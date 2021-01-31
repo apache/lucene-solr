@@ -117,7 +117,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
             "debug", "on", "clean", "true", "commit", "true",
             "category", "search",
             "dataConfig", REQUEST_PARAM_AS_VARIABLE);
-    h.query("/dataimport", request);
+    query("/dataimport", request);
     assertQ(req("desc:ApacheSolr"), "//*[@numFound='1']");
   }
 
@@ -132,7 +132,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     LocalSolrQueryRequest request = lrf.makeRequest("command", "full-import",
         "debug", "on", "clean", "true", "commit", "true",
         "dataConfig", DATA_CONFIG_WITH_DYNAMIC_FIELD_NAMES);
-    h.query("/dataimport", request);
+    query("/dataimport", request);
     assertQ(req("id:101"), "//*[@numFound='1']", "//*[@name='101_s']");
   }
 
@@ -148,7 +148,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
             "debug", "on", "clean", "true", "commit", "true",
             "mypk", "id", "text", "desc",
             "dataConfig", DATA_CONFIG_WITH_TEMPLATIZED_FIELD_NAMES);
-    h.query("/dataimport", request);
+    query("/dataimport", request);
     assertQ(req("id:101"), "//*[@numFound='1']");
   }
 

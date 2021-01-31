@@ -70,7 +70,7 @@ public class PackageAPI {
   public static final String ERR_MSG = "Package loading is not enabled , Start your nodes with -Denable.packages=true";
 
   final CoreContainer coreContainer;
-  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
+  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.INSTANCE.createObjectMapper();
   private final PackageLoader packageLoader;
   Packages pkgs;
 

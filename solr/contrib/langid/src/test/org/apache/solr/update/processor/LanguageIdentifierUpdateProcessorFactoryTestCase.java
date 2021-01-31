@@ -45,6 +45,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     assertNotNull(chained);
     chained = core.getUpdateProcessingChain("lang_id_opennlp");
     assertNotNull(chained);
+    core.close();
   }
 
   @Override

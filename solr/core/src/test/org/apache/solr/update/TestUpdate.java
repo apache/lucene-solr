@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -224,18 +225,19 @@ public class TestUpdate extends SolrTestCaseJ4 {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "444");
     doc.addField("text", new Object());//Object shouldn't be serialized later...
-
-    AddUpdateCommand cmd = new AddUpdateCommand(req());
-    cmd.solrDoc = doc;
-    try {
-      h.getCore().getUpdateHandler().addDoc(cmd); // should throw
-    } catch (SolrException e) {
-      if (e.getMessage().contains("serialize")) {
-        return;//passed test
+    try (SolrQueryRequest req = req()){
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = doc;
+      try {
+        h.getCore().getUpdateHandler().addDoc(cmd); // should throw
+      } catch (SolrException e) {
+        if (e.getMessage().contains("serialize")) {
+          return;//passed test
+        }
+        throw e;
       }
-      throw e;
+      fail();
     }
-    fail();
   }
 
 }

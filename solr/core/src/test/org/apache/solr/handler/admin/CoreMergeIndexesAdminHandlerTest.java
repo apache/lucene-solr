@@ -28,6 +28,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -71,15 +72,15 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
       DirectoryFactory df = core.getDirectoryFactory();
       FailingDirectoryFactory dirFactory = (FailingDirectoryFactory) df;
 
-      try {
+      try (SolrQueryRequest req = req(CoreAdminParams.ACTION,
+          CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString(),
+          CoreAdminParams.CORE, "collection1",
+          CoreAdminParams.INDEX_DIR, workDir.getAbsolutePath())) {
         dirFactory.fail = true;
         ignoreException(WRAPPED_FAILING_MSG);
         SolrException e = expectThrows(SolrException.class, () -> {
           admin.handleRequestBody
-              (req(CoreAdminParams.ACTION,
-                  CoreAdminParams.CoreAdminAction.MERGEINDEXES.toString(),
-                  CoreAdminParams.CORE, "collection1",
-                  CoreAdminParams.INDEX_DIR, workDir.getAbsolutePath()),
+              (req,
                   new SolrQueryResponse());
         });
         assertEquals(FailingDirectoryFactory.FailingDirectoryFactoryException.class, e.getCause().getClass());

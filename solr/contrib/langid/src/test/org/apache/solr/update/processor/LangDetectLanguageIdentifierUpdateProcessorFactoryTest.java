@@ -18,12 +18,15 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.junit.Test;
 
 public class LangDetectLanguageIdentifierUpdateProcessorFactoryTest extends LanguageIdentifierUpdateProcessorFactoryTestCase {
   @Override
   protected LanguageIdentifierUpdateProcessor createLangIdProcessor(ModifiableSolrParams parameters) throws Exception {
-    return new LangDetectLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(h.getCore(), parameters, null), resp, null);
+    try (SolrCore core = h.getCore()) {
+      return new LangDetectLanguageIdentifierUpdateProcessor(_parser.buildRequestFrom(core, parameters, null), resp, null);
+    }
   }
   
   // this one actually works better it seems with short docs

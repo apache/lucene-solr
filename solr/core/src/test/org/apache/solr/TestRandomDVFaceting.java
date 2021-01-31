@@ -26,13 +26,13 @@ import java.util.Random;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.IntPointField;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,22 +57,15 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     
     initCore("solrconfig-basic.xml","schema-docValuesFaceting.xml");
 
-    assertEquals("DocValues: Schema assumptions are broken",
-                 false, h.getCore().getLatestSchema().getField("foo_i").hasDocValues());
-    assertEquals("DocValues: Schema assumptions are broken",
-                 true, h.getCore().getLatestSchema().getField("foo_i_dv").hasDocValues());
-    assertEquals("DocValues: Schema assumptions are broken",
-                 true, h.getCore().getLatestSchema().getField("foo_i_p").hasDocValues());
-    
-    assertEquals("Type: Schema assumptions are broken",
-                 TrieIntField.class,
-                 h.getCore().getLatestSchema().getField("foo_i").getType().getClass());
-    assertEquals("Type: Schema assumptions are broken",
-                 TrieIntField.class,
-                 h.getCore().getLatestSchema().getField("foo_i_dv").getType().getClass());
-    assertEquals("Type: Schema assumptions are broken",
-                 IntPointField.class,
-                 h.getCore().getLatestSchema().getField("foo_i_p").getType().getClass());
+    try (SolrCore core = h.getCore()) {
+      assertEquals("DocValues: Schema assumptions are broken", false, core.getLatestSchema().getField("foo_i").hasDocValues());
+      assertEquals("DocValues: Schema assumptions are broken", true, core.getLatestSchema().getField("foo_i_dv").hasDocValues());
+      assertEquals("DocValues: Schema assumptions are broken", true, core.getLatestSchema().getField("foo_i_p").hasDocValues());
+
+      assertEquals("Type: Schema assumptions are broken", TrieIntField.class, core.getLatestSchema().getField("foo_i").getType().getClass());
+      assertEquals("Type: Schema assumptions are broken", TrieIntField.class, core.getLatestSchema().getField("foo_i_dv").getType().getClass());
+      assertEquals("Type: Schema assumptions are broken", IntPointField.class, core.getLatestSchema().getField("foo_i_p").getType().getClass());
+    }
     
   }
 
@@ -275,7 +268,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
         // if (random().nextBoolean()) params.set("facet.mincount", "1");  // uncomment to test that validation fails
 
-        String strResponse = h.query(req(params));
+        String strResponse = query(req(params));
         // Object realResponse = ObjectBuilder.fromJSON(strResponse);
         // System.out.println(strResponse);
 
@@ -283,16 +276,16 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       }
       // If there is a PointField option for this test, also test it
       // Don't check points if facet.mincount=0
-      if (h.getCore().getLatestSchema().getFieldOrNull(facet_field + "_p") != null
-          && params.get("facet.mincount") != null
-          && params.getInt("facet.mincount").intValue() > 0) {
-        params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_p");
-        String strResponse = h.query(req(params));
-        responses.add(strResponse);
+      try (SolrCore core = h.getCore()) {
+        if (core.getLatestSchema().getFieldOrNull(facet_field + "_p") != null && params.get("facet.mincount") != null && params.getInt("facet.mincount").intValue() > 0) {
+          params.set("facet.field", "{!key=" + facet_field + "}" + facet_field + "_p");
+          String strResponse = query(req(params));
+          responses.add(strResponse);
+        }
       }
 
       /**
-      String strResponse = h.query(req(params));
+      String strResponse = query(req(params));
       Object realResponse = ObjectBuilder.fromJSON(strResponse);
       **/
 

@@ -81,7 +81,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
     LocalSolrQueryRequest request = lrf.makeRequest("command", "full-import",
             "debug", "on", "clean", "true", "commit", "true", "dataConfig",
             dataConfig);
-    return h.query("/dataimport", request);
+    return query("/dataimport", request);
   }
 
   protected void runDeltaImport(String dataConfig) throws Exception {
@@ -130,7 +130,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
       l.add(e.getKey(),e.getValue());
     }
     LocalSolrQueryRequest request = new LocalSolrQueryRequest(h.getCore(), l, true);
-    h.query("/dataimport", request);
+    query("/dataimport", request);
   }
 
   /**

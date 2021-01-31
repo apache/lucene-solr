@@ -1045,6 +1045,7 @@ public class Http2SolrClient extends SolrClient {
       } catch (IllegalStateException e) {
         log.error("Unexpected, perhaps came after close; ?", e);
       } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (TimeoutException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout", e);
@@ -1075,6 +1076,7 @@ public class Http2SolrClient extends SolrClient {
           available.acquire();
         }
       } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
       phaser.register();

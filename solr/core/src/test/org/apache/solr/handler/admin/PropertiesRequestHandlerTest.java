@@ -22,6 +22,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.RedactionUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,11 +62,9 @@ public class PropertiesRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   private NamedList<NamedList<NamedList<Object>>> readProperties() throws Exception {
-    String xml = h.query(req(
-        CommonParams.QT, "/admin/properties",
-        CommonParams.WT, "xml"
-    ));
-
+    SolrQueryRequest req = req(CommonParams.QT, "/admin/properties", CommonParams.WT, "xml");
+    String xml = h.query(req);
+    req.close();
     XMLResponseParser parser = new XMLResponseParser();
     return (NamedList<NamedList<NamedList<Object>>>)
         parser.processResponse(new StringReader(xml)).get("system.properties");

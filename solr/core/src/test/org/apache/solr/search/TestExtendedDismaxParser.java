@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
@@ -713,12 +714,11 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void testUfDynamicField() throws Exception {
     try {
       ignoreException("dynamic field");
-
-      SolrException exception = expectThrows(SolrException.class,
-          () -> h.query(req("uf", "fl=trait*,id", "defType", "edismax")));
-      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-      assertEquals("dynamic field name must start or end with *",
-          exception.getMessage());
+      try (SolrQueryRequest req = req("uf", "fl=trait*,id", "defType", "edismax")) {
+        SolrException exception = expectThrows(SolrException.class, () -> h.query(req));
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+        assertEquals("dynamic field name must start or end with *", exception.getMessage());
+      }
     } finally {
       resetExceptionIgnores();
     }
@@ -730,26 +730,31 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   public void testCyclicAliasing() throws Exception {
     try {
       ignoreException(".*Field aliases lead to a cycle.*");
+      SolrException e;
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","who")) {
+        e = expectThrows(SolrException.class, "Simple cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
 
-      SolrException e = expectThrows(SolrException.class, "Simple cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","who")));
-      assertCyclicDetectionErrorMessage(e);
-
-      e = expectThrows(SolrException.class, "Cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")));
-      assertCyclicDetectionErrorMessage(e);
-
-      e = expectThrows(SolrException.class, "Cyclic aliasing not detected", () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6")));
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","who", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")) {
+        e = expectThrows(SolrException.class, "Cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3","f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field6", "f.field3.qf","field6")) {
+        e = expectThrows(SolrException.class, "Cyclic aliasing not detected", () -> h.query(req));
+      }
       assertFalse("This is not cyclic aliasing", e.getCause().getMessage().contains("Field aliases lead to a cycle"));
       assertTrue("Should throw exception due to invalid field name", e.getCause().getMessage().contains("not a valid field name"));
 
-      e = expectThrows(SolrException.class, "Cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4")));
-      assertCyclicDetectionErrorMessage(e);
+      try (SolrQueryRequest req = req("defType","edismax", "q","blarg", "qf","field1", "f.field1.qf","field2 field3", "f.field2.qf","field4 field5", "f.field4.qf","field5", "f.field5.qf","field4")) {
+        e = expectThrows(SolrException.class, "Cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
 
-      e = expectThrows(SolrException.class, "Cyclic alising not detected",
-          () -> h.query(req("defType","edismax", "q","who:(Zapp Pig)", "qf","text", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")));
-      assertCyclicDetectionErrorMessage(e);
+      try (SolrQueryRequest req = req("defType","edismax", "q","who:(Zapp Pig)", "qf","text", "f.who.qf","name","f.name.qf","myalias", "f.myalias.qf","who")) {
+        e = expectThrows(SolrException.class, "Cyclic alising not detected", () -> h.query(req));
+        assertCyclicDetectionErrorMessage(e);
+      }
     } finally {
       resetExceptionIgnores();
     }
@@ -1818,8 +1823,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertJQ(req("qf","text_sw title", "defType","edismax", "q","+(wi fi)", "sow","false")
         , "/response/numFound==1"
     );
-
-    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all;
+    try (SolrQueryRequest req = req("q", "*:*", "rows", "0", "wt", "json")) {
+       all = (Map) Utils.fromJSONString(h.query(req));
+    }
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 
@@ -2183,11 +2190,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   /** SOLR-11512 */
   @Test
   public void killInfiniteRecursionParse() throws Exception {
-    SolrException exception = expectThrows(SolrException.class, () -> {
-      h.query(req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}"));
-    });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertTrue(exception.getMessage().contains("Infinite Recursion detected parsing query"));
+    try (SolrQueryRequest req = req("defType", "edismax", "q", "*", "qq", "{!edismax v=something}", "bq", "{!edismax v=$qq}")) {
+      SolrException exception = expectThrows(SolrException.class, () -> {
+        h.query(req);
+      });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertTrue(exception.getMessage().contains("Infinite Recursion detected parsing query"));
+    }
   }
 
   /** SOLR-5163 */
@@ -2202,16 +2211,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.add("debugQuery", "true");
 
     // test valid field names
-    String response = h.query(req(params));
-    assertTrue(response.contains("+DisjunctionMaxQuery((title:olive | " +
-        "(subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))"));
+    try (SolrQueryRequest req = req(params)) {
+      String response = h.query(req);
+      assertTrue(response.contains("+DisjunctionMaxQuery((title:olive | " + "(subject:oliv)^3.0)) +DisjunctionMaxQuery((title:other | (subject:other)^3.0))"));
+    }
 
     // test invalid field name
     params.set("qf", "subject^3 nosuchfield");
-    SolrException exception = expectThrows(SolrException.class, () -> h.query(req(params)));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
-    assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name",
-        exception.getMessage());
+    try (SolrQueryRequest req = req(params)) {
+      SolrException exception = expectThrows(SolrException.class, () -> h.query(req));
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+      assertEquals("org.apache.solr.search.SyntaxError: Query Field 'nosuchfield' is not a valid field name", exception.getMessage());
+    }
   }
 
 }

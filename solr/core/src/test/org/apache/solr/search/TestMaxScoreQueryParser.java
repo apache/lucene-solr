@@ -22,6 +22,7 @@ import org.apache.lucene.search.*;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -149,7 +150,9 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
       while(al.size() >= 2) {
         p.add(al.remove(0), al.remove(0));
       }
-      return new MaxScoreQParser(q, p, new MapSolrParams(Collections.singletonMap("df", "text")), req(q)).parse();
+      try (SolrQueryRequest req = req(q)) {
+        return new MaxScoreQParser(q, p, new MapSolrParams(Collections.singletonMap("df", "text")), req).parse();
+      }
     } catch (SyntaxError syntaxError) {
       fail("Failed with exception "+syntaxError.getMessage());
     }

@@ -186,7 +186,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
   @Test
   public void testRowsStartForSubqueryAndScores() throws Exception {
     
-    String johnDeptsIds = h.query(req(new String[]{"q","{!join from=dept_ss_dv to=dept_id_s}name_s:john", 
+    String johnDeptsIds = query(req(new String[]{"q","{!join from=dept_ss_dv to=dept_id_s}name_s:john",
         "wt","csv",
         "csv.header","false",
         "fl","id",
@@ -244,7 +244,7 @@ public class TestSubQueryTransformer extends SolrTestCaseJ4 {
     for (String dept : new String[] {"Engineering", "Support"}) { //dept_id_s_dv">Engineering
       
       ArrayList<Object> deptWorkers = Collections.list(
-          new StringTokenizer( h.query(req(
+          new StringTokenizer(query(req(
               "q","dept_ss_dv:"+dept ,//dept_id_i_dv
              "wt","csv",
              "csv.header","false",

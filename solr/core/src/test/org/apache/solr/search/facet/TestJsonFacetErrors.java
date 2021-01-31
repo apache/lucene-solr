@@ -21,6 +21,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -153,104 +154,94 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     indexSimple(client);
 
     SolrParams params = params("q", "*:*", "rows", "0");
-
+    SolrException ex;
     // invalid format for ranges
-    SolrException ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i,start:-10,end:10,gap:2," +
-            "ranges:[{key:\"0-200\", to:200}]}}"))
-    );
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertEquals("Cannot set gap/start/end and ranges params together", ex.getMessage());
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i,start:-10,end:10,gap:2," +
+        "ranges:[{key:\"0-200\", to:200}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:bleh}}"))
-    );
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertEquals("Cannot set gap/start/end and ranges params together", ex.getMessage());
+    }
+
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," +
+        "ranges:bleh}}")){
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected List for ranges but got String"));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[bleh]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," +
+        "ranges:[bleh]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected Map for range but got String"));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{from:0, to:200, inclusive_to:bleh}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:0, to:200, inclusive_to:bleh}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected boolean type for param 'inclusive_to' but got String"));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{from:0, to:200, inclusive_from:bleh}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:0, to:200, inclusive_from:bleh}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected boolean type for param 'inclusive_from' but got String"));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{from:bleh, to:200}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:bleh, to:200}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{from:0, to:bleh}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:0, to:bleh}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{from:200, to:0}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:200, to:0}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("'from' is higher than 'to' in range for key: [200,0)", ex.getMessage());
 
     // with old format
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{range:\"\"}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"\"}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("empty facet range"));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{range:\"bl\"}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"bl\"}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Invalid start character b in facet range bl"));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{range:\"(bl\"}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(bl\"}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Invalid end character l in facet range (bl"));
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{range:\"(bleh,12)\"}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(bleh,12)\"}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{range:\"(12,bleh)\"}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(12,bleh)\"}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
-    ex = expectThrows(SolrException.class,
-        () -> h.query(req(params, "json.facet", "{price:{type :range, field : num_i," +
-            "ranges:[{range:\"(200,12)\"}]}}"))
-    );
+    try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(200,12)\"}]}}")) {
+      ex = expectThrows(SolrException.class, () -> h.query(req));
+    }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("'start' is higher than 'end' in range for key: (200,12)", ex.getMessage());
   }
@@ -367,33 +358,38 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   public void testAggErrors() {
     ignoreException("aggregation");
 
-    SolrException e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
-    });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(),
-        containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
+    SolrException e;
+    try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}")) {
+      e = expectThrows(SolrException.class, () -> {
+        h.query(req);
+      });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
+    }
 
-    e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
-    });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(),
-        containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
+    try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}")) {
+      e = expectThrows(SolrException.class, () -> {
+        h.query(req);
+      });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
+    }
 
-    e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
-    });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(),
-        containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
+    try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}")) {
+      e = expectThrows(SolrException.class, () -> {
+        h.query(req);
+      });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
+    }
 
-    e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
-    });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    assertThat(e.getMessage(),
-        containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
+    try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}")) {
+      e = expectThrows(SolrException.class, () -> {
+        h.query(req);
+      });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertThat(e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
+    }
 
     resetExceptionIgnores();
   }

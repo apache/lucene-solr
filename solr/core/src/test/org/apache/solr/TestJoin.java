@@ -19,6 +19,7 @@ package org.apache.solr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
@@ -239,16 +240,19 @@ public class TestJoin extends SolrTestCaseJ4 {
           pivot = createJoinMap(model, fromField, toField);
           pivots.put(fromField+"/"+toField, pivot);
         }
-
-        Collection<Doc> fromDocs = model.values();
-        Set<Comparable> docs = join(fromDocs, pivot);
-        List<Doc> docList = new ArrayList<>(docs.size());
-        for (Comparable id : docs) docList.add(model.get(id));
-        Collections.sort(docList, createComparator("_docid_",true,false,false,false));
-        List sortedDocs = new ArrayList();
-        for (Doc doc : docList) {
-          if (sortedDocs.size() >= 10) break;
-          sortedDocs.add(doc.toObject(h.getCore().getLatestSchema()));
+        List<Doc> docList;
+        List sortedDocs;
+        try (SolrCore core = h.getCore()) {
+          Collection<Doc> fromDocs = model.values();
+          Set<Comparable> docs = join(fromDocs, pivot);
+          docList = new ArrayList<>(docs.size());
+          for (Comparable id : docs) docList.add(model.get(id));
+          Collections.sort(docList, createComparator("_docid_", true, false, false, false));
+          sortedDocs = new ArrayList();
+          for (Doc doc : docList) {
+            if (sortedDocs.size() >= 10) break;
+            sortedDocs.add(doc.toObject(core.getLatestSchema()));
+          }
         }
 
         Map<String,Object> resultSet = new LinkedHashMap<>();
@@ -265,7 +269,7 @@ public class TestJoin extends SolrTestCaseJ4 {
                 +"}*:*"
         );
 
-        String strResponse = h.query(req);
+        String strResponse = query(req);
 
         Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/response", realResponse, resultSet);
@@ -275,7 +279,7 @@ public class TestJoin extends SolrTestCaseJ4 {
           );
 
           // re-execute the request... good for putting a breakpoint here for debugging
-          String rsp = h.query(req);
+          String rsp = query(req);
 
           fail(err);
         }

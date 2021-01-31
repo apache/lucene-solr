@@ -36,11 +36,11 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
 
   @Test
   public void test() throws Exception {
-    h.query("/dataimport", generateRequest());
+    query("/dataimport", generateRequest());
     SolrQueryRequest req = null;
     try {
       req = req("q", "*:*", "wt", "json", "indent", "true");
-      String response = h.query(req);
+      String response = query(req);
       log.debug(response);
       response = response.replaceAll("\\s","");
       Assert.assertTrue(response.contains("\"numFound\":1"));

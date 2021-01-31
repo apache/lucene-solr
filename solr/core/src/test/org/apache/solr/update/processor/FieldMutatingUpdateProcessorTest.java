@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 
@@ -600,8 +601,10 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   public void testIgnore() throws Exception {
-
-    IndexSchema schema = h.getCore().getLatestSchema();
+    IndexSchema schema;
+    try (SolrCore core = h.getCore()) {
+       schema = core.getLatestSchema();
+    }
     assertNull("test expects 'foo_giberish' to not be a valid field, looks like schema was changed out from under us",
                schema.getFieldTypeNoEx("foo_giberish"));
     assertNull("test expects 'bar_giberish' to not be a valid field, looks like schema was changed out from under us",

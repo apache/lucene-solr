@@ -31,9 +31,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
@@ -63,13 +63,15 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     dummyBlock.removeField(VERSION);
 
     SolrInputDocument preMergeDoc = new SolrInputDocument(dummyBlock);
-    AtomicUpdateDocumentMerger docMerger = new AtomicUpdateDocumentMerger(req());
-    docMerger.merge(addedDoc, dummyBlock);
-    assertEquals("merged document should have the same id", preMergeDoc.getFieldValue("id"), dummyBlock.getFieldValue("id"));
-    assertDocContainsSubset(preMergeDoc, dummyBlock);
-    assertDocContainsSubset(addedDoc, dummyBlock);
-    assertDocContainsSubset(newChildDoc, (SolrInputDocument) ((List) dummyBlock.getFieldValues("child")).get(1));
-    assertEquals(dummyBlock.getFieldValue("id"), dummyBlock.getFieldValue("id"));
+    try (SolrQueryRequest req = req()) {
+      AtomicUpdateDocumentMerger docMerger = new AtomicUpdateDocumentMerger(req);
+      docMerger.merge(addedDoc, dummyBlock);
+      assertEquals("merged document should have the same id", preMergeDoc.getFieldValue("id"), dummyBlock.getFieldValue("id"));
+      assertDocContainsSubset(preMergeDoc, dummyBlock);
+      assertDocContainsSubset(addedDoc, dummyBlock);
+      assertDocContainsSubset(newChildDoc, (SolrInputDocument) ((List) dummyBlock.getFieldValues("child")).get(1));
+      assertEquals(dummyBlock.getFieldValue("id"), dummyBlock.getFieldValue("id"));
+    }
   }
 
   @Test

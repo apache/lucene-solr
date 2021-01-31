@@ -33,6 +33,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
@@ -88,7 +89,9 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     h.coreName = DEFAULT_TEST_CORENAME;
     jmxReporter = 1;
     metricManager = cc.getMetricManager();
-    tag = h.getCore().getCoreMetricManager().getTag();
+    try (SolrCore core = h.getCore()) {
+      tag = core.getCoreMetricManager().getTag();
+    }
     // initially there are more reporters, because two of them are added via a matching collection name
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.core." + DEFAULT_TEST_CORENAME);
     assertEquals(INITIAL_REPORTERS.length + jmxReporter, reporters.size());
@@ -121,45 +124,46 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     if (null == metricManager) {
       return; // test failed to init, nothing to cleanup
     }
-      
-    SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
-
+    try (SolrCore core = h.getCore()) {
+      SolrCoreMetricManager coreMetricManager = core.getCoreMetricManager();
+      Map<String,SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
+    }
     deleteCore();
   }
 
   @Test
   public void testConfigureReporter() throws Exception {
     Random random = random();
+    try (SolrCore core = h.getCore()) {
+      String metricName = SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
+      SolrCoreMetricManager coreMetricManager = core.getCoreMetricManager();
+      Timer timer = (Timer) metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
 
-    String metricName = SolrMetricManager.mkName(METRIC_NAME, HANDLER_CATEGORY.toString(), HANDLER_NAME);
-    SolrCoreMetricManager coreMetricManager = h.getCore().getCoreMetricManager();
-    Timer timer = (Timer) metricManager.timer(null, coreMetricManager.getRegistryName(), metricName);
+      long initialCount = timer.getCount();
 
-    long initialCount = timer.getCount();
+      int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
+      for (int i = 0; i < iterations; ++i) {
+        query(req("*"));
+      }
 
-    int iterations = TestUtil.nextInt(random, 0, MAX_ITERATIONS);
-    for (int i = 0; i < iterations; ++i) {
-      h.query(req("*"));
-    }
+      long finalCount = timer.getCount();
+      // nocommit - those timers are disabled right now
+      // assertEquals("metric counter incorrect", iterations, finalCount - initialCount);
+      Map<String,SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
+      assertEquals(RENAMED_REPORTERS.length + jmxReporter, reporters.size());
 
-    long finalCount = timer.getCount();
-    // nocommit - those timers are disabled right now
-    // assertEquals("metric counter incorrect", iterations, finalCount - initialCount);
-    Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
-    assertEquals(RENAMED_REPORTERS.length + jmxReporter, reporters.size());
+      // SPECIFIC and MULTIREGISTRY were skipped because they were
+      // specific to collection1
+      for (String reporterName : RENAMED_REPORTERS) {
+        SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
+        assertNotNull("Reporter " + reporterName + " was not found.", reporter);
+        assertTrue(reporter instanceof MockMetricReporter);
 
-    // SPECIFIC and MULTIREGISTRY were skipped because they were
-    // specific to collection1
-    for (String reporterName : RENAMED_REPORTERS) {
-      SolrMetricReporter reporter = reporters.get(reporterName + "@" + tag);
-      assertNotNull("Reporter " + reporterName + " was not found.", reporter);
-      assertTrue(reporter instanceof MockMetricReporter);
-
-      MockMetricReporter mockReporter = (MockMetricReporter) reporter;
-      assertTrue("Reporter " + reporterName + " was not initialized: " + mockReporter, mockReporter.didInit);
-      assertTrue("Reporter " + reporterName + " was not validated: " + mockReporter, mockReporter.didValidate);
-      assertFalse("Reporter " + reporterName + " was incorrectly closed: " + mockReporter, mockReporter.didClose);
+        MockMetricReporter mockReporter = (MockMetricReporter) reporter;
+        assertTrue("Reporter " + reporterName + " was not initialized: " + mockReporter, mockReporter.didInit);
+        assertTrue("Reporter " + reporterName + " was not validated: " + mockReporter, mockReporter.didValidate);
+        assertFalse("Reporter " + reporterName + " was incorrectly closed: " + mockReporter, mockReporter.didClose);
+      }
     }
   }
 

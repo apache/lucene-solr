@@ -175,8 +175,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   private final ReentrantLock indexFetchLock = new ReentrantLock(true);
 
-  private final ExecutorService restoreExecutor = ParWork.getMyPerThreadExecutor();
-
   private volatile Future<Boolean> restoreFuture;
 
   private volatile String currentRestoreName;
@@ -407,7 +405,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
 
-    indexFetchLock.lock();
+    try {
+      indexFetchLock.lockInterruptibly();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new org.apache.solr.common.AlreadyClosedException(e);
+    }
     log.info("Got index fetch lock");
 
     try {

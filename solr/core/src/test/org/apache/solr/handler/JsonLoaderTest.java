@@ -174,13 +174,15 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     JsonLoader loader = new JsonLoader();
     String invalidJsonString = "}{";
 
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      loader.load(req(), rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
-    });
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertTrue(ex.getMessage().contains("Cannot parse"));
-    assertTrue(ex.getMessage().contains("JSON"));
-    p.close();
+    try (SolrQueryRequest req = req()) {
+      SolrException ex = expectThrows(SolrException.class, () -> {
+        loader.load(req, rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
+      });
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+      assertTrue(ex.getMessage().contains("Cannot parse"));
+      assertTrue(ex.getMessage().contains("JSON"));
+      p.close();
+    }
   }
 
   public void testSimpleFormatInAdd() throws Exception
@@ -260,6 +262,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
     assertEquals( 2, p.addCommands.size() );
     p.close();
+    req.close();
   }
 
   public void testJsonDocFormat() throws Exception{
@@ -295,6 +298,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     p = new BufferingRequestProcessor(null);
     loader = new JsonLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
+    req.close();
 
     assertEquals( 2, p.addCommands.size() );
 
@@ -324,6 +328,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     loader = new JsonLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream(doc), p);
     assertEquals( 2, p.addCommands.size() );
+    req.close();
 
     content = (String) p.addCommands.get(0).solrDoc.getFieldValue("_src_");
     assertNotNull(content);
@@ -343,6 +348,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.getContext().put("path","/update/json/docs");
     rsp = new SolrQueryResponse();
     p.close();
+    req.close();
     p = new BufferingRequestProcessor(null);
     loader = new JsonLoader();
     loader.load(req, rsp, new ContentStreamBase.StringStream(json), p);
@@ -453,6 +459,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
       }
     }
     p.close();
+    req.close();
   }
 
   private static void assertOnlyValue(String expected, SolrInputDocument doc, String field) {

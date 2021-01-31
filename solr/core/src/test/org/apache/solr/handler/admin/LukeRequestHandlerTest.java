@@ -22,6 +22,7 @@ import java.util.EnumSet;
 import javax.xml.xpath.XPathConstants;
 
 import org.apache.solr.common.luke.FieldFlag;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.CustomAnalyzerStrField; // jdoc
 import org.apache.solr.schema.IndexSchema;
@@ -116,20 +117,17 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
     }
 
-    // diff loop for checking 'index' flags,
-    // only valid for fields that are indexed & stored
-    for (String f : Arrays.asList("solr_t","solr_s","solr_ti",
-        "solr_td","solr_dt","solr_b")) {
-      if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
-      final String xp = getFieldXPathPrefix(f);
-      assertQ("Not as many index flags as expected ("+numFlags+") for " + f,
-          req("qt","/admin/luke", "fl", f),
-          numFlags+"=string-length("+xp+"[@name='index'])");
+    try (SolrCore core = h.getCore()) {
+      // diff loop for checking 'index' flags,
+      // only valid for fields that are indexed & stored
+      for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti", "solr_td", "solr_dt", "solr_b")) {
+        if (core.getLatestSchema().getField(f).getType().isPointField()) continue;
+        final String xp = getFieldXPathPrefix(f);
+        assertQ("Not as many index flags as expected (" + numFlags + ") for " + f, req("qt", "/admin/luke", "fl", f), numFlags + "=string-length(" + xp + "[@name='index'])");
 
-      final String hxp = getFieldXPathHistogram(f);
-      assertQ("Historgram field should be present for field "+f,
-          req("qt", "/admin/luke", "fl", f),
-          hxp+"[@name='histogram']");
+        final String hxp = getFieldXPathHistogram(f);
+        assertQ("Historgram field should be present for field " + f, req("qt", "/admin/luke", "fl", f), hxp + "[@name='histogram']");
+      }
     }
   }
 
@@ -163,6 +161,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     try {
       // First, determine that the two fields ARE there
       String response = h.query(req);
+      req.close();
       assertNull(TestHarness.validateXPath(solrConfig.getResourceLoader(), response,
           getFieldXPathPrefix("solr_t") + "[@name='index']",
           getFieldXPathPrefix("solr_s") + "[@name='index']"
@@ -181,10 +180,11 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
       response = h.query(req);
       for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti",
           "solr_td", "solr_dt", "solr_b")) {
-        if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
+        if (req.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
         assertNull(TestHarness.validateXPath(solrConfig.getResourceLoader(), response,
             getFieldXPathPrefix(f) + "[@name='index']"));
       }
+      req.close();
     } catch (Exception e) {
       fail("Caught unexpected exception " + e.getMessage());
     }
@@ -238,6 +238,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema");
 
     String xml = h.query(req);
+    req.close();
     String r = TestHarness.validateXPath
       (solrConfig.getResourceLoader(), xml,
        field("text") + "/arr[@name='copySources']/str[.='title']",
@@ -268,6 +269,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
     SolrQueryRequest req = req("qt", "/admin/luke", "show", "schema", "indent", "on");
     String xml = h.query(req);
+    req.close();
     String result = TestHarness.validateXPath(solrConfig.getResourceLoader(), xml, field("bday") + "/arr[@name='copyDests']/str[.='catchall_t']");
     assertNull(xml, result);
 

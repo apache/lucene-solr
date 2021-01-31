@@ -30,6 +30,8 @@ import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -49,13 +51,15 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   static long start = System.nanoTime();
   
   void makeExternalFile(String field, String contents) {
-    String dir = h.getCore().getDataDir();
-    String filename = dir + "/external_" + field + "." + (start++);
+    try (SolrCore core = h.getCore()) {
+      String dir = core.getDataDir();
+      String filename = dir + "/external_" + field + "." + (start++);
 
-    try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
-      out.write(contents);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+      try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
+        out.write(contents);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -230,7 +234,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertTrue(orig == FileFloatSource.onlyForTesting);
 
     makeExternalFile(field, "0=1");
-    assertU(h.query("/reloadCache",lrf.makeRequest("","")));
+    try (SolrQueryRequest req = lrf.makeRequest("","")) {
+      assertU(h.query("/reloadCache", req));
+    }
     singleTest(field, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
@@ -266,7 +272,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
       makeExternalFile(field, sb.toString());
 
       // make it visible
-      assertU(h.query("/reloadCache",lrf.makeRequest("","")));
+      try (SolrQueryRequest req = lrf.makeRequest("","")) {
+        assertU(h.query("/reloadCache", req));
+      }
 
       // test it
       float[] answers = new float[ids.length*2];
@@ -481,11 +489,12 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     TFIDFSimilarity similarity = null;
     {
-      Similarity sim = h.getCore().getLatestSchema().getFieldType("a_tfidf").getSimilarity();
-      assertNotNull("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config?", sim);
-      assertTrue("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config: " + sim.getClass(),
-                 sim instanceof TFIDFSimilarity);
-      similarity = (TFIDFSimilarity) sim;
+      try (SolrCore core = h.getCore()) {
+        Similarity sim = core.getLatestSchema().getFieldType("a_tfidf").getSimilarity();
+        assertNotNull("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config?", sim);
+        assertTrue("Test needs *_tfidf to use a TFIDFSimilarity ... who broke the config: " + sim.getClass(), sim instanceof TFIDFSimilarity);
+        similarity = (TFIDFSimilarity) sim;
+      }
     }
      
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));

@@ -113,7 +113,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         "fl", "id, subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
 
     SolrException e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+      query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
           "fl", "id, subject,[child parentFilter=\"subject:bleh\" childFilter=\"title:bar\" limit=2]"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
@@ -121,7 +121,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         containsString("Parent filter 'QueryBitSetProducer(subject:bleh)' doesn't match any parent documents"));
 
     e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+      query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
           "fl", "id, subject,[child parentFilter=e childFilter=\"title:bar\" limit=2]"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
@@ -129,7 +129,7 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
         containsString("Parent filter 'QueryBitSetProducer(text:e)' doesn't match any parent documents"));
 
     e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+      query(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
           "fl", "id, subject,[child parentFilter=\"\"]"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());

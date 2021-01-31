@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.junit.Test;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "Solr logs to JUL")
+@LuceneTestCase.Nightly
 public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
   @Test

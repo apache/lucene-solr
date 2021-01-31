@@ -136,6 +136,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly
   public void testTermEnum() throws Exception {
     doTermEnum(0);
     doTermEnum(1);

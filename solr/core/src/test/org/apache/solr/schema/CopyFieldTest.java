@@ -184,7 +184,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args.put( CommonParams.Q, "text:AAM46" );
     args.put( "indent", "true" );
     core = h.getCore();
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
         ,"//result/doc[1]/str[@name='id'][.='5']"
@@ -194,7 +194,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args.put( CommonParams.Q, "1_s:10-1839ACX-93" );
     args.put( "indent", "true" );
     core = h.getCore();
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku1 copied to dynamic dest *_s", req
         ,"//*[@numFound='1']"
         ,"//result/doc[1]/str[@name='id'][.='5']"
@@ -205,7 +205,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args.put( CommonParams.Q, "1_dest_sub_s:10-1839ACX-93" );
     args.put( "indent", "true" );
     core = h.getCore();
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku1 copied to *_dest_sub_s (*_s subset pattern)", req
         ,"//*[@numFound='1']");
 
@@ -213,7 +213,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args.put( CommonParams.Q, "dest_sub_no_ast_s:AAM46" );
     args.put( "indent", "true" );
     core = h.getCore();
-    req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku2 copied to dest_sub_no_ast_s (*_s subset pattern no asterisk)", req
         ,"//*[@numFound='1']");
   }
@@ -224,7 +224,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     // SOLR-4650: copyField source globs should not have to match an explicit or dynamic field 
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-
+    core.close();
     assertNull("'testing123_*' should not be (or match) a dynamic or explicit field", schema.getFieldOrNull("testing123_*"));
 
     assertTrue("schema should contain dynamic field '*_s'", schema.getDynamicPattern("*_s").equals("*_s"));
@@ -236,7 +236,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args.put( CommonParams.Q, "text:AAM46" );
     args.put( "indent", "true" );
     core = h.getCore();
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     assertQ("sku2 copied to text", req
         ,"//*[@numFound='1']"
         ,"//result/doc[1]/str[@name='id'][.='5']"

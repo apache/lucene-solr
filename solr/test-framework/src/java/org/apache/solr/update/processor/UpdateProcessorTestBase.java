@@ -63,7 +63,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams, true);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -95,7 +95,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
 
     CommitUpdateCommand cmd = new CommitUpdateCommand(req,false);
     UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
@@ -114,7 +114,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
     cmd.setId(id);
@@ -133,7 +133,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams(), true);
 
     UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
     try {

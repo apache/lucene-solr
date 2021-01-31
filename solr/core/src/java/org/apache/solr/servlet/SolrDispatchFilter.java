@@ -89,6 +89,7 @@ import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.apache.solr.util.tracing.GlobalTracer;
@@ -109,8 +110,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    log.warn("expected pre init of xml factories {} {} {}",
-        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory);
+    log.warn("expected pre init of factories {} {} {} {}",
+        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory, SolrJacksonAnnotationInspector.INSTANCE);
   }
 
   private volatile StopRunnable stopRunnable;
@@ -405,7 +406,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   @Override
   public void destroy() {
-    if (cores.isZooKeeperAware())  {
+    if (cores != null && cores.isZooKeeperAware())  {
       MDCLoggingContext.setNode(cores.getZkController().getNodeName());
     }
     try {
@@ -541,8 +542,12 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         ExecutorUtil.setServerThreadFlag(null);
       }
     } catch(Exception e) {
-      log.error("Solr ran into an unexpected problem and doesn't seem to know more about it.", e);
-      response.sendError(500, e.getMessage());
+      log.error("Solr ran into an unexpected problem.", e);
+      int code = 500;
+      if (e instanceof SolrException) {
+        code = ((SolrException) e).code();
+      }
+      response.sendError(code, e.getClass().getName() + " " + e.getMessage());
     } finally {
       if (span != null) span.finish();
       if (scope != null) scope.close();

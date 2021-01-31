@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.request.IntervalFacets.IntervalCompareResult;
 import org.apache.solr.response.SolrQueryResponse;
@@ -155,8 +156,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   private int getNumberOfReaders() {
-    try {
-      return h.getCore().withSearcher(searcher -> searcher.getTopReaderContext().leaves().size());
+    try (SolrCore core = h.getCore()) {
+      return core.withSearcher(searcher -> searcher.getTopReaderContext().leaves().size());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -252,9 +253,10 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   @Test
   @Slow
+  @Nightly
   public void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
-    int cardinality = TEST_NIGHTLY ? 10000 : 1000;
+    int cardinality = TEST_NIGHTLY ? 10000 : 100;
     // Fields to use for interval faceting
     String[] fields = new String[]{
         "test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv", "test_dt_dv",
@@ -262,7 +264,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         "test_l", "test_f", "test_d", "test_dt", "test_ss", "test_is", "test_fs", "test_ls", "test_ds", "test_dts",
         "test_i_p", "test_is_p", "test_l_p", "test_ls_p", "test_f_p", "test_fs_p", "test_d_p", "test_ds_p", "test_dts_p"
         };
-    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 500 : 100); i++) {
+    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 500 : 10); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         assertU(adoc("id", String.valueOf(i)));
@@ -432,61 +434,63 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
    * The range could also contain "*" as beginning and/or end of the range
    */
   private String[] getRandomRange(int max, String fieldName) {
-    Number[] values = new Number[2];
-    FieldType ft = h.getCore().getLatestSchema().getField(fieldName).getType();
-    if (ft.getNumberType() == null) {
-      assert ft instanceof StrField;
-      values[0] = randomInt(max);
-      values[1] = randomInt(max);
-      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
-    } else {
-      switch (ft.getNumberType()) {
-        case DOUBLE:
-          values[0] = raondomDouble(max);
-          values[1] = raondomDouble(max);
-          break;
-        case FLOAT:
-          values[0] = randomFloat(max);
-          values[1] = randomFloat(max);
-          break;
-        case INTEGER:
-          values[0] = randomInt(max);
-          values[1] = randomInt(max);
-          break;
-        case LONG:
-          values[0] = randomLong(max);
-          values[1] = randomLong(max);
-          break;
-        case DATE:
-          values[0] = randomMs(max);
-          values[1] = randomMs(max);
-          break;
-        default:
-          throw new AssertionError("Unexpected number type");
-        
-      }
-      Arrays.sort(values);
-    }
-    String[] stringValues = new String[2];
-    if (rarely()) {
-      stringValues[0] = "*";
-    } else {
-      if (ft.getNumberType() == NumberType.DATE) {
-        stringValues[0] = dateFormat.format(values[0]);
+    try (SolrCore core = h.getCore()) {
+      Number[] values = new Number[2];
+      FieldType ft = core.getLatestSchema().getField(fieldName).getType();
+      if (ft.getNumberType() == null) {
+        assert ft instanceof StrField;
+        values[0] = randomInt(max);
+        values[1] = randomInt(max);
+        Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
       } else {
-        stringValues[0] = String.valueOf(values[0]);
+        switch (ft.getNumberType()) {
+          case DOUBLE:
+            values[0] = raondomDouble(max);
+            values[1] = raondomDouble(max);
+            break;
+          case FLOAT:
+            values[0] = randomFloat(max);
+            values[1] = randomFloat(max);
+            break;
+          case INTEGER:
+            values[0] = randomInt(max);
+            values[1] = randomInt(max);
+            break;
+          case LONG:
+            values[0] = randomLong(max);
+            values[1] = randomLong(max);
+            break;
+          case DATE:
+            values[0] = randomMs(max);
+            values[1] = randomMs(max);
+            break;
+          default:
+            throw new AssertionError("Unexpected number type");
+
+        }
+        Arrays.sort(values);
       }
-    }
-    if (rarely()) {
-      stringValues[1] = "*";
-    } else {
-      if (ft.getNumberType() == NumberType.DATE) {
-        stringValues[1] = dateFormat.format(values[1]);
+      String[] stringValues = new String[2];
+      if (rarely()) {
+        stringValues[0] = "*";
       } else {
-        stringValues[1] = String.valueOf(values[1]);
+        if (ft.getNumberType() == NumberType.DATE) {
+          stringValues[0] = dateFormat.format(values[0]);
+        } else {
+          stringValues[0] = String.valueOf(values[0]);
+        }
       }
+      if (rarely()) {
+        stringValues[1] = "*";
+      } else {
+        if (ft.getNumberType() == NumberType.DATE) {
+          stringValues[1] = dateFormat.format(values[1]);
+        } else {
+          stringValues[1] = String.valueOf(values[1]);
+        }
+      }
+      return stringValues;
     }
-    return stringValues;
   }
 
   @Test
@@ -678,54 +682,54 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
 
   private void assertStringInterval(String fieldName, String intervalStr,
                                     String expectedStart, String expectedEnd) throws SyntaxError {
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
+    try (SolrCore core = h.getCore()) {
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
 
-    assertEquals("Expected start " + expectedStart + " but found " + f.getType().toObject(f, interval.start),
-        interval.start, new BytesRef(f.getType().toInternal(expectedStart)));
+      assertEquals("Expected start " + expectedStart + " but found " + f.getType().toObject(f, interval.start), interval.start, new BytesRef(f.getType().toInternal(expectedStart)));
 
-    assertEquals("Expected end " + expectedEnd + " but found " + f.getType().toObject(f, interval.end),
-        interval.end, new BytesRef(f.getType().toInternal(expectedEnd)));
+      assertEquals("Expected end " + expectedEnd + " but found " + f.getType().toObject(f, interval.end), interval.end, new BytesRef(f.getType().toInternal(expectedEnd)));
+    }
   }
 
   private void assertBadInterval(String fieldName, String intervalStr, String errorMsg) {
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    SyntaxError e = expectThrows(SyntaxError.class,  () -> new FacetInterval(f, intervalStr, new ModifiableSolrParams()));
-    assertTrue("Unexpected error message for interval String: " + intervalStr + ": " +
-        e.getMessage(), e.getMessage().contains(errorMsg));
+    try (SolrCore core = h.getCore()) {
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      SyntaxError e = expectThrows(SyntaxError.class, () -> new FacetInterval(f, intervalStr, new ModifiableSolrParams()));
+      assertTrue("Unexpected error message for interval String: " + intervalStr + ": " + e.getMessage(), e.getMessage().contains(errorMsg));
+    }
   }
 
   private void assertInterval(String fieldName, String intervalStr, long[] included, long[] lowerThanStart, long[] graterThanEnd) throws SyntaxError {
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
-    for (long l : included) {
-      assertEquals("Value " + l + " should be INCLUDED for interval" + interval,
-          IntervalCompareResult.INCLUDED, interval.includes(l));
+    try (SolrCore core = h.getCore()) {
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      FacetInterval interval = new FacetInterval(f, intervalStr, new ModifiableSolrParams());
+      for (long l : included) {
+        assertEquals("Value " + l + " should be INCLUDED for interval" + interval, IntervalCompareResult.INCLUDED, interval.includes(l));
+      }
+      for (long l : lowerThanStart) {
+        assertEquals("Value " + l + " should be LOWER_THAN_START for inteval " + interval, IntervalCompareResult.LOWER_THAN_START, interval.includes(l));
+      }
+      for (long l : graterThanEnd) {
+        assertEquals("Value " + l + " should be GRATER_THAN_END for inteval " + interval, IntervalCompareResult.GREATER_THAN_END, interval.includes(l));
+      }
     }
-    for (long l : lowerThanStart) {
-      assertEquals("Value " + l + " should be LOWER_THAN_START for inteval " + interval,
-          IntervalCompareResult.LOWER_THAN_START, interval.includes(l));
-    }
-    for (long l : graterThanEnd) {
-      assertEquals("Value " + l + " should be GRATER_THAN_END for inteval " + interval,
-          IntervalCompareResult.GREATER_THAN_END, interval.includes(l));
-    }
-
   }
   
   private void assertIntervalKey(String fieldName, String intervalStr,
       String expectedKey, String...params) throws SyntaxError {
-    assert (params.length&1)==0:"Params must have an even number of elements";
-    SchemaField f = h.getCore().getLatestSchema().getField(fieldName);
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    for (int i = 0; i < params.length - 1;) {
-      solrParams.set(params[i], params[i+1]);
-      i+=2;
+    try (SolrCore core = h.getCore()) {
+      assert (params.length & 1) == 0 : "Params must have an even number of elements";
+      SchemaField f = core.getLatestSchema().getField(fieldName);
+      ModifiableSolrParams solrParams = new ModifiableSolrParams();
+      for (int i = 0; i < params.length - 1; ) {
+        solrParams.set(params[i], params[i + 1]);
+        i += 2;
+      }
+      FacetInterval interval = new FacetInterval(f, intervalStr, solrParams);
+
+      assertEquals("Expected key " + expectedKey + " but found " + interval.getKey(), expectedKey, interval.getKey());
     }
-    FacetInterval interval = new FacetInterval(f, intervalStr, solrParams);
-    
-    assertEquals("Expected key " + expectedKey + " but found " + interval.getKey(), 
-        expectedKey, interval.getKey());
   }
   
   public void testChangeKey() {

@@ -102,17 +102,19 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testReloadSequential() throws Exception {
-    SolrResourceLoader loader = h.getCore().getResourceLoader();
-    final CoreContainer cc = init(loader, CONFIGSETS_SOLR_XML);
-    try {
-      cc.create("core1", ImmutableMap.of("configSet", "minimal"));
-      cc.reload("core1");
-      cc.reload("core1");
-      cc.reload("core1");
-      cc.reload("core1");
+    try (SolrCore core = h.getCore()) {
+      SolrResourceLoader loader = core.getResourceLoader();
+      final CoreContainer cc = init(loader, CONFIGSETS_SOLR_XML);
+      try {
+        cc.create("core1", ImmutableMap.of("configSet", "minimal"));
+        cc.reload("core1");
+        cc.reload("core1");
+        cc.reload("core1");
+        cc.reload("core1");
 
-    } finally {
-      cc.shutdown();
+      } finally {
+        cc.shutdown();
+      }
     }
   }
 

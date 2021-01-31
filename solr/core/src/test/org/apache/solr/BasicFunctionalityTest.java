@@ -234,6 +234,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     assertU(h.simpleTag("rollback"));
     assertU(commit());
+    core.close();
   }
 
 
@@ -369,13 +370,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           msg1.contains(BAD_VALUE));
       assertTrue("client error does not mention document id: " + msg1,
           msg1.contains("[doc=100]"));
-      SchemaField sf = h.getCore().getLatestSchema().getField(field);
+      SolrCore core = h.getCore();
+      SchemaField sf = core.getLatestSchema().getField(field);
+      core.close();
       if (!sf.hasDocValues() && !sf.indexed()) {
         continue;
       }
       SolrException e2 = expectThrows(SolrException.class,
           "Didn't encounter an error trying to add a bad date: " + field,
-          () -> h.query(req("q",field + ":" + BAD_VALUE))
+          () -> query(req("q",field + ":" + BAD_VALUE))
       );
       String msg2 = e2.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg2,
@@ -385,7 +388,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
       SolrException e3 = expectThrows(SolrException.class,
           "Didn't encounter an error trying to add a bad date: " + field,
-          () -> h.query(req("q",field + ":[NOW TO " + BAD_VALUE + "]"))
+          () -> query(req("q",field + ":[NOW TO " + BAD_VALUE + "]"))
       );
       String msg3 = e3.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg3,
@@ -425,14 +428,16 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           msg1.contains(BAD_VALUE));
       assertTrue("client error does not mention document id",
           msg1.contains("[doc=100]"));
-      SchemaField sf = h.getCore().getLatestSchema().getField(field); 
+      SolrCore core = h.getCore();
+      SchemaField sf = core.getLatestSchema().getField(field);
+      core.close();
       if (!sf.hasDocValues() && !sf.indexed()) {
         continue;
       }
 
       SolrException e2 = expectThrows(SolrException.class,
           "Didn't encounter an error trying to add a non-number: " + field,
-          () -> h.query(req("q",field + ":" + BAD_VALUE))
+          () -> query(req("q",field + ":" + BAD_VALUE))
       );
       String msg2 = e2.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg2,
@@ -442,7 +447,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
       SolrException e3 = expectThrows(SolrException.class,
           "Didn't encounter an error trying to add a non-number: " + field,
-          () -> h.query(req("q",field + ":[10 TO " + BAD_VALUE + "]"))
+          () -> query(req("q",field + ":[10 TO " + BAD_VALUE + "]"))
       );
       String msg3 = e3.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg3,
@@ -467,7 +472,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     handler.init(new NamedList());
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
-    h.getCore().execute(handler, 
+    req.getCore().execute(handler,
                         req,
                         rsp);
     assertNotNull("should have found an exception", rsp.getException());
@@ -500,7 +505,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ(req("text:hello")
             ,"//*[@numFound='2']"
             );
-    String resp = h.query(lrf.makeRequest("q", "text:hello", CommonParams.DEBUG_QUERY, "true"));
+    String resp = query(lrf.makeRequest("q", "text:hello", CommonParams.DEBUG_QUERY, "true"));
     //System.out.println(resp);
     // second doc ranked first
     assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
@@ -519,7 +524,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertQ(req("text:hello"),
             "//*[@numFound='2']"
             );
-    String resp = h.query(lrf.makeRequest("q", "text:hello", CommonParams.DEBUG_QUERY, "true"));
+    String resp = query(lrf.makeRequest("q", "text:hello", CommonParams.DEBUG_QUERY, "true"));
     //System.out.println(resp);
     // second doc ranked first
 ;    assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
@@ -787,6 +792,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("q", "id:7777", "fl", "id,title,test_hlt");
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+    core.close();
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     Document d = req.getSearcher().doc(dl.iterator().nextDoc());
@@ -812,6 +818,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("q", "id:7777", "fl", "id,title");
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
+    core.close();
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     DocIterator di = dl.iterator();    

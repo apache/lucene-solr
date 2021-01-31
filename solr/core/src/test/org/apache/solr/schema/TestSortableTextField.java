@@ -392,16 +392,16 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     // unlike most field types, SortableTextField should default to useDocValuesAsStored==false
     // (check a handful that should have the default behavior)
     try (SolrCore core = h.getCore()) {
-    for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
-      {
-        FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
-        assertEquals("type " + ft.getTypeName() + " should not default to useDocValuesAsStored", false, ft.useDocValuesAsStored());
+      for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
+        {
+          FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+          assertEquals("type " + ft.getTypeName() + " should not default to useDocValuesAsStored", false, ft.useDocValuesAsStored());
+        }
+        {
+          SchemaField sf = core.getLatestSchema().getField(n);
+          assertEquals("field " + sf.getName() + " should not default to useDocValuesAsStored", false, sf.useDocValuesAsStored());
+        }
       }
-      {
-        SchemaField sf = core.getLatestSchema().getField(n);
-        assertEquals("field " + sf.getName() + " should not default to useDocValuesAsStored", false, sf.useDocValuesAsStored());
-      }
-    }
     }
     
     // but it should be possible to set useDocValuesAsStored=true explicitly on types...
@@ -421,52 +421,49 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     // ...and it should be possible to set/override useDocValuesAsStored=true on fields...
     int num_fields_found = 0;
     List<String> xpaths = new ArrayList<>(42);
-    for (Map.Entry<String,SchemaField> entry : h.getCore().getLatestSchema().getFields().entrySet()) {
-      if (entry.getKey().endsWith("_usedvs")) {
-        num_fields_found++;
-        final SchemaField sf = entry.getValue();
-        final String name = sf.getName();
-        
-        // some sanity check before we move on with the rest of our testing...
-        assertFalse("schema change? field should not be stored=true: " + name, sf.stored());
-        final boolean usedvs = name.endsWith("_has_usedvs");
-        assertTrue("schema change broke assumptions: field must be '*_has_usedvs' or '*_negates_usedvs': " +
-                   name, usedvs ^ name.endsWith("_negates_usedvs"));
-        final boolean max6 = name.startsWith("max6_");
-        assertTrue("schema change broke assumptions: field must be 'max6_*' or 'max0_*': " +
-                   name, max6 ^ name.startsWith("max0_"));
-        
-        assertEquals("Unexpected useDocValuesAsStored value for field: " + name,
-                     usedvs, sf.useDocValuesAsStored()) ;
-        
-        final String docid = ""+num_fields_found;
-        if (usedvs && max6) {
-          // if useDocValuesAsStored==true and maxCharsForDocValues=N then longer values should fail
-          
-          final String doc = adoc("id", docid, name, "apple pear orange");
-          SolrException ex = expectThrows(SolrException.class, () -> { assertU(doc); });
-          for (String expect : Arrays.asList("field " + name,
-                                             "length=17",
-                                             "useDocValuesAsStored=true",
-                                             "maxCharsForDocValues=6")) {
-            assertTrue("exception must mention " + expect + ": " + ex.getMessage(),
-                       ex.getMessage().contains(expect));
-          }
-        } else {
-          // otherwise (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
-          // should be fine when adding a doc and we should be able to search for it later...
-          final String val = docid + " apple pear orange " + BIG_CONST;
-          assertU(adoc("id", docid, name, val));
-          String doc_xpath = "//result/doc[str[@name='id'][.='"+docid+"']]";
-            
-          if (usedvs) {
-            // ...and if it *does* usedvs, then we should defnitely see our value when searching...
-            doc_xpath = doc_xpath + "[str[@name='"+name+"'][.='"+val+"']]";
+    try (SolrCore core = h.getCore()) {
+      for (Map.Entry<String,SchemaField> entry : core.getLatestSchema().getFields().entrySet()) {
+        if (entry.getKey().endsWith("_usedvs")) {
+          num_fields_found++;
+          final SchemaField sf = entry.getValue();
+          final String name = sf.getName();
+
+          // some sanity check before we move on with the rest of our testing...
+          assertFalse("schema change? field should not be stored=true: " + name, sf.stored());
+          final boolean usedvs = name.endsWith("_has_usedvs");
+          assertTrue("schema change broke assumptions: field must be '*_has_usedvs' or '*_negates_usedvs': " + name, usedvs ^ name.endsWith("_negates_usedvs"));
+          final boolean max6 = name.startsWith("max6_");
+          assertTrue("schema change broke assumptions: field must be 'max6_*' or 'max0_*': " + name, max6 ^ name.startsWith("max0_"));
+
+          assertEquals("Unexpected useDocValuesAsStored value for field: " + name, usedvs, sf.useDocValuesAsStored());
+
+          final String docid = "" + num_fields_found;
+          if (usedvs && max6) {
+            // if useDocValuesAsStored==true and maxCharsForDocValues=N then longer values should fail
+
+            final String doc = adoc("id", docid, name, "apple pear orange");
+            SolrException ex = expectThrows(SolrException.class, () -> {
+              assertU(doc);
+            });
+            for (String expect : Arrays.asList("field " + name, "length=17", "useDocValuesAsStored=true", "maxCharsForDocValues=6")) {
+              assertTrue("exception must mention " + expect + ": " + ex.getMessage(), ex.getMessage().contains(expect));
+            }
           } else {
-            // ...but if not, then we should definitely not see any value for our field...
-            doc_xpath = doc_xpath + "[not(str[@name='"+name+"'])]";
+            // otherwise (useDocValuesAsStored==false *OR* maxCharsForDocValues=0) any value
+            // should be fine when adding a doc and we should be able to search for it later...
+            final String val = docid + " apple pear orange " + BIG_CONST;
+            assertU(adoc("id", docid, name, val));
+            String doc_xpath = "//result/doc[str[@name='id'][.='" + docid + "']]";
+
+            if (usedvs) {
+              // ...and if it *does* usedvs, then we should defnitely see our value when searching...
+              doc_xpath = doc_xpath + "[str[@name='" + name + "'][.='" + val + "']]";
+            } else {
+              // ...but if not, then we should definitely not see any value for our field...
+              doc_xpath = doc_xpath + "[not(str[@name='" + name + "'])]";
+            }
+            xpaths.add(doc_xpath);
           }
-          xpaths.add(doc_xpath);
         }
       }
     }

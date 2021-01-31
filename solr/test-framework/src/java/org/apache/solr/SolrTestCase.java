@@ -29,9 +29,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.io.Lang;
-import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecutor;
@@ -44,6 +41,7 @@ import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.CryptoKeys;
@@ -87,7 +85,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * All Solr test cases should derive from this class eventually. This is originally a result of async logging, see:
@@ -423,13 +420,6 @@ public class SolrTestCase extends LuceneTestCase {
                SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, ExternalPaths.DEFAULT_CONFIGSET);
     }
 
-    // preinit static
-    Lang.register(new DefaultStreamFactory(){
-      public void setFunctionNames(Map<String,Supplier<Class<? extends Expressible>>> functionNames) {
-
-      }
-    });
-
     log.info("@BeforeClass end ------------------------------------------------------");
     log.info("*******************************************************************");
   }
@@ -507,7 +497,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       if (testExecutor != null) {
         testExecutor.disableCloseLock();
-        testExecutor.shutdownNow();
+        testExecutor.shutdown();
       }
 
 
@@ -543,6 +533,7 @@ public class SolrTestCase extends LuceneTestCase {
       ParWork.shutdownParWorkExecutor();
 
     } finally {
+      SolrResourceLoader.refreshConf();
       ObjectReleaseTracker.clear();
       TestInjection.reset();
     }
@@ -692,7 +683,7 @@ public class SolrTestCase extends LuceneTestCase {
     if (thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) {
       return false;
     }
-    if (thread.getName().contains("RootExec")) {
+    if (thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-")) {
       log.warn("interrupt on " + thread.getName());
       thread.interrupt();
       return true;
@@ -887,7 +878,8 @@ public class SolrTestCase extends LuceneTestCase {
       if (testExecutor != null) {
         return testExecutor;
       }
-      testExecutor = (ParWorkExecutor) ParWork.getParExecutorService("testExecutor", 3, 100, 3000, new BlockingArrayQueue(30, 16));
+      testExecutor = (ParWorkExecutor) ParWork.getParExecutorService("testExecutor", 10, 30, 1000, new BlockingArrayQueue(30, 16));
+      testExecutor.prestartAllCoreThreads();
       ((ParWorkExecutor) testExecutor).enableCloseLock();
       return testExecutor;
     }

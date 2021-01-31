@@ -26,7 +26,6 @@ import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -38,7 +37,6 @@ import org.junit.Test;
  * @deprecated Trie fields are deprecated as of Solr 7.0
  */
 @Deprecated
-@Ignore // MRM-TEST TODO: finish closing things right
 public class TestTrie extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -260,12 +258,19 @@ public class TestTrie extends SolrTestCaseJ4 {
             "facet.field", "tfloat",
             "facet.field", "tdouble");
     testFacetField(req, "tint", "0", "2");
+    h.getCore();
     testFacetField(req, "tint", "5", "1");
+    h.getCore();
     testFacetField(req, "tlong", String.valueOf(Integer.MAX_VALUE), "2");
+    h.getCore();
     testFacetField(req, "tlong", String.valueOf(Integer.MAX_VALUE+5L), "1");
+    h.getCore();
     testFacetField(req, "tfloat", String.valueOf(31.11f), "2");
+    h.getCore();
     testFacetField(req, "tfloat", String.valueOf(5*5*31.11f), "1");
+    h.getCore();
     testFacetField(req, "tdouble", String.valueOf(2.33d), "2");
+    h.getCore();
     testFacetField(req, "tdouble", String.valueOf(5*2.33d), "1");
   }
 

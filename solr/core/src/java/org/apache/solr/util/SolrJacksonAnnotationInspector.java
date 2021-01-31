@@ -87,7 +87,7 @@ public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
     return findNameForSerialization(a);
   }
 
-  public static ObjectMapper createObjectMapper(){
+  public ObjectMapper createObjectMapper(){
     ObjectMapper mapper = new ObjectMapper();
     mapper.setAnnotationIntrospector(INSTANCE);
     return mapper;

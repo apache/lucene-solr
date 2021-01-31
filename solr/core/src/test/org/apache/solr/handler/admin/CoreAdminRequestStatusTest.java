@@ -26,6 +26,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,41 +59,39 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4{
     // create a new core (using CoreAdminHandler) w/ properties
 
     SolrQueryResponse resp = new SolrQueryResponse();
+    SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString(), CoreAdminParams.INSTANCE_DIR, instPropFile.getAbsolutePath(), CoreAdminParams.NAME,
+        "dummycore", CommonAdminParams.ASYNC, "42");
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.CREATE.toString(),
-            CoreAdminParams.INSTANCE_DIR, instPropFile.getAbsolutePath(),
-            CoreAdminParams.NAME, "dummycore",
-            CommonAdminParams.ASYNC, "42"),
+        (req,
             resp);
+    req.close();
     assertNull("Exception on create", resp.getException());
 
     int maxRetries = 10;
 
     while(maxRetries-- > 0) {
     resp = new SolrQueryResponse();
+    req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(), CoreAdminParams.REQUESTID, "42");
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
-            CoreAdminParams.REQUESTID, "42"),
+        (req,
             resp
         );
+      req.close();
       if(resp.getValues().get("STATUS") != null && resp.getValues().get("STATUS").equals("completed"))
         break;
-      Thread.sleep(1000);
+      Thread.sleep(250);
     }
 
     assertEquals("The status of request was expected to be completed",
                  "completed", resp.getValues().get("STATUS"));
 
     resp = new SolrQueryResponse();
+    req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(), CoreAdminParams.REQUESTID, "9999999");
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.REQUESTSTATUS.toString(),
-            CoreAdminParams.REQUESTID, "9999999"),
+        (req,
             resp
         );
-
+    req.close();
     assertEquals("Was expecting it to be invalid but found a task with the id.",
                  "notfound", resp.getValues().get("STATUS"));
 

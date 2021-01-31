@@ -38,6 +38,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.junit.AfterClass;
@@ -107,22 +108,32 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
     // This is a little fragile in that it demands the elements have the same name as type, i.e. when looking for a
     // VAL_TYPE.DOUBLE, the element in question is <double name="blah">47.0</double>.
     sb.append("/").append(type.toString()).append("[@name='").append(name).append("']");
-    String val = h.getCore().getResourceLoader().getXPath().compile(sb.toString()).evaluate(doc, XPathConstants.STRING).toString();
-    try {
-      switch (type) {
-        case INTEGER: return Integer.parseInt(val);
-        case DOUBLE:  return Double.parseDouble(val);
-        case FLOAT:   return Float.parseFloat(val);
-        case LONG:    return Long.parseLong(val);
-        case STRING:  assertTrue(rawResponse, val != null && val.length() > 0 ); return val;
-        case DATE:    assertTrue(rawResponse, val != null && val.length() > 0 ); return val;
+    try (SolrCore core = h.getCore()) {
+      String val = core.getResourceLoader().getXPath().compile(sb.toString()).evaluate(doc, XPathConstants.STRING).toString();
+      try {
+        switch (type) {
+          case INTEGER:
+            return Integer.parseInt(val);
+          case DOUBLE:
+            return Double.parseDouble(val);
+          case FLOAT:
+            return Float.parseFloat(val);
+          case LONG:
+            return Long.parseLong(val);
+          case STRING:
+            assertTrue(rawResponse, val != null && val.length() > 0);
+            return val;
+          case DATE:
+            assertTrue(rawResponse, val != null && val.length() > 0);
+            return val;
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
+        fail("Caught exception in getStatResult, xPath = " + sb.toString() + " \nraw data: " + rawResponse);
       }
-    } catch (Exception e) {
-      e.printStackTrace();
-      fail("Caught exception in getStatResult, xPath = " + sb.toString() + " \nraw data: " + rawResponse);
+      fail("Unknown type used in getStatResult");
+      return null; // Really can't get here, but the compiler thinks we can!
     }
-    fail("Unknown type used in getStatResult");
-    return null; // Really can't get here, but the compiler thinks we can!
   }
 
 
@@ -201,7 +212,9 @@ public class LegacyAbstractAnalyticsTest extends SolrTestCaseJ4 {
   }
 
   public static SolrQueryRequest request(String...args){
-    return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class) );
+    SolrQueryRequest req = SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class));
+    req.close();
+    return req;
   }
 
   public static SolrQueryRequest request(String[] args, String... additional){

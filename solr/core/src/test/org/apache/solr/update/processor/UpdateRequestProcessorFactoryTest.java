@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     UpdateRequestProcessorChain chain = core.getUpdateProcessorChain(params);
     List<UpdateRequestProcessorFactory> l = chain.getProcessors();
     assertTrue(l.get(0) instanceof TemplateUpdateProcessorFactory);
-
+    core.close();
 
   }
   
@@ -89,6 +90,8 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     
     // Make sure the NamedListArgs got through ok
     assertEquals( "{name={n8=88, n9=99}}", link.args.toString() );
+
+    core.close();
   }
 
   public void testUpdateDistribChainSkipping() throws Exception {
@@ -119,8 +122,10 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
                    chain.getProcessors().size());
 
       // test a basic (non distrib) chain
-      proc = chain.createProcessor(req(), new SolrQueryResponse());
+      SolrQueryRequest req = req();
+      proc = chain.createProcessor(req, new SolrQueryResponse());
       procs = procToList(proc);
+      req.close();
 
       int expectedProcLen = EXPECTED_CHAIN_LENGTH;
       if ("distrib-chain-noop".equals(name)) { // NoOpDistributingUpdateProcessorFactory produces no processor
@@ -148,9 +153,11 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
                    && procs.get(1) instanceof LogUpdateProcessorFactory.LogUpdateProcessor));
       proc.close();
       // fetch the distributed version of this chain
-      proc = chain.createProcessor(req(DISTRIB_UPDATE_PARAM, "NONE"), // just some non-blank value
+      req = req(DISTRIB_UPDATE_PARAM, "NONE");
+      proc = chain.createProcessor(req, // just some non-blank value
                                    new SolrQueryResponse());
       procs = procToList(proc);
+      req.close();
       assertNotNull(name + " (distrib) chain produced null proc", proc);
       assertFalse(name + " (distrib) procs is empty", procs.isEmpty());
 
@@ -181,7 +188,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
           expectedProcLen, procs.size());
       proc.close();
     }
-
+    core.close();
   }
 
   /**

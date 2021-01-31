@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,7 +30,9 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    _func = QParser.getParser(null, FunctionQParserPlugin.NAME, lrf.makeRequest());
+    try (SolrQueryRequest req = lrf.makeRequest()) {
+      _func = QParser.getParser(null, FunctionQParserPlugin.NAME, req);
+    }
   }
 
   static QParser _func;

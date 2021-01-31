@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -268,14 +269,19 @@ public class TestStressUserVersions extends TestRTGBase {
               if (VERBOSE) {
                 verbose("querying id", id);
               }
-              SolrQueryRequest sreq;
-              if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
-              } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              }
+              SolrQueryRequest sreq = null;
+              String response;
+              try {
+                if (realTime) {
+                  sreq = req("wt", "json", "qt", "/get", "ids", Integer.toString(id));
+                } else {
+                  sreq = req("wt", "json", "q", "id:" + Integer.toString(id), "omitHeader", "true");
+                }
 
-              String response = h.query(sreq);
+                response = h.query(sreq);
+              } finally {
+                IOUtils.closeQuietly(sreq);
+              }
               Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {

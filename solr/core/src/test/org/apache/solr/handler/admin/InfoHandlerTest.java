@@ -154,10 +154,11 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
   private SolrQueryResponse handleRequest(InfoHandler infoHandler, String path)
       throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = req();
-    req.getContext().put("path", path);
-    infoHandler.handleRequestBody(req, rsp);
-    return rsp;
+    try (SolrQueryRequest req = req()) {
+      req.getContext().put("path", path);
+      infoHandler.handleRequestBody(req, rsp);
+      return rsp;
+    }
   }
 
 }

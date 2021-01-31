@@ -154,6 +154,8 @@ public class XmlConfigFile { // formerly simply "Config"
         ParseOptions po = plc.getParseOptions();
         if (is.getSystemId() != null) {
           po.setEntityResolver(loader.getSysIdResolver());
+        } else {
+          po.setEntityResolver(null);
         }
         po.setXIncludeAware(true);
         po.setCheckEntityReferences(false);
@@ -162,7 +164,10 @@ public class XmlConfigFile { // formerly simply "Config"
         po.setPleaseCloseAfterUse(true);
         Sender.send(source, builder, po);
         docTree = (TinyDocumentImpl) builder.getCurrentRoot();
-      } finally {
+      } catch (Exception e) {
+        log.error("Exception handling xml doc", e);
+        throw e;
+      }  finally {
         builder.close();
         builder.reset();
       }

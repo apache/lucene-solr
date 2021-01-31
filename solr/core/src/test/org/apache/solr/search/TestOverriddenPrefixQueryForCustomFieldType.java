@@ -22,6 +22,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,6 +50,14 @@ public class TestOverriddenPrefixQueryForCustomFieldType extends SolrTestCaseJ4 
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
+    // if you override setUp or tearDown, you better call
+    // the super classes version
+    super.tearDown();
     clearIndex();
     assertU(commit());
     otherCounts=0;

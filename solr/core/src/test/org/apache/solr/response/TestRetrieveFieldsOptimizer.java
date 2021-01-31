@@ -39,7 +39,6 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static junit.framework.Assert.fail;
@@ -75,11 +74,12 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     System.setProperty("enable.update.log", "false");
     typesHolder = new FieldTypeHolder();
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+      setupAllFields();
 
-    IndexSchema schema = h.getCore().getLatestSchema();
-    setupAllFields();
-
-    h.getCore().setLatestSchema(schema);
+      core.setLatestSchema(schema);
+    }
   }
 
   @After
@@ -156,26 +156,27 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     }
     schema = fieldsHolder.addFields(schema);
 
-    h.getCore().setLatestSchema(schema);
+    try (SolrCore core = h.getCore()) {
+      core.setLatestSchema(schema);
 
-    // All that setup work and we're only going to add a very few docs!
-    for (int idx = 0; idx < 10; ++idx) {
-      addDocWithAllFields(idx);
-    }
-    assertU(commit());
-    // Now we need to massage the expected values returned based on the docValues type 'cause it's weird.
-    final RefCounted<SolrIndexSearcher> refCounted = h.getCore().getNewestSearcher(true);
-    try {
-      //static Map<String, Map<String, List<String>>>
-      for (Map<String, List<String>> docFieldsEnt : allFieldValuesInput.values()) {
-        for (Map.Entry<String, List<String>> oneField : docFieldsEnt.entrySet()) {
-          RetrieveField field = fieldsHolder.getTestField(oneField.getKey());
-          field.expectedValsAsStrings(refCounted.get().getSlowAtomicReader().getFieldInfos().fieldInfo(field.name),
-              oneField.getValue());
-        }
+      // All that setup work and we're only going to add a very few docs!
+      for (int idx = 0; idx < 10; ++idx) {
+        addDocWithAllFields(idx);
       }
-    } finally {
-      refCounted.decref();
+      assertU(commit());
+      // Now we need to massage the expected values returned based on the docValues type 'cause it's weird.
+      final RefCounted<SolrIndexSearcher> refCounted = core.getNewestSearcher(true);
+      try {
+        //static Map<String, Map<String, List<String>>>
+        for (Map<String,List<String>> docFieldsEnt : allFieldValuesInput.values()) {
+          for (Map.Entry<String,List<String>> oneField : docFieldsEnt.entrySet()) {
+            RetrieveField field = fieldsHolder.getTestField(oneField.getKey());
+            field.expectedValsAsStrings(refCounted.get().getSlowAtomicReader().getFieldInfos().fieldInfo(field.name), oneField.getValue());
+          }
+        }
+      } finally {
+        refCounted.decref();
+      }
     }
    }
 
@@ -315,7 +316,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) core.getQueryResponseWriter("javabin");
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-
+    req.close();
     // This is really the main point!
     assertEquals("We didn't get the values from the expected places! ",
         source, ((SolrReturnFields) rsp.returnFields).getFieldSources());

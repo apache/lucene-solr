@@ -714,7 +714,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public SolrCore reload(ConfigSet coreConfig) throws IOException, InterruptedException {
     log.info("Reload SolrCore");
 
-    if (coreContainer.isShutDown() || isClosed() || closing) {
+    if (closing) {
       throw new AlreadyClosedException();
     }
     // only one reload at a time
@@ -724,7 +724,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
       if (!locked && reloadyWaiting.get() > 1) {
         log.info("Skipping recovery because there is another already queued");
-        lock.lock();
+        lock.lockInterruptibly();
         lock.unlock();
         return null;
       }
@@ -1731,7 +1731,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public void closeAndWait() {
     close();
 
-    int timeouts = 180;
+    int timeouts = 30;
 
     TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int cnt = 0;
@@ -1739,9 +1739,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       cnt++;
       try {
         synchronized (closeAndWait) {
-          closeAndWait.wait(1);
+          closeAndWait.wait(250);
         }
-        if (cnt >= 3 && !closing) {
+        if (cnt >= 2 && !closing) {
           close();
         }
         log.warn("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
@@ -1760,7 +1760,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
       if (getUpdateHandler() != null && getUpdateHandler().getSolrCoreState() != null) {
         reloadLock = getUpdateHandler().getSolrCoreState().getReloadLock();
-        reloadLock.lock();
+        try {
+          reloadLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new AlreadyClosedException(e);
+        }
       }
 
       if (closing) {
@@ -2307,7 +2312,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // use the searcher lock to prevent multiple people from trying to open at once
-    openSearcherLock.lock();
+    try {
+      openSearcherLock.lockInterruptibly();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException(e);
+    }
+
     try {
 
       // try again
@@ -2351,7 +2362,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (coreContainer.isShutDown()) {
       throw new AlreadyClosedException();
     }
-    openSearcherLock.lock();
+    try {
+      openSearcherLock.lockInterruptibly();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException(e);
+    }
     try {
 
       String newIndexDir = getNewIndexDir();
@@ -2482,7 +2498,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error opening new searcher", e);
     } finally {
-      openSearcherLock.unlock();
+      if (openSearcherLock != null && openSearcherLock.isHeldByCurrentThread()) openSearcherLock.unlock();
       if (newestSearcher != null) {
         newestSearcher.decref();
       }
@@ -2623,7 +2639,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     RefCounted<SolrIndexSearcher> searchHolder = null;
     boolean success = false;
     AtomicBoolean registered = new AtomicBoolean(false);
-    openSearcherLock.lock();
+    try {
+      openSearcherLock.lockInterruptibly();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException(e);
+    }
     Timer.Context timerContext = newSearcherTimer.time();
     try {
       searchHolder = openNewSearcher(updateHandlerReopens, false);
@@ -2797,7 +2818,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       } finally {
         // we want to do this after we decrement onDeckSearchers so another thread
         // doesn't increment first and throw a false warning.
-        openSearcherLock.unlock();
+        if (openSearcherLock != null && openSearcherLock.isHeldByCurrentThread()) openSearcherLock.unlock();
       }
     }
 

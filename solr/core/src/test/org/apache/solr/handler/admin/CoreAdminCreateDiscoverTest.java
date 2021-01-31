@@ -30,6 +30,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -95,16 +96,13 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     System.setProperty("DATA_TEST", "data_diff");
 
     SolrQueryResponse resp = new SolrQueryResponse();
+    SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString(), CoreAdminParams.NAME, coreSysProps, CoreAdminParams.INSTANCE_DIR, "${INSTDIR_TEST}",
+        CoreAdminParams.CONFIG, "${CONFIG_TEST}", CoreAdminParams.SCHEMA, "${SCHEMA_TEST}", CoreAdminParams.DATA_DIR, "${DATA_TEST}");
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.CREATE.toString(),
-            CoreAdminParams.NAME, coreSysProps,
-            CoreAdminParams.INSTANCE_DIR, "${INSTDIR_TEST}",
-            CoreAdminParams.CONFIG, "${CONFIG_TEST}",
-            CoreAdminParams.SCHEMA, "${SCHEMA_TEST}",
-            CoreAdminParams.DATA_DIR, "${DATA_TEST}"),
+        (req,
             resp);
     assertNull("Exception on create", resp.getException());
+    req.close();
 
     // verify props are in persisted file
 
@@ -156,16 +154,13 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     // Create one core
     SolrQueryResponse resp = new SolrQueryResponse();
+    SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString(), CoreAdminParams.NAME, coreDuplicate, CoreAdminParams.INSTANCE_DIR, workDir.getAbsolutePath(),
+        CoreAdminParams.CONFIG, "solrconfig_ren.xml", CoreAdminParams.SCHEMA, "schema_ren.xml", CoreAdminParams.DATA_DIR, data.getAbsolutePath());
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.CREATE.toString(),
-            CoreAdminParams.NAME, coreDuplicate,
-            CoreAdminParams.INSTANCE_DIR, workDir.getAbsolutePath(),
-            CoreAdminParams.CONFIG, "solrconfig_ren.xml",
-            CoreAdminParams.SCHEMA, "schema_ren.xml",
-            CoreAdminParams.DATA_DIR, data.getAbsolutePath()),
+        (req,
             resp);
     assertNull("Exception on create", resp.getException());
+    req.close();
 
     // Try to create another core with a different name, but the same instance dir
     // nocommit disabled at the moment
@@ -194,23 +189,22 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
 
     // Create one core
     SolrQueryResponse resp = new SolrQueryResponse();
+    SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString(), CoreAdminParams.NAME, "testInstanceDirAsPropertyParam",
+        "property.instanceDir", workDir.getAbsolutePath(), CoreAdminParams.CONFIG, "solrconfig_ren.xml", CoreAdminParams.SCHEMA, "schema_ren.xml", CoreAdminParams.DATA_DIR, data.getAbsolutePath());
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-                CoreAdminParams.CoreAdminAction.CREATE.toString(),
-                CoreAdminParams.NAME, "testInstanceDirAsPropertyParam",
-                "property.instanceDir", workDir.getAbsolutePath(),
-                CoreAdminParams.CONFIG, "solrconfig_ren.xml",
-                CoreAdminParams.SCHEMA, "schema_ren.xml",
-                CoreAdminParams.DATA_DIR, data.getAbsolutePath()),
+        (req,
             resp);
     assertNull("Exception on create", resp.getException());
+    req.close();
 
     resp = new SolrQueryResponse();
+    req = req(CoreAdminParams.ACTION,
+        CoreAdminParams.CoreAdminAction.STATUS.toString(),
+        CoreAdminParams.CORE, "testInstanceDirAsPropertyParam");
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-                CoreAdminParams.CoreAdminAction.STATUS.toString(),
-                CoreAdminParams.CORE, "testInstanceDirAsPropertyParam"),
+        (req,
             resp);
+    req.close();
     NamedList status = (NamedList) resp.getValues().get("status");
     assertNotNull(status);
     NamedList coreProps = (NamedList) status.get("testInstanceDirAsPropertyParam");
@@ -231,16 +225,13 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     File data = new File(workDir, "data");
 
     SolrQueryResponse resp = new SolrQueryResponse();
+    SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString(), CoreAdminParams.NAME, coreNormal, CoreAdminParams.INSTANCE_DIR, workDir.getAbsolutePath(),
+        CoreAdminParams.CONFIG, "solrconfig_ren.xml", CoreAdminParams.SCHEMA, "schema_ren.xml", CoreAdminParams.DATA_DIR, data.getAbsolutePath());
     admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.CREATE.toString(),
-            CoreAdminParams.NAME, coreNormal,
-            CoreAdminParams.INSTANCE_DIR, workDir.getAbsolutePath(),
-            CoreAdminParams.CONFIG, "solrconfig_ren.xml",
-            CoreAdminParams.SCHEMA, "schema_ren.xml",
-            CoreAdminParams.DATA_DIR, data.getAbsolutePath()),
+        (req,
             resp);
     assertNull("Exception on create", resp.getException());
+    req.close();
 
     // verify props are in persisted file
     Properties props = new Properties();

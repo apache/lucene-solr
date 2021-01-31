@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
@@ -71,8 +72,10 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     // response.
     SolrCore core = h.getCore();
     SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = req("file", "does-not-exist-404.txt");
     core.execute(core.getRequestHandler("/admin/file"),
-            req("file", "does-not-exist-404.txt"), rsp);
+            req, rsp);
+    req.close();
     assertNotNull("no exception in response", rsp.getException());
     assertTrue("wrong type of exception: " + rsp.getException().getClass(),
             rsp.getException() instanceof SolrException);

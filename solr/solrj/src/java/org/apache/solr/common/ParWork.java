@@ -58,6 +58,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ParWork implements Closeable {
   public static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
+  public static final String ROOT_EXEC_NAME = "Root";
   private static final String WORK_WAS_INTERRUPTED = "Work was interrupted!";
 
   private static final String RAN_INTO_AN_ERROR_WHILE_DOING_WORK =
@@ -77,7 +78,7 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ParWorkExecutor) getParExecutorService("Root",
+          EXEC = (ParWorkExecutor) getParExecutorService(ROOT_EXEC_NAME,
               Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 32), Integer.MAX_VALUE, 1000,
               new SynchronousQueue());
           ((ParWorkExecutor)EXEC).enableCloseLock();

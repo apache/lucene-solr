@@ -74,7 +74,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public LocalSolrQueryRequest(SolrCore core, NamedList args, boolean closeCore) {
     super(core, args.toSolrParams());
     this.closeCore = closeCore;
-    //assert ObjectReleaseTracker.track(this);
+    assert ObjectReleaseTracker.track(this);
   }
 
   public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args) {

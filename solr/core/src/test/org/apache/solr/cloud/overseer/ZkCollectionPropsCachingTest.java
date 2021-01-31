@@ -29,7 +29,6 @@ import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,12 +72,12 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
     collectionProps.setCollectionProperty(collectionName, "property1", "value1");
     checkValue("property1", "value1"); //Should be no cache, so the change should take effect immediately
 
-    zkStateReader.getCollectionProperties(collectionName,900);
+    zkStateReader.getCollectionProperties(collectionName,100);
     zkStateReader.getZkClient().close();
     assertFalse(zkStateReader.isClosed());
     checkValue("property1", "value1"); //Should be cached, so the change should not try to hit zk
 
-    Thread.sleep(1000); // test the timeout feature
+    Thread.sleep(300); // test the timeout feature
     try {
       checkValue("property1", "value1"); //Should not be cached anymore
       fail("cache should have expired, prev line should throw an exception trying to access zookeeper after closed");

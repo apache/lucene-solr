@@ -60,6 +60,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -131,7 +132,9 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private SolrIndexSearcher getSearcher() {
     if (_searcher == null) {
-      searcherRef = h.getCore().getSearcher();
+      try (SolrCore core = h.getCore()) {
+        searcherRef = core.getSearcher();
+      }
       _searcher = searcherRef.get();
     }
     return _searcher;

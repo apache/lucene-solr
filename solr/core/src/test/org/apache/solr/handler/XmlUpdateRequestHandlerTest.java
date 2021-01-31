@@ -190,8 +190,9 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       p.expectDelete("500", null, -1, 42, "shard1");
 
       XMLLoader loader = new XMLLoader().init(null);
-      loader.load(req(), new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
-
+      SolrQueryRequest req = req();
+      loader.load(req, new SolrQueryResponse(), new ContentStreamBase.StringStream(xml), p);
+      req.close();
       p.assertNoCommandsPending();
       p.close();
     }

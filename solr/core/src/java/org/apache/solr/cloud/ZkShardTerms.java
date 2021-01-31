@@ -108,7 +108,7 @@ public class ZkShardTerms implements Closeable {
     this.zkClient = zkClient;
     retryRegisterWatcher();
     if (terms.get() == null) {
-      terms.set(new ShardTerms(new ConcurrentHashMap<>(), -1));
+      terms.set(new ShardTerms(Collections.emptyMap(), -1));
     }
     assert ObjectReleaseTracker.track(this);
   }
@@ -358,7 +358,12 @@ public class ZkShardTerms implements Closeable {
    * Fetch latest terms from ZK
    */
   public void refreshTerms(boolean setWatch, int version) throws KeeperException {
-    lock.lock();
+    try {
+      lock.lockInterruptibly();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      throw new AlreadyClosedException(e);
+    }
     try {
       ShardTerms newTerms;
       Watcher watcher = event -> {
@@ -384,7 +389,7 @@ public class ZkShardTerms implements Closeable {
       try {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(znodePath, setWatch ? watcher : null, stat, true);
-        ConcurrentHashMap<String,Long> values = new ConcurrentHashMap<>((Map<String,Long>) Utils.fromJSON(data));
+        Map<String,Long> values = Collections.unmodifiableMap(new HashMap<>((Map<String,Long>) Utils.fromJSON(data)));
         // nocommit
         log.info("refresh shard terms to zk version {}", stat.getVersion());
         newTerms = new ShardTerms(values, stat.getVersion());

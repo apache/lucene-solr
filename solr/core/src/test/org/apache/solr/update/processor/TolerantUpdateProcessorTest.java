@@ -337,16 +337,18 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
   
   public String update(String chain, String xml) {
-    DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/update");
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("update.chain", chain);
-    try {
-      return connection.request(handler, params, xml);
-    } catch (SolrException e) {
-      throw (SolrException)e;
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    try (SolrCore core = h.getCore()) {
+      DirectSolrConnection connection = new DirectSolrConnection(core);
+      SolrRequestHandler handler = core.getRequestHandler("/update");
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add("update.chain", chain);
+      try {
+        return connection.request(handler, params, xml);
+      } catch (SolrException e) {
+        throw (SolrException) e;
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
     }
   }
   
@@ -393,7 +395,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
       requestParams = new ModifiableSolrParams();
     }
     
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams, true);
     UpdateRequestProcessor processor = null;
     try {
       processor = pc.createProcessor(req, rsp);

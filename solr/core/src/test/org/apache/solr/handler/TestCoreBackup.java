@@ -29,7 +29,9 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
@@ -66,10 +68,9 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-          (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-              "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location", location)
-              , resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(), "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location", location);
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(location, "snapshot." + snapshotName), 2);
     }
@@ -100,12 +101,12 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     
     { // first a backup before we've ever done *anything*...
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "name", "empty_backup1",
-             "location", backupDir.getAbsolutePath()),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "name", "empty_backup1",
+          "location", backupDir.getAbsolutePath());
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.empty_backup1"),
                         0, initialEmptyIndexSegmentFileName);
@@ -113,11 +114,11 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
 
     { // Empty (named) snapshot..
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "commitName", "empty_snapshotA"),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "commitName", "empty_snapshotA");
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Snapshot A should have succeeded", resp.getException());
     }
     
@@ -125,12 +126,12 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
 
     { // second backup w/uncommited docs
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "name", "empty_backup2",
-             "location", backupDir.getAbsolutePath()),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "name", "empty_backup2",
+          "location", backupDir.getAbsolutePath());
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.empty_backup2"),
                         0, initialEmptyIndexSegmentFileName);
@@ -138,11 +139,11 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     
     { // Second empty (named) snapshot..
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "commitName", "empty_snapshotB"),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "commitName", "empty_snapshotB");
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Snapshot A should have succeeded", resp.getException());
     }
 
@@ -158,14 +159,12 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     for (String snapName : Arrays.asList("empty_snapshotA", "empty_snapshotB")) {
       String name = "empty_backup_from_" + snapName;
       SolrQueryResponse resp = new SolrQueryResponse();
-      
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(), "core", DEFAULT_TEST_COLLECTION_NAME, "name", name,
+          "commitName", snapName, "location", backupDir.getAbsolutePath());
       admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "name", name,
-             "commitName", snapName,
-             "location", backupDir.getAbsolutePath()),
+        (req,
          resp);
+      req.close();
       assertNull("Backup "+name+" should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot." + name),
                         0, initialEmptyIndexSegmentFileName);
@@ -202,12 +201,12 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     
     { // take an initial 'backup1a' containing our 1 document
       final SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "name", "backup1a",
-             "location", backupDir.getAbsolutePath()),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "name", "backup1a",
+          "location", backupDir.getAbsolutePath());
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.backup1a"),
                         1, oneDocSegmentFile);
@@ -215,11 +214,9 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     
     { // and an initial "snapshot1a' that should eventually match
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "commitName", "snapshot1a"),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(), "core", DEFAULT_TEST_COLLECTION_NAME, "commitName", "snapshot1a");
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Snapshot 1A should have succeeded", resp.getException());
     }
 
@@ -235,12 +232,12 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     { // we now have an index with two searchable docs, but a new 'backup1b' should still
       // be identical to the previous backup...
       final SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "name", "backup1b",
-             "location", backupDir.getAbsolutePath()),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "name", "backup1b",
+          "location", backupDir.getAbsolutePath());
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.backup1b"),
                         1, oneDocSegmentFile);
@@ -248,11 +245,11 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     
     { // and a second "snapshot1b' should also still be identical
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "commitName", "snapshot1b"),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATESNAPSHOT.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "commitName", "snapshot1b");
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Snapshot 1B should have succeeded", resp.getException());
     }
 
@@ -266,12 +263,12 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     
     { // But we should be able to confirm both docs appear in a new backup (not based on a previous snapshot)
       final SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "name", "backup2",
-             "location", backupDir.getAbsolutePath()),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+          "core", DEFAULT_TEST_COLLECTION_NAME,
+          "name", "backup2",
+          "location", backupDir.getAbsolutePath());
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.backup2"), 2);
     }
@@ -282,13 +279,10 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     for (String snapName : Arrays.asList("snapshot1a", "snapshot1b")) {
       String name = "backup_from_" + snapName;
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-        (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-             "core", DEFAULT_TEST_COLLECTION_NAME,
-             "name", name,
-             "commitName", snapName,
-             "location", backupDir.getAbsolutePath()),
-         resp);
+      SolrQueryRequest req = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(), "core", DEFAULT_TEST_COLLECTION_NAME, "name", name, "commitName", snapName, "location",
+          backupDir.getAbsolutePath());
+      admin.handleRequestBody(req, resp);
+      req.close();
       assertNull("Backup "+name+" should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot." + name),
                         1, oneDocSegmentFile);
@@ -331,20 +325,20 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     // verify it's "searchable" ...
     assertQ(req("q", "id:42"), "//result[@numFound='1']");
 
-    // sanity check what the searcher/reader of this empty index report about current commit
-    IndexCommit oneDoc = h.getCore().withSearcher(s -> {
+    try (SolrCore core = h.getCore()) {
+      // sanity check what the searcher/reader of this empty index report about current commit
+      IndexCommit oneDoc = core.withSearcher(s -> {
         // sanity check this really is the searcher/reader that has the new doc...
         assertEquals(1L, (long) s.getIndexReader().numDocs());
-        
+
         final IndexCommit commit = s.getIndexReader().getIndexCommit();
         // WTF: how/why does this reader still have the same commit generation as before ? ? ? ? ?
-        assertEquals("WTF: This Reader (claims) the same generation as our previous pre-softCommif (empty) reader",
-                     EXPECTED_GEN_OF_EMPTY_INDEX, (long) commit.getGeneration());
+        assertEquals("WTF: This Reader (claims) the same generation as our previous pre-softCommif (empty) reader", EXPECTED_GEN_OF_EMPTY_INDEX, (long) commit.getGeneration());
         return commit;
       });
 
-    assertEquals("WTF: Our two IndexCommits, which we know have different docs, claim to be equals",
-                 empty, oneDoc);
+      assertEquals("WTF: Our two IndexCommits, which we know have different docs, claim to be equals", empty, oneDoc);
+    }
     
   }
 

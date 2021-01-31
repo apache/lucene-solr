@@ -490,38 +490,38 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
     // expand with grouping
     SolrException e = expectThrows(SolrException.class, () -> {
-      h.query(req("q", "*:*", "expand", "true", "expand.field", "id", "group", "true", "group.field", "id"));
+      query(req("q", "*:*", "expand", "true", "expand.field", "id", "group", "true", "group.field", "id"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertEquals("Can not use expand with Grouping enabled", e.getMessage());
 
     // no expand field
-    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true")));
+    e = expectThrows(SolrException.class,  () -> query(req("q", "*:*", "expand", "true")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertEquals("missing expand field", e.getMessage());
 
     // query and filter syntax errors
-    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+    e = expectThrows(SolrException.class,  () -> query(req("q", "*:*", "expand", "true",
         "expand.field", "term_s", "expand.q", "{!")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
 
-    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+    e = expectThrows(SolrException.class,  () -> query(req("q", "*:*", "expand", "true",
         "expand.field", "term_s", "expand.q", "*:*", "expand.fq", "{!")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
 
-    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+    e = expectThrows(SolrException.class,  () -> query(req("q", "*:*", "expand", "true",
         "expand.field", "term_s", "expand.q", "*:*", "expand.fq", "{!")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
 
-    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+    e = expectThrows(SolrException.class,  () -> query(req("q", "*:*", "expand", "true",
         "expand.field", "term_s", "expand.q", "*:*", "expand.sort", "bleh")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertTrue(e.getMessage().contains("Can't determine a Sort Order (asc or desc) in sort spec 'bleh'"));
 
-    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+    e = expectThrows(SolrException.class,  () -> query(req("q", "*:*", "expand", "true",
         "expand.field", "text_t", "expand.q", "*:*")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertEquals("Expand not supported for fieldType:'text'", e.getMessage());

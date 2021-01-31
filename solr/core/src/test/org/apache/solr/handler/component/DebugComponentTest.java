@@ -218,6 +218,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       }
       component.prepare(rb);
       ensureRidPresent(rb, null);
+      req.close();
     }
    
     req = req("q", "test query", "distrib", "true", CommonParams.REQUEST_ID, "123");
@@ -226,6 +227,7 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     rb.setDebug(true);
     component.prepare(rb);
     ensureRidPresent(rb, "123");
+    req.close();
   }
   
   @SuppressWarnings("unchecked")

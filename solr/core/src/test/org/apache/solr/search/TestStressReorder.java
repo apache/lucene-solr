@@ -26,6 +26,7 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
@@ -307,14 +308,19 @@ public class TestStressReorder extends TestRTGBase {
               if (VERBOSE) {
                 verbose("querying id", id);
               }
-              SolrQueryRequest sreq;
-              if (realTime) {
-                sreq = req("wt","json", "qt","/get", "ids",Integer.toString(id));
-              } else {
-                sreq = req("wt","json", "q","id:"+Integer.toString(id), "omitHeader","true");
-              }
+              String response = null;
+              SolrQueryRequest sreq = null;
+              try {
+                if (realTime) {
+                  sreq = req("wt", "json", "qt", "/get", "ids", Integer.toString(id));
+                } else {
+                  sreq = req("wt", "json", "q", "id:" + Integer.toString(id), "omitHeader", "true");
+                }
 
-              String response = h.query(sreq);
+                response = h.query(sreq);
+              } finally {
+                IOUtils.closeQuietly(sreq);
+              }
               Map rsp = (Map) Utils.fromJSONString(response);
               List doclist = (List)(((Map)rsp.get("response")).get("docs"));
               if (doclist.size() == 0) {

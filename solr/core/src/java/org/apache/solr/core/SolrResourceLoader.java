@@ -89,8 +89,6 @@ import javax.xml.xpath.XPathExpression;
 public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
-
   private static final String base = "org.apache.solr";
   private static final String[] packages = {
       "", "analysis.", "schema.", "handler.", "handler.tagger.", "search.", "update.", "core.", "response.", "request.",
@@ -99,27 +97,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final URL[] EMPTY_URL_ARRAY = new URL[0];
+  private static XPathFactoryImpl xpathFactory;
   private final SystemIdResolver sysIdResolver;
 
-  public volatile Configuration conf;
+  public static XPathFactoryImpl getXpathFactory() {
+    return xpathFactory;
+  }
 
-  public volatile XPathFactoryImpl xpathFactory;
-
-
-  public XPathExpression shardHandlerFactoryExp;
-  public XPathExpression counterExp;
-  public XPathExpression meterExp;
-  public XPathExpression timerExp;
-  public XPathExpression histoExp;
-  public XPathExpression historyExp;
-  public XPathExpression transientCoreCacheFactoryExp;
-  public XPathExpression tracerConfigExp;
-
-  public XPathExpression coreLoadThreadsExp;
-  public XPathExpression persistentExp;
-  public XPathExpression sharedLibExp;
-  public XPathExpression zkHostExp;
-  public XPathExpression coresExp;
+  static String luceneMatchVersionPath = "/config/" + IndexSchema.LUCENE_MATCH_VERSION_PARAM;
+  static String indexDefaultsPath = "/config/indexDefaults";
+  static String mainIndexPath = "/config/mainIndex";
+  static String nrtModePath = "/config/indexConfig/nrtmode";
+  static String unlockOnStartupPath = "/config/indexConfig/unlockOnStartup";
 
   static String shardHandlerFactoryPath = "solr/shardHandlerFactory";
   static String counterExpPath = "solr/metrics/suppliers/counter";
@@ -136,16 +125,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   static String  zkHostPath = "solr/@zkHost";
   static String  coresPath = "solr/cores";
 
-  public XPathExpression xpathOrExp;
-  public XPathExpression schemaNameExp;
-  public XPathExpression schemaVersionExp;
-  public XPathExpression schemaSimExp;
-  public XPathExpression defaultSearchFieldExp;
-  public XPathExpression solrQueryParserDefaultOpExp;
-  public XPathExpression schemaUniqueKeyExp;
-  public XPathExpression fieldTypeXPathExpressionsExp;
-  public XPathExpression copyFieldsExp;
-
   public static String schemaNamePath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.AT + IndexSchema.NAME);
   public static String schemaVersionPath = "/schema/@version";
 
@@ -161,29 +140,65 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   public static String schemaUniqueKeyPath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.UNIQUE_KEY, IndexSchema.TEXT_FUNCTION);
 
-  public XPathExpression luceneMatchVersionExp;
-  public XPathExpression indexDefaultsExp;
-  public XPathExpression mainIndexExp;
-  public XPathExpression nrtModeExp;
-  public XPathExpression unlockOnStartupExp;
 
-  static String luceneMatchVersionPath = "/config/" + IndexSchema.LUCENE_MATCH_VERSION_PARAM;
-  static String indexDefaultsPath = "/config/indexDefaults";
-  static String mainIndexPath = "/config/mainIndex";
-  static String nrtModePath = "/config/indexConfig/nrtmode";
-  static String unlockOnStartupPath = "/config/indexConfig/unlockOnStartup";
+  public static XPathExpression shardHandlerFactoryExp;
+  public static XPathExpression counterExp;
+  public static XPathExpression meterExp;
+  public static XPathExpression timerExp;
+  public static XPathExpression histoExp;
+  public static XPathExpression historyExp;
+  public static XPathExpression transientCoreCacheFactoryExp;
+  public static XPathExpression tracerConfigExp;
 
+  public static XPathExpression coreLoadThreadsExp;
+  public static XPathExpression persistentExp;
+  public static XPathExpression sharedLibExp;
+  public static XPathExpression zkHostExp;
+  public static XPathExpression coresExp;
 
-   {
-    conf = Configuration.newConfiguration();
+  public static XPathExpression xpathOrExp;
+  public static XPathExpression schemaNameExp;
+  public static XPathExpression schemaVersionExp;
+  public static XPathExpression schemaSimExp;
+  public static XPathExpression defaultSearchFieldExp;
+  public static XPathExpression solrQueryParserDefaultOpExp;
+  public static XPathExpression schemaUniqueKeyExp;
+  public static XPathExpression fieldTypeXPathExpressionsExp;
+  public static XPathExpression copyFieldsExp;
 
-    conf.setValidation(false);
-    conf.setXIncludeAware(true);
-    conf.setExpandAttributeDefaults(true);
+  public static XPathExpression luceneMatchVersionExp;
+  public static XPathExpression indexDefaultsExp;
+  public static XPathExpression mainIndexExp;
+  public static XPathExpression nrtModeExp;
+  public static XPathExpression unlockOnStartupExp;
 
-    xpathFactory = new XPathFactoryImpl(conf.makePipelineConfiguration().getConfiguration());
+  private final Configuration ourConf;
 
+  {
+    Configuration conf = Configuration.newConfiguration();
+    conf.setNamePool(this.conf.getNamePool());
+    conf.setDocumentNumberAllocator(this.conf.getDocumentNumberAllocator());
+    ourConf = conf;
+  }
+
+  static volatile Configuration conf;
+  static {
+    refreshConf();
+  }
+
+  public static void refreshConf() {
     try {
+      if (conf != null) {
+        conf.close();
+      }
+      conf = Configuration.newConfiguration();
+
+      conf.setValidation(false);
+      conf.setXIncludeAware(true);
+      conf.setExpandAttributeDefaults(true);
+
+      xpathFactory = new XPathFactoryImpl(conf);
+
       XPath xpath = xpathFactory.newXPath();
 
       luceneMatchVersionExp = xpath.compile(luceneMatchVersionPath);
@@ -246,9 +261,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
     } catch (Exception e) {
       log.error("", e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
   }
-
 
   private String name = "";
   protected volatile URLClassLoader classLoader;
@@ -371,7 +386,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public Configuration getConf() {
-    return conf;
+    return ourConf;
   }
 
   /**
@@ -996,6 +1011,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public XPath getXPath() {
-    return xpathFactory.newXPath();
+    return getXpathFactory().newXPath();
   }
 }

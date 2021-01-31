@@ -39,7 +39,7 @@ public class TestFileListWithLineEntityProcessor extends AbstractDataImportHandl
     LocalSolrQueryRequest request = lrf.makeRequest(
         "command", "full-import", "dataConfig", config,
         "clean", "true", "commit", "true", "synchronous", "true", "indent", "true");
-    h.query("/dataimport", request);
+    query("/dataimport", request);
     
     assertQ(req("*:*"), "//*[@numFound='9']");
     assertQ(req("id:?\\ line\\ one"), "//*[@numFound='3']");

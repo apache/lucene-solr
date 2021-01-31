@@ -56,12 +56,12 @@ public class TestRawTransformer extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*"), "//*[@numFound='" + max + "']");
 
     SolrQueryRequest req = req("q", "*:*", "fl", "subject:[json]", "wt", "json");
-    String strResponse = h.query(req);
+    String strResponse = query(req);
     assertTrue("response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("\"subject\":[{poffL:[{offL:[{oGUID:\"7"));
 
     req = req("q", "*:*", "fl", "id,subject", "wt", "json");
-    strResponse = h.query(req);
+    strResponse = query(req);
     assertTrue("response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("subject\":[\""));
   }

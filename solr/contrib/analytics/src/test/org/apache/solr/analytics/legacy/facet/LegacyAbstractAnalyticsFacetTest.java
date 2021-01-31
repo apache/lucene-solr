@@ -288,7 +288,9 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
   }
 
   public static SolrQueryRequest request(String...args){
-    return SolrTestCaseJ4.req( ObjectArrays.concat(BASEPARMS, args,String.class) );
+    SolrQueryRequest req = SolrTestCaseJ4.req(ObjectArrays.concat(BASEPARMS, args, String.class));
+    req.close();
+    return req;
   }
 
   public static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };

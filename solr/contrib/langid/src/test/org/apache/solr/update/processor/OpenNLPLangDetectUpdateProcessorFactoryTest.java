@@ -19,6 +19,7 @@ package org.apache.solr.update.processor;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;
 
@@ -33,11 +34,13 @@ public class OpenNLPLangDetectUpdateProcessorFactoryTest extends LanguageIdentif
     if (parameters.get("langid.threshold") == null) { // handle superclass tests that don't provide confidence threshold
       parameters.set("langid.threshold", "0.3");
     }
-    SolrQueryRequest req = _parser.buildRequestFrom(h.getCore(), new ModifiableSolrParams(), null);
-    OpenNLPLangDetectUpdateProcessorFactory factory = new OpenNLPLangDetectUpdateProcessorFactory();
-    factory.init(parameters.toNamedList());
-    factory.inform(h.getCore());
-    return (OpenNLPLangDetectUpdateProcessor)factory.getInstance(req, resp, null);
+    try (SolrCore core = h.getCore()) {
+      SolrQueryRequest req = _parser.buildRequestFrom(core, new ModifiableSolrParams(), null);
+      OpenNLPLangDetectUpdateProcessorFactory factory = new OpenNLPLangDetectUpdateProcessorFactory();
+      factory.init(parameters.toNamedList());
+      factory.inform(core);
+      return (OpenNLPLangDetectUpdateProcessor) factory.getInstance(req, resp, null);
+    }
   }
 
   // this one actually works better it seems with short docs

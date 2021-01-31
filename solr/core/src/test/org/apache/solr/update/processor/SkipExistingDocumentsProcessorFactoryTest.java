@@ -35,6 +35,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.SkipExistingDocumentsProcessorFactory.SkipExistingDocumentsUpdateProcessor;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -42,11 +44,17 @@ import org.mockito.Mockito;
 public class SkipExistingDocumentsProcessorFactoryTest {
 
   private BytesRef docId = new BytesRef();
-  private SolrQueryRequest defaultRequest = new LocalSolrQueryRequest(null, new NamedList());
+  private static SolrQueryRequest defaultRequest;
   
   @BeforeClass
   public static void beforeClass() {
-    SolrTestCaseJ4.assumeWorkingMockito();
+    defaultRequest = new LocalSolrQueryRequest(null, new NamedList());
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    defaultRequest.close();
+    defaultRequest = null;
   }
 
   // Tests for logic in the factory
@@ -189,6 +197,7 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     assertTrue("Expected skipUpdateIfMissing to be true", processor.isSkipUpdateIfMissing());
     next.close();
     processor.close();
+    req.close();
   }
 
   @Test
@@ -207,6 +216,7 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     assertFalse("Expected skipUpdateIfMissing to be false", processor.isSkipUpdateIfMissing());
     next.close();
     processor.close();
+    req.close();
   }
 
   @Test
@@ -226,6 +236,7 @@ public class SkipExistingDocumentsProcessorFactoryTest {
     assertTrue("Expected skipUpdateIfMissing to be true", processor.isSkipUpdateIfMissing());
     next.close();
     processor.close();
+    req.close();
   }
 
 

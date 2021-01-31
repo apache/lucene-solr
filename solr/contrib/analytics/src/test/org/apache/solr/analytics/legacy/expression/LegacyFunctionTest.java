@@ -19,6 +19,8 @@ package org.apache.solr.analytics.legacy.expression;
 
 import org.apache.solr.analytics.legacy.LegacyAbstractAnalyticsTest;
 import org.apache.solr.analytics.legacy.facet.LegacyAbstractAnalyticsFacetTest;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -79,6 +81,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
     assertU(commit());
 
     setResponse(h.query(request(fileToStringArr(LegacyFunctionTest.class, fileName))));
+
   }
 
   @Test

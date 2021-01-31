@@ -198,7 +198,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     // surrounded by ()'s in the debug output
     Pattern p = Pattern.compile("subject:hell\\s*subject:cool");
     Pattern p_bool = Pattern.compile("\\(subject:hell\\s*subject:cool\\)");
-    String resp = h.query(req("q", "cool stuff"
+    String resp = query(req("q", "cool stuff"
                 ,"qt", "/dismax"
                 ,CommonParams.VERSION, "2.2"
                 ,"bq", "subject:hell OR subject:cool"
@@ -207,7 +207,7 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
     assertTrue(p.matcher(resp).find());
     assertFalse(p_bool.matcher(resp).find());
 
-    resp = h.query(req("q", "cool stuff"
+    resp = query(req("q", "cool stuff"
                 ,"qt", "/dismax"
                 ,CommonParams.VERSION, "2.2"
                 ,"bq", "subject:hell OR subject:cool"

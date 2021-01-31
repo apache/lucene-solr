@@ -44,7 +44,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Slow
-@LuceneTestCase.Nightly // TODO convert to bridge test class
+@LuceneTestCase.Nightly // MRM TODO: finish compare against control, look at setErrorHook
 public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

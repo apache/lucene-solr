@@ -46,6 +46,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -195,9 +196,11 @@ public class EmbeddedSolrServer extends SolrClient {
     // Check for cores action
     SolrQueryRequest req = null;
     SolrCore core = null;
+    boolean closeCore = false;
     try {
       if (req == null) {
         core = coreContainer.getCore(coreName);
+        closeCore = true;
       } else {
         core = req.getCore();
       }
@@ -280,10 +283,9 @@ public class EmbeddedSolrServer extends SolrClient {
       ParWork.propagateInterrupt(ex);
       throw new SolrServerException(ex);
     } finally {
-      if (req != null) {
-        req.close();
-      } else {
-        core.close();
+      IOUtils.closeQuietly(req);
+      if (closeCore) {
+        IOUtils.closeQuietly(core);
       }
       SolrRequestInfo.clearRequestInfo();
     }

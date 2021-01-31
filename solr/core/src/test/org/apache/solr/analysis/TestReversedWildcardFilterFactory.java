@@ -237,5 +237,6 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     parser.getReversedWildcardFilterFactory(typeSpy);
     // but it should reach only once 
     verify(typeSpy, times(1)).getIndexAnalyzer();
+    req.close();
   }
 }

@@ -1338,7 +1338,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       return;
     }
 
-    if (zkController.getZkClient().isAlive()) {
+    if (!(isLeader || isSubShardLeader) || zkController.getZkClient().isAlive()) {
       return;
     }
 

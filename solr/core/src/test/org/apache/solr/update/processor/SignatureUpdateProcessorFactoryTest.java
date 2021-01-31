@@ -86,6 +86,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(this.chain);
     SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
+    core.close();
     factory.setEnabled(true);
     assertNotNull(chained);
 
@@ -106,6 +107,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(
         "dedupe");
     SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
+    core.close();
     factory.setEnabled(true);
     assertNotNull(chained);
 
@@ -148,9 +150,11 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMultiThreaded() throws Exception {
-    UpdateRequestProcessorChain chained = h.getCore().getUpdateProcessingChain(
+    SolrCore core = h.getCore();
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(
         "dedupe");
     SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
+    core.close();
     factory.setEnabled(true);
     Thread[] threads = null;
     Thread[] threads2 = null;
@@ -216,7 +220,6 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     for (int i = 0; i < threads2.length; i++) {
       threads2[i].join();
     }
-    SolrCore core = h.getCore();
 
     assertU(commit());
 
@@ -229,8 +232,6 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testNonIndexedSignatureField() throws Exception {
-    SolrCore core = h.getCore();
-
     checkNumDocs(0);    
 
     chain = "stored_sig";
@@ -255,6 +256,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     } catch (Exception e) {
       exception_ok = true;
     }
+    core.close();
     assertTrue("Should have gotten an exception from inform(SolrCore)", 
                exception_ok);
   }
@@ -268,7 +270,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
         .getUpdateProcessingChain(chain);
     SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
     factory.setEnabled(true);
-    
+    core.close();
     Map<String,String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] {chain});
@@ -324,7 +326,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     }
         
 
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams, true);
     try {
       req.setContentStreams(Collections.singletonList(ContentStreamBase.create(new BinaryRequestWriter(), ureq)));
       UpdateRequestHandler h = new UpdateRequestHandler();

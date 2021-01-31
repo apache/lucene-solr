@@ -43,6 +43,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
@@ -255,13 +256,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     // length of date math caused issues...
+    String expected;
     {
-      SchemaField foo_dt = h.getCore().getLatestSchema().getField("foo_dt");
-      String expected = "foo_dt:2013-09-11T00:00:00Z";
-      if (foo_dt.getType().isPointField()) {
-        expected = "(foo_dt:[1378857600000 TO 1378857600000])";
-        if (foo_dt.hasDocValues() && foo_dt.indexed()) {
-          expected = "IndexOrDocValuesQuery"+expected ;
+      try (SolrCore core = h.getCore()) {
+        SchemaField foo_dt = core.getLatestSchema().getField("foo_dt");
+        expected = "foo_dt:2013-09-11T00:00:00Z";
+        if (foo_dt.getType().isPointField()) {
+          expected = "(foo_dt:[1378857600000 TO 1378857600000])";
+          if (foo_dt.hasDocValues() && foo_dt.indexed()) {
+            expected = "IndexOrDocValuesQuery" + expected;
+          }
         }
       }
       assertJQ(req("q", "foo_dt:\"2013-03-08T00:46:15Z/DAY+000MILLISECONDS+00SECONDS+00MINUTES+00HOURS+0000000000YEARS+6MONTHS+3DAYS\"", "debug", "query")
@@ -447,24 +451,23 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   @Test
   public void testManyClauses_Solr() throws Exception {
     final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
-    
+
     // this should exceed our solrconfig.xml level (solr specific) maxBooleanClauses limit
     // even though it's not long enough to trip the Lucene level (global) limit
     final String too_long = "id:(" + a + a + a + a + a + ")";
 
     final String expectedMsg = "Too many clauses";
     ignoreException(expectedMsg);
-    SolrException e = expectThrows(SolrException.class, "expected SolrException",
-                                   () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    SolrException e;
+    SolrQueryRequest req = req("q", too_long);
+    e = expectThrows(SolrException.class, "expected SolrException", () -> assertJQ(req, "/response/numFound==6"));
+
     assertThat(e.getMessage(), containsString(expectedMsg));
-    
+
     // but should still work as a filter query since TermsQuery can be used...
-    assertJQ(req("q","*:*", "fq", too_long)
-             ,"/response/numFound==6");
-    assertJQ(req("q","*:*", "fq", too_long, "sow", "false")
-             ,"/response/numFound==6");
-    assertJQ(req("q","*:*", "fq", too_long, "sow", "true")
-             ,"/response/numFound==6");
+    assertJQ(req("q", "*:*", "fq", too_long), "/response/numFound==6");
+    assertJQ(req("q", "*:*", "fq", too_long, "sow", "false"), "/response/numFound==6");
+    assertJQ(req("q", "*:*", "fq", too_long, "sow", "true"), "/response/numFound==6");
   }
     
   @Test
@@ -547,15 +550,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "777"));
     delI("777");
     assertU(commit());  // arg... commit no longer "commits" unless there has been a change.
+    final MetricsMap filterCacheStats;
+    try (SolrCore core = h.getCore()) {
+      filterCacheStats = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+      assertNotNull(filterCacheStats);
+      final MetricsMap queryCacheStats = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
 
-
-    final MetricsMap filterCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.filterCache");
-    assertNotNull(filterCacheStats);
-    final MetricsMap queryCacheStats = (MetricsMap)h.getCore().getCoreMetricManager().getRegistry()
-        .getMetrics().get("CACHE.searcher.queryResultCache");
-
-    assertNotNull(queryCacheStats);
+      assertNotNull(queryCacheStats);
+    }
 
 
     long inserts = (Long) filterCacheStats.getValue().get("inserts");
@@ -1064,95 +1066,43 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertJQ(req("df", "syn", "q", "+(wi fi)", "sow", "false")
         , "/response/numFound==1"
     );
+    try (SolrQueryRequest req = req("q", "*:*", "rows", "0", "wt", "json")) {
+      Map all = (Map) Utils.fromJSONString(h.query(req));
+      int totalDocs = Integer.parseInt(((Map) all.get("response")).get("numFound").toString());
+      int allDocsExceptOne = totalDocs - 1;
 
-    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
-    int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
-    int allDocsExceptOne = totalDocs - 1;
-
-    assertJQ(req("df", "syn", "q", "-(wi fi)", "sow", "false")
-        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
-    );
-    assertJQ(req("df", "syn", "q", "!(wi fi)", "sow", "false")
-        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
-    );
-    assertJQ(req("df", "syn", "q", "NOT (wi fi)", "sow", "false")
-        , "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
-    );
-    assertJQ(req("df", "syn", "q", "(wi fi)^2", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "(wi fi)^=2", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "syn:(wi fi)", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "+ATM wi fi", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "-ATM wi fi", "sow", "false")
-        , "/response/numFound==0"
-    );
-    assertJQ(req("df", "syn", "q", "-NotThereAtAll wi fi", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "!ATM wi fi", "sow", "false")
-        , "/response/numFound==0"
-    );
-    assertJQ(req("df", "syn", "q", "!NotThereAtAll wi fi", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "NOT ATM wi fi", "sow", "false")
-        , "/response/numFound==0"
-    );
-    assertJQ(req("df", "syn", "q", "NOT NotThereAtAll wi fi", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "AT* wi fi", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "AT? wi fi", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "\"ATM\" wi fi", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi +ATM", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi -ATM", "sow", "false")
-        , "/response/numFound==0"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi -NotThereAtAll", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi !ATM", "sow", "false")
-        , "/response/numFound==0"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi !NotThereAtAll", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi NOT ATM", "sow", "false")
-        , "/response/numFound==0"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi NOT NotThereAtAll", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi AT*", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi AT?", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "wi fi \"ATM\"", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "\"wi fi\"~2", "sow", "false")
-        , "/response/numFound==1"
-    );
-    assertJQ(req("df", "syn", "q", "syn:\"wi fi\"", "sow", "false")
-        , "/response/numFound==1"
-    );
+      assertJQ(req("df", "syn", "q", "-(wi fi)", "sow", "false"), "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
+      );
+      assertJQ(req("df", "syn", "q", "!(wi fi)", "sow", "false"), "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
+      );
+      assertJQ(req("df", "syn", "q", "NOT (wi fi)", "sow", "false"), "/response/numFound==" + allDocsExceptOne  // one doc contains "wifi" in the syn field
+      );
+      assertJQ(req("df", "syn", "q", "(wi fi)^2", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "(wi fi)^=2", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "syn:(wi fi)", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "+ATM wi fi", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "-ATM wi fi", "sow", "false"), "/response/numFound==0");
+      assertJQ(req("df", "syn", "q", "-NotThereAtAll wi fi", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "!ATM wi fi", "sow", "false"), "/response/numFound==0");
+      assertJQ(req("df", "syn", "q", "!NotThereAtAll wi fi", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "NOT ATM wi fi", "sow", "false"), "/response/numFound==0");
+      assertJQ(req("df", "syn", "q", "NOT NotThereAtAll wi fi", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "AT* wi fi", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "AT? wi fi", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "\"ATM\" wi fi", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "wi fi +ATM", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "wi fi -ATM", "sow", "false"), "/response/numFound==0");
+      assertJQ(req("df", "syn", "q", "wi fi -NotThereAtAll", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "wi fi !ATM", "sow", "false"), "/response/numFound==0");
+      assertJQ(req("df", "syn", "q", "wi fi !NotThereAtAll", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "wi fi NOT ATM", "sow", "false"), "/response/numFound==0");
+      assertJQ(req("df", "syn", "q", "wi fi NOT NotThereAtAll", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "wi fi AT*", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "wi fi AT?", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "wi fi \"ATM\"", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "\"wi fi\"~2", "sow", "false"), "/response/numFound==1");
+      assertJQ(req("df", "syn", "q", "syn:\"wi fi\"", "sow", "false"), "/response/numFound==1");
+    }
   }
 
   @Test
@@ -1208,19 +1158,25 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
 
   public void testSynonymQueryStyle() throws Exception {
+    Query q;
+    try (SolrQueryRequest req = req(params("df", "t_pick_best_foo"))) {
+      q = QParser.getParser("tabby", req).getQuery();
+      assertEquals("(t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim)", q.toString());
+    }
 
-    Query q = QParser.getParser("tabby", req(params("df", "t_pick_best_foo"))).getQuery();
-    assertEquals("(t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim)", q.toString());
-
-    q = QParser.getParser("tabby", req(params("df", "t_as_distinct_foo"))).getQuery();
-    assertEquals("t_as_distinct_foo:tabbi t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:anim", q.toString());
-
+    try (SolrQueryRequest req = req(params("df", "t_as_distinct_foo"))) {
+      q = QParser.getParser("tabby", req).getQuery();
+      assertEquals("t_as_distinct_foo:tabbi t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:anim", q.toString());
+    }
     /*confirm autoGeneratePhraseQueries always builds OR queries*/
-    q = QParser.getParser("jeans",  req(params("df", "t_as_distinct_foo", "sow", "false"))).getQuery();
-    assertEquals("(t_as_distinct_foo:\"denim pant\" t_as_distinct_foo:jean)", q.toString());
-
-    q = QParser.getParser("jeans",  req(params("df", "t_pick_best_foo", "sow", "false"))).getQuery();
-    assertEquals("(t_pick_best_foo:\"denim pant\" | t_pick_best_foo:jean)", q.toString());
+    try (SolrQueryRequest req = req(params("df", "t_as_distinct_foo", "sow", "false"))) {
+      q = QParser.getParser("jeans", req).getQuery();
+      assertEquals("(t_as_distinct_foo:\"denim pant\" t_as_distinct_foo:jean)", q.toString());
+    }
+    try (SolrQueryRequest req = req(params("df", "t_pick_best_foo", "sow", "false"))) {
+      q = QParser.getParser("jeans", req).getQuery();
+      assertEquals("(t_pick_best_foo:\"denim pant\" | t_pick_best_foo:jean)", q.toString());
+    }
   }
 
   @AwaitsFix(bugUrl = "nocommit - review difference")
@@ -1472,7 +1428,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       qParser.setIsFilter(true);
       qParser.getQuery();
     }
-
+    req.close();
+    req = req();
     for (String suffix:fieldSuffix) {
       qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
       qParser.setIsFilter(true); // this may change in the future
@@ -1481,12 +1438,12 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
     }
 
-
+    req.close();
   }
 
   @Test
   public void testFieldExistsQueries() throws SyntaxError {
-    SolrQueryRequest req = req();
+
     String[] fieldSuffix = new String[] {
         "ti", "tf", "td", "tl", "tdt",
         "pi", "pf", "pd", "pl", "pdt",
@@ -1504,32 +1461,38 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     for (String existenceQuery : existenceQueries) {
       for (String suffix : fieldSuffix) {
-        IndexSchema indexSchema = h.getCore().getLatestSchema();
-        String field = "foo_" + suffix;
-        String query = field + ":" + existenceQuery;
-        QParser qParser = QParser.getParser(query, req);
-        Query createdQuery = qParser.getQuery();
-        SchemaField schemaField = indexSchema.getField(field);
+        try (SolrCore core = h.getCore()) {
+          IndexSchema indexSchema = core.getLatestSchema();
+          String field = "foo_" + suffix;
+          String query = field + ":" + existenceQuery;
+          SolrQueryRequest req = req();
+          QParser qParser = QParser.getParser(query, req);
+          req.close();
+          Query createdQuery = qParser.getQuery();
+          SchemaField schemaField = indexSchema.getField(field);
 
-        // Test float & double realNumber queries differently
-        if ("[* TO *]".equals(existenceQuery) && (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT)) {
-          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.", createdQuery instanceof DocValuesFieldExistsQuery);
-          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.", createdQuery instanceof NormsFieldExistsQuery);
-          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so NaN should not be matched via a ConstantScoreQuery.", createdQuery instanceof ConstantScoreQuery);
-          assertFalse("For float and double fields\"" + query + "\" is not an existence query, so NaN should not be matched via a BooleanQuery (NaN and [* TO *]).", createdQuery instanceof BooleanQuery);
-        } else {
-          if (schemaField.hasDocValues()) {
-            assertTrue("Field has docValues, so existence query \"" + query + "\" should return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
-          } else if (!schemaField.omitNorms() && !schemaField.getType().isPointField()) { //TODO: Remove !isPointField() for SOLR-14199
-            assertTrue("Field has norms and no docValues, so existence query \"" + query + "\" should return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
-          } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT) {
-            assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", createdQuery instanceof ConstantScoreQuery);
-            assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", ((ConstantScoreQuery)createdQuery).getQuery() instanceof BooleanQuery);
-            assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must be an OR.", 1, ((BooleanQuery)((ConstantScoreQuery)createdQuery).getQuery()).getMinimumNumberShouldMatch());
-            assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must have 2 clauses.", 2, ((BooleanQuery)((ConstantScoreQuery)createdQuery).getQuery()).clauses().size());
+          // Test float & double realNumber queries differently
+          if ("[* TO *]".equals(existenceQuery) && (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT)) {
+            assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.", createdQuery instanceof DocValuesFieldExistsQuery);
+            assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.", createdQuery instanceof NormsFieldExistsQuery);
+            assertFalse("For float and double fields \"" + query + "\" is not an existence query, so NaN should not be matched via a ConstantScoreQuery.", createdQuery instanceof ConstantScoreQuery);
+            assertFalse("For float and double fields\"" + query + "\" is not an existence query, so NaN should not be matched via a BooleanQuery (NaN and [* TO *]).", createdQuery instanceof BooleanQuery);
           } else {
-            assertFalse("Field doesn't have docValues, so existence query \"" + query + "\" should not return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
-            assertFalse("Field doesn't have norms, so existence query \"" + query + "\" should not return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
+            if (schemaField.hasDocValues()) {
+              assertTrue("Field has docValues, so existence query \"" + query + "\" should return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
+            } else if (!schemaField.omitNorms() && !schemaField.getType().isPointField()) { //TODO: Remove !isPointField() for SOLR-14199
+              assertTrue("Field has norms and no docValues, so existence query \"" + query + "\" should return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
+            } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT) {
+              assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", createdQuery instanceof ConstantScoreQuery);
+              assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
+              assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must be an OR.", 1,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).getMinimumNumberShouldMatch());
+              assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must have 2 clauses.", 2,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+            } else {
+              assertFalse("Field doesn't have docValues, so existence query \"" + query + "\" should not return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
+              assertFalse("Field doesn't have norms, so existence query \"" + query + "\" should not return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
+            }
           }
         }
       }

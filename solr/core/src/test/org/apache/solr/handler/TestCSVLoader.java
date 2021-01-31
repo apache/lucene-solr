@@ -93,7 +93,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     f.setContentType("text/csv");
     cs.add(f);
     req.setContentStreams(cs);
-    h.query("/update",req);
+    query("/update",req);
   }
 
   @Test

@@ -95,6 +95,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -1014,18 +1015,19 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[]{updateRequestProcessorChain});
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
-        (SolrParams) mmparams) {
-    };
+    try (SolrCore core = h.getCore()) {
+      SolrQueryRequestBase req = new SolrQueryRequestBase(core, (SolrParams) mmparams) {
+      };
 
-    UpdateRequestHandler handler = new UpdateRequestHandler();
-    handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<>(2);
-    streams.add(new ContentStreamBase.StringStream(doc));
-    req.setContentStreams(streams);
-    handler.handleRequestBody(req, new SolrQueryResponse());
-    req.close();
-    handler.close();
+      UpdateRequestHandler handler = new UpdateRequestHandler();
+      handler.init(null);
+      ArrayList<ContentStream> streams = new ArrayList<>(2);
+      streams.add(new ContentStreamBase.StringStream(doc));
+      req.setContentStreams(streams);
+      handler.handleRequestBody(req, new SolrQueryResponse());
+      req.close();
+      handler.close();
+    }
   }
 
   /**
@@ -1127,7 +1129,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     for (int i=0; i<moreParams.length; i+=2) {
       mp.add(moreParams[i], moreParams[i+1]);
     }
-    return new LocalSolrQueryRequest(h.getCore(), mp);
+    return new LocalSolrQueryRequest(h.getCore(), mp, true);
   }
 
   /** Necessary to make method signatures un-ambiguous */
@@ -1683,7 +1685,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     // merging segments no longer selects just adjacent segments hence ids (doc.order) can be shuffled.
     // we need to look at the index to determine the order.
-    String responseStr = h.query(req("q","*:*", "fl","id", "sort","_docid_ asc", "rows",Integer.toString(model.size()*2), "wt","json", "indent","true"));
+    String responseStr = query(req("q","*:*", "fl","id", "sort","_docid_ asc", "rows",Integer.toString(model.size()*2), "wt","json", "indent","true"));
     Object response = ObjectBuilder.fromJSON(responseStr);
 
     response = ((Map)response).get("response");
@@ -2511,7 +2513,27 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   protected void waitForWarming() throws InterruptedException {
-    waitForWarming(h.getCore());
+    try (SolrCore core = h.getCore()) {
+      waitForWarming(core);
+    }
+  }
+
+  protected String query(SolrQueryRequest req) throws Exception {
+    try {
+      String resp = h.query(req);
+      return resp;
+    } finally {
+      IOUtils.closeQuietly(req);
+    }
+  }
+
+  protected String query(String handler, SolrQueryRequest req) throws Exception {
+    try {
+      String resp = h.query(handler, req);
+      return resp;
+    } finally {
+      IOUtils.closeQuietly(req);
+    }
   }
 
   public static void assertNonBlockingRandomGeneratorAvailable() throws InterruptedException {

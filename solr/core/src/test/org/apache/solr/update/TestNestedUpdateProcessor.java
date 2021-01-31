@@ -22,6 +22,7 @@ import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.NestedUpdateProcessorFactory;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -157,10 +158,12 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
   public void testDeeplyNestedURPSanity() throws Exception {
     SolrInputDocument docHierarchy = sdoc("id", "1", "children", sdocs(sdoc("id", "2", "name_s", "Yaz"),
         sdoc("id", "3", "name_s", "Jazz", "grandChild", sdoc("id", "4", "name_s", "Gaz"))), "lonelyChild", sdoc("id", "5", "name_s", "Loner"));
-    UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req(), null, null);
-    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    SolrQueryRequest req = req();
+    UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req, null, null);
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = docHierarchy;
     nestedUpdate.processAdd(cmd);
+    req.close();
     cmd.clear();
 
     List children = (List) docHierarchy.get("children").getValues();
@@ -184,11 +187,13 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     final String rootId = "1";
     final String childKey = "grandChild";
     final String expectedId = rootId + "/children#1/" + childKey + NUM_SEP_CHAR + SINGLE_VAL_CHAR;
+    SolrQueryRequest req = req();
     SolrInputDocument noIdChildren = sdoc("id", rootId, "children", sdocs(sdoc("name_s", "Yaz"), sdoc("name_s", "Jazz", childKey, sdoc("name_s", "Gaz"))));
-    UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req(), null, null);
-    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    UpdateRequestProcessor nestedUpdate = new NestedUpdateProcessorFactory().getInstance(req, null, null);
+    AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = noIdChildren;
     nestedUpdate.processAdd(cmd);
+    req.close();
     cmd.clear();
     List children = (List) noIdChildren.get("children").getValues();
     SolrInputDocument idLessChild = (SolrInputDocument)((SolrInputDocument) children.get(1)).get(childKey).getValue();

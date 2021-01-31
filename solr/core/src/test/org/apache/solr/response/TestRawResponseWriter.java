@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.util.ContentStreamBase.ByteArrayStream;
 import org.apache.solr.common.util.ContentStreamBase.StringStream;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
 
@@ -83,12 +84,13 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
 
     stream.setContentType(TestUtil.randomSimpleString(random()));
     rsp.add(RawResponseWriter.CONTENT, stream);
-    
-    for (RawResponseWriter writer : allWriters) {
-      assertEquals(stream.getContentType(), writer.getContentType(req(), rsp));
-      ByteArrayOutputStream out = new ByteArrayOutputStream();
-      writer.write(out, req(), rsp);
-      assertArrayEquals(data, out.toByteArray());
+    try (SolrQueryRequest req = req()) {
+      for (RawResponseWriter writer : allWriters) {
+        assertEquals(stream.getContentType(), writer.getContentType(req, rsp));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        write(rsp, out, writer);
+        assertArrayEquals(data, out.toByteArray());
+      }
     }
   }
 
@@ -103,19 +105,20 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
 
     stream.setContentType(TestUtil.randomSimpleString(random()));
     rsp.add(RawResponseWriter.CONTENT, stream);
-    
-    for (RawResponseWriter writer : allWriters) {
-      assertEquals(stream.getContentType(), writer.getContentType(req(), rsp));
+    try (SolrQueryRequest req = req()) {
+      for (RawResponseWriter writer : allWriters) {
+        assertEquals(stream.getContentType(), writer.getContentType(req, rsp));
 
-      // we should have the same string if we use a Writer
-      StringWriter sout = new StringWriter();
-      writer.write(sout, req(), rsp);
-      assertEquals(data, sout.toString());
+        // we should have the same string if we use a Writer
+        StringWriter sout = new StringWriter();
+        write(rsp, sout, writer);
+        assertEquals(data, sout.toString());
 
-      // we should have UTF-8 Bytes if we use an OutputStream
-      ByteArrayOutputStream bout = new ByteArrayOutputStream();
-      writer.write(bout, req(), rsp);
-      assertEquals(data, bout.toString(StandardCharsets.UTF_8.toString()));
+        // we should have UTF-8 Bytes if we use an OutputStream
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        write(rsp, bout, writer);
+        assertEquals(data, bout.toString(StandardCharsets.UTF_8.toString()));
+      }
     }
   }
 
@@ -129,11 +132,12 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     rsp.add(RawResponseWriter.CONTENT, "test");
     rsp.add("foo", "bar");
 
-    // check Content-Type against each writer 
-    assertEquals("application/xml; charset=UTF-8", writerNoBase.getContentType(req(), rsp));
-    assertEquals("application/xml; charset=UTF-8", writerXmlBase.getContentType(req(), rsp));
-    assertEquals("application/json; charset=UTF-8", writerJsonBase.getContentType(req(), rsp));
-    assertEquals("application/octet-stream",  writerBinBase.getContentType(req(), rsp));
+    // check Content-Type against each writer
+    try (SolrQueryRequest req = req()) {
+      assertEquals("application/xml; charset=UTF-8", writerNoBase.getContentType(req, rsp)); assertEquals("application/xml; charset=UTF-8", writerXmlBase.getContentType(req, rsp));
+      assertEquals("application/json; charset=UTF-8", writerJsonBase.getContentType(req, rsp));
+      assertEquals("application/octet-stream", writerBinBase.getContentType(req, rsp));
+    }
 
     // check response against each writer
 
@@ -145,17 +149,17 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
         "<str name=\"foo\">bar</str>\n" +
         "</response>\n";
     StringWriter xmlSout = new StringWriter();
-    writerXmlBase.write(xmlSout, req(), rsp);
+    write(rsp, xmlSout, writerXmlBase);
     assertEquals(xml, xmlSout.toString());
     ByteArrayOutputStream xmlBout = new ByteArrayOutputStream();
-    writerXmlBase.write(xmlBout, req(), rsp);
+    write(rsp, xmlBout, writerXmlBase);
     assertEquals(xml, xmlBout.toString(StandardCharsets.UTF_8.toString()));
     //
     StringWriter noneSout = new StringWriter();
-    writerNoBase.write(noneSout, req(), rsp);
+    write(rsp, noneSout, writerNoBase);
     assertEquals(xml, noneSout.toString());
     ByteArrayOutputStream noneBout = new ByteArrayOutputStream();
-    writerNoBase.write(noneBout, req(), rsp);
+    write(rsp, noneBout, writerNoBase);
     assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8.toString()));
 
     // json
@@ -163,15 +167,15 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
         "  \"content\":\"test\",\n" +
         "  \"foo\":\"bar\"}\n";
     StringWriter jsonSout = new StringWriter();
-    writerJsonBase.write(jsonSout, req(), rsp);
+    write(rsp, jsonSout, writerJsonBase);
     assertEquals(json, jsonSout.toString());
     ByteArrayOutputStream jsonBout = new ByteArrayOutputStream();
-    writerJsonBase.write(jsonBout, req(), rsp);
+    write(rsp, jsonBout, writerJsonBase);
     assertEquals(json, jsonBout.toString(StandardCharsets.UTF_8.toString()));
 
     // javabin
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-    writerBinBase.write(bytes, req(), rsp);
+    write(rsp, bytes, writerBinBase);
     BinaryResponseParser parser = new BinaryResponseParser();
     NamedList<Object> out = parser.processResponse
       (new ByteArrayInputStream(bytes.toByteArray()), /* encoding irrelevant */ null);
@@ -180,6 +184,18 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     assertEquals("foo", out.getName(1));
     assertEquals("bar", out.getVal(1));
 
+  }
+
+  private void write(SolrQueryResponse rsp, ByteArrayOutputStream jsonBout, RawResponseWriter writerJsonBase) throws IOException {
+    try (SolrQueryRequest req = req()) {
+      writerJsonBase.write(jsonBout, req, rsp);
+    }
+  }
+
+  private void write(SolrQueryResponse rsp, StringWriter xmlSout, RawResponseWriter writerXmlBase) throws IOException {
+    try (SolrQueryRequest req = req()) {
+      writerXmlBase.write(xmlSout, req, rsp);
+    }
   }
 
   /**
