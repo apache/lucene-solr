@@ -18,8 +18,8 @@ package org.apache.lucene.queries.payloads;
 
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.MatchOperation;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -35,18 +35,21 @@ public class PayloadMatcherFactory {
   static {
     payloadCheckerOpTypeMap = new HashMap<PayloadType, HashMap<MatchOperation, PayloadMatcher>>();
     // ints
-    HashMap<MatchOperation, PayloadMatcher> intCheckers = new HashMap<MatchOperation, PayloadMatcher>();
+    HashMap<MatchOperation, PayloadMatcher> intCheckers =
+        new HashMap<MatchOperation, PayloadMatcher>();
     intCheckers.put(MatchOperation.LT, new LTIntPayloadMatcher());
     intCheckers.put(MatchOperation.LTE, new LTEIntPayloadMatcher());
     intCheckers.put(MatchOperation.GT, new GTIntPayloadMatcher());
     intCheckers.put(MatchOperation.GTE, new GTEIntPayloadMatcher());
-    HashMap<MatchOperation, PayloadMatcher> floatCheckers = new HashMap<MatchOperation, PayloadMatcher>();
+    HashMap<MatchOperation, PayloadMatcher> floatCheckers =
+        new HashMap<MatchOperation, PayloadMatcher>();
     floatCheckers.put(MatchOperation.LT, new LTFloatPayloadMatcher());
     floatCheckers.put(MatchOperation.LTE, new LTEFloatPayloadMatcher());
     floatCheckers.put(MatchOperation.GT, new GTFloatPayloadMatcher());
     floatCheckers.put(MatchOperation.GTE, new GTEFloatPayloadMatcher());
     // strings
-    HashMap<MatchOperation, PayloadMatcher> stringCheckers = new HashMap<MatchOperation, PayloadMatcher>();
+    HashMap<MatchOperation, PayloadMatcher> stringCheckers =
+        new HashMap<MatchOperation, PayloadMatcher>();
     stringCheckers.put(MatchOperation.LT, new LTStringPayloadMatcher());
     stringCheckers.put(MatchOperation.LTE, new LTEStringPayloadMatcher());
     stringCheckers.put(MatchOperation.GT, new GTStringPayloadMatcher());
@@ -66,7 +69,8 @@ public class PayloadMatcherFactory {
    * @param op and inequalit operation as the test (example: eq for equals, gt for greater than)
    * @return a payload matcher that decodes the payload and applies the operation inequality test.
    */
-  public static PayloadMatcher createMatcherForOpAndType(PayloadType payloadType, MatchOperation op) {
+  public static PayloadMatcher createMatcherForOpAndType(
+      PayloadType payloadType, MatchOperation op) {
     // special optimization, binary/byte comparison
     if (op == null || MatchOperation.EQ.equals(op)) {
       return new EQPayloadMatcher();

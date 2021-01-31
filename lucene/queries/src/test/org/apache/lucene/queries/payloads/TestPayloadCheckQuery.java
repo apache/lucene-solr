@@ -31,8 +31,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.MatchOperation;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -359,18 +359,16 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     SpanQuery stringEQQuery =
         new SpanPayloadCheckQuery(
             sq1, Collections.singletonList(intPayload), PayloadType.STRING, MatchOperation.EQ);
-    
+
     SpanQuery stringDefaultQuery =
-        new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(intPayload));
+        new SpanPayloadCheckQuery(sq1, Collections.singletonList(intPayload));
 
     assertTrue(stringDefaultQuery.equals(stringEQQuery));
     assertFalse(stringDefaultQuery.equals(stringGTQuery));
     assertFalse(stringDefaultQuery.equals(stringGTEQuery));
     assertFalse(stringDefaultQuery.equals(stringLTQuery));
     assertFalse(stringDefaultQuery.equals(stringLTEQuery));
-    
-    
+
     assertFalse(floatLTQuery.equals(floatLTEQuery));
     assertFalse(floatLTQuery.equals(floatGTQuery));
     assertFalse(floatLTQuery.equals(floatGTEQuery));

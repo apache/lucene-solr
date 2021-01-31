@@ -72,7 +72,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     LTE
   };
 
-  
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.List} of payloads to match
@@ -89,7 +88,10 @@ public class SpanPayloadCheckQuery extends SpanQuery {
    *     Float)
    */
   public SpanPayloadCheckQuery(
-      SpanQuery match, List<BytesRef> payloadToMatch, PayloadType payloadType, MatchOperation operation) {
+      SpanQuery match,
+      List<BytesRef> payloadToMatch,
+      PayloadType payloadType,
+      MatchOperation operation) {
     this.match = match;
     this.payloadToMatch = payloadToMatch;
     this.payloadType = payloadType;
