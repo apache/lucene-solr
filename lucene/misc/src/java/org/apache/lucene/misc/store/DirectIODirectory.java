@@ -359,12 +359,8 @@ public class DirectIODirectory extends FilterDirectory {
         filePos = alignedPos - buffer.capacity();
 
         final int delta = (int) (pos - alignedPos);
-        refill();
-        try {
-          buffer.position(delta);
-        } catch (IllegalArgumentException iae) {
-          throw new EOFException("read past EOF: " + this);
-        }
+        refill(delta);
+        buffer.position(delta);
       }
       assert pos == getFilePointer();
     }
@@ -381,23 +377,18 @@ public class DirectIODirectory extends FilterDirectory {
     @Override
     public byte readByte() throws IOException {
       if (!buffer.hasRemaining()) {
-        refill();
-
-        // refill may not actually fill buffer if it reaches EOF
-        if (buffer.limit() == 0) {
-          throw new EOFException("read past EOF: " + this);
-        }
+        refill(1);
       }
 
       return buffer.get();
     }
 
-    private void refill() throws IOException {
+    private void refill(int byteToRead) throws IOException {
       filePos += buffer.capacity();
 
       // BaseDirectoryTestCase#testSeekPastEOF test for consecutive read past EOF,
       // hence throwing EOFException early to maintain buffer state (position in particular)
-      if (filePos > channel.size()) {
+      if (filePos > channel.size() || (channel.size() - filePos < byteToRead)) {
         throw new EOFException("read past EOF: " + this);
       }
 
@@ -423,9 +414,7 @@ public class DirectIODirectory extends FilterDirectory {
           buffer.get(dst, offset, left);
           toRead -= left;
           offset += left;
-          // when reading past EOF, this method will keep increasing filePos in the loop to
-          // eventually throw EOFException
-          refill();
+          refill(toRead);
         } else {
           buffer.get(dst, offset, toRead);
           break;

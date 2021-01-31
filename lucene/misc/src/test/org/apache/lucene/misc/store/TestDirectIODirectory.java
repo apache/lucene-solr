@@ -95,6 +95,14 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
         expectThrows(EOFException.class, () -> i.readByte());
         expectThrows(EOFException.class, () -> i.readBytes(new byte[1], 0, 1));
       }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        expectThrows(EOFException.class, () -> i.readByte());
+      }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        expectThrows(EOFException.class, () -> i.readBytes(new byte[1], 0, 1));
+      }
     }
   }
 
