@@ -44,7 +44,7 @@ public abstract class SolrCoreState {
   
   protected volatile boolean closed = false;
   private final Object updateLock = new Object();
-  private final ReentrantLock reloadLock = new ReentrantLock(false);
+  private final ReentrantLock reloadLock = new ReentrantLock(true);
   
   public Object getUpdateLock() {
     return updateLock;

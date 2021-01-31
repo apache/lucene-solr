@@ -736,7 +736,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         reloadyWaiting.incrementAndGet();
         log.info("Wait for reload lock");
 
-        while (!lock.tryLock(250, TimeUnit.MILLISECONDS)) {
+        while (!(lock.tryLock() || lock.tryLock(250, TimeUnit.MILLISECONDS))) {
           if (coreContainer.isShutDown() || isClosed() || closing) {
             log.warn("Skipping reload because we are closed");
             reloadyWaiting.decrementAndGet();
