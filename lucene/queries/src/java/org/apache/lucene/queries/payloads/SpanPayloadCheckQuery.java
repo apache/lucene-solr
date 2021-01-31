@@ -269,11 +269,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     return sameClassAs(other)
         && payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch)
         && match.equals(((SpanPayloadCheckQuery) other).match)
-        && (operation == null && (((SpanPayloadCheckQuery) other).operation == null)
-            || (operation != null && operation.equals(((SpanPayloadCheckQuery) other).operation)))
-        && (payloadType == null && (((SpanPayloadCheckQuery) other).payloadType == null)
-            || (payloadType != null
-                && payloadType.equals(((SpanPayloadCheckQuery) other).payloadType)));
+        && operation.equals(((SpanPayloadCheckQuery) other).operation)
+        && payloadType.equals(((SpanPayloadCheckQuery) other).payloadType);
   }
 
   @Override
