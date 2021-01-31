@@ -32,6 +32,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.MatchOperation;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -167,7 +168,7 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
             term1,
             Collections.singletonList(payloadOne),
             SpanPayloadCheckQuery.PayloadType.STRING,
-            "eq");
+            MatchOperation.EQ);
     checkHits(stringEQ1, new int[] {25, 35, 45, 55, 65, 75, 85, 95});
     // These queries return the same thing
     SpanQuery stringLT =
@@ -175,13 +176,13 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
             term1,
             Collections.singletonList(payloadOne),
             SpanPayloadCheckQuery.PayloadType.STRING,
-            "lt");
+            MatchOperation.LT);
     SpanQuery stringLTE =
         new SpanPayloadCheckQuery(
             term1,
             Collections.singletonList(payloadZero),
             SpanPayloadCheckQuery.PayloadType.STRING,
-            "lte");
+            MatchOperation.LTE);
     // string less than and string less than or equal
     checkHits(
         stringLT,
@@ -209,13 +210,13 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
             term1,
             Collections.singletonList(payloadFour),
             SpanPayloadCheckQuery.PayloadType.STRING,
-            "gt");
+            MatchOperation.GT);
     SpanQuery stringGTE =
         new SpanPayloadCheckQuery(
             term1,
             Collections.singletonList(payloadFive),
             SpanPayloadCheckQuery.PayloadType.STRING,
-            "gte");
+            MatchOperation.GTE);
     checkHits(
         stringGT,
         new int[] {
@@ -316,33 +317,60 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     BytesRef intPayload = new BytesRef(ByteBuffer.allocate(4).putInt(i).array());
     Float e = 2.71828f;
     BytesRef floatPayload = new BytesRef(ByteBuffer.allocate(4).putFloat(e).array());
-
     SpanQuery floatLTQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "lt");
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, MatchOperation.LT);
     SpanQuery floatLTEQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "lte");
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, MatchOperation.LTE);
     SpanQuery floatGTQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "gt");
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, MatchOperation.GT);
     SpanQuery floatGTEQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, "gte");
+            sq1, Collections.singletonList(floatPayload), PayloadType.FLOAT, MatchOperation.GTE);
 
     SpanQuery intLTQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(intPayload), PayloadType.INT, "lt");
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, MatchOperation.LT);
     SpanQuery intLTEQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(intPayload), PayloadType.INT, "lte");
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, MatchOperation.LTE);
     SpanQuery intGTQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(intPayload), PayloadType.INT, "gt");
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, MatchOperation.GT);
     SpanQuery intGTEQuery =
         new SpanPayloadCheckQuery(
-            sq1, Collections.singletonList(intPayload), PayloadType.INT, "gte");
+            sq1, Collections.singletonList(intPayload), PayloadType.INT, MatchOperation.GT);
 
+    // string inequality checks
+    SpanQuery stringLTQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.STRING, MatchOperation.LT);
+    SpanQuery stringLTEQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.STRING, MatchOperation.LTE);
+    SpanQuery stringGTQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.STRING, MatchOperation.GT);
+    SpanQuery stringGTEQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.STRING, MatchOperation.GT);
+    SpanQuery stringEQQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload), PayloadType.STRING, MatchOperation.EQ);
+    
+    SpanQuery stringDefaultQuery =
+        new SpanPayloadCheckQuery(
+            sq1, Collections.singletonList(intPayload));
+
+    assertTrue(stringDefaultQuery.equals(stringEQQuery));
+    assertFalse(stringDefaultQuery.equals(stringGTQuery));
+    assertFalse(stringDefaultQuery.equals(stringGTEQuery));
+    assertFalse(stringDefaultQuery.equals(stringLTQuery));
+    assertFalse(stringDefaultQuery.equals(stringLTEQuery));
+    
+    
     assertFalse(floatLTQuery.equals(floatLTEQuery));
     assertFalse(floatLTQuery.equals(floatGTQuery));
     assertFalse(floatLTQuery.equals(floatGTEQuery));

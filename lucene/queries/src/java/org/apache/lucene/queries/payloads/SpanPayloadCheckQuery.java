@@ -46,7 +46,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   protected final List<BytesRef> payloadToMatch;
   protected final SpanQuery match;
-  protected String operation = null;
+  protected MatchOperation operation = null;
   protected PayloadType payloadType = PayloadType.STRING;
   /** The payload type. This specifies the decoding of the ByteRef for the payload. */
   public static enum PayloadType {
@@ -58,12 +58,27 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     STRING
   };
 
+  /** The payload type. This specifies the decoding of the ByteRef for the payload. */
+  public static enum MatchOperation {
+    /** Checks for binary equality of the byte array (default) */
+    EQ,
+    /** GT Matches if the payload value is greater than the reference */
+    GT,
+    /** GTE Matches if the payload value is greater than or equal to the reference */
+    GTE,
+    /** LT Matches if the payload value is less than the reference */
+    LT,
+    /** LTE Matches if the payload value is less than or equal to the reference */
+    LTE
+  };
+
+  
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.List} of payloads to match
    */
   public SpanPayloadCheckQuery(SpanQuery match, List<BytesRef> payloadToMatch) {
-    this(match, payloadToMatch, null, null);
+    this(match, payloadToMatch, PayloadType.STRING, MatchOperation.EQ);
   }
 
   /**
@@ -74,7 +89,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
    *     Float)
    */
   public SpanPayloadCheckQuery(
-      SpanQuery match, List<BytesRef> payloadToMatch, PayloadType payloadType, String operation) {
+      SpanQuery match, List<BytesRef> payloadToMatch, PayloadType payloadType, MatchOperation operation) {
     this.match = match;
     this.payloadToMatch = payloadToMatch;
     this.payloadType = payloadType;
