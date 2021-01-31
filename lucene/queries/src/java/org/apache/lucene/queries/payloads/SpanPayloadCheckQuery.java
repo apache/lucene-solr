@@ -46,8 +46,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   protected final List<BytesRef> payloadToMatch;
   protected final SpanQuery match;
-  protected MatchOperation operation = null;
-  protected PayloadType payloadType = PayloadType.STRING;
+  protected final MatchOperation operation;
+  protected final PayloadType payloadType;
   /** The payload type. This specifies the decoding of the ByteRef for the payload. */
   public static enum PayloadType {
     /** INT is for a 4 byte payload that is a packed integer */
@@ -253,12 +253,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       buffer.append(Term.toString(bytes));
       buffer.append(';');
     }
-    if (payloadType != null) {
-      buffer.append(", payloadType:").append(payloadType).append(";");
-    }
-    if (operation != null) {
-      buffer.append(", operation:").append(operation).append(";");
-    }
+    buffer.append(", payloadType:").append(payloadType).append(";");
+    buffer.append(", operation:").append(operation).append(";");
     buffer.append(")");
     return buffer.toString();
   }
