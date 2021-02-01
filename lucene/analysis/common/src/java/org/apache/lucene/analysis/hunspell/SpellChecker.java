@@ -366,7 +366,10 @@ public class SpellChecker {
         String chunk = word.substring(chunkStart, chunkEnd);
         if (!spell(chunk)) {
           for (String chunkSug : suggest(chunk)) {
-            result.add(word.substring(0, chunkStart) + chunkSug + word.substring(chunkEnd));
+            String replaced = word.substring(0, chunkStart) + chunkSug + word.substring(chunkEnd);
+            if (!dictionary.isForbiddenWord(replaced.toCharArray(), replaced.length(), scratch)) {
+              result.add(replaced);
+            }
           }
         }
       }

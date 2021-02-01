@@ -153,6 +153,8 @@ public class Dictionary {
   private char[] ignore;
 
   String tryChars = "";
+  String[] neighborKeyGroups = new String[0];
+  boolean enableSplitSuggestions = true;
   List<RepEntry> repTable = new ArrayList<>();
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
@@ -394,6 +396,10 @@ public class Dictionary {
           String[] parts = splitBySpace(reader, reader.readLine(), 3);
           repTable.add(new RepEntry(parts[1], parts[2]));
         }
+      } else if ("KEY".equals(firstWord)) {
+        neighborKeyGroups = singleArgument(reader, line).split("\\|");
+      } else if ("NOSPLITSUGS".equals(firstWord)) {
+        enableSplitSuggestions = false;
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
