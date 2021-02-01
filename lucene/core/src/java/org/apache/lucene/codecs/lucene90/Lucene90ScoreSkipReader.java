@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
 import java.util.AbstractList;
@@ -27,7 +27,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
 
-final class Lucene84ScoreSkipReader extends Lucene84SkipReader {
+final class Lucene90ScoreSkipReader extends Lucene90SkipReader {
 
   private final byte[][] impactData;
   private final int[] impactDataLength;
@@ -36,7 +36,7 @@ final class Lucene84ScoreSkipReader extends Lucene84SkipReader {
   private int numLevels = 1;
   private final MutableImpactList[] perLevelImpacts;
 
-  public Lucene84ScoreSkipReader(
+  public Lucene90ScoreSkipReader(
       IndexInput skipStream,
       int maxSkipLevels,
       boolean hasPos,

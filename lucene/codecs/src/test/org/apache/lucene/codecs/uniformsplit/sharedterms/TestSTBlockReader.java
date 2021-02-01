@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.lucene84.MockTermStateFactory;
+import org.apache.lucene.codecs.lucene90.MockTermStateFactory;
 import org.apache.lucene.codecs.uniformsplit.BlockHeader;
 import org.apache.lucene.codecs.uniformsplit.BlockLine;
 import org.apache.lucene.codecs.uniformsplit.FSTDictionary;

@@ -19,8 +19,8 @@ package org.apache.lucene.search.suggest.document;
 import org.apache.lucene.codecs.PostingsFormat;
 
 /**
- * {@link org.apache.lucene.search.suggest.document.CompletionPostingsFormat} for {@link
- * org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat}
+ * {@link org.apache.lucene.search.suggest.document.CompletionPostingsFormat} for {@code
+ * org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat}
  *
  * @lucene.experimental
  */

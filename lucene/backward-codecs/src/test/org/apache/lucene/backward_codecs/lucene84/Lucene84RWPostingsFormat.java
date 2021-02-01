@@ -14,58 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.memory;
+package org.apache.lucene.backward_codecs.lucene84;
 
 import java.io.IOException;
 import org.apache.lucene.codecs.FieldsConsumer;
-import org.apache.lucene.codecs.FieldsProducer;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
-import org.apache.lucene.codecs.lucene90.Lucene90PostingsWriter;
-import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
-/** FST term dict + Lucene50PBF */
-public final class FSTPostingsFormat extends PostingsFormat {
-  public FSTPostingsFormat() {
-    super("FST50");
-  }
-
-  @Override
-  public String toString() {
-    return getName();
-  }
-
+public class Lucene84RWPostingsFormat extends Lucene84PostingsFormat {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene90PostingsWriter(state);
-
+    PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(state);
     boolean success = false;
     try {
-      FieldsConsumer ret = new FSTTermsWriter(state, postingsWriter);
+      FieldsConsumer ret =
+          new BlockTreeTermsWriter(
+              state,
+              postingsWriter,
+              BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE,
+              BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
       success = true;
       return ret;
     } finally {
       if (!success) {
         IOUtils.closeWhileHandlingException(postingsWriter);
-      }
-    }
-  }
-
-  @Override
-  public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene90PostingsReader(state);
-    boolean success = false;
-    try {
-      FieldsProducer ret = new FSTTermsReader(state, postingsReader);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(postingsReader);
       }
     }
   }

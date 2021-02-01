@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+package org.apache.lucene.backward_codecs.lucene84;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
@@ -24,31 +24,21 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
-public class TestPForUtil extends LuceneTestCase {
+public class TestForDeltaUtil extends LuceneTestCase {
 
   public void testEncodeDecode() throws IOException {
     final int iterations = RandomNumbers.randomIntBetween(random(), 50, 1000);
     final int[] values = new int[iterations * ForUtil.BLOCK_SIZE];
 
     for (int i = 0; i < iterations; ++i) {
-      final int bpv = TestUtil.nextInt(random(), 0, 31);
+      final int bpv = TestUtil.nextInt(random(), 1, 31 - 7);
       for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
         values[i * ForUtil.BLOCK_SIZE + j] =
-            RandomNumbers.randomIntBetween(random(), 0, (int) PackedInts.maxValue(bpv));
-        if (random().nextInt(100) == 0) {
-          final int exceptionBpv;
-          if (random().nextInt(10) == 0) {
-            exceptionBpv = Math.min(bpv + TestUtil.nextInt(random(), 9, 16), 31);
-          } else {
-            exceptionBpv = Math.min(bpv + TestUtil.nextInt(random(), 1, 8), 31);
-          }
-          values[i * ForUtil.BLOCK_SIZE + j] |= random().nextInt(1 << (exceptionBpv - bpv)) << bpv;
-        }
+            RandomNumbers.randomIntBetween(random(), 1, (int) PackedInts.maxValue(bpv));
       }
     }
 
@@ -58,14 +48,14 @@ public class TestPForUtil extends LuceneTestCase {
     {
       // encode
       IndexOutput out = d.createOutput("test.bin", IOContext.DEFAULT);
-      final PForUtil pforUtil = new PForUtil(new ForUtil());
+      final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(new ForUtil());
 
       for (int i = 0; i < iterations; ++i) {
         long[] source = new long[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
           source[j] = values[i * ForUtil.BLOCK_SIZE + j];
         }
-        pforUtil.encode(source, out);
+        forDeltaUtil.encodeDeltas(source, out);
       }
       endPointer = out.getFilePointer();
       out.close();
@@ -74,22 +64,25 @@ public class TestPForUtil extends LuceneTestCase {
     {
       // decode
       IndexInput in = d.openInput("test.bin", IOContext.READONCE);
-      final PForUtil pforUtil = new PForUtil(new ForUtil());
+      final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(new ForUtil());
       for (int i = 0; i < iterations; ++i) {
         if (random().nextInt(5) == 0) {
-          pforUtil.skip(in);
+          forDeltaUtil.skip(in);
           continue;
         }
+        long base = 0;
         final long[] restored = new long[ForUtil.BLOCK_SIZE];
-        pforUtil.decode(in, restored);
-        int[] ints = new int[ForUtil.BLOCK_SIZE];
+        forDeltaUtil.decodeAndPrefixSum(in, base, restored);
+        final long[] expected = new long[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          ints[j] = Math.toIntExact(restored[j]);
+          expected[j] = values[i * ForUtil.BLOCK_SIZE + j];
+          if (j > 0) {
+            expected[j] += expected[j - 1];
+          } else {
+            expected[j] += base;
+          }
         }
-        assertArrayEquals(
-            Arrays.toString(ints),
-            ArrayUtil.copyOfSubArray(values, i * ForUtil.BLOCK_SIZE, (i + 1) * ForUtil.BLOCK_SIZE),
-            ints);
+        assertArrayEquals(Arrays.toString(restored), expected, restored);
       }
       assertEquals(endPointer, in.getFilePointer());
       in.close();

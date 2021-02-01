@@ -22,9 +22,9 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat; // javadocs
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat; // javadocs
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -32,7 +32,7 @@ import org.apache.lucene.index.SegmentWriteState;
 // any PostingsFormat and make it ord-able...
 
 /**
- * Customized version of {@link Lucene84PostingsFormat} that uses {@link
+ * Customized version of {@link Lucene90PostingsFormat} that uses {@link
  * VariableGapTermsIndexWriter} with a fixed interval.
  */
 public final class LuceneVarGapFixedInterval extends PostingsFormat {
@@ -49,7 +49,7 @@ public final class LuceneVarGapFixedInterval extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase docs = new Lucene84PostingsWriter(state);
+    PostingsWriterBase docs = new Lucene90PostingsWriter(state);
 
     // TODO: should we make the terms index more easily
     // pluggable?  Ie so that this codec would record which
@@ -88,7 +88,7 @@ public final class LuceneVarGapFixedInterval extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    PostingsReaderBase postings = new Lucene84PostingsReader(state);
+    PostingsReaderBase postings = new Lucene90PostingsReader(state);
     TermsIndexReaderBase indexReader;
 
     boolean success = false;

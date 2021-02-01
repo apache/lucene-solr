@@ -14,18 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+package org.apache.lucene.backward_codecs.lucene84;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.backward_codecs.lucene84.Lucene84ScoreSkipReader.MutableImpactList;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
-import org.apache.lucene.codecs.lucene84.Lucene84ScoreSkipReader.MutableImpactList;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
@@ -41,7 +41,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.TestUtil;
 
 public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene84PostingsFormat());
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene84RWPostingsFormat());
 
   @Override
   protected Codec getCodec() {
@@ -71,22 +71,6 @@ public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
     r.close();
     w.close();
     d.close();
-  }
-
-  private void shouldFail(int minItemsInBlock, int maxItemsInBlock) {
-    expectThrows(
-        IllegalArgumentException.class,
-        () -> {
-          new Lucene84PostingsFormat(minItemsInBlock, maxItemsInBlock);
-        });
-  }
-
-  public void testInvalidBlockSizes() throws Exception {
-    shouldFail(0, 0);
-    shouldFail(10, 8);
-    shouldFail(-1, 10);
-    shouldFail(10, -1);
-    shouldFail(10, 12);
   }
 
   public void testImpactSerialization() throws IOException {

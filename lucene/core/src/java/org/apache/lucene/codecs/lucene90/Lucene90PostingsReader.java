@@ -14,24 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+package org.apache.lucene.codecs.lucene90;
 
-import static org.apache.lucene.codecs.lucene84.ForUtil.BLOCK_SIZE;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.DOC_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.MAX_SKIP_LEVELS;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.PAY_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.POS_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.TERMS_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_COMPRESSED_TERMS_DICT_IDS;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_CURRENT;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_START;
+import static org.apache.lucene.codecs.lucene90.ForUtil.BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.DOC_CODEC;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.MAX_SKIP_LEVELS;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.PAY_CODEC;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.POS_CODEC;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.TERMS_CODEC;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.VERSION_COMPRESSED_TERMS_DICT_IDS;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.VERSION_START;
 
 import java.io.IOException;
 import java.util.Arrays;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.IntBlockTermState;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
@@ -53,10 +53,10 @@ import org.apache.lucene.util.RamUsageEstimator;
  *
  * @lucene.experimental
  */
-public final class Lucene84PostingsReader extends PostingsReaderBase {
+public final class Lucene90PostingsReader extends PostingsReaderBase {
 
   private static final long BASE_RAM_BYTES_USED =
-      RamUsageEstimator.shallowSizeOfInstance(Lucene84PostingsReader.class);
+      RamUsageEstimator.shallowSizeOfInstance(Lucene90PostingsReader.class);
 
   private final IndexInput docIn;
   private final IndexInput posIn;
@@ -65,7 +65,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
   private final int version;
 
   /** Sole constructor. */
-  public Lucene84PostingsReader(SegmentReadState state) throws IOException {
+  public Lucene90PostingsReader(SegmentReadState state) throws IOException {
     boolean success = false;
     IndexInput docIn = null;
     IndexInput posIn = null;
@@ -78,7 +78,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     String docName =
         IndexFileNames.segmentFileName(
-            state.segmentInfo.name, state.segmentSuffix, Lucene84PostingsFormat.DOC_EXTENSION);
+            state.segmentInfo.name, state.segmentSuffix, Lucene90PostingsFormat.DOC_EXTENSION);
     try {
       docIn = state.directory.openInput(docName, state.context);
       version =
@@ -94,7 +94,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       if (state.fieldInfos.hasProx()) {
         String proxName =
             IndexFileNames.segmentFileName(
-                state.segmentInfo.name, state.segmentSuffix, Lucene84PostingsFormat.POS_EXTENSION);
+                state.segmentInfo.name, state.segmentSuffix, Lucene90PostingsFormat.POS_EXTENSION);
         posIn = state.directory.openInput(proxName, state.context);
         CodecUtil.checkIndexHeader(
             posIn, POS_CODEC, version, version, state.segmentInfo.getId(), state.segmentSuffix);
@@ -105,7 +105,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
               IndexFileNames.segmentFileName(
                   state.segmentInfo.name,
                   state.segmentSuffix,
-                  Lucene84PostingsFormat.PAY_EXTENSION);
+                  Lucene90PostingsFormat.PAY_EXTENSION);
           payIn = state.directory.openInput(payName, state.context);
           CodecUtil.checkIndexHeader(
               payIn, PAY_CODEC, version, version, state.segmentInfo.getId(), state.segmentSuffix);
@@ -332,7 +332,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     private int docBufferUpto;
 
-    private Lucene84SkipReader skipper;
+    private Lucene90SkipReader skipper;
     private boolean skipped;
 
     final IndexInput startDocIn;
@@ -369,7 +369,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     private int singletonDocID; // docid when there is a single pulsed posting, otherwise -1
 
     public BlockDocsEnum(FieldInfo fieldInfo) throws IOException {
-      this.startDocIn = Lucene84PostingsReader.this.docIn;
+      this.startDocIn = Lucene90PostingsReader.this.docIn;
       this.docIn = null;
       indexHasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       indexHasPos =
@@ -519,7 +519,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
           skipper =
-              new Lucene84SkipReader(
+              new Lucene90SkipReader(
                   docIn.clone(), MAX_SKIP_LEVELS, indexHasPos, indexHasOffsets, indexHasPayloads);
         }
 
@@ -531,7 +531,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
           skipped = true;
         }
 
-        // always plus one to fix the result, since skip position in Lucene84SkipReader
+        // always plus one to fix the result, since skip position in Lucene90SkipReader
         // is a little different from MultiLevelSkipListReader
         final int newDocUpto = skipper.skipTo(target) + 1;
 
@@ -605,7 +605,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     private int docBufferUpto;
     private int posBufferUpto;
 
-    private Lucene84SkipReader skipper;
+    private Lucene90SkipReader skipper;
     private boolean skipped;
 
     final IndexInput startDocIn;
@@ -672,11 +672,11 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
               >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
 
-      this.startDocIn = Lucene84PostingsReader.this.docIn;
+      this.startDocIn = Lucene90PostingsReader.this.docIn;
       this.docIn = null;
-      this.posIn = Lucene84PostingsReader.this.posIn.clone();
+      this.posIn = Lucene90PostingsReader.this.posIn.clone();
       if (indexHasOffsets || indexHasPayloads) {
-        this.payIn = Lucene84PostingsReader.this.payIn.clone();
+        this.payIn = Lucene90PostingsReader.this.payIn.clone();
       } else {
         this.payIn = null;
       }
@@ -884,7 +884,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
           skipper =
-              new Lucene84SkipReader(
+              new Lucene90SkipReader(
                   docIn.clone(), MAX_SKIP_LEVELS, true, indexHasOffsets, indexHasPayloads);
         }
 
@@ -1077,7 +1077,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     private int docBufferUpto;
 
-    private final Lucene84ScoreSkipReader skipper;
+    private final Lucene90ScoreSkipReader skipper;
 
     final IndexInput docIn;
 
@@ -1109,7 +1109,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
               >= 0;
       final boolean indexHasPayloads = fieldInfo.hasPayloads();
 
-      this.docIn = Lucene84PostingsReader.this.docIn.clone();
+      this.docIn = Lucene90PostingsReader.this.docIn.clone();
 
       docFreq = termState.docFreq;
       docIn.seek(termState.docStartFP);
@@ -1120,7 +1120,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       docBufferUpto = BLOCK_SIZE;
 
       skipper =
-          new Lucene84ScoreSkipReader(
+          new Lucene90ScoreSkipReader(
               docIn.clone(), MAX_SKIP_LEVELS, indexHasPositions, indexHasOffsets, indexHasPayloads);
       skipper.init(
           termState.docStartFP + termState.skipOffset,
@@ -1183,7 +1183,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     @Override
     public void advanceShallow(int target) throws IOException {
       if (target > nextSkipDoc) {
-        // always plus one to fix the result, since skip position in Lucene84SkipReader
+        // always plus one to fix the result, since skip position in Lucene90SkipReader
         // is a little different from MultiLevelSkipListReader
         final int newDocUpto = skipper.skipTo(target) + 1;
 
@@ -1274,7 +1274,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     private int docBufferUpto;
     private int posBufferUpto;
 
-    private final Lucene84ScoreSkipReader skipper;
+    private final Lucene90ScoreSkipReader skipper;
 
     final IndexInput docIn;
     final IndexInput posIn;
@@ -1326,9 +1326,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
               >= 0;
       indexHasPayloads = fieldInfo.hasPayloads();
 
-      this.docIn = Lucene84PostingsReader.this.docIn.clone();
+      this.docIn = Lucene90PostingsReader.this.docIn.clone();
 
-      this.posIn = Lucene84PostingsReader.this.posIn.clone();
+      this.posIn = Lucene90PostingsReader.this.posIn.clone();
 
       docFreq = termState.docFreq;
       docTermStartFP = termState.docStartFP;
@@ -1352,7 +1352,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       docBufferUpto = BLOCK_SIZE;
 
       skipper =
-          new Lucene84ScoreSkipReader(
+          new Lucene90ScoreSkipReader(
               docIn.clone(), MAX_SKIP_LEVELS, true, indexHasOffsets, indexHasPayloads);
       skipper.init(
           docTermStartFP + termState.skipOffset,
@@ -1420,7 +1420,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     @Override
     public void advanceShallow(int target) throws IOException {
       if (target > nextSkipDoc) {
-        // always plus one to fix the result, since skip position in Lucene84SkipReader
+        // always plus one to fix the result, since skip position in Lucene90SkipReader
         // is a little different from MultiLevelSkipListReader
         final int newDocUpto = skipper.skipTo(target) + 1;
 
@@ -1580,7 +1580,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     private int docBufferUpto;
     private int posBufferUpto;
 
-    private final Lucene84ScoreSkipReader skipper;
+    private final Lucene90ScoreSkipReader skipper;
 
     final IndexInput docIn;
     final IndexInput posIn;
@@ -1654,16 +1654,16 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       needsOffsets = PostingsEnum.featureRequested(flags, PostingsEnum.OFFSETS);
       needsPayloads = PostingsEnum.featureRequested(flags, PostingsEnum.PAYLOADS);
 
-      this.docIn = Lucene84PostingsReader.this.docIn.clone();
+      this.docIn = Lucene90PostingsReader.this.docIn.clone();
 
       if (indexHasPos && needsPositions) {
-        this.posIn = Lucene84PostingsReader.this.posIn.clone();
+        this.posIn = Lucene90PostingsReader.this.posIn.clone();
       } else {
         this.posIn = null;
       }
 
       if ((indexHasOffsets && needsOffsets) || (indexHasPayloads && needsPayloads)) {
-        this.payIn = Lucene84PostingsReader.this.payIn.clone();
+        this.payIn = Lucene90PostingsReader.this.payIn.clone();
       } else {
         this.payIn = null;
       }
@@ -1713,7 +1713,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       docBufferUpto = BLOCK_SIZE;
 
       skipper =
-          new Lucene84ScoreSkipReader(
+          new Lucene90ScoreSkipReader(
               docIn.clone(), MAX_SKIP_LEVELS, indexHasPos, indexHasOffsets, indexHasPayloads);
       skipper.init(
           docTermStartFP + termState.skipOffset,
@@ -1856,7 +1856,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     @Override
     public void advanceShallow(int target) throws IOException {
       if (target > nextSkipDoc) {
-        // always plus one to fix the result, since skip position in Lucene84SkipReader
+        // always plus one to fix the result, since skip position in Lucene90SkipReader
         // is a little different from MultiLevelSkipListReader
         final int newDocUpto = skipper.skipTo(target) + 1;
 

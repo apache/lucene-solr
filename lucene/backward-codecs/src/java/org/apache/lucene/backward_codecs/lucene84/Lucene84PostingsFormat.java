@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+package org.apache.lucene.backward_codecs.lucene84;
 
 import java.io.IOException;
 import org.apache.lucene.codecs.BlockTermState;
@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.IndexOptions;
@@ -331,7 +330,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * @lucene.experimental
  */
-public final class Lucene84PostingsFormat extends PostingsFormat {
+public class Lucene84PostingsFormat extends PostingsFormat {
 
   /**
    * Filename extension for document number, frequencies, and skip data. See chapter: <a
@@ -368,25 +367,9 @@ public final class Lucene84PostingsFormat extends PostingsFormat {
   static final int VERSION_COMPRESSED_TERMS_DICT_IDS = 1;
   static final int VERSION_CURRENT = VERSION_COMPRESSED_TERMS_DICT_IDS;
 
-  private final int minTermBlockSize;
-  private final int maxTermBlockSize;
-
   /** Creates {@code Lucene84PostingsFormat} with default settings. */
   public Lucene84PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
-  }
-
-  /**
-   * Creates {@code Lucene84PostingsFormat} with custom values for {@code minBlockSize} and {@code
-   * maxBlockSize} passed to block terms dictionary.
-   *
-   * @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int)
-   */
-  public Lucene84PostingsFormat(int minTermBlockSize, int maxTermBlockSize) {
     super("Lucene84");
-    BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
-    this.minTermBlockSize = minTermBlockSize;
-    this.maxTermBlockSize = maxTermBlockSize;
   }
 
   @Override
@@ -396,18 +379,7 @@ public final class Lucene84PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(state);
-    boolean success = false;
-    try {
-      FieldsConsumer ret =
-          new BlockTreeTermsWriter(state, postingsWriter, minTermBlockSize, maxTermBlockSize);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(postingsWriter);
-      }
-    }
+    throw new UnsupportedOperationException("Old codecs may only be used for reading");
   }
 
   @Override

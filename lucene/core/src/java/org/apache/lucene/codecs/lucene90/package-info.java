@@ -151,15 +151,15 @@
  *       field names. These are used to store auxiliary information about the document, such as its
  *       title, url, or an identifier to access a database. The set of stored fields are what is
  *       returned for each hit when searching. This is keyed by document number.
- *   <li>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term dictionary}. A
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term dictionary}. A
  *       dictionary containing all of the terms used in all of the indexed fields of all of the
  *       documents. The dictionary also contains the number of documents which contain the term, and
  *       pointers to the term's frequency and proximity data.
- *   <li>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Frequency data}. For
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Frequency data}. For
  *       each term in the dictionary, the numbers of all the documents that contain that term, and
  *       the frequency of the term in that document, unless frequencies are omitted ({@link
  *       org.apache.lucene.index.IndexOptions#DOCS IndexOptions.DOCS})
- *   <li>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Proximity data}. For
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Proximity data}. For
  *       each term in the dictionary, the positions that the term occurs in each document. Note that
  *       this will not exist if all fields in all documents omit position data.
  *   <li>{@link org.apache.lucene.codecs.lucene80.Lucene80NormsFormat Normalization factors}. For
@@ -255,27 +255,27 @@
  * <td>The stored fields for documents</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Dictionary}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Dictionary}</td>
  * <td>.tim</td>
  * <td>The term dictionary, stores term info</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Index}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Index}</td>
  * <td>.tip</td>
  * <td>The index into the Term Dictionary</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Frequencies}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Frequencies}</td>
  * <td>.doc</td>
  * <td>Contains the list of docs which contain each term along with frequency</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Positions}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Positions}</td>
  * <td>.pos</td>
  * <td>Stores position information about where a term occurs in the index</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Payloads}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Payloads}</td>
  * <td>.pay</td>
  * <td>Stores additional per-position metadata information such as character offsets and user payloads</td>
  * </tr>

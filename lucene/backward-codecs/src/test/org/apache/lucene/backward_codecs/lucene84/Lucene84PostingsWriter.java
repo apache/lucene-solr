@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene84;
+package org.apache.lucene.backward_codecs.lucene84;
 
-import static org.apache.lucene.codecs.lucene84.ForUtil.BLOCK_SIZE;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.DOC_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.MAX_SKIP_LEVELS;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.PAY_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.POS_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.TERMS_CODEC;
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_CURRENT;
+import static org.apache.lucene.backward_codecs.lucene84.ForUtil.BLOCK_SIZE;
+import static org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat.DOC_CODEC;
+import static org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat.MAX_SKIP_LEVELS;
+import static org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat.PAY_CODEC;
+import static org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat.POS_CODEC;
+import static org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat.TERMS_CODEC;
+import static org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat.VERSION_CURRENT;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
+import org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat.IntBlockTermState;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.PushPostingsWriterBase;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.IntBlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;

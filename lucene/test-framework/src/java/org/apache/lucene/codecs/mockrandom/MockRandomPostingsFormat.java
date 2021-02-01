@@ -37,8 +37,8 @@ import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsWriter;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsWriter;
 import org.apache.lucene.codecs.memory.FSTTermsReader;
 import org.apache.lucene.codecs.memory.FSTTermsWriter;
 import org.apache.lucene.index.FieldInfo;
@@ -121,7 +121,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
     random.nextInt(); // consume a random for buffersize
 
-    PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(state);
+    PostingsWriterBase postingsWriter = new Lucene90PostingsWriter(state);
 
     final FieldsConsumer fields;
     final int t1 = random.nextInt(4);
@@ -287,7 +287,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
       System.out.println("MockRandomCodec: readBufferSize=" + readBufferSize);
     }
 
-    PostingsReaderBase postingsReader = new Lucene84PostingsReader(state);
+    PostingsReaderBase postingsReader = new Lucene90PostingsReader(state);
 
     final FieldsProducer fields;
     final int t1 = random.nextInt(4);

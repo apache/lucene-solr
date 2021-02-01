@@ -39,7 +39,6 @@ import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -49,7 +48,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  *
  * <p>If you want to reuse functionality of this codec in another codec, extend {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene84 package documentation for file format details.
+ * @see org.apache.lucene.backward_codecs.lucene84 package documentation for file format details.
  * @lucene.experimental
  */
 public class Lucene84Codec extends Codec {
@@ -105,7 +104,7 @@ public class Lucene84Codec extends Codec {
   }
 
   @Override
-  public final PostingsFormat postingsFormat() {
+  public PostingsFormat postingsFormat() {
     return postingsFormat;
   }
 
