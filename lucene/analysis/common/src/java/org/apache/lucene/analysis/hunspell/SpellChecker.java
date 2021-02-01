@@ -119,7 +119,7 @@ public class SpellChecker {
   }
 
   boolean checkWord(String word) {
-    return checkWord(word.toCharArray(), word.length(), false);
+    return checkWord(word.toCharArray(), word.length(), null);
   }
 
   private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
