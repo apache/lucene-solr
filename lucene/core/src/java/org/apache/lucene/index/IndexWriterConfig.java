@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -53,7 +54,7 @@ import org.apache.lucene.util.Version;
 public final class IndexWriterConfig extends LiveIndexWriterConfig {
 
   /** Specifies the open mode for {@link IndexWriter}. */
-  public static enum OpenMode {
+  public enum OpenMode {
     /** Creates a new index or overwrites an existing one. */
     CREATE,
 
@@ -475,6 +476,18 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
     this.indexSort = sort;
     this.indexSortFields =
         Arrays.stream(sort.getSort()).map(SortField::getField).collect(Collectors.toSet());
+    return this;
+  }
+
+  /**
+   * Set the comparator for sorting leaf readers. A DirectoryReader opened from a IndexWriter with
+   * this configuration will have its leaf readers sorted with the provided leaf sorter.
+   *
+   * @param leafSorter – a comparator for sorting leaf readers
+   * @return IndexWriterConfig with leafSorter set.
+   */
+  public IndexWriterConfig setLeafSorter(Comparator<LeafReader> leafSorter) {
+    this.leafSorter = leafSorter;
     return this;
   }
 

@@ -1237,7 +1237,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     final int NUM_DOCS = atLeast(30);
     Directory dir = newDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(), leafSorter);
+    IndexWriterConfig iwc = new IndexWriterConfig();
+    iwc.setLeafSorter(leafSorter);
+    IndexWriter writer = new IndexWriter(dir, iwc);
     for (int i = 0; i < NUM_DOCS; ++i) {
       final Document doc = new Document();
       doc.add(new LongPoint(FIELD_NAME, randomLongBetween(1, 99)));
@@ -1245,7 +1247,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       if (i > 0 && i % 10 == 0) writer.flush();
     }
 
-    // Test1: test that leafReaders are sorted according to leafSorter provided in Writer
+    // Test1: test that leafReaders are sorted according to leafSorter provided in IndexWriterConfig
     {
       try (DirectoryReader reader = open(writer)) {
         List<LeafReader> lrs =

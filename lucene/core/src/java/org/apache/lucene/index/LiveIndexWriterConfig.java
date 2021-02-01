@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
@@ -90,6 +91,9 @@ public class LiveIndexWriterConfig {
 
   /** The sort order to use to write merged segments. */
   protected Sort indexSort = null;
+
+  /** The comparator for sorting leaf readers. */
+  protected Comparator<LeafReader> leafSorter = null;
 
   /** The field names involved in the index sort */
   protected Set<String> indexSortFields = Collections.emptySet();
@@ -390,6 +394,17 @@ public class LiveIndexWriterConfig {
   }
 
   /**
+   * Returns a comparator for sorting leaf readers. If not {@code null}, this comparator is used to
+   * sort leaf readers within {@code DirectoryReader} opened from the {@code IndexWriter} of this
+   * configuration.
+   *
+   * @return a comparator for sorting leaf readers
+   */
+  public Comparator<LeafReader> getLeafSorter() {
+    return leafSorter;
+  }
+
+  /**
    * Expert: Returns if indexing threads check for pending flushes on update in order to help our
    * flushing indexing buffers to disk
    *
@@ -458,6 +473,7 @@ public class LiveIndexWriterConfig {
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
     sb.append("maxFullFlushMergeWaitMillis=").append(getMaxFullFlushMergeWaitMillis()).append("\n");
+    sb.append("leafSorter=").append(getLeafSorter()).append("\n");
     return sb.toString();
   }
 }

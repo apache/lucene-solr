@@ -158,8 +158,8 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
       writer.incRefDeleter(segmentInfos);
 
-      if (writer.getLeafSorter() != null) {
-        readers.sort(writer.getLeafSorter());
+      if (writer.getConfig().getLeafSorter() != null) {
+        readers.sort(writer.getConfig().getLeafSorter());
       }
 
       StandardDirectoryReader result =
@@ -168,7 +168,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
               readers.toArray(new SegmentReader[readers.size()]),
               writer,
               segmentInfos,
-              writer.getLeafSorter(),
+              writer.getConfig().getLeafSorter(),
               applyAllDeletes,
               writeAllDeletes);
       return result;
