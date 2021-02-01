@@ -23,7 +23,9 @@ import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
@@ -34,9 +36,9 @@ import org.apache.lucene.util.IntsRef;
  * threads). Not all Hunspell features are supported yet.
  */
 public class SpellChecker {
-  private final Dictionary dictionary;
+  final Dictionary dictionary;
+  final Stemmer stemmer;
   private final BytesRef scratch = new BytesRef();
-  private final Stemmer stemmer;
 
   public SpellChecker(Dictionary dictionary) {
     this.dictionary = dictionary;
@@ -126,6 +128,10 @@ public class SpellChecker {
       }
     }
     return false;
+  }
+
+  boolean checkWord(String word) {
+    return checkWord(word.toCharArray(), word.length(), null);
   }
 
   private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
@@ -328,5 +334,45 @@ public class SpellChecker {
         && breakPos < word.length() - breakStr.length()
         && spell(word.substring(0, breakPos))
         && spell(word.substring(breakPos + breakStr.length()));
+  }
+
+  public List<String> suggest(String word) {
+    if (word.length() >= 100) return Collections.emptyList();
+
+    if (dictionary.needsInputCleaning) {
+      word = dictionary.cleanInput(word, new StringBuilder()).toString();
+    }
+
+    ModifyingSuggester modifier = new ModifyingSuggester(this);
+    Set<String> result = modifier.suggest(word);
+
+    if (word.contains("-") && result.stream().noneMatch(s -> s.contains("-"))) {
+      result.addAll(modifyChunksBetweenDashes(word));
+    }
+
+    return new ArrayList<>(result);
+  }
+
+  private List<String> modifyChunksBetweenDashes(String word) {
+    List<String> result = new ArrayList<>();
+    int chunkStart = 0;
+    while (chunkStart < word.length()) {
+      int chunkEnd = word.indexOf('-', chunkStart);
+      if (chunkEnd < 0) {
+        chunkEnd = word.length();
+      }
+
+      if (chunkEnd > chunkStart) {
+        String chunk = word.substring(chunkStart, chunkEnd);
+        if (!spell(chunk)) {
+          for (String chunkSug : suggest(chunk)) {
+            result.add(word.substring(0, chunkStart) + chunkSug + word.substring(chunkEnd));
+          }
+        }
+      }
+
+      chunkStart = chunkEnd + 1;
+    }
+    return result;
   }
 }

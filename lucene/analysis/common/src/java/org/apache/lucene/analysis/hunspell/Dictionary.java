@@ -152,6 +152,9 @@ public class Dictionary {
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
 
+  String tryChars = "";
+  List<RepEntry> repTable = new ArrayList<>();
+
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
   FST<CharsRef> oconv;
@@ -383,6 +386,14 @@ public class Dictionary {
         alternateCasing = langCode.equals("tr") || langCode.equals("az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
+      } else if ("TRY".equals(firstWord)) {
+        tryChars = singleArgument(reader, line);
+      } else if ("REP".equals(firstWord)) {
+        int count = Integer.parseInt(singleArgument(reader, line));
+        for (int i = 0; i < count; i++) {
+          String[] parts = splitBySpace(reader, reader.readLine(), 3);
+          repTable.add(new RepEntry(parts[1], parts[2]));
+        }
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
