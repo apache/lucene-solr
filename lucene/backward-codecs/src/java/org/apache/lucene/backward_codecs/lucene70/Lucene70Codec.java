@@ -134,7 +134,7 @@ public class Lucene70Codec extends Codec {
   private final NormsFormat normsFormat = new Lucene70NormsFormat();
 
   @Override
-  public final NormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     return normsFormat;
   }
 }
