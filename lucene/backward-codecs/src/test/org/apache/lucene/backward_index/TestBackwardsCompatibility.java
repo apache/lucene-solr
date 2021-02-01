@@ -1062,6 +1062,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     TestUtil.checkIndex(dir);
 
     final Bits liveDocs = MultiBits.getLiveDocs(reader);
+    assertNotNull(liveDocs);
 
     for (int i = 0; i < 35; i++) {
       if (liveDocs.get(i)) {
