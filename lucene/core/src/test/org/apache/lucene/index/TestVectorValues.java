@@ -76,7 +76,9 @@ public class TestVectorValues extends LuceneTestCase {
   public void testFieldConstructorExceptions() {
     expectThrows(IllegalArgumentException.class, () -> new VectorField(null, new float[1]));
     expectThrows(IllegalArgumentException.class, () -> new VectorField("f", null));
-    expectThrows(IllegalArgumentException.class, () -> new VectorField("f", new float[1], null));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> new VectorField("f", new float[1], (SearchStrategy) null));
     expectThrows(IllegalArgumentException.class, () -> new VectorField("f", new float[0]));
     expectThrows(
         IllegalArgumentException.class,

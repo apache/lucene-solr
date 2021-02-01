@@ -123,7 +123,9 @@ public final class Lucene90VectorWriter extends VectorWriter {
             (RandomAccessVectorValuesProducer) vectors,
             vectorIndexOffset,
             offsets,
-            count);
+            count,
+            fieldInfo.getAttribute(HnswGraphBuilder.HNSW_MAX_CONN_ATTRIBUTE_KEY),
+            fieldInfo.getAttribute(HnswGraphBuilder.HNSW_BEAM_WIDTH_ATTRIBUTE_KEY));
       } else {
         throw new IllegalArgumentException(
             "Indexing an HNSW graph requires a random access vector values, got " + vectors);
@@ -188,9 +190,29 @@ public final class Lucene90VectorWriter extends VectorWriter {
       RandomAccessVectorValuesProducer vectorValues,
       long graphDataOffset,
       long[] offsets,
-      int count)
+      int count,
+      String maxConnStr,
+      String beamWidthStr)
       throws IOException {
-    HnswGraphBuilder hnswGraphBuilder = new HnswGraphBuilder(vectorValues);
+    int maxConn, beamWidth;
+    if (maxConnStr == null) {
+      maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
+    } else if (!maxConnStr.matches("[0-9]+")) {
+      throw new IllegalArgumentException(
+          "HNSW max-connections parameter should be integer, received value: " + maxConnStr);
+    } else {
+      maxConn = Integer.parseInt(maxConnStr);
+    }
+    if (beamWidthStr == null) {
+      beamWidth = HnswGraphBuilder.DEFAULT_BEAM_WIDTH;
+    } else if (!beamWidthStr.matches("[0-9]+")) {
+      throw new IllegalArgumentException(
+          "HNSW beam-width parameter should be integer, received value: " + maxConnStr);
+    } else {
+      beamWidth = Integer.parseInt(beamWidthStr);
+    }
+    HnswGraphBuilder hnswGraphBuilder =
+        new HnswGraphBuilder(vectorValues, maxConn, beamWidth, System.currentTimeMillis());
     hnswGraphBuilder.setInfoStream(segmentWriteState.infoStream);
     HnswGraph graph = hnswGraphBuilder.build(vectorValues.randomAccess());
 

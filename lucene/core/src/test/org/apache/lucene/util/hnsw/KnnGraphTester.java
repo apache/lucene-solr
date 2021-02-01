@@ -37,6 +37,7 @@ import java.util.Locale;
 import java.util.Set;
 import org.apache.lucene.codecs.lucene90.Lucene90VectorReader;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.VectorField;
 import org.apache.lucene.index.CodecReader;
@@ -83,6 +84,8 @@ public class KnnGraphTester {
   private boolean reindex;
   private boolean forceMerge;
   private int reindexTimeMsec;
+  private int beamWidth;
+  private int maxConn;
 
   @SuppressForbidden(reason = "uses Random()")
   private KnnGraphTester() {
@@ -132,13 +135,13 @@ public class KnnGraphTester {
           if (iarg == args.length - 1) {
             throw new IllegalArgumentException("-beamWidthIndex requires a following number");
           }
-          HnswGraphBuilder.DEFAULT_BEAM_WIDTH = Integer.parseInt(args[++iarg]);
+          beamWidth = Integer.parseInt(args[++iarg]);
           break;
         case "-maxConn":
           if (iarg == args.length - 1) {
             throw new IllegalArgumentException("-maxConn requires a following number");
           }
-          HnswGraphBuilder.DEFAULT_MAX_CONN = Integer.parseInt(args[++iarg]);
+          maxConn = Integer.parseInt(args[++iarg]);
           break;
         case "-dim":
           if (iarg == args.length - 1) {
@@ -223,12 +226,7 @@ public class KnnGraphTester {
   }
 
   private String formatIndexPath(Path docsPath) {
-    return docsPath.getFileName()
-        + "-"
-        + HnswGraphBuilder.DEFAULT_MAX_CONN
-        + "-"
-        + HnswGraphBuilder.DEFAULT_BEAM_WIDTH
-        + ".index";
+    return docsPath.getFileName() + "-" + maxConn + "-" + beamWidth + ".index";
   }
 
   @SuppressForbidden(reason = "Prints stuff")
@@ -250,9 +248,7 @@ public class KnnGraphTester {
   private void dumpGraph(Path docsPath) throws IOException {
     try (BinaryFileVectors vectors = new BinaryFileVectors(docsPath)) {
       RandomAccessVectorValues values = vectors.randomAccess();
-      HnswGraphBuilder builder =
-          new HnswGraphBuilder(
-              vectors, HnswGraphBuilder.DEFAULT_MAX_CONN, HnswGraphBuilder.DEFAULT_BEAM_WIDTH, 0);
+      HnswGraphBuilder builder = new HnswGraphBuilder(vectors, maxConn, beamWidth, 0);
       // start at node 1
       for (int i = 1; i < numDocs; i++) {
         builder.addGraphNode(values.vectorValue(i));
@@ -413,8 +409,8 @@ public class KnnGraphTester {
           totalCpuTime / (float) numIters,
           numDocs,
           fanout,
-          HnswGraphBuilder.DEFAULT_MAX_CONN,
-          HnswGraphBuilder.DEFAULT_BEAM_WIDTH,
+          maxConn,
+          beamWidth,
           totalVisited,
           reindexTimeMsec);
     }
@@ -574,6 +570,9 @@ public class KnnGraphTester {
     iwc.setRAMBufferSizeMB(1994d);
     // iwc.setMaxBufferedDocs(10000);
 
+    FieldType fieldType =
+        VectorField.createHnswType(
+            dim, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW, maxConn, beamWidth);
     if (quiet == false) {
       iwc.setInfoStream(new PrintStreamInfoStream(System.out));
       System.out.println("creating index in " + indexPath);
@@ -598,8 +597,7 @@ public class KnnGraphTester {
             vectors.get(vector);
             Document doc = new Document();
             // System.out.println("vector=" + vector[0] + "," + vector[1] + "...");
-            doc.add(
-                new VectorField(KNN_FIELD, vector, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
+            doc.add(new VectorField(KNN_FIELD, vector, fieldType));
             doc.add(new StoredField(ID_FIELD, i));
             iw.addDocument(doc);
           }
