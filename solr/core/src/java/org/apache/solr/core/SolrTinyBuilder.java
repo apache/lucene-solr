@@ -21,10 +21,12 @@ import net.sf.saxon.om.AttributeInfo;
 import net.sf.saxon.tree.tiny.TinyBuilder;
 import org.apache.solr.util.PropertiesUtil;
 
+import java.util.HashMap;
 import java.util.Properties;
 
 public class SolrTinyBuilder extends TinyBuilder  {
   private final Properties substituteProps;
+  private final HashMap sysProperties;
 
   /**
    * Create a TinyTree builder
@@ -35,12 +37,13 @@ public class SolrTinyBuilder extends TinyBuilder  {
   public SolrTinyBuilder(PipelineConfiguration pipe, Properties substituteProps) {
     super(pipe);
     this.substituteProps = substituteProps;
+    this.sysProperties = new HashMap(System.getProperties());
   }
 
   protected int makeTextNode(CharSequence chars, int len) {
     String sub = PropertiesUtil
         .substituteProperty(chars.subSequence(0, len).toString(),
-            substituteProps);
+            substituteProps, sysProperties);
 
     return super.makeTextNode(sub, sub.length());
   }
@@ -48,7 +51,7 @@ public class SolrTinyBuilder extends TinyBuilder  {
   protected String getAttValue(AttributeInfo att) {
     String sub = PropertiesUtil
         .substituteProperty(att.getValue(),
-            substituteProps);
+            substituteProps, sysProperties);
     return sub;
   }
 

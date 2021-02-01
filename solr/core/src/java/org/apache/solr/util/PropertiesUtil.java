@@ -21,6 +21,7 @@ import org.apache.solr.common.SolrException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -32,7 +33,7 @@ public class PropertiesUtil {
   * This method borrowed from Ant's PropertyHelper.replaceProperties:
   *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
   */
-  public static String substituteProperty(String value, Properties coreProperties) {
+  public static String substituteProperty(String value, Properties coreProperties, Map systemProperties) {
     if (value == null || value.indexOf('$') == -1) {
       return value;
     }
@@ -59,7 +60,10 @@ public class PropertiesUtil {
           fragment = coreProperties.getProperty(propertyName);
         }
         if (fragment == null) {
-          fragment = System.getProperty(propertyName, defaultValue);
+          fragment = (String) systemProperties.get(propertyName);
+          if (fragment == null) {
+            fragment = defaultValue;
+          }
         }
         if (fragment == null) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No system property or default value specified for " + propertyName + " value:" + value);

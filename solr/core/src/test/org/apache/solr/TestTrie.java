@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
@@ -275,10 +276,12 @@ public class TestTrie extends SolrTestCaseJ4 {
   }
 
   private void checkPrecisionSteps(String fieldType) {
-    FieldType type = h.getCore().getLatestSchema().getFieldType(fieldType);
-    if (type instanceof TrieField) {
-      TrieField field = (TrieField) type;
-      assertTrue(field.getPrecisionStep() > 0 && field.getPrecisionStep() < 64);
+    try (SolrCore core = h.getCore()) {
+      FieldType type = core.getLatestSchema().getFieldType(fieldType);
+      if (type instanceof TrieField) {
+        TrieField field = (TrieField) type;
+        assertTrue(field.getPrecisionStep() > 0 && field.getPrecisionStep() < 64);
+      }
     }
   }
 

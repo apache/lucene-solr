@@ -155,12 +155,12 @@ public class TestJoin extends SolrTestCaseJ4 {
 
     // "from" field missing docValues
     expectThrows(SolrException.class, () -> {
-      h.query(req(p, "q", "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*", "fl","id"));
+      query(req(p, "q", "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*", "fl","id"));
     });
 
     // "to" field missing docValues
     expectThrows(SolrException.class, () -> {
-      h.query(req(p, "q", "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*", "fl","id"));
+      query(req(p, "q", "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*", "fl","id"));
     });
   }
 

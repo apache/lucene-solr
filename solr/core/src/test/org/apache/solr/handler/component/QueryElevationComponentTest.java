@@ -550,134 +550,76 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSorting() throws Exception {
-    try {
-      init("schema12.xml");
+
+    init("schema12.xml");
+    try (SolrCore core = h.getCore()) {
       assertU(adoc("id", "a", "title", "ipod trash trash", "str_s1", "group1"));
       assertU(adoc("id", "b", "title", "ipod ipod  trash", "str_s1", "group2"));
       assertU(adoc("id", "c", "title", "ipod ipod  ipod ", "str_s1", "group2"));
 
-      assertU(adoc("id", "x", "title", "boosted",                 "str_s1", "group1"));
-      assertU(adoc("id", "y", "title", "boosted boosted",         "str_s1", "group2"));
+      assertU(adoc("id", "x", "title", "boosted", "str_s1", "group1"));
+      assertU(adoc("id", "y", "title", "boosted boosted", "str_s1", "group2"));
       assertU(adoc("id", "z", "title", "boosted boosted boosted", "str_s1", "group2"));
       assertU(commit());
 
       final String query = "title:ipod";
 
-      final SolrParams baseParams = params(
-          "qt", "/elevate",
-          "q", query,
-          "fl", "id,score",
-          "indent", "true");
+      final SolrParams baseParams = params("qt", "/elevate", "q", query, "fl", "id,score", "indent", "true");
 
-      QueryElevationComponent booster = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
-      IndexReader reader = h.getCore().withSearcher(SolrIndexSearcher::getIndexReader);
+      QueryElevationComponent booster = (QueryElevationComponent) core.getSearchComponent("elevate");
+      IndexReader reader = core.withSearcher(SolrIndexSearcher::getIndexReader);
 
-      assertQ("Make sure standard sort works as expected", req(baseParams)
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='c']"
-          , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[3]/str[@name='id'][.='a']"
-      );
+      assertQ("Make sure standard sort works as expected", req(baseParams), "//*[@numFound='3']", "//result/doc[1]/str[@name='id'][.='c']", "//result/doc[2]/str[@name='id'][.='b']",
+          "//result/doc[3]/str[@name='id'][.='a']");
 
       // Explicitly set what gets boosted
-      booster.setTopQueryResults(reader, query, false, new String[]{"x", "y", "z"}, null);
+      booster.setTopQueryResults(reader, query, false, new String[] {"x", "y", "z"}, null);
 
-      assertQ("All six should make it", req(baseParams)
-          , "//*[@numFound='6']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='y']"
-          , "//result/doc[3]/str[@name='id'][.='z']"
-          , "//result/doc[4]/str[@name='id'][.='c']"
-          , "//result/doc[5]/str[@name='id'][.='b']"
-          , "//result/doc[6]/str[@name='id'][.='a']"
-      );
+      assertQ("All six should make it", req(baseParams), "//*[@numFound='6']", "//result/doc[1]/str[@name='id'][.='x']", "//result/doc[2]/str[@name='id'][.='y']",
+          "//result/doc[3]/str[@name='id'][.='z']", "//result/doc[4]/str[@name='id'][.='c']", "//result/doc[5]/str[@name='id'][.='b']", "//result/doc[6]/str[@name='id'][.='a']");
 
       // now switch the order:
-      booster.setTopQueryResults(reader, query, false, new String[]{"a", "x"}, null);
-      assertQ(req(baseParams)
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
-          , "//result/doc[2]/str[@name='id'][.='x']"
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='b']"
-      );
+      booster.setTopQueryResults(reader, query, false, new String[] {"a", "x"}, null);
+      assertQ(req(baseParams), "//*[@numFound='4']", "//result/doc[1]/str[@name='id'][.='a']", "//result/doc[2]/str[@name='id'][.='x']", "//result/doc[3]/str[@name='id'][.='c']",
+          "//result/doc[4]/str[@name='id'][.='b']");
 
       // Try normal sort by 'id'
       // default 'forceBoost' should be false
       assertFalse(booster.forceElevation);
-      assertQ(req(baseParams, "sort", "id asc")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
-          , "//result/doc[2]/str[@name='id'][.='b']"
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='x']"
-      );
+      assertQ(req(baseParams, "sort", "id asc"), "//*[@numFound='4']", "//result/doc[1]/str[@name='id'][.='a']", "//result/doc[2]/str[@name='id'][.='b']", "//result/doc[3]/str[@name='id'][.='c']",
+          "//result/doc[4]/str[@name='id'][.='x']");
 
-      assertQ("useConfiguredElevatedOrder=false",
-          req(baseParams, "sort", "str_s1 asc,id desc", "useConfiguredElevatedOrder", "false")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='x']"//group1
+      assertQ("useConfiguredElevatedOrder=false", req(baseParams, "sort", "str_s1 asc,id desc", "useConfiguredElevatedOrder", "false"), "//*[@numFound='4']", "//result/doc[1]/str[@name='id'][.='x']"
+          //group1
           , "//result/doc[2]/str[@name='id'][.='a']"//group1
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='b']"
-      );
+          , "//result/doc[3]/str[@name='id'][.='c']", "//result/doc[4]/str[@name='id'][.='b']");
 
       booster.forceElevation = true;
-      assertQ(req(baseParams, "sort", "id asc")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='a']"
-          , "//result/doc[2]/str[@name='id'][.='x']"
-          , "//result/doc[3]/str[@name='id'][.='b']"
-          , "//result/doc[4]/str[@name='id'][.='c']"
-      );
+      assertQ(req(baseParams, "sort", "id asc"), "//*[@numFound='4']", "//result/doc[1]/str[@name='id'][.='a']", "//result/doc[2]/str[@name='id'][.='x']", "//result/doc[3]/str[@name='id'][.='b']",
+          "//result/doc[4]/str[@name='id'][.='c']");
 
       booster.forceElevation = true;
-      assertQ("useConfiguredElevatedOrder=false and forceElevation",
-          req(baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='x']" // force elevated
+      assertQ("useConfiguredElevatedOrder=false and forceElevation", req(baseParams, "sort", "id desc", "useConfiguredElevatedOrder", "false"), "//*[@numFound='4']",
+          "//result/doc[1]/str[@name='id'][.='x']" // force elevated
           , "//result/doc[2]/str[@name='id'][.='a']" // force elevated
-          , "//result/doc[3]/str[@name='id'][.='c']"
-          , "//result/doc[4]/str[@name='id'][.='b']"
-      );
+          , "//result/doc[3]/str[@name='id'][.='c']", "//result/doc[4]/str[@name='id'][.='b']");
 
       //Test exclusive (not to be confused with exclusion)
-      booster.setTopQueryResults(reader, query, false, new String[]{"x", "a"}, new String[]{});
-      assertQ(req(baseParams, "exclusive", "true")
-          , "//*[@numFound='2']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='a']"
-      );
+      booster.setTopQueryResults(reader, query, false, new String[] {"x", "a"}, new String[] {});
+      assertQ(req(baseParams, "exclusive", "true"), "//*[@numFound='2']", "//result/doc[1]/str[@name='id'][.='x']", "//result/doc[2]/str[@name='id'][.='a']");
 
       // Test exclusion
-      booster.setTopQueryResults(reader, query, false, new String[]{"x"}, new String[]{"a"});
-      assertQ(req(baseParams)
-          , "//*[@numFound='3']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='c']"
-          , "//result/doc[3]/str[@name='id'][.='b']"
-      );
-
+      booster.setTopQueryResults(reader, query, false, new String[] {"x"}, new String[] {"a"});
+      assertQ(req(baseParams), "//*[@numFound='3']", "//result/doc[1]/str[@name='id'][.='x']", "//result/doc[2]/str[@name='id'][.='c']", "//result/doc[3]/str[@name='id'][.='b']");
 
       // Test setting ids and excludes from http parameters
 
       booster.clearElevationProviderCache();
-      assertQ("All five should make it", req(baseParams, "elevateIds", "x,y,z", "excludeIds", "b")
-          , "//*[@numFound='5']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='y']"
-          , "//result/doc[3]/str[@name='id'][.='z']"
-          , "//result/doc[4]/str[@name='id'][.='c']"
-          , "//result/doc[5]/str[@name='id'][.='a']"
-      );
+      assertQ("All five should make it", req(baseParams, "elevateIds", "x,y,z", "excludeIds", "b"), "//*[@numFound='5']", "//result/doc[1]/str[@name='id'][.='x']",
+          "//result/doc[2]/str[@name='id'][.='y']", "//result/doc[3]/str[@name='id'][.='z']", "//result/doc[4]/str[@name='id'][.='c']", "//result/doc[5]/str[@name='id'][.='a']");
 
-      assertQ("All four should make it", req(baseParams, "elevateIds", "x,z,y", "excludeIds", "b,c")
-          , "//*[@numFound='4']"
-          , "//result/doc[1]/str[@name='id'][.='x']"
-          , "//result/doc[2]/str[@name='id'][.='z']"
-          , "//result/doc[3]/str[@name='id'][.='y']"
-          , "//result/doc[4]/str[@name='id'][.='a']"
-      );
+      assertQ("All four should make it", req(baseParams, "elevateIds", "x,z,y", "excludeIds", "b,c"), "//*[@numFound='4']", "//result/doc[1]/str[@name='id'][.='x']",
+          "//result/doc[2]/str[@name='id'][.='z']", "//result/doc[3]/str[@name='id'][.='y']", "//result/doc[4]/str[@name='id'][.='a']");
 
     } finally {
       delete();
@@ -705,13 +647,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testElevationReloading() throws Exception {
-    try {
-      init("schema12.xml");
+
+    init("schema12.xml");
+    try (SolrCore core = h.getCore()) {
       String testfile = "data-elevation.xml";
-      File configFile = new File(h.getCore().getDataDir(), testfile);
+      File configFile = new File(core.getDataDir(), testfile);
       writeElevationConfigFile(configFile, "aaa", "A");
 
-      QueryElevationComponent comp = (QueryElevationComponent) h.getCore().getSearchComponent("elevate");
+      QueryElevationComponent comp = (QueryElevationComponent) core.getSearchComponent("elevate");
       NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.CONFIG_FILE, testfile);
       comp.init(args);
@@ -750,7 +693,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       writeElevationConfigFile(configFile, "ccc", "C");
 
       // Without index change, but calling a different method that clears the elevationProviderCache, so we should load a new ElevationProvider.
-      int elevationRuleNumber = comp.loadElevationConfiguration(h.getCore());
+      int elevationRuleNumber = comp.loadElevationConfiguration(core);
       assertEquals(1, elevationRuleNumber);
       try (SolrQueryRequest req = req()) {
         elevationProvider = comp.getElevationProvider(req.getSearcher().getIndexReader(), req.getCore());
@@ -901,24 +844,25 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public void testElevatedIds() throws Exception {
     try (QueryElevationComponent comp = new QueryElevationComponent()) {
       init("schema12.xml");
-      SolrCore core = h.getCore();
+      try (SolrCore core = h.getCore()) {
 
-      NamedList<String> args = new NamedList<>();
-      args.add(QueryElevationComponent.FIELD_TYPE, "text");
-      args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
+        NamedList<String> args = new NamedList<>();
+        args.add(QueryElevationComponent.FIELD_TYPE, "text");
+        args.add(QueryElevationComponent.CONFIG_FILE, "elevate.xml");
 
-      comp.init(args);
-      comp.inform(core);
+        comp.init(args);
+        comp.inform(core);
 
-      SolrQueryRequest req = req();
-      IndexReader reader = req.getSearcher().getIndexReader();
-      QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
-      req.close();
+        SolrQueryRequest req = req();
+        IndexReader reader = req.getSearcher().getIndexReader();
+        QueryElevationComponent.ElevationProvider elevationProvider = comp.getElevationProvider(reader, core);
+        req.close();
 
-      assertEquals(toIdSet("1"), elevationProvider.getElevationForQuery("xxxx").elevatedIds);
-      assertEquals(toIdSet("10", "11", "12"), elevationProvider.getElevationForQuery("bb DD CC vv").elevatedIds);
-      assertEquals(toIdSet("10", "11", "12", "13"), elevationProvider.getElevationForQuery("BB Cc").elevatedIds);
-      assertEquals(toIdSet("10", "11", "12", "14"), elevationProvider.getElevationForQuery("aa bb dd cc aa").elevatedIds);
+        assertEquals(toIdSet("1"), elevationProvider.getElevationForQuery("xxxx").elevatedIds);
+        assertEquals(toIdSet("10", "11", "12"), elevationProvider.getElevationForQuery("bb DD CC vv").elevatedIds);
+        assertEquals(toIdSet("10", "11", "12", "13"), elevationProvider.getElevationForQuery("BB Cc").elevatedIds);
+        assertEquals(toIdSet("10", "11", "12", "14"), elevationProvider.getElevationForQuery("aa bb dd cc aa").elevatedIds);
+      }
     } finally {
       delete();
     }

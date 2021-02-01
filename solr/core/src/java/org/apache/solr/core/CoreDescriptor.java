@@ -186,8 +186,9 @@ public class CoreDescriptor {
 
     originalCoreProperties.setProperty(CORE_NAME, name);
 
+    HashMap sysProperties = new HashMap(System.getProperties());
     name = PropertiesUtil.substituteProperty(checkPropertyIsNotEmpty(name, CORE_NAME),
-                                             containerProperties);
+                                             containerProperties, sysProperties);
 
     coreProperties.putAll(defaultProperties);
     coreProperties.put(CORE_NAME, name);
@@ -203,7 +204,7 @@ public class CoreDescriptor {
 
       if (!requiredProperties.contains(propname))   // Required props are already dealt with
         coreProperties.setProperty(propname,
-            PropertiesUtil.substituteProperty(propvalue, containerProperties));
+            PropertiesUtil.substituteProperty(propvalue, containerProperties, sysProperties));
     }
 
     loadExtraProperties();

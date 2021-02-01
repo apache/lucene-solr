@@ -69,6 +69,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
     SolrException ex = expectThrows(SolrException.class, () -> DocumentBuilder.toDocument( doc, core.getLatestSchema() ));
     assertEquals("should be bad request", 400, ex.code());
+    core.close();
   }
 
   @Test
@@ -80,6 +81,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     doc.addField( "name", null );
     Document out = DocumentBuilder.toDocument( doc, core.getLatestSchema() );
     assertNull( out.get( "name" ) );
+    core.close();
   }
 
   @Test
@@ -103,6 +105,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     // now make sure it is OK
     doc.setField( "weight", "1.34" );
     DocumentBuilder.toDocument( doc, core.getLatestSchema() );
+    core.close();
   }
 
   @Test
@@ -116,6 +119,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     assertNotNull( out.get( "home" ) );//contains the stored value and term vector, if there is one
     assertNotNull( out.getField( "home_0" + FieldType.POLY_FIELD_SEPARATOR + "double") );
     assertNotNull( out.getField( "home_1" + FieldType.POLY_FIELD_SEPARATOR + "double") );
+    core.close();
   }
   
   /**
@@ -297,6 +301,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
     assertEquals(testValue, out.get("title"));
     assertEquals(truncatedValue, out.get("max_chars"));
+    core.close();
   }
 
 }

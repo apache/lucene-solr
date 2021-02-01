@@ -73,7 +73,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 
-    h.getCore().withSearcher(searcher -> {
+    core.withSearcher(searcher -> {
       Collection<Token> tokens = queryConverter.convert("fob");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
@@ -90,7 +90,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
       assertTrue("suggestions is not null and it should be", suggestions == null);
       return null;
     });
-
+    core.close();
   }
 
   @Test
@@ -113,7 +113,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     checker.build(core, null);
 
     Collection<Token> tokens = queryConverter.convert("Solar");
-    h.getCore().withSearcher(searcher -> {
+    core.withSearcher(searcher -> {
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
       assertTrue("result is null and it shouldn't be", result != null);
@@ -132,6 +132,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
       assertTrue("suggestions is not null and it should be", suggestions == null);
       return null;
     });
+    core.close();
   }
 
   /**
@@ -155,7 +156,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     assertTrue(dictName + " is not equal to " + "external", dictName.equals("external") == true);
     checker.build(core, null);
 
-    h.getCore().withSearcher(searcher -> {
+    core.withSearcher(searcher -> {
       Collection<Token> tokens = queryConverter.convert("solar");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
@@ -175,5 +176,6 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
       assertTrue("suggestions size should be 0", suggestions.size()==0);
       return null;
     });
+    core.close();
   }
 }

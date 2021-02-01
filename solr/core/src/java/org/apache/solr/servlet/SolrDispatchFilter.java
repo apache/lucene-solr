@@ -63,6 +63,7 @@ import io.opentracing.tag.Tags;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
 import org.apache.lucene.util.Version;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.ParWork;
@@ -89,7 +90,6 @@ import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.apache.solr.util.tracing.GlobalTracer;
@@ -97,7 +97,6 @@ import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import static org.apache.solr.security.AuditEvent.EventType;
 
@@ -110,8 +109,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static {
-    log.warn("expected pre init of factories {} {} {} {}",
-        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory, SolrJacksonAnnotationInspector.INSTANCE);
+    log.warn("expected pre init of factories {} {} {} {} {} {}",
+        FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory,
+        AnnotatedApi.MAPPER, org.apache.http.conn.util.PublicSuffixMatcherLoader.getDefault());
   }
 
   private volatile StopRunnable stopRunnable;

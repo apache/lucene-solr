@@ -55,13 +55,15 @@ public class ByteBuffersDirectoryFactoryTest extends SolrTestCaseJ4 {
   public void testIndexRetrieve() throws Exception {
     System.setProperty("solr.directoryFactory", "solr.ByteBuffersDirectoryFactory");
     initCore("solrconfig-minimal.xml","schema-minimal.xml");
-    DirectoryFactory factory = h.getCore().getDirectoryFactory();
-    assertTrue("Found: " + factory.getClass().getName(), factory instanceof ByteBuffersDirectoryFactory);
-    for (int i = 0 ; i < 5 ; ++i) {
-      assertU(adoc("id", "" + i, "a_s", "_" + i + "_"));
+    try (SolrCore core = h.getCore()) {
+      DirectoryFactory factory = core.getDirectoryFactory();
+      assertTrue("Found: " + factory.getClass().getName(), factory instanceof ByteBuffersDirectoryFactory);
+      for (int i = 0; i < 5; ++i) {
+        assertU(adoc("id", "" + i, "a_s", "_" + i + "_"));
+      }
+      assertU(commit());
+      assertQ(req("q", "a_s:_0_"), "//result[@numFound = '1']");
     }
-    assertU(commit());
-    assertQ(req("q", "a_s:_0_"), "//result[@numFound = '1']");
     deleteCore();
   }
 

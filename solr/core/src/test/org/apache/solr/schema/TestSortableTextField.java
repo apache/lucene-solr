@@ -53,34 +53,30 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void create() throws Exception {
-    initCore("solrconfig-minimal.xml","schema-sorting-text.xml");
-    
-    // sanity check our fields & types...
+    initCore("solrconfig-minimal.xml", "schema-sorting-text.xml");
+    try (SolrCore core = h.getCore()) {
+      // sanity check our fields & types...
 
-    // these should all use docValues (either explicitly or implicitly)...
-    for (String n : Arrays.asList("keyword_stxt", 
-                                  "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
-           try (SolrCore core = h.getCore()) {
-             FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
-             assertEquals("type " + ft.getTypeName() + " should have docvalues - schema got changed?", true, ft.getNamedPropertyValues(true).get("docValues"));
-           }
-    }
-    for (String n : Arrays.asList("keyword_stxt", "keyword_dv_stxt",
-                                  "whitespace_stxt", "whitespace_nois_stxt",
-                                  "whitespace_f_stxt", "whitespace_l_stxt")) {
-                                  
-      SchemaField sf = h.getCore().getLatestSchema().getField(n);
-      assertTrue("field " + sf.getName() + " should have docvalues - schema got changed?",
-                 sf.hasDocValues()) ;
-    }
+      // these should all use docValues (either explicitly or implicitly)...
+      for (String n : Arrays.asList("keyword_stxt", "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
 
-    { // this field should *NOT* have docValues .. should behave like a plain old TextField
-      try (SolrCore core = h.getCore()) {
+        FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+        assertEquals("type " + ft.getTypeName() + " should have docvalues - schema got changed?", true, ft.getNamedPropertyValues(true).get("docValues"));
+
+      }
+      for (String n : Arrays.asList("keyword_stxt", "keyword_dv_stxt", "whitespace_stxt", "whitespace_nois_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
+
+        SchemaField sf = core.getLatestSchema().getField(n);
+        assertTrue("field " + sf.getName() + " should have docvalues - schema got changed?", sf.hasDocValues());
+      }
+
+      { // this field should *NOT* have docValues .. should behave like a plain old TextField
+
         SchemaField sf = core.getLatestSchema().getField("whitespace_nodv_stxt");
         assertFalse("field " + sf.getName() + " should not have docvalues - schema got changed?", sf.hasDocValues());
+
       }
     }
-    
   }
   
   @Before
@@ -387,7 +383,8 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
    */
   public void testUseDocValuesAsStored() throws Exception {
     ignoreException("when useDocValuesAsStored=true \\(length=");
-    
+    int num_fields_found = 0;
+    List<String> xpaths = new ArrayList<>(42);
     // first things first...
     // unlike most field types, SortableTextField should default to useDocValuesAsStored==false
     // (check a handful that should have the default behavior)
@@ -402,26 +399,20 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
           assertEquals("field " + sf.getName() + " should not default to useDocValuesAsStored", false, sf.useDocValuesAsStored());
         }
       }
-    }
-    
-    // but it should be possible to set useDocValuesAsStored=true explicitly on types...
-    int num_types_found = 0;
-    for (Map.Entry<String,FieldType> entry : h.getCore().getLatestSchema().getFieldTypes().entrySet()) {
-      if (entry.getKey().endsWith("_has_usedvs")) {
-        num_types_found++;
-        FieldType ft = entry.getValue();
-        assertEquals("type " + ft.getTypeName() + " has unexpected useDocValuesAsStored value",
-                     true, ft.useDocValuesAsStored()) ;
-      }
-    }
-    assertEquals("sanity check: wrong number of *_has_usedvs types found -- schema changed?",
-                 2, num_types_found);
 
-    
-    // ...and it should be possible to set/override useDocValuesAsStored=true on fields...
-    int num_fields_found = 0;
-    List<String> xpaths = new ArrayList<>(42);
-    try (SolrCore core = h.getCore()) {
+      // but it should be possible to set useDocValuesAsStored=true explicitly on types...
+      int num_types_found = 0;
+      for (Map.Entry<String,FieldType> entry : core.getLatestSchema().getFieldTypes().entrySet()) {
+        if (entry.getKey().endsWith("_has_usedvs")) {
+          num_types_found++;
+          FieldType ft = entry.getValue();
+          assertEquals("type " + ft.getTypeName() + " has unexpected useDocValuesAsStored value", true, ft.useDocValuesAsStored());
+        }
+      }
+      assertEquals("sanity check: wrong number of *_has_usedvs types found -- schema changed?", 2, num_types_found);
+
+      // ...and it should be possible to set/override useDocValuesAsStored=true on fields...
+
       for (Map.Entry<String,SchemaField> entry : core.getLatestSchema().getFields().entrySet()) {
         if (entry.getKey().endsWith("_usedvs")) {
           num_fields_found++;
@@ -466,6 +457,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
           }
         }
       }
+
     }
     assertEquals("sanity check: wrong number of *_usedvs fields found -- schema changed?",
                  6, num_fields_found);

@@ -52,46 +52,48 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   public void testSetNoCFSMergePolicyConfig() throws Exception {
     final boolean useCompoundFile = random().nextBoolean();
     System.setProperty("testSetNoCFSMergePolicyConfig.useCompoundFile", String.valueOf(useCompoundFile));
-    try {
+
       initCore("solrconfig-mergepolicyfactory-nocfs.xml","schema-minimal.xml");
-      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
+    try (SolrCore core = h.getCore())  {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
       assertEquals(useCompoundFile, iwc.getUseCompoundFile());
 
       TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
                                                  iwc.getMergePolicy());
       assertEquals(0.5D, tieredMP.getNoCFSRatio(), 0.0D);
-    } finally {
-      System.getProperties().remove("testSetNoCFSMergePolicyConfig.useCompoundFile");
     }
   }
 
   public void testDefaultMergePolicyConfig() throws Exception {
     initCore("solrconfig-mergepolicy-defaults.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    assertEquals(false, iwc.getUseCompoundFile());
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
+      assertEquals(false, iwc.getUseCompoundFile());
 
-    TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
-                                               iwc.getMergePolicy());
-    assertEquals(TieredMergePolicy.DEFAULT_NO_CFS_RATIO, tieredMP.getNoCFSRatio(), 0.0D);
+      TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
+      assertEquals(TieredMergePolicy.DEFAULT_NO_CFS_RATIO, tieredMP.getNoCFSRatio(), 0.0D);
 
-    assertCommitSomeNewDocs();
-    assertCompoundSegments(h.getCore(), false);
+      assertCommitSomeNewDocs();
+      assertCompoundSegments(core, false);
+    }
   }
 
   public void testLegacyMergePolicyConfig() throws Exception {
     final boolean expectCFS = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
-    initCore("solrconfig-mergepolicy-legacy.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    assertEquals(expectCFS, iwc.getUseCompoundFile());
+    initCore("solrconfig-mergepolicy-legacy.xml", "schema-minimal.xml");
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
+      assertEquals(expectCFS, iwc.getUseCompoundFile());
 
-    TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
+      TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
 
-    assertEquals(10, tieredMP.getMaxMergeAtOnce());
-    assertEquals(10.0D, tieredMP.getSegmentsPerTier(), 0.0D);
+      assertEquals(10, tieredMP.getMaxMergeAtOnce());
+      assertEquals(10.0D, tieredMP.getSegmentsPerTier(), 0.0D);
 
-    assertCommitSomeNewDocs();
-    assertCompoundSegments(h.getCore(), expectCFS);
+      assertCommitSomeNewDocs();
+      assertCompoundSegments(core, expectCFS);
+    }
   }
   
   public void testTieredMergePolicyConfig() throws Exception {
@@ -99,66 +101,70 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
     initCore("solrconfig-tieredmergepolicyfactory.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    assertEquals(expectCFS, iwc.getUseCompoundFile());
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
+      assertEquals(expectCFS, iwc.getUseCompoundFile());
 
+      TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
 
-    TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
-                                               iwc.getMergePolicy());
+      // set by legacy <mergeFactor> setting
+      assertEquals(7, tieredMP.getMaxMergeAtOnce());
 
-    // set by legacy <mergeFactor> setting
-    assertEquals(7, tieredMP.getMaxMergeAtOnce());
-    
-    // mp-specific setters
-    assertEquals(19, tieredMP.getMaxMergeAtOnceExplicit());
-    assertEquals(0.1D, tieredMP.getNoCFSRatio(), 0.0D);
-    // make sure we overrode segmentsPerTier 
-    // (split from maxMergeAtOnce out of mergeFactor)
-    assertEquals(9D, tieredMP.getSegmentsPerTier(), 0.001);
-    
-    assertCommitSomeNewDocs();
-    // even though we have a single segment (which is 100% of the size of 
-    // the index which is higher then our 0.6D threshold) the
-    // compound ratio doesn't matter because the segment was never merged
-    assertCompoundSegments(h.getCore(), expectCFS);
+      // mp-specific setters
+      assertEquals(19, tieredMP.getMaxMergeAtOnceExplicit());
+      assertEquals(0.1D, tieredMP.getNoCFSRatio(), 0.0D);
+      // make sure we overrode segmentsPerTier
+      // (split from maxMergeAtOnce out of mergeFactor)
+      assertEquals(9D, tieredMP.getSegmentsPerTier(), 0.001);
 
-    assertCommitSomeNewDocs();
-    assertNumSegments(h.getCore(), 2);
-    assertCompoundSegments(h.getCore(), expectCFS);
+      assertCommitSomeNewDocs();
+      // even though we have a single segment (which is 100% of the size of
+      // the index which is higher then our 0.6D threshold) the
+      // compound ratio doesn't matter because the segment was never merged
+      assertCompoundSegments(core, expectCFS);
 
-    assertU(optimize("maxSegments", "1"));
-    assertNumSegments(h.getCore(), 1);
-    // we've now forced a merge, and the MP ratio should be in play
-    assertCompoundSegments(h.getCore(), false);
+      assertCommitSomeNewDocs();
+      assertNumSegments(core, 2);
+      assertCompoundSegments(core, expectCFS);
+
+      assertU(optimize("maxSegments", "1"));
+      assertNumSegments(core, 1);
+      // we've now forced a merge, and the MP ratio should be in play
+      assertCompoundSegments(core, false);
+    }
   }
 
   public void testNoMergePolicyFactoryConfig() throws Exception {
-    initCore("solrconfig-nomergepolicyfactory.xml","schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    NoMergePolicy mergePolicy = assertAndCast(NoMergePolicy.class,
-        iwc.getMergePolicy());
+    initCore("solrconfig-nomergepolicyfactory.xml", "schema-minimal.xml");
+    NoMergePolicy mergePolicy;
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
+      mergePolicy = assertAndCast(NoMergePolicy.class, iwc.getMergePolicy());
 
-    assertCommitSomeNewDocs();
+      assertCommitSomeNewDocs();
 
-    assertCommitSomeNewDocs();
-    assertNumSegments(h.getCore(), 2);
+      assertCommitSomeNewDocs();
+      assertNumSegments(core, 2);
 
-    assertU(optimize());
-    assertNumSegments(h.getCore(), 2);
+      assertU(optimize());
+      assertNumSegments(core, 2);
+    }
     deleteCore();
-    initCore("solrconfig-nomergepolicyfactory.xml","schema-minimal.xml");
-    iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    assertEquals(mergePolicy, iwc.getMergePolicy());
 
-    UpdateHandler updater = h.getCore().getUpdateHandler();
-    SolrQueryRequest req = req();
-    CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, true);
-    req.close();
-    cmtCmd.maxOptimizeSegments = -1;
-    expectThrows(IllegalArgumentException.class, () -> {
-      updater.commit(cmtCmd);
-    });
+    initCore("solrconfig-nomergepolicyfactory.xml", "schema-minimal.xml");
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
+      assertEquals(mergePolicy, iwc.getMergePolicy());
 
+      UpdateHandler updater = core.getUpdateHandler();
+      SolrQueryRequest req = req();
+      CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, true);
+      req.close();
+      cmtCmd.maxOptimizeSegments = -1;
+      expectThrows(IllegalArgumentException.class, () -> {
+        updater.commit(cmtCmd);
+      });
+    }
   }
 
   public void testLogMergePolicyFactoryConfig() throws Exception {
@@ -178,18 +184,19 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       Class<? extends LogMergePolicy> mpClass) throws Exception {
 
     initCore(solrConfigFileName, "schema-minimal.xml");
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
 
-    // verify some props set to -1 get lucene internal defaults
-    assertEquals(-1, solrConfig.indexConfig.maxBufferedDocs);
-    assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, 
-                 iwc.getMaxBufferedDocs());
-    assertEquals(100, solrConfig.indexConfig.ramBufferSizeMB, 0.0D);
+      // verify some props set to -1 get lucene internal defaults
+      assertEquals(-1, solrConfig.indexConfig.maxBufferedDocs);
+      assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, iwc.getMaxBufferedDocs());
+      assertEquals(100, solrConfig.indexConfig.ramBufferSizeMB, 0.0D);
 
-    LogMergePolicy logMP = assertAndCast(mpClass, iwc.getMergePolicy());
+      LogMergePolicy logMP = assertAndCast(mpClass, iwc.getMergePolicy());
 
-    assertEquals(11, logMP.getMergeFactor());
-    assertEquals(456, logMP.getMaxMergeDocs());
+      assertEquals(11, logMP.getMergeFactor());
+      assertEquals(456, logMP.getMaxMergeDocs());
+    }
   }
 
   /**

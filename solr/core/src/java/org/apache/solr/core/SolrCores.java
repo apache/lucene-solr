@@ -223,7 +223,7 @@ class SolrCores implements Closeable {
 //  }
 
   protected void swap(String n0, String n1) {
-    if (isClosed()) {
+    if (isClosed() || container.isShutDown()) {
       throw new AlreadyClosedException();
     }
     synchronized (cores) {
@@ -258,8 +258,8 @@ class SolrCores implements Closeable {
 
   }
 
-  private boolean isClosed() {
-    return closed || container.isShutDown();
+  boolean isClosed() {
+    return closed;
   }
 
   protected SolrCore remove(String name) {

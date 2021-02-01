@@ -112,14 +112,13 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   @Test
   public void testCopyFieldFunctionality() 
     {
-      SolrCore core = h.getCore();
       assertU(adoc("id", "5", "title", "test copy field", "text_en", "this is a simple test of the copy field functionality"));
       assertU(commit());
       
       Map<String,String> args = new HashMap<>();
       args.put( CommonParams.Q, "text_en:simple" );
       args.put( "indent", "true" );
-      SolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      SolrQueryRequest req = new LocalSolrQueryRequest( h.getCore(), new MapSolrParams( args), true );
       
       assertQ("Make sure they got in", req
               ,"//*[@numFound='1']"
@@ -129,8 +128,8 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       args = new HashMap<>();
       args.put( CommonParams.Q, "highlight:simple" );
       args.put( "indent", "true" );
-      core = h.getCore();
-      req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      SolrCore core = h.getCore();
+      req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
       assertQ("dynamic source", req
               ,"//*[@numFound='1']"
               ,"//result/doc[1]/str[@name='id'][.='5']"
@@ -141,7 +140,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       args.put( CommonParams.Q, "text_en:functionality" );
       args.put( "indent", "true" );
       core = h.getCore();
-      req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
       assertQ("Make sure they got in", req
               ,"//*[@numFound='1']");
       
@@ -149,7 +148,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
       args.put( CommonParams.Q, "highlight:functionality" );
       args.put( "indent", "true" );
       core = h.getCore();
-      req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+      req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
       assertQ("dynamic source", req
               ,"//*[@numFound='0']");
     }
@@ -244,19 +243,16 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   }
 
   public void testCatchAllCopyField() {
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    core.close();
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
 
-    assertNull("'*' should not be (or match) a dynamic field", 
-               schema.getDynamicPattern("*"));
-    
-    assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
-    assertU(commit());
-    for (String q : new String[] {"5", "10-1839ACX-93", "AAM46" }) {
-      assertQ(req("q","catchall_t:" + q)
-              ,"//*[@numFound='1']"
-              ,"//result/doc[1]/str[@name='id'][.='5']");
+      assertNull("'*' should not be (or match) a dynamic field", schema.getDynamicPattern("*"));
+
+      assertU(adoc("id", "5", "sku1", "10-1839ACX-93", "testing123_s", "AAM46"));
+      assertU(commit());
+      for (String q : new String[] {"5", "10-1839ACX-93", "AAM46"}) {
+        assertQ(req("q", "catchall_t:" + q), "//*[@numFound='1']", "//result/doc[1]/str[@name='id'][.='5']");
+      }
     }
   }
 }

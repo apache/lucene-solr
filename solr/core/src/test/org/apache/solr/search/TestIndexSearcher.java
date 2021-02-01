@@ -138,7 +138,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     int baseRefCount = r3.getRefCount();
     assertEquals(1, baseRefCount);
 
-    Map<String, Metric> metrics = h.getCore().getCoreMetricManager().getRegistry().getMetrics();
+    SolrCore core = h.getCore();
+    Map<String, Metric> metrics = core.getCoreMetricManager().getRegistry().getMetrics();
+    core.close();
     Gauge<Date> g = (Gauge<Date>)metrics.get("SEARCHER.searcher.registeredAt");
     Date sr3SearcherRegAt = g.getValue();
     assertU(commit()); // nothing has changed
@@ -229,13 +231,14 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   private void createCoreAndValidateListeners(int numTimesCalled, int numTimesCalledFirstSearcher,
       int numTimesCalledAfterGetSearcher, int numTimesCalledFirstSearcherAfterGetSearcher) throws Exception {
     CoreContainer cores = h.getCoreContainer();
-    CoreDescriptor cd = h.getCore().getCoreDescriptor();
+
     SolrCore newCore = null;
     // reset counters
     MockSearcherListener.numberOfTimesCalled = new AtomicInteger();
     MockSearcherListener.numberOfTimesCalledFirstSearcher = new AtomicInteger();
-    
-    try {
+
+    try (SolrCore core = h.getCore()) {
+      CoreDescriptor cd = core.getCoreDescriptor();
       // Create a new core, this should call all the firstSearcherListeners
       newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"), false);
 
@@ -243,22 +246,22 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       assertNotNull(newCore.getSearchComponent("mock"));
       assertEquals(MockSearchComponent.class, newCore.getSearchComponent("mock").getClass());
       assertFalse(newCore.getSolrConfig().useColdSearcher);
-      
+
       doQuery(newCore);
-      
+
       assertEquals(numTimesCalled, MockSearcherListener.numberOfTimesCalled.get());
       assertEquals(numTimesCalledFirstSearcher, MockSearcherListener.numberOfTimesCalledFirstSearcher.get());
-      
+
       addDummyDoc(newCore);
-      
+
       // Open a new searcher, this should call the newSearcherListeners
       Future<?>[] future = new Future[1];
       newCore.getSearcher(true, false, future);
       future[0].get();
-      
+
       assertEquals(numTimesCalledAfterGetSearcher, MockSearcherListener.numberOfTimesCalled.get());
       assertEquals(numTimesCalledFirstSearcherAfterGetSearcher, MockSearcherListener.numberOfTimesCalledFirstSearcher.get());
-      
+
     } finally {
       if (newCore != null) {
         cores.unload("core1");
@@ -283,10 +286,11 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     SlowSearcherListener.latch = new CountDownLatch(1);
     
     CoreContainer cores = h.getCoreContainer();
-    CoreDescriptor cd = h.getCore().getCoreDescriptor();
+
     final SolrCore newCore;
     boolean coreCreated = false;
-    try {
+    try (SolrCore core = h.getCore()) {
+      CoreDescriptor cd = core.getCoreDescriptor();
       // Create a new core, this should call all the firstSearcherListeners
       newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"), false);
       coreCreated = true;
@@ -345,23 +349,23 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     final AtomicBoolean querySucceeded = new AtomicBoolean(false);
     SlowSearcherListener.numberOfTimesCalled = new AtomicInteger(0);
     SlowSearcherListener.latch = new CountDownLatch(1);
-    
-    
+
     CoreContainer cores = h.getCoreContainer();
-    CoreDescriptor cd = h.getCore().getCoreDescriptor();
+
     final SolrCore newCore;
     boolean coreCreated = false;
-    try {
+    try (SolrCore core = h.getCore()) {
+      CoreDescriptor cd = core.getCoreDescriptor();
       System.setProperty("tests.solr.useColdSearcher", "true");
       // Create a new core, this should call all the firstSearcherListeners
       newCore = cores.create("core1", cd.getInstanceDir(), ImmutableMap.of("config", "solrconfig-searcher-listeners1.xml"), false);
       coreCreated = true;
-      
+
       //validate that the new core was created with the correct solrconfig
       assertNotNull(newCore.getSearchComponent("mock"));
       assertEquals(MockSearchComponent.class, newCore.getSearchComponent("mock").getClass());
       assertTrue(newCore.getSolrConfig().useColdSearcher);
-      
+
       Thread t = new Thread() {
         public void run() {
           try {
@@ -370,10 +374,12 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
-        };
+        }
+
+        ;
       };
       t.start();
-      
+
       // validate that the query runs before the searcher warmer finishes
       for (int i = 0; i <= 1000; i++) {
         if (querySucceeded.get()) {
@@ -384,16 +390,16 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
         }
         Thread.sleep(10);
       }
-      
+
       assertEquals(0, SlowSearcherListener.numberOfTimesCalled.get());
-      
+
     } finally {
       System.getProperties().remove("tests.solr.useColdSearcher");
       if (coreCreated) {
         SlowSearcherListener.latch.countDown();
         cores.unload("core1");
       }
-      
+
     }
   }
 

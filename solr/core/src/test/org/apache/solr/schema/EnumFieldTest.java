@@ -25,6 +25,7 @@ import java.util.regex.Pattern;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrQueryParser;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,7 +55,9 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
         System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
-    IndexSchema schema = h.getCore().getLatestSchema();
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
 
     SchemaField enumField = schema.getField(FIELD_NAME);
     assertNotNull(enumField);
@@ -463,8 +466,9 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
     clearIndex();
-
-    SchemaField sf = h.getCore().getLatestSchema().getField(FIELD_NAME);
+    SolrCore core = h.getCore();
+    SchemaField sf = core.getLatestSchema().getField(FIELD_NAME);
+    core.close();
     Set<String> enumStrs = ((AbstractEnumField)sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
     assertTrue(enumStrs.size() > SolrQueryParser.TERMS_QUERY_THRESHOLD);
 
@@ -512,8 +516,9 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
             && System.getProperty("solr.tests.numeric.dv").equals("false"));
 
     clearIndex();
-
-    SchemaField sf = h.getCore().getLatestSchema().getField(MV_FIELD_NAME);
+    SolrCore core = h.getCore();
+    SchemaField sf = core.getLatestSchema().getField(MV_FIELD_NAME);
+    core.close();
     Set<String> enumStrs = ((AbstractEnumField)sf.getType()).getEnumMapping().enumStringToIntMap.keySet();
     assertTrue(enumStrs.size() > SolrQueryParser.TERMS_QUERY_THRESHOLD);
 

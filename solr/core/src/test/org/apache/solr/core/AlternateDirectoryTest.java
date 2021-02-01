@@ -43,11 +43,11 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   }
   
   public void testAltReaderUsed() throws Exception {
-    IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
-    assertNotNull("Factory is null", readerFactory);
-    assertEquals("readerFactory is wrong class",
-                 AlternateDirectoryTest.TestIndexReaderFactory.class.getName(), 
-                 readerFactory.getClass().getName());
+    try (SolrCore core = h.getCore()) {
+      IndexReaderFactory readerFactory = core.getIndexReaderFactory();
+      assertNotNull("Factory is null", readerFactory);
+      assertEquals("readerFactory is wrong class", AlternateDirectoryTest.TestIndexReaderFactory.class.getName(), readerFactory.getClass().getName());
+    }
   }
 
   static public class TestFSDirectoryFactory extends StandardDirectoryFactory {

@@ -813,14 +813,15 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private void indexSolrInputDocumentsDirectly(SolrInputDocument ... docs) throws IOException {
-    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
     AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
     for (SolrInputDocument doc: docs) {
       updateCmd.solrDoc = doc;
-      h.getCore().getUpdateHandler().addDoc(updateCmd);
+      coreReq.getCore().getUpdateHandler().addDoc(updateCmd);
       updateCmd.clear();
     }
     assertU(commit());
+    coreReq.close();
   }
 
   /**

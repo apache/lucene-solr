@@ -35,22 +35,25 @@ public class TestSolrIndexConfig extends SolrTestCaseJ4 {
   }
 
   public void testLiveWriter() throws Exception {
-    SolrCore core = h.getCore();
-    RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
-    try {
-      checkIndexWriterConfig(iw.get().getConfig());
-    } finally {
-      if (null != iw) iw.decref();
+    try (SolrCore core = h.getCore()) {
+      RefCounted<IndexWriter> iw = core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+      try {
+        checkIndexWriterConfig(iw.get().getConfig());
+      } finally {
+        if (null != iw) iw.decref();
+      }
     }
   }
 
   
   public void testIndexConfigParsing() throws Exception {
-    IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
-    try {
-      checkIndexWriterConfig(iwc);
-    } finally {
-      iwc.getInfoStream().close();
+    try (SolrCore core = h.getCore()) {
+      IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
+      try {
+        checkIndexWriterConfig(iwc);
+      } finally {
+        iwc.getInfoStream().close();
+      }
     }
   }
 

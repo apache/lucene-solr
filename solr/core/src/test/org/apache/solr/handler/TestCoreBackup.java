@@ -80,7 +80,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
 
     // even w/o a user sending any data, the SolrCore initialiation logic should have automatically created
     // an "empty" commit point that can be backed up...
-    final IndexCommit empty = h.getCore().getDeletionPolicy().getLatestCommit();
+    SolrCore core = h.getCore();
+    final IndexCommit empty = core.getDeletionPolicy().getLatestCommit();
     assertNotNull(empty);
     
     // white box sanity check that the commit point of the "reader" available from SolrIndexSearcher
@@ -88,7 +89,9 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     // 
     // this is important to ensure that backup/snapshot behavior is consistent with user expection
     // when using typical commit + openSearcher
-    assertEquals(empty, h.getCore().withSearcher(s -> s.getIndexReader().getIndexCommit()));
+    assertEquals(empty, core.withSearcher(s -> s.getIndexReader().getIndexCommit()));
+
+    core.close();
 
     assertEquals(1L, empty.getGeneration());
     assertNotNull(empty.getSegmentsFileName());
@@ -188,8 +191,10 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("q", "id:99"), "//result[@numFound='1']");
     assertQ(req("q", "*:*"), "//result[@numFound='1']");
-    
-    final IndexCommit oneDocCommit = h.getCore().getDeletionPolicy().getLatestCommit();
+
+    SolrCore core = h.getCore();
+    final IndexCommit oneDocCommit = core.getDeletionPolicy().getLatestCommit();
+    core.close();
     assertNotNull(oneDocCommit);
     final String oneDocSegmentFile = oneDocCommit.getSegmentsFileName();
   
@@ -308,7 +313,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*"), "//result[@numFound='0']");
     
     // sanity check what the searcher/reader of this empty index report about current commit
-    final IndexCommit empty = h.getCore().withSearcher(s -> {
+    SolrCore core = h.getCore();
+    final IndexCommit empty = core.withSearcher(s -> {
         // sanity check we are empty...
         assertEquals(0L, (long) s.getIndexReader().numDocs());
         
@@ -317,6 +323,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         assertEquals(EXPECTED_GEN_OF_EMPTY_INDEX, (long) commit.getGeneration());
         return commit;
       });
+    core.close();
 
     // now let's add & soft commit 1 doc...
     assertU(adoc("id", "42"));
@@ -325,9 +332,9 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     // verify it's "searchable" ...
     assertQ(req("q", "id:42"), "//result[@numFound='1']");
 
-    try (SolrCore core = h.getCore()) {
+    try (SolrCore core2 = h.getCore()) {
       // sanity check what the searcher/reader of this empty index report about current commit
-      IndexCommit oneDoc = core.withSearcher(s -> {
+      IndexCommit oneDoc = core2.withSearcher(s -> {
         // sanity check this really is the searcher/reader that has the new doc...
         assertEquals(1L, (long) s.getIndexReader().numDocs());
 

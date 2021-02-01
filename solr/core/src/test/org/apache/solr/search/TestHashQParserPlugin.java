@@ -78,7 +78,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("partitionKeys", "a_i,a_s,a_i,a_s,a_i");
     params.add("wt", "xml");
     ModifiableSolrParams finalParams = params;
-    expectThrows(SolrException.class, () -> h.query(req(finalParams)));
+    expectThrows(SolrException.class, () -> query(req(finalParams)));
   }
 
   @Test
@@ -89,7 +89,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
     ModifiableSolrParams finalParams = params;
-    expectThrows(SolrException.class, () -> h.query(req(finalParams)));
+    expectThrows(SolrException.class, () -> query(req(finalParams)));
   }
 
   @Test
@@ -107,7 +107,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
     params.add("partitionKeys", "a_s");
     params.add("wt", "xml");
-    String response = h.query(req(params));
+    String response = query(req(params));
     try (SolrCore core = h.getCore()) {
       h.validateXPath(core.getResourceLoader(), response, "//*[@numFound='4']");
     }
@@ -118,7 +118,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
-    response = h.query(req(params));
+    response = query(req(params));
     try (SolrCore core = h.getCore()) {
       h.validateXPath(core.getResourceLoader(), response, "//*[@numFound='4']");
     }
@@ -156,7 +156,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows","50");
     params.add("wt", "xml");
     HashSet set1 = new HashSet();
-    String response = h.query(req(params));
+    String response = query(req(params));
 
     Iterator<String> it = set.iterator();
 
@@ -177,7 +177,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("rows","50");
     params.add("wt", "xml");
     HashSet set2 = new HashSet();
-    response = h.query(req(params));
+    response = query(req(params));
 
     it = set.iterator();
 

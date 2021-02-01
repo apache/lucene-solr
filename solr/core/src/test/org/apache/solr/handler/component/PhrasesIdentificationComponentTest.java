@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.PhrasesIdentificationComponent.Phrase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -75,7 +76,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   public void testWhiteBoxPhraseParsingLongInput() throws Exception {
-    final SchemaField field = h.getCore().getLatestSchema().getField("multigrams_body");
+    SolrCore core = h.getCore();
+    final SchemaField field = core.getLatestSchema().getField("multigrams_body");
+    core.close();
     assertNotNull(field);
     final List<Phrase> phrases = Phrase.extractPhrases
       (" did  a Quick    brown FOX perniciously jump over the lAZy dog", field, 3, 7);
@@ -167,7 +170,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     for (Map.Entry<String,Integer> entry : fields.entrySet()) {
       try {
         final int maxQ = entry.getValue();
-        final SchemaField field = h.getCore().getLatestSchema().getField(entry.getKey());
+        SolrCore core = h.getCore();
+        final SchemaField field = core.getLatestSchema().getField(entry.getKey());
+        core.close();
         assertNotNull(field);
         
         // empty input shouldn't break anything
@@ -302,7 +307,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   public void testWhiteboxStats() throws Exception {
-    final SchemaField analysisField = h.getCore().getLatestSchema().getField("multigrams_body");
+    SolrCore core = h.getCore();
+    final SchemaField analysisField = core.getLatestSchema().getField("multigrams_body");
+    core.close();
     assertNotNull(analysisField);
     final String input = "BROWN fox lAzY  dog xxxyyyzzz";
 
@@ -382,7 +389,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
   
   public void testWhiteboxScores() throws Exception {
-    final SchemaField analysisField = h.getCore().getLatestSchema().getField("multigrams_body");
+    SolrCore core = h.getCore();
+    final SchemaField analysisField = core.getLatestSchema().getField("multigrams_body");
+    core.close();
     assertNotNull(analysisField);
     final Map<String,Double> fieldWeights = new TreeMap<>();
     fieldWeights.put("multigrams_title", 1.0D);
@@ -460,7 +469,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     
     { // If our analysisField uses all terms,
       // be we also generate scores from a field that filters stopwords...
-      final SchemaField analysisField = h.getCore().getLatestSchema().getField("multigrams_title");
+      SolrCore core = h.getCore();
+      final SchemaField analysisField = core.getLatestSchema().getField("multigrams_title");
+      core.close();
       assertNotNull(analysisField);
       
       final List<Phrase> phrases = Phrase.extractPhrases(input, analysisField, 3, 7);
@@ -495,7 +506,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       //
       // (NOTE: the parser will still generate _some_ candidate phrases spaning the stop word position,
       // but not ones that start with the stopword)
-      final SchemaField analysisField = h.getCore().getLatestSchema().getField("multigrams_title_stop");
+      SolrCore core = h.getCore();
+      final SchemaField analysisField = core.getLatestSchema().getField("multigrams_title_stop");
+      core.close();
       assertNotNull(analysisField);
       
       final List<Phrase> phrases = Phrase.extractPhrases(input, analysisField, 3, 7);
@@ -565,7 +578,9 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
   
   public void testMaxShingleSizeHelper() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
     
     assertEquals(3, PhrasesIdentificationComponent.getMaxShingleSize
                  (schema.getFieldTypeByName("multigrams_3_7").getIndexAnalyzer()));

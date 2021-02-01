@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -103,21 +104,23 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   
   @Test
   public void testValidSimple() {
-    PreAnalyzedField paf = new PreAnalyzedField();
-    // use Simple format
-    HashMap<String,String> args = new HashMap<>();
-    args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
-    paf.init(h.getCore().getLatestSchema(), args);
-    PreAnalyzedParser parser = new SimplePreAnalyzedParser();
-    for (int i = 0; i < valid.length; i++) {
-      String s = valid[i];
-      try {
-        Field f = (Field)paf.fromString(field, s);
-        //System.out.println(" - toString: '" + sb.toString() + "'");
-        assertEquals(validParsed[i], parser.toFormattedString(f));
-      } catch (Exception e) {
-        log.error("", e);
-        fail("Should pass: '" + s + "', exception: " + e);
+    try (SolrCore core = h.getCore()) {
+      PreAnalyzedField paf = new PreAnalyzedField();
+      // use Simple format
+      HashMap<String,String> args = new HashMap<>();
+      args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
+      paf.init(core.getLatestSchema(), args);
+      PreAnalyzedParser parser = new SimplePreAnalyzedParser();
+      for (int i = 0; i < valid.length; i++) {
+        String s = valid[i];
+        try {
+          Field f = (Field) paf.fromString(field, s);
+          //System.out.println(" - toString: '" + sb.toString() + "'");
+          assertEquals(validParsed[i], parser.toFormattedString(f));
+        } catch (Exception e) {
+          log.error("", e);
+          fail("Should pass: '" + s + "', exception: " + e);
+        }
       }
     }
   }
@@ -182,45 +185,49 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInvalidSimple() {
-    PreAnalyzedField paf = new PreAnalyzedField();
-    paf.init(h.getCore().getLatestSchema(), Collections.<String,String>emptyMap());
-    for (String s : invalidSimple) {
-      try {
-        paf.fromString(field, s);
-        fail("should fail: '" + s + "'");
-      } catch (Exception e) {
-        //
+    try (SolrCore core = h.getCore()) {
+      PreAnalyzedField paf = new PreAnalyzedField();
+      paf.init(core.getLatestSchema(), Collections.<String,String>emptyMap());
+      for (String s : invalidSimple) {
+        try {
+          paf.fromString(field, s);
+          fail("should fail: '" + s + "'");
+        } catch (Exception e) {
+          //
+        }
       }
     }
   }
 
   public void testInvalidJson() throws Exception {
-    PreAnalyzedField paf = new PreAnalyzedField();
-    paf.init(h.getCore().getLatestSchema(), Collections.emptyMap());
-    Analyzer preAnalyzer = paf.getIndexAnalyzer();
-    for (String s: invalidJson) {
-      TokenStream stream = null;
-      try {
-        stream = preAnalyzer.tokenStream("dummy", s);
-        stream.reset(); // exception should be triggered here.
-        fail("should fail: '" + s + "'");
-      } catch (Exception e) {
-        // expected
-      } finally {
-        if (stream != null) {
-          stream.close();
+    try (SolrCore core = h.getCore()) {
+      PreAnalyzedField paf = new PreAnalyzedField();
+      paf.init(core.getLatestSchema(), Collections.emptyMap());
+      Analyzer preAnalyzer = paf.getIndexAnalyzer();
+      for (String s : invalidJson) {
+        TokenStream stream = null;
+        try {
+          stream = preAnalyzer.tokenStream("dummy", s);
+          stream.reset(); // exception should be triggered here.
+          fail("should fail: '" + s + "'");
+        } catch (Exception e) {
+          // expected
+        } finally {
+          if (stream != null) {
+            stream.close();
+          }
         }
       }
+      // make sure the analyzer can now handle properly formatted input
+      TokenStream stream = preAnalyzer.tokenStream("dummy", validJson);
+      CharTermAttribute termAttr = stream.addAttribute(CharTermAttribute.class);
+      stream.reset();
+      while (stream.incrementToken()) {
+        assertFalse("zero-length token", termAttr.length() == 0);
+      }
+      stream.end();
+      stream.close();
     }
-    // make sure the analyzer can now handle properly formatted input
-    TokenStream stream = preAnalyzer.tokenStream("dummy", validJson);
-    CharTermAttribute termAttr = stream.addAttribute(CharTermAttribute.class);
-    stream.reset();
-    while (stream.incrementToken()) {
-      assertFalse("zero-length token", termAttr.length() == 0);
-    }
-    stream.end();
-    stream.close();
   }
   
   // "1 =test ąćęłńóśźż \u0001=one,i=22,s=123,e=128,p=deadbeef,y=word two,i=1,s=5,e=8,y=word three,i=1,s=20,e=22,y=foobar"
@@ -233,26 +240,28 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
   
   @Test
   public void testParsers() throws Exception {
-    PreAnalyzedField paf = new PreAnalyzedField();
-    // use Simple format
-    HashMap<String,String> args = new HashMap<>();
-    args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
-    paf.init(h.getCore().getLatestSchema(), args);
-    {
-      Field f = (Field)paf.fromString(field, valid[0]);
-    }
+    try (SolrCore core = h.getCore()) {
+      PreAnalyzedField paf = new PreAnalyzedField();
+      // use Simple format
+      HashMap<String,String> args = new HashMap<>();
+      args.put(PreAnalyzedField.PARSER_IMPL, SimplePreAnalyzedParser.class.getName());
+      paf.init(core.getLatestSchema(), args);
+      {
+        Field f = (Field) paf.fromString(field, valid[0]);
+      }
 
-    // use JSON format
-    args.put(PreAnalyzedField.PARSER_IMPL, JsonPreAnalyzedParser.class.getName());
-    paf.init(h.getCore().getLatestSchema(), args);
-    expectThrows(Exception.class, () -> paf.fromString(field, valid[0]));
+      // use JSON format
+      args.put(PreAnalyzedField.PARSER_IMPL, JsonPreAnalyzedParser.class.getName());
+      paf.init(core.getLatestSchema(), args);
+      expectThrows(Exception.class, () -> paf.fromString(field, valid[0]));
 
-    byte[] deadbeef = new byte[]{(byte)0xd, (byte)0xe, (byte)0xa, (byte)0xd, (byte)0xb, (byte)0xe, (byte)0xe, (byte)0xf};
-    PreAnalyzedParser parser = new JsonPreAnalyzedParser();
+      byte[] deadbeef = new byte[] {(byte) 0xd, (byte) 0xe, (byte) 0xa, (byte) 0xd, (byte) 0xb, (byte) 0xe, (byte) 0xe, (byte) 0xf};
+      PreAnalyzedParser parser = new JsonPreAnalyzedParser();
 
-    {
-      Field f = (Field)paf.fromString(field, jsonValid);
-      assertEquals(jsonValid, parser.toFormattedString(f));
+      {
+        Field f = (Field) paf.fromString(field, jsonValid);
+        assertEquals(jsonValid, parser.toFormattedString(f));
+      }
     }
   }
 }

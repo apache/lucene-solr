@@ -46,6 +46,7 @@ public class SOLR749Test extends SolrTestCaseJ4 {
     ValueSourceParser vsp = core.getValueSourceParser("boost");
     assertTrue("vsp is null and it shouldn't be", vsp != null);
     assertTrue("vsp is not an instanceof " + DummyValueSourceParser.class, vsp instanceof DummyValueSourceParser);
+    core.close();
   }
 
   public void testHowManyDocsHaveBoostFunctionComputed() throws Exception {

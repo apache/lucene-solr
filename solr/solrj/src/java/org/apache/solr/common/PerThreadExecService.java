@@ -138,6 +138,7 @@ public class PerThreadExecService extends AbstractExecutorService {
         try {
           available.acquire();
         } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
           running.decrementAndGet();
           throw new RejectedExecutionException("Interrupted");
         }
@@ -157,17 +158,17 @@ public class PerThreadExecService extends AbstractExecutorService {
       return;
     }
 
-    try {
-      available.acquire();
-    } catch (InterruptedException e) {
-      running.decrementAndGet();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-
-
     if (!noCallerRunsAllowed && checkLoad()) {
       runIt(runnable, true, false);
       return;
+    }
+
+    try {
+      available.acquire();
+    } catch (InterruptedException e) {
+      ParWork.propagateInterrupt(e);
+      running.decrementAndGet();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
     Runnable finalRunnable = runnable;

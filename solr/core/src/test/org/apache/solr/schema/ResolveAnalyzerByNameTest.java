@@ -31,7 +31,7 @@ import org.junit.Test;
  *
  */
 
-public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
+public class                ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -42,6 +42,7 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
   public void testSchemaLoadingSimpleAnalyzer() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     assertTrue( schema.getFieldTypes().containsKey("text_ws") );
     SimpleOrderedMap<Object> analyzerProps =
         (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text_ws")
@@ -56,6 +57,7 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
   public void testSchemaLoadingComplexAnalyzer() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     assertTrue( schema.getFieldTypes().containsKey("text") );
 
     SimpleOrderedMap<Object> indexAnalyzerProps =
@@ -78,6 +80,7 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
   public void testSchemaLoadingAnalyzerWithCharFilters() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     assertTrue( schema.getFieldTypes().containsKey("charfilthtmlmap") );
     SimpleOrderedMap<Object> analyzerProps =
         (SimpleOrderedMap<Object>)schema.getFieldTypeByName("charfilthtmlmap")

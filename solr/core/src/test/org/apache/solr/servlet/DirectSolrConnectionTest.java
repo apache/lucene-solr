@@ -20,12 +20,15 @@ import java.net.URLEncoder;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
 
 
 public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
-  
+  private SolrCore core;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
@@ -38,7 +41,15 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception
   {
     super.setUp();
-    direct = new DirectSolrConnection(h.getCore());
+    core = h.getCore();
+    direct = new DirectSolrConnection(core);
+  }
+
+  @Override
+  public void tearDown() throws Exception
+  {
+    super.tearDown();
+    IOUtils.closeQuietly(core);
   }
 
   // Check that a request gets back the echoParams call

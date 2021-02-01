@@ -32,32 +32,32 @@ public class TestSimpleTextCodec extends SolrTestCaseJ4 {
   }
 
   public void test() throws Exception {
-    SolrConfig config = h.getCore().getSolrConfig();
-    String codecFactory =  config.get("codecFactory/@class");
-    assertEquals("Unexpected solrconfig codec factory", "solr.SimpleTextCodecFactory", codecFactory);
+    try (SolrCore core = h.getCore()) {
+      SolrConfig config = core.getSolrConfig();
+      String codecFactory = config.get("codecFactory/@class");
+      assertEquals("Unexpected solrconfig codec factory", "solr.SimpleTextCodecFactory", codecFactory);
 
-    assertEquals("Unexpected core codec", "SimpleText", h.getCore().getCodec().getName());
+      assertEquals("Unexpected core codec", "SimpleText", core.getCodec().getName());
 
-    RefCounted<IndexWriter> writerRef = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
-    try {
-      IndexWriter writer = writerRef.get();
-      assertEquals("Unexpected codec in IndexWriter config", 
-          "SimpleText", writer.getConfig().getCodec().getName()); 
-    } finally {
-      writerRef.decref();
+      RefCounted<IndexWriter> writerRef = core.getSolrCoreState().getIndexWriter(core);
+      try {
+        IndexWriter writer = writerRef.get();
+        assertEquals("Unexpected codec in IndexWriter config", "SimpleText", writer.getConfig().getCodec().getName());
+      } finally {
+        writerRef.decref();
+      }
+
+      assertU(add(doc("id", "1", "text", "textual content goes here")));
+      assertU(commit());
+
+      core.withSearcher(searcher -> {
+        SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
+        SegmentInfo info = infos.info(infos.size() - 1).info;
+        assertEquals("Unexpected segment codec", "SimpleText", info.getCodec().getName());
+        return null;
+      });
+
+      assertQ(req("q", "id:1"), "*[count(//doc)=1]");
     }
-
-    assertU(add(doc("id","1", "text","textual content goes here")));
-    assertU(commit());
-
-    h.getCore().withSearcher(searcher -> {
-      SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
-      SegmentInfo info = infos.info(infos.size() - 1).info;
-      assertEquals("Unexpected segment codec", "SimpleText", info.getCodec().getName());
-      return null;
-    });
-
-    assertQ(req("q", "id:1"),
-        "*[count(//doc)=1]");
   }
 }

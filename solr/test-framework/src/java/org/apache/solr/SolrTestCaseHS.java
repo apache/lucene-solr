@@ -114,10 +114,12 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     List<Doc> docList = new ArrayList<>(fullModel.values());
     Collections.sort(docList, sort);
     List sortedDocs = new ArrayList(rows);
-    for (Doc doc : docList) {
-      if (sortedDocs.size() >= rows) break;
-      Map<String,Object> odoc = toObject(doc, h.getCore().getLatestSchema(), fieldNames);
-      sortedDocs.add(toObject(doc, h.getCore().getLatestSchema(), fieldNames));
+    try (SolrCore core = h.getCore()) {
+      for (Doc doc : docList) {
+        if (sortedDocs.size() >= rows) break;
+        Map<String,Object> odoc = toObject(doc, core.getLatestSchema(), fieldNames);
+        sortedDocs.add(toObject(doc, core.getLatestSchema(), fieldNames));
+      }
     }
     return sortedDocs;
   }
@@ -287,7 +289,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
 
       public  void assertQ(SolrClient client, SolrParams args, String... tests) throws Exception {
-        SolrTestCaseHS.assertQ(h.getCore().getResourceLoader(), client, args, tests);
+        try (SolrCore core = h.getCore()) {
+          SolrTestCaseHS.assertQ(core.getResourceLoader(), client, args, tests);
+        }
       }
     }
 

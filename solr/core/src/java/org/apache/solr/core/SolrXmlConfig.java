@@ -195,6 +195,7 @@ public class SolrXmlConfig {
 
   private static Properties loadProperties(XmlConfigFile config) {
     try {
+      HashMap sysProperties = new HashMap(System.getProperties());
       NodeInfo node = (NodeInfo) ((ArrayList) config.evaluate(config.tree, "solr", XPathConstants.NODESET)).get(0);
 
       ArrayList<NodeInfo> props = (ArrayList) config.getResourceLoader().getXPath().evaluate("property", node, XPathConstants.NODESET);
@@ -202,7 +203,7 @@ public class SolrXmlConfig {
       for (int i = 0; i < props.size(); i++) {
         NodeInfo prop = props.get(i);
         properties.setProperty(DOMUtil.getAttr(prop, NAME),
-            PropertiesUtil.substituteProperty(DOMUtil.getAttr(prop, "value"), null));
+            PropertiesUtil.substituteProperty(DOMUtil.getAttr(prop, "value"), null, sysProperties));
       }
       return properties;
     }

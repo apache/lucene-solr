@@ -37,7 +37,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SolrPluginUtils;
 import org.junit.BeforeClass;
@@ -1523,8 +1522,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     params.set("qf_fr", "subject_fr title_fr^5");
     params.set("qf_en", "subject_en title_en^5");
     params.set("qf_es", "subject_es title_es^5");
-    
-    MultilanguageQueryParser parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req(params));
+    SolrQueryRequest req = req(params);
+    MultilanguageQueryParser parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req);
     Query query = parser.parse();
     assertNotNull(query);
     assertTrue(containsClause(query, "title", "foo", 5, false));
@@ -1533,21 +1532,25 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     assertTrue(containsClause(query, "subject", "bar", 1, false));
     
     params.set("language", "es");
-    parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req(params));
+    req.close();
+    req = req(params);
+    parser = new MultilanguageQueryParser("foo bar", new ModifiableSolrParams(), params, req);
     query = parser.parse();
     assertNotNull(query);
     assertTrue(containsClause(query, "title_es", "foo", 5, false));
     assertTrue(containsClause(query, "title_es", "bar", 5, false));
     assertTrue(containsClause(query, "subject_es", "foo", 1, false));
     assertTrue(containsClause(query, "subject_es", "bar", 1, false));
-    
-    FuzzyDismaxQParser parser2 = new FuzzyDismaxQParser("foo bar absence", new ModifiableSolrParams(), params, req(params));
+
+    req.close();
+    req = req(params);
+    FuzzyDismaxQParser parser2 = new FuzzyDismaxQParser("foo bar absence", new ModifiableSolrParams(), params, req);
     query = parser2.parse();
     assertNotNull(query);
     assertTrue(containsClause(query, "title", "foo", 5, false));
     assertTrue(containsClause(query, "title", "bar", 5, false));
     assertTrue(containsClause(query, "title", "absence", 5, true));
-    
+    req.close();
   }
 
   @Test

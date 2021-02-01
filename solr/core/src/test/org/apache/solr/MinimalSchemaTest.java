@@ -17,6 +17,7 @@
 package org.apache.solr;
 
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.core.SolrCore;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -43,8 +44,10 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
     /* make sure some misguided soul doesn't inadvertently give us 
        a uniqueKey field and defeat the point of the tests
     */
+    SolrCore core = h.getCore();
     assertNull("UniqueKey Field isn't null", 
-               h.getCore().getLatestSchema().getUniqueKeyField());
+               core.getLatestSchema().getUniqueKeyField());
+    core.close();
 
     lrf.args.put(CommonParams.VERSION,"2.2");
 
@@ -107,7 +110,9 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
    */
   @Test
   public void testAllConfiguredHandlers() {
-    Set<String> handlerNames = h.getCore().getRequestHandlers().keySet();
+    SolrCore core = h.getCore();
+    Set<String> handlerNames = core.getRequestHandlers().keySet();
+    core.close();
     for (String handler : handlerNames) {
       try {
 

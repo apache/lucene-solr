@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -45,22 +46,16 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     System.setProperty("enableLazyFieldLoading", "true");
 
     initCore("solrconfig-managed-schema.xml", "ignoredSchemaName");
+    try (SolrCore core = h.getCore()) {
+      // TODO SOLR-10229 will make this easier
+      boolean PERSIST_FALSE = false; // don't write to test resource dir
+      IndexSchema schema = core.getLatestSchema();
+      schema = schema.addFieldTypes(Collections.singletonList(schema.newFieldType("textType", "solr.TextField", // redundant; TODO improve api
+          map("name", "textType", "class", "solr.TextField", "analyzer", map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")))), PERSIST_FALSE);
+      schema = schema.addFields(Arrays.asList(schema.newField(LAZY_FIELD, "textType", map()), schema.newField(BIG_FIELD, "textType", map("large", true))), Collections.emptyMap(), PERSIST_FALSE);
 
-    // TODO SOLR-10229 will make this easier
-    boolean PERSIST_FALSE = false; // don't write to test resource dir
-    IndexSchema schema = h.getCore().getLatestSchema();
-    schema = schema.addFieldTypes(Collections.singletonList(
-        schema.newFieldType("textType", "solr.TextField", // redundant; TODO improve api
-            map("name", "textType",   "class", "solr.TextField",
-                "analyzer", map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")))),
-        PERSIST_FALSE);
-    schema = schema.addFields(Arrays.asList(
-        schema.newField(LAZY_FIELD, "textType", map()),
-        schema.newField(BIG_FIELD, "textType", map("large", true))),
-        Collections.emptyMap(),
-        PERSIST_FALSE);
-
-    h.getCore().setLatestSchema(schema);
+      core.setLatestSchema(schema);
+    }
   }
 
   @AfterClass

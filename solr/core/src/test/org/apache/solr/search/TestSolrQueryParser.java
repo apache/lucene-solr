@@ -1353,22 +1353,27 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
     
   public void testSynonymsBoost_edismaxBoost_shouldParseBoostedPhraseQuery() throws Exception {
-    Query q = QParser.getParser("snow leopard lion","edismax",true, req(params("sow", "false","qf", "t_pick_best_boosted_foo^10"))).getQuery();
+    SolrQueryRequest req = req(params("sow", "false", "qf", "t_pick_best_boosted_foo^10"));
+    Query q = QParser.getParser("snow leopard lion","edismax",true, req).getQuery();
     assertEquals("+(" +
         "((((t_pick_best_boosted_foo:\"panthera uncia\")^0.9 | (t_pick_best_boosted_foo:\"big cat\")^0.8 | (t_pick_best_boosted_foo:white_leopard)^0.6 | t_pick_best_boosted_foo:\"snow leopard\"))^10.0)" +
         " ((((t_pick_best_boosted_foo:\"panthera leo\")^0.9 | (t_pick_best_boosted_foo:\"simba leo\")^0.8 | (t_pick_best_boosted_foo:kimba)^0.75))^10.0)" +
         ")", q.toString());
 
-    q = QParser.getParser("snow leopard lion","edismax",true, req(params("sow", "false","qf", "t_as_distinct_boosted_foo^10"))).getQuery();
+    req.close();
+    req = req(params("sow", "false","qf", "t_as_distinct_boosted_foo^10"));
+        q = QParser.getParser("snow leopard lion","edismax",true, req).getQuery();
     assertEquals("+(" +
         "(((t_as_distinct_boosted_foo:\"panthera uncia\")^0.9 (t_as_distinct_boosted_foo:\"big cat\")^0.8 (t_as_distinct_boosted_foo:white_leopard)^0.6 t_as_distinct_boosted_foo:\"snow leopard\")^10.0)" +
         " (((t_as_distinct_boosted_foo:\"panthera leo\")^0.9 (t_as_distinct_boosted_foo:\"simba leo\")^0.8 (t_as_distinct_boosted_foo:kimba)^0.75)^10.0))", q.toString());
 
-    q = QParser.getParser("snow leopard lion","edismax",true, req(params("sow", "false","qf", "t_as_same_term_boosted_foo^10"))).getQuery();
+    req.close();
+    req = req(params("sow", "false","qf", "t_as_same_term_boosted_foo^10"));
+        q = QParser.getParser("snow leopard lion","edismax",true, req).getQuery();
     assertEquals("+(" +
             "(((t_as_same_term_boosted_foo:\"panthera uncia\")^0.9 (t_as_same_term_boosted_foo:\"big cat\")^0.8 (t_as_same_term_boosted_foo:white_leopard)^0.6 t_as_same_term_boosted_foo:\"snow leopard\")^10.0)" +
             " (((t_as_same_term_boosted_foo:\"panthera leo\")^0.9 (t_as_same_term_boosted_foo:\"simba leo\")^0.8 (t_as_same_term_boosted_foo:kimba)^0.75)^10.0))", q.toString());
-
+    req.close();
   }
 
   @AwaitsFix(bugUrl = "nocommit - review difference")
@@ -1461,40 +1466,44 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     for (String existenceQuery : existenceQueries) {
       for (String suffix : fieldSuffix) {
-        try (SolrCore core = h.getCore()) {
-          IndexSchema indexSchema = core.getLatestSchema();
-          String field = "foo_" + suffix;
-          String query = field + ":" + existenceQuery;
-          SolrQueryRequest req = req();
-          QParser qParser = QParser.getParser(query, req);
-          req.close();
-          Query createdQuery = qParser.getQuery();
-          SchemaField schemaField = indexSchema.getField(field);
 
-          // Test float & double realNumber queries differently
-          if ("[* TO *]".equals(existenceQuery) && (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT)) {
-            assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.", createdQuery instanceof DocValuesFieldExistsQuery);
-            assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.", createdQuery instanceof NormsFieldExistsQuery);
-            assertFalse("For float and double fields \"" + query + "\" is not an existence query, so NaN should not be matched via a ConstantScoreQuery.", createdQuery instanceof ConstantScoreQuery);
-            assertFalse("For float and double fields\"" + query + "\" is not an existence query, so NaN should not be matched via a BooleanQuery (NaN and [* TO *]).", createdQuery instanceof BooleanQuery);
+        String field = "foo_" + suffix;
+        String query = field + ":" + existenceQuery;
+        SolrQueryRequest req = req();
+        IndexSchema indexSchema = req.getCore().getLatestSchema();
+        QParser qParser = QParser.getParser(query, req);
+        req.close();
+        Query createdQuery = qParser.getQuery();
+        SchemaField schemaField = indexSchema.getField(field);
+
+        // Test float & double realNumber queries differently
+        if ("[* TO *]".equals(existenceQuery) && (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT)) {
+          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.",
+              createdQuery instanceof DocValuesFieldExistsQuery);
+          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.",
+              createdQuery instanceof NormsFieldExistsQuery);
+          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so NaN should not be matched via a ConstantScoreQuery.", createdQuery instanceof ConstantScoreQuery);
+          assertFalse("For float and double fields\"" + query + "\" is not an existence query, so NaN should not be matched via a BooleanQuery (NaN and [* TO *]).",
+              createdQuery instanceof BooleanQuery);
+        } else {
+          if (schemaField.hasDocValues()) {
+            assertTrue("Field has docValues, so existence query \"" + query + "\" should return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
+          } else if (!schemaField.omitNorms() && !schemaField.getType().isPointField()) { //TODO: Remove !isPointField() for SOLR-14199
+            assertTrue("Field has norms and no docValues, so existence query \"" + query + "\" should return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
+          } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT) {
+            assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", createdQuery instanceof ConstantScoreQuery);
+            assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".",
+                ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
+            assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must be an OR.", 1,
+                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).getMinimumNumberShouldMatch());
+            assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must have 2 clauses.", 2,
+                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
           } else {
-            if (schemaField.hasDocValues()) {
-              assertTrue("Field has docValues, so existence query \"" + query + "\" should return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
-            } else if (!schemaField.omitNorms() && !schemaField.getType().isPointField()) { //TODO: Remove !isPointField() for SOLR-14199
-              assertTrue("Field has norms and no docValues, so existence query \"" + query + "\" should return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
-            } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT) {
-              assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", createdQuery instanceof ConstantScoreQuery);
-              assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
-              assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must be an OR.", 1,
-                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).getMinimumNumberShouldMatch());
-              assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must have 2 clauses.", 2,
-                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
-            } else {
-              assertFalse("Field doesn't have docValues, so existence query \"" + query + "\" should not return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
-              assertFalse("Field doesn't have norms, so existence query \"" + query + "\" should not return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
-            }
+            assertFalse("Field doesn't have docValues, so existence query \"" + query + "\" should not return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
+            assertFalse("Field doesn't have norms, so existence query \"" + query + "\" should not return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
           }
         }
+
       }
     }
   }

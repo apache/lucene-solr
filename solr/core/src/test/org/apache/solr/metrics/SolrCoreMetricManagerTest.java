@@ -23,6 +23,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.reporters.MockMetricReporter;
 import org.apache.solr.schema.FieldType;
@@ -47,8 +48,10 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
     System.setProperty("solr.enableMetrics", "true");
     useFactory(null);
     initCore("solrconfig-basic.xml", "schema.xml");
-    coreMetricManager = h.getCore().getCoreMetricManager();
-    metricManager = h.getCore().getCoreContainer().getMetricManager();
+    SolrCore core = h.getCore();
+    coreMetricManager = core.getCoreMetricManager();
+    metricManager = core.getCoreContainer().getMetricManager();
+    core.close();
   }
 
   @After
@@ -159,8 +162,10 @@ public class SolrCoreMetricManagerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNonCloudRegistryName() throws Exception {
-    String registryName = h.getCore().getCoreMetricManager().getRegistryName();
-    String leaderRegistryName = h.getCore().getCoreMetricManager().getLeaderRegistryName();
+    SolrCore core = h.getCore();
+    String registryName = core.getCoreMetricManager().getRegistryName();
+    String leaderRegistryName = core.getCoreMetricManager().getLeaderRegistryName();
+    core.close();
     assertNotNull(registryName);
     assertEquals("solr.core.collection1", registryName);
     assertNull(leaderRegistryName);

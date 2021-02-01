@@ -30,6 +30,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.Bits;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.ExpressionFactory;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
@@ -209,11 +210,12 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
       multiBooleans.put(""+i, booleans);
     }
     assertU(commit());
+    try (SolrCore core = h.getCore()) {
+      ref = core.getSearcher();
+      searcher = ref.get();
 
-    ref = h.getCore().getSearcher();
-    searcher = ref.get();
-
-    indexSchema = h.getCore().getLatestSchema();
+      indexSchema = core.getLatestSchema();
+    }
   }
 
   protected ExpressionFactory getExpressionFactory() {

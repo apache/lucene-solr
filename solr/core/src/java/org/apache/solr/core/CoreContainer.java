@@ -191,6 +191,9 @@ public class CoreContainer implements Closeable {
 
   public volatile ExecutorService solrCoreExecutor;
 
+  public final ExecutorService coreContainerExecutor = ParWork.getParExecutorService("Core",
+      2, Math.max(6, SysStats.PROC_COUNT), 1000, new LinkedBlockingQueue<>(16));
+
   private final OrderedExecutor replayUpdatesExecutor;
 
   @SuppressWarnings({"rawtypes"})
@@ -400,7 +403,7 @@ public class CoreContainer implements Closeable {
     containerProperties.putAll(cfg.getSolrProperties());
 
     solrCoreExecutor = ParWork.getParExecutorService("Core",
-        4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new LinkedBlockingQueue<>(1024));
+        4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new LinkedBlockingQueue<>(64));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -1192,7 +1195,7 @@ public class CoreContainer implements Closeable {
       closer.collect(loader);
 
       closer.collect();
-
+      closer.collect(coreContainerExecutor);
       closer.collect(solrCoreExecutor);
       closer.collect(zkSys);
     }

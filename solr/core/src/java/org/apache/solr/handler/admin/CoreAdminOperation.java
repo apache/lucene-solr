@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -90,7 +91,7 @@ enum CoreAdminOperation implements CoreAdminOp {
       String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
       if (instanceDir == null) instanceDir = it.req.getParams().get("property.instanceDir");
       if (instanceDir != null) {
-        instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties());
+        instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties(), new HashMap(System.getProperties()));
         instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
       } else {
         instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);

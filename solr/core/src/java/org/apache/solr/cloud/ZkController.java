@@ -107,7 +107,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -712,21 +711,17 @@ public class ZkController implements Closeable, Runnable {
         }
       });
 
-      closer.collect(overseerElector);
-
-      if (overseer != null) {
-        closer.collect("", () -> {
-          try {
-            overseer.closeAndDone();
-          } catch (Exception e) {
-            log.warn("Exception closing Overseer", e);
-          }
-        });
-      }
-
       collectionToTerms.forEach((s, zkCollectionTerms) -> closer.collect(zkCollectionTerms));
 
     } finally {
+      IOUtils.closeQuietly(overseerElector);
+      if (overseer != null) {
+        try {
+          overseer.closeAndDone();
+        } catch (Exception e) {
+          log.warn("Exception closing Overseer", e);
+        }
+      }
       IOUtils.closeQuietly(zkStateReader);
 
       if (closeZkClient && zkClient != null) {

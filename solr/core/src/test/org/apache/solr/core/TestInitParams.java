@@ -38,96 +38,100 @@ public class TestInitParams extends SolrTestCaseJ4 {
   }
   @Test
   public void testComponentWithInitParams(){
+    try (SolrCore core = h.getCore()) {
+      for (String s : Arrays.asList("/dump1", "/dump3", "/root/dump5", "/root1/anotherlevel/dump6")) {
+        SolrRequestHandler handler = core.getRequestHandler(s);
+        SolrQueryResponse rsp = new SolrQueryResponse();
+        SolrQueryRequest req = req("initArgs", "true");
+        handler.handleRequest(req, rsp);
+        NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+        NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+        assertEquals("A", def.get("a"));
+        def = (NamedList) nl.get(PluginInfo.INVARIANTS);
+        assertEquals("B", def.get("b"));
+        def = (NamedList) nl.get(PluginInfo.APPENDS);
+        assertEquals("C", def.get("c"));
+        IOUtils.closeQuietly(req);
+      }
 
-    for (String s : Arrays.asList("/dump1", "/dump3","/root/dump5" , "/root1/anotherlevel/dump6")) {
-      SolrRequestHandler handler = h.getCore().getRequestHandler(s);
+      InitParams initParams = core.getSolrConfig().getInitParams().get("a");
+
+      PluginInfo pluginInfo = new PluginInfo("requestHandler", new HashMap<String,String>(), new NamedList<>(singletonMap("defaults", new NamedList(Utils.makeMap("a", "A1")))), null);
+      initParams.apply(pluginInfo);
+      assertEquals("A", initParams.defaults.get("a"));
+    }
+  }
+
+  @Test
+  public void testMultiInitParams(){
+    try (SolrCore core = h.getCore()) {
+      SolrRequestHandler handler = core.getRequestHandler("/dump6");
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrQueryRequest req = req("initArgs", "true");
       handler.handleRequest(req, rsp);
-      req.close();
       NamedList nl = (NamedList) rsp.getValues().get("initArgs");
       NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
       assertEquals("A", def.get("a"));
+      assertEquals("P", def.get("p"));
       def = (NamedList) nl.get(PluginInfo.INVARIANTS);
       assertEquals("B", def.get("b"));
       def = (NamedList) nl.get(PluginInfo.APPENDS);
       assertEquals("C", def.get("c"));
       IOUtils.closeQuietly(req);
     }
-
-    InitParams initParams = h.getCore().getSolrConfig().getInitParams().get("a");
-
-    PluginInfo pluginInfo = new PluginInfo("requestHandler",
-        new HashMap<String, String>(),
-        new NamedList<>(singletonMap("defaults", new NamedList(Utils.makeMap("a", "A1")))), null);
-    initParams.apply(pluginInfo);
-    assertEquals( "A",initParams.defaults.get("a"));
-  }
-
-  @Test
-  public void testMultiInitParams(){
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/dump6");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = req("initArgs", "true");
-    handler.handleRequest(req, rsp);
-    req.close();
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
-    assertEquals("A", def.get("a"));
-    assertEquals("P", def.get("p"));
-    def = (NamedList) nl.get(PluginInfo.INVARIANTS);
-    assertEquals("B", def.get("b"));
-    def = (NamedList) nl.get(PluginInfo.APPENDS);
-    assertEquals("C", def.get("c"));
-    IOUtils.closeQuietly(req);
   }
 
 
   @Test
   public void testComponentWithConflictingInitParams(){
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/dump2");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = req("initArgs", "true");
-    handler.handleRequest(req, rsp);
-    req.close();
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
-    assertEquals("A1" ,def.get("a"));
-    def = (NamedList) nl.get(PluginInfo.INVARIANTS);
-    assertEquals("B1" ,def.get("b"));
-    def = (NamedList) nl.get(PluginInfo.APPENDS);
-    assertEquals(Arrays.asList("C1","C") ,def.getAll("c"));
-    IOUtils.closeQuietly(req);
+    try (SolrCore core = h.getCore()) {
+      SolrRequestHandler handler = core.getRequestHandler("/dump2");
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrQueryRequest req = req("initArgs", "true");
+      handler.handleRequest(req, rsp);
+      NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+      NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+      assertEquals("A1", def.get("a"));
+      def = (NamedList) nl.get(PluginInfo.INVARIANTS);
+      assertEquals("B1", def.get("b"));
+      def = (NamedList) nl.get(PluginInfo.APPENDS);
+      assertEquals(Arrays.asList("C1", "C"), def.getAll("c"));
+      IOUtils.closeQuietly(req);
+    }
   }
 
   public void testNestedRequestHandler() {
-    assertNotNull(h.getCore().getRequestHandler("/greedypath"));
-    assertNotNull(h.getCore().getRequestHandler("/greedypath/some/path"));
-    assertNotNull( h.getCore().getRequestHandler("/greedypath/some/other/path"));
-    assertNull(h.getCore().getRequestHandler("/greedypath/unknownpath"));
+    try (SolrCore core = h.getCore()) {
+      assertNotNull(core.getRequestHandler("/greedypath"));
+      assertNotNull(core.getRequestHandler("/greedypath/some/path"));
+      assertNotNull(core.getRequestHandler("/greedypath/some/other/path"));
+      assertNull(core.getRequestHandler("/greedypath/unknownpath"));
+    }
   }
 
-  public void testElevateExample(){
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/elevate");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = req("initArgs", "true");
-    handler.handleRequest(req, rsp);
-    req.close();
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-    NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
-    assertEquals("text" ,def.get("df"));
-    IOUtils.closeQuietly(req);
+  public void testElevateExample() {
+    try (SolrCore core = h.getCore()) {
+      SolrRequestHandler handler = core.getRequestHandler("/elevate");
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrQueryRequest req = req("initArgs", "true");
+      handler.handleRequest(req, rsp);
+      NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+      NamedList def = (NamedList) nl.get(PluginInfo.DEFAULTS);
+      assertEquals("text", def.get("df"));
+      IOUtils.closeQuietly(req);
+    }
   }
 
   public void testArbitraryAttributes() {
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/dump7");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = req("initArgs", "true");
-    handler.handleRequest(req, rsp);
-    req.close();
-    NamedList nl = (NamedList) rsp.getValues().get("initArgs");
-    assertEquals("server-enabled.txt", nl.get("healthcheckFile"));
-    IOUtils.closeQuietly(req);
+    try (SolrCore core = h.getCore()) {
+      SolrRequestHandler handler = core.getRequestHandler("/dump7");
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      SolrQueryRequest req = req("initArgs", "true");
+      handler.handleRequest(req, rsp);
+      NamedList nl = (NamedList) rsp.getValues().get("initArgs");
+      assertEquals("server-enabled.txt", nl.get("healthcheckFile"));
+      IOUtils.closeQuietly(req);
+    }
   }
 
   public void testMatchPath(){

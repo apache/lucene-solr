@@ -959,7 +959,7 @@ public class IndexSchema {
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     if (null == destSchemaField) {
-      String msg = "copyField dest :'" + dest + "' is not an explicit field and doesn't match a dynamicField.";
+      String msg = "copyField dest :'" + dest + "' is not an explicit field and doesn't match a dynamicField. " + dynamicFields;
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
     if (sourceIsGlob) {

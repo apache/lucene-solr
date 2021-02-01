@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.TestUtil;
 
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.common.SolrInputDocument;
@@ -30,7 +31,8 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
 
   final static int MIN_VALUE = 20;
   final static int MAX_VALUE = 60;
-  
+
+
   final static String TRIE_INT_P8_S_VALUED = "foo_ti1";
   final static String TRIE_INT_P8_M_VALUED = "foo_ti";
   
@@ -57,69 +59,68 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
 
     initCore("solrconfig-tlog.xml","schema.xml");
+    try (SolrCore core = h.getCore()) {
+      // don't break the test
+      assertTrue("min value must be less then max value", MIN_VALUE < MAX_VALUE);
+      assertTrue("min value must be greater then zero", 0 < MIN_VALUE);
 
-    // don't break the test
-    assertTrue("min value must be less then max value", MIN_VALUE < MAX_VALUE);
-    assertTrue("min value must be greater then zero", 0 < MIN_VALUE);
-    
-    // sanity check no one breaks the schema out from under us...
-    for (String f : M_VALUED) {
-      SchemaField sf = h.getCore().getLatestSchema().getField(f);
-      assertTrue("who changed the schema? test isn't valid: " + f, sf.multiValued());
-    }
-    
-    for (String f : S_VALUED) {
-      SchemaField sf = h.getCore().getLatestSchema().getField(f);
-      assertFalse("who changed the schema? test isn't valid: " + f, sf.multiValued());
-    }
-
-    if (! Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-      for (String f : P0) {
-        SchemaField sf = h.getCore().getLatestSchema().getField(f);
-        assertEquals("who changed the schema? test isn't valid: " + f,
-                     0, assertCastFieldType(sf).getPrecisionStep());
+      // sanity check no one breaks the schema out from under us...
+      for (String f : M_VALUED) {
+        SchemaField sf = core.getLatestSchema().getField(f);
+        assertTrue("who changed the schema? test isn't valid: " + f, sf.multiValued());
       }
-      for (String f : P8) {
-        SchemaField sf = h.getCore().getLatestSchema().getField(f);
-        assertEquals("who changed the schema? test isn't valid: " + f,
-                     8, assertCastFieldType(sf).getPrecisionStep());
-      }
-    }
-    
-    // we don't need a lot of docs -- at least one failure only had ~1000  
-    NUM_DOCS = TestUtil.nextInt(random(), 200, 1500);
 
-    { // ensure at least one doc has every valid value in the multivalued fields
-      SolrInputDocument doc = sdoc("id", "0");
-      for (int val = MIN_VALUE; val <= MAX_VALUE; val++) {
-        for (String f : M_VALUED) {
-          doc.addField(f, val);
+      for (String f : S_VALUED) {
+        SchemaField sf = core.getLatestSchema().getField(f);
+        assertFalse("who changed the schema? test isn't valid: " + f, sf.multiValued());
+      }
+
+      if (!Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+        for (String f : P0) {
+          SchemaField sf = core.getLatestSchema().getField(f);
+          assertEquals("who changed the schema? test isn't valid: " + f, 0, assertCastFieldType(sf).getPrecisionStep());
+        }
+        for (String f : P8) {
+          SchemaField sf = core.getLatestSchema().getField(f);
+          assertEquals("who changed the schema? test isn't valid: " + f, 8, assertCastFieldType(sf).getPrecisionStep());
         }
       }
-      assertU(adoc(doc));
-    }
 
-    // randomized docs (note: starting at i=1)
-    for (int i=1; i < NUM_DOCS; i++) {
-      SolrInputDocument doc = sdoc("id", i+"");
-      if (useField()) {
-        int val = TestUtil.nextInt(random(), MIN_VALUE, MAX_VALUE);
-        for (String f : S_VALUED) {
-          doc.addField(f, val);
-        }
-      }
-      if (useField()) {
-        int numMulti = atLeast(1);
-        while (0 < numMulti--) {
-          int val = TestUtil.nextInt(random(), MIN_VALUE, MAX_VALUE);
-          for (String f: M_VALUED) {
+      // we don't need a lot of docs -- at least one failure only had ~1000
+      NUM_DOCS = TestUtil.nextInt(random(), 200, 1500);
+
+      { // ensure at least one doc has every valid value in the multivalued fields
+        SolrInputDocument doc = sdoc("id", "0");
+        for (int val = MIN_VALUE; val <= MAX_VALUE; val++) {
+          for (String f : M_VALUED) {
             doc.addField(f, val);
           }
         }
+        assertU(adoc(doc));
       }
-      assertU(adoc(doc));
+
+      // randomized docs (note: starting at i=1)
+      for (int i = 1; i < NUM_DOCS; i++) {
+        SolrInputDocument doc = sdoc("id", i + "");
+        if (useField()) {
+          int val = TestUtil.nextInt(random(), MIN_VALUE, MAX_VALUE);
+          for (String f : S_VALUED) {
+            doc.addField(f, val);
+          }
+        }
+        if (useField()) {
+          int numMulti = atLeast(1);
+          while (0 < numMulti--) {
+            int val = TestUtil.nextInt(random(), MIN_VALUE, MAX_VALUE);
+            for (String f : M_VALUED) {
+              doc.addField(f, val);
+            }
+          }
+        }
+        assertU(adoc(doc));
+      }
+      assertU(commit());
     }
-    assertU(commit());
   }
 
   /** 

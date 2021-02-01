@@ -25,6 +25,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.RealTimeGetComponent;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
@@ -65,7 +66,8 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
   /**
    * @see org.apache.solr.update.UpdateLog#applyPartialUpdates(BytesRef,long,long,SolrDocumentBase)
    */
-  public void testApplyPartialUpdatesOnMultipleInPlaceUpdatesInSequence() {    
+  public void testApplyPartialUpdatesOnMultipleInPlaceUpdatesInSequence() {
+    SolrCore core = h.getCore();
     // Add a full update, two in-place updates and verify applying partial updates is working
     ulogAdd(ulog, null, sdoc("id", "1", "title_s", "title1", "val1_i_dvo", "1", "_version_", "100"));
     ulogAdd(ulog, 100L, sdoc("id", "1", "price", "1000", "val1_i_dvo", "2", "_version_", "101"));
@@ -73,7 +75,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
 
     Object partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
     SolrDocument partialDoc = RealTimeGetComponent.toSolrDoc((SolrInputDocument)((List)partialUpdate).get(4), 
-        h.getCore().getLatestSchema());
+        core.getLatestSchema());
     long prevVersion = (Long)((List)partialUpdate).get(3);
     long prevPointer = (Long)((List)partialUpdate).get(2);
 
@@ -97,7 +99,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     ulogAdd(ulog, 200L, sdoc("id", "1", "val1_i_dvo", "5", "_version_", "201"));
 
     partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
-    partialDoc = RealTimeGetComponent.toSolrDoc((SolrInputDocument)((List)partialUpdate).get(4), h.getCore().getLatestSchema());
+    partialDoc = RealTimeGetComponent.toSolrDoc((SolrInputDocument)((List)partialUpdate).get(4), core.getLatestSchema());
     prevVersion = (Long)((List)partialUpdate).get(3);
     prevPointer = (Long)((List)partialUpdate).get(2);
 
@@ -110,10 +112,13 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     assertEquals(2000, Integer.parseInt(partialDoc.getFieldValue("price").toString()));
     assertEquals(5L, ((NumericDocValuesField)partialDoc.getFieldValue("val1_i_dvo")).numericValue());
     assertEquals("title1", partialDoc.getFieldValue("title_s"));
+
+    core.close();
   }
   
   @Test
-  public void testApplyPartialUpdatesAfterMultipleCommits() {    
+  public void testApplyPartialUpdatesAfterMultipleCommits() {
+    SolrCore core = h.getCore();
     ulogAdd(ulog, null, sdoc("id", "1", "title_s", "title1", "val1_i_dvo", "1", "_version_", "100"));
     ulogAdd(ulog, 100L, sdoc("id", "1", "price", "1000", "val1_i_dvo", "2", "_version_", "101"));
     ulogAdd(ulog, 101L, sdoc("id", "1", "val1_i_dvo", "3", "_version_", "102"));
@@ -124,7 +129,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     ulogAdd(ulog, 101L, sdoc("id", "1", "val1_i_dvo", "6", "_version_", "300"));
 
     Object partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
-    SolrDocument partialDoc = RealTimeGetComponent.toSolrDoc((SolrInputDocument)((List)partialUpdate).get(4), h.getCore().getLatestSchema());
+    SolrDocument partialDoc = RealTimeGetComponent.toSolrDoc((SolrInputDocument)((List)partialUpdate).get(4), core.getLatestSchema());
     long prevVersion = (Long)((List)partialUpdate).get(3);
     long prevPointer = (Long)((List)partialUpdate).get(2);
 
@@ -134,6 +139,7 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     long returnVal = ulog.applyPartialUpdates(DOC_1_INDEXED_ID, prevPointer, prevVersion, null, partialDoc);
 
     assertEquals(-1, returnVal);
+    core.close();
   }
 
   @Test

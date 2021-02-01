@@ -62,6 +62,8 @@ import org.slf4j.LoggerFactory;
 public class AnnotatedApi extends Api implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public final static ObjectMapper MAPPER = SolrJacksonAnnotationInspector.INSTANCE.createObjectMapper();
+
   public static final String ERR = "Error executing commands :";
   private EndPoint endPoint;
   private final Map<String, Cmd> commands;
@@ -193,7 +195,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     final String command;
     final Method method;
     final Object obj;
-    ObjectMapper mapper = SolrJacksonAnnotationInspector.INSTANCE.createObjectMapper();
+    ObjectMapper mapper = MAPPER;
     int paramsCount;
     Class c;
     boolean isWrappedInPayloadObj = false;

@@ -73,7 +73,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @Test
   public void testShouldBufferUpdateZk() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
     try (DistributedUpdateProcessor processor = new DistributedUpdateProcessor(
         req, null, null, null)) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -86,11 +86,12 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       cmd.prevVersion = 10;
       assertTrue(processor.shouldBufferUpdate(cmd, false, UpdateLog.State.APPLYING_BUFFERED));
     }
+    req.close();
   }
   
   @Test
   public void testVersionAdd() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
     int threads = 5;
     Function<DistributedUpdateProcessor,Boolean> versionAddFunc = (DistributedUpdateProcessor process) -> {
       try {
@@ -109,11 +110,12 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
     succeeded = runCommands(threads, -1, req, versionAddFunc);
     // all should succeed
     assertThat(succeeded, is(threads));
+    req.close();
   }
 
   @Test
   public void testVersionDelete() throws IOException {
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
 
     int threads = TEST_NIGHTLY ? 5 : 2;
     Function<DistributedUpdateProcessor,Boolean> versionDeleteFunc = (DistributedUpdateProcessor process) -> {
@@ -125,6 +127,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         throw new RuntimeException(e);
       }
     };
+    req.close();
 
     int succeeded = runCommands(threads, 50, req, versionDeleteFunc);
     // only one should succeed

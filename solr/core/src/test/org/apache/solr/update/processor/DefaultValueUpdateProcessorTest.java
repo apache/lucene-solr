@@ -134,7 +134,7 @@ public class DefaultValueUpdateProcessorTest extends SolrTestCaseJ4 {
     SolrQueryResponse rsp = new SolrQueryResponse();
 
     SolrQueryRequest req = new LocalSolrQueryRequest
-      (core, new ModifiableSolrParams());
+      (core, new ModifiableSolrParams(), true);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);

@@ -75,7 +75,7 @@ public class PluginBag<T> implements AutoCloseable {
     // TODO: since reads will dominate writes, we could also think about creating a new instance of a map each time it changes.
     // Not sure how much benefit this would have over ConcurrentHashMap though
     // We could also perhaps make this constructor into a factory method to return different implementations depending on thread safety needs.
-    this.registry = new ConcurrentHashMap<>(64, 0.75f, 3);
+    this.registry = new ConcurrentHashMap<>(32, 0.75f, 6);
     this.immutableRegistry = Collections.unmodifiableMap(registry);
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
@@ -233,7 +233,9 @@ public class PluginBag<T> implements AutoCloseable {
     PluginHolder<T> old = null;
     if (!disableHandler) old = registry.put(name, plugin);
     if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
-    if (plugin.isLoaded()) registerMBean(plugin.get(), core, name);
+    if (plugin.isLoaded()) {
+      registerMBean(plugin.get(), core, name);
+    }
     // old instance has been replaced - close it to prevent mem leaks
     if (old != null && old != plugin) {
       closeQuietly(old);
@@ -308,7 +310,7 @@ public class PluginBag<T> implements AutoCloseable {
     return result.isLoaded();
   }
 
-  private void registerMBean(Object inst, SolrCore core, String pluginKey) {
+  private static void registerMBean(Object inst, SolrCore core, String pluginKey) {
     if (core == null) return;
     if (inst instanceof SolrInfoBean) {
       SolrInfoBean mBean = (SolrInfoBean) inst;
@@ -401,7 +403,7 @@ public class PluginBag<T> implements AutoCloseable {
    * A class that loads plugins Lazily. When the get() method is invoked
    * the Plugin is initialized and returned.
    */
-  public class LazyPluginHolder<T> extends PluginHolder<T> {
+  public static class LazyPluginHolder<T> extends PluginHolder<T> {
     private volatile T lazyInst;
     private final SolrConfig.SolrPluginInfo pluginMeta;
     protected SolrException solrException;

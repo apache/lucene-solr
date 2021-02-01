@@ -21,6 +21,7 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -381,8 +382,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='3']",
         "//result/doc[5]/str[@name='id'][.='2']"
     );
-
-    MetricsMap metrics = (MetricsMap) h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    SolrCore core = h.getCore();
+    MetricsMap metrics = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    core.close();
     Map<String,Object> stats = metrics.getValue(true, false);
 
     long inserts = (Long) stats.get("inserts");

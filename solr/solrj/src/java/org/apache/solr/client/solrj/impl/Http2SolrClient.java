@@ -70,6 +70,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.http.HttpClientTransportOverHTTP2;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Pool;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -99,6 +100,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Phaser;
@@ -225,9 +227,13 @@ public class Http2SolrClient extends SolrClient {
     int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", PROC_COUNT);
 
     minThreads = Math.min( builder.maxThreadPoolSize, minThreads);
+
+    int capacity = Math.max(minThreads, 8) * 32;
+    BlockingQueue<Runnable> queue = new BlockingArrayQueue<>(capacity, capacity);
+
     httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
         this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 1000 : 1000,
-        null, -1, null);
+        queue, -1, null);
     httpClientExecutor.setLowThreadsThreshold(-1);
 
     boolean sslOnJava8OrLower = ssl && !Constants.JRE_IS_MINIMUM_JAVA9;
@@ -561,16 +567,7 @@ public class Http2SolrClient extends SolrClient {
     if (req.afterSend != null) {
       req.afterSend.run();
     }
-    return new Cancellable() {
-      @Override
-      public void cancel() {
-        boolean success = req.request.abort(CANCELLED_EXCEPTION);
-      }
-      @Override
-      public InputStream getStream() {
-        return mysl.getInputStream();
-      }
-    };
+    return new MyCancellable(req, mysl);
   }
 
   @Override
@@ -1019,6 +1016,26 @@ public class Http2SolrClient extends SolrClient {
 
   public String getBaseURL() {
     return serverBaseUrl;
+  }
+
+  private static class MyCancellable implements Cancellable {
+    private final TheRequest req;
+    private final MyInputStreamResponseListener mysl;
+
+    public MyCancellable(TheRequest req, MyInputStreamResponseListener mysl) {
+      this.req = req;
+      this.mysl = mysl;
+    }
+
+    @Override
+    public void cancel() {
+      boolean success = req.request.abort(CANCELLED_EXCEPTION);
+    }
+
+    @Override
+    public InputStream getStream() {
+      return mysl.getInputStream();
+    }
   }
 
   public class AsyncTracker {

@@ -106,7 +106,8 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] { "uniq-fields" });
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
+    SolrCore core = h.getCore();
+    SolrQueryRequestBase req = new SolrQueryRequestBase(core,
         (SolrParams) mmparams) {
     };
 
@@ -117,5 +118,6 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     req.setContentStreams(streams);
     handler.handleRequestBody(req, new SolrQueryResponse());
     req.close();
+    core.close();
   }
 }

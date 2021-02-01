@@ -46,6 +46,7 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
 
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     final String fieldName = "runtimefield";
     SchemaField sf = new SchemaField( fieldName, schema.getFieldTypes().get( "string" ) );
     schema.getFields().put( fieldName, sf );

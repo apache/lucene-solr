@@ -129,7 +129,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed = cc.getCore("changed");
       addDoc(changed, "id", "4", "which", "15", "text", "some stuff with which");
       changed = cc.getCore("changed");
-      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>());
+      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>(), true);
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       req.close();
       // write the new schema out and make it current

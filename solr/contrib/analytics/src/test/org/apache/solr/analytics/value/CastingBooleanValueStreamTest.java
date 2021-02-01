@@ -19,10 +19,12 @@ package org.apache.solr.analytics.value;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.value.FillableTestValue.TestBooleanValueStream;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
 
   @Test

@@ -54,7 +54,7 @@ public class StatePublisher implements Closeable {
 
   public static final NoOpMessage TERMINATE_OP = new NoOpMessage();
 
-  private final ArrayBlockingQueue<ZkNodeProps> workQueue = new ArrayBlockingQueue(300, true);
+  private final ArrayBlockingQueue<ZkNodeProps> workQueue = new ArrayBlockingQueue(32, true);
   private final ZkDistributedQueue overseerJobQueue;
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
@@ -68,7 +68,19 @@ public class StatePublisher implements Closeable {
 
     @Override
     public void run() {
-      while (!terminated) {
+      ActionThrottle throttle = new ActionThrottle("StatePublisherWorker", 50);
+
+      while (!terminated && !zkStateReader.getZkClient().isClosed()) {
+        if (!zkStateReader.getZkClient().isConnected()) {
+          try {
+            Thread.sleep(250);
+          } catch (InterruptedException e) {
+
+          }
+          continue;
+        }
+        throttle.minimumWaitBetweenActions();
+        throttle.markAttemptingAction();
         ZkNodeProps message = null;
         ZkNodeProps bulkMessage = new ZkNodeProps();
         bulkMessage.getProperties().put("operation", "state");
@@ -91,9 +103,9 @@ public class StatePublisher implements Closeable {
               try {
                 message = workQueue.poll(30, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
-              return;
-            }
-            if (log.isDebugEnabled()) log.debug("Got state message " + message);
+
+              }
+              if (log.isDebugEnabled()) log.debug("Got state message " + message);
               if (message != null) {
                 if (message == TERMINATE_OP) {
                   terminated = true;
@@ -238,7 +250,7 @@ public class StatePublisher implements Closeable {
   public void close() {
     this.terminated = true;
     try {
-      workerFuture.cancel(true);
+      workerFuture.cancel(false);
     } catch (Exception e) {
       log.error("Exception waiting for close", e);
     }

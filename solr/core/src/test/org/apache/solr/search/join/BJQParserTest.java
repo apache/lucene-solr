@@ -33,6 +33,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
@@ -225,7 +226,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("q",query, "sort","score asc", "fl","score")) {
       final String resp = h.query(req);
       return (String) h.
-          evaluateXPath(h.getCore().getResourceLoader(), resp, "(//float[@name='score'])[1]/text()", XPathConstants.STRING);
+          evaluateXPath(req.getCore().getResourceLoader(), resp, "(//float[@name='score'])[1]/text()", XPathConstants.STRING);
     }
   }
 
@@ -288,10 +289,10 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCacheHit() throws IOException {
-
-    MetricsMap parentFilterCache = (MetricsMap)(h.getCore().getCoreMetricManager().getRegistry()
+    SolrCore core = h.getCore();
+    MetricsMap parentFilterCache = (MetricsMap)(core.getCoreMetricManager().getRegistry()
         .getMetrics().get("CACHE.searcher.perSegFilter"));
-    MetricsMap filterCache = (MetricsMap)(h.getCore().getCoreMetricManager().getRegistry()
+    MetricsMap filterCache = (MetricsMap)(core.getCoreMetricManager().getRegistry()
         .getMetrics().get("CACHE.searcher.filterCache"));
 
     Map<String,Object> parentsBefore = parentFilterCache.getValue();

@@ -295,7 +295,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   public static ValidatingJsonMap getDeepCopy(Map map, int maxDepth, boolean mutable) {
     if (map == null) return null;
     if (maxDepth < 1) return ValidatingJsonMap.wrap(map);
-    ValidatingJsonMap copy = new ValidatingJsonMap(map.size() * 3);
+    ValidatingJsonMap copy = new ValidatingJsonMap( map.size() );
     for (Object o : map.entrySet()) {
       Map.Entry<String, Object> e = (Entry<String, Object>) o;
       Object v = e.getValue();
@@ -323,15 +323,14 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return new ObjectBuilder(jp) {
       @Override
       public Object newObject() throws IOException {
-        return new ValidatingJsonMap(32);
+        return new ValidatingJsonMap(8);
       }
     };
   }
 
   public static ValidatingJsonMap parse(String resourceName,
       String includeLocation) {
-    InputStream resource = ValidatingJsonMap.class.getClassLoader()
-        .getResourceAsStream(resourceName);
+    InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
     if (null == resource) {
       throw new RuntimeException("invalid API spec: " + resourceName);
     }

@@ -53,52 +53,59 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
 
   public void testPostingsFormats() {
-    Codec codec = h.getCore().getCodec();
-    Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
-    SchemaField schemaField = fields.get("string_direct_f");
-    PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
-    assertEquals("Direct", format.getPostingsFormatForField(schemaField.getName()).getName());
-    schemaField = fields.get("string_standard_f");
-    assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField(schemaField.getName()).getName());
-    schemaField = fields.get("string_f");
-    assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField(schemaField.getName()).getName());
+    try (SolrCore core = h.getCore()) {
+      Codec codec = core.getCodec();
+      Map<String,SchemaField> fields = core.getLatestSchema().getFields();
+      SchemaField schemaField = fields.get("string_direct_f");
+      PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
+      assertEquals("Direct", format.getPostingsFormatForField(schemaField.getName()).getName());
+      schemaField = fields.get("string_standard_f");
+      assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField(schemaField.getName()).getName());
+      schemaField = fields.get("string_f");
+      assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField(schemaField.getName()).getName());
+    }
   }
 
   public void testDocValuesFormats() {
-    // NOTE: Direct (and Disk) DocValues formats were removed, so we use "Asserting" 
-    // as a way to vet that the configuration actually matters.
-    Codec codec = h.getCore().getCodec();
-    Map<String, SchemaField> fields = h.getCore().getLatestSchema().getFields();
-    SchemaField schemaField = fields.get("string_disk_f");
-    PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
-    assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField(schemaField.getName()).getName());
-    schemaField = fields.get("string_direct_f");
-    assertEquals("Asserting", format.getDocValuesFormatForField(schemaField.getName()).getName());
-    schemaField = fields.get("string_f");
-    assertEquals(TestUtil.getDefaultDocValuesFormat().getName(),
-        format.getDocValuesFormatForField(schemaField.getName()).getName());
+    try (SolrCore core = h.getCore()) {
+      // NOTE: Direct (and Disk) DocValues formats were removed, so we use "Asserting"
+      // as a way to vet that the configuration actually matters.
+      Codec codec = core.getCodec();
+      Map<String,SchemaField> fields = core.getLatestSchema().getFields();
+      SchemaField schemaField = fields.get("string_disk_f");
+      PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
+      assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField(schemaField.getName()).getName());
+      schemaField = fields.get("string_direct_f");
+      assertEquals("Asserting", format.getDocValuesFormatForField(schemaField.getName()).getName());
+      schemaField = fields.get("string_f");
+      assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField(schemaField.getName()).getName());
+    }
   }
 
   public void testDynamicFieldsPostingsFormats() {
-    Codec codec = h.getCore().getCodec();
-    PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
+    try (SolrCore core = h.getCore()) {
+      Codec codec = core.getCodec();
+      PerFieldPostingsFormat format = (PerFieldPostingsFormat) codec.postingsFormat();
 
-    assertEquals("Direct", format.getPostingsFormatForField("foo_direct").getName());
-    assertEquals("Direct", format.getPostingsFormatForField("bar_direct").getName());
-    assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField("foo_standard").getName());
-    assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField("bar_standard").getName());
+      assertEquals("Direct", format.getPostingsFormatForField("foo_direct").getName());
+      assertEquals("Direct", format.getPostingsFormatForField("bar_direct").getName());
+      assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField("foo_standard").getName());
+      assertEquals(TestUtil.getDefaultPostingsFormat().getName(), format.getPostingsFormatForField("bar_standard").getName());
+    }
   }
 
   public void testDynamicFieldsDocValuesFormats() {
     // NOTE: Direct (and Disk) DocValues formats were removed, so we use "Asserting" 
     // as a way to vet that the configuration actually matters.
-    Codec codec = h.getCore().getCodec();
-    PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
+    try (SolrCore core = h.getCore()) {
+      Codec codec = core.getCodec();
+      PerFieldDocValuesFormat format = (PerFieldDocValuesFormat) codec.docValuesFormat();
 
-    assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("foo_disk").getName());
-    assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("bar_disk").getName());
-    assertEquals("Asserting", format.getDocValuesFormatForField("foo_direct").getName());
-    assertEquals("Asserting", format.getDocValuesFormatForField("bar_direct").getName());
+      assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("foo_disk").getName());
+      assertEquals(TestUtil.getDefaultDocValuesFormat().getName(), format.getDocValuesFormatForField("bar_disk").getName());
+      assertEquals("Asserting", format.getDocValuesFormatForField("foo_direct").getName());
+      assertEquals("Asserting", format.getDocValuesFormatForField("bar_direct").getName());
+    }
   }
   
   private void reloadCoreAndRecreateIndex() {
@@ -114,22 +121,21 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     }
     try {
       reloadCoreAndRecreateIndex();
-      assertCompressionMode(expectedModeString, h.getCore());  
+      try (SolrCore core = h.getCore()) {
+        assertCompressionMode(expectedModeString, core);
+      }
     } finally {
       System.clearProperty("tests.COMPRESSION_MODE");
     }
   }
 
   protected void assertCompressionMode(String expectedModeString, SolrCore core) throws IOException {
-    h.getCore().withSearcher(searcher -> {
+    core.withSearcher(searcher -> {
       SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
       SegmentInfo info = infos.info(infos.size() - 1).info;
-      assertEquals("Expecting compression mode string to be " + expectedModeString +
-              " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
-              "\n SegmentInfo: " + info +
-              "\n SegmentInfos: " + infos +
-              "\n Codec: " + core.getCodec(),
-          expectedModeString, info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY));
+      assertEquals(
+          "Expecting compression mode string to be " + expectedModeString + " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) + "\n SegmentInfo: " + info + "\n SegmentInfos: "
+              + infos + "\n Codec: " + core.getCodec(), expectedModeString, info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY));
       return null;
     });
   }

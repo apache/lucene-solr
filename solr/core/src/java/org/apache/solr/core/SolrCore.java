@@ -242,7 +242,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet(64);
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
-  private final SolrMetricsContext solrMetricsContext;
+  private volatile SolrMetricsContext solrMetricsContext;
 
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
@@ -737,7 +737,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         log.info("Wait for reload lock");
 
         while (!(lock.tryLock() || lock.tryLock(250, TimeUnit.MILLISECONDS))) {
-          if (coreContainer.isShutDown() || isClosed() || closing) {
+          if (closing) {
             log.warn("Skipping reload because we are closed");
             reloadyWaiting.decrementAndGet();
             throw new AlreadyClosedException();
@@ -755,9 +755,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
 
-      if (coreContainer.isShutDown()) {
-        throw new AlreadyClosedException();
-      }
       final SolrCore currentCore;
       if (!getNewIndexDir().equals(getIndexDir())) {
         // the directory is changing, don't pass on state
@@ -1063,11 +1060,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // Initialize the RestManager
       restManager = initRestManager(cd);
 
-      // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
-      this.coreMetricManager.loadReporters();
 
+      newSearcherCounter = coreMetricManager.getSolrMetricsContext().counter("new", Category.SEARCHER.toString());
+      newSearcherTimer = coreMetricManager.getSolrMetricsContext().timer("time", Category.SEARCHER.toString(), "new");
+      newSearcherWarmupTimer = coreMetricManager.getSolrMetricsContext().timer("warmup", Category.SEARCHER.toString(), "new");
+      newSearcherMaxReachedCounter = coreMetricManager.getSolrMetricsContext().counter("maxReached", Category.SEARCHER.toString(), "new");
+      newSearcherOtherErrorsCounter = coreMetricManager.getSolrMetricsContext().counter("errors", Category.SEARCHER.toString(), "new");
+
+      this.coreMetricManager.loadReporters();
 
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
@@ -1090,13 +1091,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
 
-      // initialize core metrics
-      initializeMetrics(solrMetricsContext, null);
-
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1142,11 +1139,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       initSearcherFuture = initSearcher(prev);
 
       infoRegistry.put("core", this);
-
-      // Allow the directory factory to report metrics
-      if (directoryFactory instanceof SolrMetricProducer) {
-        ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
-      }
 
       bufferUpdatesIfConstructing(coreDescriptor);
 
@@ -1336,12 +1328,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
-    newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
-    newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");
-    newSearcherMaxReachedCounter = parentContext.counter("maxReached", Category.SEARCHER.toString(), "new");
-    newSearcherOtherErrorsCounter = parentContext.counter("errors", Category.SEARCHER.toString(), "new");
-
     parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
     parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
     parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
@@ -1392,6 +1378,21 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
+    if (solrMetricsContext == null) {
+      // Initialize the metrics manager
+
+      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
+      // initialize core metrics
+      initializeMetrics(solrMetricsContext, null);
+      SolrFieldCacheBean solrFieldCacheBean = (SolrFieldCacheBean) infoRegistry.get("fieldcache");
+      if (solrFieldCacheBean != null) {
+        solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
+      }
+      // Allow the directory factory to report metrics
+      if (directoryFactory instanceof SolrMetricProducer) {
+        ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
+      }
+    }
     return solrMetricsContext;
   }
 
@@ -1710,7 +1711,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 //      log.debug("close refcount after {} {}", this, count);
 //    }
 
-    if (count == 0) {
+    if (count == 0 || coreContainer.solrCores.isClosed() && count == 1) {
       try {
         doClose();
       } catch (Exception e1) {
@@ -1738,8 +1739,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     while (!canBeClosed() || refCount.get() != -1) {
       cnt++;
       try {
-        synchronized (closeAndWait) {
-          closeAndWait.wait(250);
+        if (!closing) {
+          synchronized (closeAndWait) {
+            closeAndWait.wait(250);
+          }
         }
         if (cnt >= 2 && !closing) {
           close();

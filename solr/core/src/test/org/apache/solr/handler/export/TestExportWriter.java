@@ -667,6 +667,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Nightly
   public void testMultipleSorts() throws Exception {
     assertU(delQ("*:*"));
     assertU(commit());

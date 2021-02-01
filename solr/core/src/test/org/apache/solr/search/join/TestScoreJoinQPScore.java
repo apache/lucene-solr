@@ -30,6 +30,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -266,7 +267,9 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     // however it might be better to extract this method into the separate suite
     // for a while let's nuke a cache content, in case of repetitions
     @SuppressWarnings("rawtypes")
-    SolrCache cache = (SolrCache)h.getCore().getInfoRegistry().get("queryResultCache");
+    SolrCore core = h.getCore();
+    SolrCache cache = (SolrCache)core.getInfoRegistry().get("queryResultCache");
+    core.close();
     cache.clear();
   }
 

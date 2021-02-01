@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -238,22 +239,28 @@ public class TestMultiWordSynonyms extends SolrTestCaseJ4 {
   }
 
   public void testEdismaxQueryParsing_multiTermWithPf_shouldParseCorrectPhraseQueries() throws Exception {
+    SolrQueryRequest req = req(params("sow", "false", "qf", "text^10", "pf", "text^10", "pf2", "text^5", "pf3", "text^8"));
     Query q = QParser.getParser("foo a b bar","edismax",true,
-        req(params("sow", "false","qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"))).getQuery();
+       req).getQuery();
+    req.close();
     assertEquals("+(" +
         "((text:foo)^10.0) ((text:a)^10.0) ((text:b)^10.0) (((+text:tropical +text:cyclone) text:bar)^10.0)) " +
         "((text:\"foo a b tropical cyclone\" text:\"foo a b bar\")^10.0) " +
         "(((text:\"foo a\")^5.0) ((text:\"a b\")^5.0) ((text:\"b tropical cyclone\" text:\"b bar\")^5.0)) " +
         "(((text:\"foo a b\")^8.0) ((text:\"a b tropical cyclone\" text:\"a b bar\")^8.0))", q.toString());
 
-    q = QParser.getParser("tropical cyclone foo a b ","edismax",true, req(params("qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"))).getQuery();
+    req = req(params("qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"));
+    q = QParser.getParser("tropical cyclone foo a b ","edismax",true, req).getQuery();
+    req.close();
     assertEquals("+(" +
         "((text:bar (+text:tropical +text:cyclone))^10.0) ((text:foo)^10.0) ((text:a)^10.0) ((text:b)^10.0)) " +
         "((text:\"bar foo a b\" text:\"tropical cyclone foo a b\")^10.0) " +
         "(((text:bar text:\"tropical cyclone\")^5.0) ((text:\"cyclone foo\")^5.0) ((text:\"foo a\")^5.0) ((text:\"a b\")^5.0)) " +
         "(((text:\"bar foo\" text:\"tropical cyclone foo\")^8.0) ((text:\"cyclone foo a\")^8.0) ((text:\"foo a b\")^8.0))", q.toString());
 
-    q = QParser.getParser("foo a b tropical cyclone","edismax",true, req(params("qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"))).getQuery();
+    req = req(params("qf", "text^10","pf", "text^10","pf2", "text^5","pf3", "text^8"));
+    q = QParser.getParser("foo a b tropical cyclone","edismax",true, req).getQuery();
+    req.close();
     assertEquals("+(" +
         "((text:foo)^10.0) ((text:a)^10.0) ((text:b)^10.0) ((text:bar (+text:tropical +text:cyclone))^10.0)) " +
         "((text:\"foo a b bar\" text:\"foo a b tropical cyclone\")^10.0) " +

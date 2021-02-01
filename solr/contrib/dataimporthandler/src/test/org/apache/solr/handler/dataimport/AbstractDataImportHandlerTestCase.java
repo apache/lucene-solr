@@ -67,8 +67,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
   }
 
   protected String loadDataConfig(String dataConfigFileName) {
-    try {
-      SolrCore core = h.getCore();
+    try (SolrCore core = h.getCore()) {
       return SolrWriter.getResourceAsString(core.getResourceLoader()
               .openResource(dataConfigFileName));
     } catch (IOException e) {

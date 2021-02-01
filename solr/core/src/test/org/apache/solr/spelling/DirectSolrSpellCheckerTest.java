@@ -61,7 +61,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
 
-    h.getCore().withSearcher(searcher -> {
+    core.withSearcher(searcher -> {
 
       // check that 'fob' is corrected to 'foo'
       Collection<Token> tokens = queryConverter.convert("fob");
@@ -83,6 +83,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       assertTrue("suggestions should be empty", suggestions.isEmpty());
       return null;
     });
+    core.close();
   }
   
   @Test
@@ -115,7 +116,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
 
-    h.getCore().withSearcher(searcher -> {
+    core.withSearcher(searcher -> {
       Collection<Token> tokens = queryConverter.convert("anothar");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
@@ -133,6 +134,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
 
       return null;
     });
+    core.close();
   }
   
 }

@@ -49,24 +49,23 @@ public class ConfigureRecoveryStrategyTest extends SolrTestCaseJ4 {
   }
 
   public void testBuilder() throws Exception {
-    final RecoveryStrategy.Builder recoveryStrategyBuilder =
-        h.getCore().getSolrCoreState().getRecoveryStrategyBuilder();
-    assertNotNull("recoveryStrategyBuilder is null", recoveryStrategyBuilder);
+    try (SolrCore core = h.getCore()) {
+      final RecoveryStrategy.Builder recoveryStrategyBuilder = core.getSolrCoreState().getRecoveryStrategyBuilder();
+      assertNotNull("recoveryStrategyBuilder is null", recoveryStrategyBuilder);
 
-    final String expectedClassName;
+      final String expectedClassName;
 
-    if (solrConfigFileName.equals(solrConfigFileNameConfigure)) {
-      expectedClassName = RecoveryStrategy.Builder.class.getName();
-    } else if (solrConfigFileName.equals(solrConfigFileNameCustom)) {
-      assertTrue("recoveryStrategyBuilder is wrong class (instanceof)",
-          recoveryStrategyBuilder instanceof CustomRecoveryStrategyBuilder);
-      expectedClassName = ConfigureRecoveryStrategyTest.CustomRecoveryStrategyBuilder.class.getName();
-    } else {
-      expectedClassName = null;
+      if (solrConfigFileName.equals(solrConfigFileNameConfigure)) {
+        expectedClassName = RecoveryStrategy.Builder.class.getName();
+      } else if (solrConfigFileName.equals(solrConfigFileNameCustom)) {
+        assertTrue("recoveryStrategyBuilder is wrong class (instanceof)", recoveryStrategyBuilder instanceof CustomRecoveryStrategyBuilder);
+        expectedClassName = ConfigureRecoveryStrategyTest.CustomRecoveryStrategyBuilder.class.getName();
+      } else {
+        expectedClassName = null;
+      }
+
+      assertEquals("recoveryStrategyBuilder is wrong class (name)", expectedClassName, recoveryStrategyBuilder.getClass().getName());
     }
-
-    assertEquals("recoveryStrategyBuilder is wrong class (name)",
-        expectedClassName, recoveryStrategyBuilder.getClass().getName());
   }
 
   public void testAlmostAllMethodsAreFinal() throws Exception {

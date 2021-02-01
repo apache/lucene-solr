@@ -31,31 +31,26 @@ public class TestSolrDeletionPolicy2 extends SolrTestCaseJ4 {
 
   @Test
   public void testFakeDeletionPolicyClass() {
+    try (SolrCore core = h.getCore()) {
+      IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
+      assertTrue(delPolicy.getWrappedDeletionPolicy() instanceof FakeDeletionPolicy);
 
-    IndexDeletionPolicyWrapper delPolicy = h.getCore().getDeletionPolicy();
-    assertTrue(delPolicy.getWrappedDeletionPolicy() instanceof FakeDeletionPolicy);
+      FakeDeletionPolicy f = (FakeDeletionPolicy) delPolicy.getWrappedDeletionPolicy();
 
-    FakeDeletionPolicy f = (FakeDeletionPolicy) delPolicy.getWrappedDeletionPolicy();
+      assertTrue("value1".equals(f.getVar1()));
+      assertTrue("value2".equals(f.getVar2()));
 
-    assertTrue("value1".equals(f.getVar1()));
-    assertTrue("value2".equals(f.getVar2()));
+      assertU(adoc("id", String.valueOf(1), "name", "name" + String.valueOf(1)));
 
-    assertU(adoc("id", String.valueOf(1),
-            "name", "name" + String.valueOf(1)));
+      assertTrue(System.getProperty("onInit").equals("test.org.apache.solr.core.FakeDeletionPolicy.onInit"));
+      assertU(commit());
+      assertQ("return all docs", req("id:[0 TO 1]"), "*[count(//doc)=1]");
 
+      assertTrue(System.getProperty("onCommit").equals("test.org.apache.solr.core.FakeDeletionPolicy.onCommit"));
 
-    assertTrue(System.getProperty("onInit").equals("test.org.apache.solr.core.FakeDeletionPolicy.onInit"));
-    assertU(commit());
-    assertQ("return all docs",
-            req("id:[0 TO 1]"),
-            "*[count(//doc)=1]"
-    );
-
-
-    assertTrue(System.getProperty("onCommit").equals("test.org.apache.solr.core.FakeDeletionPolicy.onCommit"));
-
-    System.clearProperty("onInit");
-    System.clearProperty("onCommit");
+      System.clearProperty("onInit");
+      System.clearProperty("onCommit");
+    }
   }
 
 }

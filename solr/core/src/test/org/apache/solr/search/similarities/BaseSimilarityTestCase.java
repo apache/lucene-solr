@@ -22,14 +22,15 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 
 public abstract class BaseSimilarityTestCase extends SolrTestCaseJ4 {
 
   /** returns the similarity in use for the field */
   protected Similarity getSimilarity(String field) {
     Similarity sim = null;
-    try {
-      sim = h.getCore().withSearcher(IndexSearcher::getSimilarity);
+    try (SolrCore core = h.getCore()) {
+      sim = core.withSearcher(IndexSearcher::getSimilarity);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

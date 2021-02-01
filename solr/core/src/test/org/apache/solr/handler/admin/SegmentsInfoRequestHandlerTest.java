@@ -23,6 +23,7 @@ import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
@@ -54,41 +55,43 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     
     System.setProperty("enable.update.log", "false"); // no _version_ in our schema
     initCore("solrconfig.xml", "schema12.xml"); // segments API shouldn't depend on _version_ or ulog
-    
-    // build up an index with at least 2 segments and some deletes
-    for (int i = 0; i < DOC_COUNT; i++) {
-      assertU(adoc("id","SOLR100" + i, "name","Apache Solr:" + i));
+    try (SolrCore core = h.getCore()) {
+      // build up an index with at least 2 segments and some deletes
+      for (int i = 0; i < DOC_COUNT; i++) {
+        assertU(adoc("id", "SOLR100" + i, "name", "Apache Solr:" + i));
+      }
+      for (int i = 0; i < DEL_COUNT; i++) {
+        assertU(delI("SOLR100" + i));
+      }
+      assertU(commit());
+      for (int i = 0; i < DOC_COUNT; i++) {
+        assertU(adoc("id", "SOLR200" + i, "name", "Apache Solr:" + i));
+      }
+      assertU(commit());
+      core.withSearcher((searcher) -> {
+        int numSegments = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory()).size();
+        // if this is not NUM_SEGMENTS, there was some unexpected flush or merge
+        assertEquals("Unexpected number of segment in the index: " + numSegments, NUM_SEGMENTS, numSegments);
+        return null;
+      });
+      // see SOLR-14431
+      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
+      initialRefCount = iwRef.getRefcount();
+      iwRef.decref();
     }
-    for (int i = 0; i < DEL_COUNT; i++) {
-      assertU(delI("SOLR100" + i));
-    }
-    assertU(commit());
-    for (int i = 0; i < DOC_COUNT; i++) {
-      assertU(adoc("id","SOLR200" + i, "name","Apache Solr:" + i));
-    }
-    assertU(commit());
-    h.getCore().withSearcher((searcher) -> {
-      int numSegments = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory()).size();
-      // if this is not NUM_SEGMENTS, there was some unexpected flush or merge
-      assertEquals("Unexpected number of segment in the index: " + numSegments, 
-          NUM_SEGMENTS, numSegments);
-      return null;
-    });
-    // see SOLR-14431
-    RefCounted<IndexWriter> iwRef = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
-    initialRefCount = iwRef.getRefcount();
-    iwRef.decref();
   }
   
   @AfterClass
   public static void afterClass() throws Exception {
-    RefCounted<IndexWriter> iwRef = h.getCore().getSolrCoreState().getIndexWriter(h.getCore());
-    int finalRefCount = iwRef.getRefcount();
-    iwRef.decref();
-    assertEquals("IW refcount mismatch", initialRefCount, finalRefCount);
-    systemClearPropertySolrTestsMergePolicyFactory();
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.tests.ramBufferSizeMB");
+    try (SolrCore core = h.getCore()) {
+      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
+      int finalRefCount = iwRef.getRefcount();
+      iwRef.decref();
+      assertEquals("IW refcount mismatch", initialRefCount, finalRefCount);
+      systemClearPropertySolrTestsMergePolicyFactory();
+      System.clearProperty("solr.tests.maxBufferedDocs");
+      System.clearProperty("solr.tests.ramBufferSizeMB");
+    }
   }
 
   @Test
@@ -107,20 +110,20 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
   
   @Test
   public void testSegmentNames() throws IOException {
-    String[] segmentNamePatterns = new String[NUM_SEGMENTS];
-    h.getCore().withSearcher((searcher) -> {
-      int i = 0;
-      for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
-        assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
-        segmentNamePatterns[i] = "//lst[@name='segments']/lst/str[@name='name'][.='" + sInfo.info.name + "']";
-        i++;
-      }
-      
-      return null;
-    });
-    assertQ("Unexpected segment names returned",
-        req("qt","/admin/segments"),
-        segmentNamePatterns);
+    try (SolrCore core = h.getCore()) {
+      String[] segmentNamePatterns = new String[NUM_SEGMENTS];
+      core.withSearcher((searcher) -> {
+        int i = 0;
+        for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
+          assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
+          segmentNamePatterns[i] = "//lst[@name='segments']/lst/str[@name='name'][.='" + sInfo.info.name + "']";
+          i++;
+        }
+
+        return null;
+      });
+      assertQ("Unexpected segment names returned", req("qt", "/admin/segments"), segmentNamePatterns);
+    }
   }
   
   @Test
@@ -142,20 +145,20 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testFieldInfo() throws Exception {
-    String[] segmentNamePatterns = new String[NUM_SEGMENTS];
-    h.getCore().withSearcher((searcher) -> {
-      int i = 0;
-      for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
-        assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
-        segmentNamePatterns[i] = "boolean(//lst[@name='segments']/lst[@name='" + sInfo.info.name + "']/lst[@name='fields']/lst[@name='id']/str[@name='flags'])";
-        i++;
-      }
+    try (SolrCore core = h.getCore()) {
+      String[] segmentNamePatterns = new String[NUM_SEGMENTS];
+      core.withSearcher((searcher) -> {
+        int i = 0;
+        for (SegmentCommitInfo sInfo : SegmentInfos.readLatestCommit(searcher.getIndexReader().directory())) {
+          assertTrue("Unexpected number of segment in the index: " + i, i < NUM_SEGMENTS);
+          segmentNamePatterns[i] = "boolean(//lst[@name='segments']/lst[@name='" + sInfo.info.name + "']/lst[@name='fields']/lst[@name='id']/str[@name='flags'])";
+          i++;
+        }
 
-      return null;
-    });
-    assertQ("Unexpected field infos returned",
-        req("qt","/admin/segments", "fieldInfo", "true"),
-        segmentNamePatterns);
+        return null;
+      });
+      assertQ("Unexpected field infos returned", req("qt", "/admin/segments", "fieldInfo", "true"), segmentNamePatterns);
+    }
   }
 
 

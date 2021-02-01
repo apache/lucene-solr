@@ -42,8 +42,6 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
   }
 
   public void testListenerCreationCounts() {
-    SolrCore core = h.getCore();
-
     assertEquals("Unexpected number of listeners created",
                  EXPECTED_MOCK_LISTENER_INSTANCES,
                  MockEventListener.getCreateCount() - preInitMockListenerCount);
@@ -52,47 +50,46 @@ public class TestQuerySenderNoQuery extends SolrTestCaseJ4 {
   @Test
   public void testRequestHandlerRegistry() {
     // property values defined in build.xml
-    SolrCore core = h.getCore();
-
-    assertEquals( 2, core.firstSearcherListeners.size() );
-    assertEquals( 2, core.newSearcherListeners.size() );
+    try (SolrCore core = h.getCore()) {
+      assertEquals(2, core.firstSearcherListeners.size());
+      assertEquals(2, core.newSearcherListeners.size());
+    }
   }
 
   // Determine that when the query lists are commented out of both new and
   // first searchers in the config, we don't throw an NPE
   @Test
   public void testSearcherEvents() throws Exception {
-    SolrCore core = h.getCore();
-    SolrEventListener nsl = null;
-    boolean foundQuerySenderListener = false;
-    Iterator<SolrEventListener> it = core.newSearcherListeners.iterator();
-    while (it.hasNext()) {
-      SolrEventListener newSearcherListener = it.next();
-      if (newSearcherListener instanceof QuerySenderListener) {
-        foundQuerySenderListener = true;
-        nsl = newSearcherListener;
+    try (SolrCore core = h.getCore()) {
+      SolrEventListener nsl = null;
+      boolean foundQuerySenderListener = false;
+      Iterator<SolrEventListener> it = core.newSearcherListeners.iterator();
+      while (it.hasNext()) {
+        SolrEventListener newSearcherListener = it.next();
+        if (newSearcherListener instanceof QuerySenderListener) {
+          foundQuerySenderListener = true;
+          nsl = newSearcherListener;
+        }
       }
+
+      assertTrue("Not an instance of QuerySenderListener", foundQuerySenderListener);
+      QuerySenderListener qsl = (QuerySenderListener) nsl;
+
+      core.withSearcher(currentSearcher -> {
+        SolrIndexSearcher dummy = null;
+        qsl.newSearcher(currentSearcher, dummy);//test first Searcher (since param is null)
+        MockQuerySenderListenerReqHandler mock = (MockQuerySenderListenerReqHandler) core.getRequestHandler("/mock");
+        assertNotNull("Mock is null", mock);
+        assertNull("Req (firstsearcher) is not null", mock.req);
+
+        SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getNewIndexDir(), core.getLatestSchema(), core.getSolrConfig().indexConfig, "testQuerySenderNoQuery", false, core.getDirectoryFactory());
+
+        qsl.newSearcher(newSearcher, currentSearcher); // get newSearcher.
+        assertNull("Req (newsearcher) is not null", mock.req);
+        newSearcher.close();
+        return null;
+      });
     }
-
-
-
-    assertTrue("Not an instance of QuerySenderListener", foundQuerySenderListener);
-    QuerySenderListener qsl = (QuerySenderListener) nsl;
-
-    h.getCore().withSearcher(currentSearcher -> {
-      SolrIndexSearcher dummy = null;
-      qsl.newSearcher(currentSearcher, dummy);//test first Searcher (since param is null)
-      MockQuerySenderListenerReqHandler mock = (MockQuerySenderListenerReqHandler) core.getRequestHandler("/mock");
-      assertNotNull("Mock is null", mock);
-      assertNull("Req (firstsearcher) is not null", mock.req);
-
-      SolrIndexSearcher newSearcher = new SolrIndexSearcher(core, core.getNewIndexDir(), core.getLatestSchema(), core.getSolrConfig().indexConfig, "testQuerySenderNoQuery", false, core.getDirectoryFactory());
-
-      qsl.newSearcher(newSearcher, currentSearcher); // get newSearcher.
-      assertNull("Req (newsearcher) is not null", mock.req);
-      newSearcher.close();
-      return null;
-    });
   }
 
 }

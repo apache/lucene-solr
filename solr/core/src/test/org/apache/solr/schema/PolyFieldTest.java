@@ -40,8 +40,9 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSchemaBasics() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
 
     SchemaField home = schema.getField("home");
     assertNotNull(home);
@@ -76,6 +77,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   public void testPointFieldType() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     SchemaField home = schema.getField("home");
     assertNotNull(home);
     assertTrue("home is not a poly field", home.isPolyField());
@@ -166,6 +168,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   public void testSearchDetails() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     double[] xy = new double[]{35.0, -79.34};
     String point = xy[0] + "," + xy[1];
     //How about some queries?

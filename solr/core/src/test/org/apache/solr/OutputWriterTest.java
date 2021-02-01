@@ -22,6 +22,7 @@ import java.io.Writer;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginBag;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -68,7 +69,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
     @Test
     public void testUselessWriter() throws Exception {
         lrf.args.put("wt", "useless");
-        String out = h.query(req("foo"));
+        String out = query(req("foo"));
         assertEquals(USELESS_OUTPUT, out);
     }
     
@@ -76,7 +77,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
     public void testTrivialXsltWriter() throws Exception {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy.xsl");
-        String out = h.query(req("foo"));
+        String out = query(req("foo"));
         // System.out.println(out);
         assertTrue(out.contains("DUMMY"));
     }
@@ -85,19 +86,20 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
     public void testTrivialXsltWriterInclude() throws Exception {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy-using-include.xsl");
-        String out = h.query(req("foo"));
+        String out = query(req("foo"));
         // System.out.println(out);
         assertTrue(out.contains("DUMMY"));
     }
 
     public void testLazy() {
-        PluginBag.PluginHolder<QueryResponseWriter> qrw = h.getCore().getResponseWriters().getRegistry().get("useless");
-        assertTrue("Should be a lazy class", qrw instanceof PluginBag.LazyPluginHolder);
+        try (SolrCore core = h.getCore()) {
+            PluginBag.PluginHolder<QueryResponseWriter> qrw = core.getResponseWriters().getRegistry().get("useless");
+            assertTrue("Should be a lazy class", qrw instanceof PluginBag.LazyPluginHolder);
 
-        qrw = h.getCore().getResponseWriters().getRegistry().get("xml");
-        assertTrue("Should not be a lazy class", qrw.isLoaded());
-        assertTrue("Should not be a lazy class", qrw.getClass() == PluginBag.PluginHolder.class);
-
+            qrw = core.getResponseWriters().getRegistry().get("xml");
+            assertTrue("Should not be a lazy class", qrw.isLoaded());
+            assertTrue("Should not be a lazy class", qrw.getClass() == PluginBag.PluginHolder.class);
+        }
     }
     
     ////////////////////////////////////////////////////////////////////////////

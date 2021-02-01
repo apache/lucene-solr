@@ -36,7 +36,7 @@ import org.apache.solr.core.SolrInfoBean;
 public class SolrCoreMetricManager implements Closeable {
 
   private final SolrCore core;
-  private SolrMetricsContext solrMetricsContext;
+  private volatile SolrMetricsContext solrMetricsContext;
   private SolrMetricManager metricManager;
   private String collectionName;
   private String shardName;

@@ -23,6 +23,7 @@ import java.util.Random;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.TestCloudPseudoReturnFields;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 
 import org.apache.solr.common.params.SolrParams;
@@ -77,12 +78,12 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     // if the type lookup is done again later, we get the wrong thing). SOLR-4036
 
     // score as psuedo field - precondition checks
-    for (String name : new String[] {"score", "val_ss"}) {
-      SchemaField sf = h.getCore().getLatestSchema().getFieldOrNull(name);
-      assertNotNull("Test depends on a (dynamic) field mtching '"+name+
-                    "', schema was changed out from under us!",sf);
-      assertTrue("Test depends on a multivalued dynamic field matching '"+name+
-                 "', schema was changed out from under us!", sf.multiValued());
+    try (SolrCore core = h.getCore()) {
+      for (String name : new String[] {"score", "val_ss"}) {
+        SchemaField sf = core.getLatestSchema().getFieldOrNull(name);
+        assertNotNull("Test depends on a (dynamic) field mtching '" + name + "', schema was changed out from under us!", sf);
+        assertTrue("Test depends on a multivalued dynamic field matching '" + name + "', schema was changed out from under us!", sf.multiValued());
+      }
     }
 
     // score as psuedo field

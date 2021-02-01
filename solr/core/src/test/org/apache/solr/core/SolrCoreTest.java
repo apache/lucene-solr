@@ -70,6 +70,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     old = core.registerRequestHandler( path, handler2 );
     assertEquals( old, handler1 ); // should pop out the old one
     assertEquals( core.getRequestHandlers().get( path ), handler2 );
+    core.close();
   }
 
   @Test
@@ -116,6 +117,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount; assertEquals(pathToClassMap.get("update"), "solr.UpdateRequestHandlerApi");
     }
     assertEquals("wrong number of implicit handlers", ihCount, implicitHandlers.size());
+    core.close();
   }
 
   @Test
@@ -258,6 +260,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     //try a Req Handler, which are stored by name, not clas
     bean = infoRegistry.get("/select");
     assertNotNull("bean not registered", bean);
+    core.close();
   }
 
   @Test
