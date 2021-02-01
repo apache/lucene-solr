@@ -268,12 +268,12 @@ public class PackageTool extends SolrCLI.ToolBase {
         .argName("COLLECTIONS")
         .hasArg()
         .required(false)
-        .desc("List of collections.")
+        .desc("Specifies that this is to be a collection(s) level action.")
         .build(),
 
         Option.builder("cluster")
         .required(false)
-        .desc("Needed to install cluster level plugins in a package.")
+        .desc("Specifies that this is to be a cluster level action.")
         .build(),
 
         Option.builder("p")
