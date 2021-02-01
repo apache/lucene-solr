@@ -66,28 +66,12 @@
       "class": "solr.LukeRequestHandler",
       "useParams":"_ADMIN_LUKE"
     },
-    "/admin/system": {
-      "class": "solr.SystemInfoHandler",
-      "useParams":"_ADMIN_SYSTEM"
-    },
     "/admin/mbeans": {
       "class": "solr.SolrInfoMBeanHandler",
       "useParams":"_ADMIN_MBEANS"
     },
     "/admin/plugins": {
       "class": "solr.PluginInfoHandler"
-    },
-    "/admin/threads": {
-      "class": "solr.ThreadDumpHandler",
-      "useParams":"_ADMIN_THREADS"
-    },
-    "/admin/properties": {
-      "class": "solr.PropertiesRequestHandler",
-      "useParams":"_ADMIN_PROPERTIES"
-    },
-    "/admin/logging": {
-      "class": "solr.LoggingHandler",
-      "useParams":"_ADMIN_LOGGING"
     },
     "/admin/file": {
       "class": "solr.ShowFileRequestHandler",

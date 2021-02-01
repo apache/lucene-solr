@@ -84,11 +84,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   //(ie: not static, so core reload will refresh)
   private String hostname = null;
 
-  private CoreContainer cc;
-
-  public SystemInfoHandler() {
-    this(null);
-  }
+  private final CoreContainer cc;
 
   public SystemInfoHandler(CoreContainer cc) {
     super();
@@ -149,7 +145,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     rsp.add( "security", getSecurityInfo(req) );
     rsp.add( "system", getSystemInfo() );
     if (solrCloudMode) {
-      rsp.add("node", getCoreContainer(req, core).getZkController().getNodeName());
+      rsp.add(PARAM_NODE, getCoreContainer(req, core).getZkController().getNodeName());
     }
     SolrEnvironment env = SolrEnvironment.getFromSyspropOrClusterprop(solrCloudMode ?
         getCoreContainer(req, core).getZkController().zkStateReader : null);
