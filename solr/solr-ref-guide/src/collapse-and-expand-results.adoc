@@ -204,3 +204,6 @@ Overrides the main query (`q`), determines which documents to include in the mai
 
 `expand.fq`::
 Overrides main filter queries (`fq`), determines which documents to include in the main group. The default is to use the main filter queries.
+
+`expand.nullGroup`::
+Indicates if an expanded group can be returned containing documents with no value in the expanded field.  This option only _enables_ support for returning a "null" expanded group: As with all expanded groups, it will only exist if the main group includes corresponding documents for it to expand (Via `collapse` using either `nullPolicy=collapse` or `nullPolicy=expand`; Or via `expand.q`) _and_ documents are found that belong in this expanded group.  The default value is `false`
