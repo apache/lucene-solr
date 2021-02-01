@@ -25,11 +25,15 @@ allprojects {
       test.resources.srcDirs = ['src/test-files']
     }
 
-    task copyTestResources(type: Copy) {
+    task copyTestResources(type: Sync) {
       from('src/test') {
         exclude '**/*.java'
       }
       into sourceSets.test.java.outputDir
+      preserve {
+        include '**/*.class'
+        include 'META-INF/services/*'
+      }
     }
     processTestResources.dependsOn copyTestResources
   }
