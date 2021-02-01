@@ -31,21 +31,18 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPerFieldConsistency extends LuceneTestCase {
 
-  public void testDocWithMissingIndexingOptionsThrowsError() throws IOException {
+  public void testDocWithMissingSchemaOptionsThrowsError() throws IOException {
     try (Directory dir = newDirectory();
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig()); ) {
       final String FIELD_NAME = "myfield";
       final Field textField = new Field(FIELD_NAME, "myvalue", TextField.TYPE_NOT_STORED);
-      final Field storedField = new StoredField(FIELD_NAME, new BytesRef("myvalue"));
       final Field docValuesField = new BinaryDocValuesField(FIELD_NAME, new BytesRef("myvalue"));
       final Field pointField = new LongPoint(FIELD_NAME, 1);
       final Field vectorField =
           new VectorField(
               FIELD_NAME, new float[] {.1f, .2f, .3f}, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
-      final Field[] fields =
-          new Field[] {textField, storedField, docValuesField, pointField, vectorField};
-      final String[] errorMsgs =
-          new String[] {"postings", "stored options", "doc values", "points", "vectors"};
+      final Field[] fields = new Field[] {textField, docValuesField, pointField, vectorField};
+      final String[] errorMsgs = new String[] {"index options", "doc values", "points", "vector"};
 
       final Document doc0 = new Document();
       for (Field field : fields) {
@@ -53,7 +50,7 @@ public class TestPerFieldConsistency extends LuceneTestCase {
       }
       writer.addDocument(doc0);
 
-      // indexing a field with missing field indexing options returns error
+      // the same segment: indexing a doc with a missing field throws error
       int missingFieldIdx = randomIntBetween(0, fields.length - 1);
       final Document doc1 = new Document();
       for (int i = 0; i < fields.length; i++) {
@@ -62,22 +59,30 @@ public class TestPerFieldConsistency extends LuceneTestCase {
         }
       }
       IllegalArgumentException exception =
-          expectThrows(
-              IllegalArgumentException.class,
-              () -> {
-                writer.addDocument(doc1);
-              });
+          expectThrows(IllegalArgumentException.class, () -> writer.addDocument(doc1));
       String expectedErrMsg =
-          "Inconsistency of field indexing options across documents! "
-              + "Field [myfield] of doc [1] must be indexed with "
-              + errorMsgs[missingFieldIdx]
-              + "!";
+          "Inconsistency of field data structures across documents for field [myfield] of doc [1].";
       assertEquals(expectedErrMsg, exception.getMessage());
 
       writer.flush();
       try (IndexReader reader = DirectoryReader.open(writer)) {
         assertEquals(1, reader.numDocs());
         assertEquals(1, reader.numDeletedDocs());
+      }
+
+      // diff segment, same index: indexing a doc with a missing field throws error
+      exception = expectThrows(IllegalArgumentException.class, () -> writer.addDocument(doc1));
+      assertTrue(
+          exception
+              .getMessage()
+              .contains("cannot change field \"myfield\" from " + errorMsgs[missingFieldIdx]));
+
+      writer.addDocument(doc0); // add document with correct data structures
+
+      writer.flush();
+      try (IndexReader reader = DirectoryReader.open(writer)) {
+        assertEquals(2, reader.numDocs());
+        assertEquals(2, reader.numDeletedDocs());
       }
     }
   }
@@ -87,54 +92,53 @@ public class TestPerFieldConsistency extends LuceneTestCase {
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig()); ) {
       final String FIELD_NAME = "myfield";
       final Field textField = new Field(FIELD_NAME, "myvalue", TextField.TYPE_NOT_STORED);
-      final Field storedField = new StoredField(FIELD_NAME, new BytesRef("myvalue"));
       final Field docValuesField = new BinaryDocValuesField(FIELD_NAME, new BytesRef("myvalue"));
       final Field pointField = new LongPoint(FIELD_NAME, 1);
       final Field vectorField =
           new VectorField(
               FIELD_NAME, new float[] {.1f, .2f, .3f}, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
-      final Field[] fields =
-          new Field[] {textField, storedField, docValuesField, pointField, vectorField};
-      final String[] errorMsgs =
-          new String[] {"postings", "stored options", "doc values", "points", "vectors"};
+      final Field[] fields = new Field[] {textField, docValuesField, pointField, vectorField};
+      final String[] errorMsgs = new String[] {"index options", "doc values", "points", "vector"};
 
       final Document doc0 = new Document();
       int existingFieldIdx = randomIntBetween(0, fields.length - 1);
-      for (int i = 0; i < fields.length; i++) {
-        if (i == existingFieldIdx) {
-          doc0.add(fields[i]);
-        }
-      }
+      doc0.add(fields[existingFieldIdx]);
       writer.addDocument(doc0);
 
-      // indexing a field with extra field indexing options returns error
+      // the same segment: indexing a field with extra field indexing options returns error
       int extraFieldIndex = randomIntBetween(0, fields.length - 1);
       while (extraFieldIndex == existingFieldIdx) {
         extraFieldIndex = randomIntBetween(0, fields.length - 1);
       }
       final Document doc1 = new Document();
-      for (int i = 0; i < fields.length; i++) {
-        if (i == existingFieldIdx || i == extraFieldIndex) {
-          doc1.add(fields[i]);
-        }
-      }
+      doc1.add(fields[existingFieldIdx]);
+      doc1.add(fields[extraFieldIndex]);
+
       IllegalArgumentException exception =
-          expectThrows(
-              IllegalArgumentException.class,
-              () -> {
-                writer.addDocument(doc1);
-              });
+          expectThrows(IllegalArgumentException.class, () -> writer.addDocument(doc1));
       String expectedErrMsg =
-          "Inconsistency of field indexing options across documents! "
-              + "Field [myfield] of doc [1] must be indexed without "
-              + errorMsgs[extraFieldIndex]
-              + "!";
+          "Inconsistency of field data structures across documents for field [myfield] of doc [1].";
       assertEquals(expectedErrMsg, exception.getMessage());
 
       writer.flush();
       try (IndexReader reader = DirectoryReader.open(writer)) {
         assertEquals(1, reader.numDocs());
         assertEquals(1, reader.numDeletedDocs());
+      }
+
+      // diff segment, same index: indexing a field with extra field indexing options returns error
+      exception = expectThrows(IllegalArgumentException.class, () -> writer.addDocument(doc1));
+      assertTrue(
+          exception
+              .getMessage()
+              .contains("cannot change field \"myfield\" from " + errorMsgs[extraFieldIndex]));
+
+      writer.addDocument(doc0); // add document with correct data structures
+
+      writer.flush();
+      try (IndexReader reader = DirectoryReader.open(writer)) {
+        assertEquals(2, reader.numDocs());
+        assertEquals(2, reader.numDeletedDocs());
       }
     }
   }

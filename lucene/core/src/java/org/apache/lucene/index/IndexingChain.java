@@ -79,6 +79,7 @@ final class IndexingChain implements Accountable {
 
   // Holds fields seen in each document
   private PerField[] fields = new PerField[1];
+  private PerField[] docFields = new PerField[10];
   private final InfoStream infoStream;
   private final ByteBlockPool.Allocator byteBlockAllocator;
   private final LiveIndexWriterConfig indexWriterConfig;
@@ -349,7 +350,8 @@ final class IndexingChain implements Accountable {
 
             perField.pointValuesWriter.flush(state, sortMap, pointsWriter);
             perField.pointValuesWriter = null;
-          } else if (perField.fieldInfo.getPointDimensionCount() != 0) {
+          } else if (perField.fieldInfo != null
+              && perField.fieldInfo.getPointDimensionCount() != 0) {
             // BUG
             throw new AssertionError(
                 "segment="
@@ -399,7 +401,8 @@ final class IndexingChain implements Accountable {
             }
             perField.docValuesWriter.flush(state, sortMap, dvConsumer);
             perField.docValuesWriter = null;
-          } else if (perField.fieldInfo.getDocValuesType() != DocValuesType.NONE) {
+          } else if (perField.fieldInfo != null
+              && perField.fieldInfo.getDocValuesType() != DocValuesType.NONE) {
             // BUG
             throw new AssertionError(
                 "segment="
@@ -470,7 +473,7 @@ final class IndexingChain implements Accountable {
 
             perField.vectorValuesWriter.flush(sortMap, vectorWriter);
             perField.vectorValuesWriter = null;
-          } else if (perField.fieldInfo.getVectorDimension() != 0) {
+          } else if (perField.fieldInfo != null && perField.fieldInfo.getVectorDimension() != 0) {
             // BUG
             throw new AssertionError(
                 "segment="
@@ -548,7 +551,7 @@ final class IndexingChain implements Accountable {
     for (int j = 0; j < fieldHash.length; j++) {
       PerField fp0 = fieldHash[j];
       while (fp0 != null) {
-        final int hashPos2 = fp0.fieldInfo.name.hashCode() & newHashMask;
+        final int hashPos2 = fp0.fieldName.hashCode() & newHashMask;
         PerField nextFP0 = fp0.next;
         fp0.next = newHashArray[hashPos2];
         newHashArray[hashPos2] = fp0;
@@ -581,37 +584,56 @@ final class IndexingChain implements Accountable {
   }
 
   void processDocument(int docID, Iterable<? extends IndexableField> document) throws IOException {
-
-    // How many indexed field names we've seen (collapses
-    // multiple field instances by the same name):
-    int fieldCount = 0;
-
+    int fieldCount =
+        0; // How many field names we've seen (collapses multiple field instances by the same name)
     long fieldGen = nextFieldGen++;
-
-    // NOTE: we need two passes here, in case there are
-    // multi-valued fields, because we must process all
-    // instances of a given field at once, since the
-    // analyzer is free to reuse TokenStream across fields
-    // (i.e., we cannot have more than one TokenStream
-    // running "at once"):
+    int docFieldIdx = 0;
 
     termsHash.startDocument();
-
     startStoredFields(docID);
     try {
+      // 1st pass over doc fields – verify that doc schema matches the index schema
+      // build schema for each unique doc field
       for (IndexableField field : document) {
-        fieldCount = processField(docID, field, fieldGen, fieldCount);
+        IndexableFieldType fieldType = field.fieldType();
+        PerField pf = getOrAddPerField(field.name(), fieldType);
+        if (pf.fieldGen != fieldGen) { // first time we see this field in this document
+          fields[fieldCount++] = pf;
+          pf.fieldGen = fieldGen;
+          pf.reset(docID);
+        }
+        if (docFieldIdx >= docFields.length) oversizeDocFields();
+        docFields[docFieldIdx++] = pf;
+        updateDocFieldSchema(pf.schema, fieldType);
+      }
+      // for each field verify that its schema within the current doc matches its schema in the
+      // index
+      for (int i = 0; i < fieldCount; i++) {
+        PerField pf = fields[i];
+        if (pf.fieldInfo == null) { // the first time we see this field in this segment
+          initializeFieldInfo(pf);
+        } else {
+          pf.schema.assertSameSchema(pf.fieldInfo);
+        }
+      }
+
+      // 2nd pass over doc fields – index each field
+      docFieldIdx = 0;
+      for (IndexableField field : document) {
+        processField(docID, field, docFields[docFieldIdx++]);
       }
     } finally {
       if (hasHitAbortingException == false) {
         // Finish each indexed field name seen in the document:
         for (int i = 0; i < fieldCount; i++) {
-          fields[i].finish(docID);
+          PerField pf = fields[i];
+          if (pf.fieldInfo != null && pf.fieldInfo.getIndexOptions() != IndexOptions.NONE) {
+            pf.finish(docID);
+          }
         }
         finishStoredFields();
       }
     }
-
     try {
       termsHash.finishDocument(docID);
     } catch (Throwable th) {
@@ -622,37 +644,91 @@ final class IndexingChain implements Accountable {
     }
   }
 
-  private int processField(int docID, IndexableField field, long fieldGen, int fieldCount)
-      throws IOException {
-    String fieldName = field.name();
+  private void oversizeDocFields() {
+    PerField[] newDocFields =
+        new PerField
+            [ArrayUtil.oversize(docFields.length + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+    System.arraycopy(docFields, 0, newDocFields, 0, docFields.length);
+    docFields = newDocFields;
+  }
+
+  private void initializeFieldInfo(PerField pf) throws IOException {
+    // Create and add a new fieldInfo to fieldInfos for this segment.
+    // During the creation of FieldInfo there is also verification of the correctness of all its
+    // parameters.
+
+    // If the fieldInfo doesn't exist in globalFieldNumbers for the whole index, it will be added
+    // there.
+    // If the field already exists in globalFieldNumbers (i.e. field present in other segments),
+    // we check consistency of its schema with schema for the whole index.
+    FieldSchema s = pf.schema;
+    FieldInfo fi =
+        fieldInfos.add(
+            pf.fieldName,
+            s.storeTermVector,
+            s.omitNorms,
+            s.indexOptions,
+            s.docValuesType,
+            s.dvGen,
+            s.attributes,
+            s.pointDimensionCount,
+            s.pointIndexDimensionCount,
+            s.pointNumBytes,
+            s.vectorDimension,
+            s.vectorSearchStrategy);
+    pf.setFieldInfo(fi);
+    if (fi.getIndexOptions() != IndexOptions.NONE) {
+      pf.setInvertState();
+    }
+    DocValuesType dvType = fi.getDocValuesType();
+    if (dvType != DocValuesType.NONE) {
+      if (indexWriterConfig.getIndexSort() != null) {
+        final Sort indexSort = indexWriterConfig.getIndexSort();
+        validateIndexSortDVType(indexSort, pf.fieldInfo.name, dvType);
+      }
+      switch (dvType) {
+        case NUMERIC:
+          pf.docValuesWriter = new NumericDocValuesWriter(fi, bytesUsed);
+          break;
+        case BINARY:
+          pf.docValuesWriter = new BinaryDocValuesWriter(fi, bytesUsed);
+          break;
+        case SORTED:
+          pf.docValuesWriter = new SortedDocValuesWriter(fi, bytesUsed);
+          break;
+        case SORTED_NUMERIC:
+          pf.docValuesWriter = new SortedNumericDocValuesWriter(fi, bytesUsed);
+          break;
+        case SORTED_SET:
+          pf.docValuesWriter = new SortedSetDocValuesWriter(fi, bytesUsed);
+          break;
+        default:
+          throw new AssertionError("unrecognized DocValues.Type: " + dvType);
+      }
+    }
+    if (fi.getPointDimensionCount() != 0) {
+      pf.pointValuesWriter = new PointValuesWriter(byteBlockAllocator, bytesUsed, fi);
+    }
+    if (fi.getVectorDimension() != 0) {
+      pf.vectorValuesWriter = new VectorValuesWriter(fi, bytesUsed);
+    }
+  }
+
+  private void processField(int docID, IndexableField field, PerField pf) throws IOException {
     IndexableFieldType fieldType = field.fieldType();
 
-    PerField fp = null;
-
-    if (fieldType.indexOptions() == null) {
-      throw new NullPointerException(
-          "IndexOptions must not be null (field: \"" + field.name() + "\")");
-    }
-
-    // Invert indexed fields:
+    // Invert indexed fields
     if (fieldType.indexOptions() != IndexOptions.NONE) {
-      fp = getOrAddField(fieldName, fieldType, true);
-      boolean first = fp.fieldGen != fieldGen;
-      fp.invert(docID, field, first);
-
-      if (first) {
-        fields[fieldCount++] = fp;
-        fp.fieldGen = fieldGen;
+      if (pf.first) {
+        pf.invert(docID, field, true);
+        pf.first = false;
+      } else {
+        pf.invert(docID, field, false);
       }
-    } else {
-      verifyUnIndexedFieldType(fieldName, fieldType);
     }
 
-    // Add stored fields:
+    // Add stored fields
     if (fieldType.stored()) {
-      if (fp == null) {
-        fp = getOrAddField(fieldName, fieldType, false);
-      }
       String value = field.stringValue();
       if (value != null && value.length() > IndexWriter.MAX_STORED_STRING_LENGTH) {
         throw new IllegalArgumentException(
@@ -663,7 +739,7 @@ final class IndexingChain implements Accountable {
                 + " characters) to store");
       }
       try {
-        storedFieldsConsumer.writeField(fp.fieldInfo, field);
+        storedFieldsConsumer.writeField(pf.fieldInfo, field);
       } catch (Throwable th) {
         onAbortingException(th);
         throw th;
@@ -671,88 +747,78 @@ final class IndexingChain implements Accountable {
     }
 
     DocValuesType dvType = fieldType.docValuesType();
-    if (dvType == null) {
-      throw new NullPointerException(
-          "docValuesType must not be null (field: \"" + fieldName + "\")");
-    }
     if (dvType != DocValuesType.NONE) {
-      if (fp == null) {
-        fp = getOrAddField(fieldName, fieldType, false);
-      }
-      indexDocValue(docID, fp, dvType, field);
+      indexDocValue(docID, pf, dvType, field);
     }
     if (fieldType.pointDimensionCount() != 0) {
-      if (fp == null) {
-        fp = getOrAddField(fieldName, fieldType, false);
-      }
-      indexPoint(docID, fp, field);
+      pf.pointValuesWriter.addPackedValue(docID, field.binaryValue());
     }
     if (fieldType.vectorDimension() != 0) {
-      if (fp == null) {
-        fp = getOrAddField(fieldName, fieldType, false);
+      pf.vectorValuesWriter.addValue(docID, ((VectorField) field).vectorValue());
+    }
+  }
+
+  /**
+   * Returns a previously created {@link PerField}, absorbing the type information from {@link
+   * FieldType}, and creates a new {@link PerField} if this field name wasn't seen yet.
+   */
+  private PerField getOrAddPerField(String fieldName, IndexableFieldType fieldType) {
+    final int hashPos = fieldName.hashCode() & hashMask;
+    PerField pf = fieldHash[hashPos];
+    while (pf != null && pf.fieldName.equals(fieldName) == false) {
+      pf = pf.next;
+    }
+    if (pf == null) {
+      // first time we encounter field with this name in this segment
+      FieldSchema schema = new FieldSchema(fieldName);
+      Map<String, String> attributes = fieldType.getAttributes();
+      if (attributes != null) {
+        attributes.forEach((k, v) -> schema.putAttribute(k, v));
       }
-      indexVector(docID, fp, field);
+      pf =
+          new PerField(
+              fieldName,
+              indexCreatedVersionMajor,
+              schema,
+              indexWriterConfig.getSimilarity(),
+              indexWriterConfig.getInfoStream(),
+              indexWriterConfig.getAnalyzer());
+      pf.next = fieldHash[hashPos];
+      fieldHash[hashPos] = pf;
+      totalFieldCount++;
+      // At most 50% load factor:
+      if (totalFieldCount >= fieldHash.length / 2) {
+        rehash();
+      }
+      if (totalFieldCount > fields.length) {
+        PerField[] newFields =
+            new PerField
+                [ArrayUtil.oversize(totalFieldCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
+        System.arraycopy(fields, 0, newFields, 0, fields.length);
+        fields = newFields;
+      }
     }
-
-    return fieldCount;
+    return pf;
   }
 
-  private static void verifyUnIndexedFieldType(String name, IndexableFieldType ft) {
-    if (ft.storeTermVectors()) {
-      throw new IllegalArgumentException(
-          "cannot store term vectors "
-              + "for a field that is not indexed (field=\""
-              + name
-              + "\")");
+  // update schema for field as seen in a particular document
+  private static void updateDocFieldSchema(FieldSchema schema, IndexableFieldType fieldType) {
+    if (fieldType.indexOptions() != IndexOptions.NONE) {
+      schema.setIndexOptions(
+          fieldType.indexOptions(), fieldType.omitNorms(), fieldType.storeTermVectors());
     }
-    if (ft.storeTermVectorPositions()) {
-      throw new IllegalArgumentException(
-          "cannot store term vector positions "
-              + "for a field that is not indexed (field=\""
-              + name
-              + "\")");
+    if (fieldType.docValuesType() != DocValuesType.NONE) {
+      schema.setDocValues(fieldType.docValuesType(), -1);
     }
-    if (ft.storeTermVectorOffsets()) {
-      throw new IllegalArgumentException(
-          "cannot store term vector offsets "
-              + "for a field that is not indexed (field=\""
-              + name
-              + "\")");
+    if (fieldType.pointDimensionCount() != 0) {
+      schema.setPoints(
+          fieldType.pointDimensionCount(),
+          fieldType.pointIndexDimensionCount(),
+          fieldType.pointNumBytes());
     }
-    if (ft.storeTermVectorPayloads()) {
-      throw new IllegalArgumentException(
-          "cannot store term vector payloads "
-              + "for a field that is not indexed (field=\""
-              + name
-              + "\")");
+    if (fieldType.vectorDimension() != 0) {
+      schema.setVectors(fieldType.vectorSearchStrategy(), fieldType.vectorDimension());
     }
-  }
-
-  /** Called from processDocument to index one field's point */
-  private void indexPoint(int docID, PerField fp, IndexableField field) {
-    int pointDimensionCount = field.fieldType().pointDimensionCount();
-    int pointIndexDimensionCount = field.fieldType().pointIndexDimensionCount();
-
-    int dimensionNumBytes = field.fieldType().pointNumBytes();
-
-    // Record dimensions for this field; this setter will throw IllegalArgExc if
-    // the dimensions were already set to something different:
-    if (fp.fieldInfo.getPointDimensionCount() == 0) {
-      fieldInfos.globalFieldNumbers.setDimensions(
-          fp.fieldInfo.number,
-          fp.fieldInfo.name,
-          pointDimensionCount,
-          pointIndexDimensionCount,
-          dimensionNumBytes);
-    }
-
-    fp.fieldInfo.setPointDimensions(
-        pointDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
-
-    if (fp.pointValuesWriter == null) {
-      fp.pointValuesWriter = new PointValuesWriter(byteBlockAllocator, bytesUsed, fp.fieldInfo);
-    }
-    fp.pointValuesWriter.addPackedValue(docID, field.binaryValue());
   }
 
   private void validateIndexSortDVType(Sort indexSort, String fieldToValidate, DocValuesType dvType)
@@ -850,28 +916,9 @@ final class IndexingChain implements Accountable {
   }
 
   /** Called from processDocument to index one field's doc value */
-  private void indexDocValue(int docID, PerField fp, DocValuesType dvType, IndexableField field)
-      throws IOException {
-
-    if (fp.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
-      // This is the first time we are seeing this field indexed with doc values, so we
-      // now record the DV type so that any future attempt to (illegally) change
-      // the DV type of this field, will throw an IllegalArgExc:
-      if (indexWriterConfig.getIndexSort() != null) {
-        final Sort indexSort = indexWriterConfig.getIndexSort();
-        validateIndexSortDVType(indexSort, fp.fieldInfo.name, dvType);
-      }
-      fieldInfos.globalFieldNumbers.setDocValuesType(
-          fp.fieldInfo.number, fp.fieldInfo.name, dvType);
-    }
-
-    fp.fieldInfo.setDocValuesType(dvType);
-
+  private void indexDocValue(int docID, PerField fp, DocValuesType dvType, IndexableField field) {
     switch (dvType) {
       case NUMERIC:
-        if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new NumericDocValuesWriter(fp.fieldInfo, bytesUsed);
-        }
         if (field.numericValue() == null) {
           throw new IllegalArgumentException(
               "field=\"" + fp.fieldInfo.name + "\": null value not allowed");
@@ -881,57 +928,25 @@ final class IndexingChain implements Accountable {
         break;
 
       case BINARY:
-        if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new BinaryDocValuesWriter(fp.fieldInfo, bytesUsed);
-        }
         ((BinaryDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
         break;
 
       case SORTED:
-        if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new SortedDocValuesWriter(fp.fieldInfo, bytesUsed);
-        }
         ((SortedDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
         break;
 
       case SORTED_NUMERIC:
-        if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new SortedNumericDocValuesWriter(fp.fieldInfo, bytesUsed);
-        }
         ((SortedNumericDocValuesWriter) fp.docValuesWriter)
             .addValue(docID, field.numericValue().longValue());
         break;
 
       case SORTED_SET:
-        if (fp.docValuesWriter == null) {
-          fp.docValuesWriter = new SortedSetDocValuesWriter(fp.fieldInfo, bytesUsed);
-        }
         ((SortedSetDocValuesWriter) fp.docValuesWriter).addValue(docID, field.binaryValue());
         break;
 
       default:
         throw new AssertionError("unrecognized DocValues.Type: " + dvType);
     }
-  }
-
-  /** Called from processDocument to index one field's vector value */
-  private void indexVector(int docID, PerField fp, IndexableField field) {
-    int dimension = field.fieldType().vectorDimension();
-    VectorValues.SearchStrategy searchStrategy = field.fieldType().vectorSearchStrategy();
-
-    // Record dimensions and distance function for this field; this setter will throw IllegalArgExc
-    // if
-    // the dimensions or distance function were already set to something different:
-    if (fp.fieldInfo.getVectorDimension() == 0) {
-      fieldInfos.globalFieldNumbers.setVectorDimensionsAndSearchStrategy(
-          fp.fieldInfo.number, fp.fieldInfo.name, dimension, searchStrategy);
-    }
-    fp.fieldInfo.setVectorDimensionAndSearchStrategy(dimension, searchStrategy);
-
-    if (fp.vectorValuesWriter == null) {
-      fp.vectorValuesWriter = new VectorValuesWriter(fp.fieldInfo, bytesUsed);
-    }
-    fp.vectorValuesWriter.addValue(docID, ((VectorField) field).vectorValue());
   }
 
   /** Returns a previously created {@link PerField}, or null if this field name wasn't seen yet. */
@@ -942,73 +957,6 @@ final class IndexingChain implements Accountable {
       fp = fp.next;
     }
     return fp;
-  }
-
-  /**
-   * Returns a previously created {@link PerField}, absorbing the type information from {@link
-   * FieldType}, and creates a new {@link PerField} if this field name wasn't seen yet.
-   */
-  private PerField getOrAddField(String name, IndexableFieldType fieldType, boolean invert) {
-
-    // Make sure we have a PerField allocated
-    final int hashPos = name.hashCode() & hashMask;
-    PerField fp = fieldHash[hashPos];
-    while (fp != null && !fp.fieldInfo.name.equals(name)) {
-      fp = fp.next;
-    }
-
-    if (fp == null) {
-      // First time we are seeing this field in this segment
-
-      FieldInfo fi = fieldInfos.getOrAdd(name);
-      initIndexOptions(fi, fieldType.indexOptions());
-      Map<String, String> attributes = fieldType.getAttributes();
-      if (attributes != null) {
-        attributes.forEach((k, v) -> fi.putAttribute(k, v));
-      }
-
-      fp =
-          new PerField(
-              indexCreatedVersionMajor,
-              fi,
-              invert,
-              indexWriterConfig.getSimilarity(),
-              indexWriterConfig.getInfoStream(),
-              indexWriterConfig.getAnalyzer());
-      fp.next = fieldHash[hashPos];
-      fieldHash[hashPos] = fp;
-      totalFieldCount++;
-
-      // At most 50% load factor:
-      if (totalFieldCount >= fieldHash.length / 2) {
-        rehash();
-      }
-
-      if (totalFieldCount > fields.length) {
-        PerField[] newFields =
-            new PerField
-                [ArrayUtil.oversize(totalFieldCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-        System.arraycopy(fields, 0, newFields, 0, fields.length);
-        fields = newFields;
-      }
-
-    } else if (invert && fp.invertState == null) {
-      initIndexOptions(fp.fieldInfo, fieldType.indexOptions());
-      fp.setInvertState();
-    }
-
-    return fp;
-  }
-
-  private void initIndexOptions(FieldInfo info, IndexOptions indexOptions) {
-    // Messy: must set this here because e.g. FreqProxTermsWriterPerField looks at the initial
-    // IndexOptions to decide what arrays it must create).
-    assert info.getIndexOptions() == IndexOptions.NONE;
-    // This is the first time we are seeing this field indexed, so we now
-    // record the index options so that any future attempt to (illegally)
-    // change the index options of this field, will throw an IllegalArgExc:
-    fieldInfos.globalFieldNumbers.setIndexOptions(info.number, info.name, indexOptions);
-    info.setIndexOptions(indexOptions);
   }
 
   @Override
@@ -1025,9 +973,10 @@ final class IndexingChain implements Accountable {
 
   /** NOTE: not static: accesses at least docState, termsHash. */
   private final class PerField implements Comparable<PerField> {
-
+    final String fieldName;
     final int indexCreatedVersionMajor;
-    final FieldInfo fieldInfo;
+    final FieldSchema schema;
+    FieldInfo fieldInfo;
     final Similarity similarity;
 
     FieldInvertState invertState;
@@ -1056,22 +1005,31 @@ final class IndexingChain implements Accountable {
     TokenStream tokenStream;
     private final InfoStream infoStream;
     private final Analyzer analyzer;
+    private boolean first; // first in a document
 
     PerField(
+        String fieldName,
         int indexCreatedVersionMajor,
-        FieldInfo fieldInfo,
-        boolean invert,
+        FieldSchema schema,
         Similarity similarity,
         InfoStream infoStream,
         Analyzer analyzer) {
+      this.fieldName = fieldName;
       this.indexCreatedVersionMajor = indexCreatedVersionMajor;
-      this.fieldInfo = fieldInfo;
+      this.schema = schema;
       this.similarity = similarity;
       this.infoStream = infoStream;
       this.analyzer = analyzer;
-      if (invert) {
-        setInvertState();
-      }
+    }
+
+    void reset(int docId) {
+      first = true;
+      schema.reset(docId);
+    }
+
+    void setFieldInfo(FieldInfo fieldInfo) {
+      assert this.fieldInfo == null;
+      this.fieldInfo = fieldInfo;
     }
 
     void setInvertState() {
@@ -1089,7 +1047,7 @@ final class IndexingChain implements Accountable {
 
     @Override
     public int compareTo(PerField other) {
-      return this.fieldInfo.name.compareTo(other.fieldInfo.name);
+      return this.fieldName.compareTo(other.fieldName);
     }
 
     public void finish(int docID) throws IOException {
@@ -1109,7 +1067,6 @@ final class IndexingChain implements Accountable {
         }
         norms.addValue(docID, normValue);
       }
-
       termsHashPerField.finish();
     }
 
@@ -1119,22 +1076,11 @@ final class IndexingChain implements Accountable {
      */
     public void invert(int docID, IndexableField field, boolean first) throws IOException {
       if (first) {
-        // First time we're seeing this field (indexed) in
-        // this document:
+        // First time we're seeing this field (indexed) in this document
         invertState.reset();
       }
 
-      IndexableFieldType fieldType = field.fieldType();
-
-      IndexOptions indexOptions = fieldType.indexOptions();
-      fieldInfo.setIndexOptions(indexOptions);
-
-      if (fieldType.omitNorms()) {
-        fieldInfo.setOmitsNorms();
-      }
-
-      final boolean analyzed = fieldType.tokenized() && analyzer != null;
-
+      final boolean analyzed = field.fieldType().tokenized() && analyzer != null;
       /*
        * To assist people in tracking down problems in analysis components, we wish to write the field name to the infostream
        * when we fail. We expect some caller to eventually deal with the real exception, so we don't want any 'catch' clauses,
@@ -1311,6 +1257,112 @@ final class IndexingChain implements Accountable {
     @Override
     public void recycleIntBlocks(int[][] blocks, int offset, int length) {
       bytesUsed.addAndGet(-(length * (IntBlockPool.INT_BLOCK_SIZE * Integer.BYTES)));
+    }
+  }
+
+  private static final class FieldSchema {
+    private final String name;
+    private int docID = 0;
+    private final Map<String, String> attributes = new HashMap<>();
+    private boolean omitNorms = false;
+    private boolean storeTermVector = false;
+    private IndexOptions indexOptions = IndexOptions.NONE;
+    private long dvGen = -1;
+    private DocValuesType docValuesType = DocValuesType.NONE;
+    private int pointDimensionCount = 0;
+    private int pointIndexDimensionCount = 0;
+    private int pointNumBytes = 0;
+    private int vectorDimension = 0;
+    private VectorValues.SearchStrategy vectorSearchStrategy = VectorValues.SearchStrategy.NONE;
+
+    private static String errMsg =
+        "Inconsistency of field data structures across documents for field ";
+
+    FieldSchema(String name) {
+      this.name = name;
+    }
+
+    String putAttribute(String key, String value) {
+      return attributes.put(key, value);
+    }
+
+    private void assertSame(boolean same) {
+      if (same == false) {
+        throw new IllegalArgumentException(errMsg + "[" + name + "] of doc [" + docID + "].");
+      }
+    }
+
+    void setIndexOptions(
+        IndexOptions newIndexOptions, boolean newOmitNorms, boolean newStoreTermVector) {
+      if (indexOptions == IndexOptions.NONE) {
+        indexOptions = newIndexOptions;
+        omitNorms = newOmitNorms;
+        storeTermVector = newStoreTermVector;
+      } else {
+        assertSame(
+            indexOptions == newIndexOptions
+                && omitNorms == newOmitNorms
+                && storeTermVector == newStoreTermVector);
+      }
+    }
+
+    void setDocValues(DocValuesType newDocValuesType, long newDvGen) {
+      if (docValuesType == DocValuesType.NONE) {
+        this.docValuesType = newDocValuesType;
+        this.dvGen = newDvGen;
+      } else {
+        assertSame(docValuesType == newDocValuesType && dvGen == newDvGen);
+      }
+    }
+
+    void setPoints(int dimensionCount, int indexDimensionCount, int numBytes) {
+      if (pointIndexDimensionCount == 0) {
+        pointDimensionCount = dimensionCount;
+        pointIndexDimensionCount = indexDimensionCount;
+        pointNumBytes = numBytes;
+      } else {
+        assertSame(
+            pointDimensionCount == dimensionCount
+                && pointIndexDimensionCount == indexDimensionCount
+                && pointNumBytes == numBytes);
+      }
+    }
+
+    void setVectors(VectorValues.SearchStrategy searchStrategy, int dimension) {
+      if (vectorSearchStrategy == VectorValues.SearchStrategy.NONE) {
+        this.vectorDimension = dimension;
+        this.vectorSearchStrategy = searchStrategy;
+      } else {
+        assertSame(vectorSearchStrategy == searchStrategy && vectorDimension == dimension);
+      }
+    }
+
+    void reset(int doc) {
+      docID = doc;
+      omitNorms = false;
+      storeTermVector = false;
+      indexOptions = IndexOptions.NONE;
+      dvGen = -1;
+      docValuesType = DocValuesType.NONE;
+      pointDimensionCount = 0;
+      pointIndexDimensionCount = 0;
+      pointNumBytes = 0;
+      vectorDimension = 0;
+      vectorSearchStrategy = VectorValues.SearchStrategy.NONE;
+    }
+
+    void assertSameSchema(FieldInfo fi) {
+      assertSame(
+          indexOptions == fi.getIndexOptions()
+              && omitNorms == fi.omitsNorms()
+              && storeTermVector == fi.hasVectors()
+              && docValuesType == fi.getDocValuesType()
+              && dvGen == fi.getDocValuesGen()
+              && pointDimensionCount == fi.getPointDimensionCount()
+              && pointIndexDimensionCount == fi.getPointIndexDimensionCount()
+              && pointNumBytes == fi.getPointNumBytes()
+              && vectorDimension == fi.getVectorDimension()
+              && vectorSearchStrategy == fi.getVectorSearchStrategy());
     }
   }
 }

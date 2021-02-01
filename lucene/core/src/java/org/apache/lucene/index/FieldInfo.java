@@ -111,6 +111,43 @@ public final class FieldInfo {
 
   /** Performs internal consistency checks. Always returns true (or throws IllegalStateException) */
   public boolean checkConsistency() {
+    return checkOptionsCorrectness(
+        name,
+        storeTermVector,
+        omitNorms,
+        storePayloads,
+        indexOptions,
+        docValuesType,
+        dvGen,
+        pointDimensionCount,
+        pointIndexDimensionCount,
+        pointNumBytes,
+        vectorDimension,
+        vectorSearchStrategy);
+  }
+
+  /**
+   * Check correctness of FieldInfo options
+   *
+   * @throws IllegalStateException if some options are incorrect
+   * @return {@code true} if all options are correct
+   */
+  public static boolean checkOptionsCorrectness(
+      String name,
+      boolean storeTermVector,
+      boolean omitNorms,
+      boolean storePayloads,
+      IndexOptions indexOptions,
+      DocValuesType docValuesType,
+      long dvGen,
+      int pointDimensionCount,
+      int pointIndexDimensionCount,
+      int pointNumBytes,
+      int vectorDimension,
+      VectorValues.SearchStrategy vectorSearchStrategy) {
+    if (indexOptions == null) {
+      throw new IllegalStateException("IndexOptions must not be null (field: '" + name + "')");
+    }
     if (indexOptions != IndexOptions.NONE) {
       // Cannot store payloads unless positions are indexed:
       if (indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0 && storePayloads) {
@@ -130,35 +167,9 @@ public final class FieldInfo {
       }
     }
 
-    if (pointDimensionCount < 0) {
-      throw new IllegalStateException(
-          "pointDimensionCount must be >= 0; got " + pointDimensionCount);
+    if (docValuesType == null) {
+      throw new IllegalStateException("DocValuesType must not be null (field: '" + name + "')");
     }
-
-    if (pointIndexDimensionCount < 0) {
-      throw new IllegalStateException(
-          "pointIndexDimensionCount must be >= 0; got " + pointIndexDimensionCount);
-    }
-
-    if (pointNumBytes < 0) {
-      throw new IllegalStateException("pointNumBytes must be >= 0; got " + pointNumBytes);
-    }
-
-    if (pointDimensionCount != 0 && pointNumBytes == 0) {
-      throw new IllegalStateException(
-          "pointNumBytes must be > 0 when pointDimensionCount=" + pointDimensionCount);
-    }
-
-    if (pointIndexDimensionCount != 0 && pointDimensionCount == 0) {
-      throw new IllegalStateException(
-          "pointIndexDimensionCount must be 0 when pointDimensionCount=0");
-    }
-
-    if (pointNumBytes != 0 && pointDimensionCount == 0) {
-      throw new IllegalStateException(
-          "pointDimensionCount must be > 0 when pointNumBytes=" + pointNumBytes);
-    }
-
     if (dvGen != -1 && docValuesType == DocValuesType.NONE) {
       throw new IllegalStateException(
           "field '"
@@ -166,91 +177,245 @@ public final class FieldInfo {
               + "' cannot have a docvalues update generation without having docvalues");
     }
 
-    if (vectorDimension < 0) {
-      throw new IllegalStateException("vectorDimension must be >=0; got " + vectorDimension);
+    if (pointDimensionCount < 0) {
+      throw new IllegalStateException(
+          "pointDimensionCount must be >= 0; got "
+              + pointDimensionCount
+              + " (field: '"
+              + name
+              + "')");
+    }
+    if (pointIndexDimensionCount < 0) {
+      throw new IllegalStateException(
+          "pointIndexDimensionCount must be >= 0; got "
+              + pointIndexDimensionCount
+              + " (field: '"
+              + name
+              + "')");
+    }
+    if (pointNumBytes < 0) {
+      throw new IllegalStateException(
+          "pointNumBytes must be >= 0; got " + pointNumBytes + " (field: '" + name + "')");
     }
 
+    if (pointDimensionCount != 0 && pointNumBytes == 0) {
+      throw new IllegalStateException(
+          "pointNumBytes must be > 0 when pointDimensionCount="
+              + pointDimensionCount
+              + " (field: '"
+              + name
+              + "')");
+    }
+    if (pointIndexDimensionCount != 0 && pointDimensionCount == 0) {
+      throw new IllegalStateException(
+          "pointIndexDimensionCount must be 0 when pointDimensionCount=0"
+              + " (field: '"
+              + name
+              + "')");
+    }
+    if (pointNumBytes != 0 && pointDimensionCount == 0) {
+      throw new IllegalStateException(
+          "pointDimensionCount must be > 0 when pointNumBytes="
+              + pointNumBytes
+              + " (field: '"
+              + name
+              + "')");
+    }
+
+    if (vectorSearchStrategy == null) {
+      throw new IllegalStateException(
+          "Vector search strategy must not be null (field: '" + name + "')");
+    }
+    if (vectorDimension < 0) {
+      throw new IllegalStateException(
+          "vectorDimension must be >=0; got " + vectorDimension + " (field: '" + name + "')");
+    }
     if (vectorDimension == 0 && vectorSearchStrategy != VectorValues.SearchStrategy.NONE) {
       throw new IllegalStateException(
-          "vector search strategy must be NONE when dimension = 0; got " + vectorSearchStrategy);
+          "vector search strategy must be NONE when dimension = 0; got "
+              + vectorSearchStrategy
+              + " (field: '"
+              + name
+              + "')");
     }
-
     return true;
   }
 
-  // should only be called by FieldInfos#addOrUpdate
-  void update(
-      boolean storeTermVector,
+  void verifySameSchema(
+      IndexOptions indexOptions,
       boolean omitNorms,
       boolean storePayloads,
-      IndexOptions indexOptions,
-      Map<String, String> attributes,
+      boolean storeTermVector,
+      DocValuesType docValuesType,
+      long dvGen,
       int dimensionCount,
       int indexDimensionCount,
-      int dimensionNumBytes) {
-    if (indexOptions == null) {
-      throw new NullPointerException("IndexOptions must not be null (field: \"" + name + "\")");
+      int dimensionNumBytes,
+      int vectorDimension,
+      VectorValues.SearchStrategy searchStrategy) {
+    verifySameIndexOptions(this.name, this.indexOptions, indexOptions);
+    if (this.indexOptions != IndexOptions.NONE) {
+      verifySamePostingsOptions(
+          this.name,
+          this.storeTermVector,
+          this.omitNorms,
+          this.storePayloads,
+          storeTermVector,
+          omitNorms,
+          storePayloads);
     }
-    // System.out.println("FI.update field=" + name + " indexed=" + indexed + " omitNorms=" +
-    // omitNorms + " this.omitNorms=" + this.omitNorms);
-    if (this.indexOptions != indexOptions) {
-      if (this.indexOptions == IndexOptions.NONE) {
-        this.indexOptions = indexOptions;
-      } else if (indexOptions != IndexOptions.NONE) {
-        throw new IllegalArgumentException(
-            "cannot change field \""
-                + name
-                + "\" from index options="
-                + this.indexOptions
-                + " to inconsistent index options="
-                + indexOptions);
-      }
-    }
+    verifySameDocValuesType(this.name, this.docValuesType, docValuesType);
+    verifySameDVGen(this.name, this.dvGen, dvGen);
+    verifySamePointsOptions(
+        this.name,
+        this.pointDimensionCount,
+        this.pointIndexDimensionCount,
+        this.pointNumBytes,
+        dimensionCount,
+        indexDimensionCount,
+        dimensionNumBytes);
+    verifySameVectorOptions(
+        this.name,
+        this.vectorDimension,
+        this.vectorSearchStrategy,
+        vectorDimension,
+        searchStrategy);
+  }
 
-    if (this.pointDimensionCount == 0 && dimensionCount != 0) {
-      this.pointDimensionCount = dimensionCount;
-      this.pointIndexDimensionCount = indexDimensionCount;
-      this.pointNumBytes = dimensionNumBytes;
-    } else if (dimensionCount != 0
-        && (this.pointDimensionCount != dimensionCount
-            || this.pointIndexDimensionCount != indexDimensionCount
-            || this.pointNumBytes != dimensionNumBytes)) {
+  /**
+   * Very that the provided index options are the same
+   *
+   * @throws IllegalArgumentException if they are not the same
+   */
+  public static void verifySameIndexOptions(String fieldName, IndexOptions io1, IndexOptions io2) {
+    if (io1 != io2) {
       throw new IllegalArgumentException(
           "cannot change field \""
-              + name
+              + fieldName
+              + "\" from index options="
+              + io1
+              + " to inconsistent index options="
+              + io2);
+    }
+  }
+
+  /**
+   * Very that the provided docValues type are the same
+   *
+   * @throws IllegalArgumentException if they are not the same
+   */
+  public static void verifySameDocValuesType(
+      String fieldName, DocValuesType dv1, DocValuesType dv2) {
+    if (dv1 != dv2) {
+      throw new IllegalArgumentException(
+          "cannot change field \""
+              + fieldName
+              + "\" from doc values type="
+              + dv1
+              + " to inconsistent doc values type="
+              + dv2);
+    }
+  }
+
+  /**
+   * Very that the provided doc values generations are the same
+   *
+   * @throws IllegalArgumentException if they are not the same
+   */
+  public static void verifySameDVGen(String fieldName, long dvg1, long dvg2) {
+    if (dvg1 != dvg2) {
+      throw new IllegalArgumentException(
+          "cannot change field \""
+              + fieldName
+              + "\" from doc values generation="
+              + dvg1
+              + " to inconsistent doc values generation="
+              + dvg2);
+    }
+  }
+
+  /**
+   * Very that the provided posting options are the same
+   *
+   * @throws IllegalArgumentException if they are not the same
+   */
+  public static void verifySamePostingsOptions(
+      String fieldName,
+      boolean stv1,
+      boolean on1,
+      boolean sp1,
+      boolean stv2,
+      boolean on2,
+      boolean sp2) {
+    if (stv1 != stv2 || on1 != on2 || sp1 != sp2) {
+      throw new IllegalArgumentException(
+          "cannot change field \""
+              + fieldName
+              + "\" from storeTermVector="
+              + stv1
+              + ", omitNorms="
+              + on1
+              + ", storePayloads="
+              + sp1
+              + " to inconsistent storeTermVector="
+              + stv2
+              + ", omitNorms="
+              + on2
+              + ", storePayloads="
+              + sp2);
+    }
+  }
+
+  /**
+   * Very that the provided points indexing options are the same
+   *
+   * @throws IllegalArgumentException if they are not the same
+   */
+  public static void verifySamePointsOptions(
+      String fieldName, int dc1, int idc1, int nb1, int dc2, int idc2, int nb2) {
+    if (dc1 != dc2 || idc1 != idc2 || nb1 != nb2) {
+      throw new IllegalArgumentException(
+          "cannot change field \""
+              + fieldName
               + "\" from points dimensionCount="
-              + this.pointDimensionCount
+              + dc1
               + ", indexDimensionCount="
-              + this.pointIndexDimensionCount
+              + idc1
               + ", numBytes="
-              + this.pointNumBytes
+              + nb1
               + " to inconsistent dimensionCount="
-              + dimensionCount
+              + dc2
               + ", indexDimensionCount="
-              + indexDimensionCount
+              + idc2
               + ", numBytes="
-              + dimensionNumBytes);
+              + nb2);
     }
+  }
 
-    // if updated field data is not for indexing, leave the updates out
-    if (this.indexOptions != IndexOptions.NONE) {
-      this.storeTermVector |= storeTermVector; // once vector, always vector
-      this.storePayloads |= storePayloads;
-
-      // Awkward: only drop norms if incoming update is indexed:
-      if (indexOptions != IndexOptions.NONE && this.omitNorms != omitNorms) {
-        this.omitNorms = true; // if one require omitNorms at least once, it remains off for life
-      }
+  /**
+   * Very that the provided vector indexing options are the same
+   *
+   * @throws IllegalArgumentException if they are not the same
+   */
+  public static void verifySameVectorOptions(
+      String fieldName,
+      int vd1,
+      VectorValues.SearchStrategy vst1,
+      int vd2,
+      VectorValues.SearchStrategy vst2) {
+    if (vd1 != vd2 || vst1 != vst2) {
+      throw new IllegalArgumentException(
+          "cannot change field \""
+              + fieldName
+              + "\" from vector dimension="
+              + vd1
+              + ", vector search strategy="
+              + vst1
+              + " to inconsistent vector dimension="
+              + vd2
+              + ", vector search strategy="
+              + vst2);
     }
-    if (this.indexOptions == IndexOptions.NONE
-        || this.indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) < 0) {
-      // cannot store payloads if we don't store positions:
-      this.storePayloads = false;
-    }
-    if (attributes != null) {
-      this.attributes.putAll(attributes);
-    }
-    this.checkConsistency();
   }
 
   /**
