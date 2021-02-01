@@ -16,9 +16,18 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import static org.apache.lucene.analysis.hunspell.Dictionary.FLAG_UNSET;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_BEGIN;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
+import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
 /**
@@ -27,9 +36,9 @@ import org.apache.lucene.util.IntsRef;
  * threads). Not all Hunspell features are supported yet.
  */
 public class SpellChecker {
-  private final Dictionary dictionary;
+  final Dictionary dictionary;
+  final Stemmer stemmer;
   private final BytesRef scratch = new BytesRef();
-  private final Stemmer stemmer;
 
   public SpellChecker(Dictionary dictionary) {
     this.dictionary = dictionary;
@@ -44,12 +53,24 @@ public class SpellChecker {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
+    if (word.endsWith(".")) {
+      return spellWithTrailingDots(word);
+    }
+
+    return spellClean(word);
+  }
+
+  private boolean spellClean(String word) {
     if (isNumber(word)) {
       return true;
     }
 
     char[] wordChars = word.toCharArray();
-    if (checkWord(wordChars, wordChars.length, false)) {
+    if (dictionary.isForbiddenWord(wordChars, wordChars.length, scratch)) {
+      return false;
+    }
+
+    if (checkWord(wordChars, wordChars.length, null)) {
       return true;
     }
 
@@ -58,47 +79,152 @@ public class SpellChecker {
       return true;
     }
 
-    if (dictionary.breaks.isNotEmpty()
-        && !hasTooManyBreakOccurrences(word)
-        && !dictionary.isForbiddenWord(wordChars, word.length(), scratch)) {
+    if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
       return tryBreaks(word);
     }
 
     return false;
   }
 
+  private boolean spellWithTrailingDots(String word) {
+    int length = word.length() - 1;
+    while (length > 0 && word.charAt(length - 1) == '.') {
+      length--;
+    }
+    return spellClean(word.substring(0, length)) || spellClean(word.substring(0, length + 1));
+  }
+
   private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
     char[] caseVariant = wordChars;
     if (wordCase == WordCase.UPPER) {
       caseVariant = stemmer.caseFoldTitle(caseVariant, wordChars.length);
-      if (checkWord(caseVariant, wordChars.length, true)) {
+      if (checkWord(caseVariant, wordChars.length, wordCase)) {
         return true;
       }
       char[] aposCase = Stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
-      if (aposCase != null && checkWord(aposCase, aposCase.length, true)) {
+      if (aposCase != null && checkWord(aposCase, aposCase.length, wordCase)) {
         return true;
       }
+      for (char[] variation : stemmer.sharpSVariations(caseVariant, wordChars.length)) {
+        if (checkWord(variation, variation.length, null)) {
+          return true;
+        }
+      }
     }
-    return checkWord(stemmer.caseFoldLower(caseVariant, wordChars.length), wordChars.length, true);
+
+    if (dictionary.isDotICaseChangeDisallowed(wordChars)) {
+      return false;
+    }
+
+    char[] lower = stemmer.caseFoldLower(caseVariant, wordChars.length);
+    if (checkWord(lower, wordChars.length, wordCase)) {
+      return true;
+    }
+    if (wordCase == WordCase.UPPER) {
+      for (char[] variation : stemmer.sharpSVariations(lower, wordChars.length)) {
+        if (checkWord(variation, variation.length, null)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
-  private boolean checkWord(char[] wordChars, int length, boolean caseVariant) {
+  boolean checkWord(String word) {
+    return checkWord(word.toCharArray(), word.length(), null);
+  }
+
+  private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
     if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
       return false;
     }
 
-    if (!stemmer.doStem(wordChars, length, caseVariant).isEmpty()) {
+    if (!stemmer.doStem(wordChars, 0, length, originalCase, SIMPLE_WORD).isEmpty()) {
       return true;
     }
 
-    if (dictionary.hasCompounding()) {
-      return checkCompounds(wordChars, 0, length, new ArrayList<>());
+    if (dictionary.compoundRules != null
+        && checkCompoundRules(wordChars, 0, length, new ArrayList<>())) {
+      return true;
+    }
+
+    if (dictionary.compoundBegin != FLAG_UNSET || dictionary.compoundFlag != FLAG_UNSET) {
+      return checkCompounds(wordChars, 0, length, originalCase, 0);
     }
 
     return false;
   }
 
-  private boolean checkCompounds(char[] wordChars, int offset, int length, List<IntsRef> words) {
+  private boolean checkCompounds(
+      char[] chars, int offset, int length, WordCase originalCase, int depth) {
+    if (depth > dictionary.compoundMax - 2) return false;
+
+    int limit = length - dictionary.compoundMin + 1;
+    for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      WordContext context = depth == 0 ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
+      int breakOffset = offset + breakPos;
+      if (mayBreakIntoCompounds(chars, offset, length, breakOffset)) {
+        List<CharsRef> stems = stemmer.doStem(chars, offset, breakPos, originalCase, context);
+        if (stems.isEmpty()
+            && dictionary.simplifiedTriple
+            && chars[breakOffset - 1] == chars[breakOffset]) {
+          stems = stemmer.doStem(chars, offset, breakPos + 1, originalCase, context);
+        }
+        if (stems.isEmpty()) continue;
+
+        int remainingLength = length - breakPos;
+        List<CharsRef> lastStems =
+            stemmer.doStem(chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
+        if (!lastStems.isEmpty()
+            && !(dictionary.checkCompoundDup && intersectIgnoreCase(stems, lastStems))
+            && !hasForceUCaseProblem(chars, breakOffset, remainingLength, originalCase)) {
+          return true;
+        }
+
+        if (checkCompounds(chars, breakOffset, remainingLength, originalCase, depth + 1)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  private boolean hasForceUCaseProblem(
+      char[] chars, int offset, int length, WordCase originalCase) {
+    if (dictionary.forceUCase == FLAG_UNSET) return false;
+    if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
+
+    IntsRef forms = dictionary.lookupWord(chars, offset, length);
+    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase, scratch);
+  }
+
+  private boolean intersectIgnoreCase(List<CharsRef> stems1, List<CharsRef> stems2) {
+    return stems1.stream().anyMatch(s1 -> stems2.stream().anyMatch(s2 -> equalsIgnoreCase(s1, s2)));
+  }
+
+  private boolean equalsIgnoreCase(CharsRef cr1, CharsRef cr2) {
+    return cr1.toString().equalsIgnoreCase(cr2.toString());
+  }
+
+  private boolean mayBreakIntoCompounds(char[] chars, int offset, int length, int breakPos) {
+    if (dictionary.checkCompoundCase) {
+      if (Character.isUpperCase(chars[breakPos - 1]) || Character.isUpperCase(chars[breakPos])) {
+        return false;
+      }
+    }
+    if (dictionary.checkCompoundTriple && chars[breakPos - 1] == chars[breakPos]) {
+      //noinspection RedundantIfStatement
+      if (breakPos > offset + 1 && chars[breakPos - 2] == chars[breakPos - 1]
+          || breakPos < length - 1 && chars[breakPos] == chars[breakPos + 1]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private boolean checkCompoundRules(
+      char[] wordChars, int offset, int length, List<IntsRef> words) {
     if (words.size() >= 100) return false;
 
     int limit = length - dictionary.compoundMin + 1;
@@ -113,7 +239,7 @@ public class SpellChecker {
             return true;
           }
 
-          if (checkCompounds(wordChars, offset + breakPos, length - breakPos, words)) {
+          if (checkCompoundRules(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
         }
@@ -132,8 +258,7 @@ public class SpellChecker {
 
     words.add(forms);
     boolean result =
-        dictionary.compoundRules != null
-            && dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+        dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
     words.remove(words.size() - 1);
     return result;
   }
@@ -209,5 +334,45 @@ public class SpellChecker {
         && breakPos < word.length() - breakStr.length()
         && spell(word.substring(0, breakPos))
         && spell(word.substring(breakPos + breakStr.length()));
+  }
+
+  public List<String> suggest(String word) {
+    if (word.length() >= 100) return Collections.emptyList();
+
+    if (dictionary.needsInputCleaning) {
+      word = dictionary.cleanInput(word, new StringBuilder()).toString();
+    }
+
+    ModifyingSuggester modifier = new ModifyingSuggester(this);
+    Set<String> result = modifier.suggest(word);
+
+    if (word.contains("-") && result.stream().noneMatch(s -> s.contains("-"))) {
+      result.addAll(modifyChunksBetweenDashes(word));
+    }
+
+    return new ArrayList<>(result);
+  }
+
+  private List<String> modifyChunksBetweenDashes(String word) {
+    List<String> result = new ArrayList<>();
+    int chunkStart = 0;
+    while (chunkStart < word.length()) {
+      int chunkEnd = word.indexOf('-', chunkStart);
+      if (chunkEnd < 0) {
+        chunkEnd = word.length();
+      }
+
+      if (chunkEnd > chunkStart) {
+        String chunk = word.substring(chunkStart, chunkEnd);
+        if (!spell(chunk)) {
+          for (String chunkSug : suggest(chunk)) {
+            result.add(word.substring(0, chunkStart) + chunkSug + word.substring(chunkEnd));
+          }
+        }
+      }
+
+      chunkStart = chunkEnd + 1;
+    }
+    return result;
   }
 }

@@ -563,15 +563,10 @@ public class Overseer implements SolrCloseable {
   public static class OverseerThread extends Thread implements Closeable {
 
     protected volatile boolean isClosed;
-    private Closeable thread;
+    private final Closeable thread;
 
-    public OverseerThread(ThreadGroup tg, Closeable thread) {
-      super(tg, (Runnable) thread);
-      this.thread = thread;
-    }
-
-    public OverseerThread(ThreadGroup ccTg, Closeable thread, String name) {
-      super(ccTg, (Runnable) thread, name);
+    public <T extends Runnable & Closeable> OverseerThread(ThreadGroup ccTg, T thread, String name) {
+      super(ccTg, thread, name);
       this.thread = thread;
     }
 

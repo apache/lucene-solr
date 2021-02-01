@@ -82,6 +82,9 @@ For the above example the `/stream` handler responded with the following JSON re
 
 Note the last tuple in the above example stream is `{"EOF":true,"RESPONSE_TIME":33}`. The `EOF` indicates the end of the stream. To process the JSON response, you'll need to use a streaming JSON implementation because streaming expressions are designed to return the entire result set which may have millions of records. In your JSON client you'll need to iterate each doc (tuple) and check for the EOF tuple to determine the end of stream.
 
+=== Configuration
+
+Timeouts for Streaming Expressions can be configured with the `socketTimeout` and `connTimeout` startup parameters.
 
 == Elements of the Language
 

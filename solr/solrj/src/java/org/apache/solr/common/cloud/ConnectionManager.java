@@ -230,9 +230,13 @@ public class ConnectionManager implements Watcher {
     }
   }
 
+  /**
+   * Wait for an established zookeeper connection
+   * @param waitForConnection time to wait, in ms
+   */
   public synchronized void waitForConnected(long waitForConnection)
       throws TimeoutException {
-    log.info("Waiting for client to connect to ZooKeeper");
+    log.info("Waiting up to {}ms for client to connect to ZooKeeper", waitForConnection);
     long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForConnection, TimeUnit.MILLISECONDS);
     long left = 1;
     while (!connected && left > 0) {

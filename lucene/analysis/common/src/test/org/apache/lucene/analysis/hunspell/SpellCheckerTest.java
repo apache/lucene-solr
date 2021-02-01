@@ -20,20 +20,96 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 
 public class SpellCheckerTest extends StemmerTestBase {
   @Test
+  public void base() throws Exception {
+    doTest("base");
+  }
+
+  @Test
+  public void baseUtf() throws Exception {
+    doTest("base_utf");
+  }
+
+  @Test
+  public void keepcase() throws Exception {
+    doTest("keepcase");
+  }
+
+  @Test
   public void allcaps() throws Exception {
     doTest("allcaps");
+  }
+
+  public void rep() throws Exception {
+    doTest("rep");
+  }
+
+  @Test
+  public void forceUCase() throws Exception {
+    doTest("forceucase");
+  }
+
+  @Test
+  public void checkSharpS() throws Exception {
+    doTest("checksharps");
+  }
+
+  @Test
+  public void IJ() throws Exception {
+    doTest("IJ");
   }
 
   @Test
   public void i53643_numbersWithSeparators() throws Exception {
     doTest("i53643");
+  }
+
+  @Test
+  public void dotless_i() throws Exception {
+    doTest("dotless_i");
+  }
+
+  @Test
+  public void needAffixOnAffixes() throws Exception {
+    doTest("needaffix5");
+  }
+
+  @Test
+  public void compoundFlag() throws Exception {
+    doTest("compoundflag");
+  }
+
+  @Test
+  public void checkCompoundCase() throws Exception {
+    doTest("checkcompoundcase");
+  }
+
+  @Test
+  public void checkCompoundDup() throws Exception {
+    doTest("checkcompounddup");
+  }
+
+  @Test
+  public void checkCompoundTriple() throws Exception {
+    doTest("checkcompoundtriple");
+  }
+
+  @Test
+  public void simplifiedTriple() throws Exception {
+    doTest("simplifiedtriple");
+  }
+
+  @Test
+  public void compoundForbid() throws Exception {
+    doTest("compoundforbid");
   }
 
   public void testBreak() throws Exception {
@@ -80,6 +156,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("compoundrule8");
   }
 
+  public void testGermanCompounding() throws Exception {
+    doTest("germancompounding");
+  }
+
   protected void doTest(String name) throws Exception {
     InputStream affixStream =
         Objects.requireNonNull(getClass().getResourceAsStream(name + ".aff"), name);
@@ -104,10 +184,22 @@ public class SpellCheckerTest extends StemmerTestBase {
     }
 
     URL wrong = StemmerTestBase.class.getResource(name + ".wrong");
+    URL sug = StemmerTestBase.class.getResource(name + ".sug");
     if (wrong != null) {
-      for (String word : Files.readAllLines(Path.of(wrong.toURI()))) {
+      List<String> wrongWords = Files.readAllLines(Path.of(wrong.toURI()));
+      for (String word : wrongWords) {
         assertFalse("Unexpectedly considered correct: " + word, speller.spell(word));
       }
+      if (sug != null) {
+        String suggestions =
+            wrongWords.stream()
+                .map(s -> String.join(", ", speller.suggest(s)))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("\n"));
+        assertEquals(Files.readString(Path.of(sug.toURI())).trim(), suggestions);
+      }
+    } else {
+      assertNull(".sug file without .wrong file!", sug);
     }
   }
 }

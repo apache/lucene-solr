@@ -30,11 +30,15 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90VectorReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
+import org.apache.lucene.index.VectorValues.SearchStrategy;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.lucene.util.hnsw.HnswGraphBuilder;
@@ -48,13 +52,17 @@ public class TestKnnGraph extends LuceneTestCase {
 
   private static int maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
 
+  private SearchStrategy searchStrategy;
+
   @Before
   public void setup() {
     randSeed = random().nextLong();
     if (random().nextBoolean()) {
       maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
-      HnswGraphBuilder.DEFAULT_MAX_CONN = random().nextInt(256) + 1;
+      HnswGraphBuilder.DEFAULT_MAX_CONN = random().nextInt(256) + 2;
     }
+    int strategy = random().nextInt(SearchStrategy.values().length - 1) + 1;
+    searchStrategy = SearchStrategy.values()[strategy];
   }
 
   @After
@@ -102,7 +110,7 @@ public class TestKnnGraph extends LuceneTestCase {
             new IndexWriter(dir, newIndexWriterConfig(null).setCodec(Codec.forName("Lucene90")))) {
       int numDoc = atLeast(100);
       int dimension = atLeast(10);
-      float[][] values = new float[numDoc][];
+      float[][] values = randomVectors(numDoc, dimension);
       for (int i = 0; i < numDoc; i++) {
         if (random().nextBoolean()) {
           values[i] = new float[dimension];
@@ -113,7 +121,6 @@ public class TestKnnGraph extends LuceneTestCase {
         }
         add(iw, i, values[i]);
         if (random().nextInt(10) == 3) {
-          // System.out.println("commit @" + i);
           iw.commit();
         }
       }
@@ -124,26 +131,91 @@ public class TestKnnGraph extends LuceneTestCase {
     }
   }
 
-  private void dumpGraph(KnnGraphValues values, int size) throws IOException {
-    for (int node = 0; node < size; node++) {
-      int n;
-      System.out.print("" + node + ":");
-      values.seek(node);
-      while ((n = values.nextNeighbor()) != NO_MORE_DOCS) {
-        System.out.print(" " + n);
-      }
-      System.out.println();
+  /**
+   * Verify that we get the *same* graph by indexing one segment as we do by indexing two segments
+   * and merging.
+   */
+  public void testMergeProducesSameGraph() throws Exception {
+    long seed = random().nextLong();
+    int numDoc = atLeast(100);
+    int dimension = atLeast(10);
+    float[][] values = randomVectors(numDoc, dimension);
+    int mergePoint = random().nextInt(numDoc);
+    int[][] mergedGraph = getIndexedGraph(values, mergePoint, seed);
+    int[][] singleSegmentGraph = getIndexedGraph(values, -1, seed);
+    assertGraphEquals(singleSegmentGraph, mergedGraph);
+  }
+
+  private void assertGraphEquals(int[][] expected, int[][] actual) {
+    assertEquals("graph sizes differ", expected.length, actual.length);
+    for (int i = 0; i < expected.length; i++) {
+      assertArrayEquals("difference at ord=" + i, expected[i], actual[i]);
     }
   }
 
-  // TODO: testSorted
-  // TODO: testDeletions
+  private int[][] getIndexedGraph(float[][] values, int mergePoint, long seed) throws IOException {
+    HnswGraphBuilder.randSeed = seed;
+    int[][] graph;
+    try (Directory dir = newDirectory()) {
+      IndexWriterConfig iwc = newIndexWriterConfig();
+      iwc.setMergePolicy(new LogDocMergePolicy()); // for predictable segment ordering when merging
+      iwc.setCodec(Codec.forName("Lucene90")); // don't use SimpleTextCodec
+      try (IndexWriter iw = new IndexWriter(dir, iwc)) {
+        for (int i = 0; i < values.length; i++) {
+          add(iw, i, values[i]);
+          if (i == mergePoint) {
+            // flush proactively to create a segment
+            iw.flush();
+          }
+        }
+        iw.forceMerge(1);
+      }
+      try (IndexReader reader = DirectoryReader.open(dir)) {
+        Lucene90VectorReader vectorReader =
+            ((Lucene90VectorReader) ((CodecReader) getOnlyLeafReader(reader)).getVectorReader());
+        graph = copyGraph(vectorReader.getGraphValues(KNN_GRAPH_FIELD));
+      }
+    }
+    return graph;
+  }
+
+  private float[][] randomVectors(int numDoc, int dimension) {
+    float[][] values = new float[numDoc][];
+    for (int i = 0; i < numDoc; i++) {
+      if (random().nextBoolean()) {
+        values[i] = new float[dimension];
+        for (int j = 0; j < dimension; j++) {
+          values[i][j] = random().nextFloat();
+        }
+        VectorUtil.l2normalize(values[i]);
+      }
+    }
+    return values;
+  }
+
+  int[][] copyGraph(KnnGraphValues values) throws IOException {
+    int size = values.size();
+    int[][] graph = new int[size][];
+    int[] scratch = new int[HnswGraphBuilder.DEFAULT_MAX_CONN];
+    for (int node = 0; node < size; node++) {
+      int n, count = 0;
+      values.seek(node);
+      while ((n = values.nextNeighbor()) != NO_MORE_DOCS) {
+        scratch[count++] = n;
+        // graph[node][i++] = n;
+      }
+      graph[node] = ArrayUtil.copyOfSubArray(scratch, 0, count);
+    }
+    return graph;
+  }
 
   /** Verify that searching does something reasonable */
   public void testSearch() throws Exception {
+    // We can't use dot product here since the vectors are laid out on a grid, not a sphere.
+    searchStrategy = SearchStrategy.EUCLIDEAN_HNSW;
     try (Directory dir = newDirectory();
         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
-      // Add a document for every cartesian point  in an NxN square so we can
+      // Add a document for every cartesian point in an NxN square so we can
       // easily know which are the nearest neighbors to every point. Insert by iterating
       // using a prime number that is not a divisor of N*N so that we will hit each point once,
       // and chosen so that points will be inserted in a deterministic
@@ -153,7 +225,8 @@ public class TestKnnGraph extends LuceneTestCase {
       int index = 0;
       for (int i = 0; i < values.length; i++) {
         // System.out.printf("%d: (%d, %d)\n", i, index % n, index / n);
-        values[i] = new float[] {index % n, index / n};
+        int x = index % n, y = index / n;
+        values[i] = new float[] {x, y};
         index = (index + stepSize) % (n * n);
         add(iw, i, values[i]);
         if (i == 13) {
@@ -177,10 +250,10 @@ public class TestKnnGraph extends LuceneTestCase {
         //  9 24 14  4 19
         // 12  2 17  7 22
 
-        // For this small graph the "search" is exhaustive, so this mostly tests the APIs, the
-        // orientation of the
-        // various priority queues, the scoring function, but not so much the approximate KNN search
-        // algo
+        /* For this small graph the "search" is exhaustive, so this mostly tests the APIs, the
+         * orientation of the various priority queues, the scoring function, but not so much the
+         * approximate KNN search algorithm
+         */
         assertGraphSearch(new int[] {0, 15, 3, 18, 5}, new float[] {0f, 0.1f}, dr);
         // Tiebreaking by docid must be done after VectorValues.search.
         // assertGraphSearch(new int[]{11, 1, 8, 14, 21}, new float[]{2, 2}, dr);
@@ -194,8 +267,7 @@ public class TestKnnGraph extends LuceneTestCase {
     TopDocs results = doKnnSearch(reader, vector, 5);
     for (ScoreDoc doc : results.scoreDocs) {
       // map docId to insertion id
-      int id = Integer.parseInt(reader.document(doc.doc).get("id"));
-      doc.doc = id;
+      doc.doc = Integer.parseInt(reader.document(doc.doc).get("id"));
     }
     assertResults(expected, results);
   }
@@ -241,7 +313,7 @@ public class TestKnnGraph extends LuceneTestCase {
           continue;
         }
         KnnGraphValues graphValues = vectorReader.getGraphValues(KNN_GRAPH_FIELD);
-        assertTrue((vectorValues == null) == (graphValues == null));
+        assertEquals((vectorValues == null), (graphValues == null));
         if (vectorValues == null) {
           continue;
         }
@@ -297,10 +369,7 @@ public class TestKnnGraph extends LuceneTestCase {
               "Graph has " + graphSize + " nodes, but one of them has no neighbors", graphSize > 1);
         }
         if (HnswGraphBuilder.DEFAULT_MAX_CONN > graphSize) {
-          // assert that the graph in each leaf is connected and undirected (ie links are
-          // reciprocated)
-          // We cannot assert this when diversity criterion is applied
-          // assertReciprocal(graph);
+          // assert that the graph in each leaf is connected
           assertConnected(graph);
         } else {
           // assert that max-connections was respected
@@ -319,26 +388,11 @@ public class TestKnnGraph extends LuceneTestCase {
   }
 
   private void assertMaxConn(int[][] graph, int maxConn) {
-    for (int i = 0; i < graph.length; i++) {
-      if (graph[i] != null) {
-        assert (graph[i].length <= maxConn);
-        for (int j = 0; j < graph[i].length; j++) {
-          int k = graph[i][j];
+    for (int[] ints : graph) {
+      if (ints != null) {
+        assert (ints.length <= maxConn);
+        for (int k : ints) {
           assertNotNull(graph[k]);
-        }
-      }
-    }
-  }
-
-  private void assertReciprocal(int[][] graph) {
-    // The graph is undirected: if a -> b then b -> a.
-    for (int i = 0; i < graph.length; i++) {
-      if (graph[i] != null) {
-        for (int j = 0; j < graph[i].length; j++) {
-          int k = graph[i][j];
-          assertNotNull(graph[k]);
-          assertTrue(
-              "" + i + "->" + k + " is not reciprocated", Arrays.binarySearch(graph[k], i) >= 0);
         }
       }
     }
@@ -378,13 +432,19 @@ public class TestKnnGraph extends LuceneTestCase {
   }
 
   private void add(IndexWriter iw, int id, float[] vector) throws IOException {
+    add(iw, id, vector, searchStrategy);
+  }
+
+  private void add(IndexWriter iw, int id, float[] vector, SearchStrategy searchStrategy)
+      throws IOException {
     Document doc = new Document();
     if (vector != null) {
-      // TODO: choose random search strategy
-      doc.add(new VectorField(KNN_GRAPH_FIELD, vector, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
+      doc.add(new VectorField(KNN_GRAPH_FIELD, vector, searchStrategy));
     }
-    doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
-    // System.out.println("add " + id + " " + Arrays.toString(vector));
-    iw.addDocument(doc);
+    String idString = Integer.toString(id);
+    doc.add(new StringField("id", idString, Field.Store.YES));
+    doc.add(new SortedDocValuesField("id", new BytesRef(idString)));
+    // XSSystem.out.println("add " + idString + " " + Arrays.toString(vector));
+    iw.updateDocument(new Term("id", idString), doc);
   }
 }

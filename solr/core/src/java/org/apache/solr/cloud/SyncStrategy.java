@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -297,37 +298,32 @@ public class SyncStrategy {
       }
     }
   }
-  
+
+  @SuppressForbidden(reason = "Passed to an executor with a naming thread factory")
   private void requestRecovery(final ZkNodeProps leaderProps, final String baseUrl, final String coreName) throws SolrServerException, IOException {
-    Thread thread = new Thread() {
-      {
-        setDaemon(true);
+    Thread thread = new Thread(() -> {
+      if (isClosed) {
+        log.info("We have been closed, won't request recovery");
+        return;
       }
-      @Override
-      public void run() {
-        
-        if (isClosed) {
-          log.info("We have been closed, won't request recovery");
-          return;
-        }
-        RequestRecovery recoverRequestCmd = new RequestRecovery();
-        recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
-        recoverRequestCmd.setCoreName(coreName);
-        
-        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
-            .withHttpClient(SyncStrategy.this.client)
-            .withConnectionTimeout(30000)
-            .withSocketTimeout(120000)
-            .build()) {
-          client.request(recoverRequestCmd);
-        } catch (Throwable t) {
-          SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
-          if (t instanceof Error) {
-            throw (Error) t;
-          }
+      RequestRecovery recoverRequestCmd = new RequestRecovery();
+      recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
+      recoverRequestCmd.setCoreName(coreName);
+
+      try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
+          .withHttpClient(SyncStrategy.this.client)
+          .withConnectionTimeout(30000)
+          .withSocketTimeout(120000)
+          .build()) {
+        client.request(recoverRequestCmd);
+      } catch (Throwable t) {
+        SolrException.log(log, ZkCoreNodeProps.getCoreUrl(leaderProps) + ": Could not tell a replica to recover", t);
+        if (t instanceof Error) {
+          throw (Error) t;
         }
       }
-    };
+    });
+    thread.setDaemon(true);
     updateExecutor.execute(thread);
   }
   

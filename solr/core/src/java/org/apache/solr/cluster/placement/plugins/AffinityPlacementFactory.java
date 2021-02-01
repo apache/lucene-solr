@@ -108,7 +108,7 @@ import java.util.stream.Collectors;
  * </ul>
  *
  * <p>This code is a realistic placement computation, based on a few assumptions. The code is written in such a way to
- * make it relatively easy to adapt it to (somewhat) different assumptions. Configuration options could be introduced
+ * make it relatively easy to adapt it to (somewhat) different assumptions. Additional configuration options could be introduced
  * to allow configuration base option selection as well...</p>
  */
 public class AffinityPlacementFactory implements PlacementPluginFactory<AffinityPlacementConfig> {
@@ -149,7 +149,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
   @Override
   public PlacementPlugin createPluginInstance() {
-    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB, config.withCollections);
+    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB, config.withCollection);
   }
 
   @Override

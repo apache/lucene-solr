@@ -134,7 +134,7 @@ public class SnapShooter {
   }
 
   protected void deleteSnapAsync(final ReplicationHandler replicationHandler) {
-    new Thread(() -> deleteNamedSnapshot(replicationHandler)).start();
+    new Thread(() -> deleteNamedSnapshot(replicationHandler), "DeleteNamedSnapshot").start();
   }
 
   public void validateCreateSnapshot() throws IOException {
@@ -237,7 +237,7 @@ public class SnapShooter {
         }
       }
       if (null != snapShootDetails) result.accept(snapShootDetails);
-    }).start();
+    }, "CreateSnapshot").start();
 
   }
 

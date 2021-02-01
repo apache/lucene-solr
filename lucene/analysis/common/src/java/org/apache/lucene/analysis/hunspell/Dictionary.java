@@ -76,14 +76,14 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
-  static final int FLAG_UNSET = 0;
+  static final char FLAG_UNSET = (char) 0;
   private static final int DEFAULT_FLAGS = 65510;
   private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
-  static final String DEFAULT_ENCODING = StandardCharsets.ISO_8859_1.name();
+  static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
@@ -133,20 +133,27 @@ public class Dictionary {
   boolean hasStemExceptions;
 
   boolean ignoreCase;
+  boolean checkSharpS;
   boolean complexPrefixes;
   // if no affixes have continuation classes, no need to do 2-level affix stripping
   boolean twoStageAffix;
 
   char circumfix;
-  char keepcase;
+  char keepcase, forceUCase;
   char needaffix;
   char forbiddenword;
-  char onlyincompound;
-  int compoundMin = 3;
+  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundFlag;
+  char compoundPermit, compoundForbid;
+  boolean checkCompoundCase, checkCompoundDup;
+  boolean checkCompoundTriple, simplifiedTriple;
+  int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
 
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
+
+  String tryChars = "";
+  List<RepEntry> repTable = new ArrayList<>();
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
@@ -161,7 +168,7 @@ public class Dictionary {
   // language declaration of the dictionary
   String language;
   // true if case algorithms should use alternate (Turkish/Azeri) mapping
-  boolean alternateCasing;
+  private boolean alternateCasing;
 
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to
@@ -340,7 +347,7 @@ public class Dictionary {
       } else if ("FLAG".equals(firstWord)) {
         // Assume that the FLAG line comes before any prefix or suffixes
         // Store the strategy so it can be used when parsing the dic file
-        flagParsingStrategy = getFlagParsingStrategy(line);
+        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -348,10 +355,14 @@ public class Dictionary {
         circumfix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("KEEPCASE".equals(firstWord)) {
         keepcase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("FORCEUCASE".equals(firstWord)) {
+        forceUCase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("NEEDAFFIX".equals(firstWord) || "PSEUDOROOT".equals(firstWord)) {
         needaffix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("ONLYINCOMPOUND".equals(firstWord)) {
         onlyincompound = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("CHECKSHARPS".equals(firstWord)) {
+        checkSharpS = true;
       } else if ("IGNORE".equals(firstWord)) {
         ignore = singleArgument(reader, line).toCharArray();
         Arrays.sort(ignore);
@@ -370,15 +381,47 @@ public class Dictionary {
         fullStrip = true;
       } else if ("LANG".equals(firstWord)) {
         language = singleArgument(reader, line);
-        alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+        int underscore = language.indexOf("_");
+        String langCode = underscore < 0 ? language : language.substring(0, underscore);
+        alternateCasing = langCode.equals("tr") || langCode.equals("az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
+      } else if ("TRY".equals(firstWord)) {
+        tryChars = singleArgument(reader, line);
+      } else if ("REP".equals(firstWord)) {
+        int count = Integer.parseInt(singleArgument(reader, line));
+        for (int i = 0; i < count; i++) {
+          String[] parts = splitBySpace(reader, reader.readLine(), 3);
+          repTable.add(new RepEntry(parts[1], parts[2]));
+        }
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
         compoundMin = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDWORDMAX".equals(firstWord)) {
+        compoundMax = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
       } else if ("COMPOUNDRULE".equals(firstWord)) {
         compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDFLAG".equals(firstWord)) {
+        compoundFlag = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDBEGIN".equals(firstWord)) {
+        compoundBegin = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDMIDDLE".equals(firstWord)) {
+        compoundMiddle = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDEND".equals(firstWord)) {
+        compoundEnd = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDPERMITFLAG".equals(firstWord)) {
+        compoundPermit = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDFORBIDFLAG".equals(firstWord)) {
+        compoundForbid = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("CHECKCOMPOUNDCASE".equals(firstWord)) {
+        checkCompoundCase = true;
+      } else if ("CHECKCOMPOUNDDUP".equals(firstWord)) {
+        checkCompoundDup = true;
+      } else if ("CHECKCOMPOUNDTRIPLE".equals(firstWord)) {
+        checkCompoundTriple = true;
+      } else if ("SIMPLIFIEDTRIPLE".equals(firstWord)) {
+        simplifiedTriple = true;
       }
     }
 
@@ -682,7 +725,7 @@ public class Dictionary {
           // this test only at the end as ineffective but would allow lines only containing spaces:
           encoding.toString().trim().length() == 0) {
         if (ch < 0) {
-          return DEFAULT_ENCODING;
+          return DEFAULT_CHARSET.name();
         }
         continue;
       }
@@ -691,7 +734,7 @@ public class Dictionary {
         int last = matcher.end();
         return encoding.substring(last).trim();
       }
-      return DEFAULT_ENCODING;
+      return DEFAULT_CHARSET.name();
     }
   }
 
@@ -725,7 +768,7 @@ public class Dictionary {
    * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG
    *     definition
    */
-  static FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
+  static FlagParsingStrategy getFlagParsingStrategy(String flagLine, Charset charset) {
     String[] parts = flagLine.split("\\s+");
     if (parts.length != 2) {
       throw new IllegalArgumentException("Illegal FLAG specification: " + flagLine);
@@ -735,6 +778,9 @@ public class Dictionary {
     if ("num".equals(flagType)) {
       return new NumFlagParsingStrategy();
     } else if ("UTF-8".equals(flagType)) {
+      if (DEFAULT_CHARSET.equals(charset)) {
+        return new DefaultAsUtf8FlagParsingStrategy();
+      }
       return new SimpleFlagParsingStrategy();
     } else if ("long".equals(flagType)) {
       return new DoubleASCIIFlagParsingStrategy();
@@ -1009,6 +1055,10 @@ public class Dictionary {
     }
   }
 
+  boolean isDotICaseChangeDisallowed(char[] word) {
+    return word[0] == 'İ' && !alternateCasing;
+  }
+
   private class EntryGrouper {
     final FSTCompiler<IntsRef> words =
         new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, IntSequenceOutputs.getSingleton());
@@ -1224,6 +1274,19 @@ public class Dictionary {
     }
   }
 
+  /** Used to read flags as UTF-8 even if the rest of the file is in the default (8-bit) encoding */
+  private static class DefaultAsUtf8FlagParsingStrategy extends FlagParsingStrategy {
+    @Override
+    public char[] parseFlags(String rawFlags) {
+      return new String(rawFlags.getBytes(DEFAULT_CHARSET), StandardCharsets.UTF_8).toCharArray();
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append(new String(String.valueOf(flag).getBytes(StandardCharsets.UTF_8), DEFAULT_CHARSET));
+    }
+  }
+
   /**
    * Implementation of {@link FlagParsingStrategy} that assumes each flag is encoded in its
    * numerical form. In the case of multiple flags, each number is separated by a comma.
@@ -1301,10 +1364,6 @@ public class Dictionary {
       to.append((char) (flag >> 8));
       to.append((char) (flag & 0xff));
     }
-  }
-
-  boolean hasCompounding() {
-    return compoundRules != null;
   }
 
   boolean hasFlag(int entryId, char flag, BytesRef scratch) {

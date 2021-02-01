@@ -1,7 +1,8 @@
 = Solr Plugins
 :page-children: libs, \
     package-manager, \
-    cluster-plugins
+    cluster-plugins, \
+    replica-placement-plugins
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -59,4 +60,4 @@ Only some plugins support this as of now (support for more types of plugins comi
 
 * <<cluster-plugins.adoc#cluster-plugins,Cluster Plugins>>:
 Describes the API used for managing cluster-level plugins such as request handlers,
-cluster-level event producer and replica placement plugins.
+cluster-level event producer and <<replica-placement-plugins.adoc#replica-placement-plugins,replica placement plugins>>.
