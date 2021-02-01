@@ -53,6 +53,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.OrderedExecutor;
+import org.apache.solr.common.util.StopWatch;
 import org.apache.solr.common.util.SysStats;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -1306,6 +1307,7 @@ public class CoreContainer implements Closeable {
     if (isShutDown) {
       throw new AlreadyClosedException();
     }
+    StopWatch timeStartToCreate = new StopWatch(coreName + "-startToCreate");
     SolrCore core = null;
     CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
@@ -1329,14 +1331,21 @@ public class CoreContainer implements Closeable {
         preExisitingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
       }
 
+      timeStartToCreate.done();
+
       // Much of the logic in core handling pre-supposes that the core.properties file already exists, so create it
       // first and clean it up if there's an error.
+      StopWatch timeCreateCoresLocator = new StopWatch(coreName + "-createCoresLocator");
       coresLocator.create(this, cd);
+      timeCreateCoresLocator.done();
 
-
+      StopWatch timeCreateFromDescriptor = new StopWatch(coreName + "-createFromDescriptor");
       core = createFromDescriptor(cd, newCollection);
-      coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
+      timeCreateFromDescriptor.done();
 
+      StopWatch timePersist = new StopWatch(coreName + "-persist");
+      coresLocator.persist(this, cd); // Write out the current core properties in case anything changed when the core was created
+      timePersist.done();
 
       return core;
     } catch (Exception ex) {
@@ -1413,6 +1422,8 @@ public class CoreContainer implements Closeable {
     boolean registered = false;
     try {
       MDCLoggingContext.setCoreName(dcore.getName());
+      StopWatch timeValidateCoreNameLoadConfigSet = new StopWatch(dcore.getName() + "-validateCoreNameLoadConfigSet");
+
       SolrIdentifierValidator.validateCoreName(dcore.getName());
 
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
@@ -1421,6 +1432,7 @@ public class CoreContainer implements Closeable {
         log.info("Creating SolrCore '{}' using configuration from {} solrconfig={}, trusted={}", dcore.getName(), coreConfig.getName(), coreConfig.getSolrConfig().getName(),
             dcore.isConfigSetTrusted());
       }
+      timeValidateCoreNameLoadConfigSet.done();
 
       try {
 
@@ -1435,17 +1447,21 @@ public class CoreContainer implements Closeable {
 
         core.start();
 
+        StopWatch timeRegisterCore = new StopWatch(dcore.getName() + "-registerCore");
         old = registerCore(dcore, core, true);
         registered = true;
+        timeRegisterCore.done();
         solrCores.markCoreAsNotLoading(dcore);
 
         if (isZooKeeperAware()) {
+          StopWatch timeKickOffAsyncZkReg = new StopWatch(dcore.getName() + "-kickOffAsyncZkReg");
           if (!newCollection) {
             if (core.getDirectoryFactory().isSharedStorage()) {
               zkSys.getZkController().throwErrorIfReplicaReplaced(dcore);
             }
           }
           ParWork.getRootSharedExecutor().submit(new ZkController.RegisterCoreAsync(zkSys.zkController, dcore, false));
+          timeKickOffAsyncZkReg.done();
         }
 
       } catch (Exception e) {

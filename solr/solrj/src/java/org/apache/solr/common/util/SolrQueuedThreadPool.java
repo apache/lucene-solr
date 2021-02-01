@@ -628,6 +628,7 @@ public class SolrQueuedThreadPool extends ContainerLifeCycle implements ThreadFa
     private void cleanupThreadLocals() {
       JavaBinCodec.THREAD_LOCAL_ARR.remove();
       JavaBinCodec.THREAD_LOCAL_BRR.remove();
+      ValidatingJsonMap.THREAD_LOCAL_BBUFF.remove();
     }
   }
 

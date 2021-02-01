@@ -664,10 +664,7 @@ public class Utils {
               .compile("(\\S*?)\\[([-]?\\d+)\\]");
 
       public static SpecProvider getSpec ( final String name){
-        return () -> {
-          //log.error("Get spec {} {}", CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
-          return ValidatingJsonMap.parse(CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
-        };
+        return new MySpecProvider(name);
       }
 
       public static String parseMetricsReplicaName (String collectionName, String coreName){
@@ -837,5 +834,17 @@ public class Utils {
         return result;
       }
 
+  private static class MySpecProvider implements SpecProvider {
+    private final String name;
 
+    public MySpecProvider(String name) {
+      this.name = name;
     }
+
+    @Override
+    public ValidatingJsonMap getSpec() {
+      //log.error("Get spec {} {}", CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
+      return ValidatingJsonMap.parse(CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
+    }
+  }
+}

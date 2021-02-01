@@ -250,6 +250,12 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   }
 
+  public final static ThreadLocal<char[]> THREAD_LOCAL_BBUFF = new ThreadLocal<>(){
+    protected char[] initialValue() {
+      return new char[16384];
+    }
+  };
+
   public static ValidatingJsonMap fromJSON(InputStream is, String includeLocation) {
     return fromJSON(new InputStreamReader(is, UTF_8), includeLocation);
   }
@@ -257,7 +263,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   public static ValidatingJsonMap fromJSON(Reader r, String includeLocation) {
     try {
       ValidatingJsonMap map = (ValidatingJsonMap) getObjectBuilder(
-          new JSONParser(r)).getObject();
+          new JSONParser(r, THREAD_LOCAL_BBUFF.get())).getObject();
       handleIncludes(map, includeLocation, 4);
       return map;
     } catch (IOException e) {

@@ -26,6 +26,7 @@ import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StopWatch;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.SystemIdResolver;
@@ -125,6 +126,7 @@ public class XmlConfigFile { // formerly simply "Config"
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
 
+    StopWatch parseXmlFile = new StopWatch(name + "-parseXmlFile");
     if (is == null) {
       if (name == null || name.length() == 0) {
         throw new IllegalArgumentException("Null or empty name:" + name);
@@ -180,6 +182,7 @@ public class XmlConfigFile { // formerly simply "Config"
     } finally {
       // some XML parsers are broken and don't close the byte stream (but they should according to spec)
       ParWork.close(is.getByteStream());
+      parseXmlFile.done();
     }
 
   }

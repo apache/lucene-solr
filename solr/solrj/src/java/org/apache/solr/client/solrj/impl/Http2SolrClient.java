@@ -303,11 +303,6 @@ public class Http2SolrClient extends SolrClient {
     if (log.isTraceEnabled()) log.trace("Closing {} closeClient={}", this.getClass().getSimpleName(), closeClient);
     // assert closeTracker != null ? closeTracker.close() : true;
     try {
-      asyncTracker.waitForComplete();
-    } catch (Exception e) {
-      log.error("Exception waiting for httpClient asyncTracker", e);
-    }
-    try {
       asyncTracker.close();
     } catch (Exception e) {
       log.error("Exception closing httpClient asyncTracker", e);

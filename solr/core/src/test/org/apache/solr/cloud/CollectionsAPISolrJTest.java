@@ -104,7 +104,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, 2, 2)
             .setMaxShardsPerNode(4).process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 2,4);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();

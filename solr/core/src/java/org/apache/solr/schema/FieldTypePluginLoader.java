@@ -53,34 +53,21 @@ public final class FieldTypePluginLoader
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private XPathExpression analyzerQueryExp;
-  private XPathExpression analyzerMultiTermExp;
+  private static XPathExpression analyzerQueryExp;
+  private static XPathExpression analyzerMultiTermExp;
 
-  private XPathExpression analyzerIndexExp;
-  private XPathExpression similarityExp;
-  private XPathExpression charFilterExp;
-  private XPathExpression tokenizerExp;
-  private XPathExpression filterExp;
+  private static XPathExpression analyzerIndexExp;
+  private static XPathExpression similarityExp;
+  private static XPathExpression charFilterExp;
+  private static XPathExpression tokenizerExp;
+  private static XPathExpression filterExp;
 
   static {
-
+    refreshConf();
   }
 
-  /**
-   * @param schema The schema that will be used to initialize the FieldTypes
-   * @param fieldTypes All FieldTypes that are instantiated by
-   *        this Plugin Loader will be added to this Map
-   * @param schemaAware Any SchemaAware objects that are instantiated by
-   *        this Plugin Loader will be added to this collection.
-   */
-  public FieldTypePluginLoader(final IndexSchema schema,
-                               final Map<String, FieldType> fieldTypes,
-                               final Collection<SchemaAware> schemaAware) {
-    super("[schema.xml] fieldType", FieldType.class, true, true);
-    this.schema = schema;
-    this.fieldTypes = fieldTypes;
-    this.schemaAware = schemaAware;
-    XPath xpath = schema.getResourceLoader().getXPath();
+  public static void refreshConf() {
+    XPath xpath = SolrResourceLoader.getXpathFactory().newXPath();
     try {
       analyzerQueryExp = xpath.compile("./analyzer[@type='query']");
     } catch (XPathExpressionException e) {
@@ -119,6 +106,22 @@ public final class FieldTypePluginLoader
     } catch (XPathExpressionException e) {
       log.error("", e);
     }
+  }
+
+  /**
+   * @param schema The schema that will be used to initialize the FieldTypes
+   * @param fieldTypes All FieldTypes that are instantiated by
+   *        this Plugin Loader will be added to this Map
+   * @param schemaAware Any SchemaAware objects that are instantiated by
+   *        this Plugin Loader will be added to this collection.
+   */
+  public FieldTypePluginLoader(final IndexSchema schema,
+                               final Map<String, FieldType> fieldTypes,
+                               final Collection<SchemaAware> schemaAware) {
+    super("[schema.xml] fieldType", FieldType.class, true, true);
+    this.schema = schema;
+    this.fieldTypes = fieldTypes;
+    this.schemaAware = schemaAware;
   }
 
   private final IndexSchema schema;

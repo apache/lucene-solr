@@ -59,6 +59,9 @@ public abstract class AbstractSubTypeFieldType extends FieldType implements Sche
     if (subFieldType != null) {
       args.remove(SUB_FIELD_TYPE);
       subType = schema.getFieldTypeByName(subFieldType.trim());
+      if (subType == null) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "subtype not found " + subFieldType.trim() + " in " + schema.getFieldTypes());
+      }
       suffix = POLY_FIELD_SEPARATOR + subType.typeName;
     } else if (subSuffix != null) {
       args.remove(SUB_FIELD_SUFFIX);

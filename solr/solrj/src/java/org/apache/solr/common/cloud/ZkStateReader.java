@@ -1247,7 +1247,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * @return a map representing the key/value properties for the collection.
    */
   public Map<String, String> getCollectionProperties(final String collection, long cacheForMillis) {
-    synchronized (watchedCollectionProps) { // making decisions based on the result of a get...
+
       Watcher watcher = null;
       if (cacheForMillis > 0) {
         watcher = collectionPropsWatchers.compute(collection,
@@ -1279,7 +1279,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         }
       }
       return properties;
-    }
   }
 
   private static class VersionedCollectionProps {

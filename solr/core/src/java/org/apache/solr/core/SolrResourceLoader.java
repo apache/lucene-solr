@@ -70,6 +70,7 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.FieldTypePluginLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
@@ -258,6 +259,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       fieldTypeXPathExpressionsExp = xpath.compile(fieldTypeXPathExpressions);
 
       copyFieldsExp = xpath.compile(copyFieldPath);
+
+      FieldTypePluginLoader.refreshConf();
 
     } catch (Exception e) {
       log.error("", e);

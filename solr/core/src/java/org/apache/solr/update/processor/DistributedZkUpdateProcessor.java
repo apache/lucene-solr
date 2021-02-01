@@ -1172,6 +1172,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
     for (final SolrCmdDistributor.Error error : errors) {
 
+      if (error.req == null) continue;
+
       if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
         // if it's a forward, any fail is a problem -
         // otherwise we assume things are fine if we got it locally

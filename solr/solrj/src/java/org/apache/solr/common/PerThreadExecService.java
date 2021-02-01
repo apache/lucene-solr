@@ -158,17 +158,10 @@ public class PerThreadExecService extends AbstractExecutorService {
       return;
     }
 
-    if (!noCallerRunsAllowed && checkLoad()) {
-      runIt(runnable, true, false);
+    boolean acquired = available.tryAcquire();
+    if (!acquired && !noCallerRunsAllowed) {
+      runIt(runnable, false, false);
       return;
-    }
-
-    try {
-      available.acquire();
-    } catch (InterruptedException e) {
-      ParWork.propagateInterrupt(e);
-      running.decrementAndGet();
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
     Runnable finalRunnable = runnable;

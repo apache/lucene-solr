@@ -56,6 +56,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StopWatch;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -1033,7 +1034,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private SolrCore(CoreContainer coreContainer, String name, ConfigSet configSet, CoreDescriptor coreDescriptor,
                   String dataDir, UpdateHandler updateHandler,
                   IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
-
+    StopWatch coreConstructorTime = new StopWatch(this + "-constructor");
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
     assert ObjectReleaseTracker.track(this);
 
@@ -1058,7 +1059,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.configSetProperties = configSet.getProperties();
 
       // Initialize the RestManager
+      StopWatch initRestManager = new StopWatch(this + "-initRestManager");
       restManager = initRestManager(cd);
+      initRestManager.done();
 
       this.coreMetricManager = initCoreMetricManager(solrConfig);
 
@@ -1068,8 +1071,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       newSearcherMaxReachedCounter = coreMetricManager.getSolrMetricsContext().counter("maxReached", Category.SEARCHER.toString(), "new");
       newSearcherOtherErrorsCounter = coreMetricManager.getSolrMetricsContext().counter("errors", Category.SEARCHER.toString(), "new");
 
+      StopWatch loadReporters = new StopWatch(this + "-loadReporters");
       this.coreMetricManager.loadReporters();
+      loadReporters.done();
 
+      StopWatch timeDirFactory = new StopWatch(this + "-dirFactory");
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
         recoveryStrategyBuilder = initRecoveryStrategyBuilder();
@@ -1080,16 +1086,21 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         recoveryStrategyBuilder = solrCoreState.getRecoveryStrategyBuilder();
         isReloaded = true;
       }
+      timeDirFactory.done();
 
+      StopWatch timeDataDirUpdateLog = new StopWatch(this + "-dataDirUpdateLog");
       this.dataDir = initDataDir(dataDir, solrConfig, coreDescriptor);
       this.ulogDir = initUpdateLogDir(coreDescriptor);
+      timeDataDirUpdateLog.done();
 
       if (log.isInfoEnabled()) {
         log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, getInstancePath(), this.dataDir);
       }
 
+      StopWatch timeVerInSchema = new StopWatch(this + "-verInSchema");
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
+      timeVerInSchema.done();
 
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
@@ -1099,19 +1110,28 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
       this.slowQueryThresholdMillis = solrConfig.slowQueryThresholdMillis;
 
+      StopWatch timeInitListeners = new StopWatch(this + "-initListeners");
       initListeners();
+      timeInitListeners.done();
 
       this.snapshotMgr = initSnapshotMetaDataManager();
       this.solrDelPolicy = initDeletionPolicy(delPolicy);
 
+      StopWatch timeInitCodeIndex = new StopWatch(this + "-initCodec&Listeners");
       this.codec = initCodec(solrConfig, this.schema);
       initIndex(prev != null, reload);
+      timeInitCodeIndex.done();
 
+      StopWatch timeInitWriters = new StopWatch(this + "-initWriters");
       initWriters();
+      timeInitWriters.done();
+
       qParserPlugins.init(QParserPlugin.standardPlugins, this);
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       transformerFactories.init(TransformerFactory.defaultFactories, this);
+      StopWatch timeLoadSearchComponents = new StopWatch(this + "-loadSearchComponents");
       loadSearchComponents();
+      timeLoadSearchComponents.done();
       updateProcessors.init(Collections.emptyMap(), this);
 
       // Processors initialized before the handlers
@@ -1127,21 +1147,29 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return null;
       });
 
+      StopWatch timeUpdateHandler = new StopWatch(this + "-updateHandler");
       if (updateHandler != null) {
         this.updateHandler = new DirectUpdateHandler2(this, updateHandler);
       } else {
         this.updateHandler = new DirectUpdateHandler2(this);
       }
+      timeUpdateHandler.done();
 
+
+      StopWatch timeMetricProducerUpdateHanndler = new StopWatch(this + "-metricProducerUpdateHanndler");
       coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer) this.updateHandler);
       infoRegistry.put("updateHandler", this.updateHandler);
+      timeMetricProducerUpdateHanndler.done();
 
+      StopWatch timeInitSearcher = new StopWatch(this + "-initSearcher");
       initSearcherFuture = initSearcher(prev);
+      timeInitSearcher.done();
 
       infoRegistry.put("core", this);
 
+      StopWatch timeBufferUpdatesIfConstructing = new StopWatch(this + "-bufferUpdatesIfConstructing");
       bufferUpdatesIfConstructing(coreDescriptor);
-
+      timeBufferUpdatesIfConstructing.done();
 
       this.ruleExpiryLock = new ReentrantLock();
       this.snapshotDelLock = new ReentrantLock();
@@ -1178,6 +1206,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+    } finally {
+      coreConstructorTime.done();
     }
 
     assert ObjectReleaseTracker.track(this);
@@ -1186,16 +1216,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public void start() {
     // register any SolrInfoMBeans SolrResourceLoader initialized
     //
-
+    StopWatch timeStartCore = new StopWatch(this + "-startCore");
     try {
-
+      StopWatch timeInform = new StopWatch(this + "-inform");
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
 
       resourceLoader.inform(this); // last call before the latch is released.
 
       this.updateHandler.informEventListeners(this);
+      timeInform.done();
 
+      searcherReadyLatch.countDown();
       // this must happen after the latch is released, because a JMX server impl may
       // choose to block on registering until properties can be fetched from an MBean,
       // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
@@ -1203,9 +1235,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       resourceLoader.inform(infoRegistry);
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
-
-      searcherReadyLatch.countDown();
-
+      StopWatch timeWaitForSearcher = new StopWatch(this + "-waitForSearcher");
       // nocommit - wait before publish active
       if (!getSolrConfig().useColdSearcher) {
         try {
@@ -1216,6 +1246,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           log.error("", e);
         }
       }
+      timeWaitForSearcher.done();
 
       if (!isReloaded) { // MRM TODO: reload could move to a different index?
         RefCounted<IndexWriter> iw = updateHandler.getSolrCoreState().getIndexWriter(this);
@@ -1225,7 +1256,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           RefCounted<SolrIndexSearcher> searcher = getSearcher();
           try {
             if (dir != searcher.get().getIndexReader().directory()) {
+              StopWatch timeSeedVersions = new StopWatch(this + "-seedVersions");
               seedVersionBuckets();
+              timeSeedVersions.done();
             }
           } finally {
             searcher.decref();
@@ -1234,8 +1267,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           iw.decref();
         }
       }
-
+      StopWatch timeRegConfListener = new StopWatch(this + "-regConfListener");
       registerConfListener();
+      timeRegConfListener.done();
     } catch(Exception e) {
 //      try {
 //        close();
@@ -1247,6 +1281,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       } catch (IOException ioException) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ioException);
       }
+    } finally {
+      timeStartCore.done();
     }
 
   }

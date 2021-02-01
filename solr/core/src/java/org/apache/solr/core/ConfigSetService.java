@@ -31,6 +31,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StopWatch;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.slf4j.Logger;
@@ -64,24 +65,25 @@ public abstract class ConfigSetService {
    */
   @SuppressWarnings({"rawtypes"})
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
-
+    StopWatch timeCreateResourceLoader = new StopWatch(dcore.getName() + "-createResourceLoader");
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
-
+    timeCreateResourceLoader.done();
     try {
-
+      StopWatch timeLoadConfigProps = new StopWatch(dcore.getName() + "-loadConfigProps");
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
       NamedList properties = loadConfigSetProperties(dcore, coreLoader);
+      timeLoadConfigProps.done();
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
 
       // there are no flags in non cloud mode, it just returns null
-
+      StopWatch timeLoadConfigSetFlags = new StopWatch(dcore.getName() + "-loadConfigSetFlags");
       NamedList flags = null;
       try {
         flags = loadConfigSetFlags(dcore, coreLoader);
       } catch (Exception e) {
         log.info("Could not find/load configset flags");
       }
-
+      timeLoadConfigSetFlags.done();
 
       boolean trusted =
           (coreLoader instanceof ZkSolrResourceLoader
@@ -91,10 +93,18 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       if (log.isDebugEnabled()) log.debug("Trusted configset={} {}", trusted, flags);
-
+      StopWatch timeCreateSolrConfig = new StopWatch(dcore.getName() + "-createSolrConfig");
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
+      timeCreateSolrConfig.done();
+      StopWatch timeCreateSchema = new StopWatch(dcore.getName() + "-createSchema");
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
+      timeCreateSchema.done();
+
+      StopWatch timeCreateConfigSet = new StopWatch(dcore.getName() + "-createConfigSet");
+      ConfigSet configSet = new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
+      timeCreateConfigSet.done();
+
+      return configSet;
     } catch (Exception e) {
       IOUtils.closeQuietly(coreLoader);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

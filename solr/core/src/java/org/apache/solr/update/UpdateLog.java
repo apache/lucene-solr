@@ -104,6 +104,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   private boolean trace = log.isTraceEnabled();
 
   private final Lock tlogLock = new ReentrantLock(true);
+  private volatile boolean registeredMetricProducer;
 
   // TODO: hack
   public FileSystem getFs() {
@@ -377,7 +378,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     // tracking in this init call that can be recalled, and we create in the updatehandler
     // but then the solrcorestate is what closes ...
     // assert ObjectReleaseTracker.track(this);
-    tlogLock.lock();
     try {
       dataDir = core.getUlogDir();
 
@@ -454,7 +454,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
 
       }
-      core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+      if (!registeredMetricProducer) {
+        registeredMetricProducer = true;
+        core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
+      }
     } catch (Throwable e) {
       log.error("Error trying to init update log", e);
       ParWork.propagateInterrupt(e);
@@ -463,8 +466,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         throw e;
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    } finally {
-      tlogLock.unlock();
     }
   }
 

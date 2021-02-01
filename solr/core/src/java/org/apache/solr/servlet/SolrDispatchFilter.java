@@ -117,18 +117,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   private volatile StopRunnable stopRunnable;
   private volatile Future<?> loadCoresFuture;
 
-  private static class LiveThread extends Thread {
-    @Override
-    public void run() {
-      try {
-        Thread.sleep(Integer.MAX_VALUE);
-      } catch (InterruptedException e) {
-        // okay, stop
-      }
-    }
-  }
-
-  private final Thread liveThread = new LiveThread();
   protected volatile CoreContainer cores;
   protected final CountDownLatch init = new CountDownLatch(1);
 
@@ -158,7 +146,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   }
   
   public SolrDispatchFilter() {
-    liveThread.start();
+
   }
 
   public static final String PROPERTIES_ATTRIBUTE = "solr.properties";
@@ -263,14 +251,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       zkClient.disableCloseLock();
     }
 
-    try (ParWork parWork = new ParWork(this, true, true)) {
-      parWork.collect("", ()->{
-        ParWork.close(zkClient);
-      });
-      parWork.collect("", ()->{
-        liveThread.interrupt();
-      });
-    }
+    ParWork.close(zkClient);
   }
 
   private void setupJvmMetrics(CoreContainer coresInit)  {
