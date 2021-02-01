@@ -76,7 +76,7 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
-  static final int FLAG_UNSET = 0;
+  static final char FLAG_UNSET = (char) 0;
   private static final int DEFAULT_FLAGS = 65510;
   private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 
@@ -133,6 +133,7 @@ public class Dictionary {
   boolean hasStemExceptions;
 
   boolean ignoreCase;
+  boolean checkSharpS;
   boolean complexPrefixes;
   // if no affixes have continuation classes, no need to do 2-level affix stripping
   boolean twoStageAffix;
@@ -141,8 +142,9 @@ public class Dictionary {
   char keepcase;
   char needaffix;
   char forbiddenword;
-  char onlyincompound;
-  int compoundMin = 3;
+  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundPermit;
+  boolean checkCompoundCase;
+  int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
 
   // ignored characters (dictionary, affix, inputs)
@@ -355,6 +357,8 @@ public class Dictionary {
         needaffix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("ONLYINCOMPOUND".equals(firstWord)) {
         onlyincompound = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("CHECKSHARPS".equals(firstWord)) {
+        checkSharpS = true;
       } else if ("IGNORE".equals(firstWord)) {
         ignore = singleArgument(reader, line).toCharArray();
         Arrays.sort(ignore);
@@ -373,7 +377,9 @@ public class Dictionary {
         fullStrip = true;
       } else if ("LANG".equals(firstWord)) {
         language = singleArgument(reader, line);
-        alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+        int underscore = language.indexOf("_");
+        String langCode = underscore < 0 ? language : language.substring(0, underscore);
+        alternateCasing = langCode.equals("tr") || langCode.equals("az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
       } else if ("TRY".equals(firstWord)) {
@@ -388,8 +394,20 @@ public class Dictionary {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
         compoundMin = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDWORDMAX".equals(firstWord)) {
+        compoundMax = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
       } else if ("COMPOUNDRULE".equals(firstWord)) {
         compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDBEGIN".equals(firstWord)) {
+        compoundBegin = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDMIDDLE".equals(firstWord)) {
+        compoundMiddle = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDEND".equals(firstWord)) {
+        compoundEnd = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDPERMITFLAG".equals(firstWord)) {
+        compoundPermit = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("CHECKCOMPOUNDCASE".equals(firstWord)) {
+        checkCompoundCase = true;
       }
     }
 
@@ -1312,10 +1330,6 @@ public class Dictionary {
       to.append((char) (flag >> 8));
       to.append((char) (flag & 0xff));
     }
-  }
-
-  boolean hasCompounding() {
-    return compoundRules != null;
   }
 
   boolean hasFlag(int entryId, char flag, BytesRef scratch) {

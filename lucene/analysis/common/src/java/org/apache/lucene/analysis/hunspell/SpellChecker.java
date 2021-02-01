@@ -46,12 +46,24 @@ public class SpellChecker {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
+    if (word.endsWith(".")) {
+      return spellWithTrailingDots(word);
+    }
+
+    return spellClean(word);
+  }
+
+  private boolean spellClean(String word) {
     if (isNumber(word)) {
       return true;
     }
 
     char[] wordChars = word.toCharArray();
-    if (checkWord(wordChars, wordChars.length, false)) {
+    if (dictionary.isForbiddenWord(wordChars, wordChars.length, scratch)) {
+      return false;
+    }
+
+    if (checkWord(wordChars, wordChars.length, null)) {
       return true;
     }
 
@@ -60,51 +72,109 @@ public class SpellChecker {
       return true;
     }
 
-    if (dictionary.breaks.isNotEmpty()
-        && !hasTooManyBreakOccurrences(word)
-        && !dictionary.isForbiddenWord(wordChars, word.length(), scratch)) {
+    if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
       return tryBreaks(word);
     }
 
     return false;
   }
 
+  private boolean spellWithTrailingDots(String word) {
+    int length = word.length() - 1;
+    while (length > 0 && word.charAt(length - 1) == '.') {
+      length--;
+    }
+    return spellClean(word.substring(0, length)) || spellClean(word.substring(0, length + 1));
+  }
+
   private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
     char[] caseVariant = wordChars;
     if (wordCase == WordCase.UPPER) {
       caseVariant = stemmer.caseFoldTitle(caseVariant, wordChars.length);
-      if (checkWord(caseVariant, wordChars.length, true)) {
+      if (checkWord(caseVariant, wordChars.length, wordCase)) {
         return true;
       }
       char[] aposCase = Stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
-      if (aposCase != null && checkWord(aposCase, aposCase.length, true)) {
+      if (aposCase != null && checkWord(aposCase, aposCase.length, wordCase)) {
         return true;
       }
+      for (char[] variation : stemmer.sharpSVariations(caseVariant, wordChars.length)) {
+        if (checkWord(variation, variation.length, null)) {
+          return true;
+        }
+      }
     }
-    return checkWord(stemmer.caseFoldLower(caseVariant, wordChars.length), wordChars.length, true);
+    char[] lower = stemmer.caseFoldLower(caseVariant, wordChars.length);
+    if (checkWord(lower, wordChars.length, wordCase)) {
+      return true;
+    }
+    if (wordCase == WordCase.UPPER) {
+      for (char[] variation : stemmer.sharpSVariations(lower, wordChars.length)) {
+        if (checkWord(variation, variation.length, null)) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   boolean checkWord(String word) {
     return checkWord(word.toCharArray(), word.length(), false);
   }
 
-  private boolean checkWord(char[] wordChars, int length, boolean caseVariant) {
+  private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
     if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
       return false;
     }
 
-    if (!stemmer.doStem(wordChars, length, caseVariant).isEmpty()) {
+    if (hasStems(wordChars, 0, length, originalCase, WordContext.SIMPLE_WORD)) {
       return true;
     }
 
-    if (dictionary.hasCompounding()) {
-      return checkCompounds(wordChars, 0, length, new ArrayList<>());
+    if (dictionary.compoundRules != null
+        && checkCompoundRules(wordChars, 0, length, new ArrayList<>())) {
+      return true;
+    }
+
+    return dictionary.compoundBegin > 0 && checkCompounds(wordChars, 0, length, originalCase, 0);
+  }
+
+  private boolean hasStems(
+      char[] chars, int offset, int length, WordCase originalCase, WordContext context) {
+    return !stemmer.doStem(chars, offset, length, originalCase, context).isEmpty();
+  }
+
+  private boolean checkCompounds(
+      char[] chars, int offset, int length, WordCase originalCase, int depth) {
+    if (depth > dictionary.compoundMax - 2) return false;
+
+    int limit = length - dictionary.compoundMin + 1;
+    for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      WordContext context = depth == 0 ? WordContext.COMPOUND_BEGIN : WordContext.COMPOUND_MIDDLE;
+      int breakOffset = offset + breakPos;
+      if (checkCompoundCase(chars, breakOffset)
+          && hasStems(chars, offset, breakPos, originalCase, context)) {
+        int remainingLength = length - breakPos;
+        if (hasStems(chars, breakOffset, remainingLength, originalCase, WordContext.COMPOUND_END)) {
+          return true;
+        }
+
+        if (checkCompounds(chars, breakOffset, remainingLength, originalCase, depth + 1)) {
+          return true;
+        }
+      }
     }
 
     return false;
   }
 
-  private boolean checkCompounds(char[] wordChars, int offset, int length, List<IntsRef> words) {
+  private boolean checkCompoundCase(char[] chars, int breakPos) {
+    if (!dictionary.checkCompoundCase) return true;
+    return Character.isUpperCase(chars[breakPos - 1]) == Character.isUpperCase(chars[breakPos]);
+  }
+
+  private boolean checkCompoundRules(
+      char[] wordChars, int offset, int length, List<IntsRef> words) {
     if (words.size() >= 100) return false;
 
     int limit = length - dictionary.compoundMin + 1;
@@ -119,7 +189,7 @@ public class SpellChecker {
             return true;
           }
 
-          if (checkCompounds(wordChars, offset + breakPos, length - breakPos, words)) {
+          if (checkCompoundRules(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
         }
@@ -138,8 +208,7 @@ public class SpellChecker {
 
     words.add(forms);
     boolean result =
-        dictionary.compoundRules != null
-            && dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+        dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
     words.remove(words.size() - 1);
     return result;
   }

@@ -81,6 +81,7 @@ public class KnnGraphTester {
   private Path indexPath;
   private boolean quiet;
   private boolean reindex;
+  private boolean forceMerge;
   private int reindexTimeMsec;
 
   @SuppressForbidden(reason = "uses Random()")
@@ -176,7 +177,7 @@ public class KnnGraphTester {
           docVectorsPath = Paths.get(args[++iarg]);
           break;
         case "-forceMerge":
-          operation = "-forceMerge";
+          forceMerge = true;
           break;
         case "-quiet":
           quiet = true;
@@ -195,6 +196,9 @@ public class KnnGraphTester {
         throw new IllegalArgumentException("-docs argument is required when indexing");
       }
       reindexTimeMsec = createIndex(docVectorsPath, indexPath);
+      if (forceMerge) {
+        forceMerge();
+      }
     }
     if (operation != null) {
       switch (operation) {
@@ -207,9 +211,6 @@ public class KnnGraphTester {
           } else {
             testSearch(indexPath, queryPath, null, getNN(docVectorsPath, queryPath));
           }
-          break;
-        case "-forceMerge":
-          forceMerge();
           break;
         case "-dump":
           dumpGraph(docVectorsPath);
@@ -405,19 +406,17 @@ public class KnnGraphTester {
       }
       float recall = checkResults(results, nn);
       totalVisited /= numIters;
-      if (quiet) {
-        System.out.printf(
-            Locale.ROOT,
-            "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\t%d\t%d\n",
-            recall,
-            totalCpuTime / (float) numIters,
-            numDocs,
-            fanout,
-            HnswGraphBuilder.DEFAULT_MAX_CONN,
-            HnswGraphBuilder.DEFAULT_BEAM_WIDTH,
-            totalVisited,
-            reindexTimeMsec);
-      }
+      System.out.printf(
+          Locale.ROOT,
+          "%5.3f\t%5.2f\t%d\t%d\t%d\t%d\t%d\t%d\n",
+          recall,
+          totalCpuTime / (float) numIters,
+          numDocs,
+          fanout,
+          HnswGraphBuilder.DEFAULT_MAX_CONN,
+          HnswGraphBuilder.DEFAULT_BEAM_WIDTH,
+          totalVisited,
+          reindexTimeMsec);
     }
   }
 
@@ -443,11 +442,6 @@ public class KnnGraphTester {
       // System.out.println(Arrays.toString(nn[i]));
       // System.out.println(Arrays.toString(results[i].scoreDocs));
       totalMatches += compareNN(nn[i], results[i]);
-    }
-    if (quiet == false) {
-      System.out.println("total matches = " + totalMatches + " out of " + totalResults);
-      System.out.printf(
-          Locale.ROOT, "Average overlap = %.2f%%\n", ((100.0 * totalMatches) / totalResults));
     }
     return totalMatches / (float) totalResults;
   }
@@ -578,6 +572,8 @@ public class KnnGraphTester {
     IndexWriterConfig iwc = new IndexWriterConfig().setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     // iwc.setMergePolicy(NoMergePolicy.INSTANCE);
     iwc.setRAMBufferSizeMB(1994d);
+    // iwc.setMaxBufferedDocs(10000);
+
     if (quiet == false) {
       iwc.setInfoStream(new PrintStreamInfoStream(System.out));
       System.out.println("creating index in " + indexPath);

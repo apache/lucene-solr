@@ -192,15 +192,13 @@ public class ChaosMonkey {
       List<CloudJettyRunner> jetties = shardToJetty.get(key);
       for (CloudJettyRunner jetty : jetties) {
         Thread.sleep(pauseBetweenMs);
-        Thread thread = new Thread() {
-          public void run() {
-            try {
-              stopJetty(jetty);
-            } catch (Exception e) {
-              throw new RuntimeException(e);
-            }
+        Thread thread = new Thread(() -> {
+          try {
+            stopJetty(jetty);
+          } catch (Exception e) {
+            throw new RuntimeException(e);
           }
-        };
+        }, "ChaosMonkey");
         jettyThreads.add(thread);
         thread.start();
 
@@ -490,30 +488,26 @@ public class ChaosMonkey {
     // TODO: when kill leaders is on, lets kill a higher percentage of leaders
     
     stop = false;
-    monkeyThread = new Thread() {
+    monkeyThread = new Thread(() -> {
+      while (!stop) {
+        try {
 
-      @Override
-      public void run() {
-        while (!stop) {
-          try {
-    
-            Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
+          Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
 
-            causeSomeChaos();
-            
-          } catch (InterruptedException e) {
-            //
-          } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-          }
+          causeSomeChaos();
+
+        } catch (InterruptedException e) {
+          //
+        } catch (Exception e) {
+          // TODO Auto-generated catch block
+          e.printStackTrace();
         }
-        monkeyLog("finished");
-        monkeyLog("I ran for " + runTimer.getTime() / 1000 + "s. I stopped " + stops + " and I started " + starts
-            + ". I also expired " + expires.get() + " and caused " + connloss
-            + " connection losses");
       }
-    };
+      monkeyLog("finished");
+      monkeyLog("I ran for " + runTimer.getTime() / 1000 + "s. I stopped " + stops + " and I started " + starts
+          + ". I also expired " + expires.get() + " and caused " + connloss
+          + " connection losses");
+    }, "ChaosMonkey");
     monkeyThread.start();
   }
   
