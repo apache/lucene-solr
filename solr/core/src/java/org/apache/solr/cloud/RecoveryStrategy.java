@@ -119,7 +119,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
   private RecoveryListener recoveryListener;
   private ZkController zkController;
   private String baseUrl;
-  private String coreZkNodeName;
+  private String replicaName;
   private ZkStateReader zkStateReader;
   private volatile String coreName;
   private int retries;
@@ -137,7 +137,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     zkController = cc.getZkController();
     zkStateReader = zkController.getZkStateReader();
     baseUrl = zkController.getBaseUrl();
-    coreZkNodeName = cd.getCloudDescriptor().getCoreNodeName();
+    replicaName = cd.getCloudDescriptor().getCoreNodeName();
     replicaType = cd.getCloudDescriptor().getReplicaType();
   }
 
@@ -193,7 +193,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     if (prevSendPreRecoveryHttpUriRequest != null) {
       prevSendPreRecoveryHttpUriRequest.abort();
     }
-    log.warn("Stopping recovery for core=[{}] coreNodeName=[{}]", coreName, coreZkNodeName);
+    log.warn("Stopping recovery for core=[{}] replicaName=[{}]", coreName, replicaName);
   }
 
   final private void recoveryFailed(final ZkController zkController,
@@ -847,7 +847,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     WaitForState prepCmd = new WaitForState();
     prepCmd.setCoreName(leaderCoreName);
     prepCmd.setNodeName(zkController.getNodeName());
-    prepCmd.setCoreNodeName(coreZkNodeName);
+    prepCmd.setCoreNodeName(replicaName);
     prepCmd.setState(Replica.State.RECOVERING);
     prepCmd.setCheckLive(true);
     prepCmd.setOnlyIfLeader(true);

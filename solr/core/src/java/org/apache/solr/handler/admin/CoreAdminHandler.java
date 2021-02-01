@@ -35,10 +35,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonAdminParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -57,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import static org.apache.solr.common.params.CommonParams.REPLICA_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
@@ -233,7 +231,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       .put(CoreAdminParams.SHARD, CoreDescriptor.CORE_SHARD)
       .put(CoreAdminParams.COLLECTION, CoreDescriptor.CORE_COLLECTION)
       .put(CoreAdminParams.ROLES, CoreDescriptor.CORE_ROLES)
-      .put(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME)
+      .put(REPLICA_NAME, REPLICA_NAME)
       .put(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS)
       .put(CoreAdminParams.REPLICA_TYPE, CloudDescriptor.REPLICA_TYPE)
       .build();

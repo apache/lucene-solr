@@ -258,7 +258,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return Objects.hash(name);
   }
 
-  /** Also known as coreNodeName. */
+  /** Also known as replicaName. */
   public String getName() {
     return name;
   }

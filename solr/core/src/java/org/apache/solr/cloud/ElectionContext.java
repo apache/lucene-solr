@@ -35,10 +35,10 @@ public abstract class ElectionContext implements Closeable {
   volatile String leaderSeqPath;
   private SolrZkClient zkClient;
 
-  public ElectionContext(final String coreNodeName,
+  public ElectionContext(final String relicaName,
       final String electionPath, final String leaderPath, final ZkNodeProps leaderProps, final SolrZkClient zkClient) {
     assert zkClient != null;
-    this.id = coreNodeName;
+    this.id = relicaName;
     this.electionPath = electionPath;
     this.leaderPath = leaderPath;
     this.leaderProps = leaderProps;

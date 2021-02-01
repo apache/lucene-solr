@@ -259,38 +259,38 @@ public class ReplicaMutator {
 
   private ZkWriteCommand updateState(final ClusterState prevState, ZkNodeProps message, String collectionName, Integer numShards, boolean collectionExists) {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+    String replicaName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     boolean forceSetState = message.getBool(ZkStateReader.FORCE_SET_STATE_PROP, true);
 
     DocCollection collection = prevState.getCollectionOrNull(collectionName);
-    if (!forceSetState && !CloudUtil.replicaExists(prevState, collectionName, sliceName, coreNodeName)) {
+    if (!forceSetState && !CloudUtil.replicaExists(prevState, collectionName, sliceName, replicaName)) {
       log.info("Failed to update state because the replica does not exist, {}", message);
       return ZkStateWriter.NO_OP;
     }
     boolean persistCollectionState = collection != null && collection.isPerReplicaState();
 
-    if (coreNodeName == null) {
-      coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(collection,
+    if (replicaName == null) {
+      replicaName = ClusterStateMutator.getAssignedReplicaName(collection,
           message.getStr(ZkStateReader.NODE_NAME_PROP), message.getStr(ZkStateReader.CORE_NAME_PROP));
-      if (coreNodeName != null) {
-        log.debug("node={} is already registered", coreNodeName);
+      if (replicaName != null) {
+        log.debug("node={} is already registered", replicaName);
       } else {
         if (!forceSetState) {
           log.info("Failed to update state because the replica does not exist, {}", message);
           return ZkStateWriter.NO_OP;
         }
         persistCollectionState = true;
-        // if coreNodeName is null, auto assign one
-        coreNodeName = Assign.assignCoreNodeName(stateManager, collection);
+        // if replicaName is null, auto assign one
+        replicaName = Assign.assignReplicaName(stateManager, collection);
       }
       message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP,
-          coreNodeName);
+          replicaName);
     }
 
     // use the provided non null shardId
     if (sliceName == null) {
       //get shardId from ClusterState
-      sliceName = ClusterStateMutator.getAssignedId(collection, coreNodeName);
+      sliceName = ClusterStateMutator.getAssignedId(collection, replicaName);
       if (sliceName != null) {
         log.debug("shard={} is already registered", sliceName);
       }
@@ -312,7 +312,7 @@ public class ReplicaMutator {
 
     Map<String, Object> replicaProps = new LinkedHashMap<>(message.getProperties());
     if (slice != null) {
-      Replica oldReplica = slice.getReplica(coreNodeName);
+      Replica oldReplica = slice.getReplica(replicaName);
       if (oldReplica != null) {
         if (oldReplica.containsKey(ZkStateReader.LEADER_PROP)) {
           replicaProps.put(ZkStateReader.LEADER_PROP, oldReplica.get(ZkStateReader.LEADER_PROP));
@@ -352,7 +352,7 @@ public class ReplicaMutator {
     String shardParent = (String) replicaProps.remove(ZkStateReader.SHARD_PARENT_PROP);
 
 
-    Replica replica = new Replica(coreNodeName, replicaProps, collectionName, sliceName);
+    Replica replica = new Replica(replicaName, replicaProps, collectionName, sliceName);
 
     log.debug("Will update state for replica: {}", replica);
 
@@ -360,7 +360,7 @@ public class ReplicaMutator {
     Map<String, Replica> replicas;
 
     if (slice != null) {
-      collection = checkAndCompleteShardSplit(prevState, collection, coreNodeName, sliceName, replica);
+      collection = checkAndCompleteShardSplit(prevState, collection, replicaName, sliceName, replica);
       // get the current slice again because it may have been updated due to checkAndCompleteShardSplit method
       slice = collection.getSlice(sliceName);
       sliceProps = slice.getProperties();
@@ -385,18 +385,18 @@ public class ReplicaMutator {
     }
   }
 
-  private DocCollection checkAndCompleteShardSplit(ClusterState prevState, DocCollection collection, String coreNodeName, String sliceName, Replica replica) {
+  private DocCollection checkAndCompleteShardSplit(ClusterState prevState, DocCollection collection, String replicaName, String sliceName, Replica replica) {
     Slice slice = collection.getSlice(sliceName);
     Map<String, Object> sliceProps = slice.getProperties();
     if (slice.getState() == Slice.State.RECOVERY) {
       log.info("Shard: {} is in recovery state", sliceName);
       // is this replica active?
       if (replica.getState() == Replica.State.ACTIVE) {
-        log.info("Shard: {} is in recovery state and coreNodeName: {} is active", sliceName, coreNodeName);
+        log.info("Shard: {} is in recovery state and replicaName: {} is active", sliceName, replicaName);
         // are all other replicas also active?
         boolean allActive = true;
         for (Map.Entry<String, Replica> entry : slice.getReplicasMap().entrySet()) {
-          if (coreNodeName.equals(entry.getKey())) continue;
+          if (replicaName.equals(entry.getKey())) continue;
           if (entry.getValue().getState() != Replica.State.ACTIVE) {
             allActive = false;
             break;

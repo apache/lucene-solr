@@ -293,7 +293,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     AtomicInteger times = new AtomicInteger(0);
     ZkContainer.testing_beforeRegisterInZk = cd -> {
       if (cd.getCloudDescriptor() == null) return false;
-      if (replica1.getName().equals(cd.getCloudDescriptor().getCoreNodeName())
+      if (replica1.getName().equals(cd.getCloudDescriptor().getReplicaName())
           && collectionName.equals(cd.getCloudDescriptor().getCollectionName())) {
         if (times.incrementAndGet() > 1) {
           return false;

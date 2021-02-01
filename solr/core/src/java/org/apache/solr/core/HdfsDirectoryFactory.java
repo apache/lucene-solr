@@ -413,7 +413,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       path = URLEncoder.encode(cd.getCloudDescriptor().getCollectionName(),
           "UTF-8")
           + "/"
-          + URLEncoder.encode(cd.getCloudDescriptor().getCoreNodeName(),
+          + URLEncoder.encode(cd.getCloudDescriptor().getReplicaName(),
               "UTF-8");
     } else {
       path = cd.getName();

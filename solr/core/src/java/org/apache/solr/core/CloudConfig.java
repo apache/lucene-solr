@@ -109,7 +109,7 @@ public class CloudConfig {
     return leaderConflictResolveWait;
   }
 
-  public boolean getGenericCoreNodeNames() {
+  public boolean getGenericReplicaNames() {
     return useGenericCoreNames;
   }
 

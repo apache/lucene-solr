@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -460,7 +461,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return createJetty(solrHome, dataDir, shardList, solrConfigOverride, schemaOverride, useExplicitNodeNames);
   }
   
-  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride, boolean explicitCoreNodeName) throws Exception {
+  public JettySolrRunner createJetty(File solrHome, String dataDir, String shardList, String solrConfigOverride, String schemaOverride, boolean explicitReplicaName) throws Exception {
 
     Properties props = new Properties();
     if (solrConfigOverride != null)
@@ -472,8 +473,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (dataDir != null) {
       props.setProperty("solr.data.dir", dataDir);
     }
-    if (explicitCoreNodeName) {
-      props.setProperty("coreNodeName", Integer.toString(nodeCnt.incrementAndGet()));
+    if (explicitReplicaName) {
+      props.setProperty(CommonParams.REPLICA_NAME, Integer.toString(nodeCnt.incrementAndGet()));
     }
     props.setProperty("coreRootDirectory", solrHome.toPath().resolve("cores").toString());
 

@@ -338,7 +338,7 @@ enum CoreAdminOperation implements CoreAdminOp {
               SimpleOrderedMap cloudInfo = new SimpleOrderedMap<>();
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
-              cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+              cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getReplicaName());
               cloudInfo.add(REPLICA_TYPE, core.getCoreDescriptor().getCloudDescriptor().getReplicaType().name());
               info.add("cloud", cloudInfo);
             }

@@ -254,13 +254,13 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     });
   }
 
-  public static void verifyReplicaStatus(ZkStateReader reader, String collection, String shard, String coreNodeName,
+  public static void verifyReplicaStatus(ZkStateReader reader, String collection, String shard, String replicaName,
       Replica.State expectedState) throws InterruptedException, TimeoutException {
-    log.info("verifyReplicaStatus ({}) shard={} coreNodeName={}", collection, shard, coreNodeName);
+    log.info("verifyReplicaStatus ({}) shard={} replicaName={}", collection, shard, replicaName);
     reader.waitForState(collection, 15000, TimeUnit.MILLISECONDS,
         (collectionState) -> collectionState != null && collectionState.getSlice(shard) != null
-            && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName) != null
-            && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName).getState() == expectedState);
+            && collectionState.getSlice(shard).getReplicasMap().get(replicaName) != null
+            && collectionState.getSlice(shard).getReplicasMap().get(replicaName).getState() == expectedState);
   }
 
   protected static void assertAllActive(String collection, ZkStateReader zkStateReader)

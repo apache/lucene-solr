@@ -39,6 +39,8 @@ import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.REPLICA_NAME;
+
 
 class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -52,7 +54,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     String cname = params.get(CoreAdminParams.CORE, "");
 
     String nodeName = params.get("nodeName");
-    String coreNodeName = params.get("coreNodeName");
+    String replicaName = params.get(REPLICA_NAME);
     Replica.State waitForState = Replica.State.getState(params.get(ZkStateReader.STATE_PROP));
     Boolean checkLive = params.getBool("checkLive");
     Boolean onlyIfLeader = params.getBool("onlyIfLeader");
@@ -62,8 +64,8 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
     // wait long enough for the leader conflict to work itself out plus a little extra
     int conflictWaitMs = coreContainer.getZkController().getLeaderConflictResolveWait();
     log.info(
-        "Going to wait for coreNodeName: {}, state: {}, checkLive: {}, onlyIfLeader: {}, onlyIfLeaderActive: {}",
-        coreNodeName, waitForState, checkLive, onlyIfLeader, onlyIfLeaderActive);
+        "Going to wait for replicaName: {}, state: {}, checkLive: {}, onlyIfLeader: {}, onlyIfLeaderActive: {}",
+        replicaName, waitForState, checkLive, onlyIfLeader, onlyIfLeaderActive);
 
     String collectionName;
     CloudDescriptor cloudDescriptor;
@@ -94,7 +96,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         boolean live = false;
         Slice slice = c.getSlice(cloudDescriptor.getShardId());
         if (slice != null) {
-          final Replica replica = slice.getReplicasMap().get(coreNodeName);
+          final Replica replica = slice.getReplicasMap().get(replicaName);
           if (replica != null) {
             state = replica.getState();
             live = n.contains(nodeName);
@@ -117,8 +119,8 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
             ZkShardTerms shardTerms = coreContainer.getZkController().getShardTerms(collectionName, slice.getName());
             // if the replica is waiting for leader to see recovery state, the leader should refresh its terms
-            if (waitForState == Replica.State.RECOVERING && shardTerms.registered(coreNodeName)
-                && shardTerms.skipSendingUpdatesTo(coreNodeName)) {
+            if (waitForState == Replica.State.RECOVERING && shardTerms.registered(replicaName)
+                && shardTerms.skipSendingUpdatesTo(replicaName)) {
               // The replica changed it term, then published itself as RECOVERING.
               // This core already see replica as RECOVERING
               // so it is guarantees that a live-fetch will be enough for this core to see max term published
@@ -134,7 +136,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
                       ", isLeader? " + cloudDescriptor.isLeader() +
                       ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state
                       + ", localState=" + localState + ", nodeName=" + nodeName +
-                      ", coreNodeName=" + coreNodeName + ", onlyIfActiveCheckResult=" + onlyIfActiveCheckResult
+                      ", replicaName=" + replicaName + ", onlyIfActiveCheckResult=" + onlyIfActiveCheckResult
                       + ", nodeProps: " + replica); //nowarn
             }
             if (!onlyIfActiveCheckResult && replica != null && (state == waitForState || leaderDoesNotNeedRecovery)) {

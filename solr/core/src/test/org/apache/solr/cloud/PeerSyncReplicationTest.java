@@ -345,7 +345,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
       Collection<String> nodesDownNames =
           nodesDown.stream()
-              .map(n -> n.coreNodeName)
+              .map(n -> n.replicaName)
               .collect(Collectors.toList());
 
       Collection<Replica> replicasToCheck =

@@ -56,7 +56,7 @@ public class CloudUtil {
   public static final int DEFAULT_TIMEOUT = 90;
 
   /**
-   * See if coreNodeName has been taken over by another baseUrl and unload core
+   * See if replicaName has been taken over by another baseUrl and unload core
    * + throw exception if it has been.
    */
   public static void checkSharedFSFailoverReplaced(CoreContainer cc, CoreDescriptor desc) {
@@ -103,12 +103,12 @@ public class CloudUtil {
     }
   }
 
-  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String coreNodeName) {
+  public static boolean replicaExists(ClusterState clusterState, String collection, String shard, String replicaName) {
     DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null) {
       Slice slice = docCollection.getSlice(shard);
       if (slice != null) {
-        return slice.getReplica(coreNodeName) != null;
+        return slice.getReplica(replicaName) != null;
       }
     }
     return false;

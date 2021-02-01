@@ -270,7 +270,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
   /**
-   * Get the map of coreNodeName to replicas for this slice.
+   * Get the map of replicaName to replicas for this slice.
    */
   public Map<String, Replica> getReplicasMap() {
     return replicas;

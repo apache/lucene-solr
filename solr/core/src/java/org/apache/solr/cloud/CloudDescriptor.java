@@ -26,6 +26,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.PropertiesUtil;
 import org.apache.solr.core.CoreDescriptor;
 
+import static org.apache.solr.common.params.CommonParams.REPLICA_NAME;
+
 /**
  * SolrCloud metadata attached to a {@link CoreDescriptor}.
  */
@@ -64,7 +66,7 @@ public class CloudDescriptor {
     // If no collection name is specified, we default to the core name
     this.collectionName = props.getProperty(CoreDescriptor.CORE_COLLECTION, coreName);
     this.roles = props.getProperty(CoreDescriptor.CORE_ROLES, null);
-    this.nodeName = props.getProperty(CoreDescriptor.CORE_NODE_NAME);
+    this.nodeName = props.getProperty(REPLICA_NAME);
     if (Strings.isNullOrEmpty(nodeName))
       this.nodeName = null;
     this.numShards = PropertiesUtil.toInteger(props.getProperty(CloudDescriptor.NUM_SHARDS), null);
@@ -146,15 +148,27 @@ public class CloudDescriptor {
   public void setNumShards(int numShards) {
     this.numShards = numShards;
   }
-  
+
+  @Deprecated
   public String getCoreNodeName() {
     return nodeName;
   }
 
+  public String  getReplicaName() {
+    return nodeName;
+  }
+
+  public void  setReplicaName(String nodeName) {
+    this.nodeName = nodeName;
+    if(nodeName==null) cd.getPersistableStandardProperties().remove(REPLICA_NAME);
+    else cd.getPersistableStandardProperties().setProperty(REPLICA_NAME, nodeName);
+  }
+
+  @Deprecated
   public void setCoreNodeName(String nodeName) {
     this.nodeName = nodeName;
-    if(nodeName==null) cd.getPersistableStandardProperties().remove(CoreDescriptor.CORE_NODE_NAME);
-    else cd.getPersistableStandardProperties().setProperty(CoreDescriptor.CORE_NODE_NAME, nodeName);
+    if(nodeName==null) cd.getPersistableStandardProperties().remove(REPLICA_NAME);
+    else cd.getPersistableStandardProperties().setProperty(REPLICA_NAME, nodeName);
   }
 
   public void reload(CloudDescriptor reloadFrom) {

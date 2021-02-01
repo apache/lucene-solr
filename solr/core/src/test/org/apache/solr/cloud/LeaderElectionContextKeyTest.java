@@ -49,7 +49,7 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
 
     for (int i = 1; i <= 2; i++) {
       // Create two collections with same order of requests, no parallel
-      // therefore Assign.buildCoreNodeName will create same coreNodeName
+      // therefore Assign.buildReplicaName will create same coreNodeName
       CollectionAdminRequest
           .createCollection("testCollection"+i, "config", 2, 1)
           .setCreateNodeSet("")

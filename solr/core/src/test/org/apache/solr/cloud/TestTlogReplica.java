@@ -957,7 +957,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
+        Replica replica = docCollection.getReplica(cloudDescriptor.getReplicaName());
         if (slice.getLeader().equals(replica) && isLeader) {
           rs.add(solrCore);
         } else if (!slice.getLeader().equals(replica) && !isLeader) {
@@ -992,7 +992,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
-        Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
+        Replica replica = docCollection.getReplica(cloudDescriptor.getReplicaName());
         if (slice.getLeader() == replica && isLeader) {
           rs.add(solrRunner);
         } else if (slice.getLeader() != replica && !isLeader) {

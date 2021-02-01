@@ -58,31 +58,31 @@ public class ShardTerms implements MapWriter {
   }
 
   /**
-   * Can {@code coreNodeName} become leader?
-   * @param coreNodeName of the replica
-   * @return true if {@code coreNodeName} can become leader, false if otherwise
+   * Can {@code replicaName} become leader?
+   * @param replicaName of the replica
+   * @return true if {@code replicaName} can become leader, false if otherwise
    */
-  public boolean canBecomeLeader(String coreNodeName) {
-    return haveHighestTermValue(coreNodeName) && !values.containsKey(recoveringTerm(coreNodeName));
+  public boolean canBecomeLeader(String replicaName) {
+    return haveHighestTermValue(replicaName) && !values.containsKey(recoveringTerm(replicaName));
   }
 
   /**
-   * Is {@code coreNodeName}'s term highest?
-   * @param coreNodeName of the replica
-   * @return true if term of {@code coreNodeName} is highest
+   * Is {@code replicaName}'s term highest?
+   * @param replicaName of the replica
+   * @return true if term of {@code replicaName} is highest
    */
-  public boolean haveHighestTermValue(String coreNodeName) {
+  public boolean haveHighestTermValue(String replicaName) {
     if (values.isEmpty()) return true;
-    return values.getOrDefault(coreNodeName, 0L) == maxTerm;
+    return values.getOrDefault(replicaName, 0L) == maxTerm;
   }
 
-  public Long getTerm(String coreNodeName) {
-    return values.get(coreNodeName);
+  public Long getTerm(String replicaName) {
+    return values.get(replicaName);
   }
 
   /**
    * Return a new {@link ShardTerms} in which term of {@code leader} is higher than {@code replicasNeedingRecovery}
-   * @param leader coreNodeName of leader
+   * @param leader replicaName of leader
    * @param replicasNeedingRecovery set of replicas in which their terms should be lower than leader's term
    * @return null if term of {@code leader} is already higher than {@code replicasNeedingRecovery}
    */
@@ -137,61 +137,61 @@ public class ShardTerms implements MapWriter {
   }
 
   /**
-   * Return a new {@link ShardTerms} in which terms for the {@code coreNodeName} are removed
-   * @param coreNodeName of the replica
-   * @return null if term of {@code coreNodeName} is already not exist
+   * Return a new {@link ShardTerms} in which terms for the {@code replicaName} are removed
+   * @param replicaName of the replica
+   * @return null if term of {@code replicaName} is already not exist
    */
-  public ShardTerms removeTerm(String coreNodeName) {
-    if (!values.containsKey(recoveringTerm(coreNodeName)) && !values.containsKey(coreNodeName)) {
+  public ShardTerms removeTerm(String replicaName) {
+    if (!values.containsKey(recoveringTerm(replicaName)) && !values.containsKey(replicaName)) {
       return null;
     }
 
     HashMap<String, Long> newValues = new HashMap<>(values);
-    newValues.remove(coreNodeName);
-    newValues.remove(recoveringTerm(coreNodeName));
+    newValues.remove(replicaName);
+    newValues.remove(recoveringTerm(replicaName));
 
     return new ShardTerms(newValues, version);
   }
 
   /**
-   * Return a new {@link ShardTerms} in which the associate term of {@code coreNodeName} is not null
-   * @param coreNodeName of the replica
-   * @return null if term of {@code coreNodeName} is already exist
+   * Return a new {@link ShardTerms} in which the associate term of {@code replicaName} is not null
+   * @param replicaName of the replica
+   * @return null if term of {@code replicaName} is already exist
    */
-  public ShardTerms registerTerm(String coreNodeName) {
-    if (values.containsKey(coreNodeName)) return null;
+  public ShardTerms registerTerm(String replicaName) {
+    if (values.containsKey(replicaName)) return null;
 
     HashMap<String, Long> newValues = new HashMap<>(values);
-    newValues.put(coreNodeName, 0L);
+    newValues.put(replicaName, 0L);
     return new ShardTerms(newValues, version);
   }
 
   /**
-   * Return a new {@link ShardTerms} in which the associate term of {@code coreNodeName} is equal to zero,
+   * Return a new {@link ShardTerms} in which the associate term of {@code replicaName} is equal to zero,
    * creating it if it does not previously exist.
-   * @param coreNodeName of the replica
-   * @return null if the term of {@code coreNodeName} already exists and is zero
+   * @param replicaName of the replica
+   * @return null if the term of {@code replicaName} already exists and is zero
    */
-  public ShardTerms setTermToZero(String coreNodeName) {
-    if (values.getOrDefault(coreNodeName, -1L) == 0) {
+  public ShardTerms setTermToZero(String replicaName) {
+    if (values.getOrDefault(replicaName, -1L) == 0) {
       return null;
     }
     HashMap<String, Long> newValues = new HashMap<>(values);
-    newValues.put(coreNodeName, 0L);
+    newValues.put(replicaName, 0L);
     return new ShardTerms(newValues, version);
   }
 
   /**
-   * Return a new {@link ShardTerms} in which the term of {@code coreNodeName} is max
-   * @param coreNodeName of the replica
-   * @return null if term of {@code coreNodeName} is already maximum
+   * Return a new {@link ShardTerms} in which the term of {@code replicaName} is max
+   * @param replicaName of the replica
+   * @return null if term of {@code replicaName} is already maximum
    */
-  public ShardTerms setTermEqualsToLeader(String coreNodeName) {
-    if (values.get(coreNodeName) == maxTerm) return null;
+  public ShardTerms setTermEqualsToLeader(String replicaName) {
+    if (values.get(replicaName) == maxTerm) return null;
 
     HashMap<String, Long> newValues = new HashMap<>(values);
-    newValues.put(coreNodeName, maxTerm);
-    newValues.remove(recoveringTerm(coreNodeName));
+    newValues.put(replicaName, maxTerm);
+    newValues.remove(recoveringTerm(replicaName));
     return new ShardTerms(newValues, version);
   }
 
@@ -200,41 +200,41 @@ public class ShardTerms implements MapWriter {
   }
 
   /**
-   * Mark {@code coreNodeName} as recovering
-   * @param coreNodeName of the replica
-   * @return null if {@code coreNodeName} is already marked as doing recovering
+   * Mark {@code replicaName} as recovering
+   * @param replicaName of the replica
+   * @return null if {@code replicaName} is already marked as doing recovering
    */
-  public ShardTerms startRecovering(String coreNodeName) {
-    if (values.get(coreNodeName) == maxTerm)
+  public ShardTerms startRecovering(String replicaName) {
+    if (values.get(replicaName) == maxTerm)
       return null;
 
     HashMap<String, Long> newValues = new HashMap<>(values);
-    if (!newValues.containsKey(recoveringTerm(coreNodeName))) {
-      long currentTerm = newValues.getOrDefault(coreNodeName, 0L);
+    if (!newValues.containsKey(recoveringTerm(replicaName))) {
+      long currentTerm = newValues.getOrDefault(replicaName, 0L);
       // by keeping old term, we will have more information in leader election
-      newValues.put(recoveringTerm(coreNodeName), currentTerm);
+      newValues.put(recoveringTerm(replicaName), currentTerm);
     }
-    newValues.put(coreNodeName, maxTerm);
+    newValues.put(replicaName, maxTerm);
     return new ShardTerms(newValues, version);
   }
 
   /**
-   * Mark {@code coreNodeName} as finished recovering
-   * @param coreNodeName of the replica
-   * @return null if term of {@code coreNodeName} is already finished doing recovering
+   * Mark {@code replicaName} as finished recovering
+   * @param replicaName of the replica
+   * @return null if term of {@code replicaName} is already finished doing recovering
    */
-  public ShardTerms doneRecovering(String coreNodeName) {
-    if (!values.containsKey(recoveringTerm(coreNodeName))) {
+  public ShardTerms doneRecovering(String replicaName) {
+    if (!values.containsKey(recoveringTerm(replicaName))) {
       return null;
     }
 
     HashMap<String, Long> newValues = new HashMap<>(values);
-    newValues.remove(recoveringTerm(coreNodeName));
+    newValues.remove(recoveringTerm(replicaName));
     return new ShardTerms(newValues, version);
   }
 
-  public static String recoveringTerm(String coreNodeName) {
-    return coreNodeName + RECOVERING_TERM_SUFFIX;
+  public static String recoveringTerm(String replicaName) {
+    return replicaName + RECOVERING_TERM_SUFFIX;
   }
 
   @Override

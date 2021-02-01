@@ -251,7 +251,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     Replica tempSourceLeader = zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
 
     String tempCollectionReplica1 = tempSourceLeader.getCoreName();
-    String coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
+    String replicaName = ocmh.waitForReplica(tempSourceCollectionName,
         sourceLeader.getNodeName(), tempCollectionReplica1);
     // wait for the replicas to be seen as active on temp source leader
     if (log.isInfoEnabled()) {
@@ -260,7 +260,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     CoreAdminRequest.WaitForState cmd = new CoreAdminRequest.WaitForState();
     cmd.setCoreName(tempCollectionReplica1);
     cmd.setNodeName(sourceLeader.getNodeName());
-    cmd.setCoreNodeName(coreNodeName);
+    cmd.setReplicaName(replicaName);
     cmd.setState(Replica.State.ACTIVE);
     cmd.setCheckLive(true);
     cmd.setOnlyIfLeader(true);
@@ -319,7 +319,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
       syncRequestTracker.processResponses(results, shardHandler, true, "MIGRATE failed to create replica of " +
         "temporary collection in target leader node.");
     }
-    coreNodeName = ocmh.waitForCoreNodeName(tempSourceCollectionName,
+    replicaName = ocmh.waitForReplica(tempSourceCollectionName,
         targetLeader.getNodeName(), tempCollectionReplica2);
     // wait for the replicas to be seen as active on temp source leader
     if (log.isInfoEnabled()) {
@@ -328,7 +328,7 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
     cmd = new CoreAdminRequest.WaitForState();
     cmd.setCoreName(tempSourceLeader.getStr("core"));
     cmd.setNodeName(targetLeader.getNodeName());
-    cmd.setCoreNodeName(coreNodeName);
+    cmd.setCoreNodeName(replicaName);
     cmd.setState(Replica.State.ACTIVE);
     cmd.setCheckLive(true);
     cmd.setOnlyIfLeader(true);

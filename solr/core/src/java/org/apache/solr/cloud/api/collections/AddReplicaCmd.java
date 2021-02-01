@@ -54,10 +54,7 @@ import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -135,7 +132,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (node != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'name' parameter is specified");
       }
-      if (message.getStr(CoreAdminParams.CORE_NODE_NAME) != null) {
+      if (message.getStr(CommonParams.REPLICA_NAME) != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create " + totalReplicas + " replicas if 'coreNodeName' parameter is specified");
       }
     }
@@ -160,7 +157,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Runnable runnable = () -> {
       shardRequestTracker.processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica");
       for (CreateReplica replica : createReplicas) {
-        ocmh.waitForCoreNodeName(collectionName, replica.node, replica.coreName);
+        ocmh.waitForReplica(collectionName, replica.node, replica.coreName);
       }
       if (onComplete != null) onComplete.run();
     };
@@ -209,8 +206,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
           ZkStateReader.NODE_NAME_PROP, createReplica.node,
           ZkStateReader.REPLICA_TYPE, createReplica.replicaType.name());
-      if (createReplica.coreNodeName != null) {
-        props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
+      if (createReplica.replicaName != null) {
+        props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.replicaName);
       }
       try {
         ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
@@ -218,7 +215,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
       }
     }
-    params.set(CoreAdminParams.CORE_NODE_NAME,
+    params.set(CommonParams.REPLICA_NAME,
         ocmh.waitToSeeReplicasInState(collectionName, Collections.singletonList(createReplica.coreName)).get(createReplica.coreName).getName());
 
     String configName = zkStateReader.readConfigName(collectionName);
@@ -253,8 +250,8 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (instanceDir != null) {
       params.set(CoreAdminParams.INSTANCE_DIR, instanceDir);
     }
-    if (createReplica.coreNodeName != null) {
-      params.set(CoreAdminParams.CORE_NODE_NAME, createReplica.coreNodeName);
+    if (createReplica.replicaName != null) {
+      params.set(CoreAdminParams.CORE_NODE_NAME, createReplica.replicaName);
     }
     ocmh.addPropertyParams(message, params);
 
@@ -269,7 +266,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     String node = replicaPosition.node;
     String shard = message.getStr(SHARD_ID_PROP);
     String coreName = message.getStr(CoreAdminParams.NAME);
-    String coreNodeName = message.getStr(CoreAdminParams.CORE_NODE_NAME);
+    String replicaName = message.getStr(CoreAdminParams.CORE_NODE_NAME);
     Replica.Type replicaType = replicaPosition.type;
 
     if (StringUtils.isBlank(coreName)) {
@@ -296,7 +293,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
     log.info("Returning CreateReplica command.");
-    return new CreateReplica(collection, shard, node, replicaType, coreName, coreNodeName);
+    return new CreateReplica(collection, shard, node, replicaType, coreName, replicaName);
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,
@@ -361,15 +358,15 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     public final String node;
     public final Replica.Type replicaType;
     public String coreName;
-    public String coreNodeName;
+    public String replicaName;
 
-    CreateReplica(String collectionName, String sliceName, String node, Replica.Type replicaType, String coreName, String coreNodeName) {
+    CreateReplica(String collectionName, String sliceName, String node, Replica.Type replicaType, String coreName, String replicaName) {
       this.collectionName = collectionName;
       this.sliceName = sliceName;
       this.node = node;
       this.replicaType = replicaType;
       this.coreName = coreName;
-      this.coreNodeName = coreNodeName;
+      this.replicaName = replicaName;
     }
   }
 

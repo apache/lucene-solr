@@ -247,7 +247,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     /*
     This test asserts that if zkController.publishAndWaitForDownStates uses only core name to check if all local
-    cores are down then the method will return immediately but if it uses coreNodeName (as it does after SOLR-6665 then
+    cores are down then the method will return immediately but if it uses replicaName (as it does after SOLR-6665 then
     the method will timeout).
     We setup the cluster state in such a way that two replicas with same core name exist on non-existent nodes
     and core container also has a dummy core that has the same core name. The publishAndWaitForDownStates before SOLR-6665
@@ -270,9 +270,9 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         @Override
         public List<CoreDescriptor> getCoreDescriptors() {
           CoreDescriptor descriptor = new CoreDescriptor(collectionName, TEST_PATH(), Collections.emptyMap(), new Properties(), zkControllerRef.get());
-          // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates to wait indefinitely
-          // when using coreNodeName but usage of core name alone will return immediately
-          descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
+          // non-existent replicaName, this will cause zkController.publishAndWaitForDownStates to wait indefinitely
+          // when using replicaName but usage of core name alone will return immediately
+          descriptor.getCloudDescriptor().setReplicaName("core_node0");
           return Collections.singletonList(descriptor);
         }
       };

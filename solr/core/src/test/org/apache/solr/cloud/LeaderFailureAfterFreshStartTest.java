@@ -106,9 +106,9 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       CloudJettyRunner initialLeaderJetty = shardToLeaderJetty.get("shard1");
       List<CloudJettyRunner> otherJetties = getOtherAvailableJetties(initialLeaderJetty);
       
-      log.info("Leader node_name: {},  url: {}", initialLeaderJetty.coreNodeName, initialLeaderJetty.url);
+      log.info("Leader node_name: {},  url: {}", initialLeaderJetty.replicaName, initialLeaderJetty.url);
       for (CloudJettyRunner cloudJettyRunner : otherJetties) {
-        log.info("Nonleader node_name: {},  url: {}", cloudJettyRunner.coreNodeName, cloudJettyRunner.url);
+        log.info("Nonleader node_name: {},  url: {}", cloudJettyRunner.replicaName, cloudJettyRunner.url);
       }
       
       CloudJettyRunner secondNode = otherJetties.get(0);
@@ -212,7 +212,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       boolean allActive = true;
 
       Collection<String> nodesDownNames = nodesDown.stream()
-          .map(n -> n.coreNodeName)
+          .map(n -> n.replicaName)
           .collect(Collectors.toList());
       
       Collection<Replica> replicasToCheck = null;

@@ -895,24 +895,24 @@ public class ZkStateReader implements SolrCloseable {
   }
 
 
-  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisCoreNodeName) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, null);
+  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisReplicaName) {
+    return getReplicaProps(collection, shardId, thisReplicaName, null);
   }
 
-  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisCoreNodeName,
+  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisReplicaName,
                                                Replica.State mustMatchStateFilter) {
-    return getReplicaProps(collection, shardId, thisCoreNodeName, mustMatchStateFilter, null);
+    return getReplicaProps(collection, shardId, thisReplicaName, mustMatchStateFilter, null);
   }
 
-  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisCoreNodeName,
+  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisReplicaName,
                                                Replica.State mustMatchStateFilter, Replica.State mustNotMatchStateFilter) {
     //TODO: We don't need all these getReplicaProps method overloading. Also, it's odd that the default is to return replicas of type TLOG and NRT only
-    return getReplicaProps(collection, shardId, thisCoreNodeName, mustMatchStateFilter, null, EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
+    return getReplicaProps(collection, shardId, thisReplicaName, mustMatchStateFilter, null, EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
   }
 
-  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisCoreNodeName,
+  public List<ZkCoreNodeProps> getReplicaProps(String collection, String shardId, String thisReplicaName,
                                                Replica.State mustMatchStateFilter, Replica.State mustNotMatchStateFilter, final EnumSet<Replica.Type> acceptReplicaType) {
-    assert thisCoreNodeName != null;
+    assert thisReplicaName != null;
     ClusterState clusterState = this.clusterState;
     if (clusterState == null) {
       return null;
@@ -934,9 +934,9 @@ public class ZkStateReader implements SolrCloseable {
     for (Entry<String, Replica> entry : shardMap.entrySet().stream().filter((e) -> acceptReplicaType.contains(e.getValue().getType())).collect(Collectors.toList())) {
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
 
-      String coreNodeName = entry.getValue().getName();
+      String replicaName = entry.getValue().getName();
 
-      if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !coreNodeName.equals(thisCoreNodeName)) {
+      if (clusterState.liveNodesContain(nodeProps.getNodeName()) && !replicaName.equals(thisReplicaName)) {
         if (mustMatchStateFilter == null || mustMatchStateFilter == Replica.State.getState(nodeProps.getState())) {
           if (mustNotMatchStateFilter == null || mustNotMatchStateFilter != Replica.State.getState(nodeProps.getState())) {
             nodes.add(nodeProps);

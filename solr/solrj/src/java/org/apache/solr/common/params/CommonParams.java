@@ -305,5 +305,7 @@ public interface CommonParams {
 
   String CHILDDOC = "_childDocuments_";
 
+  String REPLICA_NAME = "coreNodeName";
+
 }
 

@@ -58,7 +58,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
   @Test
   public void test() throws IOException, SolrServerException, KeeperException, InterruptedException {
     Set<String> coreNames = new HashSet<>();
-    Set<String> coreNodeNames = new HashSet<>();
+    Set<String> replicaNames = new HashSet<>();
 
     int numOperations = random().nextInt(15) + 15;
     int numLiveReplicas = 4;
@@ -97,9 +97,9 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         Replica newReplica = getCollectionState(COLLECTION).getReplicas().stream()
             .filter(r -> r.getCoreName().equals(coreName))
             .findAny().get();
-        String coreNodeName = newReplica.getName();
-        assertFalse("Core node name is not unique", coreNodeNames.contains(coreName));
-        coreNodeNames.add(coreNodeName);
+        String replicaName = newReplica.getName();
+        assertFalse("Core node name is not unique", replicaNames.contains(coreName));
+        replicaNames.add(replicaName);
       }
     }
   }

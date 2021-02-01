@@ -372,7 +372,7 @@ public class IndexFetcher {
         assert !solrCore.isClosed(): "Replication should be stopped before closing the core";
         Replica replica = getLeaderReplica();
         CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
-        if (cd.getCoreNodeName().equals(replica.getName())) {
+        if (cd.getReplicaName().equals(replica.getName())) {
           return IndexFetchResult.EXPECTING_NON_LEADER;
         }
         if (replica.getState() != Replica.State.ACTIVE) {

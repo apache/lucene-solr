@@ -56,8 +56,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   public ShardLeaderElectionContext(LeaderElector leaderElector,
                                     final String shardId, final String collection,
-                                    final String coreNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
-    super(leaderElector, shardId, collection, coreNodeName, props,
+                                    final String replicaName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
+    super(leaderElector, shardId, collection, replicaName, props,
         zkController);
     this.cc = cc;
     syncStrategy = new SyncStrategy(cc);
@@ -133,7 +133,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       }
 
       Replica.Type replicaType;
-      String coreNodeName;
+      String replicaName;
       boolean setTermToMax = false;
       try (SolrCore core = cc.getCore(coreName)) {
 
@@ -142,11 +142,11 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
-        coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
+        replicaName = core.getCoreDescriptor().getCloudDescriptor().getReplicaName();
         // should I be leader?
         ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
-        if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
-          if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreNodeName, leaderVoteWait)) {
+        if (zkShardTerms.registered(replicaName) && !zkShardTerms.canBecomeLeader(replicaName)) {
+          if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, replicaName, leaderVoteWait)) {
             rejoinLeaderElection(core);
             return;
           } else {
@@ -255,8 +255,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           // in case of leaderVoteWait timeout, a replica with lower term can win the election
           if (setTermToMax) {
             log.error("WARNING: Potential data loss -- Replica {} became leader after timeout (leaderVoteWait) {}"
-                , "without being up-to-date with the previous leader", coreNodeName);
-            zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
+                , "without being up-to-date with the previous leader", replicaName);
+            zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(replicaName);
           }
           super.runLeaderProcess(weAreReplacement, 0);
           try (SolrCore core = cc.getCore(coreName)) {
@@ -314,15 +314,15 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * @return true if after {@code timeout} there are no other replicas with higher term participate in the election,
    * false if otherwise
    */
-  private boolean waitForEligibleBecomeLeaderAfterTimeout(ZkShardTerms zkShardTerms, String coreNodeName, int timeout) throws InterruptedException {
+  private boolean waitForEligibleBecomeLeaderAfterTimeout(ZkShardTerms zkShardTerms, String replicaName, int timeout) throws InterruptedException {
     long timeoutAt = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS);
     while (!isClosed && !cc.isShutDown()) {
       if (System.nanoTime() > timeoutAt) {
         log.warn("After waiting for {}ms, no other potential leader was found, {} try to become leader anyway (core_term:{}, highest_term:{})",
-            timeout, coreNodeName, zkShardTerms.getTerm(coreNodeName), zkShardTerms.getHighestTerm());
+            timeout, replicaName, zkShardTerms.getTerm(replicaName), zkShardTerms.getHighestTerm());
         return true;
       }
-      if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
+      if (replicasWithHigherTermParticipated(zkShardTerms, replicaName)) {
         log.info("Can't become leader, other replicas with higher term participated in leader election");
         return false;
       }
@@ -336,17 +336,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    *
    * @return true if other replicas with higher term participated in the election, false if otherwise
    */
-  private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String coreNodeName) {
+  private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String replicaName) {
     ClusterState clusterState = zkController.getClusterState();
     DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     if (slices == null) return false;
 
-    long replicaTerm = zkShardTerms.getTerm(coreNodeName);
-    boolean isRecovering = zkShardTerms.isRecovering(coreNodeName);
+    long replicaTerm = zkShardTerms.getTerm(replicaName);
+    boolean isRecovering = zkShardTerms.isRecovering(replicaName);
 
     for (Replica replica : slices.getReplicas()) {
-      if (replica.getName().equals(coreNodeName)) continue;
+      if (replica.getName().equals(replicaName)) continue;
 
       if (clusterState.getLiveNodes().contains(replica.getNodeName())) {
         long otherTerm = zkShardTerms.getTerm(replica.getName());

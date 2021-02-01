@@ -316,12 +316,12 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     jsonWriter.write(all);
   }
 
-  public Replica getReplica(String coreNodeName) {
+  public Replica getReplica(String replicaName) {
     if (perReplicaState) {
-      return replicaMap.get(coreNodeName);
+      return replicaMap.get(replicaName);
     }
     for (Slice slice : slices.values()) {
-      Replica replica = slice.getReplica(coreNodeName);
+      Replica replica = slice.getReplica(replicaName);
       if (replica != null) return replica;
     }
     return null;
