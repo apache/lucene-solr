@@ -120,6 +120,11 @@ final class Stemmer {
         list.addAll(doStem(variation, 0, variation.length, null, WordContext.SIMPLE_WORD));
       }
     }
+
+    if (dictionary.isDotICaseChangeDisallowed(word)) {
+      return;
+    }
+
     caseFoldLower(wordCase == WordCase.UPPER ? titleBuffer : word, length);
     list.addAll(doStem(lowerBuffer, 0, length, wordCase, WordContext.SIMPLE_WORD));
     if (wordCase == WordCase.UPPER) {
