@@ -70,6 +70,8 @@ import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.CancellableCollector;
+import org.apache.lucene.search.CancellableTask;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -173,6 +175,7 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -198,6 +201,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * If we reload a core, the name remains same , but the id will be new
    */
   public final UUID uniqueId = UUID.randomUUID();
+
+  //TODO: This needs to become a time aware storage model
+  private final Set<UUID> activeQueryIDs = new ConcurrentHashSet<>();
+
+  // The main difference between this and activeQueryIDs is that the former is used by
+  // the aggregating node to generate new queryIDs, whereas activeCancellableQueries is
+  // used by executing nodes to control the wrapper which is actually executing the query
+  //TODO: This needs to become a time aware storage model
+  private final Map<String, CancellableTask> activeCancellableQueries = new ConcurrentHashMap<>();
 
   private boolean isReloaded = false;
 
@@ -3243,6 +3255,67 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     });
     return blobRef;
+  }
+
+  // Used on local shards
+  public void addQueryID(String queryID) {
+    if (queryID == null) {
+      throw new IllegalArgumentException("Incoming queryID is null");
+    }
+
+    activeQueryIDs.add(UUID.fromString(queryID));
+  }
+
+  public String generateQueryID() {
+    UUID queryID = UUID.randomUUID();
+
+    while (activeQueryIDs.contains(queryID)) {
+      queryID = UUID.randomUUID();
+    }
+
+    activeQueryIDs.add(queryID);
+
+    return queryID.toString();
+  }
+
+  public void releaseQueryID(String inputQueryID) {
+    if (inputQueryID == null) {
+      return;
+    }
+
+    activeQueryIDs.remove(UUID.fromString(inputQueryID));
+  }
+
+  public void addShardLevelActiveQuery(String queryID, CancellableCollector collector) {
+    if (queryID == null) {
+      return;
+    }
+
+    addShardLevelActiveQuery(queryID, collector);
+  }
+
+  public void addShardLevelActiveQuery(String queryID, CancellableTask cancellableTask) {
+    if (queryID == null) {
+      return;
+    }
+
+    activeCancellableQueries.put(queryID, cancellableTask);
+  }
+
+  public CancellableTask getCancellableTask(String queryID) {
+    if (queryID == null) {
+      throw new IllegalArgumentException("Input queryID is null");
+    }
+
+    return activeCancellableQueries.get(queryID);
+  }
+
+  public void removeCancellableQuery(String queryID) {
+    if (queryID == null) {
+      throw new IllegalArgumentException("Input queryID is null");
+    }
+
+    activeCancellableQueries.remove(queryID);
   }
 
   /**

@@ -161,6 +161,16 @@ public interface CommonParams {
   String TIME_ALLOWED = "timeAllowed";
 
   /**
+   * Is this a query cancellation request?
+   */
+  String QUERY_CANCELLATION_REQUEST = "cancel";
+
+  /**
+   * UUID for query to be cancelled
+   */
+  String QUERY_CANCELLATION_UUID = "cancelUUID";
+
+  /**
    * The number of hits that need to be counted accurately. If more than {@link #MIN_EXACT_COUNT} documents
    * match a query, then the value in "numFound" may be an estimate to speedup search.
    */

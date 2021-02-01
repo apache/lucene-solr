@@ -65,11 +65,16 @@ public class ResponseBuilder
   public boolean doAnalytics;
   public MergeStrategy mergeFieldHandler;
 
+  public String queryID;
+
   private boolean needDocList = false;
   private boolean needDocSet = false;
   private int fieldFlags = 0;
   //private boolean debug = false;
   private boolean debugTimings, debugQuery, debugResults, debugTrack;
+
+  private boolean isCancellation;
+  private String cancellationUUID;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -508,5 +513,21 @@ public class ResponseBuilder
 
   public boolean isOlapAnalytics() {
     return this._isOlapAnalytics;
+  }
+
+  public void setCancellation(boolean isCancellation) {
+    this.isCancellation = isCancellation;
+  }
+
+  public boolean isCancellation() {
+    return isCancellation;
+  }
+
+  public void setCancellationUUID(String queryID) {
+    this.cancellationUUID = queryID;
+  }
+
+  public String getCancellationUUID() {
+    return cancellationUUID;
   }
 }

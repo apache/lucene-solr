@@ -92,6 +92,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     names.add(DebugComponent.COMPONENT_NAME);
     names.add(ExpandComponent.COMPONENT_NAME);
     names.add(TermsComponent.COMPONENT_NAME);
+    names.add(QueryCancellationComponent.COMPONENT_NAME);
 
     return names;
   }
@@ -296,6 +297,15 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
     }
 
+    boolean isCancellationRequest = req.getParams().getBool(CommonParams.QUERY_CANCELLATION_REQUEST, false);
+    rb.setCancellation(isCancellationRequest);
+
+    if (isCancellationRequest) {
+      String cancellationUUID = req.getParams().get(QUERY_CANCELLATION_UUID, null);
+
+      rb.setCancellationUUID(cancellationUUID);
+    }
+
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;
 
     if (req.getCore().getCircuitBreakerManager().isEnabled()) {
@@ -435,6 +445,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
               params.set(CommonParams.OMIT_HEADER, false);
+
+              // Distributed request -- need to send queryID as a part of the distributed request
+              params.set(ShardParams.QUERY_ID, rb.queryID);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));

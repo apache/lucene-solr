@@ -28,6 +28,9 @@ import org.apache.solr.common.util.StrUtils;
 public interface ShardParams {
   /** the shards to use (distributed configuration) */
   String SHARDS = "shards";
+
+  /** UUID of the query */
+  String QUERY_ID = "queryID";
   
   /** per-shard start and rows */
   String SHARDS_ROWS = "shards.rows";

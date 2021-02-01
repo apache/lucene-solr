@@ -29,6 +29,7 @@ import org.apache.lucene.search.Sort;
 public class QueryCommand {
   
   private Query query;
+  private String queryID;
   private List<Query> filterList;
   private DocSet filter;
   private Sort sort;
@@ -227,6 +228,14 @@ public class QueryCommand {
     } else {
       return clearFlags(SolrIndexSearcher.SEGMENT_TERMINATE_EARLY);
     }
+  }
+
+  public void setQueryID(String queryID) {
+    this.queryID = queryID;
+  }
+
+  public String getQueryID() {
+    return queryID;
   }
 
 }

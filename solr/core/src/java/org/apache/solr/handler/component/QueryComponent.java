@@ -129,13 +129,15 @@ public class QueryComponent extends SearchComponent
   @Override
   public void prepare(ResponseBuilder rb) throws IOException
   {
-
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
     if (!params.getBool(COMPONENT_NAME, true)) {
       return;
     }
     SolrQueryResponse rsp = rb.rsp;
+
+    // Generate Query ID
+    rb.queryID = generateQueryID(req);
 
     // Set field flags    
     ReturnFields returnFields = new SolrReturnFields( req );
@@ -334,6 +336,9 @@ public class QueryComponent extends SearchComponent
       return;
     }
 
+    // Add the incoming queryID to the local in process query IDs set
+    req.getCore().addQueryID(params.get(ShardParams.QUERY_ID));
+
     SolrIndexSearcher searcher = req.getSearcher();
     StatsCache statsCache = searcher.getStatsCache();
     
@@ -362,6 +367,9 @@ public class QueryComponent extends SearchComponent
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
+
+    // Set the queryID for the searcher to consume
+    cmd.setQueryID(params.get(ShardParams.QUERY_ID));
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -635,6 +643,10 @@ public class QueryComponent extends SearchComponent
     if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
       return;
     }
+
+    // Remove the current queryID from the active list
+    rb.req.getCore().releaseQueryID(rb.queryID);
+
     if (rb.grouping()) {
       groupedFinishStage(rb);
     } else {
@@ -1529,6 +1541,15 @@ public class QueryComponent extends SearchComponent
     }
 
     doPrefetch(rb);
+  }
+
+  private static String generateQueryID(SolrQueryRequest req) {
+    final String nodeName = req.getCore().getCoreContainer().
+            getZkController().getNodeName();
+
+    final String localQueryID = req.getCore().generateQueryID();
+
+    return nodeName.concat(localQueryID);
   }
 
   /**
