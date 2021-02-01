@@ -238,9 +238,15 @@ final class Stemmer {
         if (!context.isCompound() && Dictionary.hasFlag(wordFlags, dictionary.onlyincompound)) {
           continue;
         }
-        if (context.isCompound()
-            && !Dictionary.hasFlag(wordFlags, context.requiredFlag(dictionary))) {
-          continue;
+        if (context.isCompound()) {
+          if (context != WordContext.COMPOUND_END
+              && Dictionary.hasFlag(wordFlags, dictionary.compoundForbid)) {
+            return new ArrayList<>();
+          }
+          if (!Dictionary.hasFlag(wordFlags, dictionary.compoundFlag)
+              && !Dictionary.hasFlag(wordFlags, context.requiredFlag(dictionary))) {
+            continue;
+          }
         }
         stems.add(newStem(word, offset, length, forms, i));
       }
@@ -554,7 +560,10 @@ final class Stemmer {
       WordContext context) {
     int append = dictionary.affixData(affix, Dictionary.AFFIX_APPEND);
 
-    if (context.isCompound() && dictionary.compoundPermit > 0) {
+    if (context.isCompound()) {
+      if (!isPrefix && dictionary.hasFlag(append, dictionary.compoundForbid, scratch)) {
+        return false;
+      }
       WordContext allowed = isPrefix ? WordContext.COMPOUND_BEGIN : WordContext.COMPOUND_END;
       if (context != allowed && !dictionary.hasFlag(append, dictionary.compoundPermit, scratch)) {
         return false;
@@ -672,7 +681,10 @@ final class Stemmer {
           }
           if (context.isCompound()) {
             char cFlag = context.requiredFlag(dictionary);
-            if (!Dictionary.hasFlag(wordFlags, cFlag) && !isFlagAppendedByAffix(affix, cFlag)) {
+            if (!Dictionary.hasFlag(wordFlags, cFlag)
+                && !isFlagAppendedByAffix(affix, cFlag)
+                && !Dictionary.hasFlag(wordFlags, dictionary.compoundFlag)
+                && !isFlagAppendedByAffix(affix, dictionary.compoundFlag)) {
               continue;
             }
           }

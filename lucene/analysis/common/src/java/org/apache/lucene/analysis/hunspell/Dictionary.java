@@ -139,11 +139,13 @@ public class Dictionary {
   boolean twoStageAffix;
 
   char circumfix;
-  char keepcase;
+  char keepcase, forceUCase;
   char needaffix;
   char forbiddenword;
-  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundPermit;
-  boolean checkCompoundCase;
+  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundFlag;
+  char compoundPermit, compoundForbid;
+  boolean checkCompoundCase, checkCompoundDup;
+  boolean checkCompoundTriple, simplifiedTriple;
   int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
 
@@ -350,6 +352,8 @@ public class Dictionary {
         circumfix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("KEEPCASE".equals(firstWord)) {
         keepcase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("FORCEUCASE".equals(firstWord)) {
+        forceUCase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("NEEDAFFIX".equals(firstWord) || "PSEUDOROOT".equals(firstWord)) {
         needaffix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("ONLYINCOMPOUND".equals(firstWord)) {
@@ -387,6 +391,8 @@ public class Dictionary {
         compoundMax = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
       } else if ("COMPOUNDRULE".equals(firstWord)) {
         compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDFLAG".equals(firstWord)) {
+        compoundFlag = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDBEGIN".equals(firstWord)) {
         compoundBegin = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIDDLE".equals(firstWord)) {
@@ -395,8 +401,16 @@ public class Dictionary {
         compoundEnd = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDPERMITFLAG".equals(firstWord)) {
         compoundPermit = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDFORBIDFLAG".equals(firstWord)) {
+        compoundForbid = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("CHECKCOMPOUNDCASE".equals(firstWord)) {
         checkCompoundCase = true;
+      } else if ("CHECKCOMPOUNDDUP".equals(firstWord)) {
+        checkCompoundDup = true;
+      } else if ("CHECKCOMPOUNDTRIPLE".equals(firstWord)) {
+        checkCompoundTriple = true;
+      } else if ("SIMPLIFIEDTRIPLE".equals(firstWord)) {
+        simplifiedTriple = true;
       }
     }
 

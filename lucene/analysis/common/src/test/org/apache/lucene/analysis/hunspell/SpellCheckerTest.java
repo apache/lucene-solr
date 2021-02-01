@@ -47,6 +47,11 @@ public class SpellCheckerTest extends StemmerTestBase {
   }
 
   @Test
+  public void forceUCase() throws Exception {
+    doTest("forceucase");
+  }
+
+  @Test
   public void checkSharpS() throws Exception {
     doTest("checksharps");
   }
@@ -69,6 +74,36 @@ public class SpellCheckerTest extends StemmerTestBase {
   @Test
   public void needAffixOnAffixes() throws Exception {
     doTest("needaffix5");
+  }
+
+  @Test
+  public void compoundFlag() throws Exception {
+    doTest("compoundflag");
+  }
+
+  @Test
+  public void checkCompoundCase() throws Exception {
+    doTest("checkcompoundcase");
+  }
+
+  @Test
+  public void checkCompoundDup() throws Exception {
+    doTest("checkcompounddup");
+  }
+
+  @Test
+  public void checkCompoundTriple() throws Exception {
+    doTest("checkcompoundtriple");
+  }
+
+  @Test
+  public void simplifiedTriple() throws Exception {
+    doTest("simplifiedtriple");
+  }
+
+  @Test
+  public void compoundForbid() throws Exception {
+    doTest("compoundforbid");
   }
 
   public void testBreak() throws Exception {

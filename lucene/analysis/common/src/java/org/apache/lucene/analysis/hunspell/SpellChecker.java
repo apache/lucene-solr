@@ -16,9 +16,16 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import static org.apache.lucene.analysis.hunspell.Dictionary.FLAG_UNSET;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_BEGIN;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
+import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
 /**
@@ -126,7 +133,7 @@ public class SpellChecker {
       return false;
     }
 
-    if (hasStems(wordChars, 0, length, originalCase, WordContext.SIMPLE_WORD)) {
+    if (!stemmer.doStem(wordChars, 0, length, originalCase, SIMPLE_WORD).isEmpty()) {
       return true;
     }
 
@@ -135,12 +142,11 @@ public class SpellChecker {
       return true;
     }
 
-    return dictionary.compoundBegin > 0 && checkCompounds(wordChars, 0, length, originalCase, 0);
-  }
+    if (dictionary.compoundBegin != FLAG_UNSET || dictionary.compoundFlag != FLAG_UNSET) {
+      return checkCompounds(wordChars, 0, length, originalCase, 0);
+    }
 
-  private boolean hasStems(
-      char[] chars, int offset, int length, WordCase originalCase, WordContext context) {
-    return !stemmer.doStem(chars, offset, length, originalCase, context).isEmpty();
+    return false;
   }
 
   private boolean checkCompounds(
@@ -149,12 +155,23 @@ public class SpellChecker {
 
     int limit = length - dictionary.compoundMin + 1;
     for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
-      WordContext context = depth == 0 ? WordContext.COMPOUND_BEGIN : WordContext.COMPOUND_MIDDLE;
+      WordContext context = depth == 0 ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
       int breakOffset = offset + breakPos;
-      if (checkCompoundCase(chars, breakOffset)
-          && hasStems(chars, offset, breakPos, originalCase, context)) {
+      if (mayBreakIntoCompounds(chars, offset, length, breakOffset)) {
+        List<CharsRef> stems = stemmer.doStem(chars, offset, breakPos, originalCase, context);
+        if (stems.isEmpty()
+            && dictionary.simplifiedTriple
+            && chars[breakOffset - 1] == chars[breakOffset]) {
+          stems = stemmer.doStem(chars, offset, breakPos + 1, originalCase, context);
+        }
+        if (stems.isEmpty()) continue;
+
         int remainingLength = length - breakPos;
-        if (hasStems(chars, breakOffset, remainingLength, originalCase, WordContext.COMPOUND_END)) {
+        List<CharsRef> lastStems =
+            stemmer.doStem(chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
+        if (!lastStems.isEmpty()
+            && !(dictionary.checkCompoundDup && intersectIgnoreCase(stems, lastStems))
+            && !hasForceUCaseProblem(chars, breakOffset, remainingLength, originalCase)) {
           return true;
         }
 
@@ -167,9 +184,37 @@ public class SpellChecker {
     return false;
   }
 
-  private boolean checkCompoundCase(char[] chars, int breakPos) {
-    if (!dictionary.checkCompoundCase) return true;
-    return Character.isUpperCase(chars[breakPos - 1]) == Character.isUpperCase(chars[breakPos]);
+  private boolean hasForceUCaseProblem(
+      char[] chars, int offset, int length, WordCase originalCase) {
+    if (dictionary.forceUCase == FLAG_UNSET) return false;
+    if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
+
+    IntsRef forms = dictionary.lookupWord(chars, offset, length);
+    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase, scratch);
+  }
+
+  private boolean intersectIgnoreCase(List<CharsRef> stems1, List<CharsRef> stems2) {
+    return stems1.stream().anyMatch(s1 -> stems2.stream().anyMatch(s2 -> equalsIgnoreCase(s1, s2)));
+  }
+
+  private boolean equalsIgnoreCase(CharsRef cr1, CharsRef cr2) {
+    return cr1.toString().equalsIgnoreCase(cr2.toString());
+  }
+
+  private boolean mayBreakIntoCompounds(char[] chars, int offset, int length, int breakPos) {
+    if (dictionary.checkCompoundCase) {
+      if (Character.isUpperCase(chars[breakPos - 1]) || Character.isUpperCase(chars[breakPos])) {
+        return false;
+      }
+    }
+    if (dictionary.checkCompoundTriple && chars[breakPos - 1] == chars[breakPos]) {
+      //noinspection RedundantIfStatement
+      if (breakPos > offset + 1 && chars[breakPos - 2] == chars[breakPos - 1]
+          || breakPos < length - 1 && chars[breakPos] == chars[breakPos + 1]) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private boolean checkCompoundRules(
