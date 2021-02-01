@@ -394,7 +394,7 @@ public class ZkShardTerms implements Closeable {
         log.info("refresh shard terms to zk version {}", stat.getVersion());
         newTerms = new ShardTerms(values, stat.getVersion());
       } catch (KeeperException.NoNodeException e) {
-        log.info("No node found for shard terms", e);
+        log.info("No node found for shard terms");
         // we have likely been deleted
         throw new AlreadyClosedException("No node found for shard terms");
       } catch (InterruptedException e) {
