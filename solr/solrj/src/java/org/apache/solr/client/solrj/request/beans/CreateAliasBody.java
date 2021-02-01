@@ -6,6 +6,8 @@ import org.apache.solr.common.util.ReflectMapWriter;
 import java.util.List;
 import java.util.Map;
 
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_COLLECTION_KEY;
+
 public class CreateAliasBody implements ReflectMapWriter {
     @JsonProperty(required = true)
     public String name;
@@ -19,7 +21,7 @@ public class CreateAliasBody implements ReflectMapWriter {
     @JsonProperty
     public String tz;
 
-    @JsonProperty("create-collection")
+    @JsonProperty(CREATE_COLLECTION_KEY)
     public Map<String, Object> createCollectionParams;
 
     @JsonProperty

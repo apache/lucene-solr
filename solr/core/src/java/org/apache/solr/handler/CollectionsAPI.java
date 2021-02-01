@@ -27,22 +27,25 @@ import org.apache.solr.client.solrj.request.beans.CreateBody;
 import org.apache.solr.client.solrj.request.beans.DeleteAliasBody;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionBody;
 import org.apache.solr.client.solrj.request.beans.SetAliasPropertyBody;
-import org.apache.solr.common.StringUtils;
+import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.*;
-import static org.apache.solr.common.params.CollectionAdminParams.*;
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.ROUTER_KEY;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
+import static org.apache.solr.common.params.CollectionAdminParams.PROPERTY_PREFIX;
+import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
@@ -55,7 +58,14 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
  */
 public class CollectionsAPI {
 
-  private final CollectionsHandler collectionsHandler;
+    public static final String V2_CREATE_COLLECTION_CMD = "create";
+    public static final String V2_BACKUP_CMD = "backup-collection";
+    public static final String V2_RESTORE_CMD = "restore-collection";
+    public static final String V2_CREATE_ALIAS_CMD = "create-alias";
+    public static final String V2_SET_ALIAS_PROP_CMD = "set-alias-property";
+    public static final String V2_DELETE_ALIAS_CMD = "delete-alias";
+
+    private final CollectionsHandler collectionsHandler;
 
   public  final CollectionsCommands collectionsCommands = new CollectionsCommands();
 
@@ -77,7 +87,7 @@ public class CollectionsAPI {
             permission = COLL_EDIT_PERM)
     public class CollectionsCommands {
 
-        @Command(name = "backup-collection")
+        @Command(name = V2_BACKUP_CMD)
         @SuppressWarnings("unchecked")
         public void backupCollection(PayloadObj<BackupCollectionBody> obj) throws Exception {
             final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
@@ -86,7 +96,7 @@ public class CollectionsAPI {
             collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
         }
 
-        @Command(name = "restore-collection")
+        @Command(name = V2_RESTORE_CMD)
         @SuppressWarnings("unchecked")
         public void restoreBackup(PayloadObj<RestoreCollectionBody> obj) throws Exception {
             final RestoreCollectionBody v2Body = obj.get();
@@ -94,7 +104,7 @@ public class CollectionsAPI {
 
             v1Params.put(ACTION, CollectionAction.RESTORE.toLower());
             if (v2Body.createCollectionParams != null && !v2Body.createCollectionParams.isEmpty()) {
-                final Map<String, Object> createCollParams = (Map<String, Object>) v1Params.remove("create-collection");
+                final Map<String, Object> createCollParams = (Map<String, Object>) v1Params.remove(V2ApiConstants.CREATE_COLLECTION_KEY);
                 convertV2CreateCollectionMapToV1ParamMap(createCollParams);
                 v1Params.putAll(createCollParams);
             }
@@ -102,7 +112,7 @@ public class CollectionsAPI {
             collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
         }
 
-        @Command(name = "create-alias")
+        @Command(name = V2_CREATE_ALIAS_CMD)
         @SuppressWarnings("unchecked")
         public void createAlias(PayloadObj<CreateAliasBody> obj) throws Exception {
             final CreateAliasBody v2Body = obj.get();
@@ -111,23 +121,23 @@ public class CollectionsAPI {
             v1Params.put(ACTION, CollectionAction.CREATEALIAS.toLower());
             if (! CollectionUtils.isEmpty(v2Body.collections)) {
                 final String collectionsStr = String.join(",", v2Body.collections);
-                v1Params.remove("collections");
-                v1Params.put("collections", collectionsStr);
+                v1Params.remove(V2ApiConstants.COLLECTIONS);
+                v1Params.put(V2ApiConstants.COLLECTIONS, collectionsStr);
             }
             if (v2Body.router != null) {
-                Map<String, Object> routerProperties = (Map<String, Object>) v1Params.remove("router");
-                flattenMapWithPrefix(routerProperties, v1Params, "router.");
+                Map<String, Object> routerProperties = (Map<String, Object>) v1Params.remove(V2ApiConstants.ROUTER_KEY);
+                flattenMapWithPrefix(routerProperties, v1Params, ROUTER_PREFIX);
             }
             if (v2Body.createCollectionParams != null && !v2Body.createCollectionParams.isEmpty()) {
-                final Map<String, Object> createCollectionMap = (Map<String, Object>) v1Params.remove("create-collection");
+                final Map<String, Object> createCollectionMap = (Map<String, Object>) v1Params.remove(V2ApiConstants.CREATE_COLLECTION_KEY);
                 convertV2CreateCollectionMapToV1ParamMap(createCollectionMap);
-                flattenMapWithPrefix(createCollectionMap, v1Params, "create-collection.");
+                flattenMapWithPrefix(createCollectionMap, v1Params, CREATE_COLLECTION_PREFIX);
             }
 
             collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
         }
 
-        @Command(name="set-alias-property")
+        @Command(name= V2_SET_ALIAS_PROP_CMD)
         @SuppressWarnings("unchecked")
         public void setAliasProperty(PayloadObj<SetAliasPropertyBody> obj) throws Exception {
             final SetAliasPropertyBody v2Body = obj.get();
@@ -135,13 +145,13 @@ public class CollectionsAPI {
 
             v1Params.put(ACTION, CollectionAction.ALIASPROP.toLower());
             // Flatten "properties" map into individual prefixed params
-            final Map<String, Object> propertiesMap = (Map<String, Object>) v1Params.remove("properties");
-            flattenMapWithPrefix(propertiesMap, v1Params, "property.");
+            final Map<String, Object> propertiesMap = (Map<String, Object>) v1Params.remove(V2ApiConstants.PROPERTIES_KEY);
+            flattenMapWithPrefix(propertiesMap, v1Params, PROPERTY_PREFIX);
 
             collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
         }
 
-        @Command(name= "delete-alias")
+        @Command(name= V2_DELETE_ALIAS_CMD)
         @SuppressWarnings("unchecked")
         public void deleteAlias(PayloadObj<DeleteAliasBody> obj) throws Exception {
             final DeleteAliasBody v2Body = obj.get();
@@ -151,7 +161,7 @@ public class CollectionsAPI {
             collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
         }
 
-        @Command(name = "create")
+        @Command(name = V2_CREATE_COLLECTION_CMD)
         @SuppressWarnings("unchecked")
         public void create(PayloadObj<CreateBody> obj) throws Exception {
             final CreateBody v2Body = obj.get();
@@ -163,29 +173,30 @@ public class CollectionsAPI {
             collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
         }
 
+        @SuppressWarnings("unchecked")
         private void convertV2CreateCollectionMapToV1ParamMap(Map<String, Object> v2MapVals) {
             // Keys are copied so that map can be modified as keys are looped through.
             final Set<String> v2Keys = v2MapVals.keySet().stream().collect(Collectors.toSet());
             for (String key : v2Keys) {
                 switch (key) {
-                    case "properties":
-                        final Map<String, Object> propertiesMap = (Map<String, Object>) v2MapVals.remove("properties");
-                        flattenMapWithPrefix(propertiesMap, v2MapVals, "property.");
+                    case V2ApiConstants.PROPERTIES_KEY:
+                        final Map<String, Object> propertiesMap = (Map<String, Object>) v2MapVals.remove(V2ApiConstants.PROPERTIES_KEY);
+                        flattenMapWithPrefix(propertiesMap, v2MapVals, PROPERTY_PREFIX);
                         break;
-                    case "router":
-                        final Map<String, Object> routerProperties = (Map<String, Object>) v2MapVals.remove("router");
-                        flattenMapWithPrefix(routerProperties, v2MapVals, "router.");
+                    case ROUTER_KEY:
+                        final Map<String, Object> routerProperties = (Map<String, Object>) v2MapVals.remove(V2ApiConstants.ROUTER_KEY);
+                        flattenMapWithPrefix(routerProperties, v2MapVals, CollectionAdminParams.ROUTER_PREFIX);
                         break;
-                    case "config":
-                        v2MapVals.put("collection.configName", v2MapVals.remove("config"));
+                    case V2ApiConstants.CONFIG:
+                        v2MapVals.put(CollectionAdminParams.COLL_CONF, v2MapVals.remove(V2ApiConstants.CONFIG));
                         break;
-                    case "shuffleNodes":
-                        v2MapVals.put("createNodeSet.shuffle", v2MapVals.remove("shuffleNodes"));
+                    case V2ApiConstants.SHUFFLE_NODES:
+                        v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM, v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
                         break;
-                    case "nodeSet":
-                        final List<String> nodeSetList = (List<String>) v2MapVals.remove("nodeSet");
+                    case V2ApiConstants.NODE_SET:
+                        final List<String> nodeSetList = (List<String>) v2MapVals.remove(V2ApiConstants.NODE_SET);
                         final String nodeSetStr = String.join(",", nodeSetList);
-                        v2MapVals.put("createNodeSet", nodeSetStr);
+                        v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetStr);
                         break;
                     default:
                         break;
@@ -207,7 +218,7 @@ public class CollectionsAPI {
       method = DELETE,
       permission = COLL_EDIT_PERM)
   public void deleteCollection(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req = wrapParams(req, "action",
+    req = wrapParams(req, ACTION,
         CollectionAction.DELETE.toString(),
         NAME, req.getPathTemplateValues().get(ZkStateReader.COLLECTION_PROP));
     collectionsHandler.handleRequestBody(req, rsp);

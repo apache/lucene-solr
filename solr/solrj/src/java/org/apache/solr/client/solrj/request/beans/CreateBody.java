@@ -35,9 +35,6 @@ public class CreateBody implements ReflectMapWriter {
     public Integer pullReplicas;
 
     @JsonProperty
-    public Integer maxShardsPerNode;
-
-    @JsonProperty
     public List<String> nodeSet;
 
     @JsonProperty

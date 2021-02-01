@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Pair;
@@ -75,7 +76,7 @@ public class CollectionApiMapping {
         POST,
         CREATESHARD,
         "create",
-        Utils.makeMap("createNodeSet", "nodeSet"),
+        Utils.makeMap("createNodeSet", V2ApiConstants.NODE_SET),
         Utils.makeMap("property.", "coreProperties.")) {
       @Override
       public String getParamSubstitute(String param) {
