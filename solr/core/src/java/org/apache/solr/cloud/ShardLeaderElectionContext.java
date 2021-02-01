@@ -51,16 +51,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   private final CoreContainer cc;
   private final SyncStrategy syncStrategy;
+  private final DistributedClusterChangeUpdater distributedClusterChangeUpdater;
 
   private volatile boolean isClosed = false;
 
   public ShardLeaderElectionContext(LeaderElector leaderElector,
                                     final String shardId, final String collection,
                                     final String coreNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
-    super(leaderElector, shardId, collection, coreNodeName, props,
-        zkController);
+    super(leaderElector, shardId, collection, coreNodeName, props, zkController);
     this.cc = cc;
-    syncStrategy = new SyncStrategy(cc);
+    this.syncStrategy = new SyncStrategy(cc);
+    this.distributedClusterChangeUpdater = zkController.getDistributedClusterChangeUpdater();
   }
 
   @Override
@@ -116,7 +117,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
             ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-        zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+
+        if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+          distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceSetShardLeader, m,
+              zkController.getSolrCloudManager(), zkStateReader);
+        } else {
+          zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+        }
       }
 
       if (!weAreReplacement) {

@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.cloud.DistributedClusterChangeUpdater;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -78,10 +79,17 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
     }
 
-    //ZkStateReader zkStateReader = ocmh.zkStateReader;
-    ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
-    // wait for a while until we see the shard
-    //ocmh.waitForNewShard(collectionName, sliceName);
+    if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+      // The message has been crafted by CollectionsHandler.CollectionOperation.CREATESHARD_OP and defines the QUEUE_OPERATION
+      // to be CollectionParams.CollectionAction.CREATESHARD.
+      // Likely a bug here (distributed or Overseer based) as we use the collection alias name and not the real name?
+      ocmh.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.CollectionCreateShard, message,
+          ocmh.cloudManager, ocmh.zkStateReader);
+    } else {
+      // message contains extCollectionName that might be an alias. Unclear (to me) how this works in that case.
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
+    }
+
     // wait for a while until we see the shard and update the local view of the cluster state
     clusterState = ocmh.waitForNewShard(collectionName, sliceName);
 

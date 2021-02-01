@@ -195,6 +195,8 @@ public class ZkController implements Closeable {
   private final CloudConfig cloudConfig;
   private final NodesSysPropsCacher sysPropsCacher;
 
+  private final DistributedClusterChangeUpdater distributedClusterChangeUpdater;
+
   private LeaderElector overseerElector;
 
   private Map<String, ReplicateFromLeader> replicateFromLeaders = new ConcurrentHashMap<>();
@@ -283,6 +285,9 @@ public class ZkController implements Closeable {
     this.cc = cc;
 
     this.cloudConfig = cloudConfig;
+
+    // Use the configured way to do cluster state change (Overseer queue vs distributed)
+    distributedClusterChangeUpdater = new DistributedClusterChangeUpdater(cloudConfig.getDistributedClusterChangeUpdates());
 
     this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
@@ -463,7 +468,11 @@ public class ZkController implements Closeable {
 
     init();
 
-    this.overseerJobQueue = overseer.getStateUpdateQueue();
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      this.overseerJobQueue = null;
+    } else {
+      this.overseerJobQueue = overseer.getStateUpdateQueue();
+    }
     this.overseerCollectionQueue = overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = overseer.getConfigSetQueue(zkClient);
     this.sysPropsCacher = new NodesSysPropsCacher(getSolrCloudManager().getNodeStateProvider(),
@@ -754,6 +763,10 @@ public class ZkController implements Closeable {
    */
   public ClusterState getClusterState() {
     return zkStateReader.getClusterState();
+  }
+
+  public DistributedClusterChangeUpdater getDistributedClusterChangeUpdater() {
+    return distributedClusterChangeUpdater;
   }
 
   public SolrCloudManager getSolrCloudManager() {
@@ -1532,7 +1545,7 @@ public class ZkController implements Closeable {
       String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
 
       Map<String,Object> props = new HashMap<>();
-      props.put(Overseer.QUEUE_OPERATION, "state");
+      props.put(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower());
       props.put(ZkStateReader.STATE_PROP, state.toString());
       props.put(ZkStateReader.CORE_NAME_PROP, cd.getName());
       props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
@@ -1584,8 +1597,13 @@ public class ZkController implements Closeable {
         cd.getCloudDescriptor().setLastPublished(state);
       }
       DocCollection coll = zkStateReader.getCollection(collection);
-      if (forcePublish || sendToOverseer(coll, coreNodeName)) {
-        overseerJobQueue.offer(Utils.toJSON(m));
+      if (forcePublish || updateStateDotJson(coll, coreNodeName)) {
+        if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+          distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.ReplicaSetState, m,
+              getSolrCloudManager(), zkStateReader);
+        } else {
+          overseerJobQueue.offer(Utils.toJSON(m));
+        }
       } else {
         if (log.isDebugEnabled()) {
           log.debug("bypassed overseer for message : {}", Utils.toJSONString(m));
@@ -1600,9 +1618,9 @@ public class ZkController implements Closeable {
   }
 
   /**
-   * Whether a message needs to be sent to overseer or not
+   * Returns {@code true} if a message needs to be sent to overseer (or done in a distributed way) to update state.json for the collection
    */
-  static boolean sendToOverseer(DocCollection coll, String replicaName) {
+  static boolean updateStateDotJson(DocCollection coll, String replicaName) {
     if (coll == null) return true;
     if (!coll.isPerReplicaState()) return true;
     Replica r = coll.getReplica(replicaName);
@@ -1662,20 +1680,18 @@ public class ZkController implements Closeable {
     }
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
     if (removeCoreFromZk) {
-      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-          OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
+          ZkStateReader.CORE_NAME_PROP, coreName,
           ZkStateReader.NODE_NAME_PROP, getNodeName(),
           ZkStateReader.COLLECTION_PROP, cloudDescriptor.getCollectionName(),
           ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
-      overseerJobQueue.offer(Utils.toJSON(m));
+      if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+        distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceRemoveReplica, m,
+            getSolrCloudManager(), zkStateReader);
+      } else {
+        overseerJobQueue.offer(Utils.toJSON(m));
+      }
     }
-  }
-
-  public void createCollection(String collection) throws Exception {
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
-        CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, getNodeName(),
-        ZkStateReader.COLLECTION_PROP, collection);
-    overseerJobQueue.offer(Utils.toJSON(m));
   }
 
   public ZkStateReader getZkStateReader() {
@@ -2064,6 +2080,9 @@ public class ZkController implements Closeable {
   }
 
   public ZkDistributedQueue getOverseerJobQueue() {
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      throw new IllegalStateException("Cluster is configured with distributed state change, not expecting the queue to be retrieved");
+    }
     return overseerJobQueue;
   }
 
@@ -2660,17 +2679,26 @@ public class ZkController implements Closeable {
    */
   public void publishNodeAsDown(String nodeName) {
     log.info("Publish node={} as DOWN", nodeName);
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
-        ZkStateReader.NODE_NAME_PROP, nodeName);
-    try {
-      overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
-    } catch (AlreadyClosedException e) {
-      log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      log.debug("Publish node as down was interrupted.");
-    } catch (KeeperException e) {
-      log.warn("Could not publish node as down: ", e);
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      // Note that with the current implementation, when distributed cluster state updates are enabled, we mark the node
+      // down synchronously from this thread, whereas the Overseer cluster state update frees this thread right away and
+      // the Overseer will async mark the node down but updating all affected collections.
+      // If this is an issue (i.e. takes too long), then the call below should be executed from another thread so that
+      // the calling thread can immediately return.
+      distributedClusterChangeUpdater.executeNodeDownStateChange(nodeName, zkStateReader);
+    } else {
+      ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
+          ZkStateReader.NODE_NAME_PROP, nodeName);
+      try {
+        overseer.getStateUpdateQueue().offer(Utils.toJSON(m));
+      } catch (AlreadyClosedException e) {
+        log.info("Not publishing node as DOWN because a resource required to do so is already closed.");
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        log.debug("Publish node as down was interrupted.");
+      } catch (KeeperException e) {
+        log.warn("Could not publish node as down: ", e);
+      }
     }
   }
 

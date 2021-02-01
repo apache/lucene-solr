@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.cloud.DistributedClusterChangeUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -201,7 +202,12 @@ public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
         "targetCollection", targetCollection.getName(),
         "expireAt", RoutingRule.makeExpiryAt(timeout));
     log.info("Adding routing rule: {}", m);
-    ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+    if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+      ocmh.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceAddRoutingRule, m,
+          ocmh.cloudManager, ocmh.zkStateReader);
+    } else {
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+    }
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");

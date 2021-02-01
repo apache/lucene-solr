@@ -34,6 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.cloud.DistributedClusterChangeUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -211,7 +212,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(shard.getName(), Slice.State.CONSTRUCTION.toString());
       }
       propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+        ocmh.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceUpdateShardState, new ZkNodeProps(propMap),
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      }
     }
 
     // TODO how do we leverage the RULE / SNITCH logic in createCollection?
@@ -355,7 +361,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       for (Slice shard : restoreCollection.getSlices()) {
         propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
       }
-      ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
+      if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+        ocmh.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceUpdateShardState, new ZkNodeProps(propMap),
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      }
     }
 
     if (totalReplicasPerShard > 1) {

@@ -60,6 +60,15 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
+    // Overseer reported stats below are tracked in the Overseer cluster state updater when it performs certain operations.
+    // Sharing the ocmh.stats variable between the cluster state updater and the Collection API (this command) is by the way
+    // about the only thing that ties the cluster state updater to the collection api message handler and that takes
+    // advantage of the fact that both run on the same node (the Overseer node).
+    // When distributed updates are enabled, cluster state updates are not done by the Overseer (it doesn't even see them)
+    // and therefore can't report them. The corresponding data in OVERSEERSTATUS (all data built below) is no longer returned.
+    // This means top level keys "overseer_operations", "collection_operations", "overseer_queue", "overseer_internal_queue"
+    // and "collection_queue" are either empty or do not contain all expected information when cluster state updates are distributed.
+
     @SuppressWarnings({"rawtypes"})
     NamedList overseerStats = new NamedList();
     @SuppressWarnings({"rawtypes"})

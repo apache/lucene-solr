@@ -590,8 +590,6 @@ public class Overseer implements SolrCloseable {
 
   private OverseerThread updaterThread;
 
-  private OverseerThread triggerThread;
-
   private final ZkStateReader reader;
 
   private final HttpShardHandler shardHandler;
@@ -610,6 +608,7 @@ public class Overseer implements SolrCloseable {
   private volatile boolean systemCollCompatCheck = true;
 
   private CloudConfig config;
+  private final DistributedClusterChangeUpdater distributedClusterChangeUpdater;
 
   // overseer not responsible for closing reader
   public Overseer(HttpShardHandler shardHandler,
@@ -623,6 +622,7 @@ public class Overseer implements SolrCloseable {
     this.zkController = zkController;
     this.stats = new Stats();
     this.config = config;
+    this.distributedClusterChangeUpdater = new DistributedClusterChangeUpdater(config.getDistributedClusterChangeUpdates());
 
     this.solrMetricsContext = new SolrMetricsContext(zkController.getCoreContainer().getMetricManager(), SolrInfoBean.Group.overseer.toString(), metricTag);
   }
@@ -644,7 +644,9 @@ public class Overseer implements SolrCloseable {
 
     ThreadGroup ccTg = new ThreadGroup("Overseer collection creation process.");
 
-    OverseerNodePrioritizer overseerPrioritizer = new OverseerNodePrioritizer(reader, getStateUpdateQueue(), adminPath, shardHandler.getShardHandlerFactory());
+    // Below is the only non test usage of the "cluster state update" queue even when distributed cluster state updates are enabled.
+    // That queue is used to tell the Overseer to quit. As long as we have an Overseer, we need to support this.
+    OverseerNodePrioritizer overseerPrioritizer = new OverseerNodePrioritizer(reader, this, adminPath, shardHandler.getShardHandlerFactory());
     overseerCollectionConfigSetProcessor = new OverseerCollectionConfigSetProcessor(reader, id, shardHandler, adminPath, stats, Overseer.this, overseerPrioritizer, solrMetricsContext);
     ccThread = new OverseerThread(ccTg, overseerCollectionConfigSetProcessor, "OverseerCollectionConfigSetProcessor-" + id);
     ccThread.setDaemon(true);
@@ -808,6 +810,10 @@ public class Overseer implements SolrCloseable {
     return zkController.getSolrCloudManager();
   }
 
+  public DistributedClusterChangeUpdater getDistributedClusterChangeUpdater() {
+    return distributedClusterChangeUpdater;
+  }
+
   /**
    * For tests.
    * 
@@ -818,15 +824,6 @@ public class Overseer implements SolrCloseable {
     return updaterThread;
   }
 
-  /**
-   * For tests.
-   * @lucene.internal
-   * @return trigger thread
-   */
-  public synchronized OverseerThread getTriggerThread() {
-    return triggerThread;
-  }
-  
   public synchronized void close() {
     if (this.id != null) {
       log.info("Overseer (id={}) closing", id);
@@ -857,10 +854,6 @@ public class Overseer implements SolrCloseable {
       IOUtils.closeQuietly(ccThread);
       ccThread.interrupt();
     }
-    if (triggerThread != null)  {
-      IOUtils.closeQuietly(triggerThread);
-      triggerThread.interrupt();
-    }
     if (updaterThread != null) {
       try {
         updaterThread.join();
@@ -871,14 +864,8 @@ public class Overseer implements SolrCloseable {
         ccThread.join();
       } catch (InterruptedException e) {}
     }
-    if (triggerThread != null)  {
-      try {
-        triggerThread.join();
-      } catch (InterruptedException e)  {}
-    }
     updaterThread = null;
     ccThread = null;
-    triggerThread = null;
   }
 
   /**
@@ -898,6 +885,17 @@ public class Overseer implements SolrCloseable {
    * @return a {@link ZkDistributedQueue} object
    */
   ZkDistributedQueue getStateUpdateQueue() {
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      throw new IllegalStateException("Cluster state is done in a distributed way, should not try to access ZK queue");
+    }
+    return getStateUpdateQueue(new Stats());
+  }
+
+  /**
+   * Separated into its own method from {@link #getStateUpdateQueue()} that does the same thing because this one is legit
+   * to call even when cluster state updates are distributed whereas the other one is not.
+   */
+  ZkDistributedQueue getOverseerQuitNotificationQueue() {
     return getStateUpdateQueue(new Stats());
   }
 
@@ -1058,10 +1056,29 @@ public class Overseer implements SolrCloseable {
   }
 
   public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
+    // When cluster state change is distributed, the Overseer cluster state update queue should only ever receive only QUIT messages.
+    // These go to sendQuitToOverseer for execution path clarity.
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      final ZkNodeProps message = ZkNodeProps.load(data);
+      final String operation = message.getStr(QUEUE_OPERATION);
+      log.warn("Received unexpected message on Overseer cluster state updater for " + operation + ". Left over in ZK from previous config?"); // nowarn
+      // TODO before this code is merged, return instead of throwing.
+      throw new RuntimeException("Message " + operation + " offered to state update queue when distributed state change is configured.");
+    }
     if (zkController.getZkClient().isClosed()) {
       throw new AlreadyClosedException();
     }
     getStateUpdateQueue().offer(data);
   }
 
+  /**
+   * This method enqueues a QUIT message to the overseer of given id.
+   * Effect is similar to building the message then calling {@link #offerStateUpdate} but this method can legitimately be called
+   * when cluster state update is distributed (and Overseer cluster state updater not really used) while {@link #offerStateUpdate} is not.
+   * Note that sending "QUIT" to overseer is not a cluster state update and was likely added to this queue because it was simpler.
+   */
+  public void sendQuitToOverseer(String overseerId)  throws KeeperException, InterruptedException {
+    getOverseerQuitNotificationQueue().offer(
+        Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(), ID, overseerId)));
+  }
 }

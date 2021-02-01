@@ -288,7 +288,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
             CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, nodeName, ZkStateReader.NUM_SHARDS_PROP, "1",
             "name", collectionName);
-        zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
+        if (zkController.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+          zkController.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.ClusterCreateCollection, m,
+              zkController.getSolrCloudManager(), zkController.getZkStateReader());
+        } else {
+          zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
+        }
 
         HashMap<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
@@ -297,7 +302,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         propMap.put(ZkStateReader.NODE_NAME_PROP, "non_existent_host1");
         propMap.put(ZkStateReader.CORE_NAME_PROP, collectionName);
         propMap.put(ZkStateReader.STATE_PROP, "active");
-        zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        if (zkController.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+          zkController.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceAddReplica, new ZkNodeProps(propMap),
+              zkController.getSolrCloudManager(), zkController.getZkStateReader());
+        } else {
+          zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        }
 
         propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
@@ -306,7 +316,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         propMap.put(ZkStateReader.NODE_NAME_PROP, "non_existent_host2");
         propMap.put(ZkStateReader.CORE_NAME_PROP, collectionName);
         propMap.put(ZkStateReader.STATE_PROP, "down");
-        zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        if (zkController.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+          zkController.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceAddReplica, new ZkNodeProps(propMap),
+              zkController.getSolrCloudManager(), zkController.getZkStateReader());
+        } else {
+          zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        }
 
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 

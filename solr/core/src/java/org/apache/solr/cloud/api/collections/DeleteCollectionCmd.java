@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.solr.cloud.DistributedClusterChangeUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
@@ -150,9 +151,14 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+        ocmh.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.ClusterDeleteCollection, m,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      }
 
-      // wait for a while until we don't see the collection
+      // wait for a while until we see the collection
       zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
 
       // we can delete any remaining unique aliases

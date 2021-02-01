@@ -42,7 +42,6 @@ public class PerReplicaStatesOps {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
     private PerReplicaStates rs;
     List<PerReplicaStates.Operation> ops;
-    private boolean preOp = true;
     final Function<PerReplicaStates, List<PerReplicaStates.Operation>> fun;
 
     PerReplicaStatesOps(Function<PerReplicaStates, List<PerReplicaStates.Operation>> fun) {
@@ -242,7 +241,7 @@ public class PerReplicaStatesOps {
     }
 
     /**
-     * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of states.json
+     * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of state.json
      * is updated
      */
     public static PerReplicaStatesOps touchChildren() {
@@ -256,7 +255,6 @@ public class PerReplicaStatesOps {
             }
             return operations;
         });
-        result.preOp = false;
         result.ops = result.refresh(null);
         return result;
     }
@@ -276,13 +274,6 @@ public class PerReplicaStatesOps {
         if (ops == null) ops = Collections.emptyList();
         this.rs = rs;
         return ops;
-    }
-
-    /**
-     * To be executed before collection state.json is persisted
-     */
-    public boolean isPreOp() {
-        return preOp;
     }
 
     /**

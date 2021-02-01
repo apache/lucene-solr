@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.cloud.DistributedClusterChangeUpdater;
 import org.apache.solr.cloud.LockTree;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerMessageHandler;
@@ -61,7 +62,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -155,6 +155,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   String myId;
   Stats stats;
   TimeSource timeSource;
+  private final DistributedClusterChangeUpdater distributedClusterChangeUpdater;
 
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
@@ -192,6 +193,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     this.myId = myId;
     this.stats = stats;
     this.overseer = overseer;
+    this.distributedClusterChangeUpdater = overseer.getDistributedClusterChangeUpdater();
     this.cloudManager = overseer.getSolrCloudManager();
     this.timeSource = cloudManager.getTimeSource();
     this.isClosed = false;
@@ -272,6 +274,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return new OverseerSolrResponse(results);
   }
 
+  DistributedClusterChangeUpdater getDistributedClusterChangeUpdater() {
+    return distributedClusterChangeUpdater;
+  }
+
   @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
   @SuppressWarnings({"unchecked"})
   private void mockOperation(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws InterruptedException {
@@ -333,23 +339,31 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
-    SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.ReplicaAddReplicaProperty, m,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
-    SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.ReplicaDeleteReplicaProperty, m,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   private void balanceProperty(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
@@ -358,11 +372,15 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
               "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
     }
-    SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, Object> m = new HashMap<>();
     m.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     m.putAll(message.getProperties());
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.BalanceShardsUnique, new ZkNodeProps(m),
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   /**
@@ -429,7 +447,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         ZkStateReader.NODE_NAME_PROP, replica.getNodeName(),
         ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.SliceRemoveReplica, m,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   void checkRequired(ZkNodeProps message, String... props) {
@@ -590,7 +613,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
 
-    overseer.offerStateUpdate(Utils.toJSON(message));
+    if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+      // Apply the state update right away. The wait will still be useful for the change to be visible in the local cluster state (watchers have fired).
+      distributedClusterChangeUpdater.doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.CollectionModifyCollection, message,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(message));
+    }
 
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
     boolean areChangesVisible = true;

@@ -37,6 +37,7 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.cloud.DistributedClusterChangeUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -149,8 +150,15 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       createCollectionZkNode(stateManager, collectionName, collectionParams);
-      
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
+
+      if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+        // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and defines the QUEUE_OPERATION
+        // to be CollectionParams.CollectionAction.CREATE.
+        ocmh.getDistributedClusterChangeUpdater().doSingleStateUpdate(DistributedClusterChangeUpdater.MutatingCommand.ClusterCreateCollection, message,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
+      }
 
       // wait for a while until we see the collection
       TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, timeSource);
@@ -167,7 +175,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       // refresh cluster state
       clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
 
-      List<ReplicaPosition> replicaPositions = null;
+      final List<ReplicaPosition> replicaPositions;
       try {
         replicaPositions = buildReplicaPositions(ocmh.overseer.getCoreContainer(), ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName),
             message, shardNames);
@@ -190,6 +198,14 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
       Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+      final DistributedClusterChangeUpdater.StateChangeRecorder scr;
+      if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+        // The collection got created. Now we're adding replicas.
+        scr = ocmh.getDistributedClusterChangeUpdater().createStateChangeRecorder(collectionName, false);;
+      } else {
+        scr = null;
+      }
+
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String nodeName = replicaPosition.node;
 
@@ -213,7 +229,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+        if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+          scr.record(DistributedClusterChangeUpdater.MutatingCommand.SliceAddReplica, props);
+        } else {
+          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+        }
 
         // Need to create new params for each request
         ModifiableSolrParams params = new ModifiableSolrParams();
@@ -245,7 +265,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         coresToCreate.put(coreName, sreq);
       }
 
-      // wait for all replica entries to be created
+      if (ocmh.getDistributedClusterChangeUpdater().isDistributedStateChange()) {
+        // Add the replicas to the collection state
+        scr.executeStateUpdates(ocmh.cloudManager, ocmh.zkStateReader);
+      }
+
+      // wait for all replica entries to be created and visible in local cluster state (updated by ZK watchers)
       Map<String, Replica> replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
       for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
         ShardRequest sreq = e.getValue();

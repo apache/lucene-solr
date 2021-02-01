@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.DistributedClusterChangeUpdater;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue;
@@ -153,13 +154,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   protected final CoreContainer coreContainer;
   private final CollectionHandlerApi v2Handler;
+  private final DistributedClusterChangeUpdater distributedClusterChangeUpdater;
 
   public CollectionsHandler() {
-    super();
     // Unlike most request handlers, CoreContainer initialization
     // should happen in the constructor...
-    this.coreContainer = null;
-    v2Handler = new CollectionHandlerApi(this);
+    this(null);
   }
 
 
@@ -171,6 +171,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     v2Handler = new CollectionHandlerApi(this);
+    // Get the state change factory to know if need to enqueue to Overseer or process distributed.
+    // Some SolrCloud tests do not need Zookeeper and end up with a null cloudConfig in NodeConfig (because
+    // TestHarness.buildTestNodeConfig() uses the zkHost to decide it's SolrCloud).
+    // These tests do not use Zookeeper and do not do state updates (see subclasses of TestBaseStatsCacheCloud).
+    // Some non SolrCloud tests do not even pass a config at all, so let be cautious here (code is not pretty).
+    // We do want to initialize here and not do it lazy to not deal with synchronization for actual prod code.
+    if (coreContainer == null || coreContainer.getConfig() == null || coreContainer.getConfig().getCloudConfig() == null) {
+      distributedClusterChangeUpdater = null;
+    } else {
+      distributedClusterChangeUpdater = new DistributedClusterChangeUpdater(coreContainer.getConfig().getCloudConfig().getDistributedClusterChangeUpdates());
+    }
   }
 
   @Override
@@ -274,7 +285,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         rsp.setException(exp);
       }
 
-      //TODO yuck; shouldn't create-collection at the overseer do this?  (conditionally perhaps)
+      // Even if Overseer does wait for the collection to be created, it sees a different cluster state than this node,
+      // so this wait is required to make sure the local node Zookeeper watches fired and now see the collection.
       if (action.equals(CollectionAction.CREATE) && asyncId == null) {
         if (rsp.getException() == null) {
           waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
@@ -282,8 +294,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
     } else {
-      // submits and doesn't wait for anything (no response)
-      coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
+      if (distributedClusterChangeUpdater.isDistributedStateChange()) {
+        DistributedClusterChangeUpdater.MutatingCommand command = DistributedClusterChangeUpdater.MutatingCommand.getCommandFor(operation.action);
+        ZkNodeProps message = new ZkNodeProps(props);
+        // We do the state change synchronously but do not wait for it to be visible in this node's cluster state updated via ZK watches
+        distributedClusterChangeUpdater.doSingleStateUpdate(command, message,
+            coreContainer.getZkController().getSolrCloudManager(), coreContainer.getZkController().getZkStateReader());
+      } else {
+        // submits and doesn't wait for anything (no response)
+        coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
+      }
     }
 
   }
