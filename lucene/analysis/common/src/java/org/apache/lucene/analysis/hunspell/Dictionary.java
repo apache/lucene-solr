@@ -752,7 +752,7 @@ public class Dictionary {
       return new NumFlagParsingStrategy();
     } else if ("UTF-8".equals(flagType)) {
       if (DEFAULT_CHARSET.equals(charset)) {
-        return new Utf8FlagParsingStrategy();
+        return new DefaultAsUtf8FlagParsingStrategy();
       }
       return new SimpleFlagParsingStrategy();
     } else if ("long".equals(flagType)) {
@@ -1243,8 +1243,8 @@ public class Dictionary {
     }
   }
 
-  /** Used for FLAG UTF-8 on non-UTF-8 encoding */
-  private static class Utf8FlagParsingStrategy extends FlagParsingStrategy {
+  /** Used to read flags as UTF-8 even if the rest of the file is in the default (8-bit) encoding */
+  private static class DefaultAsUtf8FlagParsingStrategy extends FlagParsingStrategy {
     @Override
     public char[] parseFlags(String rawFlags) {
       return new String(rawFlags.getBytes(DEFAULT_CHARSET), StandardCharsets.UTF_8).toCharArray();
