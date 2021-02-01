@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.util.Random;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
@@ -142,6 +143,20 @@ public class TestDictionary extends LuceneTestCase {
     tempDir.close();
   }
 
+  public void testUsingFlagsBeforeFlagDirective() throws IOException, ParseException {
+    byte[] aff = "KEEPCASE 42\nFLAG num".getBytes(StandardCharsets.UTF_8);
+    byte[] dic = "1\nfoo/42".getBytes(StandardCharsets.UTF_8);
+
+    Dictionary dictionary =
+        new Dictionary(
+            new ByteBuffersDirectory(),
+            "",
+            new ByteArrayInputStream(aff),
+            new ByteArrayInputStream(dic));
+
+    assertEquals(42, dictionary.keepcase);
+  }
+
   // malformed flags causes ParseException
   public void testInvalidFlags() throws Exception {
     InputStream affixStream = getClass().getResourceAsStream("broken-flags.aff");
@@ -245,25 +260,21 @@ public class TestDictionary extends LuceneTestCase {
   }
 
   public void testSetWithCrazyWhitespaceAndBOMs() throws Exception {
-    assertEquals(
-        "UTF-8",
-        Dictionary.getDictionaryEncoding(
-            new ByteArrayInputStream("SET\tUTF-8\n".getBytes(StandardCharsets.UTF_8))));
-    assertEquals(
-        "UTF-8",
-        Dictionary.getDictionaryEncoding(
-            new ByteArrayInputStream("SET\t UTF-8\n".getBytes(StandardCharsets.UTF_8))));
-    assertEquals(
-        "UTF-8",
-        Dictionary.getDictionaryEncoding(
-            new ByteArrayInputStream("\uFEFFSET\tUTF-8\n".getBytes(StandardCharsets.UTF_8))));
-    assertEquals(
-        "UTF-8",
-        Dictionary.getDictionaryEncoding(
-            new ByteArrayInputStream("\uFEFFSET\tUTF-8\r\n".getBytes(StandardCharsets.UTF_8))));
-    assertEquals(
-        Dictionary.DEFAULT_CHARSET.name(),
-        Dictionary.getDictionaryEncoding(new ByteArrayInputStream(new byte[0])));
+    assertEquals("UTF-8", getDictionaryEncoding("SET\tUTF-8\n"));
+    assertEquals("UTF-8", getDictionaryEncoding("SET\t UTF-8\n"));
+    assertEquals("UTF-8", getDictionaryEncoding("\uFEFFSET\tUTF-8\n"));
+    assertEquals("UTF-8", getDictionaryEncoding("\uFEFFSET\tUTF-8\r\n"));
+    assertEquals(Dictionary.DEFAULT_CHARSET.name(), getDictionaryEncoding(""));
+  }
+
+  private static String getDictionaryEncoding(String affFile) throws IOException, ParseException {
+    Dictionary dictionary =
+        new Dictionary(
+            new ByteBuffersDirectory(),
+            "",
+            new ByteArrayInputStream(affFile.getBytes(StandardCharsets.UTF_8)),
+            new ByteArrayInputStream("1\nmock".getBytes(StandardCharsets.UTF_8)));
+    return dictionary.decoder.charset().name();
   }
 
   public void testFlagWithCrazyWhitespace() {

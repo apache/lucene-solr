@@ -45,8 +45,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -84,6 +82,7 @@ public class Dictionary {
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
   static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
+  CharsetDecoder decoder = replacingDecoder(DEFAULT_CHARSET);
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
@@ -225,12 +224,11 @@ public class Dictionary {
       }
       out.close();
 
-      // pass 1: get encoding
+      // pass 1: get encoding & flag
       aff1 = new BufferedInputStream(Files.newInputStream(aff));
-      String encoding = getDictionaryEncoding(aff1);
+      readConfig(aff1);
 
       // pass 2: parse affixes
-      CharsetDecoder decoder = getJavaEncoding(encoding);
       aff2 = new BufferedInputStream(Files.newInputStream(aff));
       readAffixFile(aff2, decoder);
 
@@ -344,10 +342,6 @@ public class Dictionary {
       } else if ("SFX".equals(firstWord)) {
         parseAffix(
             suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN, seenPatterns, seenStrips);
-      } else if ("FLAG".equals(firstWord)) {
-        // Assume that the FLAG line comes before any prefix or suffixes
-        // Store the strategy so it can be used when parsing the dic file
-        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -696,45 +690,25 @@ public class Dictionary {
     return fstCompiler.compile();
   }
 
-  /** pattern accepts optional BOM + SET + any whitespace */
-  static final Pattern ENCODING_PATTERN = Pattern.compile("^(\u00EF\u00BB\u00BF)?SET\\s+");
+  /** Parses the encoding and flag format specified in the provided InputStream */
+  private void readConfig(InputStream affix) throws IOException, ParseException {
+    LineNumberReader reader = new LineNumberReader(new InputStreamReader(affix, DEFAULT_CHARSET));
+    while (true) {
+      String line = reader.readLine();
+      if (line == null) break;
 
-  /**
-   * Parses the encoding specified in the affix file readable through the provided InputStream
-   *
-   * @param affix InputStream for reading the affix file
-   * @return Encoding specified in the affix file
-   * @throws IOException Can be thrown while reading from the InputStream
-   */
-  static String getDictionaryEncoding(InputStream affix) throws IOException {
-    final StringBuilder encoding = new StringBuilder();
-    for (; ; ) {
-      encoding.setLength(0);
-      int ch;
-      while ((ch = affix.read()) >= 0) {
-        if (ch == '\n') {
-          break;
-        }
-        if (ch != '\r') {
-          encoding.append((char) ch);
-        }
+      line = line.trim();
+
+      while (line.startsWith("\u00EF") || line.startsWith("\u00BB") || line.startsWith("\u00BF")) {
+        line = line.substring(1);
       }
-      if (encoding.length() == 0
-          || encoding.charAt(0) == '#'
-          ||
-          // this test only at the end as ineffective but would allow lines only containing spaces:
-          encoding.toString().trim().length() == 0) {
-        if (ch < 0) {
-          return DEFAULT_CHARSET.name();
-        }
-        continue;
+
+      String firstWord = line.split("\\s")[0];
+      if ("SET".equals(firstWord)) {
+        decoder = getDecoder(singleArgument(reader, line));
+      } else if ("FLAG".equals(firstWord)) {
+        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
       }
-      Matcher matcher = ENCODING_PATTERN.matcher(encoding);
-      if (matcher.find()) {
-        int last = matcher.end();
-        return encoding.substring(last).trim();
-      }
-      return DEFAULT_CHARSET.name();
     }
   }
 
@@ -748,7 +722,7 @@ public class Dictionary {
    * @param encoding Encoding to retrieve the CharsetDecoder for
    * @return CharSetDecoder for the given encoding
    */
-  private CharsetDecoder getJavaEncoding(String encoding) {
+  private CharsetDecoder getDecoder(String encoding) {
     if ("ISO8859-14".equals(encoding)) {
       return new ISO8859_14Decoder();
     }
@@ -756,7 +730,10 @@ public class Dictionary {
     if (canon != null) {
       encoding = canon;
     }
-    Charset charset = Charset.forName(encoding);
+    return replacingDecoder(Charset.forName(encoding));
+  }
+
+  private static CharsetDecoder replacingDecoder(Charset charset) {
     return charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE);
   }
 
