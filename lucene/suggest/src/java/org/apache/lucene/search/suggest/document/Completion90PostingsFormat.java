@@ -19,29 +19,27 @@ package org.apache.lucene.search.suggest.document;
 import org.apache.lucene.codecs.PostingsFormat;
 
 /**
- * {@link org.apache.lucene.search.suggest.document.CompletionPostingsFormat} for {@code
- * org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat}. This format is only used for
- * backward-compatibility of the index format and cannot be used to write data, use {@link
- * Completion90PostingsFormat} on new indices.
+ * {@link CompletionPostingsFormat} for {@link
+ * org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat}
  *
  * @lucene.experimental
  */
-public class Completion50PostingsFormat extends CompletionPostingsFormat {
-  /** Creates a {@link Completion50PostingsFormat} that will load the completion FST on-heap. */
-  public Completion50PostingsFormat() {
+public class Completion90PostingsFormat extends CompletionPostingsFormat {
+  /** Creates a {@link Completion90PostingsFormat} that will load the completion FST on-heap. */
+  public Completion90PostingsFormat() {
     this(FSTLoadMode.ON_HEAP);
   }
 
   /**
-   * Creates a {@link Completion50PostingsFormat} that will use the provided <code>fstLoadMode
+   * Creates a {@link Completion90PostingsFormat} that will use the provided <code>fstLoadMode
    * </code> to determine if the completion FST should be loaded on or off heap.
    */
-  public Completion50PostingsFormat(FSTLoadMode fstLoadMode) {
-    super("completion", fstLoadMode);
+  public Completion90PostingsFormat(FSTLoadMode fstLoadMode) {
+    super("Completion90", fstLoadMode);
   }
 
   @Override
   protected PostingsFormat delegatePostingsFormat() {
-    return PostingsFormat.forName("Lucene50");
+    return PostingsFormat.forName("Lucene90");
   }
 }
