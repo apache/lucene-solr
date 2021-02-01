@@ -236,7 +236,7 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Address of the Zookeeper ensemble; defaults to: "+ ZK_HOST + '.')
+          .desc("Address of the ZooKeeper ensemble; defaults to: "+ ZK_HOST + '.')
           .build(),
       Option.builder("c")
           .argName("COLLECTION")
@@ -1311,7 +1311,7 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+          .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
           .build(),
       Option.builder("solrUrl")
           .argName("HOST")
@@ -1795,7 +1795,7 @@ public class SolrCLI implements CLIO {
               .argName("confname") // Comes out in help message
               .hasArg() // Has one sub-argument
               .required(true) // confname argument must be present
-              .desc("Configset name on Zookeeper.")
+              .desc("Configset name in ZooKeeper.")
               .build(), // passed as -confname value
           Option.builder("confdir")
               .argName("confdir")
@@ -1813,7 +1813,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -1867,7 +1867,7 @@ public class SolrCLI implements CLIO {
               .argName("confname")
               .hasArg()
               .required(true)
-              .desc("Configset name on Zookeeper.")
+              .desc("Configset name in ZooKeeper.")
               .build(),
           Option.builder("confdir")
               .argName("confdir")
@@ -1879,7 +1879,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -1954,7 +1954,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -1988,9 +1988,9 @@ public class SolrCLI implements CLIO {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
       try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         if (recurse == false && zkClient.getChildren(znode, null, true).size() != 0) {
-          throw new SolrServerException("Zookeeper node " + znode + " has children and recurse has NOT been specified.");
+          throw new SolrServerException("ZooKeeper node " + znode + " has children and recurse has NOT been specified.");
         }
-        echo("Removing Zookeeper node " + znode + " from ZooKeeper at " + zkHost +
+        echo("Removing ZooKeeper node " + znode + " from ZooKeeper at " + zkHost +
             " recurse: " + Boolean.toString(recurse));
         zkClient.clean(znode);
       } catch (Exception e) {
@@ -2024,13 +2024,13 @@ public class SolrCLI implements CLIO {
               .argName("recurse")
               .hasArg()
               .required(false)
-              .desc("Recurse (true|false, default is false).")
+              .desc("Recurse (true|false), default is false.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2058,7 +2058,7 @@ public class SolrCLI implements CLIO {
 
         String znode = cli.getOptionValue("path");
         Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
-        echoIfVerbose("Getting listing for Zookeeper node " + znode + " from ZooKeeper at " + zkHost +
+        echoIfVerbose("Getting listing for ZooKeeper node " + znode + " from ZooKeeper at " + zkHost +
             " recurse: " + Boolean.toString(recurse), cli);
         stdout.print(zkClient.listZnode(znode, recurse));
       } catch (Exception e) {
@@ -2091,7 +2091,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2118,7 +2118,7 @@ public class SolrCLI implements CLIO {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
         String znode = cli.getOptionValue("path");
-        echo("Creating Zookeeper path " + znode + " on ZooKeeper at " + zkHost);
+        echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
         zkClient.makePath(znode, true);
       } catch (Exception e) {
         log.error("Could not complete mkroot operation for reason: ", e);
@@ -2158,13 +2158,13 @@ public class SolrCLI implements CLIO {
               .argName("recurse")
               .hasArg()
               .required(false)
-              .desc("Recurse (true|false, default is false).")
+              .desc("Recurse (true|false), default is false.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2247,7 +2247,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2336,7 +2336,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(false)
-              .desc("Address of the Zookeeper ensemble; defaults to: "+ ZK_HOST + '.')
+              .desc("Address of the ZooKeeper ensemble; defaults to: "+ ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2522,7 +2522,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(false)
-              .desc("Address of the Zookeeper ensemble.")
+              .desc("Address of the ZooKeeper ensemble.")
               .longOpt("zkHost")
               .build(),
           Option.builder("p")
