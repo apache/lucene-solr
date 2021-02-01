@@ -207,6 +207,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     collector = new CancellableCollector(collector);
+    //Collector collector1 = new CancellableCollector(collector);
 
     // Add this to the local active queries map
     core.addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);

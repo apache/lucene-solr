@@ -52,6 +52,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -336,9 +337,6 @@ public class QueryComponent extends SearchComponent
       return;
     }
 
-    // Add the incoming queryID to the local in process query IDs set
-    req.getCore().addQueryID(params.get(ShardParams.QUERY_ID));
-
     SolrIndexSearcher searcher = req.getSearcher();
     StatsCache statsCache = searcher.getStatsCache();
     
@@ -369,7 +367,17 @@ public class QueryComponent extends SearchComponent
     cmd.setMinExactCount(getMinExactCount(params));
 
     // Set the queryID for the searcher to consume
-    cmd.setQueryID(params.get(ShardParams.QUERY_ID));
+    String queryID = params.get(ShardParams.QUERY_ID);
+
+    if (queryID == null) {
+      if (rb.isDistrib) {
+        throw new IllegalStateException("QueryID is null for distributed query");
+      }
+
+      queryID = rb.queryID;
+    }
+
+    cmd.setQueryID(queryID);
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -1544,8 +1552,15 @@ public class QueryComponent extends SearchComponent
   }
 
   private static String generateQueryID(SolrQueryRequest req) {
-    final String nodeName = req.getCore().getCoreContainer().
-            getZkController().getNodeName();
+    ZkController zkController = req.getCore().getCoreContainer().getZkController();
+
+    //TODO: Is this default correct?
+    String nodeName = req.getCore().getCoreContainer().getHostName();
+
+    if (zkController != null) {
+      nodeName = req.getCore().getCoreContainer().
+              getZkController().getNodeName();
+    }
 
     final String localQueryID = req.getCore().generateQueryID();
 

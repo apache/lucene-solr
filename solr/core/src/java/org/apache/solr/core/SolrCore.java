@@ -3269,11 +3269,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public String generateQueryID() {
     UUID queryID = UUID.randomUUID();
 
-    while (activeQueryIDs.contains(queryID)) {
+    while (activeCancellableQueries.get(queryID) != null) {
       queryID = UUID.randomUUID();
     }
 
-    activeQueryIDs.add(queryID);
+    // This is only a placeholder collector -- the aggregating node should not have any collector
+    // associated with the queryID.
+
+    CancellableCollector cancellableCollector = new CancellableCollector(null);
+    activeCancellableQueries.put(queryID.toString(), cancellableCollector);
 
     return queryID.toString();
   }
@@ -3283,7 +3287,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       return;
     }
 
-    activeQueryIDs.remove(UUID.fromString(inputQueryID));
+    activeCancellableQueries.remove(inputQueryID);
   }
 
   public void addShardLevelActiveQuery(String queryID, CancellableCollector collector) {
@@ -3291,15 +3295,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       return;
     }
 
-    addShardLevelActiveQuery(queryID, collector);
-  }
-
-  public void addShardLevelActiveQuery(String queryID, CancellableTask cancellableTask) {
-    if (queryID == null) {
-      return;
-    }
-
-    activeCancellableQueries.put(queryID, cancellableTask);
+    activeCancellableQueries.put(queryID, collector);
   }
 
   public CancellableTask getCancellableTask(String queryID) {
@@ -3312,7 +3308,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   public void removeCancellableQuery(String queryID) {
     if (queryID == null) {
-      throw new IllegalArgumentException("Input queryID is null");
+      // Some components, such as CaffeineCache, use the searcher to fire internal queries which are not tracked
+      return;
     }
 
     activeCancellableQueries.remove(queryID);
