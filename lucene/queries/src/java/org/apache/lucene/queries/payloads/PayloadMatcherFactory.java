@@ -18,7 +18,6 @@ package org.apache.lucene.queries.payloads;
 
 import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
-
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.MatchOperation;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.util.ArrayUtil;
@@ -36,21 +35,18 @@ public class PayloadMatcherFactory {
   static {
     payloadCheckerOpTypeMap = new EnumMap<>(PayloadType.class);
     // ints
-    EnumMap<MatchOperation, PayloadMatcher> intCheckers =
-        new EnumMap<>(MatchOperation.class);
+    EnumMap<MatchOperation, PayloadMatcher> intCheckers = new EnumMap<>(MatchOperation.class);
     intCheckers.put(MatchOperation.LT, new LTIntPayloadMatcher());
     intCheckers.put(MatchOperation.LTE, new LTEIntPayloadMatcher());
     intCheckers.put(MatchOperation.GT, new GTIntPayloadMatcher());
     intCheckers.put(MatchOperation.GTE, new GTEIntPayloadMatcher());
-    EnumMap<MatchOperation, PayloadMatcher> floatCheckers =
-        new EnumMap<>(MatchOperation.class);
+    EnumMap<MatchOperation, PayloadMatcher> floatCheckers = new EnumMap<>(MatchOperation.class);
     floatCheckers.put(MatchOperation.LT, new LTFloatPayloadMatcher());
     floatCheckers.put(MatchOperation.LTE, new LTEFloatPayloadMatcher());
     floatCheckers.put(MatchOperation.GT, new GTFloatPayloadMatcher());
     floatCheckers.put(MatchOperation.GTE, new GTEFloatPayloadMatcher());
     // strings
-    EnumMap<MatchOperation, PayloadMatcher> stringCheckers =
-        new EnumMap<>(MatchOperation.class);
+    EnumMap<MatchOperation, PayloadMatcher> stringCheckers = new EnumMap<>(MatchOperation.class);
     stringCheckers.put(MatchOperation.LT, new LTStringPayloadMatcher());
     stringCheckers.put(MatchOperation.LTE, new LTEStringPayloadMatcher());
     stringCheckers.put(MatchOperation.GT, new GTStringPayloadMatcher());
@@ -72,13 +68,13 @@ public class PayloadMatcherFactory {
    */
   public static PayloadMatcher createMatcherForOpAndType(
       PayloadType payloadType, MatchOperation op) {
-        
+
     // special optimization, binary/byte comparison
     if (op == null || MatchOperation.EQ.equals(op)) {
       return new EQPayloadMatcher();
     }
     // otherwise, we need to pay attention to the payload type and operation
-    EnumMap<MatchOperation,PayloadMatcher> opMap = payloadCheckerOpTypeMap.get(payloadType);
+    EnumMap<MatchOperation, PayloadMatcher> opMap = payloadCheckerOpTypeMap.get(payloadType);
     if (opMap != null) {
       return opMap.get(op);
     } else {
