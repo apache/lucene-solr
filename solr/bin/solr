@@ -190,7 +190,6 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     echo >&2 "HTTP/2 + SSL is not support in Java 8. "
     echo >&2 "Configure Solr with HTTP/1.1 + SSL"
     SOLR_JETTY_CONFIG+=("--module=https8")
-    SOLR_JETTY_CONFIG+=("--module=https8")
   else
     SOLR_JETTY_CONFIG+=("--module=https")
   fi
@@ -1939,7 +1938,7 @@ if [ -z ${GC_LOG_OPTS+x} ]; then
                  '-XX:+PrintGCDateStamps' '-XX:+PrintGCTimeStamps' '-XX:+PrintTenuringDistribution' \
                  '-XX:+PrintGCApplicationStoppedTime')
   else
-    GC_LOG_OPTS=('')
+    GC_LOG_OPTS=('-Dno_gc_logging')
   fi
 else
   GC_LOG_OPTS=($GC_LOG_OPTS)
@@ -2030,6 +2029,7 @@ else
 fi
 
 # Enable java security manager (allowing filesystem access and other things)
+# MRM TODO: enable security manager
 if [ "${SOLR_SECURITY_MANAGER_ENABLED:-false}" == "true" ]; then
   SECURITY_MANAGER_OPTS=('-Djava.security.manager' \
       "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
@@ -2214,14 +2214,14 @@ function start_solr() {
   fi
 
   if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
+    exec "$JAVA" -Djetty.state="${SOLR_HOME}"/jetty.state "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
   else
     # run Solr in the background
     export JAVA=$JAVA
     export JETTY_HOME="$SOLR_SERVER_DIR"
     export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
     export JETTY_ARGS="${SOLR_JETTY_CONFIG[@]} $SOLR_JETTY_ADDL_CONFIG"
-    export JAVA_OPTIONS="-Djetty.state=${SOLR_HOME}/jetty.state ${SOLR_START_OPTS[@]} $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole"
+    export JAVA_OPTIONS="${SOLR_START_OPTS[@]} $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole"
     export JETTY_STATE="${SOLR_HOME}/jetty.state"
     bash $SOLR_SERVER_DIR/../bin/jetty.sh start
   fi

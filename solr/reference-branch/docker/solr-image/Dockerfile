@@ -13,9 +13,10 @@ RUN chmod +x /start-solr.sh
 RUN apt-get -y update; apt-get -y upgrade; apt-get -y install git
 
 RUN cd "${BUILD_DIR}"; git clone https://github.com/apache/lucene-solr.git --branch reference_impl --single-branch reference_impl; \
-cd "${BUILD_DIR}/reference_impl"; ./gradlew -p solr distTar; -Dversion=9.0.0-miller_ref_impl; \
-cp -r packaging/*miller_ref_impl/* /opt/solr; chmod +x /opt/solr/bin/solr; \
-rm -r /root/.m2; \
+cd "${BUILD_DIR}/reference_impl"; ./gradlew -p solr distTar; \
+#cp -r packaging/*solr-*/* /opt/solr; chmod +x /opt/solr/bin/solr; \
+cp -r "${BUILD_DIR}"/reference_impl/solr/packaging/build/distributions/solr-*.tgz /opt/solr; \
+rm -rf /root/.m2; rm -rf /root/.ivy2; \
 #rm -r "${BUILD_DIR}"; \
 apt-get -y remove git; apt -y autoclean; apt -y autoremove
 
