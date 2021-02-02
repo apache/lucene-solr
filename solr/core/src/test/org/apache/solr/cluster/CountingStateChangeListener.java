@@ -48,9 +48,9 @@ public class CountingStateChangeListener implements StateChangeListener {
      */
     public int waitForVersionChange(int lastVersion, int timeoutSec) throws InterruptedException, TimeoutException {
         TimeOut timeout = new TimeOut(timeoutSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-        int newVersion = lastVersion;
+        int newVersion;
         synchronized (this) {
-            while (!timeout.hasTimedOut() && (newVersion = version) != lastVersion) {
+            while ((newVersion = version) == lastVersion && !timeout.hasTimedOut()) {
                 this.wait(timeout.timeLeft(TimeUnit.MILLISECONDS));
             }
         }
