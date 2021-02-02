@@ -4801,8 +4801,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       if (merger.shouldMerge() == false) {
         // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove all the 0-doc segments that we "merged":
         assert merge.info.info.maxDoc() == 0;
-        commitMerge(merge, mergeState);
-        success = true;
+        success = commitMerge(merge, mergeState);
         return 0;
       }
 
