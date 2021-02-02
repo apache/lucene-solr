@@ -146,12 +146,12 @@ public class SpellCheckerTest extends StemmerTestBase {
 
   protected void doTest(String name) throws Exception {
     checkSpellCheckerExpectations(
-        Path.of(getClass().getResource(name + ".aff").getPath()).getParent() + "/" + name);
+        Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name));
   }
 
-  static void checkSpellCheckerExpectations(String basePath) throws IOException, ParseException {
-    InputStream affixStream = Files.newInputStream(Path.of(basePath + ".aff"));
-    InputStream dictStream = Files.newInputStream(Path.of(basePath + ".dic"));
+  static void checkSpellCheckerExpectations(Path basePath) throws IOException, ParseException {
+    InputStream affixStream = Files.newInputStream(Path.of(basePath.toString() + ".aff"));
+    InputStream dictStream = Files.newInputStream(Path.of(basePath.toString() + ".dic"));
 
     SpellChecker speller;
     try {

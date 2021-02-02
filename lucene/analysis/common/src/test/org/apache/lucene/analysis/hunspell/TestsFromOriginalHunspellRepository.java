@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.junit.AssumptionViolatedException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -36,18 +37,17 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class TestsFromOriginalHunspellRepository {
-  private final String pathPrefix;
+  private final Path pathPrefix;
 
-  public TestsFromOriginalHunspellRepository(String testName) {
-    pathPrefix = System.getProperty("hunspell.repo.path") + "/tests/" + testName;
+  public TestsFromOriginalHunspellRepository(String testName, Path pathPrefix) {
+    this.pathPrefix = pathPrefix;
   }
 
   @Parameterized.Parameters(name = "{0}")
   public static Collection<Object[]> data() throws IOException {
     String hunspellRepo = System.getProperty("hunspell.repo.path");
     if (hunspellRepo == null) {
-      System.out.println("TestsFromOriginalHunspellRepository: repo path not specified, skipping");
-      return Collections.emptyList();
+      throw new AssumptionViolatedException("hunspell.repo.path property not specified.");
     }
 
     Set<String> names = new TreeSet<>();
@@ -61,7 +61,7 @@ public class TestsFromOriginalHunspellRepository {
       }
     }
 
-    return names.stream().map(s -> new Object[] {s}).collect(Collectors.toList());
+    return names.stream().map(s -> new Object[] {s, tests.resolve(s)}).collect(Collectors.toList());
   }
 
   @Test
