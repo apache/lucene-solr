@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.hunspell;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,8 +44,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -84,6 +81,7 @@ public class Dictionary {
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
   static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
+  CharsetDecoder decoder = replacingDecoder(DEFAULT_CHARSET);
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
@@ -212,25 +210,21 @@ public class Dictionary {
 
     Path tempPath = getDefaultTempDir(); // TODO: make this configurable?
     Path aff = Files.createTempFile(tempPath, "affix", "aff");
-    OutputStream out = new BufferedOutputStream(Files.newOutputStream(aff));
-    InputStream aff1 = null;
+
+    BufferedInputStream aff1 = null;
     InputStream aff2 = null;
     boolean success = false;
     try {
-      // copy contents of affix stream to temp file
-      final byte[] buffer = new byte[1024 * 8];
-      int len;
-      while ((len = affix.read(buffer)) > 0) {
-        out.write(buffer, 0, len);
+      // Copy contents of the affix stream to a temp file.
+      try (OutputStream os = Files.newOutputStream(aff)) {
+        affix.transferTo(os);
       }
-      out.close();
 
-      // pass 1: get encoding
+      // pass 1: get encoding & flag
       aff1 = new BufferedInputStream(Files.newInputStream(aff));
-      String encoding = getDictionaryEncoding(aff1);
+      readConfig(aff1);
 
       // pass 2: parse affixes
-      CharsetDecoder decoder = getJavaEncoding(encoding);
       aff2 = new BufferedInputStream(Files.newInputStream(aff));
       readAffixFile(aff2, decoder);
 
@@ -242,7 +236,7 @@ public class Dictionary {
       morphAliases = null; // no longer needed
       success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(out, aff1, aff2);
+      IOUtils.closeWhileHandlingException(aff1, aff2);
       if (success) {
         Files.delete(aff);
       } else {
@@ -344,10 +338,6 @@ public class Dictionary {
       } else if ("SFX".equals(firstWord)) {
         parseAffix(
             suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN, seenPatterns, seenStrips);
-      } else if ("FLAG".equals(firstWord)) {
-        // Assume that the FLAG line comes before any prefix or suffixes
-        // Store the strategy so it can be used when parsing the dic file
-        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -696,46 +686,51 @@ public class Dictionary {
     return fstCompiler.compile();
   }
 
-  /** pattern accepts optional BOM + SET + any whitespace */
-  static final Pattern ENCODING_PATTERN = Pattern.compile("^(\u00EF\u00BB\u00BF)?SET\\s+");
+  private static final byte[] BOM_UTF8 = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
+
+  /** Parses the encoding and flag format specified in the provided InputStream */
+  private void readConfig(BufferedInputStream stream) throws IOException, ParseException {
+    // I assume we don't support other BOMs (utf16, etc.)? We trivially could,
+    // by adding maybeConsume() with a proper bom... but I don't see hunspell repo to have
+    // any such exotic examples.
+    Charset streamCharset;
+    if (maybeConsume(stream, BOM_UTF8)) {
+      streamCharset = StandardCharsets.UTF_8;
+    } else {
+      streamCharset = DEFAULT_CHARSET;
+    }
+
+    // TODO: can these flags change throughout the file? If not then we can abort sooner. And
+    // then we wouldn't even need to create a temp file for the affix stream - a large enough
+    // leading buffer (BufferedInputStream) would be sufficient?
+    LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, streamCharset));
+    String line;
+    while ((line = reader.readLine()) != null) {
+      String firstWord = line.split("\\s")[0];
+      if ("SET".equals(firstWord)) {
+        decoder = getDecoder(singleArgument(reader, line));
+      } else if ("FLAG".equals(firstWord)) {
+        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
+      }
+    }
+  }
 
   /**
-   * Parses the encoding specified in the affix file readable through the provided InputStream
+   * Consume the provided byte sequence in full, if present. Otherwise leave the input stream
+   * intact.
    *
-   * @param affix InputStream for reading the affix file
-   * @return Encoding specified in the affix file
-   * @throws IOException Can be thrown while reading from the InputStream
+   * @return {@code true} if the sequence matched and has been consumed.
    */
-  static String getDictionaryEncoding(InputStream affix) throws IOException {
-    final StringBuilder encoding = new StringBuilder();
-    for (; ; ) {
-      encoding.setLength(0);
-      int ch;
-      while ((ch = affix.read()) >= 0) {
-        if (ch == '\n') {
-          break;
-        }
-        if (ch != '\r') {
-          encoding.append((char) ch);
-        }
+  private static boolean maybeConsume(BufferedInputStream stream, byte[] bytes) throws IOException {
+    stream.mark(bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      int nextByte = stream.read();
+      if (nextByte != (bytes[i] & 0xff)) { // covers EOF (-1) as well.
+        stream.reset();
+        return false;
       }
-      if (encoding.length() == 0
-          || encoding.charAt(0) == '#'
-          ||
-          // this test only at the end as ineffective but would allow lines only containing spaces:
-          encoding.toString().trim().length() == 0) {
-        if (ch < 0) {
-          return DEFAULT_CHARSET.name();
-        }
-        continue;
-      }
-      Matcher matcher = ENCODING_PATTERN.matcher(encoding);
-      if (matcher.find()) {
-        int last = matcher.end();
-        return encoding.substring(last).trim();
-      }
-      return DEFAULT_CHARSET.name();
     }
+    return true;
   }
 
   static final Map<String, String> CHARSET_ALIASES =
@@ -748,7 +743,7 @@ public class Dictionary {
    * @param encoding Encoding to retrieve the CharsetDecoder for
    * @return CharSetDecoder for the given encoding
    */
-  private CharsetDecoder getJavaEncoding(String encoding) {
+  private CharsetDecoder getDecoder(String encoding) {
     if ("ISO8859-14".equals(encoding)) {
       return new ISO8859_14Decoder();
     }
@@ -756,7 +751,10 @@ public class Dictionary {
     if (canon != null) {
       encoding = canon;
     }
-    Charset charset = Charset.forName(encoding);
+    return replacingDecoder(Charset.forName(encoding));
+  }
+
+  private static CharsetDecoder replacingDecoder(Charset charset) {
     return charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE);
   }
 
