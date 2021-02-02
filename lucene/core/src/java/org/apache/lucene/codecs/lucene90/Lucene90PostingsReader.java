@@ -22,7 +22,6 @@ import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.MAX_SKIP_
 import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.PAY_CODEC;
 import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.POS_CODEC;
 import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.TERMS_CODEC;
-import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.VERSION_COMPRESSED_TERMS_DICT_IDS;
 import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.VERSION_CURRENT;
 import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.VERSION_START;
 
@@ -210,22 +209,18 @@ public final class Lucene90PostingsReader extends PostingsReaderBase {
       termState.payStartFP = 0;
     }
 
-    if (version >= VERSION_COMPRESSED_TERMS_DICT_IDS) {
-      final long l = in.readVLong();
-      if ((l & 0x01) == 0) {
-        termState.docStartFP += l >>> 1;
-        if (termState.docFreq == 1) {
-          termState.singletonDocID = in.readVInt();
-        } else {
-          termState.singletonDocID = -1;
-        }
+    final long l = in.readVLong();
+    if ((l & 0x01) == 0) {
+      termState.docStartFP += l >>> 1;
+      if (termState.docFreq == 1) {
+        termState.singletonDocID = in.readVInt();
       } else {
-        assert absolute == false;
-        assert termState.singletonDocID != -1;
-        termState.singletonDocID += BitUtil.zigZagDecode(l >>> 1);
+        termState.singletonDocID = -1;
       }
     } else {
-      termState.docStartFP += in.readVLong();
+      assert absolute == false;
+      assert termState.singletonDocID != -1;
+      termState.singletonDocID += BitUtil.zigZagDecode(l >>> 1);
     }
 
     if (fieldHasPositions) {
@@ -233,21 +228,13 @@ public final class Lucene90PostingsReader extends PostingsReaderBase {
       if (fieldHasOffsets || fieldHasPayloads) {
         termState.payStartFP += in.readVLong();
       }
-    }
-    if (version < VERSION_COMPRESSED_TERMS_DICT_IDS) {
-      if (termState.docFreq == 1) {
-        termState.singletonDocID = in.readVInt();
-      } else {
-        termState.singletonDocID = -1;
-      }
-    }
-    if (fieldHasPositions) {
       if (termState.totalTermFreq > BLOCK_SIZE) {
         termState.lastPosBlockOffset = in.readVLong();
       } else {
         termState.lastPosBlockOffset = -1;
       }
     }
+
     if (termState.docFreq > BLOCK_SIZE) {
       termState.skipOffset = in.readVLong();
     } else {
