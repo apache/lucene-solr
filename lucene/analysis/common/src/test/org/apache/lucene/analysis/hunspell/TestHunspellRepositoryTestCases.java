@@ -36,10 +36,10 @@ import org.junit.runners.Parameterized;
  * out Hunspell repository should be in {@code -Dhunspell.repo.path=...} system property.
  */
 @RunWith(Parameterized.class)
-public class TestsFromOriginalHunspellRepository {
+public class TestHunspellRepositoryTestCases {
   private final Path pathPrefix;
 
-  public TestsFromOriginalHunspellRepository(String testName, Path pathPrefix) {
+  public TestHunspellRepositoryTestCases(String testName, Path pathPrefix) {
     this.pathPrefix = pathPrefix;
   }
 
