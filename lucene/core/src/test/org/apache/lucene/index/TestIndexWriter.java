@@ -4619,6 +4619,9 @@ public class TestIndexWriter extends LuceneTestCase {
     addDocWithField(writer, "f2");
     assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
 
+    // set from a previous call is an independent immutable copy, cannot be modified.
+    assertEquals(Set.of("f1"), fieldSet);
+
     // flush should not have an effect on field names
     writer.flush();
     assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
