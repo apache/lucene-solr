@@ -32,7 +32,7 @@ public class TimeTracker {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(16, 0.75f, 3);
+  public static final Map<String,TimeTracker> CLOSE_TIMES = new ConcurrentHashMap<>(64, 0.75f, 1);
 
   private final long startTime;
   private final PrintStream out;

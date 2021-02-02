@@ -201,7 +201,6 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     final List<SolrCmdDistributor.Node> nodes = lookupShardLeadersOfCollections();
     cmdDistrib.distribCommit(cmd, nodes, new ModifiableSolrParams(outParamsToLeader));
-    cmdDistrib.blockAndDoRetries(); //TODO shouldn't distribCommit do this implicitly?  It doesn't.
   }
 
 // Not supported by SolrCmdDistributor and is sketchy any way

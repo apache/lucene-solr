@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -678,7 +679,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   }
 
   // We don't get a Stat or track versions on getChildren() calls, so force linearization.
-  private final Object refreshCollectionsSetLock = new Object();
+ // private final Object refreshCollectionsSetLock = new Object();
   // Ensures that only the latest getChildren fetch gets applied.
   private final AtomicReference<Set<String>> lastFetchedCollectionSet = new AtomicReference<>();
 
@@ -710,24 +711,17 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     Set<String> newCollections;
     Set<String> oldCollections;
     boolean fire = false;
-    synchronized (refreshCollectionsSetLock) {
-      newCollections = getCurrentCollections();
-      oldCollections = lastFetchedCollectionSet.getAndSet(newCollections);
-      if (!newCollections.equals(oldCollections) || notifyIfSame) {
-        fire = true;
-      }
+
+    newCollections = getCurrentCollections();
+    oldCollections = lastFetchedCollectionSet.getAndSet(newCollections);
+    if (!newCollections.equals(oldCollections) || notifyIfSame) {
+      fire = true;
     }
+
     if (log.isDebugEnabled()) log.debug("Should fire listeners? {}", fire);
     if (fire) {
 
-      cloudCollectionsListeners.forEach(listener -> {
-        if (log.isDebugEnabled()) log.debug("fire listeners {}", listener);
-
-        notifications.submit(() -> {
-          listener.onChange(oldCollections, newCollections);
-        });
-      });
-
+      cloudCollectionsListeners.forEach(new CloudCollectionsListenerConsumer(oldCollections, newCollections));
     }
   }
 
@@ -2325,7 +2319,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   }
 
   private void notifyStateWatchers(String collection, DocCollection collectionState) {
-    if (log.isDebugEnabled()) log.debug("Notify state watchers {} {}", collectionWatches.keySet(), collectionState);
+    if (log.isTraceEnabled()) log.trace("Notify state watchers {} {}", collectionWatches.keySet(), collectionState);
 
     try {
       notifications.submit(new Notification(collection, collectionState, collectionWatches));
@@ -2716,5 +2710,34 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
       return false;
     };
+  }
+
+  private class CloudCollectionsListenerConsumer implements Consumer<CloudCollectionsListener> {
+    private final Set<String> oldCollections;
+    private final Set<String> newCollections;
+
+    public CloudCollectionsListenerConsumer(Set<String> oldCollections, Set<String> newCollections) {
+      this.oldCollections = oldCollections;
+      this.newCollections = newCollections;
+    }
+
+    @Override
+    public void accept(CloudCollectionsListener listener) {
+      if (log.isDebugEnabled()) log.debug("fire listeners {}", listener);
+      notifications.submit(new ListenerOnChange(listener));
+    }
+
+    private class ListenerOnChange implements Runnable {
+      private final CloudCollectionsListener listener;
+
+      public ListenerOnChange(CloudCollectionsListener listener) {
+        this.listener = listener;
+      }
+
+      @Override
+      public void run() {
+        listener.onChange(oldCollections, newCollections);
+      }
+    }
   }
 }

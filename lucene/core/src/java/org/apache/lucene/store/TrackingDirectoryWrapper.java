@@ -21,12 +21,13 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /** A delegating Directory that records which files were
  *  written to and deleted. */
 public final class TrackingDirectoryWrapper extends FilterDirectory {
 
-  private final Set<String> createdFileNames = Collections.synchronizedSet(new HashSet<String>());
+  private final Set<String> createdFileNames = ConcurrentHashMap.newKeySet();
 
   public TrackingDirectoryWrapper(Directory in) {
     super(in);

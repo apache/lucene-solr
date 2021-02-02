@@ -24,6 +24,7 @@ import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoAuthException;
@@ -71,6 +72,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -386,7 +388,7 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.setData(path, data, version));
+      return zkCmdExecutor.retryOperation(new SetData(keeper, path, data, version));
     } else {
       return keeper.setData(path, data, version);
     }
@@ -695,27 +697,7 @@ public class SolrZkClient implements Closeable {
       ZooKeeper keeper = connManager.getKeeper();
       assert keeper != null;
       keeper.create(makePath, data, getZkACLProvider().getACLsToAdd(makePath), createMode,
-              (resultCode, zkpath, context, name) -> {
-                if (resultCode != 0) {
-                  final KeeperException.Code keCode = KeeperException.Code.get(resultCode); 
-                  if (keCode == KeeperException.Code.NODEEXISTS) {
-                    nodeAlreadyExistsPaths.add(zkpath);
-                  } else {
-                    log.warn("create znode {} failed due to: {}", zkpath, keCode);
-                    if (path[0] == null) {
-                      // capture the first error for reporting back
-                      code[0] = resultCode;
-                      failed[0] = true;
-                      path[0] = "" + zkpath;
-                      nodata[0] = data == null;
-                    }
-                  }
-                } else {
-                  log.debug("Created znode at path: {}", zkpath);
-                }
-
-                latch.countDown();
-              }, "");
+          new MkDirsCallback(nodeAlreadyExistsPaths, path, code, failed, nodata, data, latch), "");
     }
 
 
@@ -850,18 +832,7 @@ public class SolrZkClient implements Closeable {
   // Calls setData for a list of existing paths in parallel
   private void updateExistingPaths(List<String> pathsToUpdate, Map<String,byte[]> dataMap) throws KeeperException {
     final KeeperException[] keeperExceptions = new KeeperException[1];
-    pathsToUpdate.parallelStream().forEach(p -> {
-      try {
-        setData(p, dataMap.get(p), -1, true);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        log.error("Failed to set data for {}", p, e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      } catch (KeeperException ke) {
-        log.error("Failed to set data for {}", p, ke);
-        keeperExceptions[0] = ke;
-      }
-    });
+    pathsToUpdate.parallelStream().forEach(new PathConsumer(dataMap, keeperExceptions));
     if (keeperExceptions[0] != null) {
       throw keeperExceptions[0];
     }
@@ -1276,6 +1247,92 @@ public class SolrZkClient implements Closeable {
         return this.watcher.equals(((ProcessWatchWithExecutor) obj).watcher);
       }
       return false;
+    }
+  }
+
+  private static class SetData implements ZkOperation {
+    private final ZooKeeper keeper;
+    private final String path;
+    private final byte[] data;
+    private final int version;
+
+    public SetData(ZooKeeper keeper, String path, byte[] data, int version) {
+      this.keeper = keeper;
+      this.path = path;
+      this.data = data;
+      this.version = version;
+    }
+
+    @Override
+    public Object execute() throws KeeperException, InterruptedException {
+      return keeper.setData(path, data, version);
+    }
+  }
+
+  private static class MkDirsCallback implements AsyncCallback.Create2Callback {
+    private final List<String> nodeAlreadyExistsPaths;
+    private final String[] path;
+    private final int[] code;
+    private final boolean[] failed;
+    private final boolean[] nodata;
+    private final byte[] data;
+    private final CountDownLatch latch;
+
+    public MkDirsCallback(List<String> nodeAlreadyExistsPaths, String[] path, int[] code, boolean[] failed, boolean[] nodata, byte[] data, CountDownLatch latch) {
+      this.nodeAlreadyExistsPaths = nodeAlreadyExistsPaths;
+      this.path = path;
+      this.code = code;
+      this.failed = failed;
+      this.nodata = nodata;
+      this.data = data;
+      this.latch = latch;
+    }
+
+    @Override
+    public void processResult(int rc, String zkpath, Object ctx, String name, Stat stat) {
+      if (rc != 0) {
+        final KeeperException.Code keCode = KeeperException.Code.get(rc);
+        if (keCode == KeeperException.Code.NODEEXISTS) {
+          nodeAlreadyExistsPaths.add(zkpath);
+        } else {
+          log.warn("create znode {} failed due to: {}", zkpath, keCode);
+          if (path[0] == null) {
+            // capture the first error for reporting back
+            code[0] = rc;
+            failed[0] = true;
+            path[0] = "" + zkpath;
+            nodata[0] = data == null;
+          }
+        }
+      } else {
+        log.debug("Created znode at path: {}", zkpath);
+      }
+
+      latch.countDown();
+    }
+  }
+
+  private class PathConsumer implements Consumer<String> {
+    private final Map<String,byte[]> dataMap;
+    private final KeeperException[] keeperExceptions;
+
+    public PathConsumer(Map<String,byte[]> dataMap, KeeperException[] keeperExceptions) {
+      this.dataMap = dataMap;
+      this.keeperExceptions = keeperExceptions;
+    }
+
+    @Override
+    public void accept(String p) {
+      try {
+        setData(p, dataMap.get(p), -1, true);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        log.error("Failed to set data for {}", p, e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (KeeperException ke) {
+        log.error("Failed to set data for {}", p, ke);
+        keeperExceptions[0] = ke;
+      }
     }
   }
 }

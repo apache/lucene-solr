@@ -57,7 +57,7 @@ public class PluginBag<T> implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, PluginHolder<T>> registry;
-  private final Map<String, PluginHolder<T>> immutableRegistry;
+
   private String def;
   @SuppressWarnings({"rawtypes"})
   private final Class klass;
@@ -75,8 +75,8 @@ public class PluginBag<T> implements AutoCloseable {
     // TODO: since reads will dominate writes, we could also think about creating a new instance of a map each time it changes.
     // Not sure how much benefit this would have over ConcurrentHashMap though
     // We could also perhaps make this constructor into a factory method to return different implementations depending on thread safety needs.
-    this.registry = new ConcurrentHashMap<>(32, 0.75f, 6);
-    this.immutableRegistry = Collections.unmodifiableMap(registry);
+    this.registry = new ConcurrentHashMap<>(32, 0.75f, 1);
+
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown Plugin : " + klass.getName());
@@ -178,7 +178,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   public Set<String> keySet() {
-    return immutableRegistry.keySet();
+    return registry.keySet();
   }
 
   /**
@@ -252,7 +252,7 @@ public class PluginBag<T> implements AutoCloseable {
   }
 
   public Map<String, PluginHolder<T>> getRegistry() {
-    return immutableRegistry;
+    return registry;
   }
 
   public boolean contains(String name) {
@@ -279,13 +279,17 @@ public class PluginBag<T> implements AutoCloseable {
    */
   void init(Map<String, T> defaults, SolrCore solrCore, List<PluginInfo> infos) {
     core = solrCore;
-    for (PluginInfo info : infos) {
-      PluginHolder<T> o = createPlugin(info);
-      String name = info.name;
-      if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
-      PluginHolder<T> old = put(name, o);
-      if (old != null) {
-        log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
+    try (ParWork parWork = new ParWork(this)) {
+      for (PluginInfo info : infos) {
+        parWork.collect("", ()->{
+          PluginHolder<T> o = createPlugin(info);
+          String name = info.name;
+          if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
+          PluginHolder<T> old = put(name, o);
+          if (old != null) {
+            log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
+          }
+        });
       }
     }
     if (infos.size() > 0) { // Aggregate logging

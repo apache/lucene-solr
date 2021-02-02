@@ -141,10 +141,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   }
 
   public void testRandomUpdates() throws Exception {
-    final int maxDocId = atLeast(TEST_NIGHTLY ? 10000 : 100);
+    final int maxDocId = atLeast(TEST_NIGHTLY ? 10000 : 30);
     final BitSet expectedDocIds = new BitSet(maxDocId+1);
     
-    final int numIters = TEST_NIGHTLY ? atLeast(50) : 15;
+    final int numIters = TEST_NIGHTLY ? atLeast(50) : 5;
     for (int i = 0; i < numIters; i++) {
 
       log.info("BEGIN ITER #{}", i);

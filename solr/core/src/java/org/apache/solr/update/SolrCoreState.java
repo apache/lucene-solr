@@ -43,10 +43,10 @@ public abstract class SolrCoreState {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   protected volatile boolean closed = false;
-  private final Object updateLock = new Object();
+  private final ReentrantLock updateLock = new ReentrantLock(true);
   private final ReentrantLock reloadLock = new ReentrantLock(true);
   
-  public Object getUpdateLock() {
+  public ReentrantLock getUpdateLock() {
     return updateLock;
   }
   

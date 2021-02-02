@@ -41,14 +41,10 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -220,7 +216,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private final RequestHandlers reqHandlers;
   private final PluginBag<SearchComponent> searchComponents = new PluginBag<>(SearchComponent.class, this);
   private final PluginBag<UpdateRequestProcessorFactory> updateProcessors = new PluginBag<>(UpdateRequestProcessorFactory.class, this);
-  private final Map<String, UpdateRequestProcessorChain> updateProcessorChains;
+  private volatile Map<String, UpdateRequestProcessorChain> updateProcessorChains;
   private final SolrCoreMetricManager coreMetricManager;
   private final Map<String, SolrInfoBean> infoRegistry = new ConcurrentHashMap<>(64, 0.75f, 2);
   private final IndexDeletionPolicyWrapper solrDelPolicy;
@@ -1127,18 +1123,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       initWriters();
       timeInitWriters.done();
 
-      qParserPlugins.init(QParserPlugin.standardPlugins, this);
-      valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
-      transformerFactories.init(TransformerFactory.defaultFactories, this);
-      StopWatch timeLoadSearchComponents = new StopWatch(this + "-loadSearchComponents");
-      loadSearchComponents();
-      timeLoadSearchComponents.done();
-      updateProcessors.init(Collections.emptyMap(), this);
-
-      // Processors initialized before the handlers
-      updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
-      reqHandlers.initHandlersFromConfig(solrConfig);
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -1219,6 +1204,19 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     //
     StopWatch timeStartCore = new StopWatch(this + "-startCore");
     try {
+      qParserPlugins.init(QParserPlugin.standardPlugins, this);
+      valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
+      transformerFactories.init(TransformerFactory.defaultFactories, this);
+      reqHandlers.initHandlersFromConfig(solrConfig);
+
+      StopWatch timeLoadSearchComponents = new StopWatch(this + "-loadSearchComponents");
+      loadSearchComponents();
+      timeLoadSearchComponents.done();
+      updateProcessors.init(Collections.emptyMap(), this);
+
+      // Processors initialized before the handlers
+      updateProcessorChains = loadUpdateProcessorChains();
+
       StopWatch timeInform = new StopWatch(this + "-inform");
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
@@ -1851,6 +1849,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         searcherExecutor.shutdown();
 
+        closer.collect("closeSearcher", () -> {
+          closeSearcher();
+        });
+
         closer.collect("snapshotsDir", () -> {
           Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
           this.directoryFactory.doneWithDirectory(snapshotsDir);
@@ -1910,12 +1912,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         AtomicBoolean coreStateClosed = new AtomicBoolean(false);
 
-        closer.collect("closeSearcher", () -> {
-
-          synchronized (searcherLock) {
-            closeSearcher();
-          }
-        });
         closer.collect("ondeck", () -> {
 
           synchronized (searcherLock) {

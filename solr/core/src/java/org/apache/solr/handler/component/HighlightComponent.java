@@ -55,6 +55,8 @@ import static java.util.stream.Collectors.toMap;
  */
 public class HighlightComponent extends SearchComponent implements PluginInfoInitialized, SolrCoreAware
 {
+  private volatile boolean informed;
+
   public enum HighlightMethod {
     UNIFIED("unified"),
     FAST_VECTOR("fastVector"),
@@ -128,6 +130,8 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
 
   @Override
   public void inform(SolrCore core) {
+    if (informed) return;
+    informed = true;
     List<PluginInfo> children = info.getChildren("highlighting");
     if(children.isEmpty()) {
       DefaultSolrHighlighter defHighlighter = new DefaultSolrHighlighter(core);

@@ -333,7 +333,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         try {
           doLocalAdd(cmd);
         } catch (Exception e) {
-          if (distFuture != null && isLeader) {
+          if (distFuture != null && isLeader && !forwardToLeader) {
             distFuture.cancel(false);
             cancelCmds.add(cloneCmd);
           }
@@ -960,7 +960,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       } else {
         t = e;
       }
-      if (distFuture != null && isLeader) {
+      if (distFuture != null && isLeader && !forwardToLeader) {
         distFuture.cancel(false);
         cancelCmds.add(cmd);
       }

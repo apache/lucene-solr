@@ -472,7 +472,7 @@ public class LeaderElector implements Closeable {
   }
 
   @Override
-  public synchronized void close() throws IOException {
+  public void close() throws IOException {
     assert ObjectReleaseTracker.release(this);
     state = CLOSED;
     this.isClosed = true;

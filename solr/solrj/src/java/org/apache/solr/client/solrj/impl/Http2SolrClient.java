@@ -95,6 +95,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -1051,7 +1052,6 @@ public class Http2SolrClient extends SolrClient {
 
     public void waitForComplete() {
       if (log.isTraceEnabled()) log.trace("Before wait for outstanding requests registered: {} arrived: {}, {} {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), phaser.getUnarrivedParties(), phaser);
-
       try {
         phaser.awaitAdvanceInterruptibly(phaser.arrive(), idleTimeout, TimeUnit.MILLISECONDS);
       } catch (IllegalStateException e) {
@@ -1131,16 +1131,18 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
-    public int maxThreadPoolSize = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(7, PROC_COUNT * 2));
+    public static int DEFAULT_MAX_THREADS = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(7, PROC_COUNT * 2));
+    private static Integer DEFAULT_IDLE_TIME = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
+    public int maxThreadPoolSize = DEFAULT_MAX_THREADS;
     public int maxRequestsQueuedPerDestination = 1600;
     private Http2SolrClient http2SolrClient;
     private SSLConfig sslConfig = defaultSSLConfig;
-    private Integer idleTimeout = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
+    private Integer idleTimeout = DEFAULT_IDLE_TIME;
     private Integer connectionTimeout;
     private Integer maxConnectionsPerHost = 32;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
-    protected Map<String,String> headers = new ConcurrentHashMap<>();
+    protected Map<String,String> headers = new HashMap<>(6);
     protected boolean strictEventOrdering = false;
     private Integer maxOutstandingAsyncRequests;
 

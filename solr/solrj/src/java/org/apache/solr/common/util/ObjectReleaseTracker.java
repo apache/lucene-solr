@@ -25,16 +25,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class ObjectReleaseTracker {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static Map<Object,String> OBJECTS = new ConcurrentHashMap<>(256, 0.75f, 32);
+  public static Map<Object,ObjectTrackerException> OBJECTS = new ConcurrentHashMap<>(64, 0.75f, 1);
 
 
   protected final static ThreadLocal<StringBuilder> THREAD_LOCAL_SB = new ThreadLocal<>();
@@ -42,23 +41,15 @@ public class ObjectReleaseTracker {
   public static StringBuilder getThreadLocalStringBuilder() {
     StringBuilder sw = THREAD_LOCAL_SB.get();
     if (sw == null) {
-      sw = new StringBuilder(1024);
+      sw = new StringBuilder(2048);
       THREAD_LOCAL_SB.set(sw);
     }
     return sw;
   }
 
   public static boolean track(Object object) {
-    StringBuilder sb = getThreadLocalStringBuilder();
-    sb.setLength(0);
-    StringBuilderWriter sw = new StringBuilderWriter(sb);
-    PrintWriter pw = new PrintWriter(sw);
-    new ObjectTrackerException(object.getClass().getName()).printStackTrace(pw);
-    String stack = object + "\n" + sw.toString();
-    OBJECTS.put(object, stack);
-//    if (stack.length() > 8600) {
-//      throw new IllegalStateException("found size:" + stack.length());
-//    }
+    ObjectTrackerException ote = new ObjectTrackerException(object.getClass().getName());
+    OBJECTS.put(object, ote);
     return true;
   }
   
@@ -85,30 +76,11 @@ public class ObjectReleaseTracker {
   public static String checkEmpty(String object) {
    // if (true) return null; // nocommit
     StringBuilder error = new StringBuilder();
-    Set<Entry<Object,String>> entries = new HashSet<>(OBJECTS.size());
-    OBJECTS.forEach((o, s) -> {
-      entries.add(new Entry<Object,String>() {
-        @Override
-        public Object getKey() {
-          return o;
-        }
-
-        @Override
-        public String getValue() {
-          return s;
-        }
-
-        @Override
-        public String setValue(String value) {
-          return null;
-        }
-      });
-    });
-
+    HashMap<Object,ObjectTrackerException> entries = new HashMap<>(OBJECTS);
 
     if (entries.size() > 0) {
       List<String> objects = new ArrayList<>(entries.size());
-      for (Entry<Object,String> entry : entries) {
+      for (Entry<Object,ObjectTrackerException> entry : entries.entrySet()) {
         if (object != null && entry.getKey().getClass().getSimpleName().equals(object)) {
           entries.remove(entry.getKey());
           if (entry.getKey() instanceof Closeable) {
@@ -126,8 +98,15 @@ public class ObjectReleaseTracker {
         return null;
       }
       error.append("ObjectTracker found " + objects.size() + " object(s) that were not released!!! " + objects + "\n");
-      for (Entry<Object,String> entry : entries) {
-        error.append(entry.getKey() + "\n" + "StackTrace:\n" + entry.getValue() + "\n");
+      for (Entry<Object,ObjectTrackerException> entry : entries.entrySet()) {
+        StringBuilder sb = getThreadLocalStringBuilder();
+        sb.setLength(0);
+        StringBuilderWriter sw = new StringBuilderWriter(sb);
+        PrintWriter pw = new PrintWriter(sw);
+        ObjectTrackerException ote = entry.getValue();
+        ote.printStackTrace(pw);
+        String stack = object + "\n" + sw.toString();
+        error.append(entry.getKey() + "\n" + "StackTrace:\n" + stack + "\n");
       }
     }
     if (error.length() == 0) {

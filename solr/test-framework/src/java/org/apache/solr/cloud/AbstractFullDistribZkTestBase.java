@@ -551,8 +551,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
     }
 
-    System.out.println("jetty cnt:" + jettys.size());
-
     cloudClient.getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() >= jettys.size());
 
     try (ParWork closer = new ParWork(this)) {

@@ -68,32 +68,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
     this.nodeStateProvider = nodeStateProvider;
     this.currentNode = currentNode;
 
-    stateReader.registerClusterPropertiesListener(properties -> {
-      Collection<String> tags = new ArrayList<>();
-      String shardPreferences = (String) properties.getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "");
-      if (shardPreferences.contains(ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP)) {
-        try {
-          tags = PreferenceRule
-              .from(shardPreferences)
-              .stream()
-              .filter(r -> ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP.equals(r.name))
-              .map(r -> r.value)
-              .collect(Collectors.toSet());
-        } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-          log.info("Error on parsing shards preference:{}", shardPreferences);
-        }
-      }
-
-      if (tags.isEmpty()) {
-        pause();
-      } else {
-        start(tags);
-        // start fetching now
-        fetchSysProps(stateReader.getLiveNodes());
-      }
-      return isClosed;
-    });
+    stateReader.registerClusterPropertiesListener(new MyClusterPropertiesListener(stateReader));
 
     stateReader.registerLiveNodesListener((newLiveNodes) -> {
       fetchSysProps(newLiveNodes);
@@ -199,5 +174,41 @@ public class NodesSysPropsCacher implements SolrCloseable {
   public void close() {
     isClosed = true;
     pause();
+  }
+
+  private class MyClusterPropertiesListener implements ClusterPropertiesListener {
+    private final ZkStateReader stateReader;
+
+    public MyClusterPropertiesListener(ZkStateReader stateReader) {
+      this.stateReader = stateReader;
+    }
+
+    @Override
+    public boolean onChange(Map<String,Object> properties) {
+      Collection<String> tags = new ArrayList<>();
+      String shardPreferences = (String) properties.getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "");
+      if (shardPreferences.contains(ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP)) {
+        try {
+          tags = PreferenceRule
+              .from(shardPreferences)
+              .stream()
+              .filter(r -> ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP.equals(r.name))
+              .map(r -> r.value)
+              .collect(Collectors.toSet());
+        } catch (Exception e) {
+          ParWork.propagateInterrupt(e);
+          log.info("Error on parsing shards preference:{}", shardPreferences);
+        }
+      }
+
+      if (tags.isEmpty()) {
+        pause();
+      } else {
+        start(tags);
+        // start fetching now
+        fetchSysProps(stateReader.getLiveNodes());
+      }
+      return isClosed;
+    }
   }
 }

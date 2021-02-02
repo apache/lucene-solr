@@ -1170,113 +1170,115 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     Set<SolrCmdDistributor.Error> errorsForClient = new HashSet<>(errors.size());
     Set<String> replicasShouldBeInLowerTerms = new HashSet<>();
-    for (final SolrCmdDistributor.Error error : errors) {
 
-      if (error.req == null) continue;
+    errors.forEach(error -> {
 
-      if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
-        // if it's a forward, any fail is a problem -
-        // otherwise we assume things are fine if we got it locally
-        // until we start allowing min replication param
-        errorsForClient.add(error);
-        continue;
-      }
+        if (error.req == null) return;
 
-      // else...
+        if (error.req.node instanceof SolrCmdDistributor.ForwardNode) {
+          // if it's a forward, any fail is a problem -
+          // otherwise we assume things are fine if we got it locally
+          // until we start allowing min replication param
+          errorsForClient.add(error);
+          return;
+        }
 
-      // for now we don't error - we assume if it was added locally, we
-      // succeeded
-      log.warn("Error sending update to {}", error.req.node.getBaseUrl(), error.t);
+        // else...
 
-      // Since it is not a forward request, for each fail, try to tell them to
-      // recover - the doc was already added locally, so it should have been
-      // legit
+        // for now we don't error - we assume if it was added locally, we
+        // succeeded
+        log.warn("Error sending update to {}", error.req.node.getBaseUrl(), error.t);
 
-      DistribPhase phase = DistribPhase.parseParam(error.req.uReq.getParams().get(DISTRIB_UPDATE_PARAM));
-      if (phase != DistribPhase.FROMLEADER) continue; // don't have non-leaders try to recovery other nodes
+        // Since it is not a forward request, for each fail, try to tell them to
+        // recover - the doc was already added locally, so it should have been
+        // legit
 
-      // commits are special -- they can run on any node irrespective of whether it is a leader or not
-      // we don't want to run recovery on a node which missed a commit command
-      if (error.req.uReq.getParams().get(COMMIT_END_POINT) != null) continue;
+        DistribPhase phase = DistribPhase.parseParam(error.req.uReq.getParams().get(DISTRIB_UPDATE_PARAM));
+        if (phase != DistribPhase.FROMLEADER) return; // don't have non-leaders try to recovery other nodes
 
-      final String replicaUrl = error.req.node.getUrl();
+        // commits are special -- they can run on any node irrespective of whether it is a leader or not
+        // we don't want to run recovery on a node which missed a commit command
+        if (error.req.uReq.getParams().get(COMMIT_END_POINT) != null) return;
 
-      // if the remote replica failed the request because of leader change (SOLR-6511), then fail the request
-      String cause = (error.t instanceof SolrException) ? ((SolrException) error.t).getMetadata("cause") : null;
-      if ("LeaderChanged".equals(cause)) {
-        // let's just fail this request and let the client retry? or just call processAdd again?
-        log.error("On {}, replica {} now thinks it is the leader! Failing the request to let the client retry!", desc.getName(), replicaUrl, error.t);
-        errorsForClient.add(error);
-        continue;
-      }
+        final String replicaUrl = error.req.node.getUrl();
 
-      String collection = null;
-      String shardId = null;
+        // if the remote replica failed the request because of leader change (SOLR-6511), then fail the request
+        String cause = (error.t instanceof SolrException) ? ((SolrException) error.t).getMetadata("cause") : null;
+        if ("LeaderChanged".equals(cause)) {
+          // let's just fail this request and let the client retry? or just call processAdd again?
+          log.error("On {}, replica {} now thinks it is the leader! Failing the request to let the client retry!", desc.getName(), replicaUrl, error.t);
+          errorsForClient.add(error);
+          return;
+        }
 
-      if (error.req.node instanceof SolrCmdDistributor.StdNode) {
-        SolrCmdDistributor.StdNode stdNode = (SolrCmdDistributor.StdNode) error.req.node;
-        collection = stdNode.getCollection();
-        shardId = stdNode.getShardId();
+        String collection = null;
+        String shardId = null;
 
-        // before we go setting other replicas to down, make sure we're still the leader!
-        String leaderCoreNodeName = null;
-        Exception getLeaderExc = null;
-        Replica leaderProps = null;
-        try {
-          leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
-          if (leaderProps != null) {
-            leaderCoreNodeName = leaderProps.getName();
+        if (error.req.node instanceof SolrCmdDistributor.StdNode) {
+          SolrCmdDistributor.StdNode stdNode = (SolrCmdDistributor.StdNode) error.req.node;
+          collection = stdNode.getCollection();
+          shardId = stdNode.getShardId();
+
+          // before we go setting other replicas to down, make sure we're still the leader!
+          String leaderCoreNodeName = null;
+          Exception getLeaderExc = null;
+          Replica leaderProps = null;
+          try {
+            leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
+            if (leaderProps != null) {
+              leaderCoreNodeName = leaderProps.getName();
+            }
+          } catch (Exception exc) {
+            getLeaderExc = exc;
           }
-        } catch (Exception exc) {
-          getLeaderExc = exc;
-        }
-        if (leaderCoreNodeName == null) {
-          log.warn("Failed to determine if {} is still the leader for collection={} shardId={} before putting {} into leader-initiated recovery", desc.getName(), collection, shardId, replicaUrl,
-              getLeaderExc);
-        }
+          if (leaderCoreNodeName == null) {
+            log.warn("Failed to determine if {} is still the leader for collection={} shardId={} before putting {} into leader-initiated recovery", desc.getName(), collection, shardId, replicaUrl,
+                getLeaderExc);
+          }
 
-        List<Replica> myReplicas = zkController.getZkStateReader().getReplicaProps(collection, cloudDesc.getShardId(), desc.getName());
-        boolean foundErrorNodeInReplicaList = false;
-        if (myReplicas != null) {
-          for (Replica replicaProp : myReplicas) {
-            if (((Replica) replicaProp).getName().equals(((Replica) stdNode.getNodeProps()).getName())) {
-              foundErrorNodeInReplicaList = true;
-              break;
+          List<Replica> myReplicas = zkController.getZkStateReader().getReplicaProps(collection, cloudDesc.getShardId(), desc.getName());
+          boolean foundErrorNodeInReplicaList = false;
+          if (myReplicas != null) {
+            for (Replica replicaProp : myReplicas) {
+              if (((Replica) replicaProp).getName().equals(((Replica) stdNode.getNodeProps()).getName())) {
+                foundErrorNodeInReplicaList = true;
+                break;
+              }
             }
           }
-        }
 
-        if (leaderCoreNodeName != null && desc.getName().equals(leaderCoreNodeName) // we are still same leader
-            && foundErrorNodeInReplicaList // we found an error for one of replicas
-            && !stdNode.getNodeProps().getCoreUrl().equals(leaderProps.getCoreUrl())) { // we do not want to put ourself into LIR
-          try {
-            String coreNodeName = ((Replica) stdNode.getNodeProps()).getName();
-            // if false, then the node is probably not "live" anymore
-            // and we do not need to send a recovery message
-            Throwable rootCause = SolrException.getRootCause(error.t);
-            log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
-            replicasShouldBeInLowerTerms.add(coreNodeName);
-          } catch (Exception exc) {
-            SolrZkClient.checkInterrupted(exc);
-            Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
-            log.error("Leader failed to set replica {} state to DOWN due to: {}", error.req.node.getUrl(), setLirZnodeFailedCause, setLirZnodeFailedCause);
-          }
-        } else {
-          // not the leader anymore maybe or the error'd node is not my replica?
-          if (!foundErrorNodeInReplicaList) {
-            log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent! replicas={}", desc.getName(), collection, cloudDesc.getShardId(),
-                stdNode.getNodeProps().getCoreUrl(), myReplicas);
-            if (!shardId.equals(cloudDesc.getShardId())) {
-              // some replicas on other shard did not receive the updates (ex: during splitshard),
-              // exception must be notified to clients
-              errorsForClient.add(error);
+          if (leaderCoreNodeName != null && desc.getName().equals(leaderCoreNodeName) // we are still same leader
+              && foundErrorNodeInReplicaList // we found an error for one of replicas
+              && !stdNode.getNodeProps().getCoreUrl().equals(leaderProps.getCoreUrl())) { // we do not want to put ourself into LIR
+            try {
+              String coreNodeName = ((Replica) stdNode.getNodeProps()).getName();
+              // if false, then the node is probably not "live" anymore
+              // and we do not need to send a recovery message
+              Throwable rootCause = SolrException.getRootCause(error.t);
+              log.error("Setting up to try to start recovery on replica {} with url {} by increasing leader term", coreNodeName, replicaUrl, rootCause);
+              replicasShouldBeInLowerTerms.add(coreNodeName);
+            } catch (Exception exc) {
+              SolrZkClient.checkInterrupted(exc);
+              Throwable setLirZnodeFailedCause = SolrException.getRootCause(exc);
+              log.error("Leader failed to set replica {} state to DOWN due to: {}", error.req.node.getUrl(), setLirZnodeFailedCause, setLirZnodeFailedCause);
             }
           } else {
-            log.warn("Core {} is no longer the leader for {} {}  or we tried to put ourself into LIR, no request recovery command will be sent! replicas={}", desc.getName(), collection, shardId, myReplicas);
+            // not the leader anymore maybe or the error'd node is not my replica?
+            if (!foundErrorNodeInReplicaList) {
+              log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent! replicas={}", desc.getName(), collection, cloudDesc.getShardId(),
+                  stdNode.getNodeProps().getCoreUrl(), myReplicas);
+              if (!shardId.equals(cloudDesc.getShardId())) {
+                // some replicas on other shard did not receive the updates (ex: during splitshard),
+                // exception must be notified to clients
+                errorsForClient.add(error);
+              }
+            } else {
+              log.warn("Core {} is no longer the leader for {} {}  or we tried to put ourself into LIR, no request recovery command will be sent! replicas={}", desc.getName(), collection, shardId, myReplicas);
+            }
           }
         }
-      }
-    }
+    });
+
     if (!replicasShouldBeInLowerTerms.isEmpty()) {
       try {
         zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId()).ensureTermsIsHigher(desc.getName(), replicasShouldBeInLowerTerms);

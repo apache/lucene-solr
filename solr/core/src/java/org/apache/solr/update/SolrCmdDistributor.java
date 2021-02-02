@@ -168,9 +168,9 @@ public class SolrCmdDistributor implements Closeable {
   public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean sync,
                             RollupRequestReplicationTracker rollupTracker,
                             LeaderRequestReplicationTracker leaderTracker) throws IOException {
-    if (!cmd.isDeleteById()) {
-      blockAndDoRetries();
-    }
+//    if (!cmd.isDeleteById()) {
+//      blockAndDoRetries();
+//    }
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
@@ -212,7 +212,7 @@ public class SolrCmdDistributor implements Closeable {
   public void distribCommit(CommitUpdateCommand cmd, List<Node> nodes,
       ModifiableSolrParams params) {
     // we need to do any retries before commit...
-    blockAndDoRetries();
+    //blockAndDoRetries();
     if (log.isDebugEnabled()) log.debug("Distrib commit to: {} params: {}", nodes, params);
 
     for (Node node : nodes) {
