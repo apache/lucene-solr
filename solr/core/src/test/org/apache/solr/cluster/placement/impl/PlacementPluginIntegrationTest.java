@@ -27,7 +27,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.CountingStateChangeListener;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
@@ -50,16 +49,15 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Phaser;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -70,8 +68,6 @@ import static java.util.Collections.singletonMap;
  */
 @LogLevel("org.apache.solr.cluster.placement.impl=DEBUG")
 public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private static final String COLLECTION = PlacementPluginIntegrationTest.class.getSimpleName() + "_collection";
 
   private static SolrCloudManager cloudManager;
@@ -149,10 +145,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
-    CountingStateChangeListener stateChangeListener = new CountingStateChangeListener();
-    wrapper.setStateChangeListener(stateChangeListener);
+    Phaser phaser = new Phaser();
+    wrapper.setDelegationPhaser(phaser);
 
-    int version = stateChangeListener.waitForVersionChange(-1, 10);
+    int version = phaser.getPhase();
     assertTrue("wrong version " + version, version > -1);
 
     PluginMeta plugin = new PluginMeta();
@@ -165,10 +161,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    int newVersion = stateChangeListener.waitForVersionChange(version, 10);
-
-    MatcherAssert.assertThat("wrong version " + version, newVersion, Matchers.greaterThan(version));
-    version = newVersion;
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof MinimizeCoresPlacementFactory);
 
@@ -182,7 +175,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = stateChangeListener.waitForVersionChange(version, 10);
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
@@ -199,7 +192,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = stateChangeListener.waitForVersionChange(version, 10);
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
@@ -214,14 +207,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .withPayload(singletonMap("add", plugin))
         .build();
     req.process(cluster.getSolrClient());
-    try {
-      newVersion = stateChangeListener.waitForVersionChange(version, 5);
-      if (newVersion != version) {
-        fail("factory configuration updated but plugin name was wrong: " + plugin);
-      }
-    } catch (TimeoutException te) {
-      // expected
-    }
+    final int oldVersion = version;
+    expectThrows(TimeoutException.class, () -> phaser.awaitAdvanceInterruptibly(oldVersion, 5, TimeUnit.SECONDS));
     // remove plugin
     req = new V2Request.Builder("/cluster/plugin")
         .forceV2(true)
@@ -229,7 +216,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
         .build();
     req.process(cluster.getSolrClient());
-    stateChangeListener.waitForVersionChange(version, 10);
+    phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
   }
@@ -239,10 +226,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
-    CountingStateChangeListener stateChangeListener = new CountingStateChangeListener();
-    wrapper.setStateChangeListener(stateChangeListener);
+    Phaser phaser = new Phaser();
+    wrapper.setDelegationPhaser(phaser);
 
-    int version = stateChangeListener.waitForVersionChange(-1, 10);
+    int version = phaser.getPhase();
 
     Set<String> nodeSet = new HashSet<>();
     for (String node : cloudManager.getClusterStateProvider().getLiveNodes()) {
@@ -264,7 +251,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    stateChangeListener.waitForVersionChange(version, 10);
+    phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
         .process(cluster.getSolrClient());

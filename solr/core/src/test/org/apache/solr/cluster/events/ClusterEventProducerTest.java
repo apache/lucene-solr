@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cluster.CountingStateChangeListener;
 import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
 import org.apache.solr.cluster.events.impl.DelegatingClusterEventProducer;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -45,6 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Collections.singletonMap;
@@ -57,7 +57,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 @LogLevel("org.apache.solr.cluster.events=DEBUG")
 public class ClusterEventProducerTest extends SolrCloudTestCase {
   private AllEventsListener eventsListener;
-  private CountingStateChangeListener stateChangeTracker;
+  private Phaser phaser;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -77,8 +77,8 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     assertTrue("not a delegating producer? " + clusterEventProducer.getClass(),
             clusterEventProducer instanceof DelegatingClusterEventProducer);
     DelegatingClusterEventProducer wrapper = (DelegatingClusterEventProducer) clusterEventProducer;
-    stateChangeTracker = new CountingStateChangeListener();
-    wrapper.setStateChangeListener(stateChangeTracker);
+    phaser = new Phaser();
+    wrapper.setDelegationPhaser(phaser);
   }
 
   @After
@@ -104,7 +104,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testEvents() throws Exception {
-    int version = stateChangeTracker.waitForVersionChange(-1, 10);
+    int version = phaser.getPhase();
 
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
@@ -116,7 +116,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
 
-    version = stateChangeTracker.waitForVersionChange(version, 10);
+    phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     // NODES_DOWN
 
@@ -283,7 +283,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testListenerPlugins() throws Exception {
-    int version = stateChangeTracker.waitForVersionChange(-1, 10);
+    int version = phaser.getPhase();
 
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
@@ -294,7 +294,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    version = stateChangeTracker.waitForVersionChange(version, 10);
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     plugin = new PluginMeta();
     plugin.name = "testplugin";
@@ -352,7 +352,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .withPayload(Collections.singletonMap("remove", ClusterEventProducer.PLUGIN_NAME))
         .build();
     req.process(cluster.getSolrClient());
-    version = stateChangeTracker.waitForVersionChange(version, 10);
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
@@ -373,7 +373,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    version = stateChangeTracker.waitForVersionChange(version, 10);
+    phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
