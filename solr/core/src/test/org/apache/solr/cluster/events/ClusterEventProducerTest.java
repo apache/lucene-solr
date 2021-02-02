@@ -23,11 +23,15 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
+import org.apache.solr.cluster.events.impl.DelegatingClusterEventProducer;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -44,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
@@ -54,6 +59,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
  */
 @LogLevel("org.apache.solr.cluster.events=DEBUG")
 public class ClusterEventProducerTest extends SolrCloudTestCase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private AllEventsListener eventsListener;
 
@@ -96,6 +102,8 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testEvents() throws Exception {
+    int version = waitForVersionChange(-1, 10);
+
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
     plugin.name = ClusterEventProducer.PLUGIN_NAME;
@@ -106,6 +114,8 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
 
+    version = waitForVersionChange(version, 10);
+
     // NODES_DOWN
 
     eventsListener.setExpectedType(ClusterEvent.EventType.NODES_DOWN);
@@ -115,10 +125,12 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       if (cluster.getOpenOverseer().getCoreContainer().getZkController().getNodeName().equals(jetty.getNodeName())) {
         continue;
+      } else {
+        nonOverseerJetty = jetty;
+        break;
       }
-      nonOverseerJetty = jetty;
-      break;
     }
+
     String nodeName = nonOverseerJetty.getNodeName();
     cluster.stopJettySolrRunner(nonOverseerJetty);
     cluster.waitForJettyToStop(nonOverseerJetty);
@@ -269,6 +281,8 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testListenerPlugins() throws Exception {
+    int version = waitForVersionChange(-1, 10);
+
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
     plugin.name = ClusterEventProducer.PLUGIN_NAME;
@@ -278,6 +292,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
+    version = waitForVersionChange(-1, 10);
 
     plugin = new PluginMeta();
     plugin.name = "testplugin";
@@ -335,6 +350,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .withPayload(Collections.singletonMap("remove", ClusterEventProducer.PLUGIN_NAME))
         .build();
     req.process(cluster.getSolrClient());
+    version = waitForVersionChange(-1, 10);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
@@ -355,6 +371,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
+    version = waitForVersionChange(-1, 10);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
@@ -366,5 +383,30 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     }
     assertNotNull("lastEvent should be COLLECTIONS_REMOVED", lastEvent);
     assertEquals("lastEvent should be COLLECTIONS_REMOVED", ClusterEvent.EventType.COLLECTIONS_REMOVED, lastEvent.getType());
+  }
+
+  private int waitForVersionChange(int currentVersion, int timeoutSec) throws Exception {
+    TimeOut timeout = new TimeOut(timeoutSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    Overseer overseer = cluster.getOpenOverseer();
+    if (overseer == null) {
+      throw new Exception("no overseer");
+    }
+    ClusterEventProducer clusterEventProducer = overseer.getCoreContainer().getClusterEventProducer();
+    assertTrue("not a delegating producer? " + clusterEventProducer.getClass(),
+        clusterEventProducer instanceof DelegatingClusterEventProducer);
+    DelegatingClusterEventProducer wrapper = (DelegatingClusterEventProducer) clusterEventProducer;
+    while (!timeout.hasTimedOut()) {
+      int newVersion = wrapper.getVersion();
+      if (newVersion < currentVersion) {
+        throw new Exception("Invalid version - went back! currentVersion=" + currentVersion +
+            " newVersion=" + newVersion);
+      } else if (currentVersion < newVersion) {
+        log.debug("--current version was {}, new version is {}", currentVersion, newVersion);
+        return newVersion;
+      }
+      timeout.sleep(200);
+    }
+    throw new TimeoutException("version didn't change in time, currentVersion=" + currentVersion);
+
   }
 }

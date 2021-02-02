@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.events.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
@@ -38,6 +39,8 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private ClusterEventProducer delegate;
+  // support for tests to make sure the update is completed
+  private volatile int version;
 
   public DelegatingClusterEventProducer(CoreContainer cc) {
     super(cc);
@@ -87,6 +90,7 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
         log.debug("--- delegate {} already in state {}", delegate, delegate.getState());
       }
     }
+    this.version++;
   }
 
   @Override
@@ -137,5 +141,10 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     state = State.STOPPING;
     delegate.stop();
     state = delegate.getState();
+  }
+
+  @VisibleForTesting
+  public int getVersion() {
+    return version;
   }
 }
