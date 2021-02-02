@@ -18,6 +18,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.index.VectorValues;
+import org.apache.lucene.util.hnsw.HnswGraphBuilder;
 
 /**
  * A field that contains a single floating-point numeric vector (or none) for each document. Vectors
@@ -32,7 +33,7 @@ import org.apache.lucene.index.VectorValues;
  */
 public class VectorField extends Field {
 
-  private static FieldType getType(float[] v, VectorValues.SearchStrategy searchStrategy) {
+  private static FieldType createType(float[] v, VectorValues.SearchStrategy searchStrategy) {
     if (v == null) {
       throw new IllegalArgumentException("vector value must not be null");
     }
@@ -54,6 +55,37 @@ public class VectorField extends Field {
   }
 
   /**
+   * Public method to create HNSW field type with the given max-connections and beam-width
+   * parameters that would be used by HnswGraphBuilder while constructing HNSW graph.
+   *
+   * @param dimension dimension of vectors
+   * @param searchStrategy a function defining vector proximity.
+   * @param maxConn max-connections at each HNSW graph node
+   * @param beamWidth size of list to be used while constructing HNSW graph
+   * @throws IllegalArgumentException if any parameter is null, or has dimension &gt; 1024.
+   */
+  public static FieldType createHnswType(
+      int dimension, VectorValues.SearchStrategy searchStrategy, int maxConn, int beamWidth) {
+    if (dimension == 0) {
+      throw new IllegalArgumentException("cannot index an empty vector");
+    }
+    if (dimension > VectorValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException(
+          "cannot index vectors with dimension greater than " + VectorValues.MAX_DIMENSIONS);
+    }
+    if (searchStrategy == null || !searchStrategy.isHnsw()) {
+      throw new IllegalArgumentException(
+          "search strategy must not be null or non HNSW type, received: " + searchStrategy);
+    }
+    FieldType type = new FieldType();
+    type.setVectorDimensionsAndSearchStrategy(dimension, searchStrategy);
+    type.putAttribute(HnswGraphBuilder.HNSW_MAX_CONN_ATTRIBUTE_KEY, String.valueOf(maxConn));
+    type.putAttribute(HnswGraphBuilder.HNSW_BEAM_WIDTH_ATTRIBUTE_KEY, String.valueOf(beamWidth));
+    type.freeze();
+    return type;
+  }
+
+  /**
    * Creates a numeric vector field. Fields are single-valued: each document has either one value or
    * no value. Vectors of a single field share the same dimension and search strategy. Note that
    * some strategies (notably dot-product) require values to be unit-length, which can be enforced
@@ -66,7 +98,7 @@ public class VectorField extends Field {
    *     dimension &gt; 1024.
    */
   public VectorField(String name, float[] vector, VectorValues.SearchStrategy searchStrategy) {
-    super(name, getType(vector, searchStrategy));
+    super(name, createType(vector, searchStrategy));
     fieldsData = vector;
   }
 
@@ -82,6 +114,21 @@ public class VectorField extends Field {
    */
   public VectorField(String name, float[] vector) {
     this(name, vector, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
+  }
+
+  /**
+   * Creates a numeric vector field. Fields are single-valued: each document has either one value or
+   * no value. Vectors of a single field share the same dimension and search strategy.
+   *
+   * @param name field name
+   * @param vector value
+   * @param fieldType field type
+   * @throws IllegalArgumentException if any parameter is null, or the vector is empty or has
+   *     dimension &gt; 1024.
+   */
+  public VectorField(String name, float[] vector, FieldType fieldType) {
+    super(name, fieldType);
+    fieldsData = vector;
   }
 
   /** Return the vector value of this field */
