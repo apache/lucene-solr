@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -1307,22 +1308,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Set UpdateLog to buffer updates if the slice is in construction.
    */
   private void bufferUpdatesIfConstructing(CoreDescriptor desc) {
-
     if (coreContainer != null && coreContainer.isZooKeeperAware()) {
-      if (reqHandlers.get("/get") == null) {
-        log.warn("WARNING: RealTimeGetHandler is not registered at /get. SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
-      }
+      if (Boolean.parseBoolean(desc.getCoreProperty("bufferOnStart", "false"))) {
 
-      final ClusterState clusterState = coreContainer.getZkController().getClusterState();
-
-      final ClusterState.CollectionRef collectionRef = clusterState.getCollectionStates().get(desc.getCloudDescriptor().getCollectionName());
-      if (collectionRef != null && !collectionRef.isLazilyLoaded()) {
-        DocCollection coll = collectionRef.get();
-        final Slice slice = coll.getSlice(desc.getCloudDescriptor().getShardId());
-        if (slice != null && slice.getState() == Slice.State.CONSTRUCTION) {
-          // set update log to buffer before publishing the core
-          getUpdateHandler().getUpdateLog().bufferUpdates();
+        if (reqHandlers.get("/get") == null) {
+          log.warn("WARNING: RealTimeGetHandler is not registered at /get. SolrCloud will always use full index replication instead of the more efficient PeerSync method.");
         }
+
+        // set update log to buffer before publishing the core
+        getUpdateHandler().getUpdateLog().bufferUpdates();
       }
     }
   }

@@ -315,6 +315,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(REPLICA_TYPE, firstNrtReplica ? Replica.Type.NRT.toString() : Replica.Type.TLOG.toString());
         propMap.put("node", nodeName);
         propMap.put(CoreAdminParams.NAME, subShardName);
+        propMap.put(CoreAdminParams.PROPERTY_PREFIX + "bufferOnStart", "true");
         propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         // copy over property params:
         for (String key : message.keySet()) {
