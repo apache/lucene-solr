@@ -383,12 +383,12 @@ public class DirectIODirectory extends FilterDirectory {
       return buffer.get();
     }
 
-    private void refill(int byteToRead) throws IOException {
+    private void refill(int bytesToRead) throws IOException {
       filePos += buffer.capacity();
 
       // BaseDirectoryTestCase#testSeekPastEOF test for consecutive read past EOF,
       // hence throwing EOFException early to maintain buffer state (position in particular)
-      if (filePos > channel.size() || (channel.size() - filePos < byteToRead)) {
+      if (filePos > channel.size() || (channel.size() - filePos < bytesToRead)) {
         throw new EOFException("read past EOF: " + this);
       }
 
