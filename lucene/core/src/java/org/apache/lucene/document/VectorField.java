@@ -73,16 +73,9 @@ public class VectorField extends Field {
       throw new IllegalArgumentException(
           "cannot index vectors with dimension greater than " + VectorValues.MAX_DIMENSIONS);
     }
-    if (searchStrategy == null) {
-      throw new IllegalArgumentException("search strategy must not be null");
-    }
-    if (maxConn <= 0) {
+    if (searchStrategy == null || !searchStrategy.isHnsw()) {
       throw new IllegalArgumentException(
-          "max-connections for HNSW graph constructions cannot be negative or 0");
-    }
-    if (beamWidth <= 0) {
-      throw new IllegalArgumentException(
-          "beam-width for HNSW graph constructions cannot be negative or 0");
+          "search strategy must not be null or non HNSW type, received: " + searchStrategy);
     }
     FieldType type = new FieldType();
     type.setVectorDimensionsAndSearchStrategy(dimension, searchStrategy);

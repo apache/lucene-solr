@@ -43,11 +43,11 @@ public final class HnswGraphBuilder {
    */
 
   // default max connections per node
-  public static int DEFAULT_MAX_CONN = 16;
+  public static final int DEFAULT_MAX_CONN = 16;
   public static String HNSW_MAX_CONN_ATTRIBUTE_KEY = "max_connections";
 
   // default candidate list size
-  public static int DEFAULT_BEAM_WIDTH = 16;
+  public static final int DEFAULT_BEAM_WIDTH = 16;
   public static String HNSW_BEAM_WIDTH_ATTRIBUTE_KEY = "beam_width";
 
   private final int maxConn;

@@ -197,19 +197,25 @@ public final class Lucene90VectorWriter extends VectorWriter {
     int maxConn, beamWidth;
     if (maxConnStr == null) {
       maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
-    } else if (!maxConnStr.matches("[0-9]+")) {
-      throw new IllegalArgumentException(
-          "HNSW max-connections parameter should be integer, received value: " + maxConnStr);
     } else {
-      maxConn = Integer.parseInt(maxConnStr);
+      try {
+        maxConn = Integer.parseInt(maxConnStr);
+      } catch (NumberFormatException e) {
+        throw new NumberFormatException(
+            "Received non integer value for max-connections parameter of HnswGraphBuilder, value: "
+                + maxConnStr);
+      }
     }
     if (beamWidthStr == null) {
       beamWidth = HnswGraphBuilder.DEFAULT_BEAM_WIDTH;
-    } else if (!beamWidthStr.matches("[0-9]+")) {
-      throw new IllegalArgumentException(
-          "HNSW beam-width parameter should be integer, received value: " + maxConnStr);
     } else {
-      beamWidth = Integer.parseInt(beamWidthStr);
+      try {
+        beamWidth = Integer.parseInt(beamWidthStr);
+      } catch (NumberFormatException e) {
+        throw new NumberFormatException(
+            "Received non integer value for beam-width parameter of HnswGraphBuilder, value: "
+                + beamWidthStr);
+      }
     }
     HnswGraphBuilder hnswGraphBuilder =
         new HnswGraphBuilder(vectorValues, maxConn, beamWidth, System.currentTimeMillis());

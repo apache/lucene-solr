@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
@@ -83,6 +84,9 @@ public class TestVectorValues extends LuceneTestCase {
     expectThrows(
         IllegalArgumentException.class,
         () -> new VectorField("f", new float[VectorValues.MAX_DIMENSIONS + 1]));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> new VectorField("f", new float[VectorValues.MAX_DIMENSIONS + 1], (FieldType) null));
   }
 
   public void testFieldSetValue() {
@@ -92,6 +96,25 @@ public class TestVectorValues extends LuceneTestCase {
     assertSame(v1, field.vectorValue());
     expectThrows(IllegalArgumentException.class, () -> field.setVectorValue(new float[2]));
     expectThrows(IllegalArgumentException.class, () -> field.setVectorValue(null));
+  }
+
+  public void testFieldCreateFieldType() {
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> VectorField.createHnswType(0, SearchStrategy.EUCLIDEAN_HNSW, 16, 16));
+    expectThrows(
+        IllegalArgumentException.class,
+        () ->
+            VectorField.createHnswType(
+                VectorValues.MAX_DIMENSIONS + 1, SearchStrategy.EUCLIDEAN_HNSW, 16, 16));
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> VectorField.createHnswType(VectorValues.MAX_DIMENSIONS + 1, null, 16, 16));
+    expectThrows(
+        IllegalArgumentException.class,
+        () ->
+            VectorField.createHnswType(
+                VectorValues.MAX_DIMENSIONS + 1, SearchStrategy.NONE, 16, 16));
   }
 
   // Illegal schema change tests:
