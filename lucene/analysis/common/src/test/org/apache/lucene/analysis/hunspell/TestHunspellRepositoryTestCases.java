@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -66,6 +65,6 @@ public class TestHunspellRepositoryTestCases {
 
   @Test
   public void test() throws IOException, ParseException {
-    SpellCheckerTest.checkSpellCheckerExpectations(pathPrefix);
+    SpellCheckerTest.checkSpellCheckerExpectations(pathPrefix, false);
   }
 }

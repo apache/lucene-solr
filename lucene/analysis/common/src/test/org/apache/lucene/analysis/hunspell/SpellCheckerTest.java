@@ -146,10 +146,11 @@ public class SpellCheckerTest extends StemmerTestBase {
 
   protected void doTest(String name) throws Exception {
     checkSpellCheckerExpectations(
-        Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name));
+        Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name), true);
   }
 
-  static void checkSpellCheckerExpectations(Path basePath) throws IOException, ParseException {
+  static void checkSpellCheckerExpectations(Path basePath, boolean checkSuggestions)
+      throws IOException, ParseException {
     InputStream affixStream = Files.newInputStream(Path.of(basePath.toString() + ".aff"));
     InputStream dictStream = Files.newInputStream(Path.of(basePath.toString() + ".dic"));
 
@@ -177,7 +178,7 @@ public class SpellCheckerTest extends StemmerTestBase {
       for (String word : wrongWords) {
         assertFalse("Unexpectedly considered correct: " + word, speller.spell(word.trim()));
       }
-      if (Files.exists(sug)) {
+      if (Files.exists(sug) && checkSuggestions) {
         String suggestions =
             wrongWords.stream()
                 .map(s -> String.join(", ", speller.suggest(s)))
