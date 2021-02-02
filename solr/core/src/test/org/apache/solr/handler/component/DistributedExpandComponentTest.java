@@ -297,7 +297,43 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
       assertExpandGroupCountAndOrder(ccc, 2, results, "11", "9");
       assertExpandGroupCountAndOrder(ddd, 2, results, "12", "14");
 
+      // nullPolicy=collapse w/ expand.nullGroup=true...
+      params.set("fq", "{!collapse field="+group+" nullPolicy=collapse}");
+      params.set("expand.nullGroup", "true");
+      
+      rsp = queryServer(params);
+      assertCountAndOrder(5, rsp.getResults(), "10" /* c */, "88" /* null */, "2" /* a */, "13" /* d */, "6" /* b */);
+      results = rsp.getExpandedResults();
+      assertExpandGroups(results, aaa, bbb, ccc, ddd, null);
+      assertExpandGroupCountAndOrder(aaa, 2, results, "1", "7");
+      assertExpandGroupCountAndOrder(bbb, 2, results, "5", "8");
+      assertExpandGroupCountAndOrder(ccc, 2, results, "11", "9");
+      assertExpandGroupCountAndOrder(ddd, 2, results, "12", "14");
+      assertExpandGroupCountAndOrder(null, 1, results, "99");
 
+      // nullPolicy=expand w/ expand.nullGroup=true (use small rows to ensure null expanded group)
+      params.set("fq", "{!collapse field="+group+" nullPolicy=expand}");
+      params.set("rows", "3");
+      
+      rsp = queryServer(params);
+      assertCountAndOrder(3, rsp.getResults(), "10" /* c */, "88" /* null */, "2" /* a */);
+      results = rsp.getExpandedResults();
+      assertExpandGroups(results, aaa, ccc, null);
+      assertExpandGroupCountAndOrder(aaa, 2, results, "1", "7");
+      assertExpandGroupCountAndOrder(ccc, 2, results, "11", "9");
+      assertExpandGroupCountAndOrder(null, 1, results, "99");
+
+      // nullPolicy=expand w/ expand.nullGroup=true & expand.rows = 0 
+      params.set("expand.rows", "0");
+      
+      rsp = queryServer(params);
+      assertCountAndOrder(3, rsp.getResults(), "10" /* c */, "88" /* null */, "2" /* a */);
+      results = rsp.getExpandedResults();
+      assertExpandGroups(results, aaa, ccc, null);
+      assertExpandGroupCountAndOrder(aaa, 0, results);
+      assertExpandGroupCountAndOrder(ccc, 0, results);
+      assertExpandGroupCountAndOrder(null, 0, results);
+      
     }
     
   }
@@ -334,16 +370,12 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
   }
   private void assertCountAndOrder(final int count, final SolrDocumentList results,
                                    final String... docs) throws Exception {
-    if(results.size() != count) {
-      throw new Exception("Expected Count "+results.size()+" Not Found:"+count);
-    }
+    assertEquals(results.toString(), count, results.size());
 
     for(int i=0; i<docs.length;i++) {
       String id = docs[i];
       SolrDocument doc = results.get(i);
-      if(!doc.getFieldValue("id").toString().equals(id)) {
-        throw new Exception("Id not in results or out of order:"+id+"!="+doc.getFieldValue("id"));
-      }
+      assertEquals("Id not in results or out of order", id, doc.getFieldValue("id").toString());
     }
   }
 }
