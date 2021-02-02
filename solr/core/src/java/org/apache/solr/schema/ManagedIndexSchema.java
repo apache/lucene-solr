@@ -1003,12 +1003,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
 
     ManagedIndexSchema newSchema = shallowCopy(true);
-
-    // we shallow copied fieldTypes, but since we're changing them, we need to do a true
-    // deep copy before adding the new field types
-    HashMap<String,FieldType> clone =
-        (HashMap<String,FieldType>)((HashMap<String,FieldType>)newSchema.fieldTypes).clone();
-    newSchema.fieldTypes = clone;
+    Map<String,FieldType> fieldTypes = new HashMap<>(newSchema.fieldTypes);
 
     // do a first pass to validate the field types don't exist already
     for (FieldType fieldType : fieldTypeList) {
@@ -1018,8 +1013,9 @@ public final class ManagedIndexSchema extends IndexSchema {
             "Field type '" + typeName + "' already exists!");
       }
 
-      newSchema.fieldTypes.put(typeName, fieldType);
+      fieldTypes.put(typeName, fieldType);
     }
+    newSchema.fieldTypes = Collections.unmodifiableMap(fieldTypes);
 
     if (persist) {
       boolean success = newSchema.persistManagedSchema(false);
@@ -1105,8 +1101,8 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema = shallowCopy(true);
 
       Map<String,SchemaField> fields = new HashMap<>(newSchema.fields);
+      Map<String,FieldType> fieldTypes = new HashMap<>(newSchema.fieldTypes);
       // clone data structures before modifying them
-      newSchema.fieldTypes = (Map<String,FieldType>)((HashMap<String,FieldType>)fieldTypes).clone();
       newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
       newSchema.copyFieldTargetCounts
           = (Map<SchemaField,Integer>)((HashMap<SchemaField,Integer>)copyFieldTargetCounts).clone();
@@ -1115,9 +1111,9 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema.dynamicFields = new DynamicField[dynamicFields.length];
       System.arraycopy(dynamicFields, 0, newSchema.dynamicFields, 0, dynamicFields.length);
 
-      newSchema.fieldTypes.remove(typeName);
+      fieldTypes.remove(typeName);
       FieldType replacementFieldType = newSchema.newFieldType(typeName, replacementClassName, replacementArgs);
-      newSchema.fieldTypes.put(typeName, replacementFieldType);
+      fieldTypes.put(typeName, replacementFieldType);
 
       // Rebuild fields of the type being replaced
       List<CopyField> copyFieldsToRebuild = new ArrayList<>();
@@ -1156,6 +1152,7 @@ public final class ManagedIndexSchema extends IndexSchema {
         fields.put(replacementField.getName(), replacementField);
       }
       newSchema.fields = Collections.unmodifiableMap(fields);
+      newSchema.fieldTypes = Collections.unmodifiableMap(fieldTypes);
       // Remove copy fields where the target is of the type being replaced; remember them to rebuild
       Iterator<Map.Entry<String,List<CopyField>>> copyFieldsMapIter = newSchema.copyFieldsMap.entrySet().iterator();
       while (copyFieldsMapIter.hasNext()) {
@@ -1439,15 +1436,15 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     if (includeFieldDataStructures) {
       // These need new collections, since addFields() can add members to them
-      newSchema.fields = fields;
       newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
       newSchema.requiredFields.addAll(requiredFields);
     }
 
     // These don't need new collections - addFields() won't add members to them
-    newSchema.fieldTypes = fieldTypes;
     newSchema.dynamicFields = dynamicFields;
     newSchema.dynamicCopyFields = dynamicCopyFields;
+    newSchema.fields = fields;
+    newSchema.fieldTypes = fieldTypes;
     newSchema.copyFieldsMap = copyFieldsMap;
     newSchema.copyFieldTargetCounts = copyFieldTargetCounts;
     newSchema.schemaAware = schemaAware;

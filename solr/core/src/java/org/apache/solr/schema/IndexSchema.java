@@ -146,7 +146,7 @@ public class IndexSchema {
   protected final Properties substitutableProperties;
 
   protected volatile Map<String,SchemaField> fields = Collections.emptyMap();
-  protected volatile Map<String,FieldType> fieldTypes = new HashMap<>();
+  protected volatile Map<String,FieldType> fieldTypes = Collections.emptyMap();
 
   protected volatile List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
   protected volatile Collection<SchemaField> requiredFields = new HashSet<>();
