@@ -1008,7 +1008,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     // do a first pass to validate the field types don't exist already
     for (FieldType fieldType : fieldTypeList) {
       String typeName = fieldType.getTypeName();
-      if (newSchema.getFieldTypeByName(typeName) != null) {
+      if (newSchema.getFieldTypeByName(typeName, fieldTypes) != null) {
         throw new FieldExistsException(ErrorCode.BAD_REQUEST,
             "Field type '" + typeName + "' already exists!");
       }
@@ -1048,6 +1048,7 @@ public final class ManagedIndexSchema extends IndexSchema {
   public ManagedIndexSchema deleteFieldTypes(Collection<String> names) {
     ManagedIndexSchema newSchema;
     if (isMutable) {
+
       for (String name : names) {
         if ( ! fieldTypes.containsKey(name)) {
           String msg = "The field type '" + name + "' is not present in this schema, and so cannot be deleted.";
@@ -1067,9 +1068,11 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
       newSchema = shallowCopy(true);
+      Map<String,FieldType> fieldTypes = new HashMap<>(newSchema.fieldTypes);
       for (String name : names) {
-        newSchema.fieldTypes.remove(name);
+        fieldTypes.remove(name);
       }
+      newSchema.fieldTypes = Collections.unmodifiableMap(fieldTypes);
       newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
@@ -1112,7 +1115,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       System.arraycopy(dynamicFields, 0, newSchema.dynamicFields, 0, dynamicFields.length);
 
       fieldTypes.remove(typeName);
-      FieldType replacementFieldType = newSchema.newFieldType(typeName, replacementClassName, replacementArgs);
+      FieldType replacementFieldType = newSchema.newFieldType(typeName, replacementClassName, replacementArgs, fieldTypes);
       fieldTypes.put(typeName, replacementFieldType);
 
       // Rebuild fields of the type being replaced
@@ -1277,7 +1280,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           String msg = "Field '" + fieldName + "' already exists.";
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
         }
-        FieldType type = getFieldTypeByName(fieldType);
+        FieldType type = getFieldTypeByName(fieldType, fieldTypes);
         if (null == type) {
           String msg = "Field '" + fieldName + "': Field type '" + fieldType + "' not found.";
           log.error(msg);
@@ -1306,7 +1309,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     SchemaField sf;
     if (isMutable) {
       try {
-        FieldType type = getFieldTypeByName(fieldType);
+        FieldType type = getFieldTypeByName(fieldType, fieldTypes);
         if (null == type) {
           String msg = "Dynamic field '" + fieldNamePattern + "': Field type '" + fieldType + "' not found.";
           log.error(msg);
@@ -1332,14 +1335,14 @@ public final class ManagedIndexSchema extends IndexSchema {
   }
 
   @Override
-  public FieldType newFieldType(String typeName, String className, Map<String, ?> options) {
+  public FieldType newFieldType(String typeName, String className, Map<String, ?> options, Map<String,FieldType> fieldTypes) {
     if (!isMutable) {
       String msg = "This ManagedIndexSchema is not mutable.";
       log.error(msg);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
 
-    if (getFieldTypeByName(typeName) != null) {
+    if (getFieldTypeByName(typeName, fieldTypes) != null) {
       String msg = "Field type '" + typeName + "' already exists.";
       log.error(msg);
       throw new SolrException(ErrorCode.BAD_REQUEST, msg);

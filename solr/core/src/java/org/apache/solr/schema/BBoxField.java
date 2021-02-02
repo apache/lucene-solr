@@ -77,8 +77,8 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   @Override
   public void inform(IndexSchema schema) {
     this.schema = schema;
-    FieldType numberType = schema.getFieldTypeByName(numberTypeName);
-    FieldType booleanType = schema.getFieldTypeByName(booleanTypeName);
+    FieldType numberType = schema.getFieldTypeByName(numberTypeName, schema.getFieldTypes());
+    FieldType booleanType = schema.getFieldTypeByName(booleanTypeName, schema.getFieldTypes());
 
     if (numberType == null) {
       throw new RuntimeException("Cannot find number fieldType: " + numberTypeName);
@@ -129,8 +129,8 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   @Override
   protected BBoxStrategy newSpatialStrategy(String fieldName) {
     //if it's a dynamic field, we register the sub-fields now.
-    FieldType numberType = schema.getFieldTypeByName(numberTypeName);
-    FieldType booleanType = schema.getFieldTypeByName(booleanTypeName);
+    FieldType numberType = schema.getFieldTypeByName(numberTypeName, schema.getFieldTypes());
+    FieldType booleanType = schema.getFieldTypeByName(booleanTypeName, schema.getFieldTypes());
     if (schema.isDynamicField(fieldName)) {
       registerSubFields(schema, fieldName, numberType, booleanType);
     }

@@ -45,12 +45,12 @@ public class                ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
     core.close();
     assertTrue( schema.getFieldTypes().containsKey("text_ws") );
     SimpleOrderedMap<Object> analyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text_ws")
+        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text_ws", schema.getFieldTypes())
         .getNamedPropertyValues(true).get("analyzer");
     checkTokenizerName(analyzerProps, "whitespace");
 
-    assertNotNull(schema.getFieldTypeByName("text_ws").getIndexAnalyzer());
-    assertNotNull(schema.getFieldTypeByName("text_ws").getQueryAnalyzer());
+    assertNotNull(schema.getFieldTypeByName("text_ws", schema.getFieldTypes()).getIndexAnalyzer());
+    assertNotNull(schema.getFieldTypeByName("text_ws", schema.getFieldTypes()).getQueryAnalyzer());
   }
 
   @Test
@@ -61,19 +61,19 @@ public class                ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
     assertTrue( schema.getFieldTypes().containsKey("text") );
 
     SimpleOrderedMap<Object> indexAnalyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text")
+        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text", schema.getFieldTypes())
             .getNamedPropertyValues(true).get("indexAnalyzer");
     checkTokenizerName(indexAnalyzerProps, "whitespace");
     checkTokenFilterNames(indexAnalyzerProps, new String[]{"stop", "wordDelimiterGraph", "lowercase", "keywordMarker", "porterStem", "removeDuplicates", "flattenGraph"});
 
     SimpleOrderedMap<Object> queryAnalyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text")
+        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("text", schema.getFieldTypes())
             .getNamedPropertyValues(true).get("queryAnalyzer");
     checkTokenizerName(queryAnalyzerProps, "whitespace");
     checkTokenFilterNames(queryAnalyzerProps, new String[]{"synonymGraph", "stop", "wordDelimiterGraph", "lowercase", "keywordMarker", "porterStem", "removeDuplicates"});
 
-    assertNotNull(schema.getFieldTypeByName("text").getIndexAnalyzer());
-    assertNotNull(schema.getFieldTypeByName("text").getQueryAnalyzer());
+    assertNotNull(schema.getFieldTypeByName("text", schema.getFieldTypes()).getIndexAnalyzer());
+    assertNotNull(schema.getFieldTypeByName("text", schema.getFieldTypes()).getQueryAnalyzer());
   }
 
   @Test
@@ -83,13 +83,13 @@ public class                ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
     core.close();
     assertTrue( schema.getFieldTypes().containsKey("charfilthtmlmap") );
     SimpleOrderedMap<Object> analyzerProps =
-        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("charfilthtmlmap")
+        (SimpleOrderedMap<Object>)schema.getFieldTypeByName("charfilthtmlmap", schema.getFieldTypes())
             .getNamedPropertyValues(true).get("analyzer");
     checkTokenizerName(analyzerProps, "whitespace");
     checkCharFilterNames(analyzerProps, new String[]{"htmlStrip", "mapping"});
 
-    assertNotNull(schema.getFieldTypeByName("charfilthtmlmap").getIndexAnalyzer());
-    assertNotNull(schema.getFieldTypeByName("charfilthtmlmap").getQueryAnalyzer());
+    assertNotNull(schema.getFieldTypeByName("charfilthtmlmap", schema.getFieldTypes()).getIndexAnalyzer());
+    assertNotNull(schema.getFieldTypeByName("charfilthtmlmap", schema.getFieldTypes()).getQueryAnalyzer());
   }
 
   @Test(expected = SolrException.class)

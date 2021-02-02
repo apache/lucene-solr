@@ -195,7 +195,7 @@ public class SchemaManager {
         if (op.hasError())
           return false;
         try {
-          FieldType fieldType = mgr.managedIndexSchema.newFieldType(name, className, op.getDataMap());
+          FieldType fieldType = mgr.managedIndexSchema.newFieldType(name, className, op.getDataMap(), mgr.managedIndexSchema.fieldTypes);
           mgr.managedIndexSchema = mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
           return true;
         } catch (Exception e) {
@@ -367,7 +367,7 @@ public class SchemaManager {
         String type = op.getStr(TYPE);
         if (op.hasError())
           return false;
-        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
+        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type, mgr.managedIndexSchema.fieldTypes);
         if (ft == null) {
           op.addError("No such field type '" + type + "'");
           return false;
@@ -387,7 +387,7 @@ public class SchemaManager {
         String type = op.getStr(TYPE);
         if (op.hasError())
           return false;
-        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type);
+        FieldType ft = mgr.managedIndexSchema.getFieldTypeByName(type, mgr.managedIndexSchema.fieldTypes);
         if (ft == null) {
           op.addError("No such field type '" + type + "'");
           return  false;

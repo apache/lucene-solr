@@ -1333,7 +1333,7 @@ public class IndexSchema {
     // Hmmm, default field could also be implemented with a dynamic field of "*".
     // It would have to be special-cased and only used if nothing else matched.
     /***  REMOVED -YCS
-    if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType);
+    if (defaultFieldType != null) return new SchemaField(fieldName,defaultFieldType, fields);
     ***/
     throw new SolrException(ErrorCode.BAD_REQUEST,"undefined field: \""+fieldName+"\"");
   }
@@ -1362,10 +1362,11 @@ public class IndexSchema {
   /**
    * Given the name of a {@link org.apache.solr.schema.FieldType} (not to be confused with {@link #getFieldType(String)} which
    * takes in the name of a field), return the {@link org.apache.solr.schema.FieldType}.
-   * @param fieldTypeName The name of the {@link org.apache.solr.schema.FieldType}
+   * @param fieldTypeName The name of the {@link FieldType}
+   * @param fieldTypes
    * @return The {@link org.apache.solr.schema.FieldType} or null.
    */
-  public FieldType getFieldTypeByName(String fieldTypeName){
+  public FieldType getFieldTypeByName(String fieldTypeName, Map<String,FieldType> fieldTypes){
     return fieldTypes.get(fieldTypeName);
   }
 
@@ -1927,7 +1928,7 @@ public class IndexSchema {
    * @param fieldTypeList a list of FieldTypes to add
    * @param persist to persist the schema or not
    * @return a new IndexSchema based on this schema with the new types added
-   * @see #newFieldType(String, String, Map)
+   * @see #newFieldType(String, String, Map, Map)
    */
   public IndexSchema addFieldTypes(List<FieldType> fieldTypeList, boolean persist) {
     String msg = "This IndexSchema is not mutable.";
@@ -1981,7 +1982,7 @@ public class IndexSchema {
    * @return The created FieldType
    * @see #addFieldTypes(java.util.List, boolean)
    */
-  public FieldType newFieldType(String typeName, String className, Map<String,?> options) {
+  public FieldType newFieldType(String typeName, String className, Map<String,?> options, Map<String,FieldType> fieldTypes) {
     String msg = "This IndexSchema is not mutable.";
     log.error(msg);
     throw new SolrException(ErrorCode.SERVER_ERROR, msg);

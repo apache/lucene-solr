@@ -455,7 +455,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
       {
         try {
           nerTaggerOp = OpenNLPOpsFactory.getNERTagger(modelFile);
-          FieldType fieldType = req.getSchema().getFieldTypeByName(analyzerFieldType);
+          FieldType fieldType = req.getSchema().getFieldTypeByName(analyzerFieldType, req.getSchema().getFieldTypes());
           if (fieldType == null) {
             throw new SolrException
                 (SERVER_ERROR, ANALYZER_FIELD_TYPE_PARAM + " '" + analyzerFieldType + "' not found in the schema.");

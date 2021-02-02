@@ -51,7 +51,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
       boolean PERSIST_FALSE = false; // don't write to test resource dir
       IndexSchema schema = core.getLatestSchema();
       schema = schema.addFieldTypes(Collections.singletonList(schema.newFieldType("textType", "solr.TextField", // redundant; TODO improve api
-          map("name", "textType", "class", "solr.TextField", "analyzer", map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")))), PERSIST_FALSE);
+          map("name", "textType", "class", "solr.TextField", "analyzer", map("class", "org.apache.lucene.analysis.standard.StandardAnalyzer")), schema.getFieldTypes())), PERSIST_FALSE);
       schema = schema.addFields(Arrays.asList(schema.newField(LAZY_FIELD, "textType", map()), schema.newField(BIG_FIELD, "textType", map("large", true))), Collections.emptyMap(), PERSIST_FALSE);
 
       core.setLatestSchema(schema);

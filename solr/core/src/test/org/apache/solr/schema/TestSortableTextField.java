@@ -60,7 +60,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       // these should all use docValues (either explicitly or implicitly)...
       for (String n : Arrays.asList("keyword_stxt", "whitespace_stxt", "whitespace_f_stxt", "whitespace_l_stxt")) {
 
-        FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+        FieldType ft = core.getLatestSchema().getFieldTypeByName(n, core.getLatestSchema().getFieldTypes());
         assertEquals("type " + ft.getTypeName() + " should have docvalues - schema got changed?", true, ft.getNamedPropertyValues(true).get("docValues"));
 
       }
@@ -391,7 +391,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     try (SolrCore core = h.getCore()) {
       for (String n : Arrays.asList("keyword_stxt", "whitespace_max0_stxt", "whitespace_max6_stxt")) {
         {
-          FieldType ft = core.getLatestSchema().getFieldTypeByName(n);
+          FieldType ft = core.getLatestSchema().getFieldTypeByName(n, core.getLatestSchema().getFieldTypes());
           assertEquals("type " + ft.getTypeName() + " should not default to useDocValuesAsStored", false, ft.useDocValuesAsStored());
         }
         {

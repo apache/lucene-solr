@@ -321,7 +321,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     public void populateValueClasses(SolrCore core) {
       IndexSchema schema = core.getLatestSchema();
       ClassLoader loader = core.getResourceLoader().getClassLoader();
-      if (null == schema.getFieldTypeByName(fieldTypeName)) {
+      if (null == schema.getFieldTypeByName(fieldTypeName, schema.getFieldTypes())) {
         throw new SolrException(SERVER_ERROR, "fieldType '" + fieldTypeName + "' not found in the schema");
       }
       valueClasses = Collections.synchronizedList(new ArrayList<>());

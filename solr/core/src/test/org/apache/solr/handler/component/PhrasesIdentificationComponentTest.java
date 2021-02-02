@@ -583,19 +583,19 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     core.close();
     
     assertEquals(3, PhrasesIdentificationComponent.getMaxShingleSize
-                 (schema.getFieldTypeByName("multigrams_3_7").getIndexAnalyzer()));
+                 (schema.getFieldTypeByName("multigrams_3_7", schema.getFieldTypes()).getIndexAnalyzer()));
     assertEquals(7, PhrasesIdentificationComponent.getMaxShingleSize
-                 (schema.getFieldTypeByName("multigrams_3_7").getQueryAnalyzer()));
+                 (schema.getFieldTypeByName("multigrams_3_7", schema.getFieldTypes()).getQueryAnalyzer()));
     
     assertEquals(3, PhrasesIdentificationComponent.getMaxShingleSize
-                 (schema.getFieldTypeByName("multigrams_3").getIndexAnalyzer()));
+                 (schema.getFieldTypeByName("multigrams_3", schema.getFieldTypes()).getIndexAnalyzer()));
     assertEquals(3, PhrasesIdentificationComponent.getMaxShingleSize
-                 (schema.getFieldTypeByName("multigrams_3").getQueryAnalyzer()));
+                 (schema.getFieldTypeByName("multigrams_3", schema.getFieldTypes()).getQueryAnalyzer()));
     
     assertEquals(-1, PhrasesIdentificationComponent.getMaxShingleSize
-                 (schema.getFieldTypeByName("text").getIndexAnalyzer()));
+                 (schema.getFieldTypeByName("text", schema.getFieldTypes()).getIndexAnalyzer()));
     assertEquals(-1, PhrasesIdentificationComponent.getMaxShingleSize
-                 (schema.getFieldTypeByName("text").getQueryAnalyzer()));
+                 (schema.getFieldTypeByName("text", schema.getFieldTypes()).getQueryAnalyzer()));
     
   }
   

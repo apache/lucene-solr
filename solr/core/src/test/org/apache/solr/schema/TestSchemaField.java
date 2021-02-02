@@ -42,7 +42,7 @@ public class TestSchemaField extends SolrTestCaseJ4 {
 
   private void assertFieldTypeFormats(String fieldTypeName, String expectedPostingsFormat, String expectedDocValuesFormat) {
     SolrCore core = h.getCore();
-    FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName);
+    FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName, core.getLatestSchema().getFieldTypes());
     core.close();
     assertNotNull("Field type " + fieldTypeName + " not found  - schema got changed?", ft);
     assertEquals("Field type " + ft.getTypeName() + " wrong " + FieldProperties.POSTINGS_FORMAT

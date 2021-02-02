@@ -58,18 +58,18 @@ public class TestXIncludeConfig extends SolrTestCaseJ4 {
     IndexSchema schema = core.getLatestSchema();
     
     // xinclude
-    assertNotNull("ft-included is null", schema.getFieldTypeByName("ft-included"));
+    assertNotNull("ft-included is null", schema.getFieldTypeByName("ft-included", schema.getFieldTypes()));
     assertNotNull("field-included is null", schema.getFieldOrNull("field-included"));
 
     // entity include
     assertNotNull("ft-entity-include1 is null", 
-                  schema.getFieldTypeByName("ft-entity-include1"));
+                  schema.getFieldTypeByName("ft-entity-include1", schema.getFieldTypes()));
     assertNotNull("ft-entity-include2 is null", 
-                  schema.getFieldTypeByName("ft-entity-include2"));
+                  schema.getFieldTypeByName("ft-entity-include2", schema.getFieldTypes()));
 
     // sanity check
     assertNull("ft-entity-include3 is not null",  // Does Not Exist Anywhere
-               schema.getFieldTypeByName("ft-entity-include3"));
+               schema.getFieldTypeByName("ft-entity-include3", schema.getFieldTypes()));
 
   }
 }

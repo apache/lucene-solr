@@ -407,7 +407,7 @@ class RetrieveFieldType {
     opts.put("name", name);
     this.solrTypeClass = solrClassMap.get(type);
     opts.put("class", solrTypeClass);
-    solrFieldType = schema.newFieldType(name, solrTypeClass, opts);
+    solrFieldType = schema.newFieldType(name, solrTypeClass, opts, schema.getFieldTypes());
     this.testType = type;
   }
 

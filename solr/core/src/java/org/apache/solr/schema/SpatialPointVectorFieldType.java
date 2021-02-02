@@ -16,8 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.legacy.LegacyFieldType;
@@ -54,7 +53,7 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
    */
   @Override
   public void inform(IndexSchema schema) {
-    FieldType fieldType = schema.getFieldTypeByName(numberFieldName);
+    FieldType fieldType = schema.getFieldTypeByName(numberFieldName, schema.getFieldTypes());
     if( fieldType == null ) {
       throw new RuntimeException( "Can not find number field: "+ numberFieldName);
     }
@@ -70,19 +69,17 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
     // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
     // to simplify the risk of back-compat break for existing users.
 
-    // TODO: this is not legal
-//    final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS | UNINVERTIBLE);
-//    List<SchemaField> newFields = new ArrayList<>();
-//    for( SchemaField sf : schema.getFields().values() ) {
-//      if( sf.getType() == this ) {
-//        String name = sf.getName();
-//        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_X, fieldType, p, null));
-//        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_Y, fieldType, p, null));
-//      }
-//    }
-//    for (SchemaField newField : newFields) {
-//      schema.getFields().put(newField.getName(), newField);
-//    }
+
+    final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS | UNINVERTIBLE);
+    Map<String,SchemaField> newFields = new HashMap<>(schema.getFields());
+    for( SchemaField sf : schema.getFields().values() ) {
+      if( sf.getType() == this ) {
+        String name = sf.getName();
+        newFields.put(name, new SchemaField(name + PointVectorStrategy.SUFFIX_X, fieldType, p, null));
+        newFields.put(name, new SchemaField(name + PointVectorStrategy.SUFFIX_Y, fieldType, p, null));
+      }
+    }
+    schema.setFields(newFields);
   }
 
   @Override

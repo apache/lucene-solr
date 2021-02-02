@@ -334,7 +334,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           doLocalAdd(cmd);
         } catch (Exception e) {
           if (distFuture != null && isLeader) {
-            distFuture.cancel(true);
+            distFuture.cancel(false);
             cancelCmds.add(cloneCmd);
           }
           if (e instanceof RuntimeException) {
@@ -961,7 +961,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         t = e;
       }
       if (distFuture != null && isLeader) {
-        distFuture.cancel(true);
+        distFuture.cancel(false);
         cancelCmds.add(cmd);
       }
       if (t instanceof SolrException) {

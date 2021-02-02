@@ -26,7 +26,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -60,7 +59,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     assertTrue("Didn't find the expected dynamic field", seen);
     FieldType homeFT = schema.getFieldType("home");
     assertEquals(home.getType(), homeFT);
-    FieldType xy = schema.getFieldTypeByName("xy");
+    FieldType xy = schema.getFieldTypeByName("xy", schema.getFieldTypes());
     assertNotNull(xy);
     assertTrue(xy instanceof PointType);
     assertTrue(xy.isPolyField());

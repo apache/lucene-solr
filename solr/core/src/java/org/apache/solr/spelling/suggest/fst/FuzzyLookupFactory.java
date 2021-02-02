@@ -76,7 +76,7 @@ public class FuzzyLookupFactory extends LookupFactory {
       throw new IllegalArgumentException("Error in configuration: " + AnalyzingLookupFactory.QUERY_ANALYZER + " parameter is mandatory");
     }
     // retrieve index and query analyzers for the field
-    FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName.toString());
+    FieldType ft = core.getLatestSchema().getFieldTypeByName(fieldTypeName.toString(), core.getLatestSchema().getFieldTypes());
     if (ft == null) {
       throw new IllegalArgumentException("Error in configuration: " + fieldTypeName.toString() + " is not defined in the schema");
     }

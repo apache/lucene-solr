@@ -139,7 +139,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
       assertTrue("Doesn't have a value: " + fields.get(i), hasValue);
     }
 
-    assertEquals(schema.getFieldTypeByName("string").toExternal(fields.get(2)), "1.50,EUR");
+    assertEquals(schema.getFieldTypeByName("string", schema.getFieldTypes()).toExternal(fields.get(2)), "1.50,EUR");
     
     // A few tests on the provider directly
     ExchangeRateProvider p = ((CurrencyFieldType)tmp).getProvider();

@@ -115,7 +115,7 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
             new BM25Similarity() :
             new LegacyBM25Similarity();
       } else {
-        FieldType defSimFT = core.getLatestSchema().getFieldTypeByName(defaultSimFromFieldType);
+        FieldType defSimFT = core.getLatestSchema().getFieldTypeByName(defaultSimFromFieldType, core.getLatestSchema().getFieldTypes());
         if (null == defSimFT) {
           throw new SolrException(ErrorCode.SERVER_ERROR,
                                   "SchemaSimilarityFactory configured with " + INIT_OPT + "='" +
