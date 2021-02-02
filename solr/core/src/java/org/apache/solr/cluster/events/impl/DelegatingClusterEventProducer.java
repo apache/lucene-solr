@@ -23,13 +23,18 @@ import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.NoOpProducer;
 import org.apache.solr.cluster.events.ClusterEventProducerBase;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This implementation allows Solr to dynamically change the underlying implementation
@@ -40,7 +45,7 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
 
   private ClusterEventProducer delegate;
   // support for tests to make sure the update is completed
-  private volatile int version;
+  private final AtomicInteger version = new AtomicInteger();
 
   public DelegatingClusterEventProducer(CoreContainer cc) {
     super(cc);
@@ -90,7 +95,10 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
         log.debug("--- delegate {} already in state {}", delegate, delegate.getState());
       }
     }
-    this.version++;
+    synchronized (version) {
+      version.incrementAndGet();
+      version.notifyAll();
+    }
   }
 
   @Override
@@ -144,7 +152,25 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   }
 
   @VisibleForTesting
-  public int getVersion() {
-    return version;
+  public int waitForVersionChange(int currentVersion, int timeoutSec) throws InterruptedException, TimeoutException {
+    TimeOut timeout = new TimeOut(timeoutSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    int newVersion = currentVersion;
+    while (! timeout.hasTimedOut()) {
+      synchronized (version) {
+        if ((newVersion = version.get()) != currentVersion) {
+          break;
+        }
+        version.wait(timeout.timeLeft(TimeUnit.MILLISECONDS));
+      }
+    }
+    if (newVersion < currentVersion) {
+      throw new RuntimeException("Invalid version - went back! currentVersion=" + currentVersion +
+              " newVersion=" + newVersion);
+    } else if (newVersion == currentVersion) {
+      throw new TimeoutException("Timed out waiting for version change.");
+    } else {
+      log.debug("--current version was {}, new version is {}", currentVersion, newVersion);
+      return newVersion;
+    }
   }
 }
