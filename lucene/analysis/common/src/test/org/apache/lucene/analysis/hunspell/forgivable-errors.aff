@@ -1,0 +1,9 @@
+REP 1
+REP foo bar goo doo zoo
+
+COMPOUNDWORDMAX 2 y
+
+KEEPCASE Aa
+
+SFX A Y 1
+SFX A   nout        l          [aeiouyáéíóúýůěr][^aeiouyáéíóúýůěrl][^aeiouy
