@@ -28,6 +28,7 @@ description = 'Solr distribution packaging'
 ext {
   distDir = file("$buildDir/solr-${version}")
   devDir = file("$buildDir/dev")
+  versionFile = "$buildDir/VERSION.txt"
 }
 
 configurations {
@@ -70,6 +71,15 @@ dependencies {
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
 
   docker project(path: ':solr:docker', configuration: 'packaging')
+}
+
+task constructVersionFile() {
+  outputs.file(versionFile)
+  inputs.property('version', project.version)
+
+  doLast {
+    project.file(versionFile) << project.version
+  }
 }
 
 distributions {
@@ -139,8 +149,7 @@ distributions {
         include "Dockerfile"
       })
 
-      file('VERSION').text = version
-      from(file('VERSION'))
+      from(tasks.constructVersionFile.outputs)
     }
   }
 }

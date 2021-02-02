@@ -47,7 +47,7 @@ RUN set -ex; \
 COPY --from=input /opt/solr /opt/solr
 
 RUN set -ex; \
-  export SOLR_VERSION="$(cat /opt/solr/VERSION)"; \
+  export SOLR_VERSION="$(cat /opt/solr/VERSION.txt)"; \
   (cd /opt; ln -s solr "solr-$SOLR_VERSION"); \
   mkdir -p /opt/solr/server/solr/lib /docker-entrypoint-initdb.d; \
   cp /opt/solr/bin/solr.in.sh /etc/default/solr.in.sh; \
