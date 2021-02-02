@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.placement.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
@@ -43,10 +44,12 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
     this.version++;
   }
 
+  @VisibleForTesting
   public PlacementPluginFactory<? extends PlacementPluginConfig> getDelegate() {
     return delegate;
   }
 
+  @VisibleForTesting
   public int getVersion() {
     return version;
   }
