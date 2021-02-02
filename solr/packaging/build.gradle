@@ -39,6 +39,7 @@ configurations {
   example
   server
   docs
+  docker
 }
 
 dependencies {
@@ -67,6 +68,8 @@ dependencies {
 
   // Copy files from documentation output
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
+
+  docker project(path: ':solr:docker', configuration: 'packaging')
 }
 
 distributions {
@@ -83,6 +86,7 @@ distributions {
           "**/bin/solr",
           "**/bin/init.d/solr",
           "**/bin/solr-exporter",
+          "**/docker/*",
       ]) { copy ->
         copy.setMode(0755)
       }
@@ -124,6 +128,15 @@ distributions {
 
       from(configurations.docs, {
         into "docs"
+      })
+
+      from(configurations.docker, {
+        exclude "Dockerfile"
+        into "docker"
+      })
+
+      from(configurations.docker, {
+        include "Dockerfile"
       })
     }
   }

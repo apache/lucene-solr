@@ -11,7 +11,7 @@ echo "Running solr in the background. Logs are in /var/solr/logs"
 SOLR_OPTS="-Djetty.host=${SOLR_LOCAL_HOST:-localhost}" solr start
 max_try=${MAX_TRY:-12}
 wait_seconds=${WAIT_SECONDS:-5}
-if ! /opt/docker-solr/scripts/wait-for-solr.sh --max-attempts "$max_try" --wait-seconds "$wait_seconds"; then
+if ! wait-for-solr.sh --max-attempts "$max_try" --wait-seconds "$wait_seconds"; then
     echo "Could not start Solr."
     if [ -f "/var/solr/logs/solr.log" ]; then
         echo "Here is the log:"

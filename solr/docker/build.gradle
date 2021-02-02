@@ -37,57 +37,59 @@ configurations {
   packaging {
     canBeResolved = true
   }
+  dockerContext {
+    canBeResolved = true
+  }
   dockerImage {
     canBeResolved = true
   }
 }
 
+ext {
+  packagingDir = file("${buildDir}/packaging")
+}
+
+
 dependencies {
-  packaging project(path: ":solr:packaging", configuration: 'archives')
+  packaging files(packagingDir) {
+    builtBy 'assemblePackaging'
+  }
+
+  dockerContext project(path: ":solr:packaging", configuration: 'archives')
 
   dockerImage files(imageIdFile) {
     builtBy 'dockerBuild'
   }
 }
 
-task dockerTar(type: Tar) {
-  group = 'Docker'
-  description = 'Package docker context to prepare for docker build'
+task assemblePackaging(type: Sync) {
+  description = 'Assemble docker scripts and Dockerfile for Solr Packaging'
 
-  dependsOn configurations.packaging
-  into('scripts') {
-    from file('scripts')
-    fileMode 755
-  }
-  into('releases') {
-    from configurations.packaging
-    include '*.tgz'
-  }
-  from file('Dockerfile')
-  destinationDirectory = file(dockerBuildDistribution)
-  extension 'tgz'
-  compression = Compression.GZIP
+  from(projectDir, {
+    include "Dockerfile"
+  })
+  from("$projectDir/scripts")
+
+  into packagingDir
 }
 
-task dockerBuild(dependsOn: tasks.dockerTar) {
+task dockerBuild(dependsOn: configurations.dockerContext) {
   group = 'Docker'
   description = 'Build Solr docker image'
 
   // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
   inputs.properties([
           baseDockerImage: baseDockerImage,
-          githubUrlOrMirror: githubUrlOrMirror,
-          version: version
+          githubUrlOrMirror: githubUrlOrMirror
   ])
-  inputs.dir(dockerBuildDistribution)
+  //inputs.files(configurations.dockerContext.files)
 
   doLast {
     exec {
-      standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
+      standardInput = configurations.dockerContext.files.
       commandLine "docker", "build",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
-              "--build-arg", "SOLR_VERSION=${version}",
               "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",
               "-"
     }

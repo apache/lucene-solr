@@ -4,8 +4,7 @@ FROM $BASE_IMAGE as input
 ARG SOLR_VERSION
 
 # ADD extracts tgz !
-ADD /releases/solr-$SOLR_VERSION.tgz /opt/
-COPY /scripts /scripts
+COPY . /opt/solr-$SOLR_VERSION
 
 # remove what we don't want; ensure permissions are right
 #  TODO; arguably these permissions should have been set correctly previously in the TAR
@@ -13,7 +12,7 @@ RUN set -ex; \
   rm -Rf /opt/solr-$SOLR_VERSION/docs /opt/solr-$SOLR_VERSION/dist/{solr-solrj-$SOLR_VERSION.jar,solrj-lib,solr-test-framework-$SOLR_VERSION.jar,test-framework}; \
   find "/opt/solr-$SOLR_VERSION" -type d -print0 | xargs -0 chmod 0755; \
   find "/opt/solr-$SOLR_VERSION" -type f -print0 | xargs -0 chmod 0644; \
-  chmod -R 0755 /scripts "/opt/solr-$SOLR_VERSION/bin" "/opt/solr-$SOLR_VERSION/contrib/prometheus-exporter/bin/solr-exporter" "/opt/solr-$SOLR_VERSION/server/scripts/cloud-scripts"
+  chmod -R 0755 "/opt/solr-$SOLR_VERSION/docker" "/opt/solr-$SOLR_VERSION/bin" "/opt/solr-$SOLR_VERSION/contrib/prometheus-exporter/bin/solr-exporter" "/opt/solr-$SOLR_VERSION/server/scripts/cloud-scripts"
 
 FROM $BASE_IMAGE
 
@@ -35,7 +34,7 @@ ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
     SOLR_GROUP="solr" \
     SOLR_GID="8983" \
-    PATH="/opt/solr/bin:/opt/docker-solr/scripts:/opt/solr/contrib/prometheus-exporter/bin:$PATH" \
+    PATH="/opt/solr/bin:/opt/solr/docker:/opt/solr/contrib/prometheus-exporter/bin:$PATH" \
     SOLR_INCLUDE=/etc/default/solr.in.sh \
     SOLR_HOME=/var/solr/data \
     SOLR_PID_DIR=/var/solr \
@@ -46,8 +45,6 @@ ENV SOLR_USER="solr" \
 RUN set -ex; \
   groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \
   useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"
-
-COPY --from=input scripts /opt/docker-solr/scripts
 
 ARG SOLR_VERSION
 

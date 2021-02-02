@@ -7,6 +7,6 @@ if [[ "$VERBOSE" == "yes" ]]; then
     set -x
 fi
 
-. /opt/docker-solr/scripts/run-initdb
+run-initdb
 
 exec solr-fg "$@"

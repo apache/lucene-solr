@@ -15,7 +15,7 @@ if [[ "${VERBOSE:-}" == "yes" ]]; then
     set -x
 fi
 
-. /opt/docker-solr/scripts/run-initdb
+run-initdb
 
 # solr uses "-c corename". Parse the arguments to determine the core name.
 CORE_NAME="$(

@@ -18,7 +18,7 @@ if ! [[ ${SOLR_PORT:-} =~ ^[0-9]+$ ]]; then
 fi
 
 # Essential for running Solr
-/opt/docker-solr/scripts/init-var-solr
+init-var-solr
 
 # when invoked with e.g.: docker run solr -help
 if [ "${1:0:1}" == '-' ]; then
@@ -27,7 +27,7 @@ fi
 
 # execute command passed in as arguments.
 # The Dockerfile has specified the PATH to include
-# /opt/solr/bin (for Solr) and /opt/docker-solr/scripts (for our scripts
+# /opt/solr/bin (for Solr) and /opt/solr/docker (for docker-specific scripts
 # like solr-foreground, solr-create, solr-precreate, solr-demo).
 # Note: if you specify "solr", you'll typically want to add -f to run it in
 # the foreground.
