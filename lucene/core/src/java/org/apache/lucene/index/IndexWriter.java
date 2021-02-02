@@ -5019,7 +5019,7 @@ public class IndexWriter
         // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove
         // all the 0-doc segments that we "merged":
         assert merge.info.info.maxDoc() == 0;
-        commitMerge(merge, mergeState);
+        success = commitMerge(merge, mergeState);
         success = true;
         return 0;
       }
