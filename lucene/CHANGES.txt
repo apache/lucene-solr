@@ -185,6 +185,9 @@ Improvements
 
 Bug fixes
 
+* LUCENE-9686: Fix read past EOF handling in DirectIODirectory. (Zach Chen, 
+  Julie Tibshirani)
+
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
