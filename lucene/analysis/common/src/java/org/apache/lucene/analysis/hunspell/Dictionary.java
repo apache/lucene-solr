@@ -17,14 +17,11 @@
 package org.apache.lucene.analysis.hunspell;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.OutputStream;
-import java.io.PushbackInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -32,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -212,19 +210,14 @@ public class Dictionary {
 
     Path tempPath = getDefaultTempDir(); // TODO: make this configurable?
     Path aff = Files.createTempFile(tempPath, "affix", "aff");
-    OutputStream out = new BufferedOutputStream(Files.newOutputStream(aff));
-    InputStream aff1 = null;
+
+    BufferedInputStream aff1 = null;
     InputStream aff2 = null;
     boolean success = false;
     try {
-      // copy contents of affix stream to temp file
-      final byte[] buffer = new byte[1024 * 8];
-      int len;
-      while ((len = affix.read(buffer)) > 0) {
-        out.write(buffer, 0, len);
-      }
-      out.close();
-
+      // Copy contents of the affix stream to a temp file.
+      Files.copy(affix, aff, StandardCopyOption.REPLACE_EXISTING);
+      
       // pass 1: get encoding & flag
       aff1 = new BufferedInputStream(Files.newInputStream(aff));
       readConfig(aff1);
@@ -241,7 +234,7 @@ public class Dictionary {
       morphAliases = null; // no longer needed
       success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(out, aff1, aff2);
+      IOUtils.closeWhileHandlingException(aff1, aff2);
       if (success) {
         Files.delete(aff);
       } else {
@@ -691,25 +684,26 @@ public class Dictionary {
     return fstCompiler.compile();
   }
 
+  private static final byte[] BOM_UTF8 = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
+
   /** Parses the encoding and flag format specified in the provided InputStream */
-  private void readConfig(InputStream affix) throws IOException, ParseException {
-    PushbackInputStream stream = new PushbackInputStream(affix);
-    while (true) {
-      int i = stream.read();
-      if (i < 0) {
-        return;
-      }
-      if (i != 0xEF && i != 0xBB && i != 0xBF) { // skip BOM
-        stream.unread(i);
-        break;
-      }
+  private void readConfig(BufferedInputStream stream) throws IOException, ParseException {
+    // I assume we don't support other BOMs (utf16, etc.)? We trivially could,
+    // by adding maybeConsume() with a proper bom... but I don't see hunspell repo to have
+    // any such exotic examples.
+    Charset streamCharset;
+    if (maybeConsume(stream, BOM_UTF8)) {
+      streamCharset = StandardCharsets.UTF_8;
+    } else {
+      streamCharset = DEFAULT_CHARSET;
     }
 
-    LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, DEFAULT_CHARSET));
-    while (true) {
-      String line = reader.readLine();
-      if (line == null) break;
-
+    // TODO: can these flags change throughout the file? If not then we can abort sooner. And
+    // then we wouldn't even need to create a temp file for the affix stream - a large enough
+    // leading buffer (BufferedInputStream) would be sufficient?
+    LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, streamCharset));
+    String line;
+    while ((line = reader.readLine()) != null) {
       String firstWord = line.split("\\s")[0];
       if ("SET".equals(firstWord)) {
         decoder = getDecoder(singleArgument(reader, line));
@@ -717,6 +711,24 @@ public class Dictionary {
         flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
       }
     }
+  }
+
+  /**
+   * Consume the provided byte sequence in full, if present. Otherwise leave the input stream
+   * intact.
+   *
+   * @return {@code true} if the sequence matched and has been consumed.
+   */
+  private static boolean maybeConsume(BufferedInputStream stream, byte[] bytes) throws IOException {
+    stream.mark(bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      int nextByte = stream.read();
+      if (nextByte != (bytes[i] & 0xff)) { // covers EOF (-1) as well.
+        stream.reset();
+        return false;
+      }
+    }
+    return true;
   }
 
   static final Map<String, String> CHARSET_ALIASES =
