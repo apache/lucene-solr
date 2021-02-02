@@ -78,10 +78,8 @@ public class CorePropertiesLocator implements CoresLocator {
       writePropertiesFile(cd, propFile);
     }
   }
-
-  // we have to be careful about writing and reading the same file without a lock
-  // this sync is a little heavy, but given it's a tiny file we are writing, should do for now
-  private synchronized void writePropertiesFile(CoreDescriptor cd, Path propfile)  {
+  
+  private void writePropertiesFile(CoreDescriptor cd, Path propfile)  {
     Properties p = buildCoreProperties(cd);
     try {
       FileUtils.createDirectories(propfile.getParent()); // Handling for symlinks.
