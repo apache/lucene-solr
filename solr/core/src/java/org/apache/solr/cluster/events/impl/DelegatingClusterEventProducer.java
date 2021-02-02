@@ -22,7 +22,7 @@ import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.NoOpProducer;
 import org.apache.solr.cluster.events.ClusterEventProducerBase;
-import org.apache.solr.cluster.events.VersionTracker;
+import org.apache.solr.cluster.VersionTracker;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;

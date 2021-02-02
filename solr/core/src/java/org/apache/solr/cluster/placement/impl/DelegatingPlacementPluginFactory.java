@@ -17,7 +17,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.solr.cluster.events.VersionTracker;
+import org.apache.solr.cluster.VersionTracker;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;

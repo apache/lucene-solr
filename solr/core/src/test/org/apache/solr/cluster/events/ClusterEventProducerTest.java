@@ -24,6 +24,8 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cluster.VersionTracker;
+import org.apache.solr.cluster.VersionTrackerImpl;
 import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
 import org.apache.solr.cluster.events.impl.DelegatingClusterEventProducer;
 import org.apache.solr.common.cloud.ClusterProperties;

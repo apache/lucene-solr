@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.events;
+package org.apache.solr.cluster;
 
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;

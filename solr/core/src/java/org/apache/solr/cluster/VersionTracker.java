@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cluster.events;
+package org.apache.solr.cluster;
 
 import java.util.concurrent.TimeoutException;
 
