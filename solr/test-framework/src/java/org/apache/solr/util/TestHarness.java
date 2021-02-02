@@ -83,11 +83,11 @@ public class TestHarness extends BaseTestHarness {
    * follows the basic conventions of being a relative path in the solrHome 
    * dir. (ie: <code>${solrHome}/${coreName}/conf/${confFile}</code>
    */
-  public static SolrConfig createConfig(Path solrHome, String coreName, String confFile) {
+  public static SolrConfig createConfig(Path solrHome, String coreName, String confFile, SolrResourceLoader loader) {
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    try (SolrResourceLoader loader = new SolrResourceLoader(solrHome.resolve(coreName))) {
+    try {
       return new SolrConfig(loader, confFile);
     } catch (Exception xany) {
       ParWork.propagateInterrupt(xany);
@@ -96,10 +96,10 @@ public class TestHarness extends BaseTestHarness {
   }
   
   /**
-   * Creates a SolrConfig object for the default test core using {@link #createConfig(Path,String,String)}
+   * Creates a SolrConfig object for the default test core using {@link #createConfig(Path,String,String,SolrResourceLoader)}
    */
-  public static SolrConfig createConfig(Path solrHome, String confFile) {
-    return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
+  public static SolrConfig createConfig(Path solrHome, String confFile, SolrResourceLoader loader) {
+    return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile, loader);
   }
 
   /**

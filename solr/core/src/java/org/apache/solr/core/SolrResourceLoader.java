@@ -179,6 +179,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     Configuration conf = Configuration.newConfiguration();
     conf.setNamePool(this.conf.getNamePool());
     conf.setDocumentNumberAllocator(this.conf.getDocumentNumberAllocator());
+    conf.setXIncludeAware(true);
+    conf.setExpandAttributeDefaults(false);
+    conf.setValidation(false);
     ourConf = conf;
   }
 

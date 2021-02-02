@@ -39,6 +39,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -49,7 +50,7 @@ import org.apache.solr.SolrTestCase;
 public class TestFieldCacheWithThreads extends SolrTestCase {
 
   public void test() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
 
     final int numDocs = TEST_NIGHTLY ? atLeast(100) : 20;
@@ -150,7 +151,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
   public void test2() throws Exception {
     Random random = random();
     final int NUM_DOCS = TEST_NIGHTLY ? atLeast(100) : 20;
-    final Directory dir = newDirectory();
+    final Directory dir = new ByteBuffersDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     final boolean allowDups = random.nextBoolean();
     final Set<String> seen = new HashSet<>();

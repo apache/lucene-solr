@@ -92,6 +92,7 @@ public class TestTaxonomyFacetAssociations extends FacetTestCase {
     taxoReader = null;
     taxoDir.close();
     taxoDir = null;
+    config = null;
   }
   
   public void testIntSumAssociation() throws Exception {

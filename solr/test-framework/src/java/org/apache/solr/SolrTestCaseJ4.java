@@ -167,7 +167,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static volatile String coreName = DEFAULT_TEST_CORENAME;
 
   protected static volatile String initialRootLogLevel;
-  //protected static SolrResourceLoader loader;
+  protected static SolrResourceLoader loader;
 
   protected void writeCoreProperties(Path coreDirectory, String corename) throws IOException {
     Properties props = new Properties();
@@ -251,6 +251,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       schemaString = null;
       solrConfig = null;
       configString = null;
+      loader = null;
       System.clearProperty("solr.v2RealPath");
       System.clearProperty("zookeeper.forceSync");
       System.clearProperty("jetty.testMode");
@@ -606,8 +607,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static void createCore() {
     assertNotNull(testSolrHome);
-
-    solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile());
+    loader = new SolrResourceLoader(testSolrHome.resolve(coreName));
+    solrConfig = TestHarness.createConfig(testSolrHome, coreName, getSolrConfigFile(), loader);
     h = new TestHarness( coreName, hdfsDataDir == null ? initAndGetDataDir().getAbsolutePath() : hdfsDataDir,
             solrConfig,
             getSchemaFile());

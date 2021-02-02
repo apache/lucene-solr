@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -114,16 +115,17 @@ public class BBoxField extends AbstractSpatialFieldType<BBoxStrategy> implements
   // note: Registering the field is probably optional; it makes it show up in the schema browser and may have other
   //  benefits.
   private void register(IndexSchema schema, String name, FieldType fieldType) {
-    // TODO: this is not legal
-//    int props = fieldType.properties;
-//    if(storeSubFields) {
-//      props |= STORED;
-//    }
-//    else {
-//      props &= ~STORED;
-//    }
-//    SchemaField sf = new SchemaField(name, fieldType, props, null);
-//    schema.getFields().put(sf.getName(), sf);
+    int props = fieldType.properties;
+    if(storeSubFields) {
+      props |= STORED;
+    }
+    else {
+      props &= ~STORED;
+    }
+    SchemaField sf = new SchemaField(name, fieldType, props, null);
+    Map<String,SchemaField> fields = new HashMap<>(schema.getFields());
+    fields.put(sf.getName(), sf);
+    schema.setFields(fields);
   }
 
   @Override

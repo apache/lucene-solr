@@ -59,7 +59,7 @@ public class CloudConfigSetService extends ConfigSetService {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Trouble resolving configSet for collection " + colName + ": " + ex.getMessage());
     }
 
-    return new ZkSolrResourceLoader(cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(), zkController);
+    return new ZkSolrResourceLoader(cd.getInstanceDir(), configSetName, null, zkController);
   }
 
   @Override

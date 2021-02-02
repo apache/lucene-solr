@@ -65,10 +65,6 @@ public class XmlConfigFile { // formerly simply "Config"
 
   public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
-  protected final static ThreadLocal<XPath> THREAD_LOCAL_XPATH = new ThreadLocal<>();
-
-
-
   protected final String prefix;
   private final String name;
   protected final SolrResourceLoader loader;
@@ -159,11 +155,11 @@ public class XmlConfigFile { // formerly simply "Config"
         } else {
           po.setEntityResolver(null);
         }
-        po.setXIncludeAware(true);
-        po.setCheckEntityReferences(false);
-        po.setExpandAttributeDefaults(false);
-        po.setDTDValidationMode(Validation.STRIP);
-        po.setPleaseCloseAfterUse(true);
+     //   po.setXIncludeAware(true);
+      //  po.setCheckEntityReferences(false);
+       // po.setExpandAttributeDefaults(false);
+      //  po.setDTDValidationMode(Validation.STRIP);
+        //po.setPleaseCloseAfterUse(true);
         Sender.send(source, builder, po);
         docTree = (TinyDocumentImpl) builder.getCurrentRoot();
       } catch (Exception e) {

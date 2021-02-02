@@ -99,9 +99,9 @@ public class StatePublisher implements Closeable {
               bulkMessage(message, bulkMessage);
             }
 
-            while (message != null) {
+            while (message != null && !terminated) {
               try {
-                message = workQueue.poll(30, TimeUnit.MILLISECONDS);
+                message = workQueue.poll(15, TimeUnit.MILLISECONDS);
               } catch (InterruptedException e) {
 
               }

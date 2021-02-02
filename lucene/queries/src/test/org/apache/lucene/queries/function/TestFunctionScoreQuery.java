@@ -61,6 +61,8 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
+    reader = null;
+    searcher = null;
   }
 
   public void testEqualities() {

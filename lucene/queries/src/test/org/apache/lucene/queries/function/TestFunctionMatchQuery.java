@@ -43,6 +43,8 @@ public class TestFunctionMatchQuery extends FunctionTestSetup {
   @AfterClass
   public static void afterClass() throws Exception {
     reader.close();
+    reader = null;
+    searcher = null;
   }
 
   public void testRangeMatching() throws IOException {

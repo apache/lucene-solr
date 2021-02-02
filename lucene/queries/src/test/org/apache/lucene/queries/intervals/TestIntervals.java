@@ -81,15 +81,19 @@ public class TestIntervals extends LuceneTestCase {
 
   private static Directory directory;
   private static IndexSearcher searcher;
-  private static Analyzer analyzer = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+  private static Analyzer analyzer;
+  private static FieldType FIELD_TYPE;
 
-  private static final FieldType FIELD_TYPE = new FieldType(TextField.TYPE_STORED);
-  static {
-    FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-  }
 
   @BeforeClass
   public static void setupIndex() throws IOException {
+    analyzer = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+
+    FIELD_TYPE = new FieldType(TextField.TYPE_STORED);
+
+    FIELD_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+
+
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
@@ -108,6 +112,12 @@ public class TestIntervals extends LuceneTestCase {
   @AfterClass
   public static void teardownIndex() throws IOException {
     IOUtils.close(searcher.getIndexReader(), directory);
+    searcher = null;
+    directory = null;
+    analyzer = null;
+    FIELD_TYPE = null;
+    field1_docs = null;
+    field2_docs = null;
   }
 
   private void checkIntervals(IntervalsSource source, String field, int expectedMatchCount, int[][] expected) throws IOException {

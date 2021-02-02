@@ -16,11 +16,15 @@
  */
 package org.apache.solr.spelling.suggest;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -187,11 +191,13 @@ public class SolrSuggester implements Accountable {
     }
     if (storeDir != null) {
       File target = getStoreFile();
-      if(!lookup.store(new FileOutputStream(target))) {
-        log.error("Store Lookup build failed");
-      } else {
-        if (log.isInfoEnabled()) {
-          log.info("Stored suggest data to: {}", target.getAbsolutePath());
+      try (OutputStream out = new BufferedOutputStream(new FileOutputStream(target))) {
+        if (!lookup.store(out)) {
+          log.error("Store Lookup build failed");
+        } else {
+          if (log.isInfoEnabled()) {
+            log.info("Stored suggest data to: {}", target.getAbsolutePath());
+          }
         }
       }
     }
@@ -204,7 +210,7 @@ public class SolrSuggester implements Accountable {
       File lookupFile = getStoreFile();
       if (lookupFile.exists()) {
         // this may be a firstSearcher event, try loading it
-        FileInputStream is = new FileInputStream(lookupFile);
+        InputStream is = new BufferedInputStream(new FileInputStream(lookupFile));
         try {
           if (lookup.load(is)) {
             return;  // loaded ok

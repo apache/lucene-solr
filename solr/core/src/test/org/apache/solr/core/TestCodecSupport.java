@@ -227,7 +227,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     String newCoreName = "core_with_default_compression";
     SolrCore c = null;
     
-    SolrConfig config = TestHarness.createConfig(testSolrHome, previousCoreName, "solrconfig_codec2.xml");
+    SolrConfig config = TestHarness.createConfig(testSolrHome, previousCoreName, "solrconfig_codec2.xml", loader);
     assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
     String path = IndexSchema.normalize("codecFactory", config.getPrefix());
     assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 

@@ -70,6 +70,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   private String exchangeRateProviderClass;
   private String defaultCurrency;
   private ExchangeRateProvider provider;
+  private volatile boolean schemaInformed;
+  private volatile boolean resourceLoaderInformed;
 
   /**
    * A wrapper around <code>Currency.getInstance</code> that returns null
@@ -167,9 +169,9 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     CurrencyValue value = CurrencyValue.parse(externalVal.toString(), defaultCurrency);
 
     List<IndexableField> f = new ArrayList<>();
-    SchemaField amountField = getAmountField(field);
+    SchemaField amountField = getAmountField(schema, field, fieldSuffixAmountRaw);
     f.add(amountField.createField(String.valueOf(value.getAmount())));
-    SchemaField currencyField = getCurrencyField(field);
+    SchemaField currencyField = getCurrencyField(schema, field, fieldSuffixCurrency);
     f.add(currencyField.createField(value.getCurrencyCode()));
 
     if (field.stored()) {
@@ -182,12 +184,12 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
 
     return f;
   }
-  
-  private SchemaField getAmountField(SchemaField field) {
+
+  private static  SchemaField getAmountField(IndexSchema schema, SchemaField field, String fieldSuffixAmountRaw) {
     return schema.getField(field.getName() + POLY_FIELD_SEPARATOR + fieldSuffixAmountRaw);
   }
 
-  private SchemaField getCurrencyField(SchemaField field) {
+  private static SchemaField getCurrencyField(IndexSchema schema, SchemaField field, String fieldSuffixCurrency) {
     return schema.getField(field.getName() + POLY_FIELD_SEPARATOR + fieldSuffixCurrency);
   }
 
@@ -201,6 +203,12 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   @Override
   public void inform(IndexSchema schema) {
     this.schema = schema;
+
+    if (this.schemaInformed) {
+      return;
+    }
+    this.schemaInformed = true;
+
     if (null == fieldTypeAmountRaw) {
       assert null != fieldSuffixAmountRaw : "How did we get here?";
       SchemaField field = schema.getFieldOrNull(POLY_FIELD_SEPARATOR + fieldSuffixAmountRaw);
@@ -238,6 +246,12 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    */
   @Override
   public void inform(ResourceLoader resourceLoader) {
+
+    if (this.resourceLoaderInformed) {
+      return;
+    }
+    this.resourceLoaderInformed = true;
+
     provider.inform(resourceLoader);
     boolean reloaded = provider.reload();
     if(!reloaded) {
@@ -279,9 +293,10 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    */
   public RawCurrencyValueSource getValueSource(SchemaField field,
                                                QParser parser) {
-    getAmountField(field).checkFieldCacheSource();
-    getCurrencyField(field).checkFieldCacheSource();
-    return new RawCurrencyValueSource(field, defaultCurrency, parser);
+    getAmountField(schema, field, fieldSuffixAmountRaw).checkFieldCacheSource();
+    getCurrencyField(schema, field, fieldSuffixCurrency).checkFieldCacheSource();
+    return new RawCurrencyValueSource(field, defaultCurrency, parser, schema, fieldSuffixAmountRaw,
+        fieldSuffixCurrency, defaultCurrency, provider);
   }
 
   /**
@@ -313,7 +328,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       targetCurrencyCode = defaultCurrency;
     }
     return new ConvertedCurrencyValueSource(targetCurrencyCode,
-        source);
+        source, provider);
   }
 
   /**
@@ -322,7 +337,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   @Override
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     // Use an existence query of the underlying amount field
-    SchemaField amountField = getAmountField(field);
+    SchemaField amountField = getAmountField(schema, field, fieldSuffixAmountRaw);
     return amountField.getType().getExistenceQuery(parser, amountField);
   }
 
@@ -345,9 +360,10 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 
     // ValueSourceRangeFilter doesn't check exists(), so we have to
-    final Query docsWithValues = new DocValuesFieldExistsQuery(getAmountField(field).getName());
+    final Query docsWithValues = new DocValuesFieldExistsQuery(getAmountField(schema, field, fieldSuffixAmountRaw).getName());
     final Query vsRangeFilter = new ValueSourceRangeFilter
-        (new RawCurrencyValueSource(field, currencyCode, parser),
+        (new RawCurrencyValueSource(field, currencyCode, parser, schema, fieldSuffixAmountRaw,
+            fieldSuffixCurrency, defaultCurrency, provider),
             p1 == null ? null : p1.getAmount() + "",
             p2 == null ? null : p2.getAmount() + "",
             minInclusive, maxInclusive);
@@ -359,7 +375,8 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
   @Override
   public SortField getSortField(SchemaField field, boolean reverse) {
     // Convert all values to default currency for sorting.
-    return (new RawCurrencyValueSource(field, defaultCurrency, null)).getSortField(reverse);
+    return (new RawCurrencyValueSource(field, defaultCurrency, null, schema, 
+        fieldSuffixAmountRaw, fieldSuffixCurrency, defaultCurrency, provider)).getSortField(reverse);
   }
 
   @Override
@@ -383,12 +400,12 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * </p>
    * @see RawCurrencyValueSource
    */
-  class ConvertedCurrencyValueSource extends ValueSource {
+  static class ConvertedCurrencyValueSource extends ValueSource {
     private final Currency targetCurrency;
     private final RawCurrencyValueSource source;
     private final double rate;
     public ConvertedCurrencyValueSource(String targetCurrencyCode,
-                                        RawCurrencyValueSource source) {
+                                        RawCurrencyValueSource source, ExchangeRateProvider provider) {
       this.source = source;
       this.targetCurrency = getCurrency(targetCurrencyCode);
       if (null == targetCurrency) {
@@ -409,40 +426,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       // become the source digits & currency of ourselves
       final String sourceCurrencyCode = source.getTargetCurrency().getCurrencyCode();
       final double divisor = Math.pow(10D, targetCurrency.getDefaultFractionDigits());
-      return new FunctionValues() {
-        @Override
-        public boolean exists(int doc) throws IOException {
-          return amounts.exists(doc);
-        }
-        @Override
-        public long longVal(int doc) throws IOException {
-          return (long) doubleVal(doc);
-        }
-        @Override
-        public int intVal(int doc) throws IOException {
-          return (int) doubleVal(doc);
-        }
-
-        @Override
-        public double doubleVal(int doc) throws IOException {
-          return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / divisor;
-        }
-
-        @Override
-        public float floatVal(int doc) throws IOException {
-          return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / ((float)divisor);
-        }
-
-        @Override
-        public String strVal(int doc) throws IOException {
-          return Double.toString(doubleVal(doc));
-        }
-
-        @Override
-        public String toString(int doc) throws IOException {
-          return name() + '(' + strVal(doc) + ')';
-        }
-      };
+      return new MyFunctionValues(amounts, sourceCurrencyCode, divisor, targetCurrency, rate, name());
     }
     public String name() {
       return "currency";
@@ -473,6 +457,60 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       result = 31 * (int) Double.doubleToLongBits(rate);
       return result;
     }
+
+    private static class MyFunctionValues extends FunctionValues {
+      private final FunctionValues amounts;
+      private final String sourceCurrencyCode;
+      private final double divisor;
+      private final Currency targetCurrency;
+
+      private final double rate;
+      private final String name;
+
+      public MyFunctionValues(FunctionValues amounts, String sourceCurrencyCode, double divisor, Currency targetCurrency, double rate, String name) {
+        this.targetCurrency = targetCurrency;
+        this.rate = rate;
+        this.name = name;
+        this.amounts = amounts;
+        this.sourceCurrencyCode = sourceCurrencyCode;
+        this.divisor = divisor;
+      }
+
+      @Override
+      public boolean exists(int doc) throws IOException {
+        return amounts.exists(doc);
+      }
+
+      @Override
+      public long longVal(int doc) throws IOException {
+        return (long) doubleVal(doc);
+      }
+
+      @Override
+      public int intVal(int doc) throws IOException {
+        return (int) doubleVal(doc);
+      }
+
+      @Override
+      public double doubleVal(int doc) throws IOException {
+        return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / divisor;
+      }
+
+      @Override
+      public float floatVal(int doc) throws IOException {
+        return CurrencyValue.convertAmount(rate, sourceCurrencyCode, amounts.longVal(doc), targetCurrency.getCurrencyCode()) / ((float) divisor);
+      }
+
+      @Override
+      public String strVal(int doc) throws IOException {
+        return Double.toString(doubleVal(doc));
+      }
+
+      @Override
+      public String toString(int doc) throws IOException {
+        return name + '(' + strVal(doc) + ')';
+      }
+    }
   }
 
   /**
@@ -489,22 +527,32 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * </p>
    * @see ConvertedCurrencyValueSource
    */
-  class RawCurrencyValueSource extends ValueSource {
-    private static final long serialVersionUID = 1L;
+  static class RawCurrencyValueSource extends ValueSource {
     private final Currency targetCurrency;
+    private final IndexSchema schema;
+    private final String fieldSuffixAmountRaw;
+    private final String fieldSuffixCurrency;
+    private final String defaultCurrency;
+    private final ExchangeRateProvider provider;
     private ValueSource currencyValues;
     private ValueSource amountValues;
     private final SchemaField sf;
 
-    public RawCurrencyValueSource(SchemaField sfield, String targetCurrencyCode, QParser parser) {
+    public RawCurrencyValueSource(SchemaField sfield, String targetCurrencyCode, QParser parser, IndexSchema schema,
+        String fieldSuffixAmountRaw, String fieldSuffixCurrency, String defaultCurrency, ExchangeRateProvider provider) {
+      this.provider = provider;
+      this.defaultCurrency = defaultCurrency;
+      this.fieldSuffixAmountRaw = fieldSuffixAmountRaw;
+      this.fieldSuffixCurrency = fieldSuffixCurrency;
       this.sf = sfield;
+      this.schema = schema;
       this.targetCurrency = getCurrency(targetCurrencyCode);
       if (null == targetCurrency) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Currency code not supported by this JVM: " + targetCurrencyCode);
       }
 
-      SchemaField amountField = getAmountField(sf);
-      SchemaField currencyField = getCurrencyField(sf);
+      SchemaField amountField = getAmountField(schema, sf, fieldSuffixAmountRaw);
+      SchemaField currencyField = getCurrencyField(schema, sf, fieldSuffixCurrency);
 
       currencyValues = currencyField.getType().getValueSource(currencyField, parser);
       amountValues = amountField.getType().getValueSource(amountField, parser);
@@ -518,132 +566,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       final FunctionValues amounts = amountValues.getValues(context, reader);
       final FunctionValues currencies = currencyValues.getValues(context, reader);
 
-      return new FunctionValues() {
-        private static final int MAX_CURRENCIES_TO_CACHE = 256;
-        private final int[] fractionDigitCache = new int[MAX_CURRENCIES_TO_CACHE];
-        private final String[] currencyOrdToCurrencyCache = new String[MAX_CURRENCIES_TO_CACHE];
-        private final double[] exchangeRateCache = new double[MAX_CURRENCIES_TO_CACHE];
-        private int targetFractionDigits = -1;
-        private int targetCurrencyOrd = -1;
-        private boolean initializedCache;
-
-        private String getDocCurrencyCode(int doc, int currencyOrd) throws IOException {
-          if (currencyOrd < MAX_CURRENCIES_TO_CACHE) {
-            String currency = currencyOrdToCurrencyCache[currencyOrd];
-
-            if (currency == null) {
-              currencyOrdToCurrencyCache[currencyOrd] = currency = currencies.strVal(doc);
-            }
-
-            if (currency == null) {
-              currency = defaultCurrency;
-            }
-
-            if (targetCurrencyOrd == -1 &&
-                currency.equals(targetCurrency.getCurrencyCode() )) {
-              targetCurrencyOrd = currencyOrd;
-            }
-
-            return currency;
-          } else {
-            return currencies.strVal(doc);
-          }
-        }
-        /** throws a (Server Error) SolrException if the code is not valid */
-        private Currency getDocCurrency(int doc, int currencyOrd) throws IOException {
-          String code = getDocCurrencyCode(doc, currencyOrd);
-          Currency c = getCurrency(code);
-          if (null == c) {
-            throw new SolrException
-                (SolrException.ErrorCode.SERVER_ERROR,
-                    "Currency code of document is not supported by this JVM: "+code);
-          }
-          return c;
-        }
-
-        @Override
-        public boolean exists(int doc) throws IOException {
-          return amounts.exists(doc);
-        }
-
-        @Override
-        public long longVal(int doc) throws IOException {
-          long amount = amounts.longVal(doc);
-          // bail fast using whatever amounts defaults to if no value
-          // (if we don't do this early, currencyOrd may be < 0, 
-          // causing index bounds exception
-          if ( ! exists(doc) ) {
-            return amount;
-          }
-
-          if (!initializedCache) {
-            for (int i = 0; i < fractionDigitCache.length; i++) {
-              fractionDigitCache[i] = -1;
-            }
-
-            initializedCache = true;
-          }
-
-          int currencyOrd = currencies.ordVal(doc);
-
-          if (currencyOrd == targetCurrencyOrd) {
-            return amount;
-          }
-
-          double exchangeRate;
-          int sourceFractionDigits;
-
-          if (targetFractionDigits == -1) {
-            targetFractionDigits = targetCurrency.getDefaultFractionDigits();
-          }
-
-          if (currencyOrd < MAX_CURRENCIES_TO_CACHE) {
-            exchangeRate = exchangeRateCache[currencyOrd];
-
-            if (exchangeRate <= 0.0) {
-              String sourceCurrencyCode = getDocCurrencyCode(doc, currencyOrd);
-              exchangeRate = exchangeRateCache[currencyOrd] = provider.getExchangeRate(sourceCurrencyCode, targetCurrency.getCurrencyCode());
-            }
-
-            sourceFractionDigits = fractionDigitCache[currencyOrd];
-
-            if (sourceFractionDigits == -1) {
-              sourceFractionDigits = fractionDigitCache[currencyOrd] = getDocCurrency(doc, currencyOrd).getDefaultFractionDigits();
-            }
-          } else {
-            Currency source = getDocCurrency(doc, currencyOrd);
-            exchangeRate = provider.getExchangeRate(source.getCurrencyCode(), targetCurrency.getCurrencyCode());
-            sourceFractionDigits = source.getDefaultFractionDigits();
-          }
-
-          return CurrencyValue.convertAmount(exchangeRate, sourceFractionDigits, amount, targetFractionDigits);
-        }
-
-        @Override
-        public int intVal(int doc) throws IOException {
-          return (int) longVal(doc);
-        }
-
-        @Override
-        public double doubleVal(int doc) throws IOException {
-          return (double) longVal(doc);
-        }
-
-        @Override
-        public float floatVal(int doc) throws IOException {
-          return (float) longVal(doc);
-        }
-
-        @Override
-        public String strVal(int doc) throws IOException {
-          return Long.toString(longVal(doc));
-        }
-
-        @Override
-        public String toString(int doc) throws IOException {
-          return name() + '(' + amounts.toString(doc) + ',' + currencies.toString(doc) + ')';
-        }
-      };
+      return new MyFunctionValues(name(), currencies, amounts, defaultCurrency, provider, targetCurrency);
     }
 
     public String name() {
@@ -675,6 +598,155 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
       result = 31 * result + (currencyValues != null ? currencyValues.hashCode() : 0);
       result = 31 * result + (amountValues != null ? amountValues.hashCode() : 0);
       return result;
+    }
+
+    private static class MyFunctionValues extends FunctionValues {
+      private static final int MAX_CURRENCIES_TO_CACHE = 256;
+      private final int[] fractionDigitCache;
+      private final String[] currencyOrdToCurrencyCache;
+      private final double[] exchangeRateCache;
+      private final FunctionValues currencies;
+      private final FunctionValues amounts;
+      private final String defaultCurrency;
+      private final ExchangeRateProvider provider;
+      private final Currency targetCurrency;
+      private final String name;
+      private int targetFractionDigits;
+      private int targetCurrencyOrd;
+      private boolean initializedCache;
+
+      public MyFunctionValues(String name, FunctionValues currencies, FunctionValues amounts,
+          String defaultCurrency, ExchangeRateProvider provider, Currency targetCurrency) {
+        this.name = name;
+        this.currencies = currencies;
+        this.amounts = amounts;
+        this.provider = provider;
+        this.targetCurrency = targetCurrency;
+        this.defaultCurrency = defaultCurrency;
+        fractionDigitCache = new int[MAX_CURRENCIES_TO_CACHE];
+        currencyOrdToCurrencyCache = new String[MAX_CURRENCIES_TO_CACHE];
+        exchangeRateCache = new double[MAX_CURRENCIES_TO_CACHE];
+        targetFractionDigits = -1;
+        targetCurrencyOrd = -1;
+      }
+
+      private String getDocCurrencyCode(int doc, int currencyOrd) throws IOException {
+        if (currencyOrd < MAX_CURRENCIES_TO_CACHE) {
+          String currency = currencyOrdToCurrencyCache[currencyOrd];
+
+          if (currency == null) {
+            currencyOrdToCurrencyCache[currencyOrd] = currency = currencies.strVal(doc);
+          }
+
+          if (currency == null) {
+            currency = defaultCurrency;
+          }
+
+          if (targetCurrencyOrd == -1 &&
+              currency.equals(targetCurrency.getCurrencyCode() )) {
+            targetCurrencyOrd = currencyOrd;
+          }
+
+          return currency;
+        } else {
+          return currencies.strVal(doc);
+        }
+      }
+
+      /** throws a (Server Error) SolrException if the code is not valid */
+      private Currency getDocCurrency(int doc, int currencyOrd) throws IOException {
+        String code = getDocCurrencyCode(doc, currencyOrd);
+        Currency c = getCurrency(code);
+        if (null == c) {
+          throw new SolrException
+              (ErrorCode.SERVER_ERROR,
+                  "Currency code of document is not supported by this JVM: "+code);
+        }
+        return c;
+      }
+
+      @Override
+      public boolean exists(int doc) throws IOException {
+        return amounts.exists(doc);
+      }
+
+      @Override
+      public long longVal(int doc) throws IOException {
+        long amount = amounts.longVal(doc);
+        // bail fast using whatever amounts defaults to if no value
+        // (if we don't do this early, currencyOrd may be < 0,
+        // causing index bounds exception
+        if ( ! exists(doc) ) {
+          return amount;
+        }
+
+        if (!initializedCache) {
+          for (int i = 0; i < fractionDigitCache.length; i++) {
+            fractionDigitCache[i] = -1;
+          }
+
+          initializedCache = true;
+        }
+
+        int currencyOrd = currencies.ordVal(doc);
+
+        if (currencyOrd == targetCurrencyOrd) {
+          return amount;
+        }
+
+        double exchangeRate;
+        int sourceFractionDigits;
+
+        if (targetFractionDigits == -1) {
+          targetFractionDigits = targetCurrency.getDefaultFractionDigits();
+        }
+
+        if (currencyOrd < MAX_CURRENCIES_TO_CACHE) {
+          exchangeRate = exchangeRateCache[currencyOrd];
+
+          if (exchangeRate <= 0.0) {
+            String sourceCurrencyCode = getDocCurrencyCode(doc, currencyOrd);
+            exchangeRate = exchangeRateCache[currencyOrd] = provider.getExchangeRate(sourceCurrencyCode, targetCurrency.getCurrencyCode());
+          }
+
+          sourceFractionDigits = fractionDigitCache[currencyOrd];
+
+          if (sourceFractionDigits == -1) {
+            sourceFractionDigits = fractionDigitCache[currencyOrd] = getDocCurrency(doc, currencyOrd).getDefaultFractionDigits();
+          }
+        } else {
+          Currency source = getDocCurrency(doc, currencyOrd);
+          exchangeRate = provider.getExchangeRate(source.getCurrencyCode(), targetCurrency.getCurrencyCode());
+          sourceFractionDigits = source.getDefaultFractionDigits();
+        }
+
+        return CurrencyValue.convertAmount(exchangeRate, sourceFractionDigits, amount, targetFractionDigits);
+      }
+
+      @Override
+      public int intVal(int doc) throws IOException {
+        return (int) longVal(doc);
+      }
+
+      @Override
+      public double doubleVal(int doc) throws IOException {
+        return (double) longVal(doc);
+      }
+
+      @Override
+      public float floatVal(int doc) throws IOException {
+        return (float) longVal(doc);
+      }
+
+      @Override
+      public String strVal(int doc) throws IOException {
+        return Long.toString(longVal(doc));
+      }
+
+      @Override
+      public String toString(int doc) throws IOException {
+        return name + '(' + amounts.toString(doc) + ',' + currencies.toString(doc) + ')';
+      }
     }
   }
 

@@ -92,6 +92,8 @@ public class TestTaxonomyFacetCounts2 extends FacetTestCase {
   public static void afterClassCountingFacetsAggregatorTest() throws Exception {
     IOUtils.close(indexDir, taxoDir); 
     indexDir = taxoDir = null;
+    allExpectedCounts = null;
+    termExpectedCounts = null;
   }
   
   private static List<FacetField> randomCategories(Random random) {

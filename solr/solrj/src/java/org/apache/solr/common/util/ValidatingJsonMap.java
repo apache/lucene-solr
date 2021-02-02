@@ -301,7 +301,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
   public static ValidatingJsonMap getDeepCopy(Map map, int maxDepth, boolean mutable) {
     if (map == null) return null;
     if (maxDepth < 1) return ValidatingJsonMap.wrap(map);
-    ValidatingJsonMap copy = new ValidatingJsonMap( map.size() );
+    ValidatingJsonMap copy = new ValidatingJsonMap( map.size() + 16 );
     for (Object o : map.entrySet()) {
       Map.Entry<String, Object> e = (Entry<String, Object>) o;
       Object v = e.getValue();
@@ -329,7 +329,7 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
     return new ObjectBuilder(jp) {
       @Override
       public Object newObject() throws IOException {
-        return new ValidatingJsonMap(8);
+        return new ValidatingJsonMap(12);
       }
     };
   }
