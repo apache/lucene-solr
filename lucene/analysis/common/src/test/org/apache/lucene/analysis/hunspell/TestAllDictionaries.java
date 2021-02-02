@@ -21,8 +21,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
-import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
@@ -41,15 +41,13 @@ import org.junit.Ignore;
 @SuppressSysoutChecks(bugUrl = "prints important memory utilization stats per dictionary")
 public class TestAllDictionaries extends LuceneTestCase {
 
-  private static List<Path> findAllAffixFiles() throws IOException {
+  static Stream<Path> findAllAffixFiles() throws IOException {
     String dicDir = System.getProperty("hunspell.dictionaries");
     Assume.assumeFalse("Missing -Dhunspell.dictionaries=...", dicDir == null);
-    return Files.walk(Path.of(dicDir), 2)
-        .filter(f -> f.toString().endsWith(".aff"))
-        .collect(Collectors.toList());
+    return Files.walk(Path.of(dicDir), 2).filter(f -> f.toString().endsWith(".aff"));
   }
 
-  private static Dictionary loadDictionary(Path aff) throws IOException, ParseException {
+  static Dictionary loadDictionary(Path aff) throws IOException, ParseException {
     String affPath = aff.toString();
     Path dic = Path.of(affPath.substring(0, affPath.length() - 4) + ".dic");
     assert Files.exists(dic) : dic;
@@ -62,7 +60,7 @@ public class TestAllDictionaries extends LuceneTestCase {
 
   public void testDictionariesLoadSuccessfully() throws Exception {
     int failures = 0;
-    for (Path aff : findAllAffixFiles()) {
+    for (Path aff : findAllAffixFiles().collect(Collectors.toList())) {
       try {
         System.out.println(aff + "\t" + memoryUsage(loadDictionary(aff)));
       } catch (Throwable e) {
