@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
 import org.apache.solr.cluster.events.impl.DelegatingClusterEventProducer;
@@ -57,6 +56,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 @LogLevel("org.apache.solr.cluster.events=DEBUG")
 public class ClusterEventProducerTest extends SolrCloudTestCase {
   private AllEventsListener eventsListener;
+  private VersionTracker versionTracker;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -72,6 +72,12 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     cluster.deleteAllCollections();
     eventsListener = new AllEventsListener();
     cluster.getOpenOverseer().getCoreContainer().getClusterEventProducer().registerListener(eventsListener);
+    ClusterEventProducer clusterEventProducer = cluster.getOpenOverseer().getCoreContainer().getClusterEventProducer();
+    assertTrue("not a delegating producer? " + clusterEventProducer.getClass(),
+            clusterEventProducer instanceof DelegatingClusterEventProducer);
+    DelegatingClusterEventProducer wrapper = (DelegatingClusterEventProducer) clusterEventProducer;
+    versionTracker = new VersionTrackerImpl();
+    wrapper.setVersionTracker(versionTracker);
   }
 
   @After
@@ -97,7 +103,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testEvents() throws Exception {
-    int version = waitForVersionChange(-1, 10);
+    int version = versionTracker.waitForVersionChange(-1, 10);
 
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
@@ -109,7 +115,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
 
-    version = waitForVersionChange(version, 10);
+    version = versionTracker.waitForVersionChange(version, 10);
 
     // NODES_DOWN
 
@@ -276,7 +282,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testListenerPlugins() throws Exception {
-    int version = waitForVersionChange(-1, 10);
+    int version = versionTracker.waitForVersionChange(-1, 10);
 
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
@@ -287,7 +293,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    version = waitForVersionChange(version, 10);
+    version = versionTracker.waitForVersionChange(version, 10);
 
     plugin = new PluginMeta();
     plugin.name = "testplugin";
@@ -345,7 +351,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .withPayload(Collections.singletonMap("remove", ClusterEventProducer.PLUGIN_NAME))
         .build();
     req.process(cluster.getSolrClient());
-    version = waitForVersionChange(version, 10);
+    version = versionTracker.waitForVersionChange(version, 10);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
@@ -366,7 +372,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    version = waitForVersionChange(version, 10);
+    version = versionTracker.waitForVersionChange(version, 10);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
@@ -378,17 +384,5 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     }
     assertNotNull("lastEvent should be COLLECTIONS_REMOVED", lastEvent);
     assertEquals("lastEvent should be COLLECTIONS_REMOVED", ClusterEvent.EventType.COLLECTIONS_REMOVED, lastEvent.getType());
-  }
-
-  private int waitForVersionChange(int currentVersion, int timeoutSec) throws Exception {
-    Overseer overseer = cluster.getOpenOverseer();
-    if (overseer == null) {
-      throw new Exception("no overseer");
-    }
-    ClusterEventProducer clusterEventProducer = overseer.getCoreContainer().getClusterEventProducer();
-    assertTrue("not a delegating producer? " + clusterEventProducer.getClass(),
-        clusterEventProducer instanceof DelegatingClusterEventProducer);
-    DelegatingClusterEventProducer wrapper = (DelegatingClusterEventProducer) clusterEventProducer;
-    return wrapper.waitForVersionChange(currentVersion, timeoutSec);
   }
 }
