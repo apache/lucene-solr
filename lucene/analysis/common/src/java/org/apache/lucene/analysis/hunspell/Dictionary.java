@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -216,8 +217,10 @@ public class Dictionary {
     boolean success = false;
     try {
       // Copy contents of the affix stream to a temp file.
-      Files.copy(affix, aff, StandardCopyOption.REPLACE_EXISTING);
-      
+      try (OutputStream os = Files.newOutputStream(aff)) {
+        affix.transferTo(os);
+      }
+
       // pass 1: get encoding & flag
       aff1 = new BufferedInputStream(Files.newInputStream(aff));
       readConfig(aff1);
