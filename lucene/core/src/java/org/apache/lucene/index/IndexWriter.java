@@ -5020,7 +5020,6 @@ public class IndexWriter
         // all the 0-doc segments that we "merged":
         assert merge.info.info.maxDoc() == 0;
         success = commitMerge(merge, mergeState);
-        success = true;
         return 0;
       }
 
