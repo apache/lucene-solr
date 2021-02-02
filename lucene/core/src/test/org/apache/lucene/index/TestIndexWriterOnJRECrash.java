@@ -154,32 +154,7 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
    */
   public boolean checkIndexes(Path path) throws IOException {
     final AtomicBoolean found = new AtomicBoolean();
-    Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
-      @Override
-      public FileVisitResult postVisitDirectory(Path dirPath, IOException exc) throws IOException {
-        if (exc != null) {
-          throw exc;
-        } else {
-          try (BaseDirectoryWrapper dir = newFSDirectory(dirPath)) {
-            dir.setCheckIndexOnClose(false); // don't double-checkindex
-            if (DirectoryReader.indexExists(dir)) {
-              if (VERBOSE) {
-                System.err.println("Checking index: " + dirPath);
-              }
-              // LUCENE-4738: if we crashed while writing first
-              // commit it's possible index will be corrupt (by
-              // design we don't try to be smart about this case
-              // since that too risky):
-              if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
-                TestUtil.checkIndex(dir);
-              }
-              found.set(true);
-            }
-          }
-          return FileVisitResult.CONTINUE;
-        }
-      }
-    });
+    Files.walkFileTree(path, new PathSimpleFileVisitor(found));
     return found.get();
   }
 
@@ -218,5 +193,38 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
 
     // We couldn't get the JVM to crash for some reason.
     fail();
+  }
+
+  private static class PathSimpleFileVisitor extends SimpleFileVisitor<Path> {
+    private final AtomicBoolean found;
+
+    public PathSimpleFileVisitor(AtomicBoolean found) {
+      this.found = found;
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(Path dirPath, IOException exc) throws IOException {
+      if (exc != null) {
+        throw exc;
+      } else {
+        try (BaseDirectoryWrapper dir = newFSDirectory(dirPath)) {
+          dir.setCheckIndexOnClose(false); // don't double-checkindex
+          if (DirectoryReader.indexExists(dir)) {
+            if (VERBOSE) {
+              System.err.println("Checking index: " + dirPath);
+            }
+            // LUCENE-4738: if we crashed while writing first
+            // commit it's possible index will be corrupt (by
+            // design we don't try to be smart about this case
+            // since that too risky):
+            if (SegmentInfos.getLastCommitGeneration(dir) > 1) {
+              TestUtil.checkIndex(dir);
+            }
+            found.set(true);
+          }
+        }
+        return FileVisitResult.CONTINUE;
+      }
+    }
   }
 }

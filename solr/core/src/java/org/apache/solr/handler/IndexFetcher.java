@@ -48,6 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
@@ -1560,7 +1561,7 @@ public class IndexFetcher {
     while (Files.exists(dir.toPath())) {
 
       try {
-        Files.walk(dir.toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        Files.walk(dir.toPath()).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
       } catch (NoSuchFileException e) {
 
       } catch (IOException e) {

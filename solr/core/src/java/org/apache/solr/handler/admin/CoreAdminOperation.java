@@ -74,73 +74,77 @@ import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
 enum CoreAdminOperation implements CoreAdminOp {
 
-  CREATE_OP(CREATE, it -> {
-    SolrParams params = it.req.getParams();
-    log().info("core create command {}", params);
-    String coreName = params.required().get(CoreAdminParams.NAME);
-    MDCLoggingContext.setCoreName(coreName);
-    try {
+  CREATE_OP(CREATE, new CoreAdminOp() {
+    @Override
+    public void execute(CallInfo it) throws Exception {
 
-      assert TestInjection.injectRandomDelayInCoreCreation();
+      SolrParams params = it.req.getParams();
+      log().info("core create command {}", params);
+      String coreName = params.required().get(CoreAdminParams.NAME);
+      MDCLoggingContext.setCoreName(coreName);
+      try {
 
-      Map<String,String> coreParams = buildCoreParams(params);
-      CoreContainer coreContainer = it.handler.coreContainer;
-      Path instancePath;
+        assert TestInjection.injectRandomDelayInCoreCreation();
 
-      // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
-      String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
-      if (instanceDir == null) instanceDir = it.req.getParams().get("property.instanceDir");
-      if (instanceDir != null) {
-        instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties(), new HashMap(System.getProperties()));
-        instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
-      } else {
-        instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
+        Map<String,String> coreParams = buildCoreParams(params);
+        CoreContainer coreContainer = it.handler.coreContainer;
+        Path instancePath;
+
+        // TODO: Should we nuke setting odd instance paths?  They break core discovery, generally
+        String instanceDir = it.req.getParams().get(CoreAdminParams.INSTANCE_DIR);
+        if (instanceDir == null) instanceDir = it.req.getParams().get("property.instanceDir");
+        if (instanceDir != null) {
+          instanceDir = PropertiesUtil.substituteProperty(instanceDir, coreContainer.getContainerProperties(), new HashMap(System.getProperties()));
+          instancePath = coreContainer.getCoreRootDirectory().resolve(instanceDir).normalize();
+        } else {
+          instancePath = coreContainer.getCoreRootDirectory().resolve(coreName);
+        }
+
+        boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
+        if (coreContainer.isShutDown()) {
+          log().warn("Will not create SolrCore, CoreContainer is shutdown");
+          throw new AlreadyClosedException("Will not create SolrCore, CoreContainer is shutdown");
+        }
+        long start = System.nanoTime();
+        coreContainer.create(coreName, instancePath, coreParams, newCollection);
+        log().info("SolrCore {} created in {}ms", coreName, TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
+
+        it.rsp.add("core", coreName);
+      } finally {
+        MDCLoggingContext.clear();
       }
-
-      boolean newCollection = params.getBool(CoreAdminParams.NEW_COLLECTION, false);
-      if (coreContainer.isShutDown()) {
-        log().warn("Will not create SolrCore, CoreContainer is shutdown");
-        throw new AlreadyClosedException("Will not create SolrCore, CoreContainer is shutdown");
-      }
-      long start = System.nanoTime();
-      coreContainer.create(coreName, instancePath, coreParams, newCollection);
-      log().info("SolrCore {} created in {}ms", coreName, TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
-
-      it.rsp.add("core", coreName);
-    } finally {
-      MDCLoggingContext.clear();
     }
   }),
-  UNLOAD_OP(UNLOAD, it -> {
-    SolrParams params = it.req.getParams();
-    String cname = params.required().get(CoreAdminParams.CORE);
+  UNLOAD_OP(UNLOAD, new CoreAdminOp() {
+    @Override
+    public void execute(CallInfo it) throws Exception {
+      SolrParams params = it.req.getParams();
+      String cname = params.required().get(CoreAdminParams.CORE);
 
-    boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, true);
-    boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, true);
-    boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true);
-    boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
-    CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
-    it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
-    if (deleteMetricsHistory) {
-      MetricsHistoryHandler historyHandler = it.handler.coreContainer.getMetricsHistoryHandler();
-      if (historyHandler != null) {
-        CloudDescriptor cd = cdescr != null ? cdescr.getCloudDescriptor() : null;
-        String registry;
-        if (cd == null) {
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cname);
-        } else {
-          String replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), cname);
-          registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core,
-              cd.getCollectionName(),
-              cd.getShardId(),
-              replicaName);
+      boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, true);
+      boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, true);
+      boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true);
+      boolean deleteMetricsHistory = params.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
+      CoreDescriptor cdescr = it.handler.coreContainer.getCoreDescriptor(cname);
+      it.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+      if (deleteMetricsHistory) {
+        MetricsHistoryHandler historyHandler = it.handler.coreContainer.getMetricsHistoryHandler();
+        if (historyHandler != null) {
+          CloudDescriptor cd = cdescr != null ? cdescr.getCloudDescriptor() : null;
+          String registry;
+          if (cd == null) {
+            registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cname);
+          } else {
+            String replicaName = Utils.parseMetricsReplicaName(cd.getCollectionName(), cname);
+            registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, cd.getCollectionName(), cd.getShardId(), replicaName);
+          }
+          historyHandler.checkSystemCollection();
+          historyHandler.removeHistory(registry);
         }
-        historyHandler.checkSystemCollection();
-        historyHandler.removeHistory(registry);
       }
-    }
 
-    assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
+      assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
+    }
   }),
   RELOAD_OP(RELOAD, it -> {
     SolrParams params = it.req.getParams();

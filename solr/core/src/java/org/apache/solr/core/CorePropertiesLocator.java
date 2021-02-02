@@ -134,34 +134,7 @@ public class CorePropertiesLocator implements CoresLocator {
       Set<FileVisitOption> options = new HashSet<>();
       options.add(FileVisitOption.FOLLOW_LINKS);
       final int maxDepth = 256;
-      Files.walkFileTree(this.rootDirectory, options, maxDepth, new SimpleFileVisitor<Path>() {
-        @Override
-        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-          if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
-            CoreDescriptor cd = buildCoreDescriptor(file, cc);
-            if (cd != null) {
-              if (log.isDebugEnabled()) {
-                log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
-              }
-              cds.add(cd);
-            }
-            return FileVisitResult.SKIP_SIBLINGS;
-          }
-          return FileVisitResult.CONTINUE;
-        }
-
-        @Override
-        public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
-          // if we get an error on the root, then fail the whole thing
-          // otherwise, log a warning and continue to try and load other cores
-          if (file.equals(rootDirectory)) {
-            log.error("Error reading core root directory {}: {}", file, exc);
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading core root directory");
-          }
-          log.warn("Error visiting {}: {}", file, exc);
-          return FileVisitResult.CONTINUE;
-        }
-      });
+      Files.walkFileTree(this.rootDirectory, options, maxDepth, new PathSimpleFileVisitor(cc, cds, rootDirectory));
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Couldn't walk file tree under " + this.rootDirectory, e);
     }
@@ -176,28 +149,6 @@ public class CorePropertiesLocator implements CoresLocator {
     return cds;
   }
 
-  protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
-
-    Path instanceDir = propertiesFile.getParent();
-    Properties coreProperties = new Properties();
-    try (InputStream fis = Files.newInputStream(propertiesFile)) {
-      coreProperties.load(new InputStreamReader(fis, StandardCharsets.UTF_8));
-      String name = createName(coreProperties, instanceDir);
-      Map<String, String> propMap = new HashMap<>();
-      for (String key : coreProperties.stringPropertyNames()) {
-        propMap.put(key, coreProperties.getProperty(key));
-      }
-      CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.getZkController());
-      ret.loadExtraProperties();
-      return ret;
-    }
-    catch (IOException e) {
-      log.error("Couldn't load core descriptor from {}:", propertiesFile, e);
-      return null;
-    }
-
-  }
-
   protected static String createName(Properties p, Path instanceDir) {
     return p.getProperty(CoreDescriptor.CORE_NAME, instanceDir.getFileName().toString());
   }
@@ -209,4 +160,64 @@ public class CorePropertiesLocator implements CoresLocator {
     return p;
   }
 
+  private static class PathSimpleFileVisitor extends SimpleFileVisitor<Path> {
+    private final CoreContainer cc;
+    private final List<CoreDescriptor> cds;
+    private final Path rootDirectory;
+
+    public PathSimpleFileVisitor(CoreContainer cc, List<CoreDescriptor> cds, Path rootDirectory) {
+      this.cc = cc;
+      this.cds = cds;
+      this.rootDirectory = rootDirectory;
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+      if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
+        CoreDescriptor cd = buildCoreDescriptor(file, cc);
+        if (cd != null) {
+          if (log.isDebugEnabled()) {
+            log.debug("Found core {} in {}", cd.getName(), cd.getInstanceDir());
+          }
+          cds.add(cd);
+        }
+        return FileVisitResult.SKIP_SIBLINGS;
+      }
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+      // if we get an error on the root, then fail the whole thing
+      // otherwise, log a warning and continue to try and load other cores
+      if (file.equals(rootDirectory)) {
+        log.error("Error reading core root directory {}: {}", file, exc);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading core root directory");
+      }
+      log.warn("Error visiting {}: {}", file, exc);
+      return FileVisitResult.CONTINUE;
+    }
+
+    protected CoreDescriptor buildCoreDescriptor(Path propertiesFile, CoreContainer cc) {
+
+      Path instanceDir = propertiesFile.getParent();
+      Properties coreProperties = new Properties();
+      try (InputStream fis = Files.newInputStream(propertiesFile)) {
+        coreProperties.load(new InputStreamReader(fis, StandardCharsets.UTF_8));
+        String name = createName(coreProperties, instanceDir);
+        Map<String, String> propMap = new HashMap<>();
+        for (String key : coreProperties.stringPropertyNames()) {
+          propMap.put(key, coreProperties.getProperty(key));
+        }
+        CoreDescriptor ret = new CoreDescriptor(name, instanceDir, propMap, cc.getContainerProperties(), cc.getZkController());
+        ret.loadExtraProperties();
+        return ret;
+      }
+      catch (IOException e) {
+        log.error("Couldn't load core descriptor from {}:", propertiesFile, e);
+        return null;
+      }
+
+    }
+  }
 }

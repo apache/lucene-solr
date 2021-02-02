@@ -48,7 +48,8 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
   /** Label used to define the name of the
    * sortField used in the {@link #WEIGHT_EXPRESSION} */
   public static final String SORT_FIELD = "sortField";
-  
+  private volatile LongValuesSource fromExp;
+
   @Override
   public Dictionary create(SolrCore core, SolrIndexSearcher searcher) {
     if(params == null) {
@@ -76,9 +77,10 @@ public class DocumentExpressionDictionaryFactory extends DictionaryFactory {
         sortFields.add(getSortField(core, sortFieldName));
       }
     }
-   
-    return new DocumentValueSourceDictionary(searcher.getIndexReader(), field, fromExpression(weightExpression,
-        sortFields), payloadField);
+    if (fromExp == null) {
+      fromExp = fromExpression(weightExpression, sortFields);
+    }
+    return new DocumentValueSourceDictionary(searcher.getIndexReader(), field, fromExp, payloadField);
   }
 
   public LongValuesSource fromExpression(String weightExpression, Set<SortField> sortFields) {

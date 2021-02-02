@@ -147,7 +147,8 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     r.close();
     dir.close();
   }
-  
+
+  @Nightly // can generate a lot of garbage
   public void test2() throws Exception {
     Random random = random();
     final int NUM_DOCS = TEST_NIGHTLY ? atLeast(100) : 20;

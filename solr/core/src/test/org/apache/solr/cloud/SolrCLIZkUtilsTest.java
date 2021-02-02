@@ -725,30 +725,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   }
 
   void verifyAllFilesAreZNodes(Path fileRoot, String zkRoot) throws IOException {
-    Files.walkFileTree(fileRoot, new SimpleFileVisitor<Path>() {
-      void checkPathOnZk(Path path) {
-        String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
-        try { // It's easier to catch this exception and fail than catch it everywher eles.
-          assertTrue("Should have found " + znode + " on Zookeeper", zkClient.exists(znode));
-        } catch (Exception e) {
-          fail("Caught unexpected exception " + e.getMessage() + " Znode we were checking " + znode);
-        }
-      }
-
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        assertTrue("Path should start at proper place!", file.startsWith(fileRoot));
-        checkPathOnZk(file);
-        return FileVisitResult.CONTINUE;
-      }
-
-      @Override
-      public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-
-        checkPathOnZk(dir);
-        return FileVisitResult.CONTINUE;
-      }
-    });
+    Files.walkFileTree(fileRoot, new PathSimpleFileVisitor(zkRoot, fileRoot));
   }
 
   // Insure that all znodes in first are in second and vice-versa
@@ -764,6 +741,39 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
       String sNode = second + "/" + node;
       assertTrue("Node " + sNode + " not found. Exists on " + fNode, zkClient.exists(sNode));
       verifyFirstZNodesInSecond(fNode, sNode);
+    }
+  }
+
+  private static class PathSimpleFileVisitor extends SimpleFileVisitor<Path> {
+    private final String zkRoot;
+    private final Path fileRoot;
+
+    public PathSimpleFileVisitor(String zkRoot, Path fileRoot) {
+      this.zkRoot = zkRoot;
+      this.fileRoot = fileRoot;
+    }
+
+    void checkPathOnZk(Path path) {
+      String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
+      try { // It's easier to catch this exception and fail than catch it everywher eles.
+        assertTrue("Should have found " + znode + " on Zookeeper", zkClient.exists(znode));
+      } catch (Exception e) {
+        fail("Caught unexpected exception " + e.getMessage() + " Znode we were checking " + znode);
+      }
+    }
+
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+      assertTrue("Path should start at proper place!", file.startsWith(fileRoot));
+      checkPathOnZk(file);
+      return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+
+      checkPathOnZk(dir);
+      return FileVisitResult.CONTINUE;
     }
   }
 }

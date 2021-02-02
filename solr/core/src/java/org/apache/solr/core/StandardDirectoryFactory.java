@@ -111,7 +111,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     Path dirFile = Paths.get(cacheValue.path);
     while (Files.exists(dirFile)) {
       try {
-        Files.walk(dirFile).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+        Files.walk(dirFile).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
       } catch (NoSuchFileException e) {
 
       }

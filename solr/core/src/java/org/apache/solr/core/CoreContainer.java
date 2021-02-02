@@ -145,6 +145,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 /**
  * @since solr 1.3
@@ -1611,7 +1612,7 @@ public class CoreContainer implements Closeable {
               try {
                 while (new File(dataDir).exists()) {
                   try {
-                    Files.walk(new File(dataDir).toPath()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+                    Files.walk(new File(dataDir).toPath()).sorted(Comparator.reverseOrder()).forEach(new FileConsumer());
                   } catch (NoSuchFileException e) {
 
                   }
@@ -1720,34 +1721,34 @@ public class CoreContainer implements Closeable {
 
   // ---------------- Core name related methods ---------------
 
-  private CoreDescriptor reloadCoreDescriptor(CoreDescriptor oldDesc) {
-    if (oldDesc == null) {
-      return null;
-    }
-
-    CorePropertiesLocator cpl = new CorePropertiesLocator(null);
-    CoreDescriptor ret = cpl.buildCoreDescriptor(oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
-
-    // Ok, this little jewel is all because we still create core descriptors on the fly from lists of properties
-    // in tests particularly. Theoretically, there should be _no_ way to create a CoreDescriptor in the new world
-    // of core discovery without writing the core.properties file out first.
-    //
-    // TODO: remove core.properties from the conf directory in test files, it's in a bad place there anyway.
-    if (ret == null) {
-      oldDesc.loadExtraProperties(); // there may be changes to extra properties that we need to pick up.
-      return oldDesc;
-
-    }
-    // The CloudDescriptor bit here is created in a very convoluted way, requiring access to private methods
-    // in ZkController. When reloading, this behavior is identical to what used to happen where a copy of the old
-    // CoreDescriptor was just re-used.
-
-    if (ret.getCloudDescriptor() != null) {
-      ret.getCloudDescriptor().reload(oldDesc.getCloudDescriptor());
-    }
-
-    return ret;
-  }
+//  private CoreDescriptor reloadCoreDescriptor(CoreDescriptor oldDesc) {
+//    if (oldDesc == null) {
+//      return null;
+//    }
+//
+//    CorePropertiesLocator cpl = new CorePropertiesLocator(null);
+//    CoreDescriptor ret = cpl.buildCoreDescriptor(oldDesc.getInstanceDir().resolve(PROPERTIES_FILENAME), this);
+//
+//    // Ok, this little jewel is all because we still create core descriptors on the fly from lists of properties
+//    // in tests particularly. Theoretically, there should be _no_ way to create a CoreDescriptor in the new world
+//    // of core discovery without writing the core.properties file out first.
+//    //
+//    // TODO: remove core.properties from the conf directory in test files, it's in a bad place there anyway.
+//    if (ret == null) {
+//      oldDesc.loadExtraProperties(); // there may be changes to extra properties that we need to pick up.
+//      return oldDesc;
+//
+//    }
+//    // The CloudDescriptor bit here is created in a very convoluted way, requiring access to private methods
+//    // in ZkController. When reloading, this behavior is identical to what used to happen where a copy of the old
+//    // CoreDescriptor was just re-used.
+//
+//    if (ret.getCloudDescriptor() != null) {
+//      ret.getCloudDescriptor().reload(oldDesc.getCloudDescriptor());
+//    }
+//
+//    return ret;
+//  }
 
   /**
    * Recreates a SolrCore.
@@ -2038,7 +2039,7 @@ public class CoreContainer implements Closeable {
         try {
           while (Files.exists(cd.getInstanceDir())) {
             try {
-              Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+              Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).forEach(new FileConsumer());
             } catch (NoSuchFileException e) {
 
             }
@@ -2361,6 +2362,16 @@ public class CoreContainer implements Closeable {
     @Override
     public Lookup<AuthSchemeProvider> getAuthSchemeRegistry() {
       return builder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry();
+    }
+  }
+
+  public static class FileConsumer implements Consumer<Path> {
+    public void accept(Path file) {
+      try {
+        Files.delete(file);
+      }catch (IOException e) {
+        log.warn("Could not delete file {}", file, e);
+      }
     }
   }
 

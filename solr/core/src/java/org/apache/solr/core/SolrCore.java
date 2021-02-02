@@ -3391,7 +3391,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
           while (Files.exists(dataDir)) {
             try {
-              Files.walk(dataDir).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+              Files.walk(dataDir).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
             } catch (NoSuchFileException e) {
 
             }
@@ -3404,7 +3404,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         while (Files.exists(cd.getInstanceDir())) {
           try {
-            Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
+            Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
           } catch (NoSuchFileException e) {
 
           }
