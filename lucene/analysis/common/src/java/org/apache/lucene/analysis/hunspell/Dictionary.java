@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
+import java.io.PushbackInputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -692,16 +693,22 @@ public class Dictionary {
 
   /** Parses the encoding and flag format specified in the provided InputStream */
   private void readConfig(InputStream affix) throws IOException, ParseException {
-    LineNumberReader reader = new LineNumberReader(new InputStreamReader(affix, DEFAULT_CHARSET));
+    PushbackInputStream stream = new PushbackInputStream(affix);
+    while (true) {
+      int i = stream.read();
+      if (i < 0) {
+        return;
+      }
+      if (i != 0xEF && i != 0xBB && i != 0xBF) { // skip BOM
+        stream.unread(i);
+        break;
+      }
+    }
+
+    LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, DEFAULT_CHARSET));
     while (true) {
       String line = reader.readLine();
       if (line == null) break;
-
-      line = line.trim();
-
-      while (line.startsWith("\u00EF") || line.startsWith("\u00BB") || line.startsWith("\u00BF")) {
-        line = line.substring(1);
-      }
 
       String firstWord = line.split("\\s")[0];
       if ("SET".equals(firstWord)) {
