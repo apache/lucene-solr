@@ -138,6 +138,9 @@ distributions {
       from(configurations.docker, {
         include "Dockerfile"
       })
+
+      file('VERSION').text = version
+      from(file('VERSION'))
     }
   }
 }

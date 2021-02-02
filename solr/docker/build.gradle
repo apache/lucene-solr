@@ -30,11 +30,13 @@ def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCK
 def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
 
 // Build directory locations
-def dockerBuildDistribution = "$buildDir/distributions"
 def imageIdFile = "$buildDir/image-id"
 
 configurations {
   packaging {
+    canBeResolved = true
+  }
+  solrArtifacts {
     canBeResolved = true
   }
   dockerContext {
@@ -47,15 +49,21 @@ configurations {
 
 ext {
   packagingDir = file("${buildDir}/packaging")
+  dockerContextDir = "${buildDir}/docker"
+  dockerContextFile = "context.tgz"
+  dockerContextPath = "${dockerContextDir}/${dockerContextFile}"
 }
-
 
 dependencies {
   packaging files(packagingDir) {
     builtBy 'assemblePackaging'
   }
 
-  dockerContext project(path: ":solr:packaging", configuration: 'archives')
+  solrArtifacts project(path: ":solr:packaging", configuration: 'archives')
+
+  dockerContext files(dockerContextPath) {
+    builtBy 'dockerContext'
+  }
 
   dockerImage files(imageIdFile) {
     builtBy 'dockerBuild'
@@ -73,6 +81,18 @@ task assemblePackaging(type: Sync) {
   into packagingDir
 }
 
+task dockerContext(type: Sync) {
+  group = 'Docker'
+  description = 'Sync Solr tgz to become docker context'
+
+  from(configurations.solrArtifacts, {
+    include "*.tgz"
+    rename { file -> dockerContextFile }
+  })
+
+  into dockerContextDir
+}
+
 task dockerBuild(dependsOn: configurations.dockerContext) {
   group = 'Docker'
   description = 'Build Solr docker image'
@@ -82,12 +102,13 @@ task dockerBuild(dependsOn: configurations.dockerContext) {
           baseDockerImage: baseDockerImage,
           githubUrlOrMirror: githubUrlOrMirror
   ])
-  //inputs.files(configurations.dockerContext.files)
+  inputs.files(dockerContextPath)
 
   doLast {
     exec {
-      standardInput = configurations.dockerContext.files.
+      standardInput = configurations.dockerContext.singleFile.newDataInputStream()
       commandLine "docker", "build",
+              "-f", "solr-${version}/Dockerfile",
               "--iidfile", imageIdFile,
               "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
               "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",

@@ -1,18 +1,16 @@
 ARG BASE_IMAGE=openjdk:11-jre-slim
 
 FROM $BASE_IMAGE as input
-ARG SOLR_VERSION
 
-# ADD extracts tgz !
-COPY . /opt/solr-$SOLR_VERSION
+COPY /solr-* /opt/solr
 
 # remove what we don't want; ensure permissions are right
 #  TODO; arguably these permissions should have been set correctly previously in the TAR
 RUN set -ex; \
-  rm -Rf /opt/solr-$SOLR_VERSION/docs /opt/solr-$SOLR_VERSION/dist/{solr-solrj-$SOLR_VERSION.jar,solrj-lib,solr-test-framework-$SOLR_VERSION.jar,test-framework}; \
-  find "/opt/solr-$SOLR_VERSION" -type d -print0 | xargs -0 chmod 0755; \
-  find "/opt/solr-$SOLR_VERSION" -type f -print0 | xargs -0 chmod 0644; \
-  chmod -R 0755 "/opt/solr-$SOLR_VERSION/docker" "/opt/solr-$SOLR_VERSION/bin" "/opt/solr-$SOLR_VERSION/contrib/prometheus-exporter/bin/solr-exporter" "/opt/solr-$SOLR_VERSION/server/scripts/cloud-scripts"
+  rm -Rf /opt/solr/docs /opt/solr/dist/{solr-solrj-*.jar,solrj-lib,solr-test-framework-*.jar,test-framework}; \
+  find "/opt/solr" -type d -print0 | xargs -0 chmod 0755; \
+  find "/opt/solr" -type f -print0 | xargs -0 chmod 0644; \
+  chmod -R 0755 "/opt/solr/docker" "/opt/solr/bin" "/opt/solr/contrib/prometheus-exporter/bin/solr-exporter" "/opt/solr/server/scripts/cloud-scripts"
 
 FROM $BASE_IMAGE
 
@@ -46,15 +44,11 @@ RUN set -ex; \
   groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \
   useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"
 
-ARG SOLR_VERSION
-
-# Used by solr-fg
-ENV SOLR_VERSION $SOLR_VERSION
-
-COPY --from=input /opt/solr-$SOLR_VERSION /opt/solr-$SOLR_VERSION
+COPY --from=input /opt/solr /opt/solr
 
 RUN set -ex; \
-  (cd /opt; ln -s "solr-$SOLR_VERSION" solr); \
+  export SOLR_VERSION="$(cat /opt/solr/VERSION)"; \
+  (cd /opt; ln -s solr "solr-$SOLR_VERSION"); \
   mkdir -p /opt/solr/server/solr/lib /docker-entrypoint-initdb.d; \
   cp /opt/solr/bin/solr.in.sh /etc/default/solr.in.sh; \
   mv /opt/solr/bin/solr.in.sh /opt/solr/bin/solr.in.sh.orig; \
