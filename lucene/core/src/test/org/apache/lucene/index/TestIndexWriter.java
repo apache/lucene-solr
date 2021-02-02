@@ -4635,4 +4635,52 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
   }
+
+  public void testGetFieldNames() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    assertEquals(Set.of(), writer.getFieldNames());
+
+    addDocWithField(writer, "f1");
+    assertEquals(Set.of("f1"), writer.getFieldNames());
+
+    // should be unmodifiable:
+    final Set<String> fieldSet = writer.getFieldNames();
+    assertThrows(UnsupportedOperationException.class, () -> fieldSet.add("cannot modify"));
+    assertThrows(UnsupportedOperationException.class, () -> fieldSet.remove("f1"));
+
+    addDocWithField(writer, "f2");
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    // set from a previous call is an independent immutable copy, cannot be modified.
+    assertEquals(Set.of("f1"), fieldSet);
+
+    // flush should not have an effect on field names
+    writer.flush();
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    // commit should not have an effect on field names
+    writer.commit();
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    writer.close();
+
+    // new writer should identify committed fields
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    writer.deleteAll();
+    assertEquals(Set.of(), writer.getFieldNames());
+
+    writer.close();
+    dir.close();
+  }
+
+  private static void addDocWithField(IndexWriter writer, String field) throws IOException {
+    Document doc = new Document();
+    doc.add(newField(field, "value", storedTextType));
+    writer.addDocument(doc);
+  }
 }
