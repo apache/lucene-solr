@@ -17,18 +17,29 @@
 package org.apache.solr.cluster.placement.impl;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.solr.cluster.events.VersionTracker;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.util.TimeOut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Helper class to support dynamic reloading of plugin implementations.
  */
 public final class DelegatingPlacementPluginFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private volatile PlacementPluginFactory<? extends PlacementPluginConfig> delegate;
   // support for tests to make sure the update is completed
-  private volatile int version;
+  private VersionTracker versionTracker = null;
 
   @Override
   public PlacementPlugin createPluginInstance() {
@@ -39,18 +50,20 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
     }
   }
 
+  @VisibleForTesting
+  public void setVersionTracker(VersionTracker tracker) {
+    versionTracker = tracker;
+  }
+
   public void setDelegate(PlacementPluginFactory<? extends PlacementPluginConfig> delegate) {
     this.delegate = delegate;
-    this.version++;
+    if (versionTracker != null) {
+      versionTracker.increment();
+    }
   }
 
   @VisibleForTesting
   public PlacementPluginFactory<? extends PlacementPluginConfig> getDelegate() {
     return delegate;
-  }
-
-  @VisibleForTesting
-  public int getVersion() {
-    return version;
   }
 }

@@ -27,6 +27,8 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
+import org.apache.solr.cluster.events.VersionTracker;
+import org.apache.solr.cluster.events.VersionTrackerImpl;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
@@ -46,6 +48,9 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 
+import org.hamcrest.Matcher;
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -145,14 +150,15 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testDynamicReconfiguration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
+    VersionTracker versionTracker = new VersionTrackerImpl();
+    wrapper.setVersionTracker(versionTracker);
 
-    int version = wrapper.getVersion();
-    log.debug("--initial version={}", version);
+    int version = versionTracker.waitForVersionChange(-1, 10);
+    assertTrue("wrong version " + version, version > -1);
 
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
@@ -164,9 +170,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper, 10);
+    int newVersion = versionTracker.waitForVersionChange(version, 10);
 
-    assertTrue("wrong version " + version, version > 0);
+    MatcherAssert.assertThat("wrong version " + version, newVersion, Matchers.greaterThan(version));
+    version = newVersion;
     PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof MinimizeCoresPlacementFactory);
 
@@ -180,7 +187,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper, 10);
+    version = versionTracker.waitForVersionChange(version, 10);
 
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
@@ -197,7 +204,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper, 10);
+    version = versionTracker.waitForVersionChange(version, 10);
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
@@ -213,7 +220,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
     try {
-      int newVersion = waitForVersionChange(version, wrapper, 5);
+      newVersion = versionTracker.waitForVersionChange(version, 5);
       if (newVersion != version) {
         fail("factory configuration updated but plugin name was wrong: " + plugin);
       }
@@ -227,7 +234,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
         .build();
     req.process(cluster.getSolrClient());
-    waitForVersionChange(version, wrapper, 10);
+    versionTracker.waitForVersionChange(version, 10);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
   }
@@ -237,9 +244,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
+    VersionTracker versionTracker = new VersionTrackerImpl();
+    wrapper.setVersionTracker(versionTracker);
 
-    int version = wrapper.getVersion();
-    log.debug("--initial version={}", version);
+    int version = versionTracker.waitForVersionChange(-1, 10);
 
     Set<String> nodeSet = new HashSet<>();
     for (String node : cloudManager.getClusterStateProvider().getLiveNodes()) {
@@ -261,7 +269,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper, 10);
+    versionTracker.waitForVersionChange(version, 10);
 
     CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
         .process(cluster.getSolrClient());
@@ -397,22 +405,5 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         assertNotNull("updateRate", replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
       });
     });
-  }
-
-  private int waitForVersionChange(int currentVersion, DelegatingPlacementPluginFactory wrapper, int timeoutSec) throws Exception {
-    TimeOut timeout = new TimeOut(timeoutSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-
-    while (!timeout.hasTimedOut()) {
-      int newVersion = wrapper.getVersion();
-      if (newVersion < currentVersion) {
-        throw new Exception("Invalid version - went back! currentVersion=" + currentVersion +
-            " newVersion=" + newVersion);
-      } else if (currentVersion < newVersion) {
-        log.debug("--current version was {}, new version is {}", currentVersion, newVersion);
-        return newVersion;
-      }
-      timeout.sleep(200);
-    }
-    throw new TimeoutException("version didn't change in time, currentVersion=" + currentVersion);
   }
 }
