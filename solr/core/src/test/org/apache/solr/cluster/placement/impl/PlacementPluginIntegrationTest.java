@@ -27,8 +27,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.Cluster;
 import org.apache.solr.cluster.Node;
 import org.apache.solr.cluster.SolrCollection;
-import org.apache.solr.cluster.VersionTracker;
-import org.apache.solr.cluster.VersionTrackerImpl;
+import org.apache.solr.cluster.CountingStateChangeListener;
 import org.apache.solr.cluster.placement.AttributeFetcher;
 import org.apache.solr.cluster.placement.AttributeValues;
 import org.apache.solr.cluster.placement.CollectionMetrics;
@@ -150,10 +149,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
-    VersionTracker versionTracker = new VersionTrackerImpl();
-    wrapper.setVersionTracker(versionTracker);
+    CountingStateChangeListener stateChangeListener = new CountingStateChangeListener();
+    wrapper.setStateChangeListener(stateChangeListener);
 
-    int version = versionTracker.waitForVersionChange(-1, 10);
+    int version = stateChangeListener.waitForVersionChange(-1, 10);
     assertTrue("wrong version " + version, version > -1);
 
     PluginMeta plugin = new PluginMeta();
@@ -166,7 +165,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    int newVersion = versionTracker.waitForVersionChange(version, 10);
+    int newVersion = stateChangeListener.waitForVersionChange(version, 10);
 
     MatcherAssert.assertThat("wrong version " + version, newVersion, Matchers.greaterThan(version));
     version = newVersion;
@@ -183,7 +182,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = versionTracker.waitForVersionChange(version, 10);
+    version = stateChangeListener.waitForVersionChange(version, 10);
 
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
@@ -200,7 +199,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = versionTracker.waitForVersionChange(version, 10);
+    version = stateChangeListener.waitForVersionChange(version, 10);
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
@@ -216,7 +215,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
     try {
-      newVersion = versionTracker.waitForVersionChange(version, 5);
+      newVersion = stateChangeListener.waitForVersionChange(version, 5);
       if (newVersion != version) {
         fail("factory configuration updated but plugin name was wrong: " + plugin);
       }
@@ -230,7 +229,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
         .build();
     req.process(cluster.getSolrClient());
-    versionTracker.waitForVersionChange(version, 10);
+    stateChangeListener.waitForVersionChange(version, 10);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
   }
@@ -240,10 +239,10 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
-    VersionTracker versionTracker = new VersionTrackerImpl();
-    wrapper.setVersionTracker(versionTracker);
+    CountingStateChangeListener stateChangeListener = new CountingStateChangeListener();
+    wrapper.setStateChangeListener(stateChangeListener);
 
-    int version = versionTracker.waitForVersionChange(-1, 10);
+    int version = stateChangeListener.waitForVersionChange(-1, 10);
 
     Set<String> nodeSet = new HashSet<>();
     for (String node : cloudManager.getClusterStateProvider().getLiveNodes()) {
@@ -265,7 +264,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    versionTracker.waitForVersionChange(version, 10);
+    stateChangeListener.waitForVersionChange(version, 10);
 
     CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
         .process(cluster.getSolrClient());

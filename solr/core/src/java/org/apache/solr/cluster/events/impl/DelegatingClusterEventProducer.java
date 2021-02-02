@@ -22,7 +22,7 @@ import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
 import org.apache.solr.cluster.events.NoOpProducer;
 import org.apache.solr.cluster.events.ClusterEventProducerBase;
-import org.apache.solr.cluster.VersionTracker;
+import org.apache.solr.cluster.StateChangeListener;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
@@ -41,7 +41,7 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
 
   private ClusterEventProducer delegate;
   // support for tests to make sure the update is completed
-  private VersionTracker versionTracker = null;
+  private volatile StateChangeListener stateChangeListener = null;
 
   public DelegatingClusterEventProducer(CoreContainer cc) {
     super(cc);
@@ -58,8 +58,8 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   }
 
   @VisibleForTesting
-  public void setVersionTracker(VersionTracker tracker) {
-    versionTracker = tracker;
+  public void setStateChangeListener(StateChangeListener listener) {
+    stateChangeListener = listener;
   }
 
   public void setDelegate(ClusterEventProducer newDelegate) {
@@ -96,8 +96,9 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
         log.debug("--- delegate {} already in state {}", delegate, delegate.getState());
       }
     }
-    if (versionTracker != null) {
-      versionTracker.increment();
+    StateChangeListener localListener = stateChangeListener; // volatile read
+    if (localListener != null) {
+      localListener.stateChanged();
     }
   }
 

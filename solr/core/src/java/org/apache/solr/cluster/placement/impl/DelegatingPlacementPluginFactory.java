@@ -17,7 +17,7 @@
 package org.apache.solr.cluster.placement.impl;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.solr.cluster.VersionTracker;
+import org.apache.solr.cluster.StateChangeListener;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
@@ -28,7 +28,7 @@ import org.apache.solr.cluster.placement.PlacementPluginFactory;
 public final class DelegatingPlacementPluginFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
   private volatile PlacementPluginFactory<? extends PlacementPluginConfig> delegate;
   // support for tests to make sure the update is completed
-  private VersionTracker versionTracker = null;
+  private volatile StateChangeListener stateChangeListener = null;
 
   @Override
   public PlacementPlugin createPluginInstance() {
@@ -40,14 +40,15 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
   }
 
   @VisibleForTesting
-  public void setVersionTracker(VersionTracker tracker) {
-    versionTracker = tracker;
+  public void setStateChangeListener(StateChangeListener listener) {
+    stateChangeListener = listener;
   }
 
   public void setDelegate(PlacementPluginFactory<? extends PlacementPluginConfig> delegate) {
     this.delegate = delegate;
-    if (versionTracker != null) {
-      versionTracker.increment();
+    StateChangeListener localListener = stateChangeListener; // volatile read
+    if (localListener != null) {
+      localListener.stateChanged();
     }
   }
 

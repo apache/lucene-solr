@@ -17,26 +17,14 @@
 
 package org.apache.solr.cluster;
 
-import java.util.concurrent.TimeoutException;
-
 /**
- * Allows for tracking state change from test classes. Typical use will be to set a version tracker on a stateful
- * object, which will call {@link #increment()} every time state changes. Test clients observing the state will call
- * {@link #waitForVersionChange(int, int)} to be notified of the next increment call.
+ * Allows for tracking state change from test classes. Typical use will be to set a tracker on a stateful
+ * object, which will call {@link #stateChanged()} every time state changes. Test clients observing the state will
+ * provide their own implementation of what to do with state change events. They may be counted, awaited, etc.
  */
-public interface VersionTracker {
+public interface StateChangeListener {
     /**
      * Called by the stateful objects to note that state has changed.
      */
-    void increment();
-
-    /**
-     * Called by test observers interested in knowing when state changes. The returned version should be used as the
-     * argument to this method the next time it is called.
-     *
-     * @param currentVersion the last known version, to compare against current version
-     * @param timeoutSec how long to wait, in seconds
-     * @return the new version seen.
-     */
-    int waitForVersionChange(int currentVersion, int timeoutSec) throws InterruptedException, TimeoutException;
+    void stateChanged();
 }

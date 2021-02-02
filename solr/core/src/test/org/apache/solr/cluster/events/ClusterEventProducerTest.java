@@ -24,8 +24,7 @@ import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cluster.VersionTracker;
-import org.apache.solr.cluster.VersionTrackerImpl;
+import org.apache.solr.cluster.CountingStateChangeListener;
 import org.apache.solr.cluster.events.impl.DefaultClusterEventProducer;
 import org.apache.solr.cluster.events.impl.DelegatingClusterEventProducer;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -58,7 +57,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 @LogLevel("org.apache.solr.cluster.events=DEBUG")
 public class ClusterEventProducerTest extends SolrCloudTestCase {
   private AllEventsListener eventsListener;
-  private VersionTracker versionTracker;
+  private CountingStateChangeListener stateChangeTracker;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -78,8 +77,8 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     assertTrue("not a delegating producer? " + clusterEventProducer.getClass(),
             clusterEventProducer instanceof DelegatingClusterEventProducer);
     DelegatingClusterEventProducer wrapper = (DelegatingClusterEventProducer) clusterEventProducer;
-    versionTracker = new VersionTrackerImpl();
-    wrapper.setVersionTracker(versionTracker);
+    stateChangeTracker = new CountingStateChangeListener();
+    wrapper.setStateChangeListener(stateChangeTracker);
   }
 
   @After
@@ -105,7 +104,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testEvents() throws Exception {
-    int version = versionTracker.waitForVersionChange(-1, 10);
+    int version = stateChangeTracker.waitForVersionChange(-1, 10);
 
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
@@ -117,7 +116,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
 
-    version = versionTracker.waitForVersionChange(version, 10);
+    version = stateChangeTracker.waitForVersionChange(version, 10);
 
     // NODES_DOWN
 
@@ -284,7 +283,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @Test
   public void testListenerPlugins() throws Exception {
-    int version = versionTracker.waitForVersionChange(-1, 10);
+    int version = stateChangeTracker.waitForVersionChange(-1, 10);
 
     PluginMeta plugin = new PluginMeta();
     plugin.klass = DefaultClusterEventProducer.class.getName();
@@ -295,7 +294,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     V2Response rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    version = versionTracker.waitForVersionChange(version, 10);
+    version = stateChangeTracker.waitForVersionChange(version, 10);
 
     plugin = new PluginMeta();
     plugin.name = "testplugin";
@@ -353,7 +352,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .withPayload(Collections.singletonMap("remove", ClusterEventProducer.PLUGIN_NAME))
         .build();
     req.process(cluster.getSolrClient());
-    version = versionTracker.waitForVersionChange(version, 10);
+    version = stateChangeTracker.waitForVersionChange(version, 10);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
@@ -374,7 +373,7 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
         .build();
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    version = versionTracker.waitForVersionChange(version, 10);
+    version = stateChangeTracker.waitForVersionChange(version, 10);
 
     dummyEventLatch = new CountDownLatch(1);
     lastEvent = null;
