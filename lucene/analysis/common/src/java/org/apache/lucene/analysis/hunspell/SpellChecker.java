@@ -140,7 +140,7 @@ public class SpellChecker {
       return false;
     }
 
-    if (!stemmer.doStem(wordChars, 0, length, originalCase, SIMPLE_WORD).isEmpty()) {
+    if (findStem(wordChars, 0, length, originalCase, SIMPLE_WORD) != null) {
       return true;
     }
 
@@ -156,8 +156,24 @@ public class SpellChecker {
     return false;
   }
 
+  private CharsRef findStem(
+      char[] wordChars, int offset, int length, WordCase originalCase, WordContext context) {
+    CharsRef[] result = {null};
+    stemmer.doStem(
+        wordChars,
+        offset,
+        length,
+        originalCase,
+        context,
+        (buffer, offset1, length1, forms, formID) -> {
+          result[0] = new CharsRef(buffer, offset1, length1);
+          return false;
+        });
+    return result[0];
+  }
+
   private boolean checkCompounds(
-      CharsRef word, WordCase originalCase, int depth, Predicate<List<CharsRef>> checkPatterns) {
+      CharsRef word, WordCase originalCase, int depth, Predicate<CharsRef> checkPatterns) {
     if (depth > dictionary.compoundMax - 2) return false;
 
     int limit = word.length - dictionary.compoundMin + 1;
@@ -165,16 +181,15 @@ public class SpellChecker {
       WordContext context = depth == 0 ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
       int breakOffset = word.offset + breakPos;
       if (mayBreakIntoCompounds(word.chars, word.offset, word.length, breakOffset)) {
-        List<CharsRef> stems =
-            stemmer.doStem(word.chars, word.offset, breakPos, originalCase, context);
-        if (stems.isEmpty()
+        CharsRef stem = findStem(word.chars, word.offset, breakPos, originalCase, context);
+        if (stem == null
             && dictionary.simplifiedTriple
             && word.chars[breakOffset - 1] == word.chars[breakOffset]) {
-          stems = stemmer.doStem(word.chars, word.offset, breakPos + 1, originalCase, context);
+          stem = findStem(word.chars, word.offset, breakPos + 1, originalCase, context);
         }
-        if (!stems.isEmpty() && checkPatterns.test(stems)) {
-          Predicate<List<CharsRef>> nextCheck = checkNextPatterns(word, breakPos, stems);
-          if (checkCompoundsAfter(word, breakPos, originalCase, depth, stems, nextCheck)) {
+        if (stem != null && checkPatterns.test(stem)) {
+          Predicate<CharsRef> nextCheck = checkNextPatterns(word, breakPos, stem);
+          if (checkCompoundsAfter(word, breakPos, originalCase, depth, stem, nextCheck)) {
             return true;
           }
         }
@@ -195,12 +210,11 @@ public class SpellChecker {
       if (expanded != null) {
         WordContext context = depth == 0 ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
         int breakPos = pos + pattern.endLength();
-        List<CharsRef> stems =
-            stemmer.doStem(expanded.chars, expanded.offset, breakPos, originalCase, context);
-        if (!stems.isEmpty()) {
-          Predicate<List<CharsRef>> nextCheck =
-              next -> pattern.prohibitsCompounding(expanded, breakPos, stems, next);
-          if (checkCompoundsAfter(expanded, breakPos, originalCase, depth, stems, nextCheck)) {
+        CharsRef stem = findStem(expanded.chars, expanded.offset, breakPos, originalCase, context);
+        if (stem != null) {
+          Predicate<CharsRef> nextCheck =
+              next -> pattern.prohibitsCompounding(expanded, breakPos, stem, next);
+          if (checkCompoundsAfter(expanded, breakPos, originalCase, depth, stem, nextCheck)) {
             return true;
           }
         }
@@ -209,11 +223,10 @@ public class SpellChecker {
     return false;
   }
 
-  private Predicate<List<CharsRef>> checkNextPatterns(
-      CharsRef word, int breakPos, List<CharsRef> stems) {
-    return nextStems ->
+  private Predicate<CharsRef> checkNextPatterns(CharsRef word, int breakPos, CharsRef stems) {
+    return nextStem ->
         dictionary.checkCompoundPatterns.stream()
-            .noneMatch(p -> p.prohibitsCompounding(word, breakPos, stems, nextStems));
+            .noneMatch(p -> p.prohibitsCompounding(word, breakPos, stems, nextStem));
   }
 
   private boolean checkCompoundsAfter(
@@ -221,16 +234,16 @@ public class SpellChecker {
       int breakPos,
       WordCase originalCase,
       int depth,
-      List<CharsRef> prevStems,
-      Predicate<List<CharsRef>> checkPatterns) {
+      CharsRef prevStem,
+      Predicate<CharsRef> checkPatterns) {
     int remainingLength = word.length - breakPos;
     int breakOffset = word.offset + breakPos;
-    List<CharsRef> tailStems =
-        stemmer.doStem(word.chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
-    if (!tailStems.isEmpty()
-        && !(dictionary.checkCompoundDup && intersectIgnoreCase(prevStems, tailStems))
+    CharsRef tailStem =
+        findStem(word.chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
+    if (tailStem != null
+        && !(dictionary.checkCompoundDup && equalsIgnoreCase(prevStem, tailStem))
         && !hasForceUCaseProblem(word.chars, breakOffset, remainingLength, originalCase)
-        && checkPatterns.test(tailStems)) {
+        && checkPatterns.test(tailStem)) {
       return true;
     }
 
