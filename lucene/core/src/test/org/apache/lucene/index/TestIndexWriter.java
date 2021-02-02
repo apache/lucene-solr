@@ -3849,24 +3849,28 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testAbortFullyDeletedSegment() throws Exception {
     AtomicBoolean abortMergeBeforeCommit = new AtomicBoolean();
-    OneMergeWrappingMergePolicy mergePolicy = new OneMergeWrappingMergePolicy(newMergePolicy(),
-        toWrap -> new MergePolicy.OneMerge(toWrap.segments) {
+    OneMergeWrappingMergePolicy mergePolicy =
+        new OneMergeWrappingMergePolicy(
+            newMergePolicy(),
+            toWrap ->
+                new MergePolicy.OneMerge(toWrap.segments) {
+                  @Override
+                  void onMergeComplete() throws IOException {
+                    super.onMergeComplete();
+                    if (abortMergeBeforeCommit.get()) {
+                      setAborted();
+                    }
+                  }
+                }) {
           @Override
-          void onMergeComplete() throws IOException {
-            super.onMergeComplete();
-            if (abortMergeBeforeCommit.get()) {
-              setAborted();
-            }
+          public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+            return true;
           }
-        }) {
-      @Override
-      public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
-        return true;
-      }
-    };
+        };
 
     Directory dir = newDirectory();
-    IndexWriterConfig indexWriterConfig = newIndexWriterConfig().setMergePolicy(mergePolicy).setCommitOnClose(false);
+    IndexWriterConfig indexWriterConfig =
+        newIndexWriterConfig().setMergePolicy(mergePolicy).setCommitOnClose(false);
     IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
     writer.addDocument(Collections.singletonList(new StringField("id", "1", Field.Store.YES)));
     writer.flush();
