@@ -28,6 +28,7 @@ import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -82,6 +83,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -143,11 +145,11 @@ public class IndexSchema {
   protected final SolrResourceLoader loader;
   protected final Properties substitutableProperties;
 
-  protected Map<String,SchemaField> fields = new HashMap<>();
-  protected Map<String,FieldType> fieldTypes = new HashMap<>();
+  protected volatile Map<String,SchemaField> fields = Collections.emptyMap();
+  protected volatile Map<String,FieldType> fieldTypes = new HashMap<>();
 
-  protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
-  protected Collection<SchemaField> requiredFields = new HashSet<>();
+  protected volatile List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
+  protected volatile Collection<SchemaField> requiredFields = new HashSet<>();
   protected volatile DynamicField[] dynamicFields = EMPTY_DYNAMIC_FIELDS;
 
   public DynamicField[] getDynamicFields() { return dynamicFields; }
@@ -157,9 +159,11 @@ public class IndexSchema {
   protected volatile Analyzer indexAnalyzer;
   protected volatile Analyzer queryAnalyzer;
 
+  private final ReentrantLock analyzerLock = new ReentrantLock();
+
   protected volatile Set<SchemaAware> schemaAware = ConcurrentHashMap.newKeySet(32);
 
-  protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
+  protected volatile Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
 
   protected DynamicCopy[] dynamicCopyFields = EMPTY_DYNAMIC_COPIES;
@@ -248,6 +252,8 @@ public class IndexSchema {
    * </p>
    */
   public Map<String,SchemaField> getFields() { return fields; }
+
+  public void setFields(Map<String,SchemaField> fields) { this.fields = fields; }
 
   /**
    * Provides direct access to the Map containing all Field Types
@@ -381,12 +387,20 @@ public class IndexSchema {
    */
   public void refreshAnalyzers() {
     if (indexAnalyzer == null || queryAnalyzer == null) {
-      indexAnalyzer = new SolrIndexAnalyzer(fields, Arrays.asList(dynamicFields));
-      queryAnalyzer = new SolrQueryAnalyzer(fields, Arrays.asList(dynamicFields));
-    } else {
-      ((SolrIndexAnalyzer) indexAnalyzer).setUpFields(fields, Arrays.asList(dynamicFields));
-      ((SolrQueryAnalyzer) queryAnalyzer).setUpFields(fields, Arrays.asList(dynamicFields));
+      analyzerLock.lock();
+      try {
+        if (indexAnalyzer == null || queryAnalyzer == null) {
+          indexAnalyzer = new SolrIndexAnalyzer(fields, Arrays.asList(dynamicFields));
+          queryAnalyzer = new SolrQueryAnalyzer(fields, Arrays.asList(dynamicFields));
+          return;
+        }
+      } finally {
+        analyzerLock.unlock();
+      }
     }
+
+    ((SolrIndexAnalyzer) indexAnalyzer).setUpFields(fields, Arrays.asList(dynamicFields));
+    ((SolrQueryAnalyzer) queryAnalyzer).setUpFields(fields, Arrays.asList(dynamicFields));
   }
 
   /** @see UninvertingReader */
@@ -683,13 +697,14 @@ public class IndexSchema {
 
       timeParseSchemaDom.done();
 
+      StopWatch timePostReadInform = new StopWatch(SCHEMA + "-postReadInform");
+      postReadInform();
+      timePostReadInform.done();
+
       // create the field analyzers
       StopWatch timeRefreshAnalyzers = new StopWatch(SCHEMA + "-refreshAnalyzers");
       refreshAnalyzers();
       timeRefreshAnalyzers.done();
-      StopWatch timePostReadInform = new StopWatch(SCHEMA + "-postReadInform");
-      postReadInform();
-      timePostReadInform.done();
     } catch (SolrException e) {
       log.error("readSchema Exception", e);
       throw new SolrException(ErrorCode.getErrorCode(e.code()),
@@ -706,8 +721,12 @@ public class IndexSchema {
 
   public void postReadInform() {
     //Run the callbacks on SchemaAware now that everything else is done
-    for (SchemaAware aware : schemaAware) {
-        aware.inform(this);
+    try (ParWork work = new ParWork(this)) {
+      for (SchemaAware aware : schemaAware) {
+        work.collect("", ()->{
+          aware.inform(this);
+        });
+      }
     }
   }
 
@@ -722,6 +741,7 @@ public class IndexSchema {
 
     //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
     ArrayList<DynamicField> dFields = new ArrayList<>();
+    Map<String,SchemaField> fields = new HashMap<>();
     ArrayList<NodeInfo> nodes = (ArrayList) loader.xpathOrExp.evaluate(document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.size(); i++) {
@@ -778,6 +798,8 @@ public class IndexSchema {
     requiredFields.addAll(fieldsWithDefaultValue);
 
     dynamicFields = dynamicFieldListToSortedArray(dFields);
+
+    this.fields = Collections.unmodifiableMap(fields);
 
     return explicitRequiredProp;
   }

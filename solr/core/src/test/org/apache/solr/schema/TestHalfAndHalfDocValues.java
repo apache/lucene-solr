@@ -30,7 +30,9 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Added in SOLR-10047
@@ -81,7 +83,10 @@ public class TestHalfAndHalfDocValues extends SolrTestCaseJ4 {
       int newProperties = oldField.getProperties() | SchemaField.DOC_VALUES;
 
       SchemaField sf = new SchemaField(fieldname, oldField.getType(), newProperties, null);
-      schema.getFields().put(fieldname, sf);
+
+      Map<String,SchemaField> fields = new HashMap<>(schema.getFields());
+      fields.put(fieldname, sf);
+      schema.setFields(fields);
 
       // Insert a new doc with docvalues
       assertU(adoc("id", "2", fieldname, "b"));

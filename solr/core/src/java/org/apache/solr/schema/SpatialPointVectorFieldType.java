@@ -69,18 +69,20 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
     //
     // In theory we should fix this, but since this class is already deprecated, we'll leave it alone
     // to simplify the risk of back-compat break for existing users.
-    final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS | UNINVERTIBLE);
-    List<SchemaField> newFields = new ArrayList<>();
-    for( SchemaField sf : schema.getFields().values() ) {
-      if( sf.getType() == this ) {
-        String name = sf.getName();
-        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_X, fieldType, p, null));
-        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_Y, fieldType, p, null));
-      }
-    }
-    for (SchemaField newField : newFields) {
-      schema.getFields().put(newField.getName(), newField);
-    }
+
+    // TODO: this is not legal
+//    final int p = (INDEXED | TOKENIZED | OMIT_NORMS | OMIT_TF_POSITIONS | UNINVERTIBLE);
+//    List<SchemaField> newFields = new ArrayList<>();
+//    for( SchemaField sf : schema.getFields().values() ) {
+//      if( sf.getType() == this ) {
+//        String name = sf.getName();
+//        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_X, fieldType, p, null));
+//        newFields.add(new SchemaField(name + PointVectorStrategy.SUFFIX_Y, fieldType, p, null));
+//      }
+//    }
+//    for (SchemaField newField : newFields) {
+//      schema.getFields().put(newField.getName(), newField);
+//    }
   }
 
   @Override

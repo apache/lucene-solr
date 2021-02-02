@@ -130,7 +130,6 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // MRM-TEST TODO:
   public void testSearching() throws Exception {
     for (int i = 0; i < 50; i++) {
       assertU(adoc("id", "" + i, "home", i + "," + (i * 100), "homed", (i * 1000) + "," + (i * 10000)));
@@ -167,7 +166,6 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // MRM-TEST TODO:
   public void testSearchDetails() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();

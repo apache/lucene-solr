@@ -16,6 +16,8 @@
  */
 package org.apache.solr.index;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.IntUnaryOperator;
 
@@ -43,6 +45,7 @@ public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
   private static String SOLR_TESTS_SKIP_INTEGRITY_CHECK = "solr.tests.skipIntegrityCheck";
   private static String ID_FIELD = "id";
   private static String TEST_FIELD = "string_add_dv_later";
+  private IndexSchema schema;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -216,7 +219,10 @@ public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
           oldSchemaField.getType(),
           propertiesModifier.applyAsInt(oldSchemaField.getProperties()),
           oldSchemaField.getDefaultValue());
-      schema.getFields().put(fieldName, newSchemaField);
+
+      Map<String,SchemaField> fields = new HashMap<>(schema.getFields());
+      fields.put(fieldName, newSchemaField);
+      schema.setFields(fields);
     }
   }
   

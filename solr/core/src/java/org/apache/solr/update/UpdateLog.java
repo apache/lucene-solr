@@ -186,7 +186,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   long id = -1;
-  protected volatile State state = State.ACTIVE;
+  protected volatile State
+      state = State.ACTIVE;
 
   protected volatile TransactionLog bufferTlog;
   protected volatile TransactionLog tlog;

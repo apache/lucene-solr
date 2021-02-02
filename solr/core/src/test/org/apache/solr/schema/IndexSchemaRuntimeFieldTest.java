@@ -24,6 +24,9 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
 
   @Before
@@ -49,7 +52,9 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
     core.close();
     final String fieldName = "runtimefield";
     SchemaField sf = new SchemaField( fieldName, schema.getFieldTypes().get( "string" ) );
-    schema.getFields().put( fieldName, sf );
+    Map<String,SchemaField> fields = new HashMap<>(schema.getFields());
+    fields.put(fieldName, sf);
+    schema.setFields(fields);
 
     // also register a new copy field (from our new field)
     schema.registerCopyField( fieldName, "dynamic_runtime" );

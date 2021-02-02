@@ -67,14 +67,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -433,43 +431,43 @@ public final class ManagedIndexSchema extends IndexSchema {
     ManagedIndexSchema newSchema;
     if (isMutable) {
       boolean success = false;
-      if (copyFieldNames == null){
+      if (copyFieldNames == null) {
         copyFieldNames = Collections.emptyMap();
       }
       newSchema = shallowCopy(true);
 
       ManagedIndexSchema finalNewSchema = newSchema;
-
+      Map<String,SchemaField> fields = new HashMap<>(newSchema.fields);
       Map<String,Collection<String>> finalCopyFieldNames = copyFieldNames;
-      synchronized (finalNewSchema.fields) {
-        newFields.forEach(newField -> {
-          if (null != finalNewSchema.fields.get(newField.getName())) {
-            String msg = "Field '" + newField.getName() + "' already exists.";
-            throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
-          }
-          finalNewSchema.fields.put(newField.getName(), newField);
 
-          if (null != newField.getDefaultValue()) {
-            if (log.isDebugEnabled()) {
-              log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
-            }
-            finalNewSchema.fieldsWithDefaultValue.add(newField);
-          }
-          if (newField.isRequired()) {
-            if (log.isDebugEnabled()) {
-              log.debug("{} is required in this schema", newField.getName());
-            }
-            finalNewSchema.requiredFields.add(newField);
-          }
-          Collection<String> copyFields = finalCopyFieldNames.get(newField.getName());
-          if (copyFields != null) {
-            for (String copyField : copyFields) {
-              finalNewSchema.registerCopyField(newField.getName(), copyField);
-            }
-          }
+      newFields.forEach(newField -> {
+        if (null != finalNewSchema.fields.get(newField.getName())) {
+          String msg = "Field '" + newField.getName() + "' already exists.";
+          throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
+        }
+        fields.put(newField.getName(), newField);
 
-        });
-      }
+        if (null != newField.getDefaultValue()) {
+          if (log.isDebugEnabled()) {
+            log.debug("{} contains default value: {}", newField.getName(), newField.getDefaultValue());
+          }
+          finalNewSchema.fieldsWithDefaultValue.add(newField);
+        }
+        if (newField.isRequired()) {
+          if (log.isDebugEnabled()) {
+            log.debug("{} is required in this schema", newField.getName());
+          }
+          finalNewSchema.requiredFields.add(newField);
+        }
+        Collection<String> copyFields = finalCopyFieldNames.get(newField.getName());
+        if (copyFields != null) {
+          for (String copyField : copyFields) {
+            finalNewSchema.registerCopyField(newField.getName(), copyField);
+          }
+        }
+
+      });
+      finalNewSchema.fields = Collections.unmodifiableMap(fields);
 
       if (persist) {
         success = newSchema.persistManagedSchema(false); // don't just create - update it if it already exists
@@ -498,6 +496,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     ManagedIndexSchema newSchema;
     if (isMutable) {
       newSchema = shallowCopy(true);
+      Map<String,SchemaField> fields = new HashMap<>(newSchema.fields);
       for (String name : names) {
         SchemaField field = getFieldOrNull(name); 
         if (null != field) {
@@ -512,7 +511,7 @@ public final class ManagedIndexSchema extends IndexSchema {
               throw new SolrException(ErrorCode.BAD_REQUEST, message);
             }
           }
-          newSchema.fields.remove(name);
+          fields.remove(name);
           newSchema.fieldsWithDefaultValue.remove(field);
           newSchema.requiredFields.remove(field);
         } else {
@@ -520,6 +519,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
         }
       }
+      newSchema.fields = fields;
       newSchema.postReadInform();
       newSchema.refreshAnalyzers();
     } else {
@@ -542,16 +542,17 @@ public final class ManagedIndexSchema extends IndexSchema {
       }
       newSchema = shallowCopy(true);
       // clone data structures before modifying them
-
+      Map<String,SchemaField> fields = new HashMap<>(newSchema.fields);
 
       // Drop the old field
-      newSchema.fields.remove(fieldName);
+      fields.remove(fieldName);
       newSchema.fieldsWithDefaultValue.remove(oldField);
       newSchema.requiredFields.remove(oldField);
 
       // Add the replacement field
       SchemaField replacementField = SchemaField.create(fieldName, replacementFieldType, replacementArgs);
-      newSchema.fields.put(fieldName, replacementField);
+      fields.put(fieldName, replacementField);
+      newSchema.fields = Collections.unmodifiableMap(fields);
       if (null != replacementField.getDefaultValue()) {
         if (log.isDebugEnabled()) {
           log.debug("{} contains default value: {}", replacementField.getName(), replacementField.getDefaultValue());
@@ -1102,6 +1103,8 @@ public final class ManagedIndexSchema extends IndexSchema {
         throw new SolrException(ErrorCode.BAD_REQUEST, msg);
       }
       newSchema = shallowCopy(true);
+
+      Map<String,SchemaField> fields = new HashMap<>(newSchema.fields);
       // clone data structures before modifying them
       newSchema.fieldTypes = (Map<String,FieldType>)((HashMap<String,FieldType>)fieldTypes).clone();
       newSchema.copyFieldsMap = cloneCopyFieldsMap(copyFieldsMap);
@@ -1150,8 +1153,9 @@ public final class ManagedIndexSchema extends IndexSchema {
         }
       }
       for (SchemaField replacementField : replacementFields) {
-        newSchema.fields.put(replacementField.getName(), replacementField);
+        fields.put(replacementField.getName(), replacementField);
       }
+      newSchema.fields = Collections.unmodifiableMap(fields);
       // Remove copy fields where the target is of the type being replaced; remember them to rebuild
       Iterator<Map.Entry<String,List<CopyField>>> copyFieldsMapIter = newSchema.copyFieldsMap.entrySet().iterator();
       while (copyFieldsMapIter.hasNext()) {
@@ -1435,7 +1439,7 @@ public final class ManagedIndexSchema extends IndexSchema {
 
     if (includeFieldDataStructures) {
       // These need new collections, since addFields() can add members to them
-      newSchema.fields.putAll(fields);
+      newSchema.fields = fields;
       newSchema.fieldsWithDefaultValue.addAll(fieldsWithDefaultValue);
       newSchema.requiredFields.addAll(requiredFields);
     }
