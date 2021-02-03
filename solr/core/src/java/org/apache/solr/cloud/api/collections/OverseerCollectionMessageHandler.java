@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -613,7 +614,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
     assert coreNames.size() > 0;
-    Map<String, Replica> results = new HashMap<>();
+    Map<String, Replica> results = new ConcurrentHashMap<>();
     AtomicReference<DocCollection> lastState = new AtomicReference<>();
 
     long maxWait = Long.getLong("solr.waitToSeeReplicasInStateTimeoutSeconds", 120); // could be a big cluster
