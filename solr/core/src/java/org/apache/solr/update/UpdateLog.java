@@ -1475,7 +1475,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       if (writeCommit) {
         // record a commit
         if (log.isDebugEnabled()) log.debug("Recording current closed for {} log={}", uhandler.core, theLog);
-        CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
+        CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams()), false);
         theLog.writeCommit(cmd);
       }
 

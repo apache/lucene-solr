@@ -280,7 +280,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
     List<Object> updates = (List<Object>)rsp.get("updates");
 
     if (updates.size() < numRequestedUpdates) {
-      log.error("{} Requested {} updated from {} but retrieved {} {}", msg(), numRequestedUpdates, leaderUrl, updates.size(), rsp);
+      log.error("{} Requested {} updated from {} but retrieved {}", msg(), numRequestedUpdates, leaderUrl, updates.size());
       return false;
     }
 

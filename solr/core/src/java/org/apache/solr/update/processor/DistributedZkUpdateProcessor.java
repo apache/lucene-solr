@@ -304,8 +304,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     if (isLeader && !isSubShardLeader) {
       DocCollection coll = clusterState.getCollection(collection);
-      String id = cmd.getHashableId();
-      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(id), cmd.getSolrInputDocument());
+      List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
       // the list<node> will actually have only one element for an add request
       if (subShardLeaders != null && !subShardLeaders.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
@@ -315,7 +314,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         cmdDistrib.distribAdd(cmd, subShardLeaders, params, true);
       }
 
-      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getRootIdUsingRouteParam(id), cmd.getSolrInputDocument());
+      final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
       if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty()) {
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -641,7 +640,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkCheck();
     if (cmd instanceof AddUpdateCommand) {
       AddUpdateCommand acmd = (AddUpdateCommand)cmd;
-      nodes = setupRequest(acmd.getRootIdUsingRouteParam(((AddUpdateCommand) cmd).getHashableId()), acmd.getSolrInputDocument());
+      nodes = setupRequest(acmd.getRootIdUsingRouteParam(), acmd.getSolrInputDocument());
     } else if (cmd instanceof DeleteUpdateCommand) {
       DeleteUpdateCommand dcmd = (DeleteUpdateCommand)cmd;
       nodes = setupRequest(dcmd.getId(), null);
