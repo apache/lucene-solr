@@ -38,6 +38,7 @@ When you select **Level**, you see the following menu:
 image::images/logging/level_menu.png[image,width=1159,height=577]
 
 Directories are shown with their current logging levels. The Log Level Menu floats over these. To set a log level for a particular directory, select it and click the appropriate log level button.
+The log level change will be distributed to all nodes in the cluster.
 
 Log levels settings are as follows:
 

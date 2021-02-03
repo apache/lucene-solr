@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -27,12 +28,17 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -89,6 +95,32 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertTrue(nl.getName(1).endsWith("_solr"));
     assertTrue(nl.getName(2).endsWith("_solr"));
     assertNotNull(((NamedList)nl.get(nl.getName(1))).get("metrics"));
+  }
+
+  @Test
+  public void proxyLoggingHandlerAllNodes() throws IOException, SolrServerException {
+    CollectionAdminRequest.createCollection("collection", "conf", 2, 2).process(solrClient);
+    ModifiableSolrParams mparams = new ModifiableSolrParams();
+
+    mparams.set(CommonParams.QT, "/admin/logging");
+    mparams.set("nodes", "all");
+    mparams.set("set", "com.codahale.metrics.jmx.JmxReporter:WARN");
+    solrClient.query("collection", mparams, SolrRequest.METHOD.GET);
+
+    Set<String> nodes = solrClient.getClusterStateProvider().getLiveNodes();
+    nodes.forEach(node -> {
+      mparams.clear();
+      mparams.set(CommonParams.QT, "/admin/logging");
+      mparams.set("nodes", node);
+      QueryResponse rsp = null;
+      try {
+        rsp = solrClient.query("collection", mparams, SolrRequest.METHOD.GET);
+      } catch (Exception e) {
+        fail("Exception while proxying request to node " + node);
+      }
+      NamedList<Object> nl = rsp.getResponse();
+      assertEquals("WARN", ((SimpleOrderedMap) ((ArrayList)nl.get("loggers")).get(5)).get("level"));
+    });
   }
 
   @Test(expected = SolrException.class)
