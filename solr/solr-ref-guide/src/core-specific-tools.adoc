@@ -29,19 +29,19 @@ image::images/core-specific-tools/core_dashboard.png[image,width=515,height=250]
 The core-specific UI screens are listed below, with a link to the section of this guide to find out more:
 
 // TODO: SOLR-10655 BEGIN: refactor this into a 'core-screens-list.include.adoc' file for reuse
-* <<ping.adoc#ping,Ping>> - lets you ping a named core and determine whether the core is active.
-* <<plugins-stats-screen.adoc#plugins-stats-screen,Plugins/Stats>> - shows statistics for plugins and other installed components.
-* <<replication-screen.adoc#replication-screen,Replication>> - shows you the current replication status for the core, and lets you enable/disable replication.
-* <<segments-info.adoc#segments-info,Segments Info>> - Provides a visualization of the underlying Lucene index segments.
+* <<ping.adoc#,Ping>> - lets you ping a named core and determine whether the core is active.
+* <<plugins-stats-screen.adoc#,Plugins/Stats>> - shows statistics for plugins and other installed components.
+* <<replication-screen.adoc#,Replication>> - shows you the current replication status for the core, and lets you enable/disable replication.
+* <<segments-info.adoc#,Segments Info>> - Provides a visualization of the underlying Lucene index segments.
 // TODO: SOLR-10655 END
 
 If you are running a single node instance of Solr, additional UI screens normally displayed on a per-collection bases will also be listed:
 
 // TODO: SOLR-10655 BEGIN: refactor this into a 'collection-screens-list.include.adoc' file for reuse
-* <<analysis-screen.adoc#analysis-screen,Analysis>> - lets you analyze the data found in specific fields.
-* <<documents-screen.adoc#documents-screen,Documents>> - provides a simple form allowing you to execute various Solr indexing commands directly from the browser.
-* <<files-screen.adoc#files-screen,Files>> - shows the current core configuration files such as `solrconfig.xml`.
-* <<query-screen.adoc#query-screen,Query>> - lets you submit a structured query about various elements of a core.
-* <<stream-screen.adoc#stream-screen,Stream>> - allows you to submit streaming expressions and see results and parsing explanations.
-* <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>> - displays schema data in a browser window.
+* <<analysis-screen.adoc#,Analysis>> - lets you analyze the data found in specific fields.
+* <<documents-screen.adoc#,Documents>> - provides a simple form allowing you to execute various Solr indexing commands directly from the browser.
+* <<files-screen.adoc#,Files>> - shows the current core configuration files such as `solrconfig.xml`.
+* <<query-screen.adoc#,Query>> - lets you submit a structured query about various elements of a core.
+* <<stream-screen.adoc#,Stream>> - allows you to submit streaming expressions and see results and parsing explanations.
+* <<schema-browser-screen.adoc#,Schema Browser>> - displays schema data in a browser window.
 // TODO: SOLR-10655 END

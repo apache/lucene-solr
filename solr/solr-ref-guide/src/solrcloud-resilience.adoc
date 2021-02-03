@@ -21,6 +21,6 @@ In this section, we'll cover how does Solr handle reads and writes when all the 
 
 The following sections cover these topics:
 
-* <<solrcloud-recoveries-and-write-tolerance.adoc#solrcloud-recoveries-and-write-tolerance,SolrCloud Recoveries and Write Tolerance>>
-* <<solrcloud-query-routing-and-read-tolerance.adoc#solrcloud-query-routing-and-read-tolerance,SolrCloud Query Routing And Read Tolerance>>
+* <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>
+* <<solrcloud-query-routing-and-read-tolerance.adoc#,SolrCloud Query Routing And Read Tolerance>>
 

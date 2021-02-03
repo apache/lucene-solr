@@ -36,7 +36,7 @@ An example `security.json` is shown below:
 === Certificate Validation
 
 Parts of certificate validation, including verifying the trust chain and peer hostname/ip address will be done by the web servlet container before the request ever reaches the authentication plugin.
-These checks are described in the <<enabling-ssl.adoc#enabling-ssl,Enabling SSL>> section.
+These checks are described in the <<enabling-ssl.adoc#,Enabling SSL>> section.
 
 This plugin provides no additional checking beyond what has been configured via SSL properties.
 

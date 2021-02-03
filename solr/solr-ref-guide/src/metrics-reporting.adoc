@@ -95,7 +95,7 @@ In the future, metrics will be added for shard leaders and cluster nodes, includ
 
 The metrics available in your system can be customized by modifying the `<metrics>` element in `solr.xml`.
 
-TIP: See also the section <<format-of-solr-xml.adoc#format-of-solr-xml,Format of Solr.xml>> for more information about the `solr.xml` file, where to find it, and how to edit it.
+TIP: See also the section <<format-of-solr-xml.adoc#,Format of Solr.xml>> for more information about the `solr.xml` file, where to find it, and how to edit it.
 
 === Disabling the Metrics Collection
 The `<metrics>` element in `solr.xml` supports one attribute `enabled`, which takes a boolean value,

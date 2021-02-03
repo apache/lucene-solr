@@ -298,7 +298,7 @@ Results (notice that the term counts are not affected by the query):
 
 == Using the Terms Component for an Auto-Suggest Feature
 
-If the <<suggester.adoc#suggester,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
+If the <<suggester.adoc#,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
 
 [source,text]
 http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&wt=xml
@@ -347,7 +347,7 @@ Result:
 The TermsComponent also supports distributed indexes. For the `/terms` request handler, you must provide the following two parameters:
 
 `shards`::
-Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
+Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#,Distributed Search with Index Sharding>>.
 +
 The `shards` parameter is subject to a host whitelist that has to be configured in the component's parameters using the configuration key `shardsWhitelist` and the list of hosts as values.
 +
