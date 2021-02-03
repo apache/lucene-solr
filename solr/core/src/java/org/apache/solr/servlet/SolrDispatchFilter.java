@@ -194,7 +194,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       logWelcomeBanner();
       String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
-      if (muteConsole != null && !Arrays.asList("false", "0", "off", "no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
+      if (muteConsole != null && (!muteConsole.equalsIgnoreCase("false"))  && !Arrays.asList("false", "0", "off", "no").contains(muteConsole.toLowerCase(Locale.ROOT))) {
         StartupLoggingUtils.muteConsole();
       }
       String logLevel = System.getProperty(SOLR_LOG_LEVEL);

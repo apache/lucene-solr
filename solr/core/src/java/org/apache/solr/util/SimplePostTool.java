@@ -16,13 +16,13 @@
  */
 package org.apache.solr.util;
 
-import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -62,9 +62,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import net.sf.saxon.Configuration;
-import net.sf.saxon.xpath.XPathFactoryImpl;
-import org.apache.solr.common.ParWork;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -101,16 +98,6 @@ public class SimplePostTool {
   static final String DATA_MODE_STDIN = "stdin";
   static final String DATA_MODE_WEB = "web";
   static final String DEFAULT_DATA_MODE = DATA_MODE_FILES;
-
-  private static DocumentBuilder DOC_BUILDER;
-
-  static {
-    try {
-      DOC_BUILDER = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-    } catch (ParserConfigurationException e) {
-      throw new RuntimeException(e);
-    }
-  }
 
   // Input args
   boolean auto = false;
@@ -186,11 +173,6 @@ public class SimplePostTool {
       t.execute();
     }
   }
-
-  Configuration conf = Configuration.newConfiguration();
-
-  public final XPathFactoryImpl xpathFactory;
-
 
   /**
    * After initialization, call execute to start the post job.
@@ -327,18 +309,9 @@ public class SimplePostTool {
     this.optimize = optimize;
     this.args = args;
     pageFetcher = new PageFetcher();
-    conf.setValidation(false);
-    conf.setXIncludeAware(true);
-    conf.setExpandAttributeDefaults(true);
-    xpathFactory = new XPathFactoryImpl(conf);
   }
 
-  public SimplePostTool() {
-    conf.setValidation(false);
-    conf.setXIncludeAware(true);
-    conf.setExpandAttributeDefaults(true);
-    xpathFactory = new XPathFactoryImpl(conf);
-  }
+  public SimplePostTool() {}
 
   //
   // Do some action depending on which mode we have
@@ -554,7 +527,6 @@ public class SimplePostTool {
         Thread.sleep(delay * 1000);
         filesPosted++;
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
     }
@@ -669,7 +641,6 @@ public class SimplePostTool {
       } catch (IOException e) {
         warn("Caught exception when trying to open connection to "+u+": "+e.getMessage());
       } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
         throw new RuntimeException(e);
       }
     }
@@ -916,7 +887,6 @@ public class SimplePostTool {
     } catch (IOException e) {
       warn("An error occurred getting data from "+url+". Please check that Solr is running.");
     } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
       warn("An error occurred getting data from "+url+". Message: " + e.getMessage());
     }
   }
@@ -956,7 +926,6 @@ public class SimplePostTool {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);
         success = false;
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
         fatal("POST failed with error " + e.getMessage());
       }
 
@@ -1070,7 +1039,9 @@ public class SimplePostTool {
   /**
    * Gets all nodes matching an XPath
    */
-  public static NodeList getNodesFromXP(XPath xp, Node n, String xpath) throws XPathExpressionException {
+  public static NodeList getNodesFromXP(Node n, String xpath) throws XPathExpressionException {
+    XPathFactory factory = XPathFactory.newInstance();
+    XPath xp = factory.newXPath();
     XPathExpression expr = xp.compile(xpath);
     return (NodeList) expr.evaluate(n, XPathConstants.NODESET);
   }
@@ -1081,9 +1052,9 @@ public class SimplePostTool {
    * @param xpath the xpath string
    * @param concatAll if true, text from all matching nodes will be concatenated, else only the first returned
    */
-  public static String getXP(XPath xp, Node n, String xpath, boolean concatAll)
+  public static String getXP(Node n, String xpath, boolean concatAll)
       throws XPathExpressionException {
-    NodeList nodes = getNodesFromXP(xp, n, xpath);
+    NodeList nodes = getNodesFromXP(n, xpath);
     StringBuilder sb = new StringBuilder();
     if (nodes.getLength() > 0) {
       for(int i = 0; i < nodes.getLength() ; i++) {
@@ -1101,7 +1072,8 @@ public class SimplePostTool {
   public static Document makeDom(byte[] in) throws SAXException, IOException,
   ParserConfigurationException {
     InputStream is = new ByteArrayInputStream(in);
-    Document dom = DOC_BUILDER.parse(is);
+    Document dom = DocumentBuilderFactory.newInstance()
+        .newDocumentBuilder().parse(is);
     return dom;
   }
 
@@ -1273,10 +1245,9 @@ public class SimplePostTool {
         boolean success = postData(is, null, os, type, extractUrl);
         if(success) {
           Document d = makeDom(os.toByteArray());
-          XPath xpath = xpathFactory.newXPath();
-          String innerXml = getXP(xpath, d, "/response/str/text()[1]", false);
+          String innerXml = getXP(d, "/response/str/text()[1]", false);
           d = makeDom(innerXml.getBytes(StandardCharsets.UTF_8));
-          NodeList links = getNodesFromXP(xpath, d, "/html/body//a/@href");
+          NodeList links = getNodesFromXP(d, "/html/body//a/@href");
           for(int i = 0; i < links.getLength(); i++) {
             String link = links.item(i).getTextContent();
             link = computeFullUrl(u, link);
@@ -1293,7 +1264,6 @@ public class SimplePostTool {
       } catch (IOException e) {
         warn("IOException opening URL "+url+": "+e.getMessage());
       } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
         throw new RuntimeException(e);
       }
       return l;

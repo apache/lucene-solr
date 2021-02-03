@@ -2214,7 +2214,7 @@ function start_solr() {
   fi
 
   if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" -Djetty.state="${SOLR_HOME}"/jetty.state "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
+    exec "$JAVA" -Djetty.state=${SOLR_PID_DIR}/jetty.state -Dsolr.log.muteconsole "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
   else
     # run Solr in the background
     export JAVA=$JAVA
@@ -2222,7 +2222,7 @@ function start_solr() {
     export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
     export JETTY_ARGS="${SOLR_JETTY_CONFIG[@]} $SOLR_JETTY_ADDL_CONFIG"
     export JAVA_OPTIONS="${SOLR_START_OPTS[@]} $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole"
-    export JETTY_STATE="${SOLR_HOME}/jetty.state"
+    export JETTY_STATE="${SOLR_PID_DIR}/jetty.state"
     bash $SOLR_SERVER_DIR/../bin/jetty.sh start
   fi
 
