@@ -102,8 +102,8 @@ final class Stemmer {
 
     List<CharsRef> list = new ArrayList<>();
     RootProcessor processor =
-        (buffer, offset, length1, forms, formID) -> {
-          list.add(newStem(buffer, offset, length1, forms, formID));
+        (stem, forms, formID) -> {
+          list.add(newStem(stem, forms, formID));
           return true;
         };
 
@@ -273,7 +273,7 @@ final class Stemmer {
             continue;
           }
         }
-        if (!processor.processRoot(word, offset, length, forms, i)) {
+        if (!processor.processRoot(new CharsRef(word, offset, length), forms, i)) {
           return false;
         }
       }
@@ -347,10 +347,10 @@ final class Stemmer {
 
   interface RootProcessor {
     /** @return whether the processing should be continued */
-    boolean processRoot(char[] buffer, int offset, int length, IntsRef forms, int formID);
+    boolean processRoot(CharsRef stem, IntsRef forms, int formID);
   }
 
-  private CharsRef newStem(char[] buffer, int offset, int length, IntsRef forms, int formID) {
+  private CharsRef newStem(CharsRef stem, IntsRef forms, int formID) {
     final String exception;
     if (dictionary.hasStemExceptions) {
       int exceptionID = forms.ints[forms.offset + formID + 1];
@@ -368,7 +368,7 @@ final class Stemmer {
       if (exception != null) {
         scratchSegment.append(exception);
       } else {
-        scratchSegment.append(buffer, offset, length);
+        scratchSegment.append(stem.chars, stem.offset, stem.length);
       }
       try {
         Dictionary.applyMappings(dictionary.oconv, scratchSegment);
@@ -382,7 +382,7 @@ final class Stemmer {
       if (exception != null) {
         return new CharsRef(exception);
       } else {
-        return new CharsRef(buffer, offset, length);
+        return stem;
       }
     }
   }
@@ -719,7 +719,7 @@ final class Stemmer {
               continue;
             }
           }
-          if (!processor.processRoot(strippedWord, offset, length, forms, i)) {
+          if (!processor.processRoot(new CharsRef(strippedWord, offset, length), forms, i)) {
             return false;
           }
         }

@@ -165,8 +165,8 @@ public class SpellChecker {
         length,
         originalCase,
         context,
-        (buffer, offset1, length1, forms, formID) -> {
-          result[0] = new CharsRef(buffer, offset1, length1);
+        (stem, forms, formID) -> {
+          result[0] = stem;
           return false;
         });
     return result[0];
