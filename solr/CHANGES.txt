@@ -69,7 +69,8 @@ Improvements
 * SOLR-14949: Docker: Ability to customize the FROM image when building.
   (Houston Putman)
 
-* SOLR-15011: /admin/logging handler should be able to configure logs on all nodes (Nazerke Seidan, David Smiley)
+* SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
+when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 
 Other Changes
 ----------------------
