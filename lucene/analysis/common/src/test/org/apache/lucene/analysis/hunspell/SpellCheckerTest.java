@@ -156,6 +156,14 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("germancompounding");
   }
 
+  public void testModifyingSuggestions() throws Exception {
+    doTest("sug");
+  }
+
+  public void testModifyingSuggestions2() throws Exception {
+    doTest("sug2");
+  }
+
   protected void doTest(String name) throws Exception {
     checkSpellCheckerExpectations(
         Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name), true);
