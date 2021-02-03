@@ -80,6 +80,9 @@ public class AtomicUpdateDocumentMerger {
    */
   public static boolean isAtomicUpdate(final AddUpdateCommand cmd) {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
+    if (sdoc == null) {
+      return false;
+    }
     for (SolrInputField sif : sdoc.values()) {
       Object val = sif.getValue();
       if (val instanceof Map && !(val instanceof SolrDocumentBase)) {

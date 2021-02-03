@@ -1378,7 +1378,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             switch (oper) {
               case UpdateLog.UPDATE_INPLACE:
               case UpdateLog.ADD: {
-                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version, null);
                 cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
                 add(cmd);
                 break;
@@ -2063,7 +2063,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               case UpdateLog.UPDATE_INPLACE: // fall through to ADD
               case UpdateLog.ADD: {
                 recoveryInfo.adds++;
-                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+                AddUpdateCommand cmd  = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
+                cmd.clear();
+                cmd.setReq(req);
+                cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version, cmd);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
                 execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
@@ -2255,12 +2258,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    */
   public static AddUpdateCommand convertTlogEntryToAddUpdateCommand(SolrQueryRequest req,
                                                                     @SuppressWarnings({"rawtypes"})List entry,
-                                                                    int operation, long version) {
+                                                                    int operation, long version, AddUpdateCommand cmd) {
     assert operation == UpdateLog.ADD || operation == UpdateLog.UPDATE_INPLACE;
     SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size()-1);
-    AddUpdateCommand cmd  = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
-    cmd.clear();
-    cmd.setReq(req);
+
+    if (cmd == null) {
+      cmd = new AddUpdateCommand(req);
+    }
 
     cmd.solrDoc = sdoc;
     cmd.setVersion(version);

@@ -122,7 +122,6 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
         super.finish();
       } finally {
         AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clear();
-        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clear();
       }
     }
 

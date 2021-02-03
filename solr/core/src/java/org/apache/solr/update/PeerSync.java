@@ -676,7 +676,7 @@ public class PeerSync implements SolrMetricProducer {
             }
             case UpdateLog.UPDATE_INPLACE:
             {
-              AddUpdateCommand cmd = UpdateLog.convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+              AddUpdateCommand cmd = UpdateLog.convertTlogEntryToAddUpdateCommand(req, entry, oper, version, null);
               cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
                 log.debug("{} inplace update {} prevVersion={} doc={}", logPrefix, cmd, cmd.prevVersion, cmd.solrDoc);
@@ -708,6 +708,7 @@ public class PeerSync implements SolrMetricProducer {
         } finally {
           IOUtils.closeQuietly(proc);
         }
+        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clear();
       }
     }
   }
