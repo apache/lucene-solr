@@ -185,7 +185,7 @@ public class SpellChecker {
             && word.chars[breakOffset - 1] == word.chars[breakOffset]) {
           stem = findStem(word.chars, word.offset, breakPos + 1, originalCase, context);
         }
-        if (stem != null && (prev == null || prev.checkPatterns(stem))) {
+        if (stem != null && (prev == null || prev.mayCompound(stem, breakPos, originalCase))) {
           CompoundPart part = new CompoundPart(prev, word, breakPos, stem, null);
           if (checkCompoundsAfter(originalCase, part)) {
             return true;
@@ -230,7 +230,7 @@ public class SpellChecker {
     if (tailStem != null
         && !(dictionary.checkCompoundDup && equalsIgnoreCase(prev.stem, tailStem))
         && !hasForceUCaseProblem(word.chars, breakOffset, remainingLength, originalCase)
-        && prev.checkPatterns(tailStem)) {
+        && prev.mayCompound(tailStem, remainingLength, originalCase)) {
       return true;
     }
 
@@ -272,13 +272,36 @@ public class SpellChecker {
       return (prev == null ? "" : prev + "+") + tail.subSequence(0, length);
     }
 
-    boolean checkPatterns(CharsRef nextStem) {
-      if (enablingPattern != null) {
-        return enablingPattern.prohibitsCompounding(tail, length, stem, nextStem);
+    boolean mayCompound(CharsRef nextStem, int nextPartLength, WordCase originalCase) {
+      boolean patternsOk =
+          enablingPattern != null
+              ? enablingPattern.prohibitsCompounding(tail, length, stem, nextStem)
+              : dictionary.checkCompoundPatterns.stream()
+                  .noneMatch(p -> p.prohibitsCompounding(tail, length, stem, nextStem));
+      if (!patternsOk) {
+        return false;
       }
 
-      return dictionary.checkCompoundPatterns.stream()
-          .noneMatch(p -> p.prohibitsCompounding(tail, length, stem, nextStem));
+      //noinspection RedundantIfStatement
+      if (dictionary.checkCompoundRep
+          && isMisspelledSimpleWord(length + nextPartLength, originalCase)) {
+        return false;
+      }
+      return true;
+    }
+
+    private boolean isMisspelledSimpleWord(int length, WordCase originalCase) {
+      String word = new String(tail.chars, tail.offset, length);
+      for (RepEntry entry : dictionary.repTable) {
+        if (entry.isMiddle()) {
+          for (String sug : entry.substitute(word)) {
+            if (findStem(sug.toCharArray(), 0, sug.length(), originalCase, SIMPLE_WORD) != null) {
+              return true;
+            }
+          }
+        }
+      }
+      return false;
     }
   }
 
