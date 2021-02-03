@@ -74,6 +74,10 @@ class ModifyingSuggester {
     boolean hasGoodSuggestions = trySuggestion(word.toUpperCase(Locale.ROOT));
     hasGoodSuggestions |= tryRep(word);
 
+    if (!speller.dictionary.mapTable.isEmpty()) {
+      enumerateMapReplacements(word, "", 0);
+    }
+
     trySwappingChars(word);
     tryLongSwap(word);
     tryNeighborKeys(word);
@@ -114,6 +118,27 @@ class ModifyingSuggester {
       }
     }
     return result.size() > before;
+  }
+
+  private void enumerateMapReplacements(String word, String accumulated, int offset) {
+    if (offset == word.length()) {
+      trySuggestion(accumulated);
+      return;
+    }
+
+    for (List<String> entries : speller.dictionary.mapTable) {
+      for (String entry : entries) {
+        if (word.regionMatches(offset, entry, 0, entry.length())) {
+          for (String replacement : entries) {
+            if (!entry.equals(replacement)) {
+              enumerateMapReplacements(word, accumulated + replacement, offset + entry.length());
+            }
+          }
+        }
+      }
+    }
+
+    enumerateMapReplacements(word, accumulated + word.charAt(offset), offset + 1);
   }
 
   private boolean checkSimpleWord(String part) {

@@ -180,6 +180,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("sug2");
   }
 
+  public void testMapSuggestions() throws Exception {
+    doTest("map");
+  }
+
   protected void doTest(String name) throws Exception {
     checkSpellCheckerExpectations(
         Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name), true);
