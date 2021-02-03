@@ -261,7 +261,7 @@ public class HttpSolrCall {
 
       core = cores.getCore(origCorename);
 
-      if (core == null && cores.isCoreLoading(origCorename)) {
+      if (core == null && !cores.isZooKeeperAware() && cores.isCoreLoading(origCorename)) {
         cores.waitForLoadingCore(origCorename, 3000);
       }
 

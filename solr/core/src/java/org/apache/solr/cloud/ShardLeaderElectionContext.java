@@ -290,7 +290,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         return true;
       }
       if (replicasWithHigherTermParticipated(zkShardTerms, coreNodeName)) {
-        log.info("Can't become leader, other replicas with higher term participated in leader election");
+        log.info("Can't become leader, other replicas with higher term participated in leader election {}", zkShardTerms);
         return false;
       }
 
@@ -305,17 +305,17 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    *
    * @return true if other replicas with higher term participated in the election, false if otherwise
    */
-  private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String coreNodeName) throws InterruptedException {
+  private boolean replicasWithHigherTermParticipated(ZkShardTerms zkShardTerms, String coreName) throws InterruptedException {
     ClusterState clusterState = zkController.getClusterState();
     DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     Slice slices = (docCollection == null) ? null : docCollection.getSlice(shardId);
     if (slices == null) return false;
 
-    long replicaTerm = zkShardTerms.getTerm(coreNodeName);
-    boolean isRecovering = zkShardTerms.isRecovering(coreNodeName);
+    long replicaTerm = zkShardTerms.getTerm(coreName);
+    boolean isRecovering = zkShardTerms.isRecovering(coreName);
 
     for (Replica replica : slices.getReplicas()) {
-      if (replica.getName().equals(coreNodeName)) continue;
+      if (replica.getName().equals(coreName)) continue;
       if (zkController.getZkStateReader().getLiveNodes().contains(replica.getNodeName())) {
         long otherTerm = zkShardTerms.getTerm(replica.getName());
         boolean isOtherReplicaRecovering = zkShardTerms.isRecovering(replica.getName());

@@ -80,6 +80,11 @@ public class ZkShardTerms implements Closeable {
 
   private final AtomicReference<ShardTerms> terms = new AtomicReference<>();
 
+  @Override
+  public String toString() {
+    return "ZkShardTerms{" + "terms=" + terms.get() + '}';
+  }
+
   /**
    * Listener of a core for shard's term change events
    */

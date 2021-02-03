@@ -113,9 +113,9 @@ public class MiniSolrCloudCluster {
       "    <str name=\"host\">127.0.0.1</str>\n" +
       "    <int name=\"hostPort\">${hostPort:8983}</int>\n" +
       "    <str name=\"hostContext\">${hostContext:solr}</str>\n" +
-      "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n" +
+      "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:15000}</int>\n" +
       "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n" +
-      "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n" +
+      "    <int name=\"leaderVoteWait\">${leaderVoteWait:5000}</int>\n" +
       "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n" +
       "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n" +
       "    <str name=\"zkCredentialsProvider\">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str> \n" +

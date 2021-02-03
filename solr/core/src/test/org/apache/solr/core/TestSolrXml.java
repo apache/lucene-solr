@@ -140,7 +140,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
     NodeConfig cfg = new SolrXmlConfig().fromString(solrHome, solrXml);
     assertNull("maxBooleanClauses", cfg.getBooleanQueryMaxClauseCount()); // default is null
-    assertEquals("leaderVoteWait", 180000, cfg.getCloudConfig().getLeaderVoteWait());
+    assertEquals("leaderVoteWait", 10000, cfg.getCloudConfig().getLeaderVoteWait());
   }
 
   public void testIntAsLongBad() {
