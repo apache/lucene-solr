@@ -342,6 +342,8 @@ public class LeaderElector implements Closeable {
         try {
           isCancelled = false;
           doJoinElection(context, replacement, joinAtHead);
+        } catch (AlreadyClosedException e) {
+
         } catch (Exception e) {
           log.error("Exception trying to join election", e);
         } finally {

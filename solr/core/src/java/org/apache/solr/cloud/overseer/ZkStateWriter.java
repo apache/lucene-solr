@@ -475,7 +475,7 @@ public class ZkStateWriter {
               if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
 
               lastVersion.set(-1);
-            //  trackVersions.remove(collection.getName());
+              trackVersions.remove(collection.getName());
               // likely deleted
 
             } catch (KeeperException.BadVersionException bve) {
@@ -501,7 +501,14 @@ public class ZkStateWriter {
                 String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
                 if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
                 dirtyState.remove(collection.getName());
-                reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
+                try {
+                  reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
+                } catch (KeeperException.NoNodeException e) {
+                    if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
+                    lastVersion.set(-1);
+                    trackVersions.remove(collection.getName());
+                    // likely deleted
+                  }
               }
             }
 
