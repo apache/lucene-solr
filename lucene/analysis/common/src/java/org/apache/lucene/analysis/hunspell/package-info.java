@@ -16,11 +16,14 @@
  */
 
 /**
- * Stemming TokenFilter using a Java implementation of the <a
- * href="http://www.ldc.upenn.edu/Catalog/docs/LDC2008T01/acta04.pdf">Hunspell stemming
- * algorithm.</a>
+ * A Java implementation of <a href="http://hunspell.github.io/">Hunspell</a> stemming and
+ * spell-checking algorithms, and a stemming TokenFilter based on it.
  *
- * <p>Dictionaries can be found on <a
- * href="http://wiki.services.openoffice.org/wiki/Dictionaries">OpenOffice's wiki</a>
+ * <p>For dictionaries, see e.g. <a href="https://github.com/LibreOffice/dictionaries">LibreOffice
+ * repository</a> or <a href="https://github.com/wooorm/dictionaries">Titus Wormer's collection
+ * (UTF)</a>
+ *
+ * @see org.apache.lucene.analysis.hunspell.HunspellStemFilter
+ * @see org.apache.lucene.analysis.hunspell.SpellChecker
  */
 package org.apache.lucene.analysis.hunspell;
