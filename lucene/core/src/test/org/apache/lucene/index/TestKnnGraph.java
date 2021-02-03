@@ -30,6 +30,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene90.Lucene90VectorReader;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
@@ -58,8 +59,7 @@ public class TestKnnGraph extends LuceneTestCase {
   public void setup() {
     randSeed = random().nextLong();
     if (random().nextBoolean()) {
-      maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
-      HnswGraphBuilder.DEFAULT_MAX_CONN = random().nextInt(256) + 2;
+      maxConn = random().nextInt(256) + 2;
     }
     int strategy = random().nextInt(SearchStrategy.values().length - 1) + 1;
     searchStrategy = SearchStrategy.values()[strategy];
@@ -67,7 +67,7 @@ public class TestKnnGraph extends LuceneTestCase {
 
   @After
   public void cleanup() {
-    HnswGraphBuilder.DEFAULT_MAX_CONN = maxConn;
+    maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
   }
 
   /** Basic test of creating documents in a graph */
@@ -196,7 +196,7 @@ public class TestKnnGraph extends LuceneTestCase {
   int[][] copyGraph(KnnGraphValues values) throws IOException {
     int size = values.size();
     int[][] graph = new int[size][];
-    int[] scratch = new int[HnswGraphBuilder.DEFAULT_MAX_CONN];
+    int[] scratch = new int[maxConn];
     for (int node = 0; node < size; node++) {
       int n, count = 0;
       values.seek(node);
@@ -368,12 +368,12 @@ public class TestKnnGraph extends LuceneTestCase {
           assertTrue(
               "Graph has " + graphSize + " nodes, but one of them has no neighbors", graphSize > 1);
         }
-        if (HnswGraphBuilder.DEFAULT_MAX_CONN > graphSize) {
+        if (maxConn > graphSize) {
           // assert that the graph in each leaf is connected
           assertConnected(graph);
         } else {
           // assert that max-connections was respected
-          assertMaxConn(graph, HnswGraphBuilder.DEFAULT_MAX_CONN);
+          assertMaxConn(graph, maxConn);
         }
         totalGraphDocs += graphSize;
       }
@@ -439,7 +439,10 @@ public class TestKnnGraph extends LuceneTestCase {
       throws IOException {
     Document doc = new Document();
     if (vector != null) {
-      doc.add(new VectorField(KNN_GRAPH_FIELD, vector, searchStrategy));
+      FieldType fieldType =
+          VectorField.createHnswType(
+              vector.length, searchStrategy, maxConn, HnswGraphBuilder.DEFAULT_BEAM_WIDTH);
+      doc.add(new VectorField(KNN_GRAPH_FIELD, vector, fieldType));
     }
     String idString = Integer.toString(id);
     doc.add(new StringField("id", idString, Field.Store.YES));
