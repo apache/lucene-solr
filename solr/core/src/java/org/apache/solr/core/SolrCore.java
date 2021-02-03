@@ -1041,6 +1041,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
       this.configSetProperties = configSet.getProperties();
 
+      setLatestSchema(schema);
+
       // Initialize the RestManager
       StopWatch initRestManager = new StopWatch(this + "-initRestManager");
       restManager = initRestManager(cd);
@@ -1082,7 +1084,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       StopWatch timeVerInSchema = new StopWatch(this + "-verInSchema");
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
-      setLatestSchema(schema);
       timeVerInSchema.done();
 
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
@@ -1210,22 +1211,20 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       StopWatch timeLoadSearchComponents = new StopWatch(this + "-startCore-loadSearchComponents");
       loadSearchComponents();
       timeLoadSearchComponents.done();
+
       updateProcessors.init(Collections.emptyMap(), this);
 
       // Processors initialized before the handlers
       updateProcessorChains = loadUpdateProcessorChains();
 
-      StopWatch timeInform = new StopWatch(this + "-startCore-inform");
-      // Finally tell anyone who wants to know
-      resourceLoader.inform(resourceLoader);
-
-      this.updateHandler.informEventListeners(this);
-      timeInform.done();
-
-
       future.get();
 
+      // Finally tell anyone who wants to know
+      StopWatch timeInform = new StopWatch(this + "-startCore-inform");
+      this.updateHandler.informEventListeners(this);
+      resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
+      timeInform.done();
 
       searcherReadyLatch.countDown();
       // this must happen after the latch is released, because a JMX server impl may
