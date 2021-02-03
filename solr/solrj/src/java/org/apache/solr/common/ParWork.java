@@ -484,7 +484,7 @@ public class ParWork implements Closeable {
   }
 
   public static ExecutorService getMyPerThreadExecutor() {
-    Thread thread = Thread.currentThread();
+    //Thread thread = Thread.currentThread();
 
     ExecutorService service = null;
 //    if (thread instanceof  SolrThread) {

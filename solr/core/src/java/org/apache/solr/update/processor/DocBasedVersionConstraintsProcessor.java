@@ -439,6 +439,7 @@ public class DocBasedVersionConstraintsProcessor extends UpdateRequestProcessor 
       SolrInputDocument newDoc = createTombstoneDocument(core.getLatestSchema(), cmd.getId(), versionFieldNames, deleteParamValues, this.tombstoneConfig);
 
       AddUpdateCommand newCmd = new AddUpdateCommand(cmd.getReq());
+
       newCmd.solrDoc = newDoc;
       newCmd.commitWithin = cmd.commitWithin;
       super.processAdd(newCmd);

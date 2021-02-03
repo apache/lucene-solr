@@ -38,6 +38,11 @@ import org.apache.solr.schema.SchemaField;
  * may be involved in the event of nested documents.
  */
 public class AddUpdateCommand extends UpdateCommand {
+  public final static ThreadLocal<AddUpdateCommand> THREAD_LOCAL_AddUpdateCommand = new ThreadLocal<>(){
+    protected AddUpdateCommand initialValue() {
+      return new AddUpdateCommand(null);
+    }
+  };
 
   /**
    * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)

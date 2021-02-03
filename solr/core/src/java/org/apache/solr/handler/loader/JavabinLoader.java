@@ -168,10 +168,12 @@ public class JavabinLoader extends ContentStreamLoader {
   }
 
   private AddUpdateCommand getAddCommand(SolrQueryRequest req, SolrParams params) {
-    AddUpdateCommand addCmd = new AddUpdateCommand(req);
-    addCmd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
-    addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
-    return addCmd;
+    AddUpdateCommand templateAdd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+    templateAdd.clear();
+    templateAdd.setReq(req);
+    templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
+    templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+    return templateAdd;
   }
 
   private void delete(SolrQueryRequest req, UpdateRequest update, UpdateRequestProcessor processor) throws IOException {

@@ -448,7 +448,9 @@ public class JsonLoader extends ContentStreamLoader {
     }
 
     AddUpdateCommand parseAdd() throws IOException {
-      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+      cmd.clear();
+      cmd.setReq(req);
       cmd.commitWithin = commitWithin;
       cmd.overwrite = overwrite;
 
@@ -457,6 +459,9 @@ public class JsonLoader extends ContentStreamLoader {
         if (ev == JSONParser.STRING) {
           if (parser.wasKey()) {
             String key = parser.getString();
+
+
+
             if ("doc".equals(key)) {
               if (cmd.solrDoc != null) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Multiple documents in same"

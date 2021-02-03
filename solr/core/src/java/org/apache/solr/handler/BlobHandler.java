@@ -239,7 +239,9 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     for (Map.Entry<String, Object> e : doc.entrySet()) solrDoc.addField(e.getKey(), e.getValue());
     UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessorChain(req.getParams());
     try (UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp)) {
-      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      AddUpdateCommand cmd  = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+      cmd.clear();
+      cmd.setReq(req);
       cmd.solrDoc = solrDoc;
       log.info("Adding doc: {}", doc);
       processor.processAdd(cmd);

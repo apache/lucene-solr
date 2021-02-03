@@ -38,7 +38,7 @@ public class BufferingRequestProcessor extends UpdateRequestProcessor
   
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    addCommands.add( cmd );
+    addCommands.add((AddUpdateCommand) cmd.clone());
   }
 
   @Override

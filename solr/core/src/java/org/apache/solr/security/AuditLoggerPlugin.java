@@ -315,15 +315,9 @@ public abstract class AuditLoggerPlugin extends ParWork.NoLimitsCallable impleme
     // breaking out of polling
     closed = true;
     if (executorService != null) {
-      waitForQueueToDrain(15);
+      waitForQueueToDrain(1);
       runningFuture.cancel(true);
       log.info("Shutting down async Auditlogger background thread(s)");
-
-      try {
-        executorService.awaitTermination(10, TimeUnit.SECONDS);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-      }
     }
     try {
       SolrInfoBean.super.close();

@@ -16,10 +16,12 @@
  */
 package org.apache.solr.handler.loader;
 
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import java.io.*;
 
@@ -32,13 +34,22 @@ public class CSVLoader extends ContentStreamLoader {
 }
 
 class SingleThreadedCSVLoader extends CSVLoaderBase {
+  private final int commitWithin;
+  private final boolean overwrite;
+
   SingleThreadedCSVLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     super(req, processor);
+    this.overwrite = req.getParams().getBool(OVERWRITE,true);
+    this.commitWithin = req.getParams().getInt(UpdateParams.COMMIT_WITHIN, -1);
   }
 
   @Override
   void addDoc(int line, String[] vals) throws IOException {
+    AddUpdateCommand templateAdd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
     templateAdd.clear();
+    templateAdd.setReq(req);
+    templateAdd.overwrite = overwrite;
+    templateAdd.commitWithin = commitWithin;
     SolrInputDocument doc = new SolrInputDocument();
     doAdd(line, vals, doc, templateAdd);
   }

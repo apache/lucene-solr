@@ -60,6 +60,7 @@ public class PerThreadExecService extends AbstractExecutorService {
       this.maxSize = maxSize;
     }
     this.service = service;
+    running.incrementAndGet();
   }
 
   @Override
@@ -86,11 +87,19 @@ public class PerThreadExecService extends AbstractExecutorService {
    // assert closeTracker.close();
     assert ObjectReleaseTracker.release(this);
     this.shutdown = true;
+    running.decrementAndGet();
+    synchronized (running) {
+      running.notifyAll();
+    }
   }
 
   @Override
   public List<Runnable> shutdownNow() {
     shutdown = true;
+    running.decrementAndGet();
+    synchronized (running) {
+      running.notifyAll();
+    }
     return Collections.emptyList();
   }
 
@@ -108,16 +117,18 @@ public class PerThreadExecService extends AbstractExecutorService {
   public boolean awaitTermination(long l, TimeUnit timeUnit)
       throws InterruptedException {
     TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (running.get() > 0) {
-      if (timeout.hasTimedOut()) {
-        log.error("return before reaching termination, wait for {} {}, running={}", l, timeout, running);
-        return false;
+    synchronized (running) {
+
+      while (running.get() > 0) {
+        if (timeout.hasTimedOut()) {
+          log.error("return before reaching termination, wait for {} {}, running={}", l, timeout, running);
+          return false;
+        }
+
+        // System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
+        running.wait(1000);
       }
-
-      // System.out.println("WAIT : " + workQueue.size() + " " + available.getQueueLength() + " " + workQueue.toString());
-      Thread.sleep(250);
     }
-
     if (isShutdown()) {
       terminated = true;
     }
@@ -140,6 +151,9 @@ public class PerThreadExecService extends AbstractExecutorService {
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e);
           running.decrementAndGet();
+          synchronized (running) {
+            running.notifyAll();
+          }
           throw new RejectedExecutionException("Interrupted");
         }
       }
@@ -153,6 +167,9 @@ public class PerThreadExecService extends AbstractExecutorService {
           available.release();
         }
         running.decrementAndGet();
+        synchronized (running) {
+          running.notifyAll();
+        }
         throw e;
       }
       return;
@@ -173,6 +190,9 @@ public class PerThreadExecService extends AbstractExecutorService {
         available.release();
       } finally {
         running.decrementAndGet();
+        synchronized (running) {
+          running.notifyAll();
+        }
       }
       throw e;
     }
@@ -188,6 +208,9 @@ public class PerThreadExecService extends AbstractExecutorService {
         }
       } finally {
         running.decrementAndGet();
+        synchronized (running) {
+          running.notifyAll();
+        }
       }
     }
   }

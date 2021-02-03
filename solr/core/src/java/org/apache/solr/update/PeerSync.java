@@ -634,7 +634,9 @@ public class PeerSync implements SolrMetricProducer {
             {
               // byte[] idBytes = (byte[]) entry.get(2);
               SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
-              AddUpdateCommand cmd = new AddUpdateCommand(req);
+              AddUpdateCommand cmd  = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+              cmd.clear();
+              cmd.setReq(req);
               // cmd.setIndexedId(new BytesRef(idBytes));
               cmd.solrDoc = sdoc;
               cmd.setVersion(version);

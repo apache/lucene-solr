@@ -214,7 +214,9 @@ public class XMLLoader extends ContentStreamLoader {
           if (currTag.equals(UpdateRequestHandler.ADD)) {
             log.trace("SolrCore.update(add)");
 
-            addCmd = new AddUpdateCommand(req);
+            addCmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+            addCmd.clear();
+            addCmd.setReq(req);
 
             // First look for commitWithin parameter on the request, will be overwritten for individual <add>'s
             addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);

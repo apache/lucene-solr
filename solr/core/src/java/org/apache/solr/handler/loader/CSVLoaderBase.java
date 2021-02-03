@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.loader;
 
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.SolrException;
@@ -29,8 +31,14 @@ import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.solr.internal.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 import java.util.List;
 import java.util.HashMap;
@@ -38,6 +46,8 @@ import java.util.Iterator;
 import java.io.*;
 
 abstract class CSVLoaderBase extends ContentStreamLoader {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static final String SEPARATOR="separator";
   public static final String FIELDNAMES="fieldnames";
   public static final String HEADER="header";
@@ -60,6 +70,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   final SolrParams params;
   final CSVStrategy strategy;
   final UpdateRequestProcessor processor;
+  protected final SolrQueryRequest req;
   // hashmap to save any literal fields and their values
   HashMap <String, String> literals;
 
@@ -70,8 +81,6 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   int rowIdOffset = 0; //add to line/rowid before creating the field
 
   int skipLines;    // number of lines to skip at start of file
-
-  final AddUpdateCommand templateAdd;
 
 
 
@@ -160,11 +169,8 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
   CSVLoaderBase(SolrQueryRequest req, UpdateRequestProcessor processor) {
     this.processor = processor;
     this.params = req.getParams();
+    this.req = req;
     this.literals = new HashMap<>();
-
-    templateAdd = new AddUpdateCommand(req);
-    templateAdd.overwrite=params.getBool(OVERWRITE,true);
-    templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     
     strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
     String sep = params.get(SEPARATOR);
@@ -342,6 +348,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
         prepareFields();
       }
 
+      ExecutorService executor = ParWork.getExecutorService(SysStats.PROC_COUNT);
       // read the rest of the CSV file
       for(;;) {
         int line = parser.getLineNumber();  // for error reporting in MT mode
@@ -357,8 +364,24 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
         if (vals.length != fieldnames.length) {
           input_err("expected "+fieldnames.length+" values but got "+vals.length, vals, line);
         }
+        AtomicReference<Exception> failed = new AtomicReference<>();
+        String[] finalVals = vals;
+        executor.submit(() -> {
+          try {
+            addDoc(line, finalVals);
+          } catch (Exception e) {
+            log.error("addDoc failed", e);
+            failed.set(e);
+          }
+        });
 
-        addDoc(line,vals);
+      }
+      try {
+        executor.shutdown();
+        executor.awaitTermination(365, TimeUnit.DAYS);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     } finally{
       if (reader != null) {

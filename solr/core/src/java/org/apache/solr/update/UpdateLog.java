@@ -2258,7 +2258,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                                                                     int operation, long version) {
     assert operation == UpdateLog.ADD || operation == UpdateLog.UPDATE_INPLACE;
     SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size()-1);
-    AddUpdateCommand cmd = new AddUpdateCommand(req);
+    AddUpdateCommand cmd  = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+    cmd.clear();
+    cmd.setReq(req);
+
     cmd.solrDoc = sdoc;
     cmd.setVersion(version);
     
