@@ -92,7 +92,7 @@ public class TestStreamBody extends RestTestBase {
       queryRequest.process(client);
       fail();
     } catch (SolrException se) {
-      assertTrue(se.getMessage(), se.getMessage().contains("Bad contentType for search handler :text/xml"));
+      assertTrue(se.getMessage(), se.getMessage().contains("Bad contentType for search handler :text/xml") || se.getMessage().contains("Stream Body is disabled"));
     }
   }
 
