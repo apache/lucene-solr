@@ -21,16 +21,16 @@ In SolrCloud mode, custom plugins need to be shared across all nodes of the clus
 .Deprecated
 [IMPORTANT]
 ====
-The functionality here has changed to be a subset of the <<package-manager.adoc#package-manager,Package Management>> system.
+The functionality here has changed to be a subset of the <<package-manager.adoc#,Package Management>> system.
 As described in this page, will no longer be supported in Solr 9.
 ====
 
-When running Solr in SolrCloud mode and you want to use custom code (such as custom analyzers, tokenizers, query parsers, and other plugins), it can be cumbersome to add jars to the classpath on all nodes in your cluster. Using the <<blob-store-api.adoc#blob-store-api,Blob Store API>> and special commands with the <<config-api.adoc#config-api,Config API>>, you can upload jars to a special system-level collection and dynamically load plugins from them at runtime without needing to restart any nodes.
+When running Solr in SolrCloud mode and you want to use custom code (such as custom analyzers, tokenizers, query parsers, and other plugins), it can be cumbersome to add jars to the classpath on all nodes in your cluster. Using the <<blob-store-api.adoc#,Blob Store API>> and special commands with the <<config-api.adoc#,Config API>>, you can upload jars to a special system-level collection and dynamically load plugins from them at runtime without needing to restart any nodes.
 
 .This Feature is Disabled By Default
 [IMPORTANT]
 ====
-In addition to requiring that Solr is running in <<solrcloud.adoc#solrcloud,SolrCloud>> mode, this feature is also disabled by default unless all Solr nodes are run with the `-Denable.runtime.lib=true` option on startup.
+In addition to requiring that Solr is running in <<solrcloud.adoc#,SolrCloud>> mode, this feature is also disabled by default unless all Solr nodes are run with the `-Denable.runtime.lib=true` option on startup.
 
 Before enabling this feature, users should carefully consider the issues discussed in the <<Securing Runtime Libraries>> section below.
 ====
@@ -39,11 +39,11 @@ Before enabling this feature, users should carefully consider the issues discuss
 
 Use your own service to host the jars or you can use Solr itself to host the jars.
 
-Use the <<blob-store-api.adoc#blob-store-api,Blob Store API>> to upload your jar files to Solr. This will to put your jars in the `.system` collection and distribute them across your SolrCloud nodes. These jars are added to a separate classloader and only accessible to components that are configured with the property `runtimeLib=true`. These components are loaded lazily because the `.system` collection may not be loaded when a particular core is loaded.
+Use the <<blob-store-api.adoc#,Blob Store API>> to upload your jar files to Solr. This will to put your jars in the `.system` collection and distribute them across your SolrCloud nodes. These jars are added to a separate classloader and only accessible to components that are configured with the property `runtimeLib=true`. These components are loaded lazily because the `.system` collection may not be loaded when a particular core is loaded.
 
 == Config API Commands to use Jars as Runtime Libraries
 
-The runtime library feature uses a special set of commands for the <<config-api.adoc#config-api,Config API>> to add, update, or remove jar files currently available in the blob store to the list of runtime libraries.
+The runtime library feature uses a special set of commands for the <<config-api.adoc#,Config API>> to add, update, or remove jar files currently available in the blob store to the list of runtime libraries.
 
 The following commands are used to manage runtime libs:
 
@@ -284,7 +284,7 @@ The output of this step will be a string that you will need to add the jar to yo
 
 === Step 5: Load the jar to the Blob Store
 
-Load your jar to the Blob store, using the <<blob-store-api.adoc#blob-store-api,Blob Store API>>. This step does not require a signature; you will need the signature in Step 6 to add it to your classpath.
+Load your jar to the Blob store, using the <<blob-store-api.adoc#,Blob Store API>>. This step does not require a signature; you will need the signature in Step 6 to add it to your classpath.
 
 [source,bash]
 ----

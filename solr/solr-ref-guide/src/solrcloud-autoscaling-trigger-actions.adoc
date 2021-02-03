@@ -150,4 +150,4 @@ If the Overseer node fails while `ExecutePlanAction` is running,
 then the new Overseer node will run the chain of actions for the same event again after waiting for any
 running Collection API operations belonging to the event to complete.
 
-Please see <<solrcloud-autoscaling-fault-tolerance.adoc#solrcloud-autoscaling-fault-tolerance,SolrCloud Autoscaling Fault Tolerance>> for more details on fault tolerance within the autoscaling framework.
+Please see <<solrcloud-autoscaling-fault-tolerance.adoc#,SolrCloud Autoscaling Fault Tolerance>> for more details on fault tolerance within the autoscaling framework.

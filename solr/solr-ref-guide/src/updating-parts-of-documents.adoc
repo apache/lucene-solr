@@ -296,7 +296,7 @@ When documents are added/updated in batches even a single version conflict may l
 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
-When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
+When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#,`/get` request>>.
 
 Following are some examples using `versions=true` in queries:
 

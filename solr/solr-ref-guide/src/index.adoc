@@ -65,18 +65,18 @@ The Guide includes the following sections:
 [sidebar.col]
 ****
 
-The *<<getting-started.adoc#getting-started,Getting Started>>* section guides you through the installation and setup of Solr. A detailed tutorial for first-time users shows many of Solr's features.
+The *<<getting-started.adoc#,Getting Started>>* section guides you through the installation and setup of Solr. A detailed tutorial for first-time users shows many of Solr's features.
 
-*<<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,Using the Solr Administration User Interface>>*: This section introduces the Web-based interface for administering Solr. From your browser you can view configuration files, submit queries, view logfile settings and Java environment settings, and monitor and control distributed configurations.
+*<<using-the-solr-administration-user-interface.adoc#,Using the Solr Administration User Interface>>*: This section introduces the Web-based interface for administering Solr. From your browser you can view configuration files, submit queries, view logfile settings and Java environment settings, and monitor and control distributed configurations.
 ****
 
 .Deploying Solr
 [sidebar.col]
 ****
 
-*<<deployment-and-operations.adoc#deployment-and-operations,Deployment and Operations>>*: Once you have Solr configured, you want to deploy it to production and keep it up to date. This section includes information about how to take Solr to production, run it in HDFS or AWS, and information about upgrades and managing Solr from the command line.
+*<<deployment-and-operations.adoc#,Deployment and Operations>>*: Once you have Solr configured, you want to deploy it to production and keep it up to date. This section includes information about how to take Solr to production, run it in HDFS or AWS, and information about upgrades and managing Solr from the command line.
 
-*<<monitoring-solr.adoc#monitoring-solr,Monitoring Solr>>*: Solr includes options for keeping an eye on the performance of your Solr cluster with the web-based administration console, through the command line interface, or using REST APIs.
+*<<monitoring-solr.adoc#,Monitoring Solr>>*: Solr includes options for keeping an eye on the performance of your Solr cluster with the web-based administration console, through the command line interface, or using REST APIs.
 ****
 --
 
@@ -90,22 +90,22 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 .Indexing Documents
 [sidebar.col]
 ****
-*<<indexing-and-basic-data-operations.adoc#indexing-and-basic-data-operations,Indexing and Basic Data Operations>>*: This section describes the indexing process and basic index operations, such as commit, optimize, and rollback.
+*<<indexing-and-basic-data-operations.adoc#,Indexing and Basic Data Operations>>*: This section describes the indexing process and basic index operations, such as commit, optimize, and rollback.
 
-*<<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>*: This section describes how Solr organizes data in the index. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
+*<<documents-fields-and-schema-design.adoc#,Documents, Fields, and Schema Design>>*: This section describes how Solr organizes data in the index. It explains how a Solr schema defines the fields and field types which Solr uses to organize data within the document files it indexes.
 
-*<<understanding-analyzers-tokenizers-and-filters.adoc#understanding-analyzers-tokenizers-and-filters,Understanding Analyzers, Tokenizers, and Filters>>*: This section explains how Solr prepares text for indexing and searching. Analyzers parse text and produce a stream of tokens, lexical units used for indexing and searching. Tokenizers break field data down into tokens. Filters perform other transformational or selective work on token streams.
+*<<understanding-analyzers-tokenizers-and-filters.adoc#,Understanding Analyzers, Tokenizers, and Filters>>*: This section explains how Solr prepares text for indexing and searching. Analyzers parse text and produce a stream of tokens, lexical units used for indexing and searching. Tokenizers break field data down into tokens. Filters perform other transformational or selective work on token streams.
 ****
 
 .Searching Documents
 [sidebar.col]
 ****
 
-*<<searching.adoc#searching,Searching>>*: This section presents an overview of the search process in Solr. It describes the main components used in searches, including request handlers, query parsers, and response writers. It lists the query parameters that can be passed to Solr, and it describes features such as boosting and faceting, which can be used to fine-tune search results.
+*<<searching.adoc#,Searching>>*: This section presents an overview of the search process in Solr. It describes the main components used in searches, including request handlers, query parsers, and response writers. It lists the query parameters that can be passed to Solr, and it describes features such as boosting and faceting, which can be used to fine-tune search results.
 
-*<<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>*: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
+*<<streaming-expressions.adoc#,Streaming Expressions>>*: A stream processing language for Solr, with a suite of functions to perform many types of queries and parallel execution tasks.
 
-*<<client-apis.adoc#client-apis,Client APIs>>*: This section tells you how to access Solr through various client APIs, including JavaScript, JSON, and Ruby.
+*<<client-apis.adoc#,Client APIs>>*: This section tells you how to access Solr through various client APIs, including JavaScript, JSON, and Ruby.
 ****
 --
 
@@ -119,18 +119,18 @@ The *<<getting-started.adoc#getting-started,Getting Started>>* section guides yo
 .Scaling Solr
 [sidebar.col]
 ****
-*<<solrcloud.adoc#solrcloud,SolrCloud>>*: This section describes SolrCloud, which provides comprehensive distributed capabilities.
+*<<solrcloud.adoc#,SolrCloud>>*: This section describes SolrCloud, which provides comprehensive distributed capabilities.
 
-*<<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>*: This section tells you how to grow a Solr distribution by dividing a large index into sections called shards, which are then distributed across multiple servers, or by replicating a single index across multiple services.
+*<<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>*: This section tells you how to grow a Solr distribution by dividing a large index into sections called shards, which are then distributed across multiple servers, or by replicating a single index across multiple services.
 
-*<<circuit-breakers.adoc#circuit-breakers,Circuit Breakers>>*: This section talks about circuit breakers, a way of allowing a higher stability of Solr nodes and increased service level guarantees of requests that are accepted by Solr.
+*<<circuit-breakers.adoc#,Circuit Breakers>>*: This section talks about circuit breakers, a way of allowing a higher stability of Solr nodes and increased service level guarantees of requests that are accepted by Solr.
 ****
 
 .Advanced Configuration
 [sidebar.col]
 ****
-*<<securing-solr.adoc#securing-solr,Securing Solr>>*: When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
+*<<securing-solr.adoc#,Securing Solr>>*: When planning how to secure Solr, you should consider which of the available features or approaches are right for you.
 
-*<<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>*: This section discusses performance tuning for Solr. It begins with an overview of the `solrconfig.xml` file, then tells you how to configure cores with `solr.xml`, how to configure the Lucene index writer, and more.
+*<<the-well-configured-solr-instance.adoc#,The Well-Configured Solr Instance>>*: This section discusses performance tuning for Solr. It begins with an overview of the `solrconfig.xml` file, then tells you how to configure cores with `solr.xml`, how to configure the Lucene index writer, and more.
 ****
 --

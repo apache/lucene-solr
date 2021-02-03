@@ -34,7 +34,7 @@ The split is performed by dividing the original shard's hash range into two equa
 
 The newly created shards will have as many replicas as the parent shard, of the same replica types.
 
-When using `splitMethod=rewrite` (default) you must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+When using `splitMethod=rewrite` (default) you must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#,Autoscaling Policy and Preferences>> section for more details.
 
 Also, the first replicas of resulting sub-shards will always be placed on the shard leader node, which may cause Autoscaling policy violations that need to be resolved either automatically (when appropriate triggers are in use) or manually.
 
@@ -81,7 +81,7 @@ A float value (default is 0.0f, must be smaller than 0.5f) that allows to vary t
 by this percentage of total shard range, odd shards being larger and even shards being smaller.
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#,Defining core.properties>> for details on supported properties and values.
 
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
@@ -209,7 +209,7 @@ Use SPLITSHARD for collections created with the 'compositeId' router (`router.ke
 
 The default values for `replicationFactor` or `nrtReplicas`, `tlogReplicas`, `pullReplicas` from the collection is used to determine the number of replicas to be created for the new shard. This can be customized by explicitly passing the corresponding parameters to the request.
 
-The API uses the Autoscaling framework to find the best possible nodes in the cluster when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+The API uses the Autoscaling framework to find the best possible nodes in the cluster when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#,Autoscaling Policy and Preferences>> section for more details.
 
 === CREATESHARD Parameters
 
@@ -234,7 +234,7 @@ The number of `tlog` replicas that should be created for the new shard (optional
 The number of `pull` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#,Defining core.properties>> for details on supported properties and values.
 
 `waitForFinalState`::
 If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.

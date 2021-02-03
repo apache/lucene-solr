@@ -27,7 +27,7 @@ A new design for this feature is currently under development in https://issues.a
 
 The autoscaling policy and preferences are a set of rules and sorting preferences that help Solr select the target of cluster management operations so the overall load on the cluster remains balanced.
 
-The configured autoscaling policy and preferences are used by <<collections-api.adoc#collections-api,Collections API commands>> in all contexts: manual, for example using `bin/solr` to create a collection; semi-automatic, via the <<solrcloud-autoscaling-api.adoc#suggestions-api,Suggestions API>> or the Admin UI's <<suggestions-screen.adoc#suggestions-screen,Suggestions Screen>>; or fully automatic, via configured <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Triggers>>.
+The configured autoscaling policy and preferences are used by <<collections-api.adoc#,Collections API commands>> in all contexts: manual, for example using `bin/solr` to create a collection; semi-automatic, via the <<solrcloud-autoscaling-api.adoc#suggestions-api,Suggestions API>> or the Admin UI's <<suggestions-screen.adoc#,Suggestions Screen>>; or fully automatic, via configured <<solrcloud-autoscaling-triggers.adoc#,Triggers>>.
 
 See the section <<Example: Manual Collection Creation with a Policy>> for an example of how policy and preferences affect replica placement.
 
@@ -71,7 +71,7 @@ See the section <<solrcloud-autoscaling-api.adoc#create-and-modify-cluster-prefe
 === Examples of Cluster Preferences
 
 ==== Default Preferences
-The following shows the default cluster preferences. This is applied automatically by Solr when no explicit cluster preferences have been set using the <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>.
+The following shows the default cluster preferences. This is applied automatically by Solr when no explicit cluster preferences have been set using the <<solrcloud-autoscaling-api.adoc#,Autoscaling API>>.
 
 [source,json]
 [
@@ -281,7 +281,7 @@ Any arbitrary system property set on the node on startup.  The <<not-operator,`!
 
 [[metrics-attribute]]
 `metrics:<full-path-to-the metric>`::
-Any arbitrary metric. For example, `metrics:solr.node:CONTAINER.fs.totalSpace`. Refer to the `key` parameter in the  <<metrics-reporting.adoc#metrics-reporting, Metrics API>> section.
+Any arbitrary metric. For example, `metrics:solr.node:CONTAINER.fs.totalSpace`. Refer to the `key` parameter in the  <<metrics-reporting.adoc#, Metrics API>> section.
 
 [[diskType-attribute]]
 `diskType`::

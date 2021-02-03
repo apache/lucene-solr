@@ -25,7 +25,7 @@ The following table lists the field types that are available in Solr and are rec
 [cols="25,75",options="header"]
 |===
 |Class |Description
-|BBoxField | Indexes a single rectangle (bounding box) per document field and supports searching via a bounding box. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+|BBoxField | Indexes a single rectangle (bounding box) per document field and supports searching via a bounding box. See the section <<spatial-search.adoc#,Spatial Search>> for more information.
 
 |BinaryField |Binary data.
 
@@ -33,17 +33,17 @@ The following table lists the field types that are available in Solr and are rec
 
 |CollationField |Supports Unicode collation for sorting and range queries. The ICUCollationField is a better choice if you can use ICU4J. See the section <<language-analysis.adoc#unicode-collation,Unicode Collation>> for more information.
 
-|CurrencyFieldType |Supports currencies and exchange rates. See the section <<working-with-currencies-and-exchange-rates.adoc#working-with-currencies-and-exchange-rates,Working with Currencies and Exchange Rates>> for more information.
+|CurrencyFieldType |Supports currencies and exchange rates. See the section <<working-with-currencies-and-exchange-rates.adoc#,Working with Currencies and Exchange Rates>> for more information.
 
-|DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>> for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
+|DateRangeField |Supports indexing date ranges, to include point in time date instances as well (single-millisecond durations). See the section <<working-with-dates.adoc#,Working with Dates>> for more detail on using this field type. Consider using this field type even if it's just for date instances, particularly when the queries typically fall on UTC year/month/day/hour, etc., boundaries.
 
-|DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section <<working-with-dates.adoc#working-with-dates,Working with Dates>> for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
+|DatePointField |Date field. Represents a point in time with millisecond precision, encoded using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. See the section <<working-with-dates.adoc#,Working with Dates>> for more details on the supported syntax. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |DoublePointField |Double field (64-bit IEEE floating point). This class encodes double values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|ExternalFileField |Pulls values from a file on disk. See the section <<working-with-external-files-and-processes.adoc#working-with-external-files-and-processes,Working with External Files and Processes>> for more information.
+|ExternalFileField |Pulls values from a file on disk. See the section <<working-with-external-files-and-processes.adoc#,Working with External Files and Processes>> for more information.
 
-|EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section <<working-with-enum-fields.adoc#working-with-enum-fields,Working with Enum Fields>> for more information.
+|EnumFieldType |Allows defining an enumerated set of values which may not be easily sorted by either alphabetic or numeric order (such as a list of severities, for example). This field type takes a configuration file, which lists the proper order of the field values. See the section <<working-with-enum-fields.adoc#,Working with Enum Fields>> for more information.
 
 |FloatPointField |Floating point field (32-bit IEEE floating point). This class encodes float values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
@@ -51,13 +51,13 @@ The following table lists the field types that are available in Solr and are rec
 
 |IntPointField |Integer field (32-bit signed integer). This class encodes int values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
-|LatLonPointSpatialField |A latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+|LatLonPointSpatialField |A latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#,Spatial Search>> for more information.
 
 |LongPointField |Long field (64-bit signed integer). This class encodes foo values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
 
 |NestPathField | Specialized field type storing ehanced information, when <<indexing-nested-documents.adoc#schema-configuration,working with nested documents>>.
 
-|PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+|PointType |A single-valued n-dimensional point. It's both for sorting spatial data that is _not_ lat-lon, and for some more rare use-cases. (NOTE: this is _not_ related to the "Point" based numeric fields). See <<spatial-search.adoc#,Spatial Search>> for more information.
 
 |PreAnalyzedField |Provides a way to send to Solr serialized token streams, optionally with independent stored values of a field, and have this information stored and indexed without any additional text processing.
 
@@ -67,19 +67,19 @@ Configuration and usage of PreAnalyzedField is documented in the section  <<work
 
 |RankField |Can be used to store scoring factors to improve document ranking. To be used in combination with <<other-parsers.adoc#ranking-query-parser,RankQParserPlugin>>
 
-|RptWithGeometrySpatialField |A derivative of `SpatialRecursivePrefixTreeFieldType` that also stores the original geometry. See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information and usage with geospatial results transformer.
+|RptWithGeometrySpatialField |A derivative of `SpatialRecursivePrefixTreeFieldType` that also stores the original geometry. See <<spatial-search.adoc#,Spatial Search>> for more information and usage with geospatial results transformer.
 
 |SortableTextField |A specialized version of TextField that allows (and defaults to) `docValues="true"` for sorting on the first 1024 characters of the original string prior to analysis. The number of characters used for sorting can be overridden with the `maxCharsForDocValues` attribute. See <<common-query-parameters.adoc#sort-parameter,sort parameter discussion>> for details.
 
-|SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+|SpatialRecursivePrefixTreeFieldType |(RPT for short) Accepts latitude comma longitude strings or other shapes in WKT format. See <<spatial-search.adoc#,Spatial Search>> for more information.
 
 |StrField |String (UTF-8 encoded string or Unicode). Strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K.
 
-|TextField |Text, usually multiple words or tokens. In normal usage, only fields of type TextField or SortableTextField will specify an <<analyzers.adoc#analyzers,analyzer>>.
+|TextField |Text, usually multiple words or tokens. In normal usage, only fields of type TextField or SortableTextField will specify an <<analyzers.adoc#,analyzer>>.
 
 |UUIDField |Universally Unique Identifier (UUID). Pass in a value of `NEW` and Solr will create a new UUID.
 
-*Note*: configuring a UUIDField instance with a default value of `NEW` is not advisable for most users when using SolrCloud (and not possible if the UUID value is configured as the unique key field) since the result will be that each replica of each document will get a unique UUID value. Using <<update-request-processors.adoc#update-request-processors,UUIDUpdateProcessorFactory>> to generate UUID values when documents are added is recommended instead.
+*Note*: configuring a UUIDField instance with a default value of `NEW` is not advisable for most users when using SolrCloud (and not possible if the UUID value is configured as the unique key field) since the result will be that each replica of each document will get a unique UUID value. Using <<update-request-processors.adoc#,UUIDUpdateProcessorFactory>> to generate UUID values when documents are added is recommended instead.
 |===
 
 == Deprecated Field Types
@@ -97,7 +97,7 @@ NOTE: All Trie* numeric and date field types have been deprecated in favor of *P
 
 |EnumField |Use EnumFieldType instead.
 
-|LatLonType |Consider using the LatLonPointSpatialField instead. A single-valued latitude/longitude coordinate pair. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+|LatLonType |Consider using the LatLonPointSpatialField instead. A single-valued latitude/longitude coordinate pair. Usually it's specified as "lat,lon" order with a comma. See the section <<spatial-search.adoc#,Spatial Search>> for more information.
 
 |TrieDateField |Use DatePointField instead.
 

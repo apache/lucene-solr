@@ -21,7 +21,7 @@
 
 The `search` function searches a SolrCloud collection and emits a stream of tuples that match the query. This is very similar to a standard Solr query, and uses many of the same parameters.
 
-This expression allows you to specify a request hander using the `qt` parameter. By default, the `/select` handler is used. The `/select` handler can be used for simple rapid prototyping of expressions. For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets. The `/export` handler is not used by default because it has stricter requirements then the `/select` handler so it's not as easy to get started working with. To read more about the `/export` handler requirements review the section <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>>.
+This expression allows you to specify a request hander using the `qt` parameter. By default, the `/select` handler is used. The `/select` handler can be used for simple rapid prototyping of expressions. For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets. The `/export` handler is not used by default because it has stricter requirements then the `/select` handler so it's not as easy to get started working with. To read more about the `/export` handler requirements review the section <<exporting-result-sets.adoc#,Exporting Result Sets>>.
 
 === search Parameters
 
@@ -294,7 +294,7 @@ cat("authors.txt,fiction/scifi/", maxLines=500)
 
 == nodes
 
-The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
+The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#,Graph Traversal>>.
 
 == knnSearch
 

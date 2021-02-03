@@ -22,7 +22,7 @@ You can start and stop Solr, create and delete collections or cores, perform ope
 
 You can find the script in the `bin/` directory of your Solr installation. The `bin/solr` script makes Solr easier to work with by providing simple commands and options to quickly accomplish common goals.
 
-More examples of `bin/solr` in use are available throughout the Solr Reference Guide, but particularly in the sections <<installing-solr.adoc#starting-solr,Starting Solr>> and <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
+More examples of `bin/solr` in use are available throughout the Solr Reference Guide, but particularly in the sections <<installing-solr.adoc#starting-solr,Starting Solr>> and <<getting-started-with-solrcloud.adoc#,Getting Started with SolrCloud>>.
 
 == Starting and Stopping
 
@@ -184,7 +184,7 @@ To do this use the `mkroot` command outlined below, for example: `bin/solr zk mk
 
 When starting in SolrCloud mode, the interactive script session will prompt you to choose a configset to use.
 
-For more information about starting Solr in SolrCloud mode, see also the section <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
+For more information about starting Solr in SolrCloud mode, see also the section <<getting-started-with-solrcloud.adoc#,Getting Started with SolrCloud>>.
 
 ==== Running with Example Configurations
 
@@ -192,11 +192,11 @@ For more information about starting Solr in SolrCloud mode, see also the section
 
 The example configurations allow you to get started quickly with a configuration that mirrors what you hope to accomplish with Solr.
 
-Each example launches Solr with a managed schema, which allows use of the <<schema-api.adoc#schema-api,Schema API>> to make schema edits, but does not allow manual editing of a Schema file.
+Each example launches Solr with a managed schema, which allows use of the <<schema-api.adoc#,Schema API>> to make schema edits, but does not allow manual editing of a Schema file.
 
-If you would prefer to manually modify a `schema.xml` file directly, you can change this default as described in the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>.
+If you would prefer to manually modify a `schema.xml` file directly, you can change this default as described in the section <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>>.
 
-Unless otherwise noted in the descriptions below, the examples do not enable <<solrcloud.adoc#solrcloud,SolrCloud>> nor <<schemaless-mode.adoc#schemaless-mode,schemaless mode>>.
+Unless otherwise noted in the descriptions below, the examples do not enable <<solrcloud.adoc#,SolrCloud>> nor <<schemaless-mode.adoc#,schemaless mode>>.
 
 The following examples are provided:
 
@@ -210,8 +210,8 @@ The configset used can be found in `$SOLR_HOME/server/solr/configsets/sample_tec
 +
 The configset used is customized for DIH, and is found in `$SOLR_HOME/example/example-DIH/solr/conf`.
 +
-For more information about DIH, see the section <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#uploading-structured-data-store-data-with-the-data-import-handler,Uploading Structured Data Store Data with the Data Import Handler>>.
-* *schemaless*: This example starts Solr in standalone mode using a managed schema, as described in the section <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>, and provides a very minimal pre-defined schema. Solr will run in <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
+For more information about DIH, see the section <<uploading-structured-data-store-data-with-the-data-import-handler.adoc#,Uploading Structured Data Store Data with the Data Import Handler>>.
+* *schemaless*: This example starts Solr in standalone mode using a managed schema, as described in the section <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>>, and provides a very minimal pre-defined schema. Solr will run in <<schemaless-mode.adoc#,Schemaless Mode>> with this configuration, where Solr will create fields in the schema on the fly and will guess field types used in incoming documents.
 +
 The configset used can be found in `$SOLR_HOME/server/solr/configsets/_default`.
 
@@ -510,7 +510,7 @@ Currently, this script only enables Basic Authentication, and is only available 
 
 The command `bin/solr auth enable` configures Solr to use Basic Authentication when accessing the User Interface, using `bin/solr` and any API requests.
 
-TIP: For more information about Solr's authentication plugins, see the section <<securing-solr.adoc#securing-solr,Securing Solr>>. For more information on Basic Authentication support specifically, see the section  <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>.
+TIP: For more information about Solr's authentication plugins, see the section <<securing-solr.adoc#,Securing Solr>>. For more information on Basic Authentication support specifically, see the section  <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>.
 
 The `bin/solr auth enable` command makes several changes to enable Basic Authentication:
 
@@ -604,7 +604,7 @@ To unset a previously set common property, specify `-action unset-property` with
 
 === Set or Unset User-defined Properties
 
-To set the user-defined property `update.autoCreateFields` to `false` (to disable <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>):
+To set the user-defined property `update.autoCreateFields` to `false` (to disable <<schemaless-mode.adoc#,Schemaless Mode>>):
 
 `bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false`
 
@@ -922,7 +922,7 @@ bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.js
 
 === Importing Documents to a Collection
 
-Once you have exported documents in a file, you can use the <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,/update request handler>> to import them to a new Solr collection.
+Once you have exported documents in a file, you can use the <<updatehandlers-in-solrconfig.adoc#,/update request handler>> to import them to a new Solr collection.
 
 *Example: import `jsonl` files*
 

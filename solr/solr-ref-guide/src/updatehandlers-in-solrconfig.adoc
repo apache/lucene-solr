@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The settings in this section are configured in the `<updateHandler>` element in `solrconfig.xml` and may affect the performance of index updates. These settings affect how updates are done internally. `<updateHandler>` configurations do not affect the higher level configuration of <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandlers>> that process client update requests.
+The settings in this section are configured in the `<updateHandler>` element in `solrconfig.xml` and may affect the performance of index updates. These settings affect how updates are done internally. `<updateHandler>` configurations do not affect the higher level configuration of <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers>> that process client update requests.
 
 [source,xml]
 ----
@@ -33,9 +33,9 @@ Data sent to Solr is not searchable until it has been _committed_ to the index. 
 
 In Solr, a `commit` is an action which asks Solr to "commit" those changes to the Lucene index files. By default commit actions result in a "hard commit" of all the Lucene index files to stable storage (disk). When a client includes a `commit=true` parameter with an update request, this ensures that all index segments affected by the adds & deletes on an update are written to disk as soon as index updates are completed.
 
-If an additional flag `softCommit=true` is specified, then Solr performs a 'soft commit', meaning that Solr will commit your changes to the Lucene data structures quickly but not guarantee that the Lucene index files are written to stable storage. This is an implementation of Near Real Time storage, a feature that boosts document visibility, since you don't have to wait for background merges and storage (to ZooKeeper, if using <<solrcloud.adoc#solrcloud,SolrCloud>>) to finish before moving on to something else. A full commit means that, if a server crashes, Solr will know exactly where your data was stored; a soft commit means that the data is stored, but the location information isn't yet stored. The tradeoff is that a soft commit gives you faster visibility because it's not waiting for background merges to finish.
+If an additional flag `softCommit=true` is specified, then Solr performs a 'soft commit', meaning that Solr will commit your changes to the Lucene data structures quickly but not guarantee that the Lucene index files are written to stable storage. This is an implementation of Near Real Time storage, a feature that boosts document visibility, since you don't have to wait for background merges and storage (to ZooKeeper, if using <<solrcloud.adoc#,SolrCloud>>) to finish before moving on to something else. A full commit means that, if a server crashes, Solr will know exactly where your data was stored; a soft commit means that the data is stored, but the location information isn't yet stored. The tradeoff is that a soft commit gives you faster visibility because it's not waiting for background merges to finish.
 
-For more information about Near Real Time operations, see <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>.
+For more information about Near Real Time operations, see <<near-real-time-searching.adoc#,Near Real Time Searching>>.
 
 === autoCommit
 
@@ -78,7 +78,7 @@ You can also specify 'soft' autoCommits in the same way that you can specify 'so
 
 === commitWithin
 
-The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#near-real-time-searching,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to follower servers in a leader/follower environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
+The `commitWithin` settings allow forcing document commits to happen in a defined time period. This is used most frequently with <<near-real-time-searching.adoc#,Near Real Time Searching>>, and for that reason the default is to perform a soft commit. This does not, however, replicate new documents to follower servers in a leader/follower environment. If that's a requirement for your implementation, you can force a hard commit by adding a parameter, as in this example:
 
 [source,xml]
 ----
@@ -98,7 +98,7 @@ Users can write custom update event listener classes in Solr plugins. As of Solr
 
 == Transaction Log
 
-As described in the section <<realtime-get.adoc#realtime-get,RealTime Get>>, a transaction log is required for that feature. It is configured in the `updateHandler` section of `solrconfig.xml`.
+As described in the section <<realtime-get.adoc#,RealTime Get>>, a transaction log is required for that feature. It is configured in the `updateHandler` section of `solrconfig.xml`.
 
 Realtime Get currently relies on the update log feature, which is enabled by default. It relies on an update log, which is configured in `solrconfig.xml`, in a section like:
 
@@ -109,7 +109,7 @@ Realtime Get currently relies on the update log feature, which is enabled by def
 </updateLog>
 ----
 
-Three additional expert-level configuration settings affect indexing performance and how far a replica can fall behind on updates before it must enter into full recovery - see the section on <<solrcloud-recoveries-and-write-tolerance.adoc#solrcloud-recoveries-and-write-tolerance,write side fault tolerance>> for more information:
+Three additional expert-level configuration settings affect indexing performance and how far a replica can fall behind on updates before it must enter into full recovery - see the section on <<solrcloud-recoveries-and-write-tolerance.adoc#,write side fault tolerance>> for more information:
 
 `numRecordsToKeep`::
 The number of update records to keep per log. The default is `100`.

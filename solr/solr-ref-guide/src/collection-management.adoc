@@ -92,13 +92,13 @@ When such a collection is deleted, its autocreated configset will be deleted by 
 `router.field`::
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
 +
-Please note that <<realtime-get.adoc#realtime-get,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
+Please note that <<realtime-get.adoc#,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
 
 `perReplicaState`::
 If `true` the states of individual replicas will be maintained as individual child of the `state.json`. default is `false`
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#,Defining core.properties>> for details on supported properties and values.
 
 `autoAddReplicas`::
 When set to `true`, enables automatic addition of replicas when the number of active replicas falls below the value set for `replicationFactor`. This may occur if a replica goes down, for example. The default is `false`, which means new replicas will not be added.
@@ -113,10 +113,10 @@ The entries in each core.properties file are vital for Solr to function correctl
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 `rule`::
-Replica placement rules. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+Replica placement rules. See the section <<rule-based-replica-placement.adoc#,Rule-based Replica Placement>> for details.
 
 `snitch`::
-Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#rule-based-replica-placement,Rule-based Replica Placement>> for details.
+Details of the snitch provider. See the section <<rule-based-replica-placement.adoc#,Rule-based Replica Placement>> for details.
 
 `policy`:: Name of the collection-level policy. See <<solrcloud-autoscaling-policy-preferences.adoc#collection-specific-policy, Defining Collection-Specific Policies >> for details.
 
@@ -125,7 +125,7 @@ If `true`, the request will complete only when all affected replicas become acti
 
 `withCollection`::
 The name of the collection with which all replicas of this collection must be co-located. The collection must already exist and must have a single shard named `shard1`.
-See <<colocating-collections.adoc#colocating-collections, Colocating collections>> for more details.
+See <<colocating-collections.adoc#, Colocating collections>> for more details.
 
 `alias`::
 Starting with version 8.1 when a collection is created additionally an alias can be created
@@ -500,7 +500,7 @@ The routing key prefix. For example, if the uniqueKey of a document is "a!123", 
 The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#,Defining core.properties>> for details on supported properties and values.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -1241,7 +1241,7 @@ Backs up Solr collections and associated configurations to a shared filesystem -
 
 `/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
 
-The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#making-and-restoring-backups,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
+The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
 
 === BACKUP Parameters
 

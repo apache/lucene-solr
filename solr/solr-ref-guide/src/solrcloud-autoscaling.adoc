@@ -32,12 +32,12 @@ Autoscaling includes an API to manage cluster-wide and collection-specific polic
 
 The following sections describe the autoscaling features of SolrCloud:
 
-* <<solrcloud-autoscaling-overview.adoc#solrcloud-autoscaling-overview,Overview of Autoscaling in SolrCloud>>
-* <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>>
-* <<solrcloud-autoscaling-triggers.adoc#solrcloud-autoscaling-triggers,Autoscaling Triggers>>
-* <<solrcloud-autoscaling-trigger-actions.adoc#solrcloud-autoscaling-trigger-actions,Autoscaling Trigger Actions>>
-* <<solrcloud-autoscaling-listeners.adoc#solrcloud-autoscaling-listeners,Autoscaling Listeners>>
-* <<solrcloud-autoscaling-auto-add-replicas.adoc#solrcloud-autoscaling-auto-add-replicas,Automatically Adding Replicas>>
-* <<solrcloud-autoscaling-fault-tolerance.adoc#solrcloud-autoscaling-fault-tolerance,Autoscaling Fault Tolerance>>
-* <<solrcloud-autoscaling-api.adoc#solrcloud-autoscaling-api,Autoscaling API>>
-* <<migrate-to-policy-rule.adoc#migrate-to-policy-rule, Migrating Rule-Based Replica Rules to Autoscaling Policies>>
+* <<solrcloud-autoscaling-overview.adoc#,Overview of Autoscaling in SolrCloud>>
+* <<solrcloud-autoscaling-policy-preferences.adoc#,Autoscaling Policy and Preferences>>
+* <<solrcloud-autoscaling-triggers.adoc#,Autoscaling Triggers>>
+* <<solrcloud-autoscaling-trigger-actions.adoc#,Autoscaling Trigger Actions>>
+* <<solrcloud-autoscaling-listeners.adoc#,Autoscaling Listeners>>
+* <<solrcloud-autoscaling-auto-add-replicas.adoc#,Automatically Adding Replicas>>
+* <<solrcloud-autoscaling-fault-tolerance.adoc#,Autoscaling Fault Tolerance>>
+* <<solrcloud-autoscaling-api.adoc#,Autoscaling API>>
+* <<migrate-to-policy-rule.adoc#, Migrating Rule-Based Replica Rules to Autoscaling Policies>>

@@ -19,7 +19,7 @@
 
 Solr includes several APIs that can be used to modify settings in `solrconfig.xml`.
 
-* <<blob-store-api.adoc#blob-store-api,Blob Store API>>
-* <<config-api.adoc#config-api,Config API>>
-* <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>
-* <<managed-resources.adoc#managed-resources,Managed Resources>>
+* <<blob-store-api.adoc#,Blob Store API>>
+* <<config-api.adoc#,Config API>>
+* <<request-parameters-api.adoc#,Request Parameters API>>
+* <<managed-resources.adoc#,Managed Resources>>

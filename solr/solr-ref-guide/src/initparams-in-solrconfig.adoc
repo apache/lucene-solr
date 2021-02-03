@@ -20,7 +20,7 @@ The `<initParams>` section of `solrconfig.xml` allows you to define request hand
 
 There are a couple of use cases where this might be desired:
 
-* Some handlers are implicitly defined in code - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> - and there should be a way to add/append/override some of the implicitly defined properties.
+* Some handlers are implicitly defined in code - see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>> - and there should be a way to add/append/override some of the implicitly defined properties.
 * There are a few properties that are used across handlers. This helps you keep only a single definition of those properties and apply them over multiple handlers.
 
 For example, if you want several of your search handlers to return the same list of fields, you can create an `<initParams>` section without having to define the same set of parameters in each request handler definition. If you have a single request handler that should return different fields, you can define the overriding parameters in individual `<requestHandler>` sections as usual.

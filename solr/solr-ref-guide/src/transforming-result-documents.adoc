@@ -124,7 +124,7 @@ A default style can be configured by specifying an `args` parameter in your `sol
 
 === [child] - ChildDocTransformerFactory
 
-This transformer returns all <<indexing-nested-documents.adoc#indexing-nested-documents,descendant documents>> of each parent document matching your query.  This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
+This transformer returns all <<indexing-nested-documents.adoc#,descendant documents>> of each parent document matching your query.  This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
 
 Note that this transformer can be used even when the query used to match the result documents is not a <<other-parsers.adoc#block-join-query-parsers,Block Join query>>.
 
@@ -196,7 +196,7 @@ DocIdAugmenterFactory does not support any request parameters, or configuration 
 
 === [elevated] and [excluded]
 
-These transformers are available only when using the <<the-query-elevation-component.adoc#the-query-elevation-component,Query Elevation Component>>.
+These transformers are available only when using the <<the-query-elevation-component.adoc#,Query Elevation Component>>.
 
 * `[elevated]` annotates each document to indicate if it was elevated or not.
 * `[excluded]` annotates each document to indicate if it would have been excluded - this is only supported if you also use the `markExcludes` parameter.
@@ -349,14 +349,14 @@ Otherwise you'll get `NullPointerException` from `QueryComponent.mergeIds`.
 
 Formats spatial data from a spatial field using a designated format type name. Two inner parameters are required: `f` for the field name, and `w` for the format name. Example: `geojson:[geo f=mySpatialField w=GeoJSON]`.
 
-Normally you'll simply be consistent in choosing the format type you want by setting the `format` attribute on the spatial field type to `WKT` or `GeoJSON` – see the section <<spatial-search.adoc#spatial-search,Spatial Search>> for more information. If you are consistent, it'll come out the way you stored it. This transformer offers a convenience to transform the spatial format to something different on retrieval.
+Normally you'll simply be consistent in choosing the format type you want by setting the `format` attribute on the spatial field type to `WKT` or `GeoJSON` – see the section <<spatial-search.adoc#,Spatial Search>> for more information. If you are consistent, it'll come out the way you stored it. This transformer offers a convenience to transform the spatial format to something different on retrieval.
 
 In addition, this feature is very useful with the `RptWithGeometrySpatialField` to avoid double-storage of the potentially large vector geometry. This transformer will detect that field type and fetch the geometry from an internal compact binary representation on disk (in docValues), and then format it as desired. As such, you needn't mark the field as stored, which would be redundant. In a sense this double-storage between docValues and stored-value storage isn't unique to spatial but with polygonal geometry it can be a lot of data, and furthermore you'd like to avoid storing it in a verbose format (like GeoJSON or WKT).
 
 
 === [features] - LTRFeatureLoggerTransformerFactory
 
-The "LTR" prefix stands for <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>>. This transformer returns the values of features and it can be used for feature extraction and feature logging.
+The "LTR" prefix stands for <<learning-to-rank.adoc#,Learning To Rank>>. This transformer returns the values of features and it can be used for feature extraction and feature logging.
 
 [source,plain]
 ----

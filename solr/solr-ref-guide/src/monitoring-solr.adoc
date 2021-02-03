@@ -22,20 +22,20 @@ Administration and monitoring can be performed using the web-based administratio
 
 Common administrative tasks include:
 
-<<metrics-reporting.adoc#metrics-reporting,Metrics Reporting>>: Details of Solr's metrics registries and Metrics API.
+<<metrics-reporting.adoc#,Metrics Reporting>>: Details of Solr's metrics registries and Metrics API.
 
-<<metrics-history.adoc#metrics-history,Metrics History>>: Metrics history collection, configuration and API.
+<<metrics-history.adoc#,Metrics History>>: Metrics history collection, configuration and API.
 
-<<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>>: How to use Solr's MBeans for programmatic access to the system plugins and stats.
+<<mbean-request-handler.adoc#,MBean Request Handler>>: How to use Solr's MBeans for programmatic access to the system plugins and stats.
 
-<<configuring-logging.adoc#configuring-logging,Configuring Logging>>: Describes how to configure logging for Solr.
+<<configuring-logging.adoc#,Configuring Logging>>: Describes how to configure logging for Solr.
 
-<<using-jmx-with-solr.adoc#using-jmx-with-solr,Using JMX with Solr>>: Describes how to use Java Management Extensions with Solr.
+<<using-jmx-with-solr.adoc#,Using JMX with Solr>>: Describes how to use Java Management Extensions with Solr.
 
-<<monitoring-solr-with-prometheus-and-grafana.adoc#monitoring-solr-with-prometheus-and-grafana,Monitoring Solr with Prometheus and Grafana>>: Describes how to monitor Solr with Prometheus and Grafana.
+<<monitoring-solr-with-prometheus-and-grafana.adoc#,Monitoring Solr with Prometheus and Grafana>>: Describes how to monitor Solr with Prometheus and Grafana.
 
-<<performance-statistics-reference.adoc#performance-statistics-reference,Performance Statistics Reference>>: Additional information on statistics returned from JMX.
+<<performance-statistics-reference.adoc#,Performance Statistics Reference>>: Additional information on statistics returned from JMX.
 
-<<solr-tracing.adoc#solr-tracing,Distributed Solr Tracing>>: Describes how to do distributed tracing for Solr requests.
+<<solr-tracing.adoc#,Distributed Solr Tracing>>: Describes how to do distributed tracing for Solr requests.
 
 

@@ -28,7 +28,7 @@ your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
 file found in your Solr package. That file includes all the changes and updates
 that may effect your existing implementation.
 
-Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
+Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>.
 
 == Upgrading to 8.x Releases
 
@@ -123,11 +123,11 @@ The Solr community is working on pluggable API to replace this functionality, wi
 
 * Solr has replaced the terms "master" and "slave" in the codebase and all documentation with "leader" and "follower".
 +
-This impacts the functionality described in the section <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>.
+This impacts the functionality described in the section <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>.
 This functionality has only changed in terms of parameter names changed, and we do not expect any back-compatibility issues on upgrade to 8.7 or even 9.0 later.
 +
 However, users should update their `solrconfig.xml` files after completing the upgrade on all nodes of a cluster.
-Comparing your configuration to the updated configuration examples in <<index-replication.adoc#index-replication,Index Replication>> will show examples of what needs to change, but here are the main changes:
+Comparing your configuration to the updated configuration examples in <<index-replication.adoc#,Index Replication>> will show examples of what needs to change, but here are the main changes:
 +
 . On the replication leader, in the definition of the `/replication` request handler:
 .. Replace "master" with "leader".
@@ -404,9 +404,9 @@ to Solr.
 
 The system is currently considered experimental, so use with caution. It must
 be enabled with a system parameter passed at start up before it can be used.
-For details, please see the section <<package-manager.adoc#package-manager,Package Management>>.
+For details, please see the section <<package-manager.adoc#,Package Management>>.
 
-With this feature Solr's <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob Store>>
+With this feature Solr's <<adding-custom-plugins-in-solrcloud-mode.adoc#,Blob Store>>
 functionality is now deprecated and will likely be removed in 9.0.
 
 *Security*
@@ -424,7 +424,7 @@ the `/browse` sample search interface) are no longer enabled out of the box.
 ** The XSLT and Velocity response writers.
 +
 All of these items can be added to your Solr implementation by manually editing
-`solrconfig.xml` to add them back in, or use the <<config-api.adoc#config-api,Config API>>.
+`solrconfig.xml` to add them back in, or use the <<config-api.adoc#,Config API>>.
 +
 The `sample_techproducts_configs` and the examples found in `./example` are unchanged.
 
@@ -438,9 +438,9 @@ When upgrading to 8.4, if you are using untrusted configsets that contain `<lib 
 directives, their corresponding collections will not load (they will cease to
 work). You have a few options in this case:
 
-** You can secure your Solr instance with <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication>>
+** You can secure your Solr instance with <<authentication-and-authorization-plugins.adoc#,authentication>>
 and re-upload the configset (using the `bin/solr zk upconfig ...`
-<<solr-control-script-reference.adoc#solr-control-script-reference,Solr CLI>> command);
+<<solr-control-script-reference.adoc#,Solr CLI>> command);
 ** You can put your custom Jars in Solr's classpath instead of `lib` directories;
 ** You can try the new package management system to manage your custom Jars.
 +
@@ -463,8 +463,8 @@ As a result of this change, any custom HTML served by Solr's HTTP server that co
 
 *Using Collapse with Group Disallowed*
 
-Using the <<collapse-and-expand-results.adoc#collapse-and-expand-results,CollapsingQueryParser>>
-with <<result-grouping.adoc#result-grouping,Result Grouping>> has never been
+Using the <<collapse-and-expand-results.adoc#,CollapsingQueryParser>>
+with <<result-grouping.adoc#,Result Grouping>> has never been
 supported as it causes inconsistent behavior and NullPointerException errors.
 We have now explicitly disallowed this combination to prevent these errors.
 If you are using these together, you will need to modify your queries.
@@ -533,7 +533,7 @@ Since caching has a direct impact on the performance of your Solr
 
 * A new parameter, `maxIdleTime`, allows automatic eviction of cache items that have not been used in the defined amount of time. This allows the cache to release some memory and should aid those who want or need to fine-tune their caches.
 
-See the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>> for more details about these and other cache options and parameters.
+See the section <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>> for more details about these and other cache options and parameters.
 
 === Solr 8.2
 
@@ -571,7 +571,7 @@ Collections created with older versions will continue to work.
 
 *Distributed Tracing Support*
 
-This release adds support for tracing requests in Solr. Please review the section <<solr-tracing.adoc#solr-tracing,Distributed Solr Tracing>> for details on how to configure this feature.
+This release adds support for tracing requests in Solr. Please review the section <<solr-tracing.adoc#,Distributed Solr Tracing>> for details on how to configure this feature.
 
 === Solr 8.1
 
@@ -593,9 +593,9 @@ For more information about the new parameter, see the section <<format-of-solr-x
 
 *Security*
 
-* JSON Web Tokens (JWT) are now supported for authentication. These allow Solr to assert a user is already authenticated via an external identity provider, such as an OpenID Connect-enabled IdP. For more information, see the section <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>.
+* JSON Web Tokens (JWT) are now supported for authentication. These allow Solr to assert a user is already authenticated via an external identity provider, such as an OpenID Connect-enabled IdP. For more information, see the section <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>.
 
-* A new security plugin for audit logging has been added. A default class `SolrLogAuditLoggerPlugin` is available and configurable in `security.json`. The base class is also extendable for adding custom audit plugins if needed. See the section <<audit-logging.adoc#audit-logging,Audit Logging>> for more information.
+* A new security plugin for audit logging has been added. A default class `SolrLogAuditLoggerPlugin` is available and configurable in `security.json`. The base class is also extendable for adding custom audit plugins if needed. See the section <<audit-logging.adoc#,Audit Logging>> for more information.
 
 *Collections API*
 
@@ -631,7 +631,7 @@ If even this slight risk is unacceptable, the Log4j configuration file found in 
 == Upgrading from 7.x Releases
 
 The upgrade from 7.x to Solr 8.0 introduces several major changes that you should be aware of before upgrading.
-These changes are described in the section <<major-changes-in-solr-8.adoc#major-changes-in-solr-8,Major Changes in Solr 8>>. It's strongly recommended that you do a thorough review of that section before starting your upgrade.
+These changes are described in the section <<major-changes-in-solr-8.adoc#,Major Changes in Solr 8>>. It's strongly recommended that you do a thorough review of that section before starting your upgrade.
 
 [NOTE]
 If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order to upgrade to 8.x.
@@ -640,6 +640,6 @@ If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order
 
 Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
-The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
+The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#,Major Changes in Solr 7>> before starting your upgrade.
 
-A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-from-solr-5-to-solr-6.adoc#major-changes-from-solr-5-to-solr-6,Major Changes from Solr 5 to Solr 6>>.
+A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-from-solr-5-to-solr-6.adoc#,Major Changes from Solr 5 to Solr 6>>.
