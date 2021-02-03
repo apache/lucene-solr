@@ -146,15 +146,35 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         } catch (Exception e) {
           log.error("Exception while looking at refreshing shard terms", e);
         }
-        
+
         if (zkShardTerms != null && zkShardTerms.registered(coreName) && !zkShardTerms.canBecomeLeader(coreName)) {
-          if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreName, leaderVoteWait)) {
-            rejoinLeaderElection(core);
-            return false;
-          } else {
-            // only log an error if this replica win the election
-            setTermToMax = true;
+          boolean onlyLiveReplica = true;
+          DocCollection coll = zkController.zkStateReader.getClusterState().getCollectionOrNull(collection);
+
+          if (coll != null) {
+            Slice slice = coll.getSlice(shardId);
+            if (slice != null) {
+              for (Replica replica : slice) {
+                if (replica.getName().equals(coreName)) {
+                  continue;
+                }
+                if (zkController.zkStateReader.isNodeLive(replica.getNodeName())) {
+                  onlyLiveReplica = false;
+                  break;
+                }
+              }
+            }
           }
+
+          if (!onlyLiveReplica) {
+            if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreName, leaderVoteWait)) {
+              rejoinLeaderElection(core);
+              return false;
+            }
+          }
+
+          // only log an error if this replica win the election
+          setTermToMax = true;
         }
 
         log.info("I may be the new leader - try and sync");
