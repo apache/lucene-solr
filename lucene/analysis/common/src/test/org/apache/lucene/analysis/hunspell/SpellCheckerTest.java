@@ -152,6 +152,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("compoundrule8");
   }
 
+  public void testDisallowCompoundOnlySuffixesAtTheVeryEnd() throws Exception {
+    doTest("onlyincompound2");
+  }
+
   public void testGermanCompounding() throws Exception {
     doTest("germancompounding");
   }

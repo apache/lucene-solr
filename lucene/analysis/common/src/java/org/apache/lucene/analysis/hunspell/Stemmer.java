@@ -568,6 +568,12 @@ final class Stemmer {
       if (context != allowed && !dictionary.hasFlag(append, dictionary.compoundPermit, scratch)) {
         return false;
       }
+      if (context == WordContext.COMPOUND_END
+          && !isPrefix
+          && !previousWasPrefix
+          && dictionary.hasFlag(append, dictionary.onlyincompound, scratch)) {
+        return false;
+      }
     }
 
     if (recursionDepth == 0) {
