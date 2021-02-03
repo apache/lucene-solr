@@ -99,11 +99,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   //   3) in general, not controlling carefully enough exactly when our view of clusterState is updated
   protected volatile ClusterState clusterState;
 
-  // should we clone the document before sending it to replicas?
-  // this is set to true in the constructor if the next processors in the chain
-  // are custom and may modify the SolrInputDocument racing with its serialization for replication
-  private final boolean cloneRequiredOnLeader;
-
   //used for keeping track of replicas that have processed an add/update from the leader
   private volatile RollupRequestReplicationTracker rollupReplicationTracker = null;
   private volatile LeaderRequestReplicationTracker leaderReplicationTracker = null;
@@ -119,7 +114,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkController = cc.getZkController();
     cmdDistrib = new SolrCmdDistributor(zkController.getZkStateReader(), cc.getUpdateShardHandler(), new IsCCClosed(req));
     try {
-      cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
       collection = cloudDesc.getCollectionName();
       clusterState = zkController.getClusterState();
       DocCollection coll = clusterState.getCollectionOrNull(collection, true);
@@ -286,8 +280,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processAdd(AddUpdateCommand cmd) throws IOException {
-    clusterState = zkController.getClusterState();
-
     try {
 
       if (isReadOnly()) {
@@ -388,7 +380,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
-    clusterState = zkController.getClusterState();
 
     super.processDelete(cmd);
   }
@@ -450,7 +441,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   protected void doDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
     zkCheck();
-
+    clusterState = zkController.getClusterState();
     // NONE: we are the first to receive this deleteByQuery
     //       - it must be forwarded to the leader of every shard
     // TO:   we are a leader receiving a forwarded deleteByQuery... we must:
@@ -482,19 +473,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       List<SolrCmdDistributor.Node> leaders =  new ArrayList<>(slices.size());
       for (Slice slice : slices) {
         String sliceName = slice.getName();
-        Replica leader;
-        try {
-          leader = zkController.getZkStateReader().getLeaderRetry(collection, sliceName);
-        } catch (Exception e) {
-          log.error("Exception finding leader for shard " + sliceName, e);
-          continue;
-        }
+        Replica leader = slice.getLeader();
 
         // TODO: What if leaders changed in the meantime?
         // should we send out slice-at-a-time and if a node returns "hey, I'm not a leader" (or we get an error because it went down) then look up the new leader?
 
         // Am I the leader for this slice?
-
         String leaderCoreNodeName = leader.getName();
         String coreName = desc.getName();
         isLeader = coreName.equals(leaderCoreNodeName);
@@ -819,8 +803,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected boolean shouldCloneCmdDoc() {
-    boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
-    return willDistrib & cloneRequiredOnLeader;
+    return true;
   }
 
   // helper method, processAdd was getting a bit large.
@@ -862,10 +845,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       if (onlyLeaders) {
         Replica replica = docCollection.getLeader(slice.getName());
         if (replica != null) {
-          Replica nodeProps = replica;
-          nodeProps.getProperties().put(ZkStateReader.CORE_NAME_PROP, replica.getName());
-          if (zkController.getZkStateReader().isNodeLive(nodeProps.getNodeName())) {
-            urls.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), nodeProps, collection, slice.getName()));
+          if (zkController.getZkStateReader().isNodeLive(replica.getNodeName())) {
+            urls.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collection, slice.getName()));
           }
         }
         continue;

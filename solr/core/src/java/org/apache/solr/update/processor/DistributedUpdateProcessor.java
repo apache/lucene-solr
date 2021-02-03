@@ -906,7 +906,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
 
-    boolean drop = versionDeleteByQuery(cmd);
+    boolean drop = false;
+    if (!forwardToLeader) {
+       drop = versionDeleteByQuery(cmd);
+    }
 
     if (drop) {
       return;
@@ -922,18 +925,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
       return null;
     };
-    if (!forwardToLeader) {
-      distFuture = ParWork.getRootSharedExecutor().submit(distCall);
-    } else {
-      try {
-        distCall.call();
-      } catch (Exception e) {
-        if (e instanceof RuntimeException) {
-          throw (RuntimeException) e;
-        }
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-    }
 
     if (!forwardToLeader) {
       distFuture = ParWork.getRootSharedExecutor().submit(distCall);
@@ -948,24 +939,26 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    try {
-      doLocalDelete(cmd);
-    } catch (Exception e) {
-      log.error("Exception on local deleteByQuery", e);
-      Throwable t;
-      if (e instanceof ExecutionException) {
-        t = e.getCause();
-      } else {
-        t = e;
+    if (!forwardToLeader) {
+      try {
+        doLocalDelete(cmd);
+      } catch (Exception e) {
+        log.error("Exception on local deleteByQuery", e);
+        Throwable t;
+        if (e instanceof ExecutionException) {
+          t = e.getCause();
+        } else {
+          t = e;
+        }
+        if (distFuture != null && isLeader && !forwardToLeader) {
+          distFuture.cancel(false);
+          cancelCmds.add(cmd);
+        }
+        if (t instanceof SolrException) {
+          throw (SolrException) t;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, t);
       }
-      if (distFuture != null && isLeader && !forwardToLeader) {
-        distFuture.cancel(false);
-        cancelCmds.add(cmd);
-      }
-      if (t instanceof SolrException) {
-        throw (SolrException) t;
-      }
-      throw new SolrException(ErrorCode.SERVER_ERROR, t);
     }
 
     if (distFuture != null) {

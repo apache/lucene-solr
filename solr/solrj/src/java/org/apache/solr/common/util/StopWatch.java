@@ -25,16 +25,20 @@ import java.util.concurrent.TimeUnit;
 public class StopWatch {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final long start;
-  private final String name;
+  private long start;
+  private String name;
 
   public StopWatch(String name) {
-    this.name = "StopWatch-" + name;
-    start = System.nanoTime();
+    if (log.isDebugEnabled()) {
+      this.name = "StopWatch-" + name;
+      start = System.nanoTime();
+    }
   }
 
   public void done() {
-    long time = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
-    log.info("Time taken for {}={}ms", name, time);
+    if (log.isDebugEnabled()) {
+      long time = TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS);
+      log.debug("Time taken for {}={}ms", name, time);
+    }
   }
 }
