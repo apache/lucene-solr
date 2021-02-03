@@ -58,7 +58,8 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   }
 
   /**
-   * A phaser that will advance phases every time {@link #setDelegate(ClusterEventProducer)} is called
+   * A phaser that will advance phases every time {@link #setDelegate(ClusterEventProducer)} is called.
+   * Useful for allowing tests to know when a new delegate is finished getting set.
    */
   @VisibleForTesting
   public void setDelegationPhaser(Phaser phaser) {
@@ -102,6 +103,7 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     }
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
+      assert localPhaser.getRegisteredParties() == 1;
       localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
     }
   }

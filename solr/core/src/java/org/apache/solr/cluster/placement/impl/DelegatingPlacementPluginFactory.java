@@ -41,7 +41,8 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
   }
 
   /**
-   * A phaser that will advance phases every time {@link #setDelegate(PlacementPluginFactory)} is called
+   * A phaser that will advance phases every time {@link #setDelegate(PlacementPluginFactory)} is called.
+   * Useful for allowing tests to know when a new delegate is finished getting set.
    */
   @VisibleForTesting
   public void setDelegationPhaser(Phaser phaser) {
@@ -53,6 +54,7 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
     this.delegate = delegate;
     Phaser localPhaser = phaser; // volatile read
     if (localPhaser != null) {
+      assert localPhaser.getRegisteredParties() == 1;
       localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
     }
   }
