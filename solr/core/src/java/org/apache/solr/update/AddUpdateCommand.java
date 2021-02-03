@@ -58,14 +58,14 @@ public class AddUpdateCommand extends UpdateCommand {
    */
   public volatile long prevVersion = -1;
 
-  public boolean overwrite = true;
+  public volatile boolean overwrite = true;
 
   /**
    * The term to use to delete an existing document (for dedupe). (optional)
    */
-  public Term updateTerm;
+  public volatile Term updateTerm;
 
-  public int commitWithin = -1;
+  public volatile int commitWithin = -1;
 
   public volatile boolean isLastDocInBatch = false;
 
@@ -158,20 +158,6 @@ public class AddUpdateCommand extends UpdateCommand {
     }
      return "(null)";
    }
-
-  public boolean hasId() {
-    if (req != null) {
-      IndexSchema schema = req.getSchema();
-      SchemaField sf = schema.getUniqueKeyField();
-      if (solrDoc != null && sf != null) {
-        SolrInputField field = solrDoc.getField(sf.getName());
-        if (field != null) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
 
   /**
    *

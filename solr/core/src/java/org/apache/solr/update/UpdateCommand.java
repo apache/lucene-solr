@@ -23,10 +23,10 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  */
 public abstract class UpdateCommand implements Cloneable {
-  protected SolrQueryRequest req;
+  protected volatile SolrQueryRequest req;
   protected volatile long version;
-  protected String route;
-  protected int flags;
+  protected volatile String route;
+  protected volatile int flags;
 
   public static int BUFFERING = 0x00000001;    // update command is being buffered.
   public static int REPLAY    = 0x00000002;    // update command is from replaying a log.

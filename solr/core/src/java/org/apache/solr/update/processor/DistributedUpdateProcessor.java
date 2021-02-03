@@ -316,7 +316,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         try {
           distCall.call();
         } catch (Exception e) {
-          log.error("Exception sending dist update", e);
+          if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+          }
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
@@ -333,14 +335,20 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         try {
           doLocalAdd(cmd);
         } catch (Exception e) {
+          Throwable t;
+          if (e instanceof ExecutionException) {
+            t = e.getCause();
+          } else {
+            t = e;
+          }
           if (distFuture != null && isLeader && !forwardToLeader) {
             distFuture.cancel(false);
             cancelCmds.add(cloneCmd);
           }
-          if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
+          if (t instanceof RuntimeException) {
+            throw (RuntimeException) t;
           }
-          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, t);
         }
         // if the update updates a doc that is part of a nested structure,
         // force open a realTimeSearcher to trigger a ulog cache refresh.
@@ -941,14 +949,40 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
 
     Future<?> distFuture = null;
-
-    distFuture = ParWork.getRootSharedExecutor().submit(() -> {
+    Callable distCall = () -> {
       try {
         doDistribDeleteByQuery(cmd, replicas, coll);
       } catch (IOException e) {
+        // MRM TODO: fail this harder...
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
-    });
+      return null;
+    };
+    if (!forwardToLeader) {
+      distFuture = ParWork.getRootSharedExecutor().submit(distCall);
+    } else {
+      try {
+        distCall.call();
+      } catch (Exception e) {
+        if (e instanceof RuntimeException) {
+          throw (RuntimeException) e;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
+
+    if (!forwardToLeader) {
+      distFuture = ParWork.getRootSharedExecutor().submit(distCall);
+    } else {
+      try {
+        distCall.call();
+      } catch (Exception e) {
+        if (e instanceof RuntimeException) {
+          throw (RuntimeException) e;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+    }
 
     try {
       doLocalDelete(cmd);
