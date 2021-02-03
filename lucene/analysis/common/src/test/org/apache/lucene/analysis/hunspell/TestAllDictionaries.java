@@ -18,12 +18,11 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
@@ -33,10 +32,10 @@ import org.junit.Ignore;
 
 /**
  * Loads all dictionaries from the directory specified in {@code -Dhunspell.dictionaries=...} and
- * prints their memory usage. The directory should have the following structure: folders (named in
- * any way) about specific languages on the top level, with (possibly several) same-named x.dic and
- * x.aff pairs of files inside. For examples of such directories, refer to the {@link
- * org.apache.lucene.analysis.hunspell package documentation}
+ * prints their memory usage. All *.aff files are traversed directly inside the given directory or
+ * in its immediate subdirectories. Each *.aff file must have a same-named sibling *.dic file. For
+ * examples of such directories, refer to the {@link org.apache.lucene.analysis.hunspell package
+ * documentation}
  */
 @Ignore("enable manually")
 @SuppressSysoutChecks(bugUrl = "prints important memory utilization stats per dictionary")
@@ -45,21 +44,9 @@ public class TestAllDictionaries extends LuceneTestCase {
   private static List<Path> findAllAffixFiles() throws IOException {
     String dicDir = System.getProperty("hunspell.dictionaries");
     Assume.assumeFalse("Missing -Dhunspell.dictionaries=...", dicDir == null);
-
-    List<Path> result = new ArrayList<>();
-    try (DirectoryStream<Path> langDirs = Files.newDirectoryStream(Path.of(dicDir))) {
-      for (Path langDir : langDirs) {
-        if (Files.isDirectory(langDir)) {
-          try (DirectoryStream<Path> files = Files.newDirectoryStream(langDir, "*.aff")) {
-            for (Path file : files) {
-              result.add(file);
-            }
-          }
-        }
-      }
-    }
-
-    return result;
+    return Files.walk(Path.of(dicDir), 2)
+        .filter(f -> f.toString().endsWith(".aff"))
+        .collect(Collectors.toList());
   }
 
   private static Dictionary loadDictionary(Path aff) throws IOException, ParseException {
