@@ -18,6 +18,8 @@ Improvements
 
 * SOLR-15085: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was passed to it. (Tim Owen via Mike Drob)
 
+* SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
