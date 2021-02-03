@@ -158,8 +158,8 @@ public class XmlConfigFile { // formerly simply "Config"
      //   po.setXIncludeAware(true);
       //  po.setCheckEntityReferences(false);
        // po.setExpandAttributeDefaults(false);
-      //  po.setDTDValidationMode(Validation.STRIP);
-        //po.setPleaseCloseAfterUse(true);
+        po.setDTDValidationMode(Validation.STRIP);
+        po.setPleaseCloseAfterUse(true);
         Sender.send(source, builder, po);
         docTree = (TinyDocumentImpl) builder.getCurrentRoot();
       } catch (Exception e) {

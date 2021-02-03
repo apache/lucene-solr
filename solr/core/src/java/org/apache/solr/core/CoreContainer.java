@@ -112,7 +112,6 @@ import static org.apache.solr.common.params.CommonParams.METRICS_HISTORY_PATH;
 import static org.apache.solr.common.params.CommonParams.METRICS_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_PATH;
 import static org.apache.solr.common.params.CommonParams.ZK_STATUS_PATH;
-import static org.apache.solr.core.CorePropertiesLocator.PROPERTIES_FILENAME;
 import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
 import java.io.Closeable;
 import java.io.File;
@@ -316,6 +315,11 @@ public class CoreContainer implements Closeable {
   public CoreContainer(Path solrHome, Properties properties) throws IOException {
     this(new SolrXmlConfig().fromSolrHome(solrHome, properties));
   }
+
+  public CoreContainer(Path solrHome, Properties properties, boolean asyncSolrCoreLoad) throws IOException {
+    this(new SolrXmlConfig().fromSolrHome(solrHome, properties), asyncSolrCoreLoad);
+  }
+
 
   /**
    * Create a new CoreContainer using the given SolrResourceLoader,

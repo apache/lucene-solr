@@ -55,7 +55,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
   }
 
   protected void setupCoreContainer() throws IOException {
-    cores = new CoreContainer(getSolrHome(), new Properties());
+    cores = new CoreContainer(getSolrHome(), new Properties(), false);
     cores.load();
     //cores = CoreContainer.createAndLoad(getSolrHome(), new File(TEMP_DIR, "solr.xml"));
   }

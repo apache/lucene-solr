@@ -134,16 +134,20 @@ class SolrCores implements Closeable {
   // Returns the old core if there was a core of the same name.
   //WARNING! This should be the _only_ place you put anything into the list of transient cores!
   protected SolrCore putCore(CoreDescriptor cd, SolrCore core) {
-    if (cd.isTransient()) {
-      if (getTransientCacheHandler() != null) {
-        return getTransientCacheHandler().addCore(cd.getName(), core);
-      }
-    } else {
-      residentDesciptors.put(cd.getName(), cd);
-      return cores.put(cd.getName(), core);
+    //    if (cd.isTransient()) {
+    //      if (getTransientCacheHandler() != null) {
+    //        return getTransientCacheHandler().addCore(cd.getName(), core);
+    //      }
+    //    } else {
+    residentDesciptors.put(cd.getName(), cd);
+    SolrCore c = cores.put(cd.getName(), core);
+    synchronized (loadingSignal) {
+      loadingSignal.notifyAll();
     }
-
-    return null;
+    return c;
+    //    }
+    //
+    //    return null;
   }
 
   /**
@@ -267,10 +271,6 @@ class SolrCores implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Cannot unload non-existent core [null]");
     }
 
-    if (!closed) {
-      waitForLoadingCoreToFinish(name, 5000);
-    }
-
     if (log.isDebugEnabled()) log.debug("remove core from solrcores {}", name);
     currentlyLoadingCores.remove(name);
     SolrCore ret = cores.remove(name);
@@ -286,9 +286,6 @@ class SolrCores implements Closeable {
 
   /* If you don't increment the reference count, someone could close the core before you use it. */
   SolrCore getCoreFromAnyList(String name) {
-    if (!closed) {
-      waitForLoadingCoreToFinish(name, 5000);
-    }
     CoreDescriptor cd = residentDesciptors.get(name);
 
     SolrCore core = cores.get(name);
@@ -344,10 +341,6 @@ class SolrCores implements Closeable {
    */
   public CoreDescriptor getCoreDescriptor(String coreName) {
     if (coreName == null) return null;
-
-    if (!closed) {
-      waitForLoadingCoreToFinish(coreName, 5000);
-    }
 
     CoreDescriptor cd = residentDesciptors.get(coreName);
     if (cd != null) {
@@ -418,14 +411,14 @@ class SolrCores implements Closeable {
       while (isCoreLoading(core)) {
         synchronized (loadingSignal) {
           try {
-            loadingSignal.wait(250);
+            loadingSignal.wait(1000);
           } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
             return;
           }
         }
         if (System.nanoTime() >= timeout) {
           log.warn("Timed out waiting for SolrCore, {},  to finish loading.", core);
-          throw new RuntimeException("Timed out waiting for SolrCore, "+ core + ",  to finish loading.");
         }
       }
   }

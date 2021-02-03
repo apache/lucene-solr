@@ -258,7 +258,12 @@ public class HttpSolrCall {
       }
 
       // Try to resolve a Solr core name
+
       core = cores.getCore(origCorename);
+
+      if (core == null && cores.isCoreLoading(origCorename)) {
+        cores.waitForLoadingCore(origCorename, 3000);
+      }
 
       if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
 

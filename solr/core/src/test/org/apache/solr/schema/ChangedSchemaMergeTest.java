@@ -95,7 +95,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     File solrXml = new File(solrHomeDirectory, "solr.xml");
     FileUtils.write(solrXml, discoveryXml, StandardCharsets.UTF_8);
 
-    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties());
+    final CoreContainer cores = new CoreContainer(solrHomeDirectory.toPath(), new Properties(), false);
     cores.load();
     return cores;
   }
