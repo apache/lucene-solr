@@ -10,7 +10,7 @@ REP shun$ tion
 REP ^alot$ a_lot  # add the highest priority for "a lot" suggestion to "alot"
 REP ^foo$ bar
 REP ' _    # "un'alunno" -> "un alunno"
-REP ^vinteï¿½n$ vinte_e_un
+REP ^vinteún$ vinte_e_un
 REP s 's
 
 

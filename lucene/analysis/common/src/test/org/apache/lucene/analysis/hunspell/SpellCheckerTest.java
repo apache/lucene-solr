@@ -44,8 +44,16 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("allcaps");
   }
 
-  public void rep() throws Exception {
+  public void testRepSuggestions() throws Exception {
     doTest("rep");
+  }
+
+  public void testPhSuggestions() throws Exception {
+    doTest("ph");
+  }
+
+  public void testPhSuggestions2() throws Exception {
+    doTest("ph2");
   }
 
   public void testForceUCase() throws Exception {
