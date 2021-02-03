@@ -463,7 +463,7 @@ each cluster. In this example the key features of the centroids are extracted
 to represent the key phrases for clusters of TF-IDF term vectors.
 
 NOTE: The example below works with TF-IDF _term vectors_.
-The section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> offers
+The section <<term-vectors.adoc#,Text Analysis and Term Vectors>> offers
 a full explanation of this features.
 
 In the example the `search` function returns documents where the `review_t` field matches the phrase "star wars".

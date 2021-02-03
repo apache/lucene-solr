@@ -18,7 +18,7 @@
 
 The Collapsing query parser and the Expand component combine to form an approach to grouping documents for field collapsing in search results.
 
-The Collapsing query parser groups documents (collapsing the result set) according to your parameters, while the Expand component provides access to documents in the collapsed group for use in results display or other processing by a client application. Collapse & Expand can together do what the older <<result-grouping.adoc#result-grouping,Result Grouping>> (`group=true`) does for _most_ use-cases but not all. Collapse and Expand are not supported when Result Grouping is enabled. Generally, you should prefer Collapse & Expand.
+The Collapsing query parser groups documents (collapsing the result set) according to your parameters, while the Expand component provides access to documents in the collapsed group for use in results display or other processing by a client application. Collapse & Expand can together do what the older <<result-grouping.adoc#,Result Grouping>> (`group=true`) does for _most_ use-cases but not all. Collapse and Expand are not supported when Result Grouping is enabled. Generally, you should prefer Collapse & Expand.
 
 [IMPORTANT]
 ====
@@ -39,7 +39,7 @@ The CollapsingQParser accepts the following local parameters:
 The field that is being collapsed on. The field must be a single valued String, Int or Float-type of field.
 
 `min` or `max`::
-Selects the group head document for each group based on which document has the min or max value of the specified numeric field or <<function-queries.adoc#function-queries,function query>>.
+Selects the group head document for each group based on which document has the min or max value of the specified numeric field or <<function-queries.adoc#,function query>>.
 +
 At most only one of the `min`, `max`, or `sort` (see below) parameters may be specified.
 +
@@ -134,7 +134,7 @@ fq={!collapse cost=1000 field=group_field}
 
 === Block Collapsing
 
-When collapsing on the `\_root_` field, using `nullPolicy=expand` or `nullPolicy=ignore`, the Collapsing Query Parser can take advantage of the fact that all docs with identical field values are adjacent to eachother in the index in a single <<indexing-nested-documents.adoc#indexing-nested-documents,"block" of nested documents>>.  This allows the collapsing logic to be much faster and more memory efficient.
+When collapsing on the `\_root_` field, using `nullPolicy=expand` or `nullPolicy=ignore`, the Collapsing Query Parser can take advantage of the fact that all docs with identical field values are adjacent to eachother in the index in a single <<indexing-nested-documents.adoc#,"block" of nested documents>>.  This allows the collapsing logic to be much faster and more memory efficient.
 
 The default collapsing logic must keep track of all group head documents -- for all groups encountered so far -- until it has evaluated all documents, because each document it considers may become the new group head of any group.
 

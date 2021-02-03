@@ -26,7 +26,7 @@ The defType parameter selects the query parser that Solr should use to process t
 
 `defType=dismax`
 
-If no `defType` parameter is specified, then by default, the <<the-standard-query-parser.adoc#the-standard-query-parser,The Standard Query Parser>> is used. (e.g., `defType=lucene`)
+If no `defType` parameter is specified, then by default, the <<the-standard-query-parser.adoc#,The Standard Query Parser>> is used. (e.g., `defType=lucene`)
 
 == sort Parameter
 
@@ -39,7 +39,7 @@ Solr can sort query responses according to:
 * The value of any primitive field (numerics, string, boolean, dates, etc.) which has `docValues="true"` (or `multiValued="false"` and `indexed="true"`, in which case the indexed terms will used to build DocValue like structures on the fly at runtime)
 * A SortableTextField which implicitly uses `docValues="true"` by default to allow sorting on the original input string regardless of the analyzers used for Searching.
 * A single-valued TextField that uses an analyzer (such as the KeywordTokenizer) that produces only a single term per document. TextField does not support `docValues="true"`, but a DocValue-like structure will be built on the fly at runtime.
-** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copying-fields.adoc#copying-fields,use a `copyField` directive>> in the the Schema to clone the field. Then search on the field and sort on its clone.
+** *NOTE:* If you want to be able to sort on a field whose contents you want to tokenize to facilitate searching, <<copying-fields.adoc#,use a `copyField` directive>> in the the Schema to clone the field. Then search on the field and sort on its clone.
 
 In the case of primitive fields, or SortableTextFields, that are `multiValued="true"` the representative value used for each doc when sorting depends on the sort direction: The minimum value in each document is used for ascending (`asc`) sorting, while the maximal value in each document is used for descending (`desc`) sorting.  This default behavior is equivalent to explicitly sorting using the 2 argument `<<function-queries.adoc#field-function,field()>>` function: `sort=field(name,min) asc` and `sort=field(name,max) desc`
 
@@ -104,7 +104,7 @@ fq=popularity:[10 TO *]&fq=section:0
 fq=+popularity:[10 TO *] +section:0
 ----
 
-* The document sets from each filter query are cached independently. Thus, concerning the previous examples: use a single `fq` containing two mandatory clauses if those clauses appear together often, and use two separate `fq` parameters if they are relatively independent. (To learn about tuning cache sizes and making sure a filter cache actually exists, see <<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>.)
+* The document sets from each filter query are cached independently. Thus, concerning the previous examples: use a single `fq` containing two mandatory clauses if those clauses appear together often, and use two separate `fq` parameters if they are relatively independent. (To learn about tuning cache sizes and making sure a filter cache actually exists, see <<the-well-configured-solr-instance.adoc#,The Well-Configured Solr Instance>>.)
 * It is also possible to use <<the-standard-query-parser.adoc#differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser,filter(condition) syntax>> inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
 
 * As with all parameters: special characters in an URL need to be properly escaped and encoded as hex values. Online tools are available to help you with URL-encoding. For example: http://meyerweb.com/eric/tools/dencoder/.
@@ -133,7 +133,7 @@ This table shows some basic examples of how to use `fl`:
 
 === Functions with fl
 
-<<function-queries.adoc#function-queries,Functions>> can be computed for each document in the result and returned as a pseudo-field:
+<<function-queries.adoc#,Functions>> can be computed for each document in the result and returned as a pseudo-field:
 
 [source,text]
 ----
@@ -142,7 +142,7 @@ fl=id,title,product(price,popularity)
 
 === Document Transformers with fl
 
-<<transforming-result-documents.adoc#transforming-result-documents,Document Transformers>> can be used to modify the information returned about each documents in the results of a query:
+<<transforming-result-documents.adoc#,Document Transformers>> can be used to modify the information returned about each documents in the results of a query:
 
 [source,text]
 ----
@@ -206,7 +206,7 @@ The default value of this parameter is blank, which causes no extra "explain inf
 
 == timeAllowed Parameter
 
-This parameter specifies the amount of time, in milliseconds, allowed for a search to complete. If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, <<faceting.adoc#faceting,facet>> counts, and result <<the-stats-component.adoc#the-stats-component,stats>> may not be accurate for the entire result set. In case of expiration, if `omitHeader` isn't set to `true` the response header contains a special flag called `partialResults`. When using `timeAllowed` in combination with <<pagination-of-results.adoc#using-cursors,`cursorMark`>>, and the `partialResults` flag is present, some matching documents may have been skipped in the result set. Additionally, if  the `partialResults` flag is present, `cursorMark` can match `nextCursorMark` even if there may be more results
+This parameter specifies the amount of time, in milliseconds, allowed for a search to complete. If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, <<faceting.adoc#,facet>> counts, and result <<the-stats-component.adoc#,stats>> may not be accurate for the entire result set. In case of expiration, if `omitHeader` isn't set to `true` the response header contains a special flag called `partialResults`. When using `timeAllowed` in combination with <<pagination-of-results.adoc#using-cursors,`cursorMark`>>, and the `partialResults` flag is present, some matching documents may have been skipped in the result set. Additionally, if  the `partialResults` flag is present, `cursorMark` can match `nextCursorMark` even if there may be more results
 
 [source,json]
 ----
@@ -244,7 +244,7 @@ If set to `true`, and if <<indexconfig-in-solrconfig.adoc#mergepolicyfactory,the
 
 If early termination is used, a `segmentTerminatedEarly` header will be included in the `responseHeader`.
 
-Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when early segment termination happens values such as `numFound`, <<faceting.adoc#faceting,Facet>> counts, and result <<the-stats-component.adoc#the-stats-component,Stats>> may not be accurate for the entire result set.
+Similar to using <<timeAllowed Parameter,the `timeAllowed` Parameter>>, when early segment termination happens values such as `numFound`, <<faceting.adoc#,Facet>> counts, and result <<the-stats-component.adoc#,Stats>> may not be accurate for the entire result set.
 
 The default value of this parameter is `false`.
 
@@ -252,11 +252,11 @@ The default value of this parameter is `false`.
 
 This parameter may be set to either `true` or `false`.
 
-If set to `true`, this parameter excludes the header from the returned results. The header contains information about the request, such as the time it took to complete. The default value for this parameter is `false`. When using parameters such as <<common-query-parameters.adoc#timeallowed-parameter,`timeAllowed`>>, and <<solrcloud-query-routing-and-read-tolerance.adoc#shards-tolerant-parameter,`shards.tolerant`>>, which can lead to partial results, it is advisable to keep the header, so that the `partialResults` flag can be checked, and values such as `numFound`, `nextCursorMark`, <<faceting.adoc#faceting,Facet>> counts, and result <<the-stats-component.adoc#the-stats-component,Stats>> can be interpreted in the context of partial results.
+If set to `true`, this parameter excludes the header from the returned results. The header contains information about the request, such as the time it took to complete. The default value for this parameter is `false`. When using parameters such as <<common-query-parameters.adoc#timeallowed-parameter,`timeAllowed`>>, and <<solrcloud-query-routing-and-read-tolerance.adoc#shards-tolerant-parameter,`shards.tolerant`>>, which can lead to partial results, it is advisable to keep the header, so that the `partialResults` flag can be checked, and values such as `numFound`, `nextCursorMark`, <<faceting.adoc#,Facet>> counts, and result <<the-stats-component.adoc#,Stats>> can be interpreted in the context of partial results.
 
 == wt Parameter
 
-The `wt` parameter selects the Response Writer that Solr should use to format the query's response. For detailed descriptions of Response Writers, see <<response-writers.adoc#response-writers,Response Writers>>.
+The `wt` parameter selects the Response Writer that Solr should use to format the query's response. For detailed descriptions of Response Writers, see <<response-writers.adoc#,Response Writers>>.
 
 If you do not define the `wt` parameter in your queries, JSON will be returned as the format of the response.
 

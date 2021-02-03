@@ -25,7 +25,7 @@ In addition to the logging options described below, there is a way to configure 
 
 == Temporary Logging Settings
 
-You can control the amount of logging output in Solr by using the Admin Web interface. Select the *LOGGING* link. Note that this page only lets you change settings in the running system and is not saved for the next run. (For more information about the Admin Web interface, see <<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,Using the Solr Administration User Interface>>.)
+You can control the amount of logging output in Solr by using the Admin Web interface. Select the *LOGGING* link. Note that this page only lets you change settings in the running system and is not saved for the next run. (For more information about the Admin Web interface, see <<using-the-solr-administration-user-interface.adoc#,Using the Solr Administration User Interface>>.)
 
 .The Logging Screen
 image::images/logging/logging.png[image]
@@ -73,7 +73,7 @@ You can temporarily choose a different logging level as you start Solr. There ar
 
 The first way is to set the `SOLR_LOG_LEVEL` environment variable before you start Solr, or place the same variable in `bin/solr.in.sh` or `bin/solr.in.cmd`. The variable must contain an uppercase string with a supported log level (see above).
 
-The second way is to start Solr with the -v or -q options, see <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for details. Examples:
+The second way is to start Solr with the -v or -q options, see <<solr-control-script-reference.adoc#,Solr Control Script Reference>> for details. Examples:
 
 [source,bash]
 ----
@@ -87,7 +87,7 @@ bin/solr start -f -q
 
 Solr uses http://logging.apache.org/log4j/log4j-{ivy-log4j-version}/[Log4J version {ivy-log4j-version}] for logging which is configured using `server/resources/log4j2.xml`. Take a moment to inspect the contents of the `log4j2.xml` file so that you are familiar with its structure. By default, Solr log messages will be written to `SOLR_LOGS_DIR/solr.log`.
 
-When you're ready to deploy Solr in production, set the variable `SOLR_LOGS_DIR` to the location where you want Solr to write log files, such as `/var/solr/logs`. You may also want to tweak `log4j2.xml`. Note that if you installed Solr as a service using the instructions provided in <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>, then see `/var/solr/log4j2.xml` instead of the default `server/resources` version.
+When you're ready to deploy Solr in production, set the variable `SOLR_LOGS_DIR` to the location where you want Solr to write log files, such as `/var/solr/logs`. You may also want to tweak `log4j2.xml`. Note that if you installed Solr as a service using the instructions provided in <<taking-solr-to-production.adoc#,Taking Solr to Production>>, then see `/var/solr/log4j2.xml` instead of the default `server/resources` version.
 
 When starting Solr in the foreground (`-f` option), all logs will be sent to the console, in addition to `solr.log`. When starting Solr in the background, it will write all `stdout` and `stderr` output to a log file in `solr-<port>-console.log`, and automatically disable the CONSOLE logger configured in `log4j2.xml`, having the same effect as if you removed the CONSOLE appender from the rootLogger manually.
 

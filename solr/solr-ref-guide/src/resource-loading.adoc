@@ -19,17 +19,17 @@
 
 Solr components can be configured using *resources*: data stored in external files that may be referred to in a location-independent fashion.
 
-Examples of resources include: files needed by schema components, e.g., a stopword list for <<filter-descriptions.adoc#stop-filter,Stop Filter>>; and machine-learned models for <<learning-to-rank.adoc#learning-to-rank,Learning to Rank>>.
+Examples of resources include: files needed by schema components, e.g., a stopword list for <<filter-descriptions.adoc#stop-filter,Stop Filter>>; and machine-learned models for <<learning-to-rank.adoc#,Learning to Rank>>.
 _Resources are typically resolved from the configSet_ but there are other options too.
 
 Solr's resources are generally only loaded initially when the Solr collection or Solr core is loaded.
 After you update a resource, you'll typically need to _reload_ the affected collections (SolrCloud) or the cores (standalone Solr).
 Restarting all affected Solr nodes also works.
-<<managed-resources.adoc#managed-resources,Managed resources>> can be manipulated via APIs and do not need an explicit reload.
+<<managed-resources.adoc#,Managed resources>> can be manipulated via APIs and do not need an explicit reload.
 
 == Resources in Configsets
 
-<<config-sets.adoc#config-sets,Configsets>> are the directories containing solrconfig.xml, the schema, and resources referenced by them.
+<<config-sets.adoc#,Configsets>> are the directories containing solrconfig.xml, the schema, and resources referenced by them.
 In SolrCloud they are in ZooKeeper whereas in standalone they are on the file system.
 In either mode, configSets might be shared or might be dedicated to a configSet.
 Prefer to put resources here.

@@ -1698,12 +1698,11 @@ public class ZkController implements Closeable {
   private void waitForCoreNodeName(CoreDescriptor descriptor) {
     log.debug("waitForCoreNodeName >>> look for our core node name");
     try {
-      zkStateReader.waitForState(descriptor.getCollectionName(), 320L, TimeUnit.SECONDS, c -> {
-        String name = ClusterStateMutator.getAssignedCoreNodeName(c, getNodeName(), descriptor.getName());
-        if (name == null) return false;
-        descriptor.getCloudDescriptor().setCoreNodeName(name);
-        return true;
-      });
+      DocCollection collection = zkStateReader.waitForState(descriptor.getCollectionName(), 320L, TimeUnit.SECONDS,
+        c -> ClusterStateMutator.getAssignedCoreNodeName(c, getNodeName(), descriptor.getName()) != null);
+      // Read outside of the predicate to avoid multiple potential writes
+      String name = ClusterStateMutator.getAssignedCoreNodeName(collection, getNodeName(), descriptor.getName());
+      descriptor.getCloudDescriptor().setCoreNodeName(name);
     } catch (TimeoutException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed waiting for collection state", e);
@@ -1716,15 +1715,10 @@ public class ZkController implements Closeable {
       log.debug("waiting to find shard id in clusterstate for {}", cd.getName());
     }
     try {
-      zkStateReader.waitForState(cd.getCollectionName(), 320, TimeUnit.SECONDS, c -> {
-        if (c == null) return false;
-        final String shardId = c.getShardId(getNodeName(), cd.getName());
-        if (shardId != null) {
-          cd.getCloudDescriptor().setShardId(shardId);
-          return true;
-        }
-        return false;
-      });
+      DocCollection collection = zkStateReader.waitForState(cd.getCollectionName(), 320, TimeUnit.SECONDS,
+        c -> c != null && c.getShardId(getNodeName(), cd.getName()) != null);
+      // Read outside of the predicate to avoid multiple potential writes
+      cd.getCloudDescriptor().setShardId(collection.getShardId(getNodeName(), cd.getName()));
     } catch (TimeoutException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Failed getting shard id for core: " + cd.getName(), e);
@@ -1814,10 +1808,8 @@ public class ZkController implements Closeable {
     }
 
     AtomicReference<String> errorMessage = new AtomicReference<>();
-    AtomicReference<DocCollection> collectionState = new AtomicReference<>();
     try {
       zkStateReader.waitForState(cd.getCollectionName(), 10, TimeUnit.SECONDS, (c) -> {
-        collectionState.set(c);
         if (c == null)
           return false;
         Slice slice = c.getSlice(cloudDesc.getShardId());

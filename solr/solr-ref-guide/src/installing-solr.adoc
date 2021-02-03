@@ -19,7 +19,7 @@
 
 Installation of Solr on Unix-compatible or Windows servers generally requires simply extracting (or, unzipping) the download package.
 
-Please be sure to review the <<solr-system-requirements.adoc#solr-system-requirements,Solr System Requirements>> before starting Solr.
+Please be sure to review the <<solr-system-requirements.adoc#,Solr System Requirements>> before starting Solr.
 
 == Available Solr Packages
 
@@ -37,7 +37,7 @@ When getting started with Solr, all you need to do is extract the Solr distribut
 
 When you've progressed past initial evaluation of Solr, you'll want to take care to plan your implementation. You may need to reinstall Solr on another server or make a clustered SolrCloud environment.
 
-When you're ready to setup Solr for a production environment, please refer to the instructions provided on the <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>> page.
+When you're ready to setup Solr for a production environment, please refer to the instructions provided on the <<taking-solr-to-production.adoc#,Taking Solr to Production>> page.
 
 .What Size Server Do I Need?
 [NOTE]
@@ -47,7 +47,7 @@ How to size your Solr installation is a complex question that relies on a number
 It's highly recommended that you spend a bit of time thinking about the factors that will impact hardware sizing for your Solr implementation. A very good blog post that discusses the issues to consider is https://lucidworks.com/2012/07/23/sizing-hardware-in-the-abstract-why-we-dont-have-a-definitive-answer/[Sizing Hardware in the Abstract: Why We Don't have a Definitive Answer].
 ====
 
-One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact). In practice, it is highly unlikely that such a large number of documents would fit and perform well in a single index, and you will likely need to distribute your index across a cluster before you ever approach this number. If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with <<solrcloud.adoc#solrcloud,SolrCloud>> as part of your design from the start.
+One thing to note when planning your installation is that a hard limit exists in Lucene for the number of documents in a single index: approximately 2.14 billion documents (2,147,483,647 to be exact). In practice, it is highly unlikely that such a large number of documents would fit and perform well in a single index, and you will likely need to distribute your index across a cluster before you ever approach this number. If you know you will exceed this number of documents in total before you've even started indexing, it's best to plan your installation with <<solrcloud.adoc#,SolrCloud>> as part of your design from the start.
 
 == Package Installation
 
@@ -68,15 +68,15 @@ After installing Solr, you'll see the following directories and files within the
 bin/::
 This directory includes several important scripts that will make using Solr easier.
 
-solr and solr.cmd::: This is <<solr-control-script-reference.adoc#solr-control-script-reference,Solr's Control Script>>, also known as `bin/solr` (*nix) / `bin/solr.cmd` (Windows). This script is the preferred tool to start and stop Solr. You can also create collections or cores, configure authentication, and work with configuration files when running in SolrCloud mode.
+solr and solr.cmd::: This is <<solr-control-script-reference.adoc#,Solr's Control Script>>, also known as `bin/solr` (*nix) / `bin/solr.cmd` (Windows). This script is the preferred tool to start and stop Solr. You can also create collections or cores, configure authentication, and work with configuration files when running in SolrCloud mode.
 
-post::: The <<post-tool.adoc#post-tool,PostTool>>, which provides a simple command line interface for POSTing content to Solr.
+post::: The <<post-tool.adoc#,PostTool>>, which provides a simple command line interface for POSTing content to Solr.
 
 solr.in.sh and solr.in.cmd:::
 These are property files for *nix and Windows systems, respectively. System-level properties for Java, Jetty, and Solr are configured here. Many of these settings can be overridden when using `bin/solr` / `bin/solr.cmd`, but this allows you to set all the properties in one place.
 
 install_solr_services.sh:::
-This script is used on *nix systems to install Solr as a service. It is described in more detail in the section <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>.
+This script is used on *nix systems to install Solr as a service. It is described in more detail in the section <<taking-solr-to-production.adoc#,Taking Solr to Production>>.
 
 contrib/::
 Solr's `contrib` directory includes add-on plugins for specialized features of Solr.
@@ -97,17 +97,17 @@ server/::
 This directory is where the heart of the Solr application resides. A README in this directory provides a detailed overview, but here are some highlights:
 * Solr's Admin UI (`server/solr-webapp`)
 * Jetty libraries (`server/lib`)
-* Log files (`server/logs`) and log configurations (`server/resources`). See the section <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more details on how to customize Solr's default logging.
+* Log files (`server/logs`) and log configurations (`server/resources`). See the section <<configuring-logging.adoc#,Configuring Logging>> for more details on how to customize Solr's default logging.
 * Sample configsets (`server/solr/configsets`)
 
 == Solr Examples
 
-Solr includes a number of example documents and configurations to use when getting started. If you ran through the <<solr-tutorial.adoc#solr-tutorial,Solr Tutorial>>, you have already interacted with some of these files.
+Solr includes a number of example documents and configurations to use when getting started. If you ran through the <<solr-tutorial.adoc#,Solr Tutorial>>, you have already interacted with some of these files.
 
 Here are the examples included with Solr:
 
 exampledocs::
-This is a small set of simple CSV, XML, and JSON files that can be used with `bin/post` when first getting started with Solr. For more information about using `bin/post` with these files, see <<post-tool.adoc#post-tool,Post Tool>>.
+This is a small set of simple CSV, XML, and JSON files that can be used with `bin/post` when first getting started with Solr. For more information about using `bin/post` with these files, see <<post-tool.adoc#,Post Tool>>.
 
 files::
 The `files` directory provides a basic search UI for documents such as Word or PDF that you may have stored locally. See the README there for details on how to use this example.
@@ -137,7 +137,7 @@ This will start Solr in the background, listening on port 8983.
 
 When you start Solr in the background, the script will wait to make sure Solr starts correctly before returning to the command line prompt.
 
-TIP: All of the options for the Solr CLI are described in the section <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>>.
+TIP: All of the options for the Solr CLI are described in the section <<solr-control-script-reference.adoc#,Solr Control Script Reference>>.
 
 === Start Solr with a Specific Bundled Example
 
@@ -151,7 +151,7 @@ bin/solr -e techproducts
 Currently, the available examples you can run are: techproducts, schemaless, and cloud. See the section <<solr-control-script-reference.adoc#running-with-example-configurations,Running with Example Configurations>> for details on each example.
 
 .Getting Started with SolrCloud
-NOTE: Running the `cloud` example starts Solr in <<solrcloud.adoc#solrcloud,SolrCloud>> mode. For more information on starting Solr in SolrCloud mode, see the section <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>.
+NOTE: Running the `cloud` example starts Solr in <<solrcloud.adoc#,SolrCloud>> mode. For more information on starting Solr in SolrCloud mode, see the section <<getting-started-with-solrcloud.adoc#,Getting Started with SolrCloud>>.
 
 === Check if Solr is Running
 

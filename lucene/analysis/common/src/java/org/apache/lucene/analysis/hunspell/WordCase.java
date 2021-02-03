@@ -37,6 +37,10 @@ enum WordCase {
     return get(startsWithLower, seenUpper, seenLower);
   }
 
+  static WordCase caseOf(CharSequence word) {
+    return caseOf(word, word.length());
+  }
+
   static WordCase caseOf(CharSequence word, int length) {
     boolean startsWithLower = Character.isLowerCase(word.charAt(0));
 
