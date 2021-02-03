@@ -154,15 +154,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
 
       if (leaderSeqPath != null) {
         if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-        zkClient.delete(leaderSeqPath, -1);
+        try {
+          zkClient.delete(leaderSeqPath, -1);
+        } catch (NoNodeException e1) {
+          // fine
+        }
       }
 
-      if (e instanceof InterruptedException) {
-        ParWork.propagateInterrupt(e);
-      }
-      Stat stat = new Stat();
-      zkClient.getData(Paths.get(leaderPath).getParent().toString(), null, stat);
-      log.error("Exception trying to cancel election {} {} {}", stat.getVersion(), e.getClass().getName(), e.getMessage(), e);
+      log.info("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
     }
     leaderZkNodeParentVersion = null;
   }
