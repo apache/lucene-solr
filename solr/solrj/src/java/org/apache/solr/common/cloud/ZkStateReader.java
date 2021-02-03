@@ -734,8 +734,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   private class LazyCollectionRef extends ClusterState.CollectionRef {
     private final String collName;
-    private long lastUpdateTime;
-    private DocCollection cachedDocCollection;
+    private volatile long lastUpdateTime;
+    private volatile DocCollection cachedDocCollection;
 
     public LazyCollectionRef(String collName) {
       super(null);
@@ -748,7 +748,8 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       gets.incrementAndGet();
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
         boolean shouldFetch = true;
-        if (cachedDocCollection != null) {
+        DocCollection cached = cachedDocCollection;
+        if (cached != null) {
           Stat exists = null;
           try {
             exists = zkClient.exists(getCollectionPath(collName), null, true);
@@ -761,8 +762,10 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           }
         }
         if (shouldFetch) {
-          cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
+          cached = getCollectionLive(ZkStateReader.this, collName);
           lastUpdateTime = System.nanoTime();
+          cachedDocCollection = cached;
+          return cached;
         }
       }
       if (log.isDebugEnabled() && cachedDocCollection == null) {
