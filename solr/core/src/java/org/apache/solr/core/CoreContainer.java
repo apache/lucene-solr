@@ -134,6 +134,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -193,7 +194,7 @@ public class CoreContainer implements Closeable {
   public volatile ExecutorService solrCoreExecutor;
 
   public final ExecutorService coreContainerExecutor = ParWork.getParExecutorService("Core",
-      2, Math.max(6, SysStats.PROC_COUNT), 1000, new LinkedBlockingQueue<>(16));
+      2, Math.max(6, SysStats.PROC_COUNT), 1000, new ArrayBlockingQueue(256, false));
 
   private final OrderedExecutor replayUpdatesExecutor;
 
@@ -409,7 +410,7 @@ public class CoreContainer implements Closeable {
     containerProperties.putAll(cfg.getSolrProperties());
 
     solrCoreExecutor = ParWork.getParExecutorService("Core",
-        4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new LinkedBlockingQueue<>(64));
+        4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new ArrayBlockingQueue(256, false));
   }
 
   @SuppressWarnings({"unchecked"})
@@ -1931,22 +1932,23 @@ public class CoreContainer implements Closeable {
     }
     SolrException exception = null;
     try {
+
+      if (isZooKeeperAware()) {
+        if (cd != null) {
+          try {
+            zkSys.getZkController().unregister(name, cd.getCollectionName(), cd.getCloudDescriptor().getShardId());
+          } catch (AlreadyClosedException e) {
+
+          } catch (Exception e) {
+            log.error("Error unregistering core [" + name + "] from cloud state", e);
+            exception = new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
+          }
+        }
+      }
+
       if (name != null) {
         CoreLoadFailure loadFailure = coreInitFailures.remove(name);
         if (loadFailure != null) {
-
-          if (isZooKeeperAware()) {
-            if (cd != null) {
-              try {
-                zkSys.getZkController().unregister(name, cd.getCollectionName(), cd.getCloudDescriptor().getShardId());
-              } catch (AlreadyClosedException e) {
-
-              } catch (Exception e) {
-                log.error("Error unregistering core [" + name + "] from cloud state", e);
-                exception = new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
-              }
-            }
-          }
 
           // getting the index directory requires opening a DirectoryFactory with a SolrConfig, etc,
           // which we may not be able to do because of the init error.  So we just go with what we

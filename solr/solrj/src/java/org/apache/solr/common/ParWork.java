@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -31,7 +32,6 @@ import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -70,7 +70,7 @@ public class ParWork implements Closeable {
   private final boolean requireAnotherThread;
   private final String rootLabel;
 
-  private final Set<ParObject> collectSet = ConcurrentHashMap.newKeySet(16);
+  private final Queue<ParObject> collectSet = new LinkedList<>();
 
   private static volatile ParWorkExecutor EXEC;
 
@@ -78,11 +78,12 @@ public class ParWork implements Closeable {
     if (EXEC == null) {
       synchronized (ParWork.class) {
         if (EXEC == null) {
-          EXEC = (ParWorkExecutor) getParExecutorService(ROOT_EXEC_NAME,
-              Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 32), Integer.MAX_VALUE, 1000,
+          Integer coreSize = Integer.getInteger("solr.rootSharedThreadPoolCoreSize", 32);
+          EXEC = (ParWorkExecutor) getParExecutorService(ROOT_EXEC_NAME, coreSize
+             , Integer.MAX_VALUE, 1000,
               new SynchronousQueue());
           ((ParWorkExecutor)EXEC).enableCloseLock();
-          for (int i = 0; i < 16; i++) {
+          for (int i = 0; i < Math.min(coreSize, 12); i++) {
             EXEC.submit(() -> {});
           }
         }
@@ -145,13 +146,13 @@ public class ParWork implements Closeable {
     OK_CLASSES = Collections.unmodifiableSet(set);
   }
 
-  private final Queue<WorkUnit> workUnits = new ConcurrentLinkedQueue();
+  private final Queue<WorkUnit> workUnits = new LinkedList<>();
 
   private volatile TimeTracker tracker;
 
   private final boolean ignoreExceptions;
 
-  private final Set<Throwable> warns = ParWork.concSetSmallO();
+  private final Set<Throwable> warns = ConcurrentHashMap.newKeySet(6);
 
   // TODO should take logger as well
   public static class Exp extends Exception {
@@ -271,13 +272,14 @@ public class ParWork implements Closeable {
     }
   }
 
-  private void gatherObjects(String label, Object submittedObject, Set<ParObject> collectSet) {
+  private void gatherObjects(String label, Object submittedObject, Collection<ParObject> collectSet) {
     if (submittedObject != null) {
       if (submittedObject instanceof Collection) {
         for (Object obj : (Collection) submittedObject) {
           ParObject ob = new ParObject();
           ob.object = obj;
           ob.label = label;
+          verifyValidType(ob);
           collectSet.add(ob);
         }
       } else if (submittedObject instanceof Map) {
@@ -285,35 +287,30 @@ public class ParWork implements Closeable {
           ParObject ob = new ParObject();
           ob.object = v;
           ob.label = label;
+          verifyValidType(ob);
           collectSet.add(ob);
         });
       } else {
         if (submittedObject instanceof ParObject) {
+          verifyValidType((ParObject) submittedObject);
           collectSet.add((ParObject) submittedObject);
         } else {
           ParObject ob = new ParObject();
           ob.object = submittedObject;
           ob.label = label;
+          verifyValidType(ob);
           collectSet.add(ob);
         }
       }
     }
   }
 
-  private void add(Set<ParObject> objects) {
+  private void add(Collection<ParObject> objects) {
     if (log.isDebugEnabled()) {
       log.debug("add(String objects={}, objects");
     }
 
-
-
-    Set<ParObject> wuObjects = new HashSet<>(objects.size());
-
-    objects.forEach(parObject -> {
-
-      verifyValidType(parObject);
-      wuObjects.add(parObject);
-    });
+    Set<ParObject> wuObjects = new HashSet<>(objects);
 
     WorkUnit workUnit = new WorkUnit(wuObjects, tracker);
     workUnits.add(workUnit);
@@ -377,34 +374,9 @@ public class ParWork implements Closeable {
 
               TimeTracker finalWorkUnitTracker = workUnitTracker;
               if (requireAnotherThread) {
-                closeCalls.add(new NoLimitsCallable<Object>() {
-                  @Override
-                  public Object call() {
-                    try {
-                      handleObject(exception, finalWorkUnitTracker,
-                          object);
-                    } catch (Throwable t) {
-                      log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
-                      if (exception.get() == null) {
-                        exception.set(t);
-                      }
-                    }
-                    return object;
-                  }
-                });
+                closeCalls.add(new ParWorkNoLimitsCallable(exception, finalWorkUnitTracker, object));
               } else {
-                closeCalls.add(() -> {
-                  try {
-                    handleObject(exception, finalWorkUnitTracker,
-                        object);
-                  } catch (Throwable t) {
-                    log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
-                    if (exception.get() == null) {
-                      exception.set(t);
-                    }
-                  }
-                  return object;
-                });
+                closeCalls.add(new ParWorkCallable(exception, finalWorkUnitTracker, object));
               }
 
             }
@@ -457,7 +429,7 @@ public class ParWork implements Closeable {
       
       //System.out.println("DONE:" + tracker.getElapsedMS());
 
-      warns.forEach((it) -> log.warn(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, new RuntimeException(it)));
+      // warns.forEach((it) -> log.warn(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, new RuntimeException(it)));
 
       if (exception.get() != null) {
         Throwable exp = exception.get();
@@ -751,5 +723,55 @@ public class ParWork implements Closeable {
   private static class ParObject {
     String label;
     Object object;
+  }
+
+  private class ParWorkNoLimitsCallable extends NoLimitsCallable<Object> {
+    private final AtomicReference<Throwable> exception;
+    private final TimeTracker finalWorkUnitTracker;
+    private final ParObject object;
+
+    public ParWorkNoLimitsCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object) {
+      this.exception = exception;
+      this.finalWorkUnitTracker = finalWorkUnitTracker;
+      this.object = object;
+    }
+
+    @Override
+    public Object call() {
+      try {
+        handleObject(exception, finalWorkUnitTracker, object);
+      } catch (Throwable t) {
+        log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
+        if (exception.get() == null) {
+          exception.set(t);
+        }
+      }
+      return object;
+    }
+  }
+
+  private class ParWorkCallable implements Callable<Object> {
+    private final AtomicReference<Throwable> exception;
+    private final TimeTracker finalWorkUnitTracker;
+    private final ParObject object;
+
+    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object) {
+      this.exception = exception;
+      this.finalWorkUnitTracker = finalWorkUnitTracker;
+      this.object = object;
+    }
+
+    @Override
+    public Object call() {
+      try {
+        handleObject(exception, finalWorkUnitTracker, object);
+      } catch (Throwable t) {
+        log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
+        if (exception.get() == null) {
+          exception.set(t);
+        }
+      }
+      return object;
+    }
   }
 }

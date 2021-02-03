@@ -115,19 +115,19 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
 
     @Override
     public void finish() throws IOException {
-      try {
-        if (changesSinceCommit && updateHandler.getUpdateLog() != null) {
-          updateHandler.getUpdateLog().finish(null);
-        }
-        super.finish();
-      } finally {
-        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clear();
+      if (changesSinceCommit && updateHandler.getUpdateLog() != null) {
+        updateHandler.getUpdateLog().finish(null);
       }
+      super.finish();
     }
 
     @Override
     public void doClose() {
-      super.doClose();
+      try {
+        super.doClose();
+      } finally {
+        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clear();
+      }
     }
   }
 }

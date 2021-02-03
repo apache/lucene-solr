@@ -118,7 +118,7 @@ public final class RequestHandlers implements Closeable {
   void initHandlersFromConfig(SolrConfig config) {
     List<PluginInfo> implicits = core.getImplicitHandlers();
     // use link map so we iterate in the same order
-    Map<String, PluginInfo> infoMap= new LinkedHashMap<>();
+    Map<String, PluginInfo> infoMap = new LinkedHashMap<>();
     //deduping implicit and explicit requesthandlers
     for (PluginInfo info : implicits) infoMap.put(info.name,info);
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName())) infoMap.put(info.name, info);

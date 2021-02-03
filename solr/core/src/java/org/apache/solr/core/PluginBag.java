@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -75,7 +76,7 @@ public class PluginBag<T> implements AutoCloseable {
     // TODO: since reads will dominate writes, we could also think about creating a new instance of a map each time it changes.
     // Not sure how much benefit this would have over ConcurrentHashMap though
     // We could also perhaps make this constructor into a factory method to return different implementations depending on thread safety needs.
-    this.registry = new ConcurrentHashMap<>(32, 0.75f, 1);
+    this.registry = new ConcurrentHashMap<>(32, 0.75f, 4);
 
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
@@ -234,7 +235,13 @@ public class PluginBag<T> implements AutoCloseable {
     if (!disableHandler) old = registry.put(name, plugin);
     if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
     if (plugin.isLoaded()) {
-      registerMBean(plugin.get(), core, name);
+      if (core != null && core.getCoreContainer() != null) {
+        try {
+          core.getCoreContainer().coreContainerExecutor.submit(() -> registerMBean(plugin.get(), core, name));
+        } catch (RejectedExecutionException e) {
+          registerMBean(plugin.get(), core, name);
+        }
+      }
     }
     // old instance has been replaced - close it to prevent mem leaks
     if (old != null && old != plugin) {
@@ -277,19 +284,11 @@ public class PluginBag<T> implements AutoCloseable {
    *
    * @param defaults These will be registered if not explicitly specified
    */
-  void init(Map<String, T> defaults, SolrCore solrCore, List<PluginInfo> infos) {
+  void init(Map<String, T> defaults, SolrCore solrCore, Collection<PluginInfo> infos) {
     core = solrCore;
-    try (ParWork parWork = new ParWork(this)) {
+    try (ParWork parWork = new ParWork(this, false, true)) {
       for (PluginInfo info : infos) {
-        parWork.collect("", ()->{
-          PluginHolder<T> o = createPlugin(info);
-          String name = info.name;
-          if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
-          PluginHolder<T> old = put(name, o);
-          if (old != null) {
-            log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
-          }
-        });
+        parWork.collect("", new CreateAndPutRequestHandler(info));
       }
     }
     if (infos.size() > 0) { // Aggregate logging
@@ -317,9 +316,13 @@ public class PluginBag<T> implements AutoCloseable {
   private static void registerMBean(Object inst, SolrCore core, String pluginKey) {
     if (core == null) return;
     if (inst instanceof SolrInfoBean) {
-      SolrInfoBean mBean = (SolrInfoBean) inst;
-      String name = (inst instanceof SolrRequestHandler) ? pluginKey : mBean.getName();
-      core.registerInfoBean(name, mBean);
+      try {
+        SolrInfoBean mBean = (SolrInfoBean) inst;
+        String name = (inst instanceof SolrRequestHandler) ? pluginKey : mBean.getName();
+        core.registerInfoBean(name, mBean);
+      } catch (Exception e) {
+        log.error("registerMBean failed", e);
+      }
     }
   }
 
@@ -333,7 +336,6 @@ public class PluginBag<T> implements AutoCloseable {
       registry.forEach((s, tPluginHolder) -> {
         worker.collect(tPluginHolder);
       });
-
     }
   }
 
@@ -483,4 +485,22 @@ public class PluginBag<T> implements AutoCloseable {
     return apiBag;
   }
 
+  private class CreateAndPutRequestHandler implements Runnable {
+    private final PluginInfo info;
+
+    public CreateAndPutRequestHandler(PluginInfo info) {
+      this.info = info;
+    }
+
+    @Override
+    public void run() {
+      PluginHolder<T> o = createPlugin(info);
+      String name = info.name;
+      if (meta.clazz.equals(SolrRequestHandler.class)) name = RequestHandlers.normalize(info.name);
+      PluginHolder<T> old = put(name, o);
+      if (old != null) {
+        log.warn("Multiple entries of {} with name {}", meta.getCleanTag(), name);
+      }
+    }
+  }
 }

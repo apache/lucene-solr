@@ -334,10 +334,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         return cmp == 0 ? b.slot < a.slot : cmp < 0;
       };
     }
-    final PriorityQueue<Slot> queue = new PriorityQueue<>(maxTopVals) {
-      @Override
-      protected boolean lessThan(Slot a, Slot b) { return orderPredicate.test(a, b); }
-    };
+    final PriorityQueue<Slot> queue = new SlotPriorityQueue(maxTopVals, orderPredicate);
 
     // note: We avoid object allocation by having a Slot and re-using the 'bottom'.
     Slot bottom = null;
@@ -571,28 +568,14 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
       // the previously collected values using the originally collected slot numbers...
       if (resortAcc.equals(countAcc)) {
         final Comparator<Slot> comparator = null != indexOrderAcc ?
-          (new Comparator<Slot>() {
-            public int compare(Slot x, Slot y) {
-              final int cmp = resortMul * countAcc.compare(x.slot, y.slot);
-              return  cmp != 0 ? cmp : indexOrderAcc.compare(x.slot, y.slot);
-            }
-          })
-          : (new Comparator<Slot>() {
-            public int compare(Slot x, Slot y) {
-              final int cmp = resortMul * countAcc.compare(x.slot, y.slot);
-              return  cmp != 0 ? cmp : Integer.compare(x.slot, y.slot);
-            }
-          });
+          (new SlotComparatorCountAcc(resortMul))
+          : (new SlotComparator(resortMul));
         Arrays.sort(slots, comparator);
         return null;
       }
       if (resortAcc.equals(indexOrderAcc)) {
         // obviously indexOrderAcc is not null, and no need for a fancy tie breaker...
-        Arrays.sort(slots, new Comparator<Slot>() {
-          public int compare(Slot x, Slot y) {
-            return resortMul * indexOrderAcc.compare(x.slot, y.slot);
-          }
-        });
+        Arrays.sort(slots, new SlotComparatorIndexAcc(resortMul));
         return null;
       }
       // nothing else should be possible
@@ -630,18 +613,8 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     
     // now resort all the Slots according to the new collected values...
     final Comparator<Slot> comparator = null != indexOrderAcc ?
-      (new Comparator<Slot>() {
-        public int compare(Slot x, Slot y) {
-          final int cmp = resortMul * acc.compare(x.resortSlotNum, y.resortSlotNum);
-          return  cmp != 0 ? cmp : indexOrderAcc.compare(x.slot, y.slot);
-        }
-      })
-      : (new Comparator<Slot>() {
-        public int compare(Slot x, Slot y) {
-          final int cmp = resortMul * acc.compare(x.resortSlotNum, y.resortSlotNum);
-          return  cmp != 0 ? cmp : Integer.compare(x.slot, y.slot);
-        }
-      });
+      (new SlotComparatorIndexAcc2(resortMul, acc))
+      : (new SlotComparatorNotIndexAcc(resortMul, acc));
     Arrays.sort(slots, comparator);
     return acc;
   }
@@ -954,6 +927,86 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
     @Override
     public int getNewSlot(int oldSlot) {
       return 0;
+    }
+  }
+
+  private static class SlotComparatorNotIndexAcc implements Comparator<Slot> {
+    private final int resortMul;
+    private final SlotAcc acc;
+
+    public SlotComparatorNotIndexAcc(int resortMul, SlotAcc acc) {
+      this.resortMul = resortMul;
+      this.acc = acc;
+    }
+
+    public int compare(Slot x, Slot y) {
+      final int cmp = resortMul * acc.compare(x.resortSlotNum, y.resortSlotNum);
+      return  cmp != 0 ? cmp : Integer.compare(x.slot, y.slot);
+    }
+  }
+
+  private static class SlotPriorityQueue extends PriorityQueue<Slot> {
+    private final BiPredicate<Slot,Slot> orderPredicate;
+
+    public SlotPriorityQueue(int maxTopVals, BiPredicate<Slot,Slot> orderPredicate) {
+      super(maxTopVals);
+      this.orderPredicate = orderPredicate;
+    }
+
+    @Override
+    protected boolean lessThan(Slot a, Slot b) { return orderPredicate.test(a, b); }
+  }
+
+  private class SlotComparator implements Comparator<Slot> {
+    private final int resortMul;
+
+    public SlotComparator(int resortMul) {
+      this.resortMul = resortMul;
+    }
+
+    public int compare(Slot x, Slot y) {
+      final int cmp = resortMul * countAcc.compare(x.slot, y.slot);
+      return  cmp != 0 ? cmp : Integer.compare(x.slot, y.slot);
+    }
+  }
+
+  private class SlotComparatorCountAcc implements Comparator<Slot> {
+    private final int resortMul;
+
+    public SlotComparatorCountAcc(int resortMul) {
+      this.resortMul = resortMul;
+    }
+
+    public int compare(Slot x, Slot y) {
+      final int cmp = resortMul * countAcc.compare(x.slot, y.slot);
+      return  cmp != 0 ? cmp : indexOrderAcc.compare(x.slot, y.slot);
+    }
+  }
+
+  private class SlotComparatorIndexAcc implements Comparator<Slot> {
+    private final int resortMul;
+
+    public SlotComparatorIndexAcc(int resortMul) {
+      this.resortMul = resortMul;
+    }
+
+    public int compare(Slot x, Slot y) {
+      return resortMul * indexOrderAcc.compare(x.slot, y.slot);
+    }
+  }
+
+  private class SlotComparatorIndexAcc2 implements Comparator<Slot> {
+    private final int resortMul;
+    private final SlotAcc acc;
+
+    public SlotComparatorIndexAcc2(int resortMul, SlotAcc acc) {
+      this.resortMul = resortMul;
+      this.acc = acc;
+    }
+
+    public int compare(Slot x, Slot y) {
+      final int cmp = resortMul * acc.compare(x.resortSlotNum, y.resortSlotNum);
+      return  cmp != 0 ? cmp : indexOrderAcc.compare(x.slot, y.slot);
     }
   }
 }

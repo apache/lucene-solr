@@ -1942,6 +1942,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         SolrException.log(log, e);
       } finally {
         // change the state while updates are still blocked to prevent races
+        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clear();
         state = State.ACTIVE;
         if (finishing) {
 
@@ -2065,8 +2066,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 recoveryInfo.adds++;
                 AddUpdateCommand cmd  = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
                 cmd.clear();
-                cmd.setReq(req);
                 cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version, cmd);
+                if (cmd.solrDoc == null) {
+                  throw new SolrException(ErrorCode.SERVER_ERROR, "No SolrInputDocument could be read");
+                }
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
                 execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
@@ -2210,13 +2213,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: IOException reading log", e);
             // could be caused by an incomplete flush if recovering from log
-          } catch (SolrException e) {
-            if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-              exceptionHolder.compareAndSet(null, e);
+          } catch (Exception e) {
+
+            if (e instanceof SolrException && ((SolrException) e).code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+              exceptionHolder.compareAndSet(null, (SolrException) e);
               return;
             }
             recoveryInfo.errors++;
-            loglog.warn("REPLAY_ERR: IOException reading log", e);
+            loglog.warn("REPLAY_ERR: Exception reading log", e);
           } finally {
             pendingTasks.decrement();
           }
@@ -2264,6 +2268,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     if (cmd == null) {
       cmd = new AddUpdateCommand(req);
+    } else {
+      cmd.setReq(req);
     }
 
     cmd.solrDoc = sdoc;

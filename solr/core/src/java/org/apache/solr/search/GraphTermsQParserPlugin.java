@@ -79,80 +79,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() throws SyntaxError {
-        String fname = localParams.get(QueryParsing.F);
-        FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
-        int maxDocFreq = localParams.getInt("maxDocFreq", Integer.MAX_VALUE);
-        String qstr = localParams.get(QueryParsing.V);//never null
-
-        if (qstr.length() == 0) {
-          return new MatchNoDocsQuery();
-        }
-
-        final String[] splitVals = qstr.split(",");
-
-        SchemaField sf = req.getSchema().getField(fname);
-
-        // if we don't limit by maxDocFreq, then simply use a normal set query
-        if (maxDocFreq == Integer.MAX_VALUE) {
-          return sf.getType().getSetQuery(this, sf, Arrays.asList(splitVals));
-        }
-
-        if (sf.getType().isPointField()) {
-          PointSetQuery setQ = null;
-          if (sf.getType().getNumberType() == NumberType.INTEGER) {
-            int[] vals = new int[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
-              vals[i] = Integer.parseInt(splitVals[i]);
-            }
-            Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
-          } else if (sf.getType().getNumberType() == NumberType.LONG || sf.getType().getNumberType() == NumberType.DATE) {
-            long[] vals = new long[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
-              vals[i] = Long.parseLong(splitVals[i]);
-            }
-            Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
-          } else if (sf.getType().getNumberType() == NumberType.FLOAT) {
-            float[] vals = new float[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
-              vals[i] = Float.parseFloat(splitVals[i]);
-            }
-            Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
-          } else if (sf.getType().getNumberType() == NumberType.DOUBLE) {
-            double[] vals = new double[splitVals.length];
-            for (int i=0; i<vals.length; i++) {
-              vals[i] = Double.parseDouble(splitVals[i]);
-            }
-            Arrays.sort(vals);
-            setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
-          }
-
-          setQ.setMaxDocFreq(maxDocFreq);
-          return setQ;
-        }
-
-        Term[] terms = new Term[splitVals.length];
-        BytesRefBuilder term = new BytesRefBuilder();
-        for (int i = 0; i < splitVals.length; i++) {
-          String stringVal = splitVals[i].trim();
-          if (ft != null) {
-            ft.readableToIndexed(stringVal, term);
-          } else {
-            term.copyChars(stringVal);
-          }
-          BytesRef ref = term.toBytesRef();
-          terms[i] = new Term(fname, ref);
-        }
-
-        ArrayUtil.timSort(terms);
-        return new ConstantScoreQuery(new GraphTermsQuery(fname, terms, maxDocFreq));
-      }
-    };
+    return new MyQParser(qstr, localParams, params, req);
   }
 
   private static class GraphTermsQuery extends Query implements ExtendedQuery {
@@ -253,39 +180,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         }
       }
 
-      return new ConstantScoreWeight(this, boost) {
-
-        @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
-          final LeafReader reader = context.reader();
-          Terms terms = reader.terms(field);
-          if (terms == null) {
-            return null;
-          }
-          TermsEnum  termsEnum = terms.iterator();
-          PostingsEnum docs = null;
-          DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
-          for (int i=0; i<finalContexts.size(); i++) {
-            TermStates ts = finalContexts.get(i);
-            TermState termState = ts.get(context);
-            if(termState != null) {
-              Term term = finalTerms.get(i);
-              termsEnum.seekExact(term.bytes(), ts.get(context));
-              docs = termsEnum.postings(docs, PostingsEnum.NONE);
-              builder.add(docs);
-            }
-          }
-          DocIdSet docIdSet = builder.build();
-          DocIdSetIterator disi = docIdSet.iterator();
-          return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
-        }
-
-        @Override
-        public boolean isCacheable(LeafReaderContext ctx) {
-          return true;
-        }
-
-      };
+      return new MyConstantScoreWeight(boost, finalContexts, finalTerms, scoreMode);
     }
 
     private void collectTermStates(IndexReader reader,
@@ -322,6 +217,130 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         }
       }
     }
+
+    private class MyConstantScoreWeight extends ConstantScoreWeight {
+
+      private final List<TermStates> finalContexts;
+      private final List<Term> finalTerms;
+      private final ScoreMode scoreMode;
+
+      public MyConstantScoreWeight(float boost, List<TermStates> finalContexts, List<Term> finalTerms, ScoreMode scoreMode) {
+        super(GraphTermsQuery.this, boost);
+        this.finalContexts = finalContexts;
+        this.finalTerms = finalTerms;
+        this.scoreMode = scoreMode;
+      }
+
+      @Override
+      public Scorer scorer(LeafReaderContext context) throws IOException {
+        final LeafReader reader = context.reader();
+        Terms terms = reader.terms(field);
+        if (terms == null) {
+          return null;
+        }
+        TermsEnum termsEnum = terms.iterator();
+        PostingsEnum docs = null;
+        DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
+        for (int i = 0; i< finalContexts.size(); i++) {
+          TermStates ts = finalContexts.get(i);
+          TermState termState = ts.get(context);
+          if(termState != null) {
+            Term term = finalTerms.get(i);
+            termsEnum.seekExact(term.bytes(), ts.get(context));
+            docs = termsEnum.postings(docs, PostingsEnum.NONE);
+            builder.add(docs);
+          }
+        }
+        DocIdSet docIdSet = builder.build();
+        DocIdSetIterator disi = docIdSet.iterator();
+        return disi == null ? null : new ConstantScoreScorer(this, score(), scoreMode, disi);
+      }
+
+      @Override
+      public boolean isCacheable(LeafReaderContext ctx) {
+        return true;
+      }
+
+    }
+  }
+
+  private static class MyQParser extends QParser {
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      String fname = localParams.get(QueryParsing.F);
+      FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
+      int maxDocFreq = localParams.getInt("maxDocFreq", Integer.MAX_VALUE);
+      String qstr = localParams.get(QueryParsing.V);//never null
+
+      if (qstr.length() == 0) {
+        return new MatchNoDocsQuery();
+      }
+
+      final String[] splitVals = qstr.split(",");
+
+      SchemaField sf = req.getSchema().getField(fname);
+
+      // if we don't limit by maxDocFreq, then simply use a normal set query
+      if (maxDocFreq == Integer.MAX_VALUE) {
+        return sf.getType().getSetQuery(this, sf, Arrays.asList(splitVals));
+      }
+
+      if (sf.getType().isPointField()) {
+        PointSetQuery setQ = null;
+        if (sf.getType().getNumberType() == NumberType.INTEGER) {
+          int[] vals = new int[splitVals.length];
+          for (int i=0; i<vals.length; i++) {
+            vals[i] = Integer.parseInt(splitVals[i]);
+          }
+          Arrays.sort(vals);
+          setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+        } else if (sf.getType().getNumberType() == NumberType.LONG || sf.getType().getNumberType() == NumberType.DATE) {
+          long[] vals = new long[splitVals.length];
+          for (int i=0; i<vals.length; i++) {
+            vals[i] = Long.parseLong(splitVals[i]);
+          }
+          Arrays.sort(vals);
+          setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+        } else if (sf.getType().getNumberType() == NumberType.FLOAT) {
+          float[] vals = new float[splitVals.length];
+          for (int i=0; i<vals.length; i++) {
+            vals[i] = Float.parseFloat(splitVals[i]);
+          }
+          Arrays.sort(vals);
+          setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+        } else if (sf.getType().getNumberType() == NumberType.DOUBLE) {
+          double[] vals = new double[splitVals.length];
+          for (int i=0; i<vals.length; i++) {
+            vals[i] = Double.parseDouble(splitVals[i]);
+          }
+          Arrays.sort(vals);
+          setQ = PointSetQuery.newSetQuery(sf.getName(), vals);
+        }
+
+        setQ.setMaxDocFreq(maxDocFreq);
+        return setQ;
+      }
+
+      Term[] terms = new Term[splitVals.length];
+      BytesRefBuilder term = new BytesRefBuilder();
+      for (int i = 0; i < splitVals.length; i++) {
+        String stringVal = splitVals[i].trim();
+        if (ft != null) {
+          ft.readableToIndexed(stringVal, term);
+        } else {
+          term.copyChars(stringVal);
+        }
+        BytesRef ref = term.toBytesRef();
+        terms[i] = new Term(fname, ref);
+      }
+
+      ArrayUtil.timSort(terms);
+      return new ConstantScoreQuery(new GraphTermsQuery(fname, terms, maxDocFreq));
+    }
   }
 }
 
@@ -357,22 +376,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
     final BytesRef encoded = new BytesRef(new byte[Float.BYTES]);
 
-    return new PointSetQuery(field, 1, Float.BYTES,
-        new PointSetQuery.Stream() {
-
-          int upto;
-
-          @Override
-          public BytesRef next() {
-            if (upto == sortedValues.length) {
-              return null;
-            } else {
-              FloatPoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
-              upto++;
-              return encoded;
-            }
-          }
-        }) {
+    return new PointSetQuery(field, 1, Float.BYTES, new newSetQuerySteram3(encoded, sortedValues)) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Float.BYTES;
@@ -384,22 +388,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   public static PointSetQuery newSetQuery(String field, long... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Long.BYTES]);
 
-    return new PointSetQuery(field, 1, Long.BYTES,
-        new PointSetQuery.Stream() {
-
-          int upto;
-
-          @Override
-          public BytesRef next() {
-            if (upto == sortedValues.length) {
-              return null;
-            } else {
-              LongPoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
-              upto++;
-              return encoded;
-            }
-          }
-        }) {
+    return new PointSetQuery(field, 1, Long.BYTES, new newSetQueryStream2(encoded, sortedValues)) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Long.BYTES;
@@ -411,22 +400,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   public static PointSetQuery newSetQuery(String field, int... sortedValues) {
     final BytesRef encoded = new BytesRef(new byte[Integer.BYTES]);
 
-    return new PointSetQuery(field, 1, Integer.BYTES,
-        new PointSetQuery.Stream() {
-
-          int upto;
-
-          @Override
-          public BytesRef next() {
-            if (upto == sortedValues.length) {
-              return null;
-            } else {
-              IntPoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
-              upto++;
-              return encoded;
-            }
-          }
-        }) {
+    return new PointSetQuery(field, 1, Integer.BYTES, new newSetQueryStream(encoded, sortedValues)) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Integer.BYTES;
@@ -443,22 +417,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
     final BytesRef encoded = new BytesRef(new byte[Double.BYTES]);
 
-    return new PointSetQuery(field, 1, Double.BYTES,
-        new PointSetQuery.Stream() {
-
-          int upto;
-
-          @Override
-          public BytesRef next() {
-            if (upto == sortedValues.length) {
-              return null;
-            } else {
-              DoublePoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
-              upto++;
-              return encoded;
-            }
-          }
-        }) {
+    return new PointSetQuery(field, 1, Double.BYTES, new PointSetQueryStream(sortedValues, encoded)) {
       @Override
       protected String toString(byte[] value) {
         assert value.length == Double.BYTES;
@@ -562,35 +521,100 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
 
   @Override
   public final Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new ConstantScoreWeight(this, boost) {
-      Filter filter;
-
-      @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        if (filter == null) {
-          DocSet set = getDocSet(searcher);
-          filter = set.getTopFilter();
-        }
-
-        // Although this set only includes live docs, other filters can be pushed down to queries.
-        DocIdSet readerSet = filter.getDocIdSet(context, null);
-        if (readerSet == null) {
-          return null;
-        }
-        DocIdSetIterator readerSetIterator = readerSet.iterator();
-        if (readerSetIterator == null) {
-          return null;
-        }
-        return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
-      }
-
-      @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return true;
-      }
-    };
+    return new MyConstantScoreWeight2(boost, searcher, scoreMode);
   }
 
+  private static class PointSetQueryStream extends Stream {
+
+    private final double[] sortedValues;
+    private final BytesRef encoded;
+    int upto;
+
+    public PointSetQueryStream(double[] sortedValues, BytesRef encoded) {
+      this.sortedValues = sortedValues;
+      this.encoded = encoded;
+    }
+
+    @Override
+    public BytesRef next() {
+      if (upto == sortedValues.length) {
+        return null;
+      } else {
+        DoublePoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
+        upto++;
+        return encoded;
+      }
+    }
+  }
+
+  private static class newSetQueryStream extends Stream {
+
+    private final BytesRef encoded;
+    private final int[] sortedValues;
+    int upto;
+
+    public newSetQueryStream(BytesRef encoded, int... sortedValues) {
+      this.encoded = encoded;
+      this.sortedValues = sortedValues;
+    }
+
+    @Override
+    public BytesRef next() {
+      if (upto == sortedValues.length) {
+        return null;
+      } else {
+        IntPoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
+        upto++;
+        return encoded;
+      }
+    }
+  }
+
+  private static class newSetQueryStream2 extends Stream {
+
+    private final BytesRef encoded;
+    private final long[] sortedValues;
+    int upto;
+
+    public newSetQueryStream2(BytesRef encoded, long... sortedValues) {
+      this.encoded = encoded;
+      this.sortedValues = sortedValues;
+    }
+
+    @Override
+    public BytesRef next() {
+      if (upto == sortedValues.length) {
+        return null;
+      } else {
+        LongPoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
+        upto++;
+        return encoded;
+      }
+    }
+  }
+
+  private static class newSetQuerySteram3 extends Stream {
+
+    private final BytesRef encoded;
+    private final float[] sortedValues;
+    int upto;
+
+    public newSetQuerySteram3(BytesRef encoded, float... sortedValues) {
+      this.encoded = encoded;
+      this.sortedValues = sortedValues;
+    }
+
+    @Override
+    public BytesRef next() {
+      if (upto == sortedValues.length) {
+        return null;
+      } else {
+        FloatPoint.encodeDimension(sortedValues[upto], encoded.bytes, 0);
+        upto++;
+        return encoded;
+      }
+    }
+  }
 
   /** Cutoff point visitor that collects a maximum number of points before stopping. */
   private class CutoffPointVisitor implements PointValues.IntersectVisitor {
@@ -744,4 +768,40 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   }
 
   protected abstract String toString(byte[] value);
+
+  private class MyConstantScoreWeight2 extends ConstantScoreWeight {
+    private final IndexSearcher searcher;
+    private final ScoreMode scoreMode;
+    Filter filter;
+
+    public MyConstantScoreWeight2(float boost, IndexSearcher searcher, ScoreMode scoreMode) {
+      super(PointSetQuery.this, boost);
+      this.searcher = searcher;
+      this.scoreMode = scoreMode;
+    }
+
+    @Override
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      if (filter == null) {
+        DocSet set = getDocSet(searcher);
+        filter = set.getTopFilter();
+      }
+
+      // Although this set only includes live docs, other filters can be pushed down to queries.
+      DocIdSet readerSet = filter.getDocIdSet(context, null);
+      if (readerSet == null) {
+        return null;
+      }
+      DocIdSetIterator readerSetIterator = readerSet.iterator();
+      if (readerSetIterator == null) {
+        return null;
+      }
+      return new ConstantScoreScorer(this, score(), scoreMode, readerSetIterator);
+    }
+
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return true;
+    }
+  }
 }

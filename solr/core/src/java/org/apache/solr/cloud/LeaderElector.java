@@ -132,9 +132,9 @@ public class LeaderElector implements Closeable {
         return false;
       }
 
-      executor.submit(() -> {
-        context.checkIfIamLeaderFired();
-      });
+//      executor.submit(() -> {
+//        context.checkIfIamLeaderFired();
+//      });
 
       state = CHECK_IF_LEADER;
       // get all other numbers...
@@ -540,8 +540,6 @@ public class LeaderElector implements Closeable {
     final String myNode, watchedNode;
     final ElectionContext context;
 
-    private volatile boolean canceled = false;
-
     private ElectionWatcher(String myNode, String watchedNode, ElectionContext context) {
       this.myNode = myNode;
       this.watchedNode = watchedNode;
@@ -557,6 +555,11 @@ public class LeaderElector implements Closeable {
 
       if (log.isDebugEnabled()) log.debug("Got event on node we where watching in leader line {} watchedNode={}", myNode, watchedNode);
 
+      if (state.equals(LEADER)) {
+        log.info("Election watcher fired, but we are already leader");
+        return;
+      }
+
       if (isCancelled || isClosed) {
         if (log.isDebugEnabled()) log.debug("This watcher is not active anymore {} isCancelled={} isClosed={}", myNode, isCancelled, isClosed);
         return;
@@ -564,11 +567,13 @@ public class LeaderElector implements Closeable {
       try {
         if (event.getType() == EventType.NodeDeleted) {
           // am I the next leader?
+          state = CHECK_IF_LEADER;
           boolean tryagain = true;
           while (tryagain) {
             tryagain = checkIfIamLeader(context, true);
           }
         } else {
+
           Stat exists = zkClient.exists(watchedNode, this);
           if (exists == null) {
             close();
@@ -578,6 +583,7 @@ public class LeaderElector implements Closeable {
               tryagain = checkIfIamLeader(context, true);
             }
           }
+
         }
         // we don't kick off recovery here, the leader sync will do that if necessary for its replicas
       } catch (AlreadyClosedException | InterruptedException e) {
@@ -599,8 +605,6 @@ public class LeaderElector implements Closeable {
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
       }
-
-      canceled = true;
     }
   }
 

@@ -613,7 +613,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
 
     private boolean pluginExists(SolrConfig.SolrPluginInfo info, ConfigOverlay overlay, String name) {
-      List<PluginInfo> l = req.getCore().getSolrConfig().getPluginInfos(info.clazz.getName());
+      Collection<PluginInfo> l = req.getCore().getSolrConfig().getPluginInfos(info.clazz.getName());
       for (PluginInfo pluginInfo : l) if (name.equals(pluginInfo.name)) return true;
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }

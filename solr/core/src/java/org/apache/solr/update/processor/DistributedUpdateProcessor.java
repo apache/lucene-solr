@@ -229,16 +229,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // to the client that the minRf wasn't reached and let them handle it    
 
     boolean dropCmd = false;
-
     if (!forwardToLeader) {
-      BytesRef idBytes = cmd.getIndexedId();
-
-      if (idBytes == null) {
-        super.processAdd(cmd);
-        return;
-      } else {
-        dropCmd = versionAdd(cmd);
-      }
+      dropCmd = versionAdd(cmd);
     }
 
     if (vinfo == null) {
@@ -251,53 +243,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
 
-    String id = cmd.getHashableId();
-    List<Node> nodes = getNodes();
-    boolean doDist = forwardToLeader;
-    Future<?> localFuture = null;
     Future<?> distFuture = null;
     AddUpdateCommand cloneCmd = null;
-    if (!forwardToLeader) {
-      try {
-        doDist = isLeader || isSubShardLeader && id != null && nodes != null && nodes.size() > 0;
 
-        if (!doDist) {
-          // TODO: possibly set checkDeleteByQueries as a flag on the command?
-          if (log.isTraceEnabled()) log.trace("Local add cmd {}", cmd.solrDoc);
-          doLocalAdd(cmd);
-
-          // if the update updates a doc that is part of a nested structure,
-          // force open a realTimeSearcher to trigger a ulog cache refresh.
-          // This refresh makes RTG handler aware of this update.q
-          if (ulog != null) {
-            if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-              ulog.openRealtimeSearcher();
-            }
-          }
-        }
-
-      } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
-        if (e instanceof RuntimeException) {
-          throw (RuntimeException) e;
-        }
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    boolean nodist = noDistrib();
+    if (!nodist) {
+      if (!forwardToLeader) {
+        // SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+        cloneCmd = (AddUpdateCommand) cmd.clone();
       }
-    }
-
-    if (doDist) {
-
-      SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
-      cloneCmd = (AddUpdateCommand) cmd.clone();
-      cloneCmd.solrDoc = clonedDoc;
-
       AddUpdateCommand finalCloneCmd;
       if (cloneCmd != null) {
         finalCloneCmd = cloneCmd;
       } else {
         finalCloneCmd = cmd;
       }
-
       Callable distCall = () -> {
         if (log.isTraceEnabled()) log.trace("Run distrib add collection");
 
@@ -322,44 +282,42 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
       }
+    }
 
+    // TODO: possibly set checkDeleteByQueries as a flag on the command?
+    // if the update updates a doc that is part of a nested structure,
+    // force open a realTimeSearcher to trigger a ulog cache refresh.
+    // This refresh makes RTG handler aware of this update.q
+
+    if (!forwardToLeader) {
       // TODO: possibly set checkDeleteByQueries as a flag on the command?
+      if (log.isTraceEnabled()) log.trace("Local add cmd {}", cmd.solrDoc);
+      try {
+        doLocalAdd(cmd);
+      } catch (Exception e) {
+        Throwable t;
+        if (e instanceof ExecutionException) {
+          t = e.getCause();
+        } else {
+          t = e;
+        }
+        if (distFuture != null && isLeader && !forwardToLeader) {
+          distFuture.cancel(false);
+          cancelCmds.add(cloneCmd);
+        }
+        if (t instanceof RuntimeException) {
+          throw (RuntimeException) t;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, t);
+      }
       // if the update updates a doc that is part of a nested structure,
       // force open a realTimeSearcher to trigger a ulog cache refresh.
       // This refresh makes RTG handler aware of this update.q
-
-
-      if (!forwardToLeader) {
-        // TODO: possibly set checkDeleteByQueries as a flag on the command?
-        if (log.isTraceEnabled()) log.trace("Local add cmd {}", cmd.solrDoc);
-        try {
-          doLocalAdd(cmd);
-        } catch (Exception e) {
-          Throwable t;
-          if (e instanceof ExecutionException) {
-            t = e.getCause();
-          } else {
-            t = e;
-          }
-          if (distFuture != null && isLeader && !forwardToLeader) {
-            distFuture.cancel(false);
-            cancelCmds.add(cloneCmd);
-          }
-          if (t instanceof RuntimeException) {
-            throw (RuntimeException) t;
-          }
-          throw new SolrException(ErrorCode.SERVER_ERROR, t);
-        }
-        // if the update updates a doc that is part of a nested structure,
-        // force open a realTimeSearcher to trigger a ulog cache refresh.
-        // This refresh makes RTG handler aware of this update.q
-        if (ulog != null) {
-          if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-            ulog.openRealtimeSearcher();
-          }
+      if (ulog != null) {
+        if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+          ulog.openRealtimeSearcher();
         }
       }
-
     }
 
     if (distFuture != null) {
@@ -416,13 +374,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   protected boolean versionAdd(AddUpdateCommand cmd) throws IOException {
     BytesRef idBytes = cmd.getIndexedId();
 
+    if (idBytes == null) {
+      super.processAdd(cmd);
+      return true;
+    }
+
     if (vinfo == null) {
       if (AtomicUpdateDocumentMerger.isAtomicUpdate(cmd)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Atomic document updates are not supported unless <updateLog/> is configured");
       } else {
         super.processAdd(cmd);
-        return false;
+        return true;
       }
     }
 
@@ -529,7 +492,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
               return true;
             }
-            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId() + " expected=" + versionOnUpdate + " actual=" + foundVersion);
+            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId() + " expected=" + versionOnUpdate +
+                " actual=" + foundVersion + " params=" + req.getParams());
           }
         }
 
@@ -1100,6 +1064,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     isLeader = getNonZkLeaderAssumption(req);
   }
 
+  boolean noDistrib() {
+    return false;
+  }
+
   protected List<SolrCmdDistributor.Node> getNodes() {
     return null;
   }
@@ -1195,7 +1163,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
             // specified it must exist (versionOnUpdate==1) and it does.
           } else {
-            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getId() + " expected=" + signedVersionOnUpdate + " actual=" + foundVersion);
+            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getId() + " expected=" + signedVersionOnUpdate +
+                " actual=" + foundVersion + " params=" + req.getParams());
           }
         }
 

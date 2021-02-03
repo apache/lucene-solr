@@ -139,38 +139,7 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     /*
      * This comparator sorts the intervals by start value from lower to greater
      */
-    Arrays.sort(sortedIntervals, new Comparator<FacetInterval>() {
-
-      @Override
-      public int compare(FacetInterval o1, FacetInterval o2) {
-        assert o1 != null;
-        assert o2 != null;
-        return compareStart(o1, o2);
-      }
-
-      private int compareStart(FacetInterval o1, FacetInterval o2) {
-        if (o1.start == null) {
-          if (o2.start == null) {
-            return 0;
-          }
-          return -1;
-        }
-        if (o2.start == null) {
-          return 1;
-        }
-        int startComparison = o1.start.compareTo(o2.start);
-        if (startComparison == 0) {
-          if (o1.startOpen != o2.startOpen) {
-            if (!o1.startOpen) {
-              return -1;
-            } else {
-              return 1;
-            }
-          }
-        }
-        return startComparison;
-      }
-    });
+    Arrays.sort(sortedIntervals, new FacetIntervalComparator());
     return sortedIntervals;
   }
 
@@ -932,4 +901,36 @@ public class IntervalFacets implements Iterable<FacetInterval> {
     return new ArrayList<FacetInterval>(Arrays.asList(intervals)).iterator();
   }
 
+  private static class FacetIntervalComparator implements Comparator<FacetInterval> {
+
+    @Override
+    public int compare(FacetInterval o1, FacetInterval o2) {
+      assert o1 != null;
+      assert o2 != null;
+      return compareStart(o1, o2);
+    }
+
+    private int compareStart(FacetInterval o1, FacetInterval o2) {
+      if (o1.start == null) {
+        if (o2.start == null) {
+          return 0;
+        }
+        return -1;
+      }
+      if (o2.start == null) {
+        return 1;
+      }
+      int startComparison = o1.start.compareTo(o2.start);
+      if (startComparison == 0) {
+        if (o1.startOpen != o2.startOpen) {
+          if (!o1.startOpen) {
+            return -1;
+          } else {
+            return 1;
+          }
+        }
+      }
+      return startComparison;
+    }
+  }
 }

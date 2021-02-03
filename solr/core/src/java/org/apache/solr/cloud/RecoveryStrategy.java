@@ -520,6 +520,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // we temporary ignore peersync for tlog replicas
     boolean firstTime = replicaType != Replica.Type.TLOG;
 
+    boolean didReplication = false;
+
     List<Long> recentVersions;
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       recentVersions = recentUpdates.getVersions(ulog.getNumRecordsToKeep());
@@ -642,9 +644,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
               // solrcloud_debug
               // cloudDebugLog(core, "synced");
 
-              log.info("Replaying updates buffered during PeerSync.");
-              replay(core);
-
               // sync success
               successfulRecovery = true;
             } else {
@@ -662,7 +661,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         }
         if (!successfulRecovery) {
           log.info("Starting Replication Recovery.");
-
+          didReplication = true;
           try {
 
             log.info("Begin buffering updates. core=[{}]", coreName);
@@ -717,7 +716,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
             // if replay was skipped (possibly to due pulling a full index from the leader),
             // then we still need to update version bucket seeds after recovery
-            if (successfulRecovery && replayFuture == null) {
+            if (successfulRecovery && replayFuture == null && didReplication) {
               log.info("Updating version bucket highest from index after successful recovery.");
               try {
                 core.seedVersionBuckets();

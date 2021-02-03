@@ -877,23 +877,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * @param infoRegistry The Info Registry
    */
   public void inform(Map<String, SolrInfoBean> infoRegistry) {
-    // this can currently happen concurrently with requests starting and lazy components
-    // loading
-
-    while (infoMBeans.size() > 0) {
-
-      try (ParWork worker = new ParWork(this, false, true)) {
-        infoMBeans.forEach(imb -> {
-          worker.collect("informInfoRegistry", ()-> {
-              try {
-                infoRegistry.put(imb.getName(), imb);
-                infoMBeans.remove(imb);
-              } catch (Exception e) {
-                ParWork.propagateInterrupt(e);
-                log.warn("could not register MBean '" + imb.getName() + "'.", e);
-              }
-          });
-        });
+    for (SolrInfoBean bean : infoMBeans) {
+      if (!infoRegistry.containsValue(bean)) {
+        try {
+          infoRegistry.put(bean.getName(), bean);
+        } catch (Exception e) {
+          log.warn("could not register MBean '" + bean.getName() + "'.", e);
+        }
       }
     }
   }

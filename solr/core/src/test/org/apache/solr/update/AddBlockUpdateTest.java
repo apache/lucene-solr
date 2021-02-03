@@ -819,6 +819,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       updateCmd.solrDoc = doc;
       coreReq.getCore().getUpdateHandler().addDoc(updateCmd);
       updateCmd.clear();
+      updateCmd.setReq(coreReq);
     }
     assertU(commit());
     coreReq.close();

@@ -340,7 +340,7 @@ public class SolrTestCase extends LuceneTestCase {
       // unlimited - System.setProperty("solr.maxContainerThreads", "300");
       System.setProperty("solr.lowContainerThreadsThreshold", "-1");
       System.setProperty("solr.minContainerThreads", "8");
-      System.setProperty("solr.rootSharedThreadPoolCoreSize", "100");
+      System.setProperty("solr.rootSharedThreadPoolCoreSize", "12");
       System.setProperty("solr.minHttp2ClientThreads", "6");
 
       System.setProperty("solr.containerThreadsIdleTimeout", "1000");

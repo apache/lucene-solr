@@ -274,7 +274,7 @@ public class VersionInfo {
 
     final String versionFieldName = versionField.getName();
 
-    log.debug("Refreshing highest value of {} for {} version buckets from index", versionFieldName, buckets.length);
+    log.info("Refreshing highest value of {} for {} version buckets from index", versionFieldName, buckets.length);
     // if indexed, then we have terms to get the max from
     if (versionField.indexed()) {
       if (versionField.getType().isPointField()) {
@@ -292,7 +292,7 @@ public class VersionInfo {
     vs.createWeight(funcContext, searcher);
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     Set<Long> maxVersions = ConcurrentHashMap.newKeySet(leaves.size());
-    try (ParWork work = new ParWork("maxVersion")) {
+    try (ParWork work = new ParWork("maxVersion", false, true)) {
       for (LeafReaderContext ctx : leaves) {
         work.collect("", () -> {
           try {

@@ -34,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -57,6 +58,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -292,8 +294,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
       }
 
-      setupRequest(cmd);
-
       // check if client has requested minimum replication factor information. will set replicationTracker to null if
       // we aren't the leader or subShardLeader
       checkReplicationTracker(cmd);
@@ -385,11 +385,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processDelete(DeleteUpdateCommand cmd) throws IOException {
-    clusterState = zkController.getClusterState();
-
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
+    clusterState = zkController.getClusterState();
 
     super.processDelete(cmd);
   }
@@ -665,6 +664,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
   }
 
+  @Override
+  boolean noDistrib() {
+    return !forwardToLeader && nodes == null && !isSubShardLeader; // MRM TODO: what about sub shard leader?
+  }
+
   protected List<SolrCmdDistributor.Node> setupRequest(String id, SolrInputDocument doc) {
     return setupRequest(id, doc, null);
   }
@@ -684,7 +688,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       return null;
     }
 
-    clusterState = zkController.getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
     Slice slice = coll.getRouter().getTargetSlice(id, doc, route, req.getParams(), coll);
 
@@ -713,19 +716,27 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     String shardId = slice.getName();
-
+    Replica leaderReplica = null;
+    LeaderElector elector = zkController.getLeaderElector(desc.getName());
     try {
-      // Not equivalent to getLeaderProps, which  retries to find a leader.
-      // Replica leader = slice.getLeader();
-      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 3000, true);
-      isLeader = leaderReplica.getName().equals(desc.getName());
+      isLeader = elector != null && elector.isLeader();
       if (log.isTraceEnabled()) log.trace("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
           shardId = cloudDesc.getShardId();
-          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId, 3000, true);
         }
+      }
+
+      if (!isLeader && !isSubShardLeader) {
+        leaderReplica = slice.getLeader();
+        if (desc.getName().equals(slice.getLeader().getName()) && slice.getReplicas().size() > 1) {
+          assert !desc.getName().equals(slice.getLeader().getName()) : elector == null ? null : elector.getState();
+        } else {
+          isLeader = true;
+        }
+      } else {
+        leaderReplica = clusterState.getCollection(collection).getReplica(req.getCore().getName());
       }
 
       doDefensiveChecks(phase);
@@ -734,7 +745,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // even if its phase is FROMLEADER
       String fromCollection = updateCommand.getReq().getParams().get(DISTRIB_FROM_COLLECTION);
 
-      if (DistribPhase.FROMLEADER == phase && !isSubShardLeader && fromCollection == null) {
+      if (DistribPhase.FROMLEADER == phase && !isSubShardLeader && !isLeader && fromCollection == null) {
         // we are coming from the leader, just go local - add no urls
         forwardToLeader = false;
         return null;
@@ -792,6 +803,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       } else {
         // I need to forward on to the leader...
         forwardToLeader = true;
+        assert !isLeader;
+        assert !isSubShardLeader;
         List<SolrCmdDistributor.Node> nodes = Collections.singletonList(
                 new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), leaderReplica, collection, shardId));
         if (log.isDebugEnabled()) log.debug("Forward update to leader {}", nodes);
@@ -1115,8 +1128,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processMergeIndexes(MergeIndexesCommand cmd) throws IOException {
-    clusterState = zkController.getClusterState();
-
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
@@ -1125,8 +1136,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processRollback(RollbackUpdateCommand cmd) throws IOException {
-    clusterState = zkController.getClusterState();
-
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
@@ -1135,8 +1144,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   // TODO: optionally fail if n replicas are not reached...
   protected void doDistribFinish(Set<UpdateCommand> cancelCmds) {
-    clusterState = zkController.getClusterState();
-
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
@@ -1298,7 +1305,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
    */
   @SuppressWarnings("deprecation")
   private void handleReplicationFactor() {
-    if (leaderReplicationTracker != null || rollupReplicationTracker != null) {
+    if (rsp != null && leaderReplicationTracker != null || rollupReplicationTracker != null) {
       int achievedRf = Integer.MAX_VALUE;
 
       if (leaderReplicationTracker != null) {
@@ -1319,7 +1326,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // Unused, but kept for back compatibility. To be removed in Solr 9
         rsp.getResponseHeader().add(UpdateRequest.MIN_REPFACT, Integer.parseInt(req.getParams().get(UpdateRequest.MIN_REPFACT)));
       }
-      rsp.getResponseHeader().add(UpdateRequest.REPFACT, achievedRf);
+      NamedList<Object> header = rsp.getResponseHeader();
+      if (header != null) {
+        header.add(UpdateRequest.REPFACT, achievedRf);
+      }
       rollupReplicationTracker = null;
       leaderReplicationTracker = null;
 

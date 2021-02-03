@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -302,7 +303,6 @@ public class FacetComponent extends SearchComponent {
    *
    * @see SimpleFacets#getFacetQueryCounts
    * @see SimpleFacets#getFacetFieldCounts
-   * @see RangeFacetProcessor#getFacetRangeCounts
    * @see RangeFacetProcessor#getFacetIntervalCounts
    * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
@@ -1506,7 +1506,7 @@ public class FacetComponent extends SearchComponent {
     public ShardFacetCount[] getLexSorted() {
       ShardFacetCount[] arr 
         = counts.values().toArray(new ShardFacetCount[counts.size()]);
-      Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
+      Arrays.sort(arr, Comparator.comparing(ShardFacetCount::getIndexed));
       countSorted = arr;
       return arr;
     }
@@ -1514,11 +1514,7 @@ public class FacetComponent extends SearchComponent {
     public ShardFacetCount[] getCountSorted() {
       ShardFacetCount[] arr 
         = counts.values().toArray(new ShardFacetCount[counts.size()]);
-      Arrays.sort(arr, (o1, o2) -> {
-        if (o2.count < o1.count) return -1;
-        else if (o1.count < o2.count) return 1;
-        return o1.indexed.compareTo(o2.indexed);
-      });
+      Arrays.sort(arr, new ShardFacetCountComparator());
       countSorted = arr;
       return arr;
     }
@@ -1548,6 +1544,15 @@ public class FacetComponent extends SearchComponent {
         counts = newOne;
       }
     }
+
+    private static class ShardFacetCountComparator implements Comparator<ShardFacetCount> {
+      @Override
+      public int compare(ShardFacetCount o1, ShardFacetCount o2) {
+        if (o2.count < o1.count) return -1;
+        else if (o1.count < o2.count) return 1;
+        return o1.indexed.compareTo(o2.indexed);
+      }
+    }
   }
 
   /**
@@ -1559,7 +1564,11 @@ public class FacetComponent extends SearchComponent {
     public BytesRef indexed; 
     public long count;
     public int termNum; // term number starting at 0 (used in bit arrays)
-    
+
+    public BytesRef getIndexed() {
+      return indexed;
+    }
+
     @Override
     public String toString() {
       return "{term=" + name + ",termNum=" + termNum + ",count=" + count + "}";

@@ -94,11 +94,17 @@ public class AddUpdateCommand extends UpdateCommand {
    /** Reset state to reuse this object with a different document in the same request */
    public void clear() {
      solrDoc = null;
+     flags = 0;
+     route = null;
      indexedId = null;
+     isNested = false;
      updateTerm = null;
      isLastDocInBatch = false;
      version = 0;
      prevVersion = -1;
+     req = null;
+     overwrite = true;
+     commitWithin = -1;
    }
 
    public SolrInputDocument getSolrInputDocument() {
@@ -113,7 +119,7 @@ public class AddUpdateCommand extends UpdateCommand {
    * Note that the behavior of this is sensitive to {@link #isInPlaceUpdate()}.*/
    public Document getLuceneDocument() {
      final boolean ignoreNestedDocs = false; // throw an exception if found
-     SolrInputDocument solrInputDocument = getSolrInputDocument();
+     SolrInputDocument solrInputDocument = solrDoc;
      if (!isInPlaceUpdate() && getReq().getSchema().isUsableForChildDocs()) {
        addRootField(solrInputDocument, getRootIdUsingRouteParam(getHashableId()));
      }
@@ -210,7 +216,7 @@ public class AddUpdateCommand extends UpdateCommand {
    */
   public Iterable<Document> getLuceneDocsIfNested() {
     assert ! isInPlaceUpdate() : "We don't expect this to happen."; // but should "work"?
-    if (!req.getSchema().isUsableForChildDocs()) {
+    if (req.getSchema() != null && !req.getSchema().isUsableForChildDocs()) {
       // note if the doc is nested despite this, we'll throw an exception elsewhere
       return null;
     }
@@ -247,7 +253,7 @@ public class AddUpdateCommand extends UpdateCommand {
   }
 
   private List<SolrInputDocument> flatten(SolrInputDocument root) {
-    List<SolrInputDocument> unwrappedDocs = new ArrayList<>();
+    List<SolrInputDocument> unwrappedDocs = new ArrayList<>(16);
     flattenAnonymous(unwrappedDocs, root, true);
     flattenLabelled(unwrappedDocs, root, true);
     unwrappedDocs.add(root);

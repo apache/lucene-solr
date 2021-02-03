@@ -1400,7 +1400,7 @@ public class ZkController implements Closeable, Runnable {
 
       try {
         log.info("Waiting to see our entry in state.json {}", desc.getName());
-        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 10000), TimeUnit.MILLISECONDS, (l, c) -> { // nocommit timeout
+        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 5000), TimeUnit.MILLISECONDS, (l, c) -> { // nocommit timeout
           if (c == null) {
             return false;
           }
@@ -1426,10 +1426,6 @@ public class ZkController implements Closeable, Runnable {
       }
 
       log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, replica.getType());
-      if (isDcCalled()) {
-        log.info("Disconnect already called, won't register");
-        throw new AlreadyClosedException();
-      }
 
       log.info("Register terms for replica {}", coreName);
       //ZkCollectionTerms ct = createCollectionTerms(collection);
@@ -1437,10 +1433,7 @@ public class ZkController implements Closeable, Runnable {
 
       log.info("Create leader elector for replica {}", coreName);
       leaderElector = leaderElectors.get(replica.getName());
-      if (leaderElector == null && !dcCalled && !cc.isShutDown()) {
-        if (afterExpiration) {
-          throw new AlreadyClosedException();
-        }
+      if (leaderElector == null) {
         ContextKey contextKey = new ContextKey(collection, coreName);
         leaderElector = new LeaderElector(this, contextKey);
         LeaderElector oldElector = leaderElectors.putIfAbsent(replica.getName(), leaderElector);
@@ -1842,6 +1835,8 @@ public class ZkController implements Closeable, Runnable {
   public void unregister(String coreName, String collection, String shardId) throws KeeperException, InterruptedException {
     log.info("Unregister core from zookeeper {}", coreName);
     try {
+
+      removeShardLeaderElector(coreName);
 
       ZkCollectionTerms ct = collectionToTerms.get(collection);
       if (ct != null) {

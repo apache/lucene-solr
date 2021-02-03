@@ -139,6 +139,7 @@ public class PerThreadExecService extends AbstractExecutorService {
   @Override
   public void execute(Runnable runnable) {
 
+
 //    if (shutdown) {
 //      throw new RejectedExecutionException();
 //    }
@@ -158,9 +159,7 @@ public class PerThreadExecService extends AbstractExecutorService {
         }
       }
       try {
-        service.submit(() -> {
-          runIt(runnable, noCallerRunsAvailableLimit, false);
-        });
+        service.submit(new MyCallable(runnable, noCallerRunsAvailableLimit));
       } catch (Exception e) {
         log.error("", e);
         if (noCallerRunsAvailableLimit) {
@@ -177,13 +176,13 @@ public class PerThreadExecService extends AbstractExecutorService {
 
     boolean acquired = available.tryAcquire();
     if (!acquired && !noCallerRunsAllowed) {
-      runIt(runnable, false, false);
+      runIt(runnable, false);
       return;
     }
 
     Runnable finalRunnable = runnable;
     try {
-      service.submit(() -> runIt(finalRunnable, true, false));
+      service.submit(new MyCallable(finalRunnable, true));
     } catch (Exception e) {
       log.error("Exception submitting", e);
       try {
@@ -198,7 +197,7 @@ public class PerThreadExecService extends AbstractExecutorService {
     }
   }
 
-  private void runIt(Runnable runnable, boolean acquired, boolean alreadyShutdown) {
+  private void runIt(Runnable runnable, boolean acquired) {
     try {
       runnable.run();
     } finally {
@@ -241,4 +240,18 @@ public class PerThreadExecService extends AbstractExecutorService {
     }
   }
 
+  private class MyCallable implements Callable<Object> {
+    private final Runnable runnable;
+    private final boolean acquired;
+
+    public MyCallable(Runnable runnable, boolean acquired) {
+      this.runnable = runnable;
+      this.acquired = acquired;
+    }
+
+    public Object call() {
+      runIt(runnable, acquired);
+      return null;
+    }
+  }
 }

@@ -131,7 +131,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   @SuppressWarnings({"unchecked"})
   public static void addExpressiblePlugins(StreamFactory streamFactory, SolrCore core) {
-    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+    Collection<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
     for (PluginInfo pluginInfo : pluginInfos) {
       if (pluginInfo.pkgName != null) {
         @SuppressWarnings("resource")

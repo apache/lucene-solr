@@ -255,7 +255,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
-    log.debug("Opening [{}]", this.name);
+    if (log.isDebugEnabled()) log.debug("Opening [{}]", this.name);
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher

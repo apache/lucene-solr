@@ -71,64 +71,58 @@ public class TestIndexingPerformance extends SolrTestCaseJ4 {
     }
 
 
-    SolrQueryRequest req = lrf.makeRequest();
-    UpdateHandler updateHandler = req.getCore().getUpdateHandler();
-    String field = "textgap";
+    try (SolrQueryRequest req = lrf.makeRequest()) {
+      UpdateHandler updateHandler = req.getCore().getUpdateHandler();
+      String field = "textgap";
 
-    String[] fields = {field,"simple"
-            ,field,"test"
-            ,field,"how now brown cow"
-            ,field,"what's that?"
-            ,field,"radical!"
-            ,field,"what's all this about, anyway?"
-            ,field,"just how fast is this text indexing?"
-    };
+      String[] fields = {field, "simple", field, "test", field, "how now brown cow", field, "what's that?", field, "radical!", field, "what's all this about, anyway?", field,
+          "just how fast is this text indexing?"};
 
+      /***
+       String[] fields = {
+       "a_i","1"
+       ,"b_i","2"
+       ,"c_i","3"
+       ,"d_i","4"
+       ,"e_i","5"
+       ,"f_i","6"
+       ,"g_i","7"
+       ,"h_i","8"
+       ,"i_i","9"
+       ,"j_i","0"
+       ,"k_i","0"
+       };
+       ***/
 
-  /***
-    String[] fields = {
-            "a_i","1"
-            ,"b_i","2"
-            ,"c_i","3"
-            ,"d_i","4"
-            ,"e_i","5"
-            ,"f_i","6"
-            ,"g_i","7"
-            ,"h_i","8"
-            ,"i_i","9"
-            ,"j_i","0"
-            ,"k_i","0"
-    };
-   ***/
+      final RTimer timer = new RTimer();
 
-    final RTimer timer = new RTimer();
+      AddUpdateCommand add = new AddUpdateCommand(req);
+      add.overwrite = overwrite;
 
-    AddUpdateCommand add = new AddUpdateCommand(req);
-    add.overwrite = overwrite;
-
-    for (int i=0; i<iter; i++) {
-      add.clear();
-      add.solrDoc = new SolrInputDocument();
-      add.solrDoc.addField("id", Integer.toString(i));
-      for (int j=0; j<fields.length; j+=2) {
-        String f = fields[j];
-        String val = fields[j+1];
-        add.solrDoc.addField(f, val);
+      for (int i = 0; i < iter; i++) {
+        add.clear();
+        add.setReq(req);
+        add.solrDoc = new SolrInputDocument();
+        add.solrDoc.addField("id", Integer.toString(i));
+        for (int j = 0; j < fields.length; j += 2) {
+          String f = fields[j];
+          String val = fields[j + 1];
+          add.solrDoc.addField(f, val);
+        }
+        updateHandler.addDoc(add);
       }
-      updateHandler.addDoc(add);
-    }
-    if (log.isInfoEnabled()) {
-      log.info("doc={}", Arrays.toString(fields));
-    }
-    double elapsed = timer.getTime();
-    if (log.isInfoEnabled()) {
-      log.info("iter={} time={} throughput={}", iter, elapsed, ((long) iter * 1000) / elapsed);
-    }
+      if (log.isInfoEnabled()) {
+        log.info("doc={}", Arrays.toString(fields));
+      }
+      double elapsed = timer.getTime();
+      if (log.isInfoEnabled()) {
+        log.info("iter={} time={} throughput={}", iter, elapsed, ((long) iter * 1000) / elapsed);
+      }
 
-    //discard all the changes
-    updateHandler.rollback(new RollbackUpdateCommand(req));
+      //discard all the changes
+      updateHandler.rollback(new RollbackUpdateCommand(req));
 
-    req.close();
+    }
   }
 
 }

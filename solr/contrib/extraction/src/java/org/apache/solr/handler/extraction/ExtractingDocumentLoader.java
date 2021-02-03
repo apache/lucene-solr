@@ -87,6 +87,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
   final SolrParams params;
   final UpdateRequestProcessor processor;
   final boolean ignoreTikaException;
+  private final SolrQueryRequest req;
+  private final boolean overwrite;
+  private final int commitWithin;
   protected AutoDetectParser autoDetectParser;
 
   private final AddUpdateCommand templateAdd;
@@ -105,10 +108,10 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     this.processor = processor;
 
     templateAdd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
-    templateAdd.clear();
-    templateAdd.setReq(req);
-    templateAdd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
-    templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+
+    this.req = req;
+    this.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
+    this.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
 
     //this is lightweight
     autoDetectParser = new AutoDetectParser(config);
@@ -130,6 +133,9 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
 
   void addDoc(SolrContentHandler handler) throws IOException {
     templateAdd.clear();
+    templateAdd.setReq(req);
+    templateAdd.overwrite = overwrite;
+    templateAdd.commitWithin = commitWithin;
     doAdd(handler, templateAdd);
   }
 

@@ -265,7 +265,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       globalDocs[++docsIndex] = idit.nextDoc();
     }
 
-    Arrays.sort(globalDocs);
+    Arrays.parallelSort(globalDocs);
     Query groupQuery = null;
 
     /*
@@ -578,46 +578,56 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       for (LongObjectCursor<Collector> entry : groups) {
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
-      return new LeafCollector() {
-
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
-            c.value.setScorer(scorer);
-          }
-        }
-
-        @Override
-        public void collect(int docId) throws IOException {
-          int globalDoc = docId + docBase;
-          int ord = -1;
-          if(ordinalMap != null) {
-            if (docId > segmentValues.docID()) {
-              segmentValues.advance(docId);
-            }
-            if (docId == segmentValues.docID()) {
-              ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
-            } else {
-              ord = -1;
-            }
-          } else {
-            if (docValues.advanceExact(globalDoc)) {
-              ord = docValues.ordValue();
-            } else {
-              ord = -1;
-            }
-          }
-
-          if (ord > -1 && groupBits.get(ord) && !collapsedSet.contains(globalDoc)) {
-            LeafCollector c = leafCollectors.get(ord);
-            c.collect(docId);
-          }
-        }
-      };
+      return new MyLeafCollector(leafCollectors, docBase);
     }
 
     public LongObjectMap<Collector> getGroups() {
       return groups;
+    }
+
+    private class MyLeafCollector implements LeafCollector {
+
+      private final LongObjectMap<LeafCollector> leafCollectors;
+      private final int docBase;
+
+      public MyLeafCollector(LongObjectMap<LeafCollector> leafCollectors, int docBase) {
+        this.leafCollectors = leafCollectors;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public void setScorer(Scorable scorer) throws IOException {
+        for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
+          c.value.setScorer(scorer);
+        }
+      }
+
+      @Override
+      public void collect(int docId) throws IOException {
+        int globalDoc = docId + docBase;
+        int ord = -1;
+        if(ordinalMap != null) {
+          if (docId > segmentValues.docID()) {
+            segmentValues.advance(docId);
+          }
+          if (docId == segmentValues.docID()) {
+            ord = (int)segmentOrdinalMap.get(segmentValues.ordValue());
+          } else {
+            ord = -1;
+          }
+        } else {
+          if (docValues.advanceExact(globalDoc)) {
+            ord = docValues.ordValue();
+          } else {
+            ord = -1;
+          }
+        }
+
+        if (ord > -1 && groupBits.get(ord) && !collapsedSet.contains(globalDoc)) {
+          LeafCollector c = leafCollectors.get(ord);
+          c.collect(docId);
+        }
+      }
     }
   }
 
@@ -652,37 +662,46 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
 
-      return new LeafCollector() {
-
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
-            c.value.setScorer(scorer);
-          }
-        }
-
-        @Override
-        public void collect(int docId) throws IOException {
-          long value;
-          if (docValues.advanceExact(docId)) {
-            value = docValues.longValue();
-          } else {
-            value = 0;
-          }
-          final int index;
-          if (value != nullValue && 
-              (index = leafCollectors.indexOf(value)) >= 0 && 
-              !collapsedSet.contains(docId + docBase)) {
-            leafCollectors.indexGet(index).collect(docId);
-          }
-        }
-      };
+      return new MyLeafCollector2(leafCollectors, docBase);
     }
 
     public LongObjectHashMap<Collector> getGroups() {
       return groups;
     }
 
+    private class MyLeafCollector2 implements LeafCollector {
+
+      private final LongObjectHashMap<LeafCollector> leafCollectors;
+      private final int docBase;
+
+      public MyLeafCollector2(LongObjectHashMap<LeafCollector> leafCollectors, int docBase) {
+        this.leafCollectors = leafCollectors;
+        this.docBase = docBase;
+      }
+
+      @Override
+      public void setScorer(Scorable scorer) throws IOException {
+        for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
+          c.value.setScorer(scorer);
+        }
+      }
+
+      @Override
+      public void collect(int docId) throws IOException {
+        long value;
+        if (docValues.advanceExact(docId)) {
+          value = docValues.longValue();
+        } else {
+          value = 0;
+        }
+        final int index;
+        if (value != nullValue &&
+            (index = leafCollectors.indexOf(value)) >= 0 &&
+            !collapsedSet.contains(docId + docBase)) {
+          leafCollectors.indexGet(index).collect(docId);
+        }
+      }
+    }
   }
 
   //TODO lets just do simple abstract base class -- a fine use of inheritance

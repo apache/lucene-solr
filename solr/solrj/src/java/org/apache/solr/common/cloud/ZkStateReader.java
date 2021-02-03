@@ -1932,6 +1932,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     AtomicBoolean reconstructState = new AtomicBoolean(false);
 
     collectionWatches.compute(collection, (k, v) -> {
+      if (v == null) return null;
       if (v.coreRefCount.get() > 0)
         v.coreRefCount.decrementAndGet();
       if (v.canBeRemoved()) {

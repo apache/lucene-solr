@@ -708,7 +708,6 @@ public class PeerSync implements SolrMetricProducer {
         } finally {
           IOUtils.closeQuietly(proc);
         }
-        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clear();
       }
     }
   }

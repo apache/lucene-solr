@@ -25,12 +25,17 @@ import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
 
 /**
  * Tests for PREPRECOVERY CoreAdmin API
  */
 public class TestPrepRecovery extends SolrCloudTestCase {
-
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
     useFactory(null);
@@ -68,6 +73,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionName, 1, 3);
 
     // now delete the leader
+    log.info("Delete replica");
     Replica leader = solrClient.getZkStateReader().getLeaderRetry(collectionName, "s1");
     CollectionAdminRequest.deleteReplica(collectionName, "s1", leader.getName())
         .process(solrClient);

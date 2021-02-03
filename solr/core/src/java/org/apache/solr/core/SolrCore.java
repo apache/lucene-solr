@@ -1190,12 +1190,24 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     //
     StopWatch timeStartCore = new StopWatch(this + "-startCore");
     try {
-      qParserPlugins.init(QParserPlugin.standardPlugins, this);
-      valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
-      transformerFactories.init(TransformerFactory.defaultFactories, this);
-      reqHandlers.initHandlersFromConfig(solrConfig);
 
-      StopWatch timeLoadSearchComponents = new StopWatch(this + "-loadSearchComponents");
+      Future<?> future = coreContainer.coreContainerExecutor.submit(() -> {
+        StopWatch timeInitReqHandlers = new StopWatch(this + "-startCore-timeInitReqHandlers");
+        reqHandlers.initHandlersFromConfig(solrConfig);
+        timeInitReqHandlers.done();
+      });
+
+      StopWatch timeInitQParserPlugins = new StopWatch(this + "-startCore-timeInitQParserPlugins");
+      qParserPlugins.init(QParserPlugin.standardPlugins, this);
+      timeInitQParserPlugins.done();
+      StopWatch timeInitValueSourceParsers = new StopWatch(this + "-startCore-timeInitValueSourceParsers");
+      valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
+      timeInitValueSourceParsers.done();
+      StopWatch timeInitTransformerFactories = new StopWatch(this + "-startCore-timeInitTransformerFactories");
+      transformerFactories.init(TransformerFactory.defaultFactories, this);
+      timeInitTransformerFactories.done();
+
+      StopWatch timeLoadSearchComponents = new StopWatch(this + "-startCore-loadSearchComponents");
       loadSearchComponents();
       timeLoadSearchComponents.done();
       updateProcessors.init(Collections.emptyMap(), this);
@@ -1203,24 +1215,29 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // Processors initialized before the handlers
       updateProcessorChains = loadUpdateProcessorChains();
 
-      StopWatch timeInform = new StopWatch(this + "-inform");
+      StopWatch timeInform = new StopWatch(this + "-startCore-inform");
       // Finally tell anyone who wants to know
       resourceLoader.inform(resourceLoader);
 
-      resourceLoader.inform(this); // last call before the latch is released.
-
       this.updateHandler.informEventListeners(this);
       timeInform.done();
+
+
+      future.get();
+
+      resourceLoader.inform(this); // last call before the latch is released.
 
       searcherReadyLatch.countDown();
       // this must happen after the latch is released, because a JMX server impl may
       // choose to block on registering until properties can be fetched from an MBean,
       // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
       // from the core.
+      StopWatch timeRInform = new StopWatch(this + "-startCore-resourceLoaderInform");
       resourceLoader.inform(infoRegistry);
+      timeRInform.done();
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
-      StopWatch timeWaitForSearcher = new StopWatch(this + "-waitForSearcher");
+      StopWatch timeWaitForSearcher = new StopWatch(this + "-startCore-waitForSearcher");
       // nocommit - wait before publish active
       if (!getSolrConfig().useColdSearcher) {
         try {
@@ -1233,7 +1250,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
       timeWaitForSearcher.done();
 
-      if (!isReloaded) { // MRM TODO: reload could move to a different index?
+      boolean dirChanged = false;
+
+      StopWatch timeReloadAndDirChange = new StopWatch(this + "-startCore-timeReloadAndDirChange");
+      if (isReloaded) {
         RefCounted<IndexWriter> iw = updateHandler.getSolrCoreState().getIndexWriter(this);
         try {
           Directory dir = iw.get().getDirectory();
@@ -1241,9 +1261,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           RefCounted<SolrIndexSearcher> searcher = getSearcher();
           try {
             if (dir != searcher.get().getIndexReader().directory()) {
-              StopWatch timeSeedVersions = new StopWatch(this + "-seedVersions");
-              seedVersionBuckets();
-              timeSeedVersions.done();
+               dirChanged = true;
             }
           } finally {
             searcher.decref();
@@ -1252,7 +1270,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           iw.decref();
         }
       }
-      StopWatch timeRegConfListener = new StopWatch(this + "-regConfListener");
+      timeReloadAndDirChange.done();
+      if (!isReloaded || dirChanged) { // MRM TODO: reload could move to a different index?
+        StopWatch timeSeedVers = new StopWatch(this + "-seedVersionBuckets");
+
+        StopWatch timeSeedVersions = new StopWatch(this + "-startCore-seedVersions");
+        seedVersionBuckets();
+        timeSeedVersions.done();
+
+        timeSeedVers.done();
+      }
+
+      StopWatch timeRegConfListener = new StopWatch(this + "-startCore-regConfListener");
       registerConfListener();
       timeRegConfListener.done();
     } catch(Exception e) {
@@ -1263,7 +1292,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 //      }
       try {
         throw e;
-      } catch (IOException ioException) {
+      } catch (IOException | InterruptedException | ExecutionException ioException) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ioException);
       }
     } finally {
@@ -1812,10 +1841,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               return hook;
             });
           }
-        }
-
-        if (coreContainer.isZooKeeperAware()) {
-          coreContainer.getZkController().removeShardLeaderElector(name);
         }
 
 //        int noops = searcherExecutor.getPoolSize() - searcherExecutor.getActiveCount();
@@ -3223,7 +3248,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return initPlugins(solrConfig.getPluginInfos(type.getName()), registry, type, defClassName);
   }
 
-  public <T> T initPlugins(List<PluginInfo> pluginInfos, Map<String, T> registry, Class<T> type, String defClassName, String... subpackages) {
+  public <T> T initPlugins(Collection<PluginInfo> pluginInfos, Map<String, T> registry, Class<T> type, String defClassName, String... subpackages) {
     T def = null;
     for (PluginInfo info : pluginInfos) {
       T o = createInitInstance(info, type, type.getSimpleName(), defClassName, subpackages);

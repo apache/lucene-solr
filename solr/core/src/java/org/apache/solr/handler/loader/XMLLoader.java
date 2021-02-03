@@ -202,6 +202,8 @@ public class XMLLoader extends ContentStreamLoader {
           throws XMLStreamException, IOException, FactoryConfigurationError {
     AddUpdateCommand addCmd = null;
     SolrParams params = req.getParams();
+    int commitWithin = -1;
+    boolean overwrite = true;
     while (true) {
       int event = parser.next();
       switch (event) {
@@ -211,6 +213,7 @@ public class XMLLoader extends ContentStreamLoader {
 
         case XMLStreamConstants.START_ELEMENT:
           String currTag = parser.getLocalName();
+
           if (currTag.equals(UpdateRequestHandler.ADD)) {
             log.trace("SolrCore.update(add)");
 
@@ -219,16 +222,22 @@ public class XMLLoader extends ContentStreamLoader {
             addCmd.setReq(req);
 
             // First look for commitWithin parameter on the request, will be overwritten for individual <add>'s
-            addCmd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
-            addCmd.overwrite = params.getBool(UpdateParams.OVERWRITE, true);
-            
+
+            commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
+            overwrite = params.getBool(UpdateParams.OVERWRITE, true);
+
+            addCmd.commitWithin = commitWithin;
+            addCmd.overwrite = overwrite;
+
             for (int i = 0; i < parser.getAttributeCount(); i++) {
               String attrName = parser.getAttributeLocalName(i);
               String attrVal = parser.getAttributeValue(i);
               if (UpdateRequestHandler.OVERWRITE.equals(attrName)) {
                 addCmd.overwrite = StrUtils.parseBoolean(attrVal);
+                overwrite = addCmd.overwrite;
               } else if (UpdateRequestHandler.COMMIT_WITHIN.equals(attrName)) {
                 addCmd.commitWithin = Integer.parseInt(attrVal);
+                commitWithin = addCmd.commitWithin;
               } else {
                 log.warn("XML element <add> has invalid XML attr: {}", attrName);
               }
@@ -238,7 +247,10 @@ public class XMLLoader extends ContentStreamLoader {
             if(addCmd != null) {
               log.trace("adding doc...");
               addCmd.clear();
+              addCmd.setReq(req);
               addCmd.solrDoc = readDoc(parser);
+              addCmd.commitWithin = commitWithin;
+              addCmd.overwrite = overwrite;
               processor.processAdd(addCmd);
             } else {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected <doc> tag without an <add> tag surrounding it.");

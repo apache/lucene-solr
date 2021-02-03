@@ -77,12 +77,17 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         boolean isLive = false;
         if (replica != null) {
           isLive = coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName());
-          if (replica.getState() == waitForState) {
-            if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState, coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
-            return true;
+          if (isLive) {
+            if (replica.getState() == waitForState) {
+              if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState,
+                  coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
+              return true;
+            } else if (replica.getState() == Replica.State.ACTIVE) {
+              return true;
+            }
           }
         }
-        errorMessage.set("Timeout waiting to see RECOVERY state replica=" + replica + " state=" + replica.getState() + " waitForState=" + waitForState + " isLive=" + isLive + "\n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection));
+        errorMessage.set("Timeout waiting to see " + waitForState + " state replica=" + cname + " state=" + replica.getState() + " waitForState=" + waitForState + " isLive=" + isLive + "\n" + coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection));
         return false;
       });
 

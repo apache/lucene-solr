@@ -33,6 +33,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -267,7 +268,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
     Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
-    List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
+    Collection<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
     if (!caches.isEmpty()) {
       for (PluginInfo c : caches) {
         userCacheConfigs.put(c.name, CacheConfig.getConfig(this, "cache", c.attributes, null));
@@ -297,7 +298,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     addHttpRequestToContext = getBool(
         "requestDispatcher/requestParsers/@addHttpRequestToContext", false);
 
-    List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
+    Collection<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
     if (argsInfos != null) {
       Map<String, InitParams> argsMap = new HashMap<>();
       for (PluginInfo p : argsInfos) {
@@ -723,17 +724,16 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    *             IndexDeletionPolicy, IndexReaderFactory, {@link TransformerFactory}
    */
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public List<PluginInfo> getPluginInfos(String type) {
+  public Collection<PluginInfo> getPluginInfos(String type) {
     List<PluginInfo> result = pluginStore.get(type);
     SolrPluginInfo info = classVsSolrPluginInfo.get(type);
     if (info != null &&
         (info.options.contains(REQUIRE_NAME) || info.options.contains(REQUIRE_NAME_IN_OVERLAY))) {
       Map<String,Map> infos;
-      synchronized (this) {
-        infos = overlay.getNamedPlugins(info.getCleanTag());
-      }
+      infos = overlay.getNamedPlugins(info.getCleanTag());
       if (!infos.isEmpty()) {
-        LinkedHashMap<String, PluginInfo> map = new LinkedHashMap<>();
+        int resultSize = result == null ? 0 : result.size();
+        LinkedHashMap<String, PluginInfo> map = new LinkedHashMap<>(resultSize + infos.size());
         if (result != null) for (PluginInfo pluginInfo : result) {
           //just create a UUID for the time being so that map key is not null
           String name = pluginInfo.name == null ?
@@ -744,10 +744,10 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
         for (Map.Entry<String, Map> e : infos.entrySet()) {
           map.put(e.getKey(), new PluginInfo(info.getCleanTag(), e.getValue()));
         }
-        result = new ArrayList<>(map.values());
+        return map.values();
       }
     }
-    return result == null ? Collections.<PluginInfo>emptyList() : result;
+    return result == null ?  Collections.<PluginInfo>emptySet()  : result;
   }
 
   public PluginInfo getPluginInfo(String type) {
@@ -919,7 +919,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     m.put("enableLazyFieldLoading", enableLazyFieldLoading);
     m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
     for (SolrPluginInfo plugin : plugins) {
-      List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
+      Collection<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
       String tag = plugin.getCleanTag();
       tag = tag.replace("/", "");
@@ -941,13 +941,12 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           for (PluginInfo info : infos) l.add(info);
           result.put(tag, l);
         } else {
-          result.put(tag, infos.get(0));
+          result.put(tag, infos.iterator().next());
         }
 
       }
 
     }
-
 
     addCacheConfig(m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
     m = new LinkedHashMap();
@@ -984,11 +983,15 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return result;
   }
 
-  private ConfigOverlay overlay;
+  private volatile ConfigOverlay overlay;
 
-  public synchronized ConfigOverlay getOverlay() {
+  public ConfigOverlay getOverlay() {
     if (overlay == null) {
-      overlay = getConfigOverlay(getResourceLoader());
+      synchronized (this) {
+        if (overlay == null) {
+          overlay = getConfigOverlay(getResourceLoader());
+        }
+      }
     }
     return overlay;
   }

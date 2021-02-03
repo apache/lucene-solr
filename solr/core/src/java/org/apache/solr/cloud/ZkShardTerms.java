@@ -206,18 +206,12 @@ public class ZkShardTerms implements Closeable {
   // return true if this object should not be reused
   boolean removeTerm(String coreNodeName) throws KeeperException, InterruptedException {
     ShardTerms newTerms;
-    int tries = 0;
     while ( (newTerms = terms.get().removeTerm(coreNodeName)) != null) {
       try {
         if (saveTerms(newTerms)) {
           return false;
         }
       } catch (KeeperException.NoNodeException e) {
-        return true;
-      }
-      tries++;
-      if (tries > 60) {
-        log.error("Could not save terms to zk within " + tries + " tries");
         return true;
       }
     }
