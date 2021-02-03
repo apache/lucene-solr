@@ -370,7 +370,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       t.stop();
       t = timings.sub("waitForSubSliceLeadersAlive");
       {
-        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
         for (String subShardName : subShardNames) {
           // wait for parent leader to acknowledge the sub-shard core
           log.info("Asking parent leader to wait for: {} to be alive on: {}", subShardName, nodeName);
@@ -415,7 +415,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       t = timings.sub("splitParentCore");
       {
-        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
         shardRequestTracker.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
 
         String msgOnError = "SPLITSHARD failed to invoke SPLIT core admin command";
@@ -431,7 +431,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       t = timings.sub("applyBufferedUpdates");
       // apply buffered updates on sub-shards
       {
-        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+        final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
 
         for (int i = 0; i < subShardNames.size(); i++) {
           String subShardName = subShardNames.get(i);

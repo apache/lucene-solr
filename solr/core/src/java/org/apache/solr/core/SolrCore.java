@@ -172,6 +172,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -720,16 +721,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     boolean locked = lock.tryLock();
 
     try {
-      if (!locked && reloadyWaiting.get() > 1) {
-        log.info("Skipping recovery because there is another already queued");
-        lock.lockInterruptibly();
-        lock.unlock();
-        return null;
-      }
 
-      //        if (closed || prepForClose) {
-      //          return;
-      //        }
       if (!locked) {
         reloadyWaiting.incrementAndGet();
         log.info("Wait for reload lock");
@@ -740,16 +732,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             reloadyWaiting.decrementAndGet();
             throw new AlreadyClosedException();
           }
-        }
-        // don't use recoveryLock.getQueueLength() for this
-        if (reloadyWaiting.decrementAndGet() > 0) {
-          // another recovery waiting behind us, let it run now instead of after we finish
-          log.info("Skipping reload because there is another in line behind");
-          lock.unlock();
-          Thread.sleep(10);
-          lock.lock();
-          lock.unlock();
-          return null;
         }
       }
 
@@ -766,7 +748,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         CoreDescriptor cd = getCoreDescriptor();
         cd.loadExtraProperties(); //Reload the extra properties
-        coreMetricManager.close();
+      //  coreMetricManager.close();
         if (coreContainer.isShutDown()) {
           throw new AlreadyClosedException();
         }
@@ -774,7 +756,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         core.start();
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
-        core.getSearcher(true, false, null, true);
+     //   core.getSearcher(true, false, null, true);
         success = true;
         return core;
       } finally {
@@ -782,14 +764,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (!success) {
           if (core != null) {
             SolrCore finalCore = core;
-//            coreContainer.solrCoreCloseExecutor.submit(() -> {
-//              try {
-//                log.error("Closing failed SolrCore from failed reload");
-                finalCore.closeAndWait();
-//              } catch (Exception e) {
-//                log.error("Exception waiting for core to close on reload failure", e);
-//              }
-//            });
+            try {
+              coreContainer.solrCoreExecutor.submit(() -> {
+                try {
+                  log.warn("Closing failed SolrCore from failed reload");
+                  finalCore.closeAndWait();
+                } catch (Exception e) {
+                  log.error("Exception waiting for core to close on reload failure", e);
+                }
+              });
+            } catch (RejectedExecutionException e) {
+              finalCore.closeAndWait();
+            }
           }
         }
       }
@@ -1725,9 +1711,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
 
     int count = refCount.decrementAndGet();
-    synchronized (closeAndWait) {
-      closeAndWait.notifyAll();
-    }
 
 //    if (log.isDebugEnabled()) {
 //      RuntimeException e = new RuntimeException();
@@ -1739,12 +1722,23 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 //      log.debug("close refcount after {} {}", this, count);
 //    }
 
-    if (count == 0 || coreContainer.solrCores.isClosed() && count == 1) {
+    if (count == 0) {
       try {
-        doClose();
-      } catch (Exception e1) {
-        log.error("Exception waiting for core to close", e1);
+        coreContainer.solrCoreExecutor.submit(() -> {
+          try {
+            doClose();
+          } catch (Exception e1) {
+            log.error("Exception closing SolrCore", e1);
+          }
+        });
+      } catch (RejectedExecutionException e) {
+        try {
+          doClose();
+        } catch (Exception e1) {
+          log.error("Exception closing SolrCore", e1);
+        }
       }
+
       return;
     }
 
@@ -1775,7 +1769,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (cnt >= 2 && !closing) {
           close();
         }
-        log.warn("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
+        if (log.isTraceEnabled()) log.trace("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
       } catch (InterruptedException e) {
 
       }
@@ -1787,29 +1781,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   void doClose() {
-    ReentrantLock reloadLock = null;
-    try {
-      if (getUpdateHandler() != null && getUpdateHandler().getSolrCoreState() != null) {
-        reloadLock = getUpdateHandler().getSolrCoreState().getReloadLock();
-        try {
-          reloadLock.lockInterruptibly();
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new AlreadyClosedException(e);
-        }
-      }
 
+    try {
       if (closing) {
-        while (refCount.get() != -1) {
+        while (!isClosed) {
           synchronized (closeAndWait) {
             try {
-              closeAndWait.wait(250);
+              closeAndWait.wait(500);
             } catch (InterruptedException e) {
 
             }
           }
         }
-
         return;
       }
 
@@ -1830,8 +1813,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             });
           }
         }
-
-        this.isClosed = true;
 
         if (coreContainer.isZooKeeperAware()) {
           coreContainer.getZkController().removeShardLeaderElector(name);
@@ -1995,8 +1976,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     } finally {
       if (log.isDebugEnabled()) log.debug("close done refcount {} {}", refCount == null ? null : refCount.get(), name);
+      this.isClosed = true;
       refCount.set(-1);
-      if (reloadLock != null && reloadLock.isHeldByCurrentThread()) reloadLock.unlock();
 
       infoRegistry.clear();
 

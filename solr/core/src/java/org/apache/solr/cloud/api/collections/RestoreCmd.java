@@ -303,7 +303,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
     {
-      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
       // Copy data from backed up index to each replica
       for (Slice slice : restoreCollection.getSlices()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
@@ -317,7 +317,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     {
-      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+      ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
 
       for (Slice s : restoreCollection.getSlices()) {
         for (Replica r : s.getReplicas()) {

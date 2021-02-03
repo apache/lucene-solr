@@ -18,6 +18,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
@@ -145,7 +146,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
 
-      shardRequestTracker = new OverseerCollectionMessageHandler.ShardRequestTracker(asyncId, message.getStr("operation"), ocmh.adminPath, zkStateReader, ocmh.shardHandlerFactory, ocmh.overseer);
+      shardRequestTracker = new OverseerCollectionMessageHandler.ShardRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION), ocmh.adminPath, zkStateReader, ocmh.shardHandlerFactory, ocmh.overseer);
 
       @SuppressWarnings({"unchecked"}) List<Replica> notLifeReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions, shardHandler, shardRequestTracker);
 

@@ -51,10 +51,10 @@ public class TestConfigsApi extends SolrTestCaseJ4 {
       ApiBag apiBag = new ApiBag(false);
       for (Api api : handler.getApis()) apiBag.register(api, EMPTY_MAP);
       compareOutput(apiBag, "/cluster/configs/sample", DELETE, null, null,
-          "{name :sample, operation:delete}");
+          "{name :sample, op:delete}");
 
       compareOutput(apiBag, "/cluster/configs", POST, "{create:{name : newconf, baseConfigSet: sample }}", null,
-          "{operation:create, name :newconf,  baseConfigSet: sample, immutable: false }");
+          "{op:create, name :newconf,  baseConfigSet: sample, immutable: false }");
     }
   }
 }

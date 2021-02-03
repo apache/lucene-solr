@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Cmd;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -80,7 +81,7 @@ public class DeleteReplicaCmd implements Cmd {
     if (!onlyUpdateState) {
       String asyncId = message.getStr(ASYNC);
       shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
-      shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+      shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
       createdShardHandler = true;
     }
 

@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.StatePublisher;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -176,7 +177,7 @@ public class ZkStateWriter {
 
         this.cs = clusterState;
       } else {
-        final String operation = message.getStr(Overseer.QUEUE_OPERATION);
+        final String operation = message.getStr(StatePublisher.OPERATION);
         OverseerAction overseerAction = OverseerAction.get(operation);
         if (overseerAction == null) {
           throw new RuntimeException("unknown operation:" + operation + " contents:" + message.getProperties());
@@ -184,8 +185,8 @@ public class ZkStateWriter {
 
         switch (overseerAction) {
           case STATE:
-            log.info("state cmd {}", message);
-            message.getProperties().remove("operation");
+            if (log.isDebugEnabled()) log.debug("state cmd {}", message);
+            message.getProperties().remove(StatePublisher.OPERATION);
 
             for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
               if (OverseerAction.DOWNNODE.equals(OverseerAction.get(entry.getKey()))) {
@@ -215,7 +216,7 @@ public class ZkStateWriter {
                 }
 
                 String collection = collectionAndState[0];
-                String setState = collectionAndState[1];
+                String setState = Replica.State.shortStateToState(collectionAndState[1]).toString();
 
                 if (trackVersions.get(collection) == null) {
                   reader.forciblyRefreshClusterStateSlow(collection);
@@ -288,7 +289,7 @@ public class ZkStateWriter {
           case UPDATESHARDSTATE:
             String collection = message.getStr("collection");
             message.getProperties().remove("collection");
-            message.getProperties().remove("operation");
+            message.getProperties().remove(StatePublisher.OPERATION);
 
             DocCollection docColl = cs.getCollectionOrNull(collection);
             if (docColl != null) {

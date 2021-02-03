@@ -165,7 +165,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection alias already exists: " + collectionName);
     }
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async, message.getStr("operation"));
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async, message.getStr(Overseer.QUEUE_OPERATION));
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
 
     String withCollection = message.getStr(CollectionAdminParams.WITH_COLLECTION);

@@ -134,7 +134,7 @@ import java.util.function.BiConsumer;
  * </ol>
  */
 public class Overseer implements SolrCloseable {
-  public static final String QUEUE_OPERATION = "operation";
+  public static final String QUEUE_OPERATION = "op";
 
   public static final String OVERSEER_COLLECTION_QUEUE_WORK = "/overseer/collection-queue-work";
 

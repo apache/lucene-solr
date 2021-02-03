@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -202,7 +203,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       shardsToConsider = snapshotMeta.get().getShards();
     }
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, request.getStr("operation"));
+    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, request.getStr(Overseer.QUEUE_OPERATION));
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices()) {
       Replica replica = null;
 

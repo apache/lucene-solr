@@ -802,7 +802,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     if (coll == null) return null;
     List<Replica> notLivesReplicas = new ArrayList<>();
     if (shardRequestTracker == null) {
-      shardRequestTracker = new ShardRequestTracker(asyncId, message.getStr("operation"), adminPath, zkStateReader, shardHandlerFactory, overseer);
+      shardRequestTracker = new ShardRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION), adminPath, zkStateReader, shardHandlerFactory, overseer);
     }
     for (Slice slice : coll.getSlices()) {
       notLivesReplicas.addAll(shardRequestTracker.sliceCmd(params, stateMatcher, slice, shardHandler));

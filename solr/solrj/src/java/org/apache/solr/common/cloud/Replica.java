@@ -42,6 +42,8 @@ public class Replica extends ZkNodeProps {
      * </p>
      */
     ACTIVE,
+
+    LEADER,
     
     /**
      * The first state before {@link State#RECOVERING}. A node in this state
@@ -87,6 +89,8 @@ public class Replica extends ZkNodeProps {
     public static State shortStateToState(String shortState) {
       if (shortState.equals("a")) {
         return State.ACTIVE;
+      } if (shortState.equals("l")) {
+        return State.LEADER;
       } else if (shortState.equals("r")) {
         return State.RECOVERING;
       } else if (shortState.equals("b")) {

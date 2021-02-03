@@ -2448,7 +2448,7 @@ public class ZkController implements Closeable, Runnable {
       return;
     }
 
-    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, state.toLower(),
+    ZkNodeProps m = new ZkNodeProps(StatePublisher.OPERATION, state.toLower(),
         ZkStateReader.NODE_NAME_PROP, nodeName);
     try {
       statePublisher.submitState(m);

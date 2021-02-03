@@ -95,7 +95,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
     String coreName = leaderProps.getName();
 
-    log.info("Run leader process for shard [{}] election, first step is to try and sync with the shard core={}", context.leaderProps.getSlice(), coreName);
+    log.info("Run leader process for shard [{}] election, first step is to try and sync with the shard", context.leaderProps.getSlice());
     try (SolrCore core = cc.getCore(coreName)) {
       if (core == null) {
         log.info("No SolrCore found, cannot become leader {}", coreName);
@@ -169,8 +169,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         success = result.isSuccess();
 
         if (!success) {
-
-          log.warn("Our sync attempt failed");
           boolean hasRecentUpdates = false;
 
           UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
@@ -195,8 +193,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
               success = true;
             }
           }
-        } else {
-          log.info("Our sync attempt succeeded");
         }
         // solrcloud_debug
 //        if (log.isDebugEnabled()) {
@@ -250,7 +246,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         ZkNodeProps zkNodes = ZkNodeProps
-            .fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(),
+            .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(),
                 ZkStateReader.STATE_PROP, "leader");
 
         log.info("I am the new leader, publishing as active: " + leaderProps.getCoreUrl() + " " + shardId);

@@ -101,7 +101,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       final String asyncId = message.getStr(ASYNC);
       shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
 
-      shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+      shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
       createdShardHandler = true;
     }
 

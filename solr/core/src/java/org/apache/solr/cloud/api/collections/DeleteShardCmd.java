@@ -107,7 +107,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     List<OverseerCollectionMessageHandler.Finalize> finalizers = new ArrayList<>();
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
-    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr("operation"));
+    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr(Overseer.QUEUE_OPERATION));
     try {
       List<ZkNodeProps> replicas = getReplicasForSlice(collectionName, slice);
 

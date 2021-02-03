@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.cloud.ActiveReplicaWatcher;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -95,7 +96,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
 
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
-    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async, message.getStr("operation"));
+    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(async, message.getStr(Overseer.QUEUE_OPERATION));
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       @SuppressWarnings({"rawtypes"}) NamedList nl = new NamedList();
       String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
@@ -200,7 +201,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       //now cleanup the replicas in the source node
       try {
         ShardHandler sh = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
-        OverseerCollectionMessageHandler.ShardRequestTracker srt = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr("operation"));
+        OverseerCollectionMessageHandler.ShardRequestTracker srt = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr(Overseer.QUEUE_OPERATION));
 
         log.info("Cleanup replicas {}", sourceReplicas);
         AddReplicaCmd.Response r = DeleteNodeCmd.cleanupReplicas(results, finalClusterState, sourceReplicas, ocmh, source, null, sh, srt);

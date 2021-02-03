@@ -71,11 +71,6 @@ public class SyncStrategy implements Closeable {
       return PeerSync.PeerSyncResult.success();
     }
 
-    if (log.isInfoEnabled()) {
-      log.info("Sync replicas to {}", leaderProps.getCoreUrl());
-    }
-
-
     this.zkController = zkController;
     return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
   }

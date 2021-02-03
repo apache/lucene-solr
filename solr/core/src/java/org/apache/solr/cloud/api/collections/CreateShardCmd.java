@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -106,7 +107,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     final String asyncId = message.getStr(ASYNC);
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
 
-    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr("operation"));
+    OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId, message.getStr(Overseer.QUEUE_OPERATION));
 
     final NamedList addResult = new NamedList();
     AddReplicaCmd.Response resp;

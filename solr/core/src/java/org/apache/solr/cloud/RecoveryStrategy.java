@@ -178,6 +178,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
   final public void close() {
     close = true;
 
+    if (log.isDebugEnabled()) log.debug("Stopping recovery for core=[{}]", coreName);
+
     try {
       if (prevSendPreRecoveryHttpUriRequest != null) {
         prevSendPreRecoveryHttpUriRequest.cancel();
@@ -196,7 +198,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
       latch.countDown();
     }
 
-    log.warn("Stopping recovery for core=[{}]", coreName);
     //ObjectReleaseTracker.release(this);
   }
 

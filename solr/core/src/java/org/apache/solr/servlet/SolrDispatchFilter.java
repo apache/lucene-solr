@@ -113,7 +113,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     log.warn("expected pre init of factories {} {} {} {} {} {} {}",
         FieldTypeXmlAdapter.dbf, XMLResponseParser.inputFactory, XMLResponseParser.saxFactory,
         AnnotatedApi.MAPPER, org.apache.http.conn.util.PublicSuffixMatcherLoader.getDefault(),
-        ValueSourceParser.standardValueSourceParsers);
+        ValueSourceParser.standardValueSourceParsers.getClass().getSimpleName());
   }
 
   private volatile StopRunnable stopRunnable;

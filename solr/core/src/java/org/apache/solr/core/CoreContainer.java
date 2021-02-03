@@ -911,7 +911,6 @@ public class CoreContainer implements Closeable {
           log.error("Timeout", e);
         }
       }
-      getZkController().getZkClient().printLayout();
     }
 
     for (final CoreDescriptor cd : cds) {
@@ -1279,10 +1278,14 @@ public class CoreContainer implements Closeable {
       if (closeOld) {
         if (old != null) {
           SolrCore finalCore = old;
-          Future<?> future = solrCoreExecutor.submit(() -> {
-            log.info("Closing replaced core {}", cd.getName());
+          try {
+            Future<?> future = solrCoreExecutor.submit(() -> {
+              log.info("Closing replaced core {}", cd.getName());
+              finalCore.closeAndWait();
+            });
+          } catch (RejectedExecutionException e) {
             finalCore.closeAndWait();
-          });
+          }
         }
       }
       return old;
@@ -1791,13 +1794,7 @@ public class CoreContainer implements Closeable {
           }
           newCore = core.reload(coreConfig);
 
-          if (newCore == null) {
-            return;
-          }
-
           if (isShutDown()) {
-            IOUtils.closeQuietly(core);
-            IOUtils.closeQuietly(newCore);
             throw new AlreadyClosedException();
           }
 
@@ -1851,7 +1848,7 @@ public class CoreContainer implements Closeable {
           }
 
         } catch (SolrCoreState.CoreIsClosedException e) {
-
+          log.error("Core is closed", e);
           throw e;
         } catch (Exception e) {
           ParWork.propagateInterrupt("Exception reloading SolrCore", e);
@@ -1866,21 +1863,17 @@ public class CoreContainer implements Closeable {
           throw exp;
         } finally {
 
-          if (isShutDown()) {
-            IOUtils.closeQuietly(core);
-            IOUtils.closeQuietly(oldCore);
-          }
-
-          if (!success) {
-            log.error("Failed reloading core, cleaning up new core");
+          if (!success && newCore != null) {
+            log.warn("Failed reloading core, cleaning up new core");
             SolrCore finalNewCore = newCore;
-            solrCoreExecutor.submit(() -> {
-              //            try {
-              if (finalNewCore != null) {
+            try {
+              solrCoreExecutor.submit(() -> {
                 log.error("Closing failed new core");
                 finalNewCore.closeAndWait();
-              }
-            });
+              });
+            } catch (RejectedExecutionException e) {
+              finalNewCore.closeAndWait();
+            }
           }
         }
 

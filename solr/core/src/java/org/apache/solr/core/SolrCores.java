@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.Lists;
@@ -115,18 +116,22 @@ class SolrCores implements Closeable {
     }
 
     cores.forEach((s, solrCore) -> {
-      container.solrCoreExecutor.submit(() -> {
-        MDCLoggingContext.setCoreName(solrCore.getName());
-        try {
-          solrCore.closeAndWait();
-        } catch (Throwable e) {
-          log.error("Error closing SolrCore", e);
-          ParWork.propagateInterrupt("Error shutting down core", e);
-        } finally {
-          MDCLoggingContext.clear();
-        }
-        return solrCore;
-      });
+      try {
+        container.solrCoreExecutor.submit(() -> {
+          MDCLoggingContext.setCoreName(solrCore.getName());
+          try {
+            solrCore.closeAndWait();
+          } catch (Throwable e) {
+            log.error("Error closing SolrCore", e);
+            ParWork.propagateInterrupt("Error shutting down core", e);
+          } finally {
+            MDCLoggingContext.clear();
+          }
+          return solrCore;
+        });
+      } catch (RejectedExecutionException e) {
+        solrCore.closeAndWait();
+      }
     });
 
   }

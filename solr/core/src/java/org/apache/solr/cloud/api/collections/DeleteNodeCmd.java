@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -62,7 +63,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       results.add("failure", "Can't delete the only existing non-PULL replica(s) on node " + node + ": " + singleReplicas.toString());
     } else {
       ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseerLbClient);
-      OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr("operation"));
+      OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(message.getStr("async"), message.getStr(Overseer.QUEUE_OPERATION));
       resp = cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC), shardHandler, shardRequestTracker);
 
       AddReplicaCmd.Response response = new AddReplicaCmd.Response();
