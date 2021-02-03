@@ -1270,7 +1270,7 @@ public class IndexFetcher {
           compareResult.equal = true;
           return compareResult;
         } else {
-          log.warn("File {} did not match. expected checksum is {} and actual is checksum {}. " +
+          log.info("File {} did not match. expected checksum is {} and actual is checksum {}. " +
               "expected length is {} and actual length is {}"
               , filename, backupIndexFileChecksum, indexFileChecksum,
               backupIndexFileLen, indexFileLen);
