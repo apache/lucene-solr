@@ -261,8 +261,8 @@ public class HttpSolrCall {
 
       core = cores.getCore(origCorename);
 
-      if (core == null && !cores.isZooKeeperAware() && cores.isCoreLoading(origCorename)) {
-        cores.waitForLoadingCore(origCorename, 3000);
+      if (core == null && (!cores.isZooKeeperAware() ||  QoSParams.INTERNAL.equals(req.getHeader(QoSParams.REQUEST_SOURCE))) && cores.isCoreLoading(origCorename)) {
+        cores.waitForLoadingCore(origCorename, 2500);
       }
 
       if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
