@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.lucene70;
 import static org.apache.lucene.codecs.lucene70.Lucene70NormsFormat.VERSION_CURRENT;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -31,22 +30,32 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * Writer for {@link Lucene70NormsFormat}
- */
+/** Writer for {@link Lucene70NormsFormat} */
 final class Lucene70NormsConsumer extends NormsConsumer {
   IndexOutput data, meta;
   final int maxDoc;
 
-  Lucene70NormsConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
+  Lucene70NormsConsumer(
+      SegmentWriteState state,
+      String dataCodec,
+      String dataExtension,
+      String metaCodec,
+      String metaExtension)
+      throws IOException {
     boolean success = false;
     try {
-      String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
+      String dataName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
-      CodecUtil.writeIndexHeader(data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
-      String metaName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, metaExtension);
+      CodecUtil.writeIndexHeader(
+          data, dataCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      String metaName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, metaExtension);
       meta = state.directory.createOutput(metaName, state.context);
-      CodecUtil.writeIndexHeader(meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          meta, metaCodec, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       maxDoc = state.segmentInfo.maxDoc();
       success = true;
     } finally {
@@ -135,7 +144,8 @@ final class Lucene70NormsConsumer extends NormsConsumer {
     }
   }
 
-  private void writeValues(NumericDocValues values, int numBytesPerValue, IndexOutput out) throws IOException, AssertionError {
+  private void writeValues(NumericDocValues values, int numBytesPerValue, IndexOutput out)
+      throws IOException, AssertionError {
     for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
       long value = values.longValue();
       switch (numBytesPerValue) {

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.codecs.lucene70;
 
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -23,18 +24,17 @@ import org.apache.lucene.codecs.lucene50.Lucene50RWPostingsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50RWStoredFieldsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
-/**
- * RW impersonation of {@link Lucene70Codec}.
- */
+/** RW impersonation of {@link Lucene70Codec}. */
 public final class Lucene70RWCodec extends Lucene70Codec {
 
   private final PostingsFormat defaultPF = new Lucene50RWPostingsFormat();
-  private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
-    @Override
-    public PostingsFormat getPostingsFormatForField(String field) {
-      return defaultPF;
-    }
-  };
+  private final PostingsFormat postingsFormat =
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return defaultPF;
+        }
+      };
 
   /** Sole constructor. */
   public Lucene70RWCodec() {}
@@ -42,6 +42,11 @@ public final class Lucene70RWCodec extends Lucene70Codec {
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
     return new Lucene70RWSegmentInfoFormat();
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return new Lucene70RWNormsFormat();
   }
 
   @Override
