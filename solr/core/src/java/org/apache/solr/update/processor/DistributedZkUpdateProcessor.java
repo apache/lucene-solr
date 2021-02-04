@@ -233,14 +233,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               "processCommit - Found the following replicas to send commit to {}",
               useNodes);
 
-          worker.collect("localCommit", () -> {
-            try {
-              doLocalCommit(cmd);
-            } catch (IOException e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-            }
-          });
-
           if (useNodes != null && useNodes.size() > 0) {
             if (log.isDebugEnabled()) log.debug("processCommit - send commit to replicas nodes={}",
                 useNodes);
@@ -253,6 +245,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             worker.collect("distCommit", () -> {
               cmdDistrib.distribCommit(cmd, finalUseNodes, params);
             });
+          }
+
+          try {
+            doLocalCommit(cmd);
+          } catch (IOException e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         } else {
           // zk

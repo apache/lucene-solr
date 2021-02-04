@@ -56,11 +56,6 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     }
 
     @Override
-    SolrRequestInfo getRequestInfo() {
-      return solrRequestInfo;
-    }
-
-    @Override
     PublicKey getRemotePublicKey(String nodename) {
       return remoteKeys.get(nodename);
     }

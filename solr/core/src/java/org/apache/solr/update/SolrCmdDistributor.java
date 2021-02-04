@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.solr.client.solrj.SolrServerException;
@@ -32,7 +31,6 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.AsyncListener;
-import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -67,7 +65,7 @@ public class SolrCmdDistributor implements Closeable {
   
   private final Http2SolrClient solrClient;
   private volatile boolean closed;
-  private final Set<Cancellable> cancels = ConcurrentHashMap.newKeySet(32);
+
   private volatile Throwable cancelExeption;
 
   public SolrCmdDistributor(ZkStateReader zkStateReader, UpdateShardHandler updateShardHandler) {
@@ -87,16 +85,16 @@ public class SolrCmdDistributor implements Closeable {
   public void finish() {
     assert !finished : "lifecycle sanity check";
 
-    if (cancelExeption != null) {
-      Throwable exp = cancelExeption;
-      cancelExeption = null;
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exp);
-    }
+//    if (cancelExeption != null) {
+//      Throwable exp = cancelExeption;
+//      cancelExeption = null;
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exp);
+//    }
 
     if (isClosed == null || isClosed != null && !isClosed.isClosed()) {
       solrClient.waitForOutstandingRequests();
     } else {
-      cancels.forEach(cancellable -> cancellable.cancel());
+      //cancels.forEach(cancellable -> cancellable.cancel());
       Error error = new Error();
       error.t = new AlreadyClosedException();
       AlreadyClosedUpdateCmd cmd = new AlreadyClosedUpdateCmd(null);
@@ -277,18 +275,16 @@ public class SolrCmdDistributor implements Closeable {
 
       client = solrClient;
 
-      int cancelIndex = cancels.size() - 1;
-      cancels.add(client.asyncRequest(req.uReq, null, new AsyncListener<>() {
+
+      client.asyncRequest(req.uReq, null, new AsyncListener<>() {
         @Override
         public void onSuccess(NamedList result) {
           if (log.isTraceEnabled()) log.trace("Success for distrib update {}", result);
-          cancels.remove(cancelIndex);
         }
 
         @Override
         public void onFailure(Throwable t, int code) {
           log.error("Exception sending dist update {} {}", code, t);
-          cancels.remove(cancelIndex);
 
           // nocommit - we want to prevent any more from this request
           // to go just to this node rather than stop the whole request
@@ -321,7 +317,7 @@ public class SolrCmdDistributor implements Closeable {
             allErrors.put(req.cmd, error);
           }
         }
-      }));
+      });
     } catch (Exception e) {
       log.error("Exception sending dist update", e);
       Error error = new Error();

@@ -82,36 +82,7 @@ public class JavabinLoader extends ContentStreamLoader {
       return;
     }
     UpdateRequest update = null;
-    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
-
-      @Override
-      public void update(SolrInputDocument document, UpdateRequest updateRequest, Integer commitWithin, Boolean overwrite) {
-        if (document == null) {
-          return;
-        }
-    
-         AddUpdateCommand addCmd = getAddCommand(req, updateRequest.getParams());
-        
-        addCmd.solrDoc = document;
-        if (commitWithin != null) {
-          addCmd.commitWithin = commitWithin;
-        }
-        if (overwrite != null) {
-          addCmd.overwrite = overwrite;
-        }
-
-        if (updateRequest.isLastDocInBatch()) {
-          // this is a hint to downstream code that indicates we've sent the last doc in a batch
-          addCmd.isLastDocInBatch = true;
-        }
-
-        try {
-          processor.processAdd(addCmd);
-        } catch (ZooKeeperException | IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + addCmd.getPrintableId(), e);
-        }
-      }
-    };
+    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new MyStreamingUpdateHandler(req, processor);
     FastInputStream in = FastInputStream.wrap(stream);
     for (; ; ) {;
       if (in.peek() == -1) return;
@@ -207,6 +178,45 @@ public class JavabinLoader extends ContentStreamLoader {
       for (String s : update.getDeleteQuery()) {
         delcmd.query = s;
         processor.processDelete(delcmd);
+      }
+    }
+  }
+
+  private class MyStreamingUpdateHandler implements JavaBinUpdateRequestCodec.StreamingUpdateHandler {
+
+    private final SolrQueryRequest req;
+    private final UpdateRequestProcessor processor;
+
+    public MyStreamingUpdateHandler(SolrQueryRequest req, UpdateRequestProcessor processor) {
+      this.req = req;
+      this.processor = processor;
+    }
+
+    @Override
+    public void update(SolrInputDocument document, UpdateRequest updateRequest, Integer commitWithin, Boolean overwrite) {
+      if (document == null) {
+        return;
+      }
+
+      AddUpdateCommand addCmd = getAddCommand(req, updateRequest.getParams());
+
+      addCmd.solrDoc = document;
+      if (commitWithin != null) {
+        addCmd.commitWithin = commitWithin;
+      }
+      if (overwrite != null) {
+        addCmd.overwrite = overwrite;
+      }
+
+      if (updateRequest.isLastDocInBatch()) {
+        // this is a hint to downstream code that indicates we've sent the last doc in a batch
+        addCmd.isLastDocInBatch = true;
+      }
+
+      try {
+        processor.processAdd(addCmd);
+      } catch (ZooKeeperException | IOException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "ERROR adding document " + addCmd.getPrintableId(), e);
       }
     }
   }

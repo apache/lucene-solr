@@ -38,7 +38,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory;
@@ -220,27 +219,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   @Override
   public void setup(Http2SolrClient client) {
-    final HttpListenerFactory.RequestResponseListener listener = new HttpListenerFactory.RequestResponseListener() {
-      @Override
-      public void onQueued(Request request) {
-        log.trace("onQueued: {}", request);
-        if (cores.getAuthenticationPlugin() == null) {
-          log.trace("no authentication plugin, skipping");
-          return;
-        }
-        if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", this.getClass().getSimpleName());
-          }
-          generateToken().ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
-        } else {
-          if (log.isDebugEnabled()) {
-            log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
-          }
-        }
-      }
-    };
-    client.addListenerFactory(() -> listener);
+    client.addListenerFactory(new MyHttpListenerFactory(publicKeyHandler, cores, myNodeName));
   }
 
   @Override
@@ -252,6 +231,24 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
 
   public boolean needsAuthorization(HttpServletRequest req) {
     return req.getUserPrincipal() != SU;
+  }
+
+  private static class MyHttpListenerFactory implements HttpListenerFactory {
+
+    private final PublicKeyHandler publicKeyHandler;
+    private final CoreContainer cores;
+    private final String nodeName;
+
+    MyHttpListenerFactory(PublicKeyHandler publicKeyHandler, CoreContainer cores, String nodeName) { 
+      this.publicKeyHandler = publicKeyHandler;
+      this.cores = cores;
+      this.nodeName = nodeName;
+    }
+
+    @Override
+    public RequestResponseListener get() {
+      return new MyRequestResponseListener(publicKeyHandler, cores, nodeName);
+    }
   }
 
   private class HttpHeaderClientInterceptor implements HttpRequestInterceptor {
@@ -278,7 +275,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to set current time in header")
-  private Optional<String> generateToken() {
+  private static Optional<String> generateToken(PublicKeyHandler publicKeyHandler) {
     SolrRequestInfo reqInfo = getRequestInfo();
     String usr;
     if (reqInfo != null) {
@@ -292,7 +289,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
         usr = principal.getName();
       }
     } else {
-      if (!isSolrThread()) {
+      if (!ExecutorUtil.isSolrServerThread()) {
         //if this is not running inside a Solr threadpool (as in testcases)
         // then no need to add any header
         log.debug("generateToken: not a solr (server) thread");
@@ -312,14 +309,15 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   }
 
   void setHeader(HttpRequest httpRequest) {
-    generateToken().ifPresent(s -> httpRequest.setHeader(HEADER, myNodeName + " " + s));
+    generateToken(publicKeyHandler).ifPresent(s -> httpRequest.setHeader(HEADER, myNodeName + " " + s));
   }
 
   boolean isSolrThread() {
     return ExecutorUtil.isSolrServerThread();
   }
 
-  SolrRequestInfo getRequestInfo() {
+
+  static SolrRequestInfo getRequestInfo() {
     return SolrRequestInfo.getRequestInfo();
   }
 
@@ -337,4 +335,36 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   public static final String NODE_IS_USER = "$";
   // special principal to denote the cluster member
   private static final Principal SU = new BasicUserPrincipal("$");
+
+  private static class MyRequestResponseListener extends HttpListenerFactory.RequestResponseListener {
+
+    private final PublicKeyHandler publicKeyHandler;
+    private final CoreContainer cores;
+    private final String myNodeName;
+
+    MyRequestResponseListener(PublicKeyHandler publicKeyHandler, CoreContainer cores, String myNodeName) {
+      this.publicKeyHandler = publicKeyHandler;
+      this.cores = cores;
+      this.myNodeName = myNodeName;
+    }
+    
+    @Override
+    public void onQueued(Request request) {
+      log.trace("onQueued: {}", request);
+      if (cores.getAuthenticationPlugin() == null) {
+        log.trace("no authentication plugin, skipping");
+        return;
+      }
+      if (!cores.getAuthenticationPlugin().interceptInternodeRequest(request)) {
+        if (log.isDebugEnabled()) {
+          log.debug("{} secures this internode request", this.getClass().getSimpleName());
+        }
+        generateToken(publicKeyHandler).ifPresent(s -> request.header(HEADER, myNodeName + " " + s));
+      } else {
+        if (log.isDebugEnabled()) {
+          log.debug("{} secures this internode request", cores.getAuthenticationPlugin().getClass().getSimpleName());
+        }
+      }
+    }
+  }
 }

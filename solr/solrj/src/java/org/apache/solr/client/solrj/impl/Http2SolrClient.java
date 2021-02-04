@@ -49,7 +49,9 @@ import org.apache.solr.common.util.SolrInternalHttpClient;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SolrScheduledExecutorScheduler;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.MultiplexConnectionPool;
 import org.eclipse.jetty.client.ProtocolHandlers;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -108,6 +110,7 @@ import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
@@ -255,13 +258,7 @@ public class Http2SolrClient extends SolrClient {
       HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2client);
 
 
-      transport.setConnectionPoolFactory(destination -> {
-        Pool pool = new Pool(Pool.StrategyType.FIRST, getHttpClient().getMaxConnectionsPerDestination(), true);
-        MultiplexConnectionPool mulitplexPool = new MultiplexConnectionPool(destination, pool, destination,  getHttpClient().getMaxRequestsQueuedPerDestination());
-        mulitplexPool.setMaximizeConnections(false);
-        mulitplexPool.preCreateConnections(4);
-        return mulitplexPool;
-      });
+      transport.setConnectionPoolFactory(new MyFactory());
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     }
 
@@ -691,7 +688,7 @@ public class Http2SolrClient extends SolrClient {
       String url = basePath + path;
       boolean hasNullStreamName = false;
       if (streams != null) {
-        hasNullStreamName = streams.stream().anyMatch(cs -> cs.getName() == null);
+        hasNullStreamName = streams.stream().anyMatch(new ContentStreamPredicate());
       }
 
       boolean isMultipart = streams != null && streams.size() > 1 && !hasNullStreamName;
@@ -1500,6 +1497,18 @@ public class Http2SolrClient extends SolrClient {
       }
     }
   }
+
+  private class MyFactory implements ConnectionPool.Factory {
+    @Override
+    public ConnectionPool newConnectionPool(HttpDestination destination) {
+      Pool pool = new Pool(Pool.StrategyType.FIRST, getHttpClient().getMaxConnectionsPerDestination(), true);
+      MultiplexConnectionPool mulitplexPool = new MultiplexConnectionPool(destination, pool, destination,  getHttpClient().getMaxRequestsQueuedPerDestination());
+      mulitplexPool.setMaximizeConnections(false);
+      mulitplexPool.preCreateConnections(4);
+      return mulitplexPool;
+    }
+  }
+
 
   private class OnHeadersRunnable implements Runnable {
     private final SolrRequest solrRequest;

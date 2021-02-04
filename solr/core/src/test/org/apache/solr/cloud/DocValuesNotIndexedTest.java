@@ -84,8 +84,6 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
 
-    zkClient().printLayout();
-
     fieldsToTestSingle =
         Collections.unmodifiableList(Arrays.asList(
             new FieldProps("intField", "int", 1),

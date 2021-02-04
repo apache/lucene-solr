@@ -190,7 +190,7 @@ public class JavaBinUpdateRequestCodec {
     void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override);
   }
 
-  static class MaskCharSequenceSolrInputDoc extends SolrInputDocument {
+  public static class MaskCharSequenceSolrInputDoc extends SolrInputDocument {
     public MaskCharSequenceSolrInputDoc(Map<String, SolrInputField> fields) {
       super(fields);
     }
@@ -240,7 +240,8 @@ public class JavaBinUpdateRequestCodec {
     }
 
     private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
-      SolrInputDocument doc = new SolrInputDocument();
+      SolrInputDocument doc = SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get();
+      doc.clear();
       for (int i = 0; i < namedList.size(); i++) {
         NamedList nl = namedList.get(i);
         if (i == 0) {

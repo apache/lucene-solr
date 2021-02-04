@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.common.params.CommonParams;
 
 /**
@@ -38,6 +39,21 @@ import org.apache.solr.common.params.CommonParams;
  */
 public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInputDocument> implements Iterable<SolrInputField>
 {
+
+  public final static ThreadLocal<SolrInputDocument> THREAD_LOCAL_SolrInputDocument= new ThreadLocal<>(){
+    protected SolrInputDocument initialValue() {
+      return new SolrInputDocument();
+    }
+  };
+
+  public final static ThreadLocal<SolrInputDocument> THREAD_LOCAL_MaskCharSolrInputDocument= new ThreadLocal<>(){
+    protected SolrInputDocument initialValue() {
+      return new JavaBinUpdateRequestCodec.MaskCharSequenceSolrInputDoc(new LinkedHashMap());
+    }
+  };
+
+
+
   private final Map<String,SolrInputField> _fields;
   private List<SolrInputDocument> _childDocuments;
 

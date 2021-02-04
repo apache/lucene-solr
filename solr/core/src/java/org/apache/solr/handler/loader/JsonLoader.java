@@ -233,7 +233,9 @@ public class JsonLoader extends ContentStreamLoader {
             changeChildDoc(copy);
             docs.add(copy);
           } else {
-            AddUpdateCommand cmd = new AddUpdateCommand(req);
+            AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+            cmd.clear();
+            cmd.setReq(req);
             cmd.commitWithin = commitWithin;
             cmd.overwrite = overwrite;
             cmd.solrDoc = buildDoc(copy);
@@ -459,9 +461,6 @@ public class JsonLoader extends ContentStreamLoader {
         if (ev == JSONParser.STRING) {
           if (parser.wasKey()) {
             String key = parser.getString();
-
-
-
             if ("doc".equals(key)) {
               if (cmd.solrDoc != null) {
                 throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Multiple documents in same"
@@ -505,7 +504,9 @@ public class JsonLoader extends ContentStreamLoader {
 
     void handleAdds() throws IOException {
       while (true) {
-        AddUpdateCommand cmd = new AddUpdateCommand(req);
+        AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
+        cmd.clear();
+        cmd.setReq(req);
         cmd.commitWithin = commitWithin;
         cmd.overwrite = overwrite;
 

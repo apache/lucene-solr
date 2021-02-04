@@ -44,12 +44,13 @@ public class AddUpdateCommand extends UpdateCommand {
     }
   };
 
-
   public final static ThreadLocal<AddUpdateCommand> THREAD_LOCAL_AddUpdateCommand_TLOG = new ThreadLocal<>(){
     protected AddUpdateCommand initialValue() {
       return new AddUpdateCommand(null);
     }
   };
+
+
   /**
    * Higher level SolrInputDocument, normally used to construct the Lucene Document(s)
    * to index.

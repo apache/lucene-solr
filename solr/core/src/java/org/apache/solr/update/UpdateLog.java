@@ -49,7 +49,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
-import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -64,6 +63,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.OrderedExecutor;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
@@ -978,7 +978,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // any added documents will make it into this commit or not.
       // But we do know that any updates already added will definitely
       // show up in the latest reader after the commit succeeds.
-      map = new HashMap<>();
+      map = new ConcurrentHashMap<>(32);
 
       if (debug) {
         log.debug("TLOG: preSoftCommit: prevMap={} new map={}", System.identityHashCode(prevMap), System.identityHashCode(map));
@@ -1171,17 +1171,23 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   // that have already grabbed higher version numbers.  Higher level coordination or
   // synchronization is needed for stronger guarantees (as VersionUpdateProcessor does).
   public Long lookupVersion(BytesRef indexedId) {
-    LogPtr entry;
+    LogPtr entry = null;
 
-    entry = map.get(indexedId);
+    Map<BytesRef,LogPtr> localMap = map;
+    Map<BytesRef,LogPtr> localPrevMap = prevMap;
+    Map<BytesRef,LogPtr> localPrevMap2 = prevMap2;
+
+    if (localMap != null) {
+      entry = localMap.get(indexedId);
+    }
     // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in map",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
-    if (entry == null && prevMap != null) {
-      entry = prevMap.get(indexedId);
+    if (entry == null && localPrevMap != null) {
+      entry = localPrevMap.get(indexedId);
       // something found in prevMap will always be found in prevMapLog (which could be tlog or prevTlog)
       // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
     }
-    if (entry == null && prevMap2 != null) {
-      entry = prevMap2.get(indexedId);
+    if (entry == null && localPrevMap2 != null) {
+      entry = localPrevMap2.get(indexedId);
       // something found in prevMap2 will always be found in prevMapLog2 (which could be tlog or prevTlog)
       // SolrCore.verbose("TLOG: lookup ver: for id ",indexedId.utf8ToString(),"in prevMap2",System.identityHashCode(map),"got",entry,"lookupLog=",lookupLog);
     }
@@ -1269,10 +1275,11 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       dbqLock.lock();
       try {
         deleteByQueries.clear();
+        oldDeletes.clear();
       } finally {
         dbqLock.unlock();
       }
-      oldDeletes.clear();
+
     } finally {
       versionInfo.unblockUpdates();
     }
@@ -1295,7 +1302,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     recoveryInfo = new RecoveryInfo();
     tlog.incref();
 
-    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(ParWork.getRootSharedExecutor());
+    ExecutorCompletionService<RecoveryInfo> cs = new ExecutorCompletionService<>(ParWork.getExecutorService(SysStats.PROC_COUNT));
     LogReplayer replayer = new LogReplayer(Collections.singletonList(tlog), false, true);
 
     versionInfo.blockUpdates();
@@ -1449,15 +1456,9 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
       }
       // Prev tlog will be closed, so nullify prevMap
-      tlogLock.lock();
-      try {
         if (prevTlog == oldTlog) {
           prevMap = null;
         }
-
-      } finally {
-        tlogLock.unlock();
-      }
     } catch (IOException e) {
       log.error("Exception reading versions from log",e);
     } catch (InterruptedException e) {
@@ -1674,7 +1675,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     private void update() {
       int numUpdates = 0;
-      updateList = new ArrayList<>(numRecordsToKeep);
+      updateList = new ArrayList<>(logList.size());
       deleteByQueryList = new ArrayList<>();
       deleteList = new ArrayList<>();
       updates = new HashMap<>(numRecordsToKeep);
@@ -1739,7 +1740,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               // would be caused by a corrupt transaction log
             } catch (Exception ex) {
               log.warn("Exception reverse reading log", ex);
-             // break;
+              break;
             }
 
             numUpdates++;
@@ -1946,7 +1947,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       this.inSortedOrder = inSortedOrder;
     }
 
-    private SolrQueryRequest req;
     private SolrQueryResponse rsp;
 
     @Override
@@ -1954,7 +1954,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DISTRIB_UPDATE_PARAM, FROMLEADER.toString());
       params.set(DistributedUpdateProcessor.LOG_REPLAY, "true");
-      req = new LocalSolrQueryRequest(uhandler.core, params);
+      SolrQueryRequest  req = new LocalSolrQueryRequest(uhandler.core, params);
       rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));    // setting request info will help logging
 
@@ -1962,9 +1962,10 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         for (; ; ) {
           TransactionLog translog = translogs.pollFirst();
           if (translog == null) break;
-          doReplay(translog);
+          doReplay(translog, req);
         }
       } catch (AlreadyClosedException e) {
+        log.info("Stopping LogReplayer, already closed");
         throw e;
       } catch (SolrException e) {
         if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
@@ -2005,7 +2006,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       SolrRequestInfo.clearRequestInfo();
     }
 
-    public void doReplay(TransactionLog translog) {
+    public void doReplay(TransactionLog translog, SolrQueryRequest req) {
       UpdateRequestProcessor proc = null;
       try {
         loglog.warn("Starting log replay {}  active={} starting pos={} inSortedOrder={}", translog, activeLog, recoveryInfo.positionOfStart, inSortedOrder);
@@ -2206,6 +2207,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     private void waitForAllUpdatesGetExecuted(OrderedExecutor executor, LongAdder pendingTasks) {
+      executor.shutdown();
       while (pendingTasks.sum() > 0) {
         executor.awaitTermination();
       }
@@ -2234,7 +2236,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       return null;
     }
 
-    private Future execute(UpdateCommand ucmd, OrderedExecutor executor, LongAdder pendingTasks, UpdateRequestProcessor proc, AtomicReference<SolrException> exceptionHolder, SolrQueryRequest req,
+    private void execute(UpdateCommand ucmd, OrderedExecutor executor, LongAdder pendingTasks, UpdateRequestProcessor proc, AtomicReference<SolrException> exceptionHolder, SolrQueryRequest req,
         SolrInputDocument doc, int operation, long version, Long prevVersion) {
       assert ucmd instanceof AddUpdateCommand || ucmd instanceof DeleteUpdateCommand || ucmd == null;
 
@@ -2250,16 +2252,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       BytesRef finalIndexedId = indexedId;
 
+      final SolrInputDocument sdoc = doc;
+
       if (executor != null) {
         // by using the same hash as DUP, independent updates can avoid waiting for same bucket
 
-        return executor.submit(hash, () -> {
+        executor.submit(hash, () -> {
           try {
             // fail fast
             if (exceptionHolder.get() != null) return;
             if (ucmd instanceof AddUpdateCommand) {
 
-              convertTlogEntryToAddUpdateCommand(req, doc, operation, prevVersion, version, (AddUpdateCommand) ucmd);
+              convertTlogEntryToAddUpdateCommand(req, sdoc, operation, prevVersion, version, (AddUpdateCommand) ucmd);
               ((AddUpdateCommand) ucmd).setIndexedId(finalIndexedId);
               ucmd.setReq(req);
               ucmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
@@ -2284,6 +2288,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             pendingTasks.decrement();
           }
         });
+        pendingTasks.increment();
       } else {
         try {
           if (ucmd instanceof AddUpdateCommand) {
@@ -2308,7 +2313,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           loglog.warn("REPLAY_ERR: IOException replaying log", e);
         }
       }
-      return ConcurrentUtils.constantFuture(null);
     }
   }
 

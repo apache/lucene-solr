@@ -27,6 +27,7 @@ import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -84,6 +85,8 @@ public class SolrRequestInfo {
       threadLocal.remove();
       AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clearAll();
       AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clearAll();
+      SolrInputDocument.THREAD_LOCAL_MaskCharSolrInputDocument.get().clear();
+      SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get().clear();
     }
   }
 

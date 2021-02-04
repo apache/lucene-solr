@@ -353,8 +353,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     vinfo.lockForUpdate();
     try {
       long finalVersionOnUpdate = versionOnUpdate;
-      return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () -> doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync,
-          leaderLogic, forwardedFromCollection, bucket), idBytes);
+      return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), new VersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket), idBytes);
     } finally {
       vinfo.unlockForUpdate();
     }
@@ -424,15 +423,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         cmd.setVersion(version);
         cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
 
-        if (!nodist) {
-
-          SolrInputDocument clonedDoc = null;
-          if (shouldCloneCmdDoc()) {
-            // SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
-            cloneCmd = (AddUpdateCommand) cmd.clone();
-            clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy() : null;
-            cloneCmd.solrDoc = clonedDoc;
-          }
+        if (shouldCloneCmdDoc()) {
+          cloneCmd = (AddUpdateCommand) cmd.clone();
+          SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+          cloneCmd.solrDoc = clonedDoc;
         }
 
         bucket.updateHighest(version);
@@ -527,16 +521,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         finalCloneCmd = cmd;
       }
 
-      Callable distCall = () -> {
-        if (log.isTraceEnabled()) log.trace("Run distrib add collection");
-        try {
-          doDistribAdd(finalCloneCmd);
-          if (log.isTraceEnabled()) log.trace("after distrib add collection");
-        } catch (Throwable e) {
-          return e;
-        }
-        return null;
-      };
+      Callable distCall = new DistAddCallable(finalCloneCmd);
 
       distFuture = ParWork.getRootSharedExecutor().submit(distCall);
     }
@@ -1466,5 +1451,48 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void doClose() {
     super.doClose();
+  }
+
+  private class VersionAdd implements VersionBucket.CheckedFunction<Object,Future> {
+    private final AddUpdateCommand cmd;
+    private final long finalVersionOnUpdate;
+    private final boolean isReplayOrPeersync;
+    private final boolean leaderLogic;
+    private final boolean forwardedFromCollection;
+    private final VersionBucket bucket;
+
+    public VersionAdd(AddUpdateCommand cmd, long finalVersionOnUpdate, boolean isReplayOrPeersync, boolean leaderLogic, boolean forwardedFromCollection, VersionBucket bucket) {
+      this.cmd = cmd;
+      this.finalVersionOnUpdate = finalVersionOnUpdate;
+      this.isReplayOrPeersync = isReplayOrPeersync;
+      this.leaderLogic = leaderLogic;
+      this.forwardedFromCollection = forwardedFromCollection;
+      this.bucket = bucket;
+    }
+
+    @Override
+    public Future apply() throws IOException {
+      return doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket);
+    }
+  }
+
+  private class DistAddCallable implements Callable {
+    private final AddUpdateCommand finalCloneCmd;
+
+    public DistAddCallable(AddUpdateCommand finalCloneCmd) {
+      this.finalCloneCmd = finalCloneCmd;
+    }
+
+    @Override
+    public Object call() throws Exception {
+      if (log.isTraceEnabled()) log.trace("Run distrib add collection");
+      try {
+        doDistribAdd(finalCloneCmd);
+        if (log.isTraceEnabled()) log.trace("after distrib add collection");
+      } catch (Throwable e) {
+        return e;
+      }
+      return null;
+    }
   }
 }
