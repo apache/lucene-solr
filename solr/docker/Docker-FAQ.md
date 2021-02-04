@@ -150,7 +150,7 @@ rather than the "mycores" directory.
 Can I run ZooKeeper and Solr clusters under Docker?
 ---------------------------------------------------
 
-At the network level the ZooKeeper nodes need to be able to talk to eachother,
+At the network level the ZooKeeper nodes need to be able to talk to each other,
 and the Solr nodes need to be able to talk to the ZooKeeper nodes and to each other.
 At the application level, different nodes need to be able to identify and locate each other.
 In ZooKeeper that is done with a configuration file that lists hostnames or IP addresses for each node.
@@ -159,10 +159,10 @@ In Solr that is done with a parameter that specifies a host or IP address, which
 In typical clusters, those hostnames/IP addresses are pre-defined and remain static through the lifetime of the cluster.
 In Docker, inter-container communication and multi-host networking can be facilitated by [Docker Networks](https://docs.docker.com/engine/userguide/networking/).
 But, crucially, Docker does not normally guarantee that IP addresses of containers remain static during the lifetime of a container.
-In non-networked Docker, the IP address seems to change everytime you stop/start.
+In non-networked Docker, the IP address seems to change every time you stop/start.
 In a networked Docker, containers can lose their IP address in certain sequences of starting/stopping, unless you take steps to prevent that.
 
-IP changes causes problems:
+IP changes cause problems:
 
 - If you use hardcoded IP addresses in configuration, and the addresses of your containers change after a stops/start, then your cluster will stop working and may corrupt itself.
 - If you use hostnames in configuration, and the addresses of your containers change, then you might run into problems with cached hostname lookups.
@@ -234,8 +234,8 @@ To run an arbitrary command in the image:
 docker run -it apache/solr date
 ```
 
-here "apache/solr" is the name of the image, and "date" is the command.
-This does not invoke any solr functionality.
+Here "apache/solr" is the name of the image, and "date" is the command.
+This does not invoke any Solr functionality.
 
 
 To run the Solr server:
@@ -255,7 +255,7 @@ docker run -it apache/solr -h myhostname
 ```
 
 This is the same as the previous one, but an additional argument is passed.
-The image will run the "solr" command with "-f -h myhostname"
+The image will run the "solr" command with "-f -h myhostname".
 
 To run solr as an arbitrary command:
 
@@ -263,7 +263,7 @@ To run solr as an arbitrary command:
 docker run -it apache/solr solr zk --help
 ```
 
-here the first "apache/solr" is the image name, and the second "solr"
+Here the first "apache/solr" is the image name, and the second "solr"
 is the "solr" command. The image runs the command exactly as specified;
 no "-f" is implicitly added. The container will print help text, and exit.
 
