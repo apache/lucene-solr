@@ -21,22 +21,20 @@
   <Appenders>
 
     <Console name="STDOUT" target="SYSTEM_OUT">
-      <PatternLayout>
-        <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
-        </Pattern>
-      </PatternLayout>
+      <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+                      eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
+                      prettyPrintEnabled="true"
+                      stackTraceEnabled="true"/>
     </Console>
 
     <RollingRandomAccessFile
         name="MainLogFile"
         fileName="${sys:solr.log.dir}/solr.log"
         filePattern="${sys:solr.log.dir}/solr.log.%i" >
-      <PatternLayout>
-        <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
-        </Pattern>
-      </PatternLayout>
+      <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+                      eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
+                      prettyPrintEnabled="true"
+                      stackTraceEnabled="true"/>
       <Policies>
         <OnStartupTriggeringPolicy />
         <SizeBasedTriggeringPolicy size="64 MB"/>
@@ -48,11 +46,10 @@
         name="SlowLogFile"
         fileName="${sys:solr.log.dir}/solr_slow_requests.log"
         filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
-      <PatternLayout>
-        <Pattern>
-          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
-        </Pattern>
-      </PatternLayout>
+      <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+                      eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
+                      prettyPrintEnabled="true"
+                      stackTraceEnabled="true"/>
       <Policies>
         <OnStartupTriggeringPolicy />
         <SizeBasedTriggeringPolicy size="32 MB"/>
@@ -67,10 +64,12 @@
     <AsyncLogger name="org.eclipse.jetty" level="WARN"/>
     <AsyncLogger name="org.eclipse.jetty.server.Server" level="WARN"/>
     <AsyncLogger name="org.apache.hadoop" level="WARN"/>
-    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
     <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
     <AsyncLogger name="org.apache.zookeeper.ClientCnxn" level="ERROR"/>
     <AsyncLogger name="org.apache.zookeeper.server.ZooKeeperCriticalThread" level="OFF"/>
+
+    <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="DEBUG"/>
+    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
     <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="INFO" additivity="false">
       <AppenderRef ref="SlowLogFile"/>
     </AsyncLogger>

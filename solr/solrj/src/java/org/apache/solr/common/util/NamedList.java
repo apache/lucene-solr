@@ -182,7 +182,13 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
    * @return null if no name exists
    */
   public String getName(int idx) {
-    return (String)nvPairs.get(idx << 1);
+    Object name = null;
+    try {
+      name = nvPairs.get(idx << 1);
+      return (String) name;
+    } catch (ClassCastException e) {
+      return String.valueOf(name);
+    }
   }
 
   /**
@@ -422,96 +428,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     return asShallowMap(false);
   }
   public Map<String,T> asShallowMap(boolean allowDps) {
-    return new Map<String, T>() {
-      @Override
-      public int size() {
-        return NamedList.this.size();
-      }
-
-      @Override
-      public boolean isEmpty() {
-        return size() == 0;
-      }
-
-      public boolean containsKey(Object  key) {
-        return NamedList.this.get((String) key) != null ;
-      }
-
-      @Override
-      public boolean containsValue(Object value) {
-        return false;
-      }
-
-      @Override
-      public T get(Object key) {
-        return  NamedList.this.get((String) key);
-      }
-
-      @Override
-      public T put(String  key, T value) {
-        if (allowDps) {
-          NamedList.this.add(key, value);
-          return null;
-        }
-        int idx = NamedList.this.indexOf(key, 0);
-        if (idx == -1) {
-          NamedList.this.add(key, value);
-        } else {
-          NamedList.this.setVal(idx, value);
-        }
-        return null;
-      }
-
-      @Override
-      public T remove(Object key) {
-        return  NamedList.this.remove((String) key);
-      }
-
-      @Override
-      @SuppressWarnings({"unchecked"})
-      public void putAll(Map m) {
-        boolean isEmpty = isEmpty();
-        for (Object o : m.entrySet()) {
-          @SuppressWarnings({"rawtypes"})
-          Map.Entry e = (Entry) o;
-          if (isEmpty) {// we know that there are no duplicates
-            add((String) e.getKey(), (T) e.getValue());
-          } else {
-            put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
-          }
-        }
-      }
-
-      @Override
-      public void clear() {
-        NamedList.this.clear();
-      }
-
-      @Override
-      @SuppressWarnings({"unchecked"})
-      public Set<String> keySet() {
-        //TODO implement more efficiently
-        return  NamedList.this.asMap(1).keySet();
-      }
-
-      @Override
-      @SuppressWarnings({"unchecked", "rawtypes"})
-      public Collection values() {
-        //TODO implement more efficiently
-        return  NamedList.this.asMap(1).values();
-      }
-
-      @Override
-      public Set<Entry<String,T>> entrySet() {
-        //TODO implement more efficiently
-        return NamedList.this.asMap(1).entrySet();
-      }
-
-      @Override
-      public void forEach(BiConsumer action) {
-        NamedList.this.forEach(action);
-      }
-    };
+    return new ShallowMap(this, allowDps);
   }
 
   public Map asMap(int maxDepth) {
@@ -857,6 +774,105 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     int sz = size();
     for (int i = 0; i < sz; i++) {
       action.accept(getName(i), getVal(i));
+    }
+  }
+
+  private static class ShallowMap<T> implements Map<String, T> {
+    private final boolean allowDps;
+    private NamedList<T> namedList;
+
+    public ShallowMap(NamedList<T> namedList, boolean allowDps) {
+      this.allowDps = allowDps;
+      this.namedList = namedList;
+    }
+
+    @Override
+    public int size() {
+      return namedList.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+      return size() == 0;
+    }
+
+    public boolean containsKey(Object  key) {
+      return namedList.get((String) key) != null ;
+    }
+
+    @Override
+    public boolean containsValue(Object value) {
+      return false;
+    }
+
+    @Override
+    public T get(Object key) {
+      return  namedList.get((String) key);
+    }
+
+    @Override
+    public T put(String  key, T value) {
+      if (allowDps) {
+        namedList.add(key, value);
+        return null;
+      }
+      int idx = namedList.indexOf(key, 0);
+      if (idx == -1) {
+        namedList.add(key, value);
+      } else {
+        namedList.setVal(idx, value);
+      }
+      return null;
+    }
+
+    @Override
+    public T remove(Object key) {
+      return  namedList.remove((String) key);
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked"})
+    public void putAll(Map m) {
+      boolean isEmpty = isEmpty();
+      for (Object o : m.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
+        Entry e = (Entry) o;
+        if (isEmpty) {// we know that there are no duplicates
+          namedList.add((String) e.getKey(), (T) e.getValue());
+        } else {
+          put(e.getKey() == null ? null : e.getKey().toString(), (T) e.getValue());
+        }
+      }
+    }
+
+    @Override
+    public void clear() {
+      namedList.clear();
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked"})
+    public Set<String> keySet() {
+      //TODO implement more efficiently
+      return  namedList.asMap(1).keySet();
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public Collection values() {
+      //TODO implement more efficiently
+      return  namedList.asMap(1).values();
+    }
+
+    @Override
+    public Set<Entry<String,T>> entrySet() {
+      //TODO implement more efficiently
+      return namedList.asMap(1).entrySet();
+    }
+
+    @Override
+    public void forEach(BiConsumer action) {
+      namedList.forEach(action);
     }
   }
 }

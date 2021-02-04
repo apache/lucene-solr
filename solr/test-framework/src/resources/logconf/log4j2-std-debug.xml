@@ -20,7 +20,10 @@
     <Appenders>
 
         <Console name="STDERR_COLOR" target="SYSTEM_ERR">
-            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-1p}{20}} %style{(%maxLen{%t}{20})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+            <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+                            eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
+                            prettyPrintEnabled="true"
+                            stackTraceEnabled="true"/>
         </Console>
 
         <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
@@ -59,7 +62,7 @@
 
         <AsyncRoot level="INFO">
             <AppenderRef ref="STDERR_COLOR"/>
-            <!--   <AppenderRef ref="FILE"/>-->
+            <AppenderRef ref="FILE"/>
          </AsyncRoot>
      </Loggers>
  </Configuration>

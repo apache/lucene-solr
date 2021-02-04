@@ -112,3 +112,4 @@ org.xerial.snappy:snappy-java=1.1.8.1
 org.lz4:lz4-java:1.7.1
 commons-cli:commons-cli=1.4
 org.jline:jline=3.19.0
+com.vlkan.log4j2:log4j2-logstash-layout=1.0.5

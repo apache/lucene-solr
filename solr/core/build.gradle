@@ -96,6 +96,7 @@ dependencies {
   implementation 'org.apache.logging.log4j:log4j-api'
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+  implementation 'com.vlkan.log4j2:log4j2-logstash-layout'
 
   api 'org.bitbucket.b_c:jose4j'
   implementation 'org.codehaus.janino:commons-compiler'
