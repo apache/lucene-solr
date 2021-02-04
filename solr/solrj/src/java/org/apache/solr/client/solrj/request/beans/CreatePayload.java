@@ -19,35 +19,59 @@ package org.apache.solr.client.solrj.request.beans;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
+import java.util.List;
 import java.util.Map;
 
-import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_COLLECTION_KEY;
-
-/**
- * V2 API POJO for the /v2/collections 'restore-collection' command.
- *
- * Analogous to the request parameters for v1 /admin/collections?action=RESTORE API.
- */
-public class RestoreCollectionBody implements ReflectMapWriter {
-
-    @JsonProperty(required = true)
-    public String collection;
-
+public class CreatePayload implements ReflectMapWriter {
     @JsonProperty(required = true)
     public String name;
 
     @JsonProperty
-    public String location;
+    public String config;
 
     @JsonProperty
-    public String repository;
+    public RouterInfo router;
 
     @JsonProperty
-    public Integer backupId;
+    public Integer numShards;
 
-    @JsonProperty(CREATE_COLLECTION_KEY)
-    public Map<String, Object> createCollectionParams;
+    @JsonProperty
+    public String shards;
+
+    @JsonProperty
+    public Integer replicationFactor;
+
+    @JsonProperty
+    public Integer nrtReplicas;
+
+    @JsonProperty
+    public Integer tlogReplicas;
+
+    @JsonProperty
+    public Integer pullReplicas;
+
+    @JsonProperty
+    public List<String> nodeSet;
+
+    @JsonProperty
+    public Boolean shuffleNodes;
+
+    @JsonProperty
+    public Map<String, Object> properties;
 
     @JsonProperty
     public String async;
+
+    @JsonProperty
+    public Boolean waitForFinalState;
+
+    @JsonProperty
+    public Boolean perReplicaState;
+
+    public static class RouterInfo implements ReflectMapWriter {
+        @JsonProperty
+        public String name;
+        @JsonProperty
+        public String field;
+    }
 }

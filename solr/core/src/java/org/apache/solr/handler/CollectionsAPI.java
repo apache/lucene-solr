@@ -21,12 +21,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.BackupCollectionBody;
-import org.apache.solr.client.solrj.request.beans.CreateAliasBody;
-import org.apache.solr.client.solrj.request.beans.CreateBody;
-import org.apache.solr.client.solrj.request.beans.DeleteAliasBody;
-import org.apache.solr.client.solrj.request.beans.RestoreCollectionBody;
-import org.apache.solr.client.solrj.request.beans.SetAliasPropertyBody;
+import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
+import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
+import org.apache.solr.client.solrj.request.beans.CreatePayload;
+import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
+import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
+import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
 import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -89,7 +89,7 @@ public class CollectionsAPI {
 
         @Command(name = V2_BACKUP_CMD)
         @SuppressWarnings("unchecked")
-        public void backupCollection(PayloadObj<BackupCollectionBody> obj) throws Exception {
+        public void backupCollection(PayloadObj<BackupCollectionPayload> obj) throws Exception {
             final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
             v1Params.put(ACTION, CollectionAction.BACKUP.toLower());
 
@@ -98,8 +98,8 @@ public class CollectionsAPI {
 
         @Command(name = V2_RESTORE_CMD)
         @SuppressWarnings("unchecked")
-        public void restoreBackup(PayloadObj<RestoreCollectionBody> obj) throws Exception {
-            final RestoreCollectionBody v2Body = obj.get();
+        public void restoreBackup(PayloadObj<RestoreCollectionPayload> obj) throws Exception {
+            final RestoreCollectionPayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
 
             v1Params.put(ACTION, CollectionAction.RESTORE.toLower());
@@ -114,8 +114,8 @@ public class CollectionsAPI {
 
         @Command(name = V2_CREATE_ALIAS_CMD)
         @SuppressWarnings("unchecked")
-        public void createAlias(PayloadObj<CreateAliasBody> obj) throws Exception {
-            final CreateAliasBody v2Body = obj.get();
+        public void createAlias(PayloadObj<CreateAliasPayload> obj) throws Exception {
+            final CreateAliasPayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
 
             v1Params.put(ACTION, CollectionAction.CREATEALIAS.toLower());
@@ -139,8 +139,8 @@ public class CollectionsAPI {
 
         @Command(name= V2_SET_ALIAS_PROP_CMD)
         @SuppressWarnings("unchecked")
-        public void setAliasProperty(PayloadObj<SetAliasPropertyBody> obj) throws Exception {
-            final SetAliasPropertyBody v2Body = obj.get();
+        public void setAliasProperty(PayloadObj<SetAliasPropertyPayload> obj) throws Exception {
+            final SetAliasPropertyPayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
 
             v1Params.put(ACTION, CollectionAction.ALIASPROP.toLower());
@@ -153,8 +153,8 @@ public class CollectionsAPI {
 
         @Command(name= V2_DELETE_ALIAS_CMD)
         @SuppressWarnings("unchecked")
-        public void deleteAlias(PayloadObj<DeleteAliasBody> obj) throws Exception {
-            final DeleteAliasBody v2Body = obj.get();
+        public void deleteAlias(PayloadObj<DeleteAliasPayload> obj) throws Exception {
+            final DeleteAliasPayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
             v1Params.put(ACTION, CollectionAction.DELETEALIAS.toLower());
 
@@ -163,8 +163,8 @@ public class CollectionsAPI {
 
         @Command(name = V2_CREATE_COLLECTION_CMD)
         @SuppressWarnings("unchecked")
-        public void create(PayloadObj<CreateBody> obj) throws Exception {
-            final CreateBody v2Body = obj.get();
+        public void create(PayloadObj<CreatePayload> obj) throws Exception {
+            final CreatePayload v2Body = obj.get();
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
 
             v1Params.put(ACTION, CollectionAction.CREATE.toLower());

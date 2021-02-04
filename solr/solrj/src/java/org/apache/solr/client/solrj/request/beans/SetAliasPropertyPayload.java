@@ -21,7 +21,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 
 import java.util.Map;
 
-public class SetAliasPropertyBody implements ReflectMapWriter {
+public class SetAliasPropertyPayload implements ReflectMapWriter {
     @JsonProperty(required = true)
     public String name;
 

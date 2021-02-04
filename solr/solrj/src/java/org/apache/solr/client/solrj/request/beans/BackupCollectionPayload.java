@@ -24,7 +24,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
  *
  * Analogous to the request parameters for v1 /admin/collections?action=BACKUP API.
  */
-public class BackupCollectionBody implements ReflectMapWriter {
+public class BackupCollectionPayload implements ReflectMapWriter {
     @JsonProperty(required = true)
     public String collection;
 
