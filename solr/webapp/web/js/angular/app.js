@@ -150,7 +150,8 @@ solrAdminApp.config([
       }).
       when('/:core/query', {
         templateUrl: 'partials/query.html',
-        controller: 'QueryController'
+        controller: 'QueryController',
+        reloadOnSearch: false
       }).
       when('/:core/stream', {
         templateUrl: 'partials/stream.html',
