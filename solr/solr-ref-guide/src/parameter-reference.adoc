@@ -51,6 +51,6 @@ Defaults to 15000. The time a client is allowed to not talk to ZooKeeper before 
 == SolrCloud Core Parameters
 
 `shard`::
-Defaults to being automatically assigned based on numShards. Specifies which shard this core acts as a replica of. `shard` can be specified in the <<defining-core-properties.adoc#defining-core-properties,`core.properties`>> for each core.
+Defaults to being automatically assigned based on numShards. Specifies which shard this core acts as a replica of. `shard` can be specified in the <<defining-core-properties.adoc#,`core.properties`>> for each core.
 
-Additional cloud related parameters are discussed in <<format-of-solr-xml.adoc#format-of-solr-xml,Format of solr.xml>>
+Additional cloud related parameters are discussed in <<format-of-solr-xml.adoc#,Format of solr.xml>>

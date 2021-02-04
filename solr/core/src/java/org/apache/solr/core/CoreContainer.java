@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -958,12 +957,7 @@ public class CoreContainer {
         name = "localhost";
       }
       cloudManager = null;
-      client = new EmbeddedSolrServer(this, null) {
-        @Override
-        public void close() throws IOException {
-          // do nothing - we close the container ourselves
-        }
-      };
+      client = new EmbeddedSolrServer(this, null);
       // enable local metrics unless specifically set otherwise
       initArgs.putIfAbsent(MetricsHistoryHandler.ENABLE_NODES_PROP, true);
       initArgs.putIfAbsent(MetricsHistoryHandler.ENABLE_REPLICAS_PROP, true);
@@ -1270,7 +1264,7 @@ public class CoreContainer {
     return create(coreName, cfg.getCoreRootDirectory().resolve(coreName), parameters, false);
   }
 
-  Set<String> inFlightCreations = new HashSet<>(); // See SOLR-14969
+  final Set<String> inFlightCreations = ConcurrentHashMap.newKeySet(); // See SOLR-14969
   /**
    * Creates a new core in a specified instance directory, publishing the core state to the cluster
    *
@@ -1280,17 +1274,13 @@ public class CoreContainer {
    * @return the newly created core
    */
   public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
-    SolrCore core = null;
     boolean iAdded = false;
     try {
-      synchronized (inFlightCreations) {
-        if (inFlightCreations.add(coreName)) {
-          iAdded = true;
-        } else {
-          String msg = "Already creating a core with name '" + coreName + "', call aborted '";
-          log.warn(msg);
-          throw new SolrException(ErrorCode.CONFLICT, msg);
-        }
+      iAdded = inFlightCreations.add(coreName);
+      if (! iAdded) {
+        String msg = "Already creating a core with name '" + coreName + "', call aborted '";
+        log.warn(msg);
+        throw new SolrException(ErrorCode.CONFLICT, msg);
       }
       CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
@@ -1318,6 +1308,7 @@ public class CoreContainer {
         // first and clean it up if there's an error.
         coresLocator.create(this, cd);
 
+        SolrCore core;
         try {
           solrCores.waitAddPendingCoreOps(cd.getName());
           core = createFromDescriptor(cd, true, newCollection);
@@ -1362,10 +1353,8 @@ public class CoreContainer {
             "Error CREATEing SolrCore '" + coreName + "': " + ex.getMessage() + rootMsg, ex);
       }
     } finally {
-      synchronized (inFlightCreations) {
-        if (iAdded) {
-          inFlightCreations.remove(coreName);
-        }
+      if (iAdded) {
+        inFlightCreations.remove(coreName);
       }
     }
   }
@@ -2241,6 +2230,7 @@ class CloserThread extends Thread {
 
 
   CloserThread(CoreContainer container, SolrCores solrCores, NodeConfig cfg) {
+    super("CloserThread");
     this.container = container;
     this.solrCores = solrCores;
     this.cfg = cfg;

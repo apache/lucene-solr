@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.hunspell;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,8 +44,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -76,28 +73,36 @@ public class Dictionary {
 
   static final char[] NOFLAGS = new char[0];
 
-  static final int FLAG_UNSET = 0;
+  static final char FLAG_UNSET = (char) 0;
   private static final int DEFAULT_FLAGS = 65510;
   private static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
-  static final String DEFAULT_ENCODING = StandardCharsets.ISO_8859_1.name();
+  static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
+  CharsetDecoder decoder = replacingDecoder(DEFAULT_CHARSET);
 
   FST<IntsRef> prefixes;
   FST<IntsRef> suffixes;
   Breaks breaks = Breaks.DEFAULT;
 
-  // all condition checks used by prefixes and suffixes. these are typically re-used across
-  // many affix stripping rules. so these are deduplicated, to save RAM.
+  /**
+   * All condition checks used by prefixes and suffixes. these are typically re-used across many
+   * affix stripping rules. so these are deduplicated, to save RAM.
+   */
   ArrayList<CharacterRunAutomaton> patterns = new ArrayList<>();
 
-  // the entries in the .dic file, mapping to their set of flags.
-  // the fst output is the ordinal list for flagLookup
+  /**
+   * The entries in the .dic file, mapping to their set of flags. the fst output is the ordinal list
+   * for flagLookup.
+   */
   FST<IntsRef> words;
-  // the list of unique flagsets (wordforms). theoretically huge, but practically
-  // small (e.g. for polish this is 756), otherwise humans wouldn't be able to deal with it either.
+
+  /**
+   * The list of unique flagsets (wordforms). theoretically huge, but practically small (for Polish
+   * this is 756), otherwise humans wouldn't be able to deal with it either.
+   */
   BytesRefHash flagLookup = new BytesRefHash();
 
   // the list of unique strip affixes.
@@ -128,26 +133,38 @@ public class Dictionary {
   // st: morphological entries (either directly, or aliased from AM)
   private String[] stemExceptions = new String[8];
   private int stemExceptionCount = 0;
-  // we set this during sorting, so we know to add an extra FST output.
-  // when set, some words have exceptional stems, and the last entry is a pointer to stemExceptions
+
+  /**
+   * we set this during sorting, so we know to add an extra FST output. when set, some words have
+   * exceptional stems, and the last entry is a pointer to stemExceptions
+   */
   boolean hasStemExceptions;
 
   boolean ignoreCase;
+  boolean checkSharpS;
   boolean complexPrefixes;
   // if no affixes have continuation classes, no need to do 2-level affix stripping
   boolean twoStageAffix;
 
   char circumfix;
-  char keepcase;
+  char keepcase, forceUCase;
   char needaffix;
   char forbiddenword;
-  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundPermit;
-  boolean checkCompoundCase;
+  char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundFlag;
+  char compoundPermit, compoundForbid;
+  boolean checkCompoundCase, checkCompoundDup;
+  boolean checkCompoundTriple, simplifiedTriple;
   int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
+  List<CheckCompoundPattern> checkCompoundPatterns = new ArrayList<>();
 
   // ignored characters (dictionary, affix, inputs)
   private char[] ignore;
+
+  String tryChars = "";
+  String[] neighborKeyGroups = new String[0];
+  boolean enableSplitSuggestions = true;
+  List<RepEntry> repTable = new ArrayList<>();
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
@@ -162,7 +179,7 @@ public class Dictionary {
   // language declaration of the dictionary
   String language;
   // true if case algorithms should use alternate (Turkish/Azeri) mapping
-  boolean alternateCasing;
+  private boolean alternateCasing;
 
   /**
    * Creates a new Dictionary containing the information read from the provided InputStreams to
@@ -206,25 +223,21 @@ public class Dictionary {
 
     Path tempPath = getDefaultTempDir(); // TODO: make this configurable?
     Path aff = Files.createTempFile(tempPath, "affix", "aff");
-    OutputStream out = new BufferedOutputStream(Files.newOutputStream(aff));
-    InputStream aff1 = null;
+
+    BufferedInputStream aff1 = null;
     InputStream aff2 = null;
     boolean success = false;
     try {
-      // copy contents of affix stream to temp file
-      final byte[] buffer = new byte[1024 * 8];
-      int len;
-      while ((len = affix.read(buffer)) > 0) {
-        out.write(buffer, 0, len);
+      // Copy contents of the affix stream to a temp file.
+      try (OutputStream os = Files.newOutputStream(aff)) {
+        affix.transferTo(os);
       }
-      out.close();
 
-      // pass 1: get encoding
+      // pass 1: get encoding & flag
       aff1 = new BufferedInputStream(Files.newInputStream(aff));
-      String encoding = getDictionaryEncoding(aff1);
+      readConfig(aff1);
 
       // pass 2: parse affixes
-      CharsetDecoder decoder = getJavaEncoding(encoding);
       aff2 = new BufferedInputStream(Files.newInputStream(aff));
       readAffixFile(aff2, decoder);
 
@@ -236,7 +249,7 @@ public class Dictionary {
       morphAliases = null; // no longer needed
       success = true;
     } finally {
-      IOUtils.closeWhileHandlingException(out, aff1, aff2);
+      IOUtils.closeWhileHandlingException(aff1, aff2);
       if (success) {
         Files.delete(aff);
       } else {
@@ -338,10 +351,6 @@ public class Dictionary {
       } else if ("SFX".equals(firstWord)) {
         parseAffix(
             suffixes, line, reader, SUFFIX_CONDITION_REGEX_PATTERN, seenPatterns, seenStrips);
-      } else if ("FLAG".equals(firstWord)) {
-        // Assume that the FLAG line comes before any prefix or suffixes
-        // Store the strategy so it can be used when parsing the dic file
-        flagParsingStrategy = getFlagParsingStrategy(line);
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -349,10 +358,14 @@ public class Dictionary {
         circumfix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("KEEPCASE".equals(firstWord)) {
         keepcase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("FORCEUCASE".equals(firstWord)) {
+        forceUCase = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("NEEDAFFIX".equals(firstWord) || "PSEUDOROOT".equals(firstWord)) {
         needaffix = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("ONLYINCOMPOUND".equals(firstWord)) {
         onlyincompound = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("CHECKSHARPS".equals(firstWord)) {
+        checkSharpS = true;
       } else if ("IGNORE".equals(firstWord)) {
         ignore = singleArgument(reader, line).toCharArray();
         Arrays.sort(ignore);
@@ -371,9 +384,23 @@ public class Dictionary {
         fullStrip = true;
       } else if ("LANG".equals(firstWord)) {
         language = singleArgument(reader, line);
-        alternateCasing = "tr_TR".equals(language) || "az_AZ".equals(language);
+        int underscore = language.indexOf("_");
+        String langCode = underscore < 0 ? language : language.substring(0, underscore);
+        alternateCasing = langCode.equals("tr") || langCode.equals("az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
+      } else if ("TRY".equals(firstWord)) {
+        tryChars = singleArgument(reader, line);
+      } else if ("REP".equals(firstWord)) {
+        int count = Integer.parseInt(singleArgument(reader, line));
+        for (int i = 0; i < count; i++) {
+          String[] parts = splitBySpace(reader, reader.readLine(), 3);
+          repTable.add(new RepEntry(parts[1], parts[2]));
+        }
+      } else if ("KEY".equals(firstWord)) {
+        neighborKeyGroups = singleArgument(reader, line).split("\\|");
+      } else if ("NOSPLITSUGS".equals(firstWord)) {
+        enableSplitSuggestions = false;
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
@@ -382,6 +409,8 @@ public class Dictionary {
         compoundMax = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
       } else if ("COMPOUNDRULE".equals(firstWord)) {
         compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
+      } else if ("COMPOUNDFLAG".equals(firstWord)) {
+        compoundFlag = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDBEGIN".equals(firstWord)) {
         compoundBegin = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIDDLE".equals(firstWord)) {
@@ -390,8 +419,22 @@ public class Dictionary {
         compoundEnd = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDPERMITFLAG".equals(firstWord)) {
         compoundPermit = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("COMPOUNDFORBIDFLAG".equals(firstWord)) {
+        compoundForbid = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("CHECKCOMPOUNDCASE".equals(firstWord)) {
         checkCompoundCase = true;
+      } else if ("CHECKCOMPOUNDDUP".equals(firstWord)) {
+        checkCompoundDup = true;
+      } else if ("CHECKCOMPOUNDTRIPLE".equals(firstWord)) {
+        checkCompoundTriple = true;
+      } else if ("SIMPLIFIEDTRIPLE".equals(firstWord)) {
+        simplifiedTriple = true;
+      } else if ("CHECKCOMPOUNDPATTERN".equals(firstWord)) {
+        int count = Integer.parseInt(singleArgument(reader, line));
+        for (int i = 0; i < count; i++) {
+          checkCompoundPatterns.add(
+              new CheckCompoundPattern(reader.readLine(), flagParsingStrategy, this));
+        }
       }
     }
 
@@ -666,46 +709,51 @@ public class Dictionary {
     return fstCompiler.compile();
   }
 
-  /** pattern accepts optional BOM + SET + any whitespace */
-  static final Pattern ENCODING_PATTERN = Pattern.compile("^(\u00EF\u00BB\u00BF)?SET\\s+");
+  private static final byte[] BOM_UTF8 = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
+
+  /** Parses the encoding and flag format specified in the provided InputStream */
+  private void readConfig(BufferedInputStream stream) throws IOException, ParseException {
+    // I assume we don't support other BOMs (utf16, etc.)? We trivially could,
+    // by adding maybeConsume() with a proper bom... but I don't see hunspell repo to have
+    // any such exotic examples.
+    Charset streamCharset;
+    if (maybeConsume(stream, BOM_UTF8)) {
+      streamCharset = StandardCharsets.UTF_8;
+    } else {
+      streamCharset = DEFAULT_CHARSET;
+    }
+
+    // TODO: can these flags change throughout the file? If not then we can abort sooner. And
+    // then we wouldn't even need to create a temp file for the affix stream - a large enough
+    // leading buffer (BufferedInputStream) would be sufficient?
+    LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, streamCharset));
+    String line;
+    while ((line = reader.readLine()) != null) {
+      String firstWord = line.split("\\s")[0];
+      if ("SET".equals(firstWord)) {
+        decoder = getDecoder(singleArgument(reader, line));
+      } else if ("FLAG".equals(firstWord)) {
+        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
+      }
+    }
+  }
 
   /**
-   * Parses the encoding specified in the affix file readable through the provided InputStream
+   * Consume the provided byte sequence in full, if present. Otherwise leave the input stream
+   * intact.
    *
-   * @param affix InputStream for reading the affix file
-   * @return Encoding specified in the affix file
-   * @throws IOException Can be thrown while reading from the InputStream
+   * @return {@code true} if the sequence matched and has been consumed.
    */
-  static String getDictionaryEncoding(InputStream affix) throws IOException {
-    final StringBuilder encoding = new StringBuilder();
-    for (; ; ) {
-      encoding.setLength(0);
-      int ch;
-      while ((ch = affix.read()) >= 0) {
-        if (ch == '\n') {
-          break;
-        }
-        if (ch != '\r') {
-          encoding.append((char) ch);
-        }
+  private static boolean maybeConsume(BufferedInputStream stream, byte[] bytes) throws IOException {
+    stream.mark(bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      int nextByte = stream.read();
+      if (nextByte != (bytes[i] & 0xff)) { // covers EOF (-1) as well.
+        stream.reset();
+        return false;
       }
-      if (encoding.length() == 0
-          || encoding.charAt(0) == '#'
-          ||
-          // this test only at the end as ineffective but would allow lines only containing spaces:
-          encoding.toString().trim().length() == 0) {
-        if (ch < 0) {
-          return DEFAULT_ENCODING;
-        }
-        continue;
-      }
-      Matcher matcher = ENCODING_PATTERN.matcher(encoding);
-      if (matcher.find()) {
-        int last = matcher.end();
-        return encoding.substring(last).trim();
-      }
-      return DEFAULT_ENCODING;
     }
+    return true;
   }
 
   static final Map<String, String> CHARSET_ALIASES =
@@ -718,7 +766,7 @@ public class Dictionary {
    * @param encoding Encoding to retrieve the CharsetDecoder for
    * @return CharSetDecoder for the given encoding
    */
-  private CharsetDecoder getJavaEncoding(String encoding) {
+  private CharsetDecoder getDecoder(String encoding) {
     if ("ISO8859-14".equals(encoding)) {
       return new ISO8859_14Decoder();
     }
@@ -726,7 +774,10 @@ public class Dictionary {
     if (canon != null) {
       encoding = canon;
     }
-    Charset charset = Charset.forName(encoding);
+    return replacingDecoder(Charset.forName(encoding));
+  }
+
+  private static CharsetDecoder replacingDecoder(Charset charset) {
     return charset.newDecoder().onMalformedInput(CodingErrorAction.REPLACE);
   }
 
@@ -738,7 +789,7 @@ public class Dictionary {
    * @return FlagParsingStrategy that handles parsing flags in the way specified in the FLAG
    *     definition
    */
-  static FlagParsingStrategy getFlagParsingStrategy(String flagLine) {
+  static FlagParsingStrategy getFlagParsingStrategy(String flagLine, Charset charset) {
     String[] parts = flagLine.split("\\s+");
     if (parts.length != 2) {
       throw new IllegalArgumentException("Illegal FLAG specification: " + flagLine);
@@ -748,6 +799,9 @@ public class Dictionary {
     if ("num".equals(flagType)) {
       return new NumFlagParsingStrategy();
     } else if ("UTF-8".equals(flagType)) {
+      if (DEFAULT_CHARSET.equals(charset)) {
+        return new DefaultAsUtf8FlagParsingStrategy();
+      }
       return new SimpleFlagParsingStrategy();
     } else if ("long".equals(flagType)) {
       return new DoubleASCIIFlagParsingStrategy();
@@ -1022,6 +1076,10 @@ public class Dictionary {
     }
   }
 
+  boolean isDotICaseChangeDisallowed(char[] word) {
+    return word[0] == 'İ' && !alternateCasing;
+  }
+
   private class EntryGrouper {
     final FSTCompiler<IntsRef> words =
         new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, IntSequenceOutputs.getSingleton());
@@ -1237,6 +1295,19 @@ public class Dictionary {
     }
   }
 
+  /** Used to read flags as UTF-8 even if the rest of the file is in the default (8-bit) encoding */
+  private static class DefaultAsUtf8FlagParsingStrategy extends FlagParsingStrategy {
+    @Override
+    public char[] parseFlags(String rawFlags) {
+      return new String(rawFlags.getBytes(DEFAULT_CHARSET), StandardCharsets.UTF_8).toCharArray();
+    }
+
+    @Override
+    void appendFlag(char flag, StringBuilder to) {
+      to.append(new String(String.valueOf(flag).getBytes(StandardCharsets.UTF_8), DEFAULT_CHARSET));
+    }
+  }
+
   /**
    * Implementation of {@link FlagParsingStrategy} that assumes each flag is encoded in its
    * numerical form. In the case of multiple flags, each number is separated by a comma.
@@ -1420,34 +1491,21 @@ public class Dictionary {
     return ignoreCase;
   }
 
-  private static Path DEFAULT_TEMP_DIR;
-
-  /** Used by test framework */
-  @SuppressWarnings("unused")
-  public static void setDefaultTempDir(Path tempDir) {
-    DEFAULT_TEMP_DIR = tempDir;
-  }
-
   /**
-   * Returns the default temporary directory. By default, java.io.tmpdir. If not accessible or not
-   * available, an IOException is thrown
+   * Returns the default temporary directory pointed to by {@code java.io.tmpdir}. If not accessible
+   * or not available, an IOException is thrown.
    */
-  static synchronized Path getDefaultTempDir() throws IOException {
-    if (DEFAULT_TEMP_DIR == null) {
-      // Lazy init
-      String tempDirPath = System.getProperty("java.io.tmpdir");
-      if (tempDirPath == null) {
-        throw new IOException("Java has no temporary folder property (java.io.tmpdir)?");
-      }
-      Path tempDirectory = Paths.get(tempDirPath);
-      if (!Files.isWritable(tempDirectory)) {
-        throw new IOException(
-            "Java's temporary folder not present or writeable?: " + tempDirectory.toAbsolutePath());
-      }
-      DEFAULT_TEMP_DIR = tempDirectory;
+  static Path getDefaultTempDir() throws IOException {
+    String tmpDir = System.getProperty("java.io.tmpdir");
+    if (tmpDir == null) {
+      throw new IOException("No temporary path (java.io.tmpdir)?");
     }
-
-    return DEFAULT_TEMP_DIR;
+    Path tmpPath = Paths.get(tmpDir);
+    if (!Files.isWritable(tmpPath)) {
+      throw new IOException(
+          "Temporary path not present or writeable?: " + tmpPath.toAbsolutePath());
+    }
+    return tmpPath;
   }
 
   /** Possible word breaks according to BREAK directives */

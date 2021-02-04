@@ -57,7 +57,7 @@ Changing field properties that affect indexing without reindexing is not recomme
 
 ==== Changing Field Analysis
 
-Beyond specific field-level properties, <<analyzers.adoc#analyzers,analysis chains>> are also configured on field types, and are applied at index and query time.
+Beyond specific field-level properties, <<analyzers.adoc#,analysis chains>> are also configured on field types, and are applied at index and query time.
 
 If separate analysis chains are defined for query and indexing events for a field and you change _only_ the query-time analysis chain, reindexing is not necessary.
 
@@ -68,7 +68,7 @@ Identifying changes to solrconfig.xml that alter how data is ingested and thus r
 
 The parameter `luceneMatchVersion` in solrconfig.xml controls the compatibility of Solr with Lucene. Since this parameter can change the rules for analysis behind the scenes, it's always recommended to reindex when changing it. Usually this is only changed in conjunction with a major upgrade.
 
-If you make a change to Solr's <<update-request-processors.adoc#update-request-processors,Update Request Processors>>, it's generally because you want to change something about how _update requests_ (documents) are _processed_ (indexed). In this case, we recommend that you reindex your documents to implement the changes you've made just as if you had changed the schema.
+If you make a change to Solr's <<update-request-processors.adoc#,Update Request Processors>>, it's generally because you want to change something about how _update requests_ (documents) are _processed_ (indexed). In this case, we recommend that you reindex your documents to implement the changes you've made just as if you had changed the schema.
 
 Similarly, if you change the `codecFactory` parameter in `solrconfig.xml`, it is again strongly recommended that you
 plan to reindex your documents to avoid unintended behavior.

@@ -72,6 +72,9 @@ Improvements
 * SOLR-14949: Docker: Ability to customize the FROM image when building.
   (Houston Putman)
 
+* SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
+when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -191,6 +194,11 @@ Other Changes
 
 * SOLR-14297: Replace commons-codec Base64 with JDK8 Base64 (Andras Salamon via Houston Putman)
 
+* SOLR-15113: Do not attempt to start Solr server when embedded ZK fails (Mike Drob)
+
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
+ of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name. (Eric Pugh)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -202,16 +210,25 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+* SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
 
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
 
+* SOLR-15085: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was passed to it. (Tim Owen via Mike Drob)
+
+* SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
+
+* SOLR-13608: Backups are now done incrementally by default.  Multiple backups can be stored at the same location, and each
+  backup will only upload those files that are new since the last backup. (Jason Gerlowski, Shalin , Cao Manh Dat)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
   Used by default when field=_root_, or explicitly requested for other fields via hint=block.  (Joel Bernstein, hossman)
+
+* SOLR-15120 Reduce duplicated core creation work (Mike Drob, Mark Miller)
 
 Bug Fixes
 ---------------------

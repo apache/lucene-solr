@@ -176,7 +176,6 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
@@ -3187,20 +3186,29 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  @SuppressWarnings({"rawtypes"})
-  private static final Map implicitPluginsInfo = (Map) Utils.fromJSONResource("ImplicitPlugins.json");
+  private static final class ImplicitHolder {
+    private ImplicitHolder() { }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public List<PluginInfo> getImplicitHandlers() {
-    List<PluginInfo> implicits = new ArrayList<>();
-    Map requestHandlers = (Map) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
-    for (Object o : requestHandlers.entrySet()) {
-      Map.Entry<String, Map> entry = (Map.Entry<String, Map>) o;
-      Map info = Utils.getDeepCopy(entry.getValue(), 4);
-      info.put(NAME, entry.getKey());
-      implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
+    private static final List<PluginInfo> INSTANCE;
+
+    static {
+      @SuppressWarnings("unchecked")
+      Map<String,?> implicitPluginsInfo = (Map<String,?>) Utils.fromJSONResource("ImplicitPlugins.json");
+      @SuppressWarnings("unchecked")
+      Map<String, Map<String,Object>> requestHandlers = (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
+
+      List<PluginInfo> implicits = new ArrayList<>(requestHandlers.size());
+      for (Map.Entry<String, Map<String,Object>> entry : requestHandlers.entrySet()) {
+        Map<String,Object> info = entry.getValue();
+        info.put(CommonParams.NAME, entry.getKey());
+        implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
+      }
+      INSTANCE = Collections.unmodifiableList(implicits);
     }
-    return implicits;
+  }
+
+  public List<PluginInfo> getImplicitHandlers() {
+    return ImplicitHolder.INSTANCE;
   }
 
   /**

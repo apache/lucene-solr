@@ -105,7 +105,7 @@ When the `responseHeader` no longer includes `"partialResults": true`, and `curs
 . `sort` clauses must include the uniqueKey field (either `asc` or `desc`).
 +
 If `id` is your uniqueKey field, then sort parameters like `id asc` and `name asc, id desc` would both work fine, but `name asc` by itself would not
-. Sorts including <<working-with-dates.adoc#working-with-dates,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request. This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
+. Sorts including <<working-with-dates.adoc#,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request. This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
 +
 In this situation, choose & re-use a fixed value for the <<working-with-dates.adoc#now,`NOW` request param>> in all of your cursor requests.
 
@@ -270,4 +270,4 @@ while (true) {
 }
 ----
 
-TIP: For certain specialized cases, the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>> may be an option.
+TIP: For certain specialized cases, the <<exporting-result-sets.adoc#,/export handler>> may be an option.

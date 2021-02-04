@@ -117,6 +117,7 @@ allprojects { prj ->
     if (prj.path.startsWith(":solr")) {
       forbiddenApisMain {
         doFirst dynamicSignatures.curry(configurations.compileClasspath, "solr")
+        signaturesFiles += files(file("${resources}/java.solr.txt"))
       }
 
       forbiddenApisTest {

@@ -16,11 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The Extended DisMax (eDisMax) query parser is an improved version of the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax query parser>>.
+The Extended DisMax (eDisMax) query parser is an improved version of the <<the-dismax-query-parser.adoc#,DisMax query parser>>.
 
 In addition to supporting all the DisMax query parser parameters, Extended Dismax:
 
-* supports <<the-standard-query-parser.adoc#the-standard-query-parser,Solr's standard query parser>> syntax such as (non-exhaustive list):
+* supports <<the-standard-query-parser.adoc#,Solr's standard query parser>> syntax such as (non-exhaustive list):
 ** boolean operators such as AND (+, &&), OR (||), NOT (-).
 ** optionally treats lowercase "and" and "or" as "AND" and "OR" in Lucene syntax mode
 ** optionally allows embedded queries using other query parsers or functions

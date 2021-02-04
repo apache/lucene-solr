@@ -219,7 +219,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
     params.set(CoreAdminParams.CORE_NODE_NAME,
-        ocmh.waitToSeeReplicasInState(collectionName, Collections.singletonList(createReplica.coreName)).get(createReplica.coreName).getName());
+        ocmh.waitToSeeReplicasInState(collectionName, Collections.singleton(createReplica.coreName)).get(createReplica.coreName).getName());
 
     String configName = zkStateReader.readConfigName(collectionName);
     String routeKey = message.getStr(ShardParams._ROUTE_);

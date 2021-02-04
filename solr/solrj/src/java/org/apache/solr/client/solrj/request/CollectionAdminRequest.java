@@ -983,6 +983,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String location;
     protected Optional<String> commitName = Optional.empty();
     protected Optional<String> indexBackupStrategy = Optional.empty();
+    protected boolean incremental = true;
+    protected Optional<Integer> maxNumBackupPoints = Optional.empty();
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
@@ -1026,6 +1028,38 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    /**
+     * Specifies the backup method to use: the deprecated 'full-snapshot' format, or the current 'incremental' format.
+     *
+     * Defaults to 'true' if unspecified.
+     *
+     * Incremental backups are almost always preferable to the deprecated 'full-snapshot' format, as incremental backups
+     * can take advantage of previously backed-up files and will only upload those that aren't already stored in the
+     * repository - saving lots of time and network bandwidth.  The older 'full-snapshot' format should only be used by
+     * experts with a particular reason to do so.
+     *
+     * @param incremental true to use incremental backups, false otherwise.
+     */
+    @Deprecated
+    public Backup setIncremental(boolean incremental) {
+      this.incremental = incremental;
+      return this;
+    }
+
+    /**
+     * Specifies the maximum number of backup points to keep at the backup location.
+     *
+     * If the current backup causes the number of stored backup points to exceed this value, the oldest backup points
+     * are cleaned up so that only {@code #maxNumBackupPoints} are retained.
+     *
+     * This parameter is ignored if the request uses a non-incremental backup.
+     * @param maxNumBackupPoints the number of backup points to retain after the current backup
+     */
+    public Backup setMaxNumberBackupPoints(int maxNumBackupPoints) {
+      this.maxNumBackupPoints = Optional.of(maxNumBackupPoints);
+      return this;
+    }
+
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -1041,6 +1075,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (indexBackupStrategy.isPresent()) {
         params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
       }
+      if (maxNumBackupPoints.isPresent()) {
+        params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
+      }
+      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       return params;
     }
 
@@ -1065,6 +1103,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Optional<String> createNodeSet = Optional.empty();
     protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
     protected Properties properties;
+    protected Integer backupId;
 
     public Restore(String collection, String backupName) {
       super(CollectionAction.RESTORE, collection);
@@ -1126,6 +1165,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
     public Restore setProperties(Properties properties) { this.properties = properties; return this;}
 
+    /**
+     * Specify the ID of the backup-point to restore from.
+     *
+     * '-1'q is used by default to have Solr restore from the most recent backup-point.
+     *
+     * Solr can store multiple backup points for a given collection - each identified by a unique backup ID.  Users who
+     * want to restore a particular backup-point can specify it using this method.
+     *
+     * @param backupId the ID of the backup-point to restore from
+     */
+    public Restore setBackupId(int backupId) {
+      this.backupId = backupId;
+      return this;
+    }
+
     // TODO support rule, snitch
 
     @Override
@@ -1162,6 +1216,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (createNodeSetShuffle.isPresent()) {
         params.set(CREATE_NODE_SET_SHUFFLE_PARAM, createNodeSetShuffle.get());
+      }
+      if (backupId != null) {
+        params.set(CoreAdminParams.BACKUP_ID, backupId);
       }
 
       return params;

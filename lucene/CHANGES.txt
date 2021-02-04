@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-9680: IndexWriter#getFieldNames() method added to get fields present in index.
+  This method was removed in LUCENE-8909. (Oren Ovadia)
+
 * LUCENE-9322: Vector-valued fields, Lucene90 Codec (Mike Sokolov, Julie Tibshirani, Tomoko Uchida)
 
 * LUCENE-9004: Approximate nearest vector search via NSW graphs
@@ -185,6 +188,9 @@ Improvements
 
 Bug fixes
 
+* LUCENE-9686: Fix read past EOF handling in DirectIODirectory. (Zach Chen, 
+  Julie Tibshirani)
+
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
@@ -246,6 +252,46 @@ Other
 
 * LUCENE-9627: Remove unused Lucene50FieldInfosFormat codec and small refactor some codecs
   to separate reading header/footer from reading content of the file. (Ignacio Vera)
+
+======================= Lucene 8.9.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+New Features
+---------------------
+(No changes)
+
+* LUCENE-9537:  Added smoothingScore method and default implementation to 
+  Scorable abstract class.  The smoothing score allows scorers to calculate a 
+  score for a document where the search term or subquery is not present.  The 
+  smoothing score acts like an idf so that documents that do not have terms or 
+  subqueries that are more frequent in the index are not penalized as much as 
+  documents that do not have less frequent terms or subqueries and prevents 
+  scores which are the product or terms or subqueries from going to zero. Added 
+  the implementation of the Indri AND and the IndriDirichletSimilarity from the 
+  academic Indri search engine: http://www.lemurproject.org/indri.php. 
+  (Cameron VandenBerg)   
+
+* LUCENE-9694: New tool for creating a deterministic index to enable benchmarking changes
+  on a consistent multi-segment index even when they require re-indexing. (Haoyu Zhai)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
 
 ======================= Lucene 8.8.0 =======================
 
