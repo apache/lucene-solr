@@ -219,6 +219,25 @@ How can I run ZooKeeper and Solr with Docker Compose?
 
 See the [docker compose example](docs/docker-compose.yml).
 
+How can I get rid of "shared memory" warnings on Solr startup?
+-----------------------------------------------------
+
+When starting the docker image you typically see these log lines:
+
+```
+OpenJDK 64-Bit Server VM warning: Failed to reserve shared memory. (error = 1)
+```
+
+If your set up can run without huge pages or you do not require it, the least-friction way to
+remove this warning is to disable large paging in the JVM via the environment variable:
+
+```
+SOLR_OPTS=-XX:-UseLargePages
+```
+
+In your Solr Admin UI, you will see listed under the JVM args both the original `-XX:+UseLargePages`
+set by the `GC_TUNE` environment variable and further down the list the overriding `-XX:-UseLargePages` argument.
+
 
 I'm confused about the different invocations of solr -- help?
 -------------------------------------------------------------
