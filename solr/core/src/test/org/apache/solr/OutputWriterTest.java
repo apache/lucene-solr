@@ -33,17 +33,17 @@ import org.junit.Test;
  *
  */
 public class OutputWriterTest extends SolrTestCaseJ4 {
-    
+
     /** The XML string that's output for testing purposes. */
     public static final String USELESS_OUTPUT = "useless output";
-    
+
     @BeforeClass
     public static void beforeClass() throws Exception {
       initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
     }
-    
-    
-    /** 
+
+
+    /**
      * responseHeader has changed in SOLR-59, check old and new variants,
      * In SOLR-2413, we removed support for the deprecated versions
      */
@@ -55,36 +55,20 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
         assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
         lrf.args.remove("wt");
         assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
-        
-        // and explicit 2.2 works as default  
+
+        // and explicit 2.2 works as default
         //lrf.args.put("version", "2.2");
         lrf.args.put("wt", "standard");
         assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
         lrf.args.remove("wt");
         assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
     }
-    
+
     @Test
     public void testUselessWriter() throws Exception {
         lrf.args.put("wt", "useless");
         String out = h.query(req("foo"));
         assertEquals(USELESS_OUTPUT, out);
-    }
-    
-    @Test
-    public void testTrivialXsltWriter() throws Exception {
-        lrf.args.put("wt", "xslt");
-        lrf.args.put("tr", "dummy.xsl");
-        String out = h.query(req("foo"));
-        assertTrue(out.contains("DUMMY"));
-    }
-    
-    @Test
-    public void testTrivialXsltWriterInclude() throws Exception {
-        lrf.args.put("wt", "xslt");
-        lrf.args.put("tr", "dummy-using-include.xsl");
-        String out = h.query(req("foo"));
-        assertTrue(out.contains("DUMMY"));
     }
 
     public void testLazy() {
@@ -96,17 +80,17 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
         assertTrue("Should not be a lazy class", qrw.getClass() == PluginBag.PluginHolder.class);
 
     }
-    
+
     ////////////////////////////////////////////////////////////////////////////
     /** An output writer that doesn't do anything useful. */
-    
+
     public static class UselessOutputWriter implements QueryResponseWriter {
-        
+
         public UselessOutputWriter() {}
 
         @Override
         public void init(@SuppressWarnings({"rawtypes"})NamedList n) {}
-        
+
         @Override
         public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
         throws IOException {
@@ -119,5 +103,5 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
       }
 
     }
-    
+
 }
