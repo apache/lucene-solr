@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import java.util.List;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
@@ -58,10 +57,9 @@ class CheckCompoundPattern {
   }
 
   boolean prohibitsCompounding(
-      CharsRef word, int breakPos, List<CharsRef> stemsBefore, List<CharsRef> stemsAfter) {
+      CharsRef word, int breakPos, CharsRef stemBefore, CharsRef stemAfter) {
     if (isNonAffixedPattern(endChars)) {
-      if (stemsBefore.stream()
-          .noneMatch(stem -> charsMatch(word, breakPos - stem.length, stem.chars))) {
+      if (!charsMatch(word, breakPos - stemBefore.length, stemBefore.chars)) {
         return false;
       }
     } else if (!charsMatch(word, breakPos - endChars.length, endChars)) {
@@ -69,18 +67,18 @@ class CheckCompoundPattern {
     }
 
     if (isNonAffixedPattern(beginChars)) {
-      if (stemsAfter.stream().noneMatch(stem -> charsMatch(word, breakPos, stem.chars))) {
+      if (!charsMatch(word, breakPos, stemAfter.chars)) {
         return false;
       }
     } else if (!charsMatch(word, breakPos, beginChars)) {
       return false;
     }
 
-    if (endFlags.length > 0 && !hasStemWithFlags(stemsBefore, endFlags)) {
+    if (endFlags.length > 0 && !stemHasFlags(stemBefore, endFlags)) {
       return false;
     }
     //noinspection RedundantIfStatement
-    if (beginFlags.length > 0 && !hasStemWithFlags(stemsAfter, beginFlags)) {
+    if (beginFlags.length > 0 && !stemHasFlags(stemAfter, beginFlags)) {
       return false;
     }
 
@@ -91,14 +89,9 @@ class CheckCompoundPattern {
     return pattern.length == 1 && pattern[0] == '0';
   }
 
-  private boolean hasStemWithFlags(List<CharsRef> stems, char[] flags) {
-    for (CharsRef stem : stems) {
-      IntsRef forms = dictionary.lookupWord(stem.chars, stem.offset, stem.length);
-      if (forms != null && hasAllFlags(flags, forms)) {
-        return true;
-      }
-    }
-    return false;
+  private boolean stemHasFlags(CharsRef stem, char[] flags) {
+    IntsRef forms = dictionary.lookupWord(stem.chars, stem.offset, stem.length);
+    return forms != null && hasAllFlags(flags, forms);
   }
 
   private boolean hasAllFlags(char[] flags, IntsRef forms) {
