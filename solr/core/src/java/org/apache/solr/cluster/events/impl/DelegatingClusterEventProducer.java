@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
+import java.util.concurrent.Phaser;
 
 /**
  * This implementation allows Solr to dynamically change the underlying implementation
@@ -40,7 +41,7 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
 
   private ClusterEventProducer delegate;
   // support for tests to make sure the update is completed
-  private volatile int version;
+  private volatile Phaser phaser;
 
   public DelegatingClusterEventProducer(CoreContainer cc) {
     super(cc);
@@ -54,6 +55,16 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     }
     IOUtils.closeQuietly(delegate);
     super.close();
+  }
+
+  /**
+   * A phaser that will advance phases every time {@link #setDelegate(ClusterEventProducer)} is called.
+   * Useful for allowing tests to know when a new delegate is finished getting set.
+   */
+  @VisibleForTesting
+  public void setDelegationPhaser(Phaser phaser) {
+    phaser.register();
+    this.phaser = phaser;
   }
 
   public void setDelegate(ClusterEventProducer newDelegate) {
@@ -90,7 +101,11 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
         log.debug("--- delegate {} already in state {}", delegate, delegate.getState());
       }
     }
-    this.version++;
+    Phaser localPhaser = phaser; // volatile read
+    if (localPhaser != null) {
+      assert localPhaser.getRegisteredParties() == 1;
+      localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
+    }
   }
 
   @Override
@@ -141,10 +156,5 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     state = State.STOPPING;
     delegate.stop();
     state = delegate.getState();
-  }
-
-  @VisibleForTesting
-  public int getVersion() {
-    return version;
   }
 }
