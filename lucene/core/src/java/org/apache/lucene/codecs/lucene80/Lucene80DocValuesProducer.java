@@ -38,13 +38,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
-import org.apache.lucene.store.ChecksumIndexInput;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RandomAccessInput;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LongValues;
-import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.*;
 import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
 import org.apache.lucene.util.packed.DirectReader;
@@ -285,12 +280,24 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
 
   private static void readTermDict(IndexInput meta, TermsDictEntry entry) throws IOException {
     entry.termsDictSize = meta.readVLong();
-    entry.termsDictBlockShift = meta.readInt();
+    int termsDictBlockCode = meta.readInt();
+    if (Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_CODE == termsDictBlockCode) {
+      // This is a LZ4 compressed block.
+      entry.compressed = true;
+      entry.termsDictBlockShift = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_SHIFT;
+    } else {
+      entry.termsDictBlockShift = termsDictBlockCode;
+    }
+
     final int blockShift = meta.readInt();
     final long addressesSize =
         (entry.termsDictSize + (1L << entry.termsDictBlockShift) - 1) >>> entry.termsDictBlockShift;
     entry.termsAddressesMeta = DirectMonotonicReader.loadMeta(meta, addressesSize, blockShift);
     entry.maxTermLength = meta.readInt();
+    // Read one more int for compressed term dict.
+    if (entry.compressed) {
+      entry.maxBlockLength = meta.readInt();
+    }
     entry.termsDataOffset = meta.readLong();
     entry.termsDataLength = meta.readLong();
     entry.termsAddressesOffset = meta.readLong();
@@ -375,6 +382,9 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     long termsIndexLength;
     long termsIndexAddressesOffset;
     long termsIndexAddressesLength;
+
+    boolean compressed;
+    int maxBlockLength;
   }
 
   private static class SortedEntry extends TermsDictEntry {
@@ -1149,6 +1159,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   }
 
   private static class TermsDict extends BaseTermsEnum {
+    static final int LZ4_DECOMPRESSOR_PADDING = 7;
 
     final TermsDictEntry entry;
     final LongValues blockAddresses;
@@ -1158,6 +1169,11 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
     final IndexInput indexBytes;
     final BytesRef term;
     long ord = -1;
+
+    BytesRef blockBuffer = null;
+    ByteArrayDataInput blockInput = null;
+    long currentCompressedBlockStart = -1;
+    long currentCompressedBlockEnd = -1;
 
     TermsDict(TermsDictEntry entry, IndexInput data) throws IOException {
       this.entry = entry;
@@ -1172,6 +1188,12 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
           DirectMonotonicReader.getInstance(entry.termsIndexAddressesMeta, indexAddressesSlice);
       indexBytes = data.slice("terms-index", entry.termsIndexOffset, entry.termsIndexLength);
       term = new BytesRef(entry.maxTermLength);
+
+      if (entry.compressed) {
+        // add 7 padding bytes can help decompression run faster.
+        int bufferSize = entry.maxBlockLength + LZ4_DECOMPRESSOR_PADDING;
+        blockBuffer = new BytesRef(new byte[bufferSize], 0, bufferSize);
+      }
     }
 
     @Override
@@ -1179,21 +1201,27 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       if (++ord >= entry.termsDictSize) {
         return null;
       }
+
       if ((ord & blockMask) == 0L) {
-        term.length = bytes.readVInt();
-        bytes.readBytes(term.bytes, 0, term.length);
+        if (this.entry.compressed) {
+          decompressBlock();
+        } else {
+          term.length = bytes.readVInt();
+          bytes.readBytes(term.bytes, 0, term.length);
+        }
       } else {
-        final int token = Byte.toUnsignedInt(bytes.readByte());
+        DataInput input = this.entry.compressed ? blockInput : bytes;
+        final int token = Byte.toUnsignedInt(input.readByte());
         int prefixLength = token & 0x0F;
         int suffixLength = 1 + (token >>> 4);
         if (prefixLength == 15) {
-          prefixLength += bytes.readVInt();
+          prefixLength += input.readVInt();
         }
         if (suffixLength == 16) {
-          suffixLength += bytes.readVInt();
+          suffixLength += input.readVInt();
         }
         term.length = prefixLength + suffixLength;
-        bytes.readBytes(term.bytes, prefixLength, suffixLength);
+        input.readBytes(term.bytes, prefixLength, suffixLength);
       }
       return term;
     }
@@ -1292,8 +1320,13 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
       final long blockAddress = blockAddresses.get(block);
       this.ord = block << entry.termsDictBlockShift;
       bytes.seek(blockAddress);
-      term.length = bytes.readVInt();
-      bytes.readBytes(term.bytes, 0, term.length);
+      if (this.entry.compressed) {
+        decompressBlock();
+      } else {
+        term.length = bytes.readVInt();
+        bytes.readBytes(term.bytes, 0, term.length);
+      }
+
       while (true) {
         int cmp = term.compareTo(text);
         if (cmp == 0) {
@@ -1304,6 +1337,30 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         if (next() == null) {
           return SeekStatus.END;
         }
+      }
+    }
+
+    private void decompressBlock() throws IOException {
+      // The first term is kept uncompressed, so no need to decompress block if only
+      // look up the first term when doing seek block.
+      term.length = bytes.readVInt();
+      bytes.readBytes(term.bytes, 0, term.length);
+      long offset = bytes.getFilePointer();
+      if (offset < entry.termsDataLength - 1) {
+        // Avoid decompress again if we are reading a same block.
+        if (currentCompressedBlockStart != offset) {
+          int decompressLength = bytes.readVInt();
+          // Decompress the remaining of current block
+          LZ4.decompress(bytes, decompressLength, blockBuffer.bytes, 0);
+          currentCompressedBlockStart = offset;
+          currentCompressedBlockEnd = bytes.getFilePointer();
+        } else {
+          // Skip decompression but need to re-seek to block end.
+          bytes.seek(currentCompressedBlockEnd);
+        }
+
+        // Reset the buffer.
+        blockInput = new ByteArrayDataInput(blockBuffer.bytes, 0, blockBuffer.length);
       }
     }
 

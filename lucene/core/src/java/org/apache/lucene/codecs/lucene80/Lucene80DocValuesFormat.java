@@ -203,6 +203,15 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
   static final int TERMS_DICT_BLOCK_SIZE = 1 << TERMS_DICT_BLOCK_SHIFT;
   static final int TERMS_DICT_BLOCK_MASK = TERMS_DICT_BLOCK_SIZE - 1;
 
+  static final int TERMS_DICT_BLOCK_COMPRESSION_THRESHOLD = 32;
+  static final int TERMS_DICT_BLOCK_LZ4_SHIFT = 6;
+  static final int TERMS_DICT_BLOCK_LZ4_SIZE = 1 << TERMS_DICT_BLOCK_LZ4_SHIFT;
+  static final int TERMS_DICT_BLOCK_LZ4_MASK = TERMS_DICT_BLOCK_LZ4_SIZE - 1;
+  static final int TERMS_DICT_COMPRESSOR_LZ4_CODE = 1;
+  // Writing a special code so we know this is a LZ4-compressed block.
+  static final int TERMS_DICT_BLOCK_LZ4_CODE =
+      TERMS_DICT_BLOCK_LZ4_SHIFT << 16 | TERMS_DICT_COMPRESSOR_LZ4_CODE;
+
   static final int TERMS_DICT_REVERSE_INDEX_SHIFT = 10;
   static final int TERMS_DICT_REVERSE_INDEX_SIZE = 1 << TERMS_DICT_REVERSE_INDEX_SHIFT;
   static final int TERMS_DICT_REVERSE_INDEX_MASK = TERMS_DICT_REVERSE_INDEX_SIZE - 1;
