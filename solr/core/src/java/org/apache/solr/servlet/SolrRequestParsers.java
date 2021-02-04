@@ -605,7 +605,7 @@ public class SolrRequestParsers {
       log.warn("Errors deleting multipart tmp files", e);
       return;
     }
-    try (ParWork work = new ParWork("", true, false)) {
+    try (ParWork work = new ParWork("", true)) {
       for (Part part : parts) {
         work.collect("", () -> {
           try {

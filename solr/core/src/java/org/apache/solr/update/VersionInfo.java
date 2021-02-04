@@ -292,7 +292,7 @@ public class VersionInfo {
     vs.createWeight(funcContext, searcher);
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     Set<Long> maxVersions = ConcurrentHashMap.newKeySet(leaves.size());
-    try (ParWork work = new ParWork("maxVersion", false, true)) {
+    try (ParWork work = new ParWork("maxVersion", false, false)) {
       for (LeafReaderContext ctx : leaves) {
         work.collect("", () -> {
           try {

@@ -155,7 +155,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     AtomicBoolean sessionExpired = new AtomicBoolean();
     AtomicBoolean interrupted = new AtomicBoolean();
     // TODO: async
-    try (ParWork work = new ParWork(this, true, true)) {
+    try (ParWork work = new ParWork(this, true, false)) {
       for (Map.Entry<String, QueueEvent> entry : entrySet) {
         work.collect("cleanWorkQueue", () -> {
           try {

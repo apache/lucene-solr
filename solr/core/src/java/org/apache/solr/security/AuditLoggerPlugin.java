@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * @since 8.1.0
  * @lucene.experimental
  */
-public abstract class AuditLoggerPlugin extends ParWork.NoLimitsCallable implements Closeable, SolrInfoBean {
+public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase implements Closeable, SolrInfoBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
   static final String PARAM_ASYNC = "async";

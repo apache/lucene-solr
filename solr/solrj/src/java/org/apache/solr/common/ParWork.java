@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  */
 public class ParWork implements Closeable {
   public static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
-  public static final String ROOT_EXEC_NAME = "Root";
+  public static final String ROOT_EXEC_NAME = "SOLR";
   private static final String WORK_WAS_INTERRUPTED = "Work was interrupted!";
 
   private static final String RAN_INTO_AN_ERROR_WHILE_DOING_WORK =
@@ -67,7 +67,7 @@ public class ParWork implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final static ThreadLocal<ExecutorService> THREAD_LOCAL_EXECUTOR = new ThreadLocal<>();
-  private final boolean requireAnotherThread;
+  private final boolean callerThreadAllowed;
   private final String rootLabel;
 
   private final Queue<ParObject> collectSet = new LinkedList<>();
@@ -215,12 +215,12 @@ public class ParWork implements Closeable {
 
 
   public ParWork(Object object, boolean ignoreExceptions) {
-    this(object, ignoreExceptions, false);
+    this(object, ignoreExceptions, true);
   }
 
-  public ParWork(Object object, boolean ignoreExceptions, boolean requireAnotherThread) {
+  public ParWork(Object object, boolean ignoreExceptions, boolean callerThreadAllowed) {
     this.ignoreExceptions = ignoreExceptions;
-    this.requireAnotherThread = requireAnotherThread;
+    this.callerThreadAllowed = callerThreadAllowed;
     this.rootLabel = object instanceof String ?
         (String) object : object.getClass().getSimpleName();
     assert (tracker = new TimeTracker(object, object == null ? "NullObject" : object.getClass().getName())) != null;
@@ -262,7 +262,7 @@ public class ParWork implements Closeable {
 
   public void addCollect() {
     if (collectSet.isEmpty()) {
-      if (log.isDebugEnabled()) log.debug("No work collected to submit");
+      //if (log.isDebugEnabled()) log.debug("No work collected to submit", new RuntimeException());
       return;
     }
     try {
@@ -306,10 +306,6 @@ public class ParWork implements Closeable {
   }
 
   private void add(Collection<ParObject> objects) {
-    if (log.isDebugEnabled()) {
-      log.debug("add(String objects={}, objects");
-    }
-
     Set<ParObject> wuObjects = new HashSet<>(objects);
 
     WorkUnit workUnit = new WorkUnit(wuObjects, tracker);
@@ -334,9 +330,6 @@ public class ParWork implements Closeable {
 
   @Override
   public void close() {
-    if (log.isDebugEnabled()) {
-      log.debug("close() - start");
-    }
 
     addCollect();
 
@@ -355,7 +348,7 @@ public class ParWork implements Closeable {
     AtomicReference<Throwable> exception = new AtomicReference<>();
     try {
       for (WorkUnit workUnit : workUnits) {
-        if (log.isDebugEnabled()) log.debug("Process workunit {} {}", rootLabel, workUnit.objects);
+        if (log.isTraceEnabled()) log.trace("Process workunit {} {}", rootLabel, workUnit.objects);
         TimeTracker workUnitTracker = null;
         assert (workUnitTracker = workUnit.tracker.startSubClose(workUnit)) != null;
         try {
@@ -369,16 +362,11 @@ public class ParWork implements Closeable {
 
             for (ParObject object : objects) {
 
-              if (object == null)
-                continue;
+              if (object == null) continue;
 
               TimeTracker finalWorkUnitTracker = workUnitTracker;
-              if (requireAnotherThread) {
-                closeCalls.add(new ParWorkNoLimitsCallable(exception, finalWorkUnitTracker, object));
-              } else {
-                closeCalls.add(new ParWorkCallable(exception, finalWorkUnitTracker, object));
-              }
 
+              closeCalls.add(new ParWorkCallable(exception, finalWorkUnitTracker, object, callerThreadAllowed));
             }
             if (closeCalls.size() > 0) {
 
@@ -449,10 +437,6 @@ public class ParWork implements Closeable {
         throw new RuntimeException(exp);
       }
     }
-
-    if (log.isDebugEnabled()) {
-      log.debug("close() - end");
-    }
   }
 
   public static ExecutorService getMyPerThreadExecutor() {
@@ -466,8 +450,8 @@ public class ParWork implements Closeable {
     if (service == null) {
       ExecutorService exec = THREAD_LOCAL_EXECUTOR.get();
       if (exec == null) {
-        if (log.isDebugEnabled()) {
-          log.debug("Starting a new executor");
+        if (log.isTraceEnabled()) {
+          log.trace("Starting a new executor");
         }
 
         Integer minThreads;
@@ -487,7 +471,7 @@ public class ParWork implements Closeable {
 
   public static ExecutorService getParExecutorService(String name, int corePoolSize, int maxPoolSize, int keepAliveTime, BlockingQueue queue) {
     ThreadPoolExecutor exec;
-    exec = new ParWorkExecutor(name + "-" + Thread.currentThread().getName(),
+    exec = new ParWorkExecutor(name,
             corePoolSize, maxPoolSize, keepAliveTime, queue);
     return exec;
   }
@@ -674,50 +658,85 @@ public class ParWork implements Closeable {
     }
   }
 
-  public static abstract class NoLimitsCallable<V> implements Callable<Object> {
+  public static abstract class ParWorkCallableBase<V> implements Callable<Object> {
     @Override
     public abstract Object call() throws Exception;
+
+    public abstract boolean isCallerThreadAllowed();
+
+
+    public abstract String getLabel();
   }
 
-  public static class SolrFutureTask extends FutureTask implements SolrThread.CreateThread {
+  public static class SolrFutureTask extends FutureTask {
 
     private final boolean callerThreadAllowed;
-    private final SolrThread createThread;
+    //private final SolrThread createThread;
+    private final boolean callerThreadUsesAvailableLimit;
+    private String label;
+
+    public SolrFutureTask(String label, Callable callable) {
+      super(callable);
+      label = label;
+      callerThreadAllowed = true;
+      callerThreadUsesAvailableLimit = false;
+    }
+
+    public SolrFutureTask(Callable callable) {
+      this(callable, true);
+    }
 
     public SolrFutureTask(Callable callable, boolean callerThreadAllowed) {
       super(callable);
-      this.callerThreadAllowed = callerThreadAllowed;
-      Thread thread = Thread.currentThread();
-      if (thread instanceof  SolrThread) {
-        this.createThread = (SolrThread) Thread.currentThread();
-      } else {
-        this.createThread = null;
+      if (callable instanceof ParWork.ParWorkCallableBase) {
+        this.label = ((ParWorkCallableBase<?>) callable).getLabel();
       }
+      this.callerThreadAllowed = callerThreadAllowed;
+      this.callerThreadUsesAvailableLimit = false;
+//      Thread thread = Thread.currentThread();
+//      if (thread instanceof  SolrThread) {
+//        this.createThread = (SolrThread) Thread.currentThread();
+//      } else {
+//        this.createThread = null;
+//      }
+    }
+
+    public String getLabel() {
+      return label;
     }
 
     public SolrFutureTask(Runnable runnable, Object value) {
-      this(runnable, value, true);
+      this(runnable, value, true, false);
     }
 
     public SolrFutureTask(Runnable runnable, Object value, boolean callerThreadAllowed) {
+      this(runnable, value, callerThreadAllowed, false);
+    }
+
+    public SolrFutureTask(Runnable runnable, Object value, boolean callerThreadAllowed, boolean callerThreadUsesAvailableLimit) {
       super(runnable, value);
       this.callerThreadAllowed = callerThreadAllowed;
-      Thread thread = Thread.currentThread();
-      if (thread instanceof  SolrThread) {
-        this.createThread = (SolrThread) Thread.currentThread();
-      } else {
-        this.createThread = null;
-      }
+      this.callerThreadUsesAvailableLimit = callerThreadUsesAvailableLimit;
+//      Thread thread = Thread.currentThread();
+//      if (thread instanceof  SolrThread) {
+//        this.createThread = (SolrThread) Thread.currentThread();
+//      } else {
+//        this.createThread = null;
+//      }
     }
 
     public boolean isCallerThreadAllowed() {
       return callerThreadAllowed;
     }
 
-    @Override
-    public SolrThread getCreateThread() {
-      return createThread;
+    public boolean callerThreadUsesAvailableLimit() {
+      return callerThreadUsesAvailableLimit;
     }
+
+//    @Override
+//    public SolrThread getCreateThread() {
+//      return createThread;
+//    }
   }
 
   private static class ParObject {
@@ -725,40 +744,48 @@ public class ParWork implements Closeable {
     Object object;
   }
 
-  private class ParWorkNoLimitsCallable extends NoLimitsCallable<Object> {
+  public class ParWorkCallable extends ParWorkCallableBase<Object> {
     private final AtomicReference<Throwable> exception;
     private final TimeTracker finalWorkUnitTracker;
     private final ParObject object;
 
-    public ParWorkNoLimitsCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object) {
+    private final boolean callerThreadAllowed;
+    private final boolean callerThreadUsesAvailableLimit;
+
+    public ParWorkCallable() {
+      this.callerThreadAllowed = false;
+      this.exception = null;
+      this.finalWorkUnitTracker = null;
+      this.object = null;
+      callerThreadUsesAvailableLimit = true;
+    }
+
+    public ParWorkCallable(boolean callerThreadAllowed, boolean callerThreadUsesAvailableLimit) {
+      this(null, null, null, callerThreadAllowed, callerThreadUsesAvailableLimit);
+    }
+
+    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object, boolean callerThreadAllowed) {
+      this(exception, finalWorkUnitTracker, object, callerThreadAllowed, false);
+    }
+
+    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object, boolean callerThreadAllowed, boolean callerThreadUsesAvailableLimit) {
+      this.callerThreadAllowed = callerThreadAllowed;
+      this.callerThreadUsesAvailableLimit = callerThreadUsesAvailableLimit;
       this.exception = exception;
       this.finalWorkUnitTracker = finalWorkUnitTracker;
       this.object = object;
     }
 
-    @Override
-    public Object call() {
-      try {
-        handleObject(exception, finalWorkUnitTracker, object);
-      } catch (Throwable t) {
-        log.error(RAN_INTO_AN_ERROR_WHILE_DOING_WORK, t);
-        if (exception.get() == null) {
-          exception.set(t);
-        }
-      }
-      return object;
+    public String getLabel() {
+      return object.label;
     }
-  }
 
-  private class ParWorkCallable implements Callable<Object> {
-    private final AtomicReference<Throwable> exception;
-    private final TimeTracker finalWorkUnitTracker;
-    private final ParObject object;
+    public boolean isCallerThreadAllowed() {
+      return callerThreadAllowed;
+    }
 
-    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object) {
-      this.exception = exception;
-      this.finalWorkUnitTracker = finalWorkUnitTracker;
-      this.object = object;
+    public boolean callerThreadUsesAvailableLimit() {
+      return callerThreadUsesAvailableLimit;
     }
 
     @Override

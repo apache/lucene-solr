@@ -85,7 +85,7 @@ public class OrderedExecutorTest extends SolrTestCase {
         });
       // BBB doesn't care about the latch, but because it uses the same lockId, it's blocked on AAA
       // so we execute it in a background thread...
-      Future<?> future = getTestExecutor().submit(new MyNoLimitsCallable(orderedExecutor, lockId, events));
+      Future<?> future = getTestExecutor().submit(new MyParWorkCallableBase(orderedExecutor, lockId, events));
       // now if we release the latchAAA, AAA should be garunteed to fire first, then BBB
       latchAAA.countDown();
       try {
@@ -232,12 +232,12 @@ public class OrderedExecutorTest extends SolrTestCase {
     final AtomicInteger value = new AtomicInteger();
   }
 
-  private static class MyNoLimitsCallable extends ParWork.NoLimitsCallable {
+  private static class MyParWorkCallableBase extends ParWork.ParWorkCallableBase {
     private final OrderedExecutor orderedExecutor;
     private final Integer lockId;
     private final BlockingQueue<String> events;
 
-    public MyNoLimitsCallable(OrderedExecutor orderedExecutor, Integer lockId, BlockingQueue<String> events) {
+    public MyParWorkCallableBase(OrderedExecutor orderedExecutor, Integer lockId, BlockingQueue<String> events) {
       this.orderedExecutor = orderedExecutor;
       this.lockId = lockId;
       this.events = events;
@@ -248,6 +248,16 @@ public class OrderedExecutorTest extends SolrTestCase {
         events.add("BBB");
       });
       return null;
+    }
+
+    @Override
+    public boolean isCallerThreadAllowed() {
+      return false;
+    }
+
+    @Override
+    public String getLabel() {
+      return "orderedExecutor";
     }
   }
 }

@@ -286,7 +286,7 @@ public class PluginBag<T> implements AutoCloseable {
    */
   void init(Map<String, T> defaults, SolrCore solrCore, Collection<PluginInfo> infos) {
     core = solrCore;
-    try (ParWork parWork = new ParWork(this, false, true)) {
+    try (ParWork parWork = new ParWork(this, false, false)) {
       for (PluginInfo info : infos) {
         parWork.collect("", new CreateAndPutRequestHandler(info));
       }
@@ -332,7 +332,7 @@ public class PluginBag<T> implements AutoCloseable {
    */
   @Override
   public void close() {
-    try (ParWork worker = new ParWork(this, false, true)) {
+    try (ParWork worker = new ParWork(this, false, false)) {
       registry.forEach((s, tPluginHolder) -> {
         worker.collect(tPluginHolder);
       });

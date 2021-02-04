@@ -70,7 +70,7 @@ public class StatePublisher implements Closeable {
 
     @Override
     public void run() {
-      ActionThrottle throttle = new ActionThrottle("StatePublisherWorker", 50);
+      ActionThrottle throttle = new ActionThrottle("StatePublisherWorker", 0);
 
       while (!terminated && !zkStateReader.getZkClient().isClosed()) {
         if (!zkStateReader.getZkClient().isConnected()) {

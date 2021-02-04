@@ -49,7 +49,7 @@ public class SolrLifcycleListener extends AbstractLifeCycle.AbstractLifeCycleLis
   @Override
   public void lifeCycleStopping(LifeCycle event) {
     log.info("Solr is stopping, call ZkController#disconnect");
-    try (ParWork work = new ParWork(this, true, true)) {
+    try (ParWork work = new ParWork(this, true, false)) {
       for (Runnable run : shutdowns) {
         work.collect("shutdown", () -> run.run());
       }
@@ -60,7 +60,7 @@ public class SolrLifcycleListener extends AbstractLifeCycle.AbstractLifeCycleLis
   @Override
   public void lifeCycleStopped(LifeCycle event) {
     log.info("Solr is stopped, call shutdown");
-    try (ParWork work = new ParWork(this, true, true)) {
+    try (ParWork work = new ParWork(this, true, false)) {
       for (Runnable run : stopped) {
         work.collect("stopped", () -> run.run());
       }

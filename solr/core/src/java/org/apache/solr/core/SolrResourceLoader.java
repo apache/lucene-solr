@@ -845,7 +845,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public void inform(SolrCore core) {
     while (waitingForCore.size() > 0) {
-      try (ParWork worker = new ParWork(this, false, true)) {
+      try (ParWork worker = new ParWork(this, false, false)) {
         waitingForCore.forEach(aware -> {
           worker.collect("informSolrCore", ()-> {
             try {
@@ -866,7 +866,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public void inform(ResourceLoader loader) {
     while (waitingForResources.size() > 0) {
-      try (ParWork worker = new ParWork(this, false, true)) {
+      try (ParWork worker = new ParWork(this, false, false)) {
         waitingForResources.forEach(r -> {
           worker.collect("informResourceLoader", ()-> {
             try {

@@ -71,7 +71,7 @@ public class SolrShutdownHandler extends HandlerWrapper implements Graceful {
         @Override
         public synchronized Void get() throws InterruptedException, ExecutionException {
             synchronized (SolrShutdownHandler.class) {
-                try (ParWork work = new ParWork(this, true, true)) {
+                try (ParWork work = new ParWork(this, true, false)) {
                     for (Runnable run : shutdowns) {
                         work.collect("shutdown", () -> run.run());
                     }
@@ -84,7 +84,7 @@ public class SolrShutdownHandler extends HandlerWrapper implements Graceful {
         @Override
         public synchronized Void get(long l, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
             synchronized (SolrShutdownHandler.class) {
-                try (ParWork work = new ParWork(this, true, true)) {
+                try (ParWork work = new ParWork(this, true, false)) {
                     for (Runnable run : shutdowns) {
                         work.collect("shutdown", () -> run.run());
                     }

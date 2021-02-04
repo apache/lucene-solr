@@ -59,4 +59,14 @@ public class MockAuditLoggerPlugin extends AuditLoggerPlugin {
   public String getName() {
     return "MockAuditLoggerPlugin";
   }
+
+  @Override
+  public boolean isCallerThreadAllowed() {
+    return true;
+  }
+
+  @Override
+  public String getLabel() {
+    return getName();
+  }
 }

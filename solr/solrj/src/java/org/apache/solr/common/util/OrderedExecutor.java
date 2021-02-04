@@ -61,16 +61,15 @@ public class OrderedExecutor extends ExecutorCompletionService {
     }
 
     try {
-      return delegate.submit(new ParWork.NoLimitsCallable(){
-        public Object call() {
-          try {
-            command.run();
-          } finally {
-            sparseStripedLock.remove(lockId);
-          }
-          return null;
+      return delegate.submit(new ParWork.SolrFutureTask("TLogOrderedExec", () -> {
+        try {
+          command.run();
+        } finally {
+          sparseStripedLock.remove(lockId);
         }
-      });
+
+        return null;
+      }));
     } catch (Exception e) {
       sparseStripedLock.remove(lockId);
       throw e;

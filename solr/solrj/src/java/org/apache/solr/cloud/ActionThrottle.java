@@ -64,13 +64,13 @@ public class ActionThrottle {
   }
   
   public void minimumWaitBetweenActions() {
-    if (lastActionStartedAt == null) {
+    if (lastActionStartedAt == null || minMsBetweenActions == 0) {
       return;
     }
     long diff = timeSource.getTimeNs() - lastActionStartedAt;
     int diffMs = (int) TimeUnit.MILLISECONDS.convert(diff, TimeUnit.NANOSECONDS);
     long minNsBetweenActions = TimeUnit.NANOSECONDS.convert(minMsBetweenActions, TimeUnit.MILLISECONDS);
-    log.debug("The last {} attempt started {}ms ago.", name, diffMs);
+    if (log.isDebugEnabled()) log.debug("The last {} attempt started {}ms ago.", name, diffMs);
     int sleep = 0;
     
     if (diffMs > 0 && diff < minNsBetweenActions) {
@@ -80,7 +80,7 @@ public class ActionThrottle {
     }
     
     if (sleep > 0) {
-      log.info("Throttling {} attempts - waiting for {}ms", name, sleep);
+      if (log.isDebugEnabled()) log.debug("Throttling {} attempts - waiting for {}ms", name, sleep);
       try {
         timeSource.sleep(sleep);
       } catch (InterruptedException e) {

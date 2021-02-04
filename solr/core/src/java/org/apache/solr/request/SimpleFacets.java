@@ -814,7 +814,7 @@ public class SimpleFacets {
 //      fdebugParent.putInfoItem("maxThreads", maxThreads);
 //    }
     List<Callable<NamedList>> calls = new ArrayList<>(facetFs.length);
-    try (ParWork worker = new ParWork(this)) {
+    try {
       //Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
 
@@ -865,7 +865,7 @@ public class SimpleFacets {
         throw (RuntimeException) e;
       }
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error while processing facet fields: " + e.toString(), ee);
+          "Error while processing facet fields: " + ee.toString(), ee);
     }
 
     return res;

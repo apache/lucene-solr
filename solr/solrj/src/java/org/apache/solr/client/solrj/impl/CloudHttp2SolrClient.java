@@ -170,7 +170,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
 
   @Override
   public void close() throws IOException {
-    try (ParWork closer = new ParWork(this, true, true)) {
+    try (ParWork closer = new ParWork(this, true, false)) {
       closer.collect(stateProvider);
       closer.collect(lbClient);
       if (clientIsInternal && myClient!=null) {

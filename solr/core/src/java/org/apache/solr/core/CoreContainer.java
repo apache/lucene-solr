@@ -754,7 +754,7 @@ public class CoreContainer implements Closeable {
         }
       }
 
-      try (ParWork work = new ParWork(this, false, true)) {
+      try (ParWork work = new ParWork(this, false, false)) {
 
         boolean enableMetrics = Boolean.getBoolean("solr.enableMetrics");
         if (enableMetrics) {
@@ -1120,7 +1120,7 @@ public class CoreContainer implements Closeable {
       }
     }
 
-    try (ParWork closer = new ParWork(this, true, true)) {
+    try (ParWork closer = new ParWork(this, true, false)) {
 
       closer.collect("replayUpdateExec", () -> {
         replayUpdatesExecutor.shutdownAndAwaitTermination();

@@ -20,11 +20,11 @@
     <Appenders>
 
         <Console name="STDERR_COLOR" target="SYSTEM_ERR">
-            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-1p}{20}} %style{(%maxLen{%t}{20})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </Console>
 
         <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
-            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%t)}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-1p}{20}} %style{(%t)}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </File>
 
     </Appenders>

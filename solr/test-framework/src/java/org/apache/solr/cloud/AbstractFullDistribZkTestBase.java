@@ -450,7 +450,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
 
     AtomicInteger addReplicas = new AtomicInteger();
-    try (ParWork create = new ParWork(this, false, true)) {
+    try (ParWork create = new ParWork(this, false, false)) {
       for (int i = 1; i <= numJettys; i++) {
         if (sb.length() > 0) sb.append(',');
         int cnt = this.jettyIntCntr.incrementAndGet();
@@ -1698,7 +1698,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @Override
   protected void destroyServers() throws Exception {
-    try (ParWork closer = new ParWork(this, false, true)) {
+    try (ParWork closer = new ParWork(this, false, false)) {
       closer.collect(commonCloudSolrClient, coreClients, controlClientCloud, cloudClient);
     }
     coreClients.clear();

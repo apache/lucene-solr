@@ -320,7 +320,7 @@ public class MiniSolrCloudCluster {
       }
 
       try {
-        try (ParWork worker = new ParWork(this, false, true)) {
+        try (ParWork worker = new ParWork(this, false, false)) {
           worker.collect("start-jettys", startups);
         }
       } catch (Exception e) {
@@ -665,7 +665,7 @@ public class MiniSolrCloudCluster {
       }
       jettys.clear();
 
-      try (ParWork parWork = new ParWork(this, false, true)) {
+      try (ParWork parWork = new ParWork(this, false, false)) {
         parWork.collect(shutdowns);
       }
 

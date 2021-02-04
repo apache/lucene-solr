@@ -165,7 +165,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     if (log.isDebugEnabled()) log.debug("processCommit - start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
-      try (ParWork worker = new ParWork(this, false, true)) {
+      try (ParWork worker = new ParWork(this, false, false)) {
         clusterState = zkController.getClusterState();
 
         assert TestInjection.injectFailUpdateRequests();

@@ -1001,9 +1001,10 @@ public class SolrMetricManager {
       });
 
     }
-
-    try (ParWork worker = new ParWork(this)) {
-      worker.collect(calls);
+    if (calls.size() > 0) {
+      try (ParWork worker = new ParWork(this, false, false)) {
+        worker.collect(calls);
+      }
     }
   }
 
@@ -1207,8 +1208,10 @@ public class SolrMetricManager {
     } finally {
       reportersLock.unlock();
     }
-    try (ParWork closer = new ParWork(this, true)) {
-      closer.collect("MetricReporters", closeReporters);
+    if (closeReporters.size() > 0) {
+      try (ParWork closer = new ParWork(this, true, false)) {
+        closer.collect("MetricReporters", closeReporters);
+      }
     }
     return removed;
   }

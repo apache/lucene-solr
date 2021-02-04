@@ -1360,7 +1360,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
       }
     }
-    log.info("Commits will be reserved for {} ms", reserveCommitDuration);
+    if (log.isDebugEnabled()) log.debug("Commits will be reserved for {} ms", reserveCommitDuration);
   }
 
   // check master or slave is enabled

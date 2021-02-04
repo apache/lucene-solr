@@ -94,4 +94,14 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
   public String getName() {
     return "CallbackAuditLoggerPlugin";
   }
+
+  @Override
+  public boolean isCallerThreadAllowed() {
+    return true;
+  }
+
+  @Override
+  public String getLabel() {
+    return getName();
+  }
 }

@@ -1612,7 +1612,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     public void close() throws IOException {
       SolrZooKeeper zk = zkClient.getSolrZooKeeper();
       if (zk != null && zkClient.isAlive()) {
-        try (ParWork work = new ParWork(this, false, true)) {
+        try (ParWork work = new ParWork(this, false, false)) {
           work.collect("", () -> {
             try {
               zk.removeWatches(getCollectionSCNPath(coll), this, WatcherType.Any, true);

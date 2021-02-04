@@ -156,7 +156,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   @After
   public void cleanup() throws Exception {
-    try (ParWork closer = new ParWork(this, true, true)) {
+    try (ParWork closer = new ParWork(this, true, false)) {
       closer.collect(controlClient, clients, jettys, controlJetty);
     }
 
@@ -355,7 +355,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
 
-    try (ParWork worker = new ParWork(this, false, true)) {
+    try (ParWork worker = new ParWork(this, false, false)) {
       worker.collect("createControlJetty", () -> {
         try {
           controlJetty = createControlJetty();
