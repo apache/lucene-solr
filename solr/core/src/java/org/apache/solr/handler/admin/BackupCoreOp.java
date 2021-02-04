@@ -17,22 +17,20 @@
 
 package org.apache.solr.handler.admin;
 
-import java.net.URI;
-import java.nio.file.Paths;
-import java.util.Optional;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.handler.IncrementalShardBackup;
 import org.apache.solr.handler.SnapShooter;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
+import java.net.URI;
+import java.nio.file.Paths;
+import java.util.Optional;
 
 class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
