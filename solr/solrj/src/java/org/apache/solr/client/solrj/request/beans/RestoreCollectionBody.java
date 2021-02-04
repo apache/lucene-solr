@@ -42,6 +42,9 @@ public class RestoreCollectionBody implements ReflectMapWriter {
     @JsonProperty
     public String repository;
 
+    @JsonProperty
+    public Integer backupId;
+
     @JsonProperty(CREATE_COLLECTION_KEY)
     public Map<String, Object> createCollectionParams;
 

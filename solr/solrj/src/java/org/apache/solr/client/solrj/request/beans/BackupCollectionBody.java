@@ -47,5 +47,8 @@ public class BackupCollectionBody implements ReflectMapWriter {
     public String commitName;
 
     @JsonProperty
+    public Boolean incremental;
+
+    @JsonProperty
     public String async;
 }

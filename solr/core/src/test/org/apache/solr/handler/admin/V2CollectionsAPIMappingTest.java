@@ -214,6 +214,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
                         "'followAliases': true, " +
                         "'indexBackup': 'copy-files', " +
                         "'commitName': 'someSnapshotName', " +
+                        "'incremental': true, " +
                         "'async': 'requestTrackingId' " +
                         "}}");
 
@@ -225,6 +226,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
         assertEquals(true, v1Params.getPrimitiveBool(CollectionAdminParams.FOLLOW_ALIASES));
         assertEquals("copy-files", v1Params.get(CollectionAdminParams.INDEX_BACKUP_STRATEGY));
         assertEquals("someSnapshotName", v1Params.get(CoreAdminParams.COMMIT_NAME));
+        assertEquals(true, v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_INCREMENTAL));
         assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
     }
 
@@ -236,6 +238,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
                         "'collection': 'collectionName', " +
                         "'location': '/some/location/uri', " +
                         "'repository': 'someRepository', " +
+                        "'backupId': 123, " +
                         "'async': 'requestTrackingId', " +
                         "'create-collection': {" +
                         "     'numShards': 1, " +
@@ -249,6 +252,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
         assertEquals("collectionName", v1Params.get(BackupManager.COLLECTION_NAME_PROP));
         assertEquals("/some/location/uri", v1Params.get(CoreAdminParams.BACKUP_LOCATION));
         assertEquals("someRepository", v1Params.get(CoreAdminParams.BACKUP_REPOSITORY));
+        assertEquals(123, v1Params.getPrimitiveInt(CoreAdminParams.BACKUP_ID));
         assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
         // NOTE: Unlike other v2 APIs that have a nested object for collection-creation params, restore's v1 equivalent
         // for these properties doesn't have a "create-collection." prefix.
