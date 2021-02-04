@@ -218,7 +218,7 @@ public final class Lucene90VectorWriter extends VectorWriter {
       }
     }
     HnswGraphBuilder hnswGraphBuilder =
-        new HnswGraphBuilder(vectorValues, maxConn, beamWidth, System.currentTimeMillis());
+        new HnswGraphBuilder(vectorValues, maxConn, beamWidth, HnswGraphBuilder.randSeed);
     hnswGraphBuilder.setInfoStream(segmentWriteState.infoStream);
     HnswGraph graph = hnswGraphBuilder.build(vectorValues.randomAccess());
 
