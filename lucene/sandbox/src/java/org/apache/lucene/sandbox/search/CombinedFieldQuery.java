@@ -182,7 +182,7 @@ public final class CombinedFieldQuery extends Query implements Accountable {
 
   @Override
   public String toString(String field) {
-    StringBuilder builder = new StringBuilder("CrossFieldSynonymQuery((");
+    StringBuilder builder = new StringBuilder("CombinedFieldQuery((");
     int pos = 0;
     for (FieldAndWeight fieldWeight : fieldAndWeights.values()) {
       if (pos++ != 0) {

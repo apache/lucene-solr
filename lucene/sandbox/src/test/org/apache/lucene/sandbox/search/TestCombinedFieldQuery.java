@@ -85,17 +85,16 @@ public class TestCombinedFieldQuery extends LuceneTestCase {
   }
 
   public void testToString() {
-    assertEquals(
-        "CrossFieldSynonymQuery(()())", new CombinedFieldQuery.Builder().build().toString());
+    assertEquals("CombinedFieldQuery(()())", new CombinedFieldQuery.Builder().build().toString());
     CombinedFieldQuery.Builder builder = new CombinedFieldQuery.Builder();
     builder.addField("foo", 1f);
-    assertEquals("CrossFieldSynonymQuery((foo)())", builder.build().toString());
+    assertEquals("CombinedFieldQuery((foo)())", builder.build().toString());
     builder.addTerm(new BytesRef("bar"));
-    assertEquals("CrossFieldSynonymQuery((foo)(bar))", builder.build().toString());
+    assertEquals("CombinedFieldQuery((foo)(bar))", builder.build().toString());
     builder.addField("title", 3f);
-    assertEquals("CrossFieldSynonymQuery((foo title^3.0)(bar))", builder.build().toString());
+    assertEquals("CombinedFieldQuery((foo title^3.0)(bar))", builder.build().toString());
     builder.addTerm(new BytesRef("baz"));
-    assertEquals("CrossFieldSynonymQuery((foo title^3.0)(bar baz))", builder.build().toString());
+    assertEquals("CombinedFieldQuery((foo title^3.0)(bar baz))", builder.build().toString());
   }
 
   public void testSameScore() throws IOException {
