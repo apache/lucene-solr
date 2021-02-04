@@ -89,9 +89,9 @@ public class JavabinLoader extends ContentStreamLoader {
         if (document == null) {
           return;
         }
-
-        AddUpdateCommand addCmd = getAddCommand(req, updateRequest.getParams());
-
+    
+         AddUpdateCommand addCmd = getAddCommand(req, updateRequest.getParams());
+        
         addCmd.solrDoc = document;
         if (commitWithin != null) {
           addCmd.commitWithin = commitWithin;
@@ -133,8 +133,6 @@ public class JavabinLoader extends ContentStreamLoader {
     SolrParams old = req.getParams();
     try (JavaBinCodec jbc = new JavaBinCodec() {
       SolrParams params;
-      AddUpdateCommand addCmd = null;
-
       @Override
       public List<Object> readIterator(DataInputInputStream fis) throws IOException {
         while (true) {

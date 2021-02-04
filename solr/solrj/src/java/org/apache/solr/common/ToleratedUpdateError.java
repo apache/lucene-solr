@@ -146,7 +146,7 @@ public final class ToleratedUpdateError {
    * @see #parseMetadataIfToleratedUpdateError
    */
   public String getMetadataValue() {
-    return message.toString();
+    return message;
   }
   
   /** 

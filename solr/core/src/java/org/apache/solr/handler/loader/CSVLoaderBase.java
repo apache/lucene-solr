@@ -378,7 +378,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
       }
       try {
         executor.shutdown();
-        executor.awaitTermination(365, TimeUnit.DAYS);
+        executor.awaitTermination(365, TimeUnit.DAYS); // MRM TODO:
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

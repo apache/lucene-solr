@@ -22,6 +22,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 
@@ -40,7 +41,7 @@ public class TimedVersionBucket extends VersionBucket {
    * <code>lockTimeoutMs</code>.
    */
   @Override
-  public <T,R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function) throws IOException {
+  public <T,R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function, BytesRef idBytes) throws IOException {
     boolean success = false;
 
     try {

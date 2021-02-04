@@ -290,7 +290,6 @@ public class SolrCmdDistributor implements Closeable {
           log.error("Exception sending dist update {} {}", code, t);
           cancels.remove(cancelIndex);
 
-
           // nocommit - we want to prevent any more from this request
           // to go just to this node rather than stop the whole request
           if (code == 404) {

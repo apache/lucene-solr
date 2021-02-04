@@ -264,7 +264,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   public QueueEvent offer(byte[] data, long timeout) throws KeeperException,
       InterruptedException {
     if (log.isDebugEnabled()) log.debug("offer operation to the Overseeer queue {}", Utils.fromJSON(data));
-    log.info("offer operation to the Overseeer queue {}", Utils.fromJSON(data));
+
     if (shuttingDown.get()) {
       throw new SolrException(SolrException.ErrorCode.CONFLICT,"Solr is shutting down, no more overseer tasks may be offered");
     }
@@ -276,7 +276,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       String watchID = createResponseNode();
 
       if (log.isDebugEnabled()) log.debug("watchId for response node {}, setting a watch ... ", watchID);
-      log.info("watchId for response node {}, setting a watch ... ", watchID);
 
       watcher = new LatchWatcher(Watcher.Event.EventType.NodeDataChanged, watchID, zookeeper);
       Stat stat = zookeeper.exists(watchID, watcher, true);

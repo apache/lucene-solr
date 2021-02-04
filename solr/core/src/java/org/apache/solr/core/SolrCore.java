@@ -1031,17 +1031,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         updateHandler.getSolrCoreState().increfSolrCoreState();
       }
 
-      IndexSchema schema = configSet.getIndexSchema();
-
       CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
 
       setName(name);
 
       this.solrConfig = configSet.getSolrConfig();
+      IndexSchema schema = configSet.getIndexSchema();
+      setLatestSchema(schema);
       this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
       this.configSetProperties = configSet.getProperties();
-
-      setLatestSchema(schema);
 
       // Initialize the RestManager
       StopWatch initRestManager = new StopWatch(this + "-initRestManager");

@@ -85,7 +85,7 @@ public class TestExceedMaxTermLength extends SolrTestCaseJ4 {
         }
       } catch (Exception e) {
         //expected
-        String msg= e.getCause().getMessage();
+        String msg= e.getCause() == null ? e.getMessage() : e.getCause().getMessage();
         assertTrue(msg.contains("one immense term in field=\"cat\""));
       }
 

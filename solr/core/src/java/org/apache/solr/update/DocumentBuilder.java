@@ -123,6 +123,7 @@ public class DocumentBuilder {
    * @return Built Lucene document
    */
   public static Document toDocument(SolrInputDocument doc, IndexSchema schema, boolean forInPlaceUpdate, boolean ignoreNestedDocs) {
+    if (doc == null) throw new IllegalArgumentException("SolrInputDocument cannot be null");
     if (!ignoreNestedDocs && doc.hasChildDocuments()) {
       throw unexpectedNestedDocException(schema, forInPlaceUpdate);
     }

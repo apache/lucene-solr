@@ -84,7 +84,7 @@ public class ParWork implements Closeable {
               new SynchronousQueue());
           ((ParWorkExecutor)EXEC).enableCloseLock();
           for (int i = 0; i < Math.min(coreSize, 12); i++) {
-            EXEC.submit(() -> {});
+            EXEC.prestartCoreThread();
           }
         }
       }

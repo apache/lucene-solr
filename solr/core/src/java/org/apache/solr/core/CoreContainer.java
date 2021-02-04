@@ -135,14 +135,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReentrantLock;
@@ -192,10 +191,16 @@ public class CoreContainer implements Closeable {
 
   private volatile UpdateShardHandler updateShardHandler;
 
-  public volatile ExecutorService solrCoreExecutor;
+  public final ThreadPoolExecutor solrCoreExecutor = (ThreadPoolExecutor) ParWork.getParExecutorService("Core",
+      4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new BlockingArrayQueue<>(256, 256));
 
-  public final ExecutorService coreContainerExecutor = ParWork.getParExecutorService("Core",
-      2, Math.max(6, SysStats.PROC_COUNT), 1000, new ArrayBlockingQueue(256, false));
+  public final ThreadPoolExecutor coreContainerExecutor = (ThreadPoolExecutor) ParWork.getParExecutorService("Core",
+      8, SysStats.PROC_COUNT, 1000, new BlockingArrayQueue<>(256, 256));
+
+  {
+    solrCoreExecutor.prestartAllCoreThreads();
+    coreContainerExecutor.prestartAllCoreThreads();
+  }
 
   private final OrderedExecutor replayUpdatesExecutor;
 
@@ -371,7 +376,7 @@ public class CoreContainer implements Closeable {
 
     this.replayUpdatesExecutor = new OrderedExecutor(cfg.getReplayUpdatesThreads(),
         ParWork.getParExecutorService("replayUpdatesExecutor", cfg.getReplayUpdatesThreads(), cfg.getReplayUpdatesThreads(),
-            3000, new LinkedBlockingQueue<>(cfg.getReplayUpdatesThreads())));
+            1000, new LinkedBlockingQueue<>(cfg.getReplayUpdatesThreads())));
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
@@ -410,8 +415,6 @@ public class CoreContainer implements Closeable {
 
     containerProperties.putAll(cfg.getSolrProperties());
 
-    solrCoreExecutor = ParWork.getParExecutorService("Core",
-        4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new BlockingArrayQueue(64, 16));
   }
 
   @SuppressWarnings({"unchecked"})

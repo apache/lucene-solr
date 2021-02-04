@@ -99,6 +99,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   //   3) in general, not controlling carefully enough exactly when our view of clusterState is updated
   protected volatile ClusterState clusterState;
 
+  // should we clone the document before sending it to replicas?
+  // this is set to true in the constructor if the next processors in the chain
+  // are custom and may modify the SolrInputDocument racing with its serialization for replication
+  private final boolean cloneRequiredOnLeader;
+
   //used for keeping track of replicas that have processed an add/update from the leader
   private volatile RollupRequestReplicationTracker rollupReplicationTracker = null;
   private volatile LeaderRequestReplicationTracker leaderReplicationTracker = null;
@@ -114,6 +119,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     zkController = cc.getZkController();
     cmdDistrib = new SolrCmdDistributor(zkController.getZkStateReader(), cc.getUpdateShardHandler(), new IsCCClosed(req));
     try {
+      cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
       collection = cloudDesc.getCollectionName();
       clusterState = zkController.getClusterState();
       DocCollection coll = clusterState.getCollectionOrNull(collection, true);
@@ -484,7 +490,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
         if (isLeader) {
           // don't forward to ourself
-          leaderForAnyShard = true;
         } else {
           leaders.add(new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), leader, collection, sliceName));
         }
@@ -499,10 +504,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
       cmdDistrib.distribDelete(cmd, leaders, outParams, false, rollupReplicationTracker, null);
 
-      if (!leaderForAnyShard) {
-        return;
-      }
-
       // change the phase to TOLEADER so we look up and forward to our own replicas (if any)
       phase = DistribPhase.TOLEADER;
     }
@@ -511,7 +512,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (DistribPhase.TOLEADER == phase) {
       // This core should be a leader
       isLeader = true;
-      replicas = setupRequestForDBQ();
+      replicas = setupRequestForDBQ(desc.getName());
     } else if (DistribPhase.FROMLEADER == phase) {
       isLeader = false;
     }
@@ -581,19 +582,17 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   // used for deleteByQuery to get the list of nodes this leader should forward to
-  private List<SolrCmdDistributor.Node> setupRequestForDBQ() {
+  private List<SolrCmdDistributor.Node> setupRequestForDBQ(String name) {
     List<SolrCmdDistributor.Node> nodes = null;
     String shardId = cloudDesc.getShardId();
 
     try {
-      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
-      isLeader = leaderReplica.getName().equals(desc.getName());
 
       // TODO: what if we are no longer the leader?
 
       forwardToLeader = false;
       List<Replica> replicaProps = zkController.getZkStateReader()
-          .getReplicaProps(collection, shardId, leaderReplica.getName(), Replica.State.BUFFERING, Replica.State.ACTIVE, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
+          .getReplicaProps(collection, shardId,  name, Replica.State.BUFFERING, Replica.State.ACTIVE, EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
       if (replicaProps != null) {
         nodes = new ArrayList<>(replicaProps.size());
         for (Replica props : replicaProps) {
@@ -802,7 +801,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected boolean shouldCloneCmdDoc() {
-    return true;
+    boolean willDistrib = isLeader && nodes != null && nodes.size() > 0;
+    return willDistrib & cloneRequiredOnLeader;
   }
 
   // helper method, processAdd was getting a bit large.
@@ -969,7 +969,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           // slice leader can be null because node/shard is created zk before leader election
           if (sliceLeader != null && zkController.getZkStateReader().isNodeLive(sliceLeader.getNodeName()))  {
             if (nodes == null) nodes = new ArrayList<>();
-            nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), sliceLeader, coll.getName(), aslice.getName()));
+            nodes.add(new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), sliceLeader, coll.getName(), aslice.getName()));
           }
         }
       }
@@ -1252,8 +1252,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           } else {
             // not the leader anymore maybe or the error'd node is not my replica?
             if (!foundErrorNodeInReplicaList) {
-              log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent! replicas={}", desc.getName(), collection, cloudDesc.getShardId(),
-                  stdNode.getNodeProps().getCoreUrl(), myReplicas);
+              log.warn("Core {} belonging to {} {}, does not have error'd node {} as a replica. No request recovery command will be sent! replicas={} node={}", desc.getName(), collection, cloudDesc.getShardId(),
+                  stdNode.getNodeProps().getCoreUrl(), myReplicas, error.req.node.getClass().getSimpleName());
               if (!shardId.equals(cloudDesc.getShardId())) {
                 // some replicas on other shard did not receive the updates (ex: during splitshard),
                 // exception must be notified to clients

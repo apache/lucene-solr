@@ -221,6 +221,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
+
+    assertFalse(zkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
     // nocommit what happened to success?
 //    assertTrue(response.toString(), response.isSuccess());
 //    Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();

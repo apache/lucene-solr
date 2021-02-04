@@ -757,7 +757,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             ParWork.propagateInterrupt(e);
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
-          if (exists != null && exists.getVersion() == cachedDocCollection.getZNodeVersion()) {
+          if (exists != null && exists.getVersion() == cached.getZNodeVersion()) {
             shouldFetch = false;
           }
         }

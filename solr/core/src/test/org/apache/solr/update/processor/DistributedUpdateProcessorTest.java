@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -93,7 +94,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   public void testVersionAdd() throws IOException {
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
     int threads = 5;
-    Function<DistributedUpdateProcessor,Boolean> versionAddFunc = (DistributedUpdateProcessor process) -> {
+    Function<DistributedUpdateProcessor,Future> versionAddFunc = (DistributedUpdateProcessor process) -> {
       try {
         AddUpdateCommand cmd = new AddUpdateCommand(req);
         cmd.solrDoc = new SolrInputDocument();
@@ -118,7 +119,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
 
     int threads = TEST_NIGHTLY ? 5 : 2;
-    Function<DistributedUpdateProcessor,Boolean> versionDeleteFunc = (DistributedUpdateProcessor process) -> {
+    Function<DistributedUpdateProcessor,Future> versionDeleteFunc = (DistributedUpdateProcessor process) -> {
       try {
         DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
         cmd.id = "1";
@@ -142,7 +143,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
    * @return how many requests succeeded
    */
   private int runCommands(int threads, int versionBucketLockTimeoutMs, SolrQueryRequest req,
-      Function<DistributedUpdateProcessor,Boolean> function)
+      Function<DistributedUpdateProcessor,Future> function)
       throws IOException {
     try (DistributedUpdateProcessor processor = new DistributedUpdateProcessor(
         req, null, null, null)) {
@@ -156,7 +157,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
            * simulate the case: it takes 5 seconds to add the doc
            */
           @Override
-          public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function) throws IOException {
+          public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function, BytesRef idBytes) throws IOException {
             boolean locked = false;
             try {
               locked = lock.tryLock(versionBucketLockTimeoutMs, TimeUnit.MILLISECONDS);
@@ -180,7 +181,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
         }).when(vinfo).bucket(anyInt());
       }
       CountDownLatch latch = new CountDownLatch(1);
-      Collection<Future<Boolean>> futures = new ArrayList<>();
+      Collection<Future<Future>> futures = new ArrayList<>();
       for (int t = 0; t < threads; ++t) {
         futures.add(executor.submit(() -> {
           latch.await();
@@ -190,7 +191,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
       latch.countDown();
 
       int succeeded = 0;
-      for (Future<Boolean> f : futures) {
+      for (Future<Future> f : futures) {
         try {
           f.get();
           succeeded++;

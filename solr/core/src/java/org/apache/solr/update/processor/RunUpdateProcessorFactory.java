@@ -126,7 +126,7 @@ public class RunUpdateProcessorFactory extends UpdateRequestProcessorFactory {
       try {
         super.doClose();
       } finally {
-        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clear();
+     //   AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clear();
       }
     }
   }

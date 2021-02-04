@@ -127,13 +127,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
    */
   void doAdd(SolrContentHandler handler, AddUpdateCommand template)
           throws IOException {
-    template.solrDoc = handler.newDocument();
     processor.processAdd(template);
   }
 
   void addDoc(SolrContentHandler handler) throws IOException {
     templateAdd.clear();
     templateAdd.setReq(req);
+    templateAdd.solrDoc = handler.newDocument();
     templateAdd.overwrite = overwrite;
     templateAdd.commitWithin = commitWithin;
     doAdd(handler, templateAdd);

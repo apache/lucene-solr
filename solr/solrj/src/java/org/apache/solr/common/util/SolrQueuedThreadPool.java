@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import org.apache.commons.math3.analysis.function.Add;
 import org.apache.solr.common.ParWork;
 import org.eclipse.jetty.util.AtomicBiInteger;
 import org.eclipse.jetty.util.BlockingArrayQueue;

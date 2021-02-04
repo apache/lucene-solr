@@ -52,12 +52,14 @@ import com.codahale.metrics.Meter;
 import org.apache.commons.lang3.concurrent.ConcurrentUtils;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -71,6 +73,8 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
@@ -123,6 +127,30 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         return SyncLevel.FLUSH;
       }
     }
+  }
+
+  public static BytesRef getIndexedId(SolrInputDocument solrDoc, SolrQueryRequest req) {
+    BytesRef indexedId = null;
+    if (req != null) {
+      IndexSchema schema = req.getSchema();
+      SchemaField sf = schema.getUniqueKeyField();
+      if (sf != null) {
+        if (solrDoc != null) {
+          SolrInputField field = solrDoc.getField(sf.getName());
+          int count = field == null ? 0 : field.getValueCount();
+          if (count == 0) {
+
+          } else if (count > 1) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Document contains multiple values for uniqueKey field: " + field);
+          } else {
+            BytesRefBuilder b = new BytesRefBuilder();
+            sf.getType().readableToIndexed(field.getFirstValue().toString(), b);
+            indexedId = b.get();
+          }
+        }
+      }
+    }
+    return indexedId;
   }
 
   // NOTE: when adding new states make sure to keep existing numbers, because external metrics
@@ -1378,7 +1406,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             switch (oper) {
               case UpdateLog.UPDATE_INPLACE:
               case UpdateLog.ADD: {
-                AddUpdateCommand cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version, null);
+
+                SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size()-1);
+                Long prevVersion = null;
+                if (oper == UPDATE_INPLACE) {
+                  prevVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+                }
+                AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
+                cmd.clear();
+                cmd.setReq(req);
+                convertTlogEntryToAddUpdateCommand(req, sdoc, oper, prevVersion, version, cmd);
                 cmd.setFlags(UpdateCommand.IGNORE_AUTOCOMMIT);
                 add(cmd);
                 break;
@@ -1475,7 +1512,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       if (writeCommit) {
         // record a commit
         if (log.isDebugEnabled()) log.debug("Recording current closed for {} log={}", uhandler.core, theLog);
-        CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams()), false);
+        CommitUpdateCommand cmd = new CommitUpdateCommand(new LocalSolrQueryRequest(uhandler.core, new ModifiableSolrParams((SolrParams)null)), false);
         theLog.writeCommit(cmd);
       }
 
@@ -1942,7 +1979,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         SolrException.log(log, e);
       } finally {
         // change the state while updates are still blocked to prevent races
-        AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clear();
         state = State.ACTIVE;
         if (finishing) {
 
@@ -1968,7 +2004,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
       SolrRequestInfo.clearRequestInfo();
     }
-
 
     public void doReplay(TransactionLog translog) {
       UpdateRequestProcessor proc = null;
@@ -2006,9 +2041,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 long cpos = tlogReader.currentPos();
                 long csize = tlogReader.currentSize();
                 if (log.isInfoEnabled()) {
-                  loglog.info(
-                      "log replay status {} active={} starting pos={} current pos={} current size={} % read={}",
-                      translog, activeLog, recoveryInfo.positionOfStart, cpos, csize,
+                  loglog.info("log replay status {} active={} starting pos={} current pos={} current size={} % read={}", translog, activeLog, recoveryInfo.positionOfStart, cpos, csize,
                       Math.floor(cpos / (double) csize * 100.));
                 }
 
@@ -2054,8 +2087,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           try {
 
             // should currently be a List<Oper,Ver,Doc/Id>
-            @SuppressWarnings({"rawtypes"})
-            List entry = (List) o;
+            @SuppressWarnings({"rawtypes"}) List entry = (List) o;
             operationAndFlags = (Integer) entry.get(UpdateLog.FLAGS_IDX);
             int oper = operationAndFlags & OPERATION_MASK;
             long version = (Long) entry.get(UpdateLog.VERSION_IDX);
@@ -2064,15 +2096,17 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
               case UpdateLog.UPDATE_INPLACE: // fall through to ADD
               case UpdateLog.ADD: {
                 recoveryInfo.adds++;
-                AddUpdateCommand cmd  = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
-                cmd.clear();
-                cmd = convertTlogEntryToAddUpdateCommand(req, entry, oper, version, cmd);
-                if (cmd.solrDoc == null) {
-                  throw new SolrException(ErrorCode.SERVER_ERROR, "No SolrInputDocument could be read");
+
+                Long prevVersion = null;
+                if (oper == UPDATE_INPLACE) {
+                  prevVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
                 }
-                cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
-                if (debug) log.debug("{} {}", oper == ADD ? "add" : "update", cmd);
-                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
+
+                if (debug) log.debug("{}", oper == ADD ? "add" : "update");
+
+                AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
+                cmd.clear();
+                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate, req, (SolrInputDocument) entry.get(entry.size() - 1), oper, version, prevVersion);
                 break;
               }
               case UpdateLog.DELETE: {
@@ -2083,7 +2117,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 cmd.setVersion(version);
                 cmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
                 if (debug) log.debug("delete {}", cmd);
-                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate);
+                execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate, req, null, oper, version, null);
                 break;
               }
 
@@ -2097,7 +2131,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
                 if (debug) log.debug("deleteByQuery {}", cmd);
                 waitForAllUpdatesGetExecuted(executor, pendingTasks);
                 // DBQ will be executed in the same thread
-                execute(cmd, null, pendingTasks, proc, exceptionOnExecuteUpdate);
+                execute(cmd, null, pendingTasks, proc, exceptionOnExecuteUpdate, req, null, oper, version, null);
                 break;
               }
               case UpdateLog.COMMIT: {
@@ -2177,6 +2211,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     }
 
+    private Integer getBucketHash(BytesRef idBytes) {
+
+      if (idBytes == null) return null;
+      return DistributedUpdateProcessor.bucketHash(idBytes);
+
+    }
+
     private Integer getBucketHash(UpdateCommand cmd) {
       if (cmd instanceof AddUpdateCommand) {
         BytesRef idBytes = ((AddUpdateCommand)cmd).getIndexedId();
@@ -2193,21 +2234,39 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       return null;
     }
 
-    private Future execute(UpdateCommand cmd, OrderedExecutor executor,
-                         LongAdder pendingTasks, UpdateRequestProcessor proc,
-                         AtomicReference<SolrException> exceptionHolder) {
-      assert cmd instanceof AddUpdateCommand || cmd instanceof DeleteUpdateCommand;
+    private Future execute(UpdateCommand ucmd, OrderedExecutor executor, LongAdder pendingTasks, UpdateRequestProcessor proc, AtomicReference<SolrException> exceptionHolder, SolrQueryRequest req,
+        SolrInputDocument doc, int operation, long version, Long prevVersion) {
+      assert ucmd instanceof AddUpdateCommand || ucmd instanceof DeleteUpdateCommand || ucmd == null;
+
+      BytesRef indexedId = null;
+      Integer hash;
+      if (ucmd instanceof AddUpdateCommand) {
+        indexedId = getIndexedId(doc, req);
+        hash = getBucketHash(indexedId);
+      } else {
+        hash = getBucketHash(ucmd);
+      }
+
+
+      BytesRef finalIndexedId = indexedId;
 
       if (executor != null) {
         // by using the same hash as DUP, independent updates can avoid waiting for same bucket
-        return executor.submit(getBucketHash(cmd), () -> {
+
+        return executor.submit(hash, () -> {
           try {
             // fail fast
             if (exceptionHolder.get() != null) return;
-            if (cmd instanceof AddUpdateCommand) {
-              proc.processAdd((AddUpdateCommand) cmd);
+            if (ucmd instanceof AddUpdateCommand) {
+
+              convertTlogEntryToAddUpdateCommand(req, doc, operation, prevVersion, version, (AddUpdateCommand) ucmd);
+              ((AddUpdateCommand) ucmd).setIndexedId(finalIndexedId);
+              ucmd.setReq(req);
+              ucmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
+
+              proc.processAdd((AddUpdateCommand) ucmd);
             } else {
-              proc.processDelete((DeleteUpdateCommand) cmd);
+              proc.processDelete((DeleteUpdateCommand) ucmd);
             }
           } catch (IOException e) {
             recoveryInfo.errors++;
@@ -2227,10 +2286,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         });
       } else {
         try {
-          if (cmd instanceof AddUpdateCommand) {
-            proc.processAdd((AddUpdateCommand) cmd);
+          if (ucmd instanceof AddUpdateCommand) {
+            convertTlogEntryToAddUpdateCommand(req, doc, operation, prevVersion, version, (AddUpdateCommand) ucmd);
+            ((AddUpdateCommand) ucmd).setIndexedId(finalIndexedId);
+            ucmd.setReq(req);
+            ucmd.setFlags(UpdateCommand.REPLAY | UpdateCommand.IGNORE_AUTOCOMMIT);
+
+            proc.processAdd((AddUpdateCommand) ucmd);
           } else {
-            proc.processDelete((DeleteUpdateCommand) cmd);
+            proc.processDelete((DeleteUpdateCommand) ucmd);
           }
         } catch (IOException e) {
           recoveryInfo.errors++;
@@ -2246,8 +2310,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
       return ConcurrentUtils.constantFuture(null);
     }
-
-
   }
 
   /**
@@ -2255,28 +2317,25 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
    * can be applied to ADD the document or do an UPDATE_INPLACE.
    *
    * @param req The request to use as the owner of the new AddUpdateCommand
-   * @param entry Entry from the transaction log that contains the document to be added
+   * @param sdoc The document to be added
    * @param operation The value of the operation flag; this must be either ADD or UPDATE_INPLACE -- 
    *        if it is UPDATE_INPLACE then the previous version will also be read from the entry
    * @param version Version already obtained from the entry.
    */
-  public static AddUpdateCommand convertTlogEntryToAddUpdateCommand(SolrQueryRequest req,
-                                                                    @SuppressWarnings({"rawtypes"})List entry,
-                                                                    int operation, long version, AddUpdateCommand cmd) {
-    assert operation == UpdateLog.ADD || operation == UpdateLog.UPDATE_INPLACE;
-    SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size()-1);
+  public static AddUpdateCommand convertTlogEntryToAddUpdateCommand(SolrQueryRequest req, SolrInputDocument sdoc, int operation,
+      Long prevVersion, long version, AddUpdateCommand cmd) {
+    if (!(operation == UpdateLog.ADD || operation == UpdateLog.UPDATE_INPLACE)) {
+      throw new IllegalArgumentException(String.valueOf(cmd));
+    }
 
     if (cmd == null) {
       cmd = new AddUpdateCommand(req);
-    } else {
-      cmd.setReq(req);
     }
 
     cmd.solrDoc = sdoc;
     cmd.setVersion(version);
-    
-    if (operation == UPDATE_INPLACE) {
-      long prevVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+
+    if (prevVersion != null) {
       cmd.prevVersion = prevVersion;
     }
     return cmd;

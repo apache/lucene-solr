@@ -190,10 +190,10 @@ public class ZkStateWriter {
 
             for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
               if (OverseerAction.DOWNNODE.equals(OverseerAction.get(entry.getKey()))) {
-                log.info("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
+                if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
                 nodeOperation(entry, Replica.State.getShortState(Replica.State.DOWN));
               } else if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(entry.getKey()))) {
-                log.info("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
+                if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
                 nodeOperation(entry, Replica.State.getShortState(Replica.State.RECOVERING));
               }
             }

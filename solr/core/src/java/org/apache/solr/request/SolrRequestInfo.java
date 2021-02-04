@@ -32,6 +32,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +82,8 @@ public class SolrRequestInfo {
       }
     } finally {
       threadLocal.remove();
+      AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clearAll();
+      AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clearAll();
     }
   }
 

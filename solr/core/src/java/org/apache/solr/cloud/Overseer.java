@@ -56,6 +56,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -294,15 +295,15 @@ public class Overseer implements SolrCloseable {
 //     stateManagmentExecutor = ParWork.getParExecutorService("stateManagmentExecutor",
 //        1, 1, 3000, new SynchronousQueue());
      taskExecutor = (ParWorkExecutor) ParWork.getParExecutorService("overseerTaskExecutor",
-         4, SysStats.PROC_COUNT, 1000, new LinkedBlockingQueue<>(1024));
+         4, SysStats.PROC_COUNT, 1000, new BlockingArrayQueue<>(32, 64));
     for (int i = 0; i < 4; i++) {
-      taskExecutor.submit(() -> {});
+      taskExecutor.prestartCoreThread();
     }
 
     zkWriterExecutor = (ParWorkExecutor) ParWork.getParExecutorService("overseerZkWriterExecutor",
-        4, SysStats.PROC_COUNT, 1000, new LinkedBlockingQueue<>(1024));
+        4, SysStats.PROC_COUNT, 1000, new BlockingArrayQueue<>(64, 128));
     for (int i = 0; i < 4; i++) {
-      zkWriterExecutor.submit(() -> {});
+      zkWriterExecutor.prestartCoreThread();
     }
 
     if (overseerOnlyClient == null && !closeAndDone && !initedHttpClient) {

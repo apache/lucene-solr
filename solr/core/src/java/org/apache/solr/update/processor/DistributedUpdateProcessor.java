@@ -228,104 +228,25 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // the request right here but for now I think it is better to just return the status
     // to the client that the minRf wasn't reached and let them handle it    
 
-    boolean dropCmd = false;
     if (!forwardToLeader) {
-      dropCmd = versionAdd(cmd);
-    }
-
-    if (vinfo == null) {
-      return;
-    }
-
-    if (dropCmd) {
-      // TODO: do we need to add anything to the response?
-      if (log.isDebugEnabled()) log.debug("Dropping update {}", cmd.getPrintableId());
-      return;
-    }
-
-    Future<?> distFuture = null;
-    AddUpdateCommand cloneCmd = null;
-
-    boolean nodist = noDistrib();
-    if (!nodist) {
-      if (!forwardToLeader) {
-        // SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
-        cloneCmd = (AddUpdateCommand) cmd.clone();
-      }
-      AddUpdateCommand finalCloneCmd;
-      if (cloneCmd != null) {
-        finalCloneCmd = cloneCmd;
-      } else {
-        finalCloneCmd = cmd;
-      }
-      Callable distCall = () -> {
-        if (log.isTraceEnabled()) log.trace("Run distrib add collection");
-
+      Future distFuture = versionAdd(cmd);
+      if (distFuture != null) {
         try {
-          doDistribAdd(finalCloneCmd);
-          if (log.isTraceEnabled()) log.trace("after distrib add collection");
-        } catch (Throwable e) {
-          return e;
-        }
-        return null;
-      };
-
-      if (!forwardToLeader) {
-        distFuture = ParWork.getRootSharedExecutor().submit(distCall);
-      } else {
-        try {
-          distCall.call();
-        } catch (Exception e) {
-          if (e instanceof RuntimeException) {
-            throw (RuntimeException) e;
-          }
+          distFuture.get();
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e, true);
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } catch (ExecutionException e) {
+          Throwable de = e.getCause();
+          if (de instanceof RuntimeException) {
+            throw (RuntimeException) de;
+          } else {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
         }
       }
-    }
-
-    // TODO: possibly set checkDeleteByQueries as a flag on the command?
-    // if the update updates a doc that is part of a nested structure,
-    // force open a realTimeSearcher to trigger a ulog cache refresh.
-    // This refresh makes RTG handler aware of this update.q
-
-    if (!forwardToLeader) {
-      // TODO: possibly set checkDeleteByQueries as a flag on the command?
-      if (log.isTraceEnabled()) log.trace("Local add cmd {}", cmd.solrDoc);
-      try {
-        doLocalAdd(cmd);
-      } catch (Exception e) {
-        Throwable t;
-        if (e instanceof ExecutionException) {
-          t = e.getCause();
-        } else {
-          t = e;
-        }
-        if (distFuture != null && isLeader && !forwardToLeader) {
-          distFuture.cancel(false);
-          cancelCmds.add(cloneCmd);
-        }
-        if (t instanceof RuntimeException) {
-          throw (RuntimeException) t;
-        }
-        throw new SolrException(ErrorCode.SERVER_ERROR, t);
-      }
-      // if the update updates a doc that is part of a nested structure,
-      // force open a realTimeSearcher to trigger a ulog cache refresh.
-      // This refresh makes RTG handler aware of this update.q
-      if (ulog != null) {
-        if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
-          ulog.openRealtimeSearcher();
-        }
-      }
-    }
-
-    if (distFuture != null) {
-      try {
-        Throwable e = (Throwable) distFuture.get();
-      } catch (Exception e) {
-        log.error("dist of add failed", e);
-      }
+    } else {
+      doDistribAdd(cmd);
     }
 
     // TODO: what to do when no idField?
@@ -371,12 +292,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
    * @return whether or not to drop this cmd
    * @throws IOException If there is a low-level I/O error.
    */
-  protected boolean versionAdd(AddUpdateCommand cmd) throws IOException {
+  protected Future versionAdd(AddUpdateCommand cmd) throws IOException {
     BytesRef idBytes = cmd.getIndexedId();
 
     if (idBytes == null) {
       super.processAdd(cmd);
-      return true;
+      return null;
     }
 
     if (vinfo == null) {
@@ -385,7 +306,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             "Atomic document updates are not supported unless <updateLog/> is configured");
       } else {
         super.processAdd(cmd);
-        return true;
+        return null;
       }
     }
 
@@ -425,16 +346,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       dependentVersionFound = waitForDependentUpdates(cmd, versionOnUpdate, isReplayOrPeersync, bucket);
       if (dependentVersionFound == -1) {
         // it means the document has been deleted by now at the leader. drop this update
-        return true;
+        return null;
       }
     }
 
-    long finalVersionOnUpdate = versionOnUpdate;
-    return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () -> doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket));
-
+    vinfo.lockForUpdate();
+    try {
+      long finalVersionOnUpdate = versionOnUpdate;
+      return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () -> doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync,
+          leaderLogic, forwardedFromCollection, bucket), idBytes);
+    } finally {
+      vinfo.unlockForUpdate();
+    }
   }
 
-  private boolean doVersionAdd(AddUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync,
+  private Future doVersionAdd(AddUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync,
       boolean leaderLogic, boolean forwardedFromCollection, VersionBucket bucket) throws IOException {
 
     BytesRef idBytes = cmd.getIndexedId();
@@ -448,7 +374,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // realtime-get to work reliably.
     // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
     // there may be other reasons in the future for a version on the commands
-
+    boolean nodist = noDistrib();
+    AddUpdateCommand cloneCmd = null;
     if (versionsStored) {
 
       long bucketVersion = bucket.highest;
@@ -467,10 +394,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
         getUpdatedDocument(cmd, versionOnUpdate);
 
-        if (isSubShardLeader) {
-          log.info("subshardleader");
-        }
-
         // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
         if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
@@ -479,7 +402,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.add(cmd);
-          return true;
+          return null;
         }
 
         if (versionOnUpdate != 0) {
@@ -490,7 +413,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // specified it must exist (versionOnUpdate==1) and it does.
           } else {
             if (cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
-              return true;
+              return null;
             }
             throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId() + " expected=" + versionOnUpdate +
                 " actual=" + foundVersion + " params=" + req.getParams());
@@ -500,6 +423,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         long version = vinfo.getNewClock();
         cmd.setVersion(version);
         cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
+
+        if (!nodist) {
+
+          SolrInputDocument clonedDoc = null;
+          if (shouldCloneCmdDoc()) {
+            // SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+            cloneCmd = (AddUpdateCommand) cmd.clone();
+            clonedDoc = shouldCloneCmdDoc() ? cmd.solrDoc.deepCopy() : null;
+            cloneCmd.solrDoc = clonedDoc;
+          }
+        }
+
         bucket.updateHighest(version);
       } else {
         // The leader forwarded us this update.
@@ -509,7 +444,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.add(cmd);
-          return true;
+          return null;
         }
 
         if (cmd.isInPlaceUpdate()) {
@@ -528,7 +463,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document was deleted at the leader subsequently.", idBytes.utf8ToString());
               }
               versionDelete((DeleteUpdateCommand) fetchedFromLeader);
-              return true;
+              return null;
             } else {
               assert fetchedFromLeader instanceof AddUpdateCommand;
               // Newer document was fetched from the leader. Apply that document instead of this current in-place
@@ -548,7 +483,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               // this means we got a newer full doc update and in that case it makes no sense to apply the older
               // inplace update. Drop this update
               log.info("Update was applied on version: {}, but last version I have is: {}. Dropping current update", prev, lastVersion);
-              return true;
+              return null;
             } else {
               // We're good, we should apply this update. First, update the bucket's highest.
               if (bucketVersion != 0 && bucketVersion < versionOnUpdate) {
@@ -569,17 +504,80 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
               // This update is a repeat, or was reordered. We need to drop this update.
               if (log.isDebugEnabled()) log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-              return true;
+              return null;
             }
           }
         }
+
         if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
           cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
         }
       }
     }
 
-    return false;
+    Future<?> distFuture = null;
+
+
+    AddUpdateCommand finalCloneCmd;
+    if (!nodist) {
+
+      if (cloneCmd != null) {
+        finalCloneCmd = cloneCmd;
+      } else {
+        finalCloneCmd = cmd;
+      }
+
+      Callable distCall = () -> {
+        if (log.isTraceEnabled()) log.trace("Run distrib add collection");
+        try {
+          doDistribAdd(finalCloneCmd);
+          if (log.isTraceEnabled()) log.trace("after distrib add collection");
+        } catch (Throwable e) {
+          return e;
+        }
+        return null;
+      };
+
+      distFuture = ParWork.getRootSharedExecutor().submit(distCall);
+    }
+
+    // TODO: possibly set checkDeleteByQueries as a flag on the command?
+    // if the update updates a doc that is part of a nested structure,
+    // force open a realTimeSearcher to trigger a ulog cache refresh.
+    // This refresh makes RTG handler aware of this update.q
+
+      try {
+        doLocalAdd(cmd);
+      } catch (Exception e) {
+        Throwable t;
+        if (e instanceof ExecutionException) {
+          t = e.getCause();
+        } else {
+          t = e;
+        }
+        if (distFuture != null && isLeader && !forwardToLeader) {
+          distFuture.cancel(false);
+          if (cloneCmd != null) {
+            cancelCmds.add(cloneCmd);
+          } else {
+            cancelCmds.add(cmd);
+          }
+        }
+        if (t instanceof RuntimeException) {
+          throw (RuntimeException) t;
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, t);
+      }
+      // if the update updates a doc that is part of a nested structure,
+      // force open a realTimeSearcher to trigger a ulog cache refresh.
+      // This refresh makes RTG handler aware of this update.q
+      if (ulog != null) {
+        if (req.getSchema().isUsableForChildDocs() && shouldRefreshUlogCaches(cmd)) {
+          ulog.openRealtimeSearcher();
+        }
+      }
+
+    return distFuture;
   }
 
   /**
@@ -618,7 +616,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     vinfo.lockForUpdate();
     try {
-      lastFoundVersion = bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () -> doWaitForDependentUpdates(cmd, versionOnUpdate, isReplayOrPeersync, bucket, waitTimeout));
+      lastFoundVersion = bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () ->
+          doWaitForDependentUpdates(cmd, versionOnUpdate, isReplayOrPeersync, bucket, waitTimeout), cmd.getIndexedId());
     } finally {
       vinfo.unlockForUpdate();
     }
@@ -820,27 +819,41 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // we have to spoof the replicationTracker and set the achieved rf to the number of active replicas.
   //
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
-    // TODO: parallel
     setupRequest(cmd);
-    log.info("deletebyid {}", cmd.id);
-    boolean dropCmd = false;
+    if (log.isDebugEnabled()) log.debug("deletebyid {}", cmd.id);
+
+
     if (!forwardToLeader) {
-      dropCmd  = versionDelete(cmd);
+      Future future = versionDelete(cmd);
+      if (future != null) {
+        try {
+          future.get();
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e, true);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        } catch (ExecutionException e) {
+          Throwable t;
+          if (e instanceof ExecutionException) {
+            t = e.getCause();
+          } else {
+            t = e;
+          }
+          if (t instanceof RuntimeException) {
+            throw (RuntimeException) t;
+          }
+          throw new SolrException(ErrorCode.SERVER_ERROR, t);
+        }
+      }
+    } else {
+      doDistribDeleteById(cmd);
     }
-
-    if (dropCmd) {
-      // TODO: do we need to add anything to the response?
-      return;
-    }
-
-    doDistribDeleteById(cmd);
 
     // cmd.getIndexId == null when delete by query
     // TODO: what to do when no idField?
     if (returnVersions && rsp != null && cmd.getIndexedId() != null && idField != null) {
       if (deleteResponse == null) {
         deleteResponse = new NamedList<>(1);
-        rsp.add("deletes",deleteResponse);
+        rsp.add("deletes", deleteResponse);
       }
       if (scratch == null) scratch = new CharsRefBuilder();
       idField.getType().indexedToReadable(cmd.getIndexedId(), scratch);
@@ -906,66 +919,25 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // at this point, there is an update we need to try and apply.
     // we may or may not be the leader.
 
-    boolean drop = false;
-    if (!forwardToLeader) {
-       drop = versionDeleteByQuery(cmd);
-    }
+    Future future = versionDeleteByQuery(cmd, replicas, coll);
 
-    if (drop) {
-      return;
-    }
-
-    Future<?> distFuture = null;
-    Callable distCall = () -> {
+    if (future != null) {
       try {
-        doDistribDeleteByQuery(cmd, replicas, coll);
-      } catch (IOException e) {
-        // MRM TODO: fail this harder...
+        future.get();
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e, true);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-      return null;
-    };
-
-    if (!forwardToLeader) {
-      distFuture = ParWork.getRootSharedExecutor().submit(distCall);
-    } else {
-      try {
-        distCall.call();
-      } catch (Exception e) {
-        if (e instanceof RuntimeException) {
-          throw (RuntimeException) e;
-        }
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-    }
-
-    if (!forwardToLeader) {
-      try {
-        doLocalDelete(cmd);
-      } catch (Exception e) {
-        log.error("Exception on local deleteByQuery", e);
+      } catch (ExecutionException e) {
         Throwable t;
         if (e instanceof ExecutionException) {
           t = e.getCause();
         } else {
           t = e;
         }
-        if (distFuture != null && isLeader && !forwardToLeader) {
-          distFuture.cancel(false);
-          cancelCmds.add(cmd);
-        }
-        if (t instanceof SolrException) {
-          throw (SolrException) t;
+        if (t instanceof RuntimeException) {
+          throw (RuntimeException) t;
         }
         throw new SolrException(ErrorCode.SERVER_ERROR, t);
-      }
-    }
-
-    if (distFuture != null) {
-      try {
-        distFuture.get();
-      } catch (Exception e) {
-        log.error("dist of add failed", e);
       }
     }
 
@@ -989,7 +961,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // no-op for derived classes to implement
   }
 
-  protected boolean versionDeleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+  protected Future versionDeleteByQuery(DeleteUpdateCommand cmd, List<Node> replicas, DocCollection coll) throws IOException {
     // Find the version
     long versionOnUpdate = findVersionOnUpdate(cmd);
 
@@ -1003,7 +975,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     vinfo.blockUpdates();
     try {
 
-      return doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync);
+      return doLocalDeleteByQuery(cmd, versionOnUpdate, isReplayOrPeersync, replicas, coll);
 
       // since we don't know which documents were deleted, the easiest thing to do is to invalidate
       // all real-time caches (i.e. UpdateLog) which involves also getting a new version of the IndexReader
@@ -1024,13 +996,26 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return versionOnUpdate;
   }
 
-  private boolean doLocalDeleteByQuery(DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync) throws IOException {
+  private Future doLocalDeleteByQuery(DeleteUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync, List<Node> replicas, DocCollection coll) throws IOException {
+    Future<?> future = null;
     if (versionsStored) {
       final boolean leaderLogic = isLeader & !isReplayOrPeersync;
       if (leaderLogic) {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);
         // TODO update versions in all buckets
+
+       future = ParWork.getRootSharedExecutor().submit(() -> {
+          try {
+            doDistribDeleteByQuery(cmd, replicas, coll);
+          } catch (IOException e) {
+            log.error("", e); // MRM TODO:
+          }
+        });
+
+
+        doLocalDelete(cmd);
+
       } else {
         cmd.setVersion(-versionOnUpdate);
 
@@ -1038,16 +1023,27 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.deleteByQuery(cmd);
-          return true;
+          return null; // nocommit
         }
+
+        future = ParWork.getRootSharedExecutor().submit(() -> {
+          try {
+            DeleteUpdateCommand clonedCmd = (DeleteUpdateCommand) cmd.clone();
+            doDistribDeleteByQuery(clonedCmd, replicas, coll);
+          } catch (IOException e) {
+            log.error("", e); // MRM TODO:
+          }
+        });
 
         if (!isSubShardLeader && replicaType == Replica.Type.TLOG && (cmd.getFlags() & UpdateCommand.REPLAY) == 0) {
           // TLOG replica not leader, don't write the DBQ to IW
           cmd.setFlags(cmd.getFlags() | UpdateCommand.IGNORE_INDEXWRITER);
         }
+        doLocalDelete(cmd);
       }
     }
-    return false;
+
+    return future;
   }
 
   // internal helper method to setup request by processors who use this class.
@@ -1074,13 +1070,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     return req.getParams().get(DISTRIB_FROM);
   }
 
-  protected boolean versionDelete(DeleteUpdateCommand cmd) throws IOException {
+  protected Future versionDelete(DeleteUpdateCommand cmd) throws IOException {
 
     BytesRef idBytes = cmd.getIndexedId();
 
     if (vinfo == null || idBytes == null) {
       super.processDelete(cmd);
-      return false;
+      return null;
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash
@@ -1113,17 +1109,18 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     try {
       long finalVersionOnUpdate = versionOnUpdate;
       return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), () -> doVersionDelete(cmd, finalVersionOnUpdate, signedVersionOnUpdate, isReplayOrPeersync, leaderLogic,
-          forwardedFromCollection, bucket));
+          forwardedFromCollection, bucket), idBytes);
     } finally {
       vinfo.unlockForUpdate();
     }
   }
 
-  private boolean doVersionDelete(DeleteUpdateCommand cmd, long versionOnUpdate, long signedVersionOnUpdate,
+  private Future doVersionDelete(DeleteUpdateCommand cmd, long versionOnUpdate, long signedVersionOnUpdate,
       boolean isReplayOrPeersync, boolean leaderLogic, boolean forwardedFromCollection, VersionBucket bucket)
       throws IOException {
 
     BytesRef idBytes = cmd.getIndexedId();
+    Future<?> distFuture = null;
     if (versionsStored) {
       long bucketVersion = bucket.highest;
 
@@ -1146,7 +1143,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.delete(cmd);
-          return true;
+          return null;
         }
 
         if (signedVersionOnUpdate != 0) {
@@ -1156,13 +1153,21 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
             // specified it must exist (versionOnUpdate==1) and it does.
           } else {
-            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getId() + " expected=" + signedVersionOnUpdate +
-                " actual=" + foundVersion + " params=" + req.getParams());
+            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getId() + " expected=" + signedVersionOnUpdate + " actual=" + foundVersion + " params=" + req.getParams());
           }
         }
 
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);
+
+        distFuture = ParWork.getRootSharedExecutor().submit(() -> {
+          try {
+            doDistribDeleteById(cmd);
+          } catch (IOException e) {
+            log.error("", e); // MRM TODO
+          }
+        });
+
         bucket.updateHighest(version);
       } else {
         cmd.setVersion(-versionOnUpdate);
@@ -1171,7 +1176,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.delete(cmd);
-          return true;
+          return null;
         }
 
         // if we aren't the leader, then we need to check that updates were not re-ordered
@@ -1188,7 +1193,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (log.isDebugEnabled()) {
               log.debug("Dropping delete update due to version {}", idBytes.utf8ToString());
             }
-            return true;
+            return null;
           }
         }
 
@@ -1198,9 +1203,29 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    doLocalDelete(cmd);
-    return false;
-
+    try {
+      doLocalDelete(cmd);
+    } catch (Exception e) {
+      Throwable t;
+      if (e instanceof ExecutionException) {
+        t = e.getCause();
+      } else {
+        t = e;
+      }
+      if (distFuture != null && isLeader && !forwardToLeader) {
+        distFuture.cancel(false);
+        if (cmd != null) {
+          cancelCmds.add(cmd);
+        } else {
+          cancelCmds.add(cmd);
+        }
+      }
+      if (t instanceof RuntimeException) {
+        throw (RuntimeException) t;
+      }
+      throw new SolrException(ErrorCode.SERVER_ERROR, t);
+    }
+    return distFuture;
   }
 
   @Override

@@ -17,9 +17,15 @@
 package org.apache.solr.update;
 
 import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.LongAccumulator;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.ParWork;
 
 // TODO: make inner?
@@ -37,6 +43,8 @@ public class VersionBucket {
   private final ReentrantLock lock = new ReentrantLock(true);
   private final Condition lockCondition = lock.newCondition();
 
+  private Map<BytesRef,LongAdder> blockedIds = new ConcurrentHashMap<>();
+
   public void updateHighest(long val) {
     if (highest != 0) {
       highest = Math.max(highest, Math.abs(val));
@@ -48,17 +56,44 @@ public class VersionBucket {
      R apply() throws IOException;
   }
 
-  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T, R> function) throws IOException {
+  public <T, R> R runWithLock(int lockTimeoutMs, CheckedFunction<T,R> function, BytesRef idBytes) throws IOException {
     lock.lock();
     try {
+      if (!blockedIds.keySet().contains(idBytes)) {
+        LongAdder adder = new LongAdder();
+        adder.increment();
+        blockedIds.put(idBytes, adder);
+        lock.unlock();
+      } else {
+        LongAdder adder = blockedIds.get(idBytes);
+        adder.increment();
+      }
       return function.apply();
     } finally {
-      lock.unlock();
+      try {
+        if (!lock.isHeldByCurrentThread()) {
+          lock.lock();
+          LongAdder adder = blockedIds.get(idBytes);
+          adder.decrement();
+          if (adder.longValue() == 0L) {
+            blockedIds.remove(idBytes);
+          }
+        }
+      } finally {
+        if (lock.isHeldByCurrentThread()) lock.unlock();
+      }
     }
   }
 
   public void signalAll() {
-    lockCondition.signalAll();
+    if (!lock.isHeldByCurrentThread()) {
+      lock.lock();
+      try {
+        lockCondition.signalAll();
+      } finally {
+        lock.unlock();
+      }
+    }
   }
 
   public void awaitNanos(long nanosTimeout) {

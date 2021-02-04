@@ -192,11 +192,19 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         // make sure it's gone again after cores have been removed
         try {
           ocmh.overseer.getCoreContainer().getZkController().removeCollectionTerms(collection);
-          zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
-
+        } catch (Exception e) {
+          log.error("Exception while trying to remove collection terms", e);
+        }
+        try {
+          // was there a race? let's get after it
+          while (zkStateReader.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection)) {
+            zkStateReader.getZkClient().clean(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection);
+          }
         } catch (Exception e) {
           log.error("Exception while trying to remove collection zknode", e);
         }
+
+
 
         AddReplicaCmd.Response response = new AddReplicaCmd.Response();
         return response;

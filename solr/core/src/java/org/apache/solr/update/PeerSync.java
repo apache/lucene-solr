@@ -634,10 +634,14 @@ public class PeerSync implements SolrMetricProducer {
             {
               // byte[] idBytes = (byte[]) entry.get(2);
               SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
-              AddUpdateCommand cmd = new AddUpdateCommand(req);
+              AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
+              cmd.clear();
               // cmd.setIndexedId(new BytesRef(idBytes));
               cmd.solrDoc = sdoc;
+              cmd.setReq(req);
               cmd.setVersion(version);
+              BytesRef indexedId = UpdateLog.getIndexedId(sdoc, req);
+              cmd.setIndexedId(indexedId);
               cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
                 log.debug("{} add {} id {}", logPrefix, cmd, sdoc.getField(ID));
@@ -676,12 +680,19 @@ public class PeerSync implements SolrMetricProducer {
             }
             case UpdateLog.UPDATE_INPLACE:
             {
-              AddUpdateCommand cmd = UpdateLog.convertTlogEntryToAddUpdateCommand(req, entry, oper, version, null);
-              cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+
+              SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size() - 1);
+              Long prevVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
+              AddUpdateCommand ucmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
+              ucmd.clear();
+              ucmd.setReq(req);
+              ucmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
+              UpdateLog.convertTlogEntryToAddUpdateCommand(req, sdoc, oper, prevVersion, version, ucmd);
+
               if (debug) {
-                log.debug("{} inplace update {} prevVersion={} doc={}", logPrefix, cmd, cmd.prevVersion, cmd.solrDoc);
+                log.debug("{} inplace update {} prevVersion={} doc={}", logPrefix, ucmd, ucmd.prevVersion, ucmd.solrDoc);
               }
-              proc.processAdd(cmd);
+              proc.processAdd(ucmd);
               break;
             }
 

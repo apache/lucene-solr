@@ -102,10 +102,14 @@ public class AddUpdateCommand extends UpdateCommand {
      isLastDocInBatch = false;
      version = 0;
      prevVersion = -1;
-     req = null;
      overwrite = true;
      commitWithin = -1;
    }
+
+  public void clearAll() {
+    clear();
+    req = null;
+  }
 
    public SolrInputDocument getSolrInputDocument() {
      return solrDoc;
@@ -128,7 +132,7 @@ public class AddUpdateCommand extends UpdateCommand {
 
   /** Returns the indexed ID for this document.  The returned BytesRef is retained across multiple calls, and should not be modified. */
    public BytesRef getIndexedId() {
-     if (indexedId == null) {
+     if (indexedId == null && req != null) {
        IndexSchema schema = req.getSchema();
        SchemaField sf = schema.getUniqueKeyField();
        if (sf != null) {
