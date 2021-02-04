@@ -220,6 +220,9 @@ Improvements
 
 * SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
 
+* SOLR-13608: Backups are now done incrementally by default.  Multiple backups can be stored at the same location, and each
+  backup will only upload those files that are new since the last backup. (Jason Gerlowski, Shalin , Cao Manh Dat)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
