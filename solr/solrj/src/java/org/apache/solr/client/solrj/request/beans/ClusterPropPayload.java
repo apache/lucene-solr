@@ -20,7 +20,7 @@ package org.apache.solr.client.solrj.request.beans;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-public class ClusterPropInfo implements ReflectMapWriter {
+public class ClusterPropPayload implements ReflectMapWriter {
 
   @JsonProperty
   public String urlScheme;
@@ -31,7 +31,7 @@ public class ClusterPropInfo implements ReflectMapWriter {
   public String location;
 
   @JsonProperty
-  public DefaultsInfo defaults;
+  public Defaults defaults;
 
   @JsonProperty
   public CollectionDefaults collectionDefaults;
@@ -48,17 +48,17 @@ public class ClusterPropInfo implements ReflectMapWriter {
 
   }
 
-  public static class DefaultsInfo implements ReflectMapWriter {
+  public static class Defaults implements ReflectMapWriter {
 
     @JsonProperty
     public CollectionDefaults collection;
 
     @JsonProperty
-    public ClusterInfo cluster;
+    public Cluster cluster;
 
   }
 
-  public static class ClusterInfo implements ReflectMapWriter {
+  public static class Cluster implements ReflectMapWriter {
     @JsonProperty
     public Boolean useLegacyReplicaAssignment;
 

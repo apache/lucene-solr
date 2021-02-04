@@ -30,7 +30,7 @@ public class CreatePayload implements ReflectMapWriter {
     public String config;
 
     @JsonProperty
-    public RouterInfo router;
+    public Map<String, Object> router;
 
     @JsonProperty
     public Integer numShards;
@@ -67,11 +67,4 @@ public class CreatePayload implements ReflectMapWriter {
 
     @JsonProperty
     public Boolean perReplicaState;
-
-    public static class RouterInfo implements ReflectMapWriter {
-        @JsonProperty
-        public String name;
-        @JsonProperty
-        public String field;
-    }
 }

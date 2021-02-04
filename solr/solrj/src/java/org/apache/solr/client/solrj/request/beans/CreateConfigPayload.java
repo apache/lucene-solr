@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-public class CreateConfigInfo implements ReflectMapWriter {
+public class CreateConfigPayload implements ReflectMapWriter {
   @JsonProperty(required = true)
   public String name;
   @JsonProperty

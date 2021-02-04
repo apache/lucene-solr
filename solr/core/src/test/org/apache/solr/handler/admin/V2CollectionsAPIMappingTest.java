@@ -96,7 +96,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
                 "{'create': {" +
                         "'name': 'techproducts', " +
                         "'config':'_default', " +
-                        "'router': {'name': 'composite', 'field': 'routeField'}, " +
+                        "'router': {'name': 'composite', 'field': 'routeField', 'foo': 'bar'}, " +
                         "'shards': 'customShardName,anotherCustomShardName', " +
                         "'replicationFactor': 3," +
                         "'nrtReplicas': 1, " +
@@ -115,6 +115,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
         assertEquals("_default", v1Params.get(CollectionAdminParams.COLL_CONF));
         assertEquals("composite", v1Params.get("router.name"));
         assertEquals("routeField", v1Params.get("router.field"));
+        assertEquals("bar", v1Params.get("router.foo"));
         assertEquals("customShardName,anotherCustomShardName", v1Params.get(ShardParams.SHARDS));
         assertEquals(3, v1Params.getPrimitiveInt(ZkStateReader.REPLICATION_FACTOR));
         assertEquals(1, v1Params.getPrimitiveInt(ZkStateReader.NRT_REPLICAS));
