@@ -16,20 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -57,8 +43,23 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Nightly
 @SuppressCodecs({"SimpleText"})
@@ -114,11 +115,13 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     }
   }
 
+  @Test
   public void testCoreAdminHandler() throws Exception {
     // Use default BackupAPIImpl which hits CoreAdmin API for everything
     testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(new BackupAPIImpl());
   }
-  
+
+  @Test
   public void testReplicationHandler() throws Exception {
     // Create a custom BackupAPIImpl which uses ReplicatoinHandler for the backups
     // but still defaults to CoreAdmin for making named snapshots (since that's what's documented)
@@ -329,7 +332,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
    * @param id the uniqueKey
    * @param type the type of the doc for use in the 'type_s' field (for term counting later)
    */
-  private static SolrInputDocument makeDoc(String id, String type) {
+  static SolrInputDocument makeDoc(String id, String type) {
     final SolrInputDocument doc = new SolrInputDocument("id", id, "type_s", type);
     for (int f = 0; f < 100; f++) {
       doc.addField(f + "_s", TestUtil.randomUnicodeString(random(), 20));

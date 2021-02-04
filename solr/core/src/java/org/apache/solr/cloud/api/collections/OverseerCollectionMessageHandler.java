@@ -18,6 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -82,6 +83,8 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
@@ -200,6 +203,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(DELETENODE, new DeleteNodeCmd(this))
         .put(BACKUP, new BackupCmd(this))
         .put(RESTORE, new RestoreCmd(this))
+        .put(DELETEBACKUP, new DeleteBackupCmd(this))
         .put(CREATESNAPSHOT, new CreateSnapshotCmd(this))
         .put(DELETESNAPSHOT, new DeleteSnapshotCmd(this))
         .put(SPLITSHARD, new SplitShardCmd(this))
@@ -623,6 +627,19 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     }
 
     return results;
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  void cleanBackup(BackupRepository  repository, URI backupPath, BackupId backupId) throws Exception {
+    ((DeleteBackupCmd)commandMap.get(DELETEBACKUP))
+            .deleteBackupIds(backupPath, repository, Collections.singleton(backupId), new NamedList());
+  }
+
+  void deleteBackup(BackupRepository repository, URI backupPath,
+                    int maxNumBackup,
+                    @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+    ((DeleteBackupCmd)commandMap.get(DELETEBACKUP))
+            .keepNumberOfBackup(repository, backupPath, maxNumBackup, results);
   }
 
   List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
