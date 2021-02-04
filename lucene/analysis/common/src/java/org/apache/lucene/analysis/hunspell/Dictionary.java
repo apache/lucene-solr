@@ -951,7 +951,7 @@ public class Dictionary {
       reuse.append(caseFold(word.charAt(i)));
     }
     reuse.append(FLAG_SEPARATOR);
-    flagParsingStrategy.appendFlag(HIDDEN_FLAG, reuse);
+    reuse.append(HIDDEN_FLAG);
     reuse.append(afterSep, afterSep.charAt(0) == FLAG_SEPARATOR ? 1 : 0, afterSep.length());
     writer.write(reuse.toString().getBytes(StandardCharsets.UTF_8));
   }
@@ -1039,12 +1039,17 @@ public class Dictionary {
           entry = line.substring(0, end);
         } else {
           end = line.indexOf(MORPH_SEPARATOR);
-          String flagPart = line.substring(flagSep + 1, end);
-          if (aliasCount > 0) {
+          boolean hidden = line.charAt(flagSep + 1) == HIDDEN_FLAG;
+          String flagPart = line.substring(flagSep + (hidden ? 2 : 1), end);
+          if (aliasCount > 0 && !flagPart.isEmpty()) {
             flagPart = getAliasValue(Integer.parseInt(flagPart));
           }
 
           wordForm = flagParsingStrategy.parseFlags(flagPart);
+          if (hidden) {
+            wordForm = ArrayUtil.growExact(wordForm, wordForm.length + 1);
+            wordForm[wordForm.length - 1] = HIDDEN_FLAG;
+          }
           Arrays.sort(wordForm);
           entry = line.substring(0, flagSep);
         }
@@ -1275,8 +1280,6 @@ public class Dictionary {
      * @return Parsed flags
      */
     abstract char[] parseFlags(String rawFlags);
-
-    abstract void appendFlag(char flag, StringBuilder to);
   }
 
   /**
@@ -1288,11 +1291,6 @@ public class Dictionary {
     public char[] parseFlags(String rawFlags) {
       return rawFlags.toCharArray();
     }
-
-    @Override
-    void appendFlag(char flag, StringBuilder to) {
-      to.append(flag);
-    }
   }
 
   /** Used to read flags as UTF-8 even if the rest of the file is in the default (8-bit) encoding */
@@ -1300,11 +1298,6 @@ public class Dictionary {
     @Override
     public char[] parseFlags(String rawFlags) {
       return new String(rawFlags.getBytes(DEFAULT_CHARSET), StandardCharsets.UTF_8).toCharArray();
-    }
-
-    @Override
-    void appendFlag(char flag, StringBuilder to) {
-      to.append(new String(String.valueOf(flag).getBytes(StandardCharsets.UTF_8), DEFAULT_CHARSET));
     }
   }
 
@@ -1339,12 +1332,6 @@ public class Dictionary {
       }
       return flags;
     }
-
-    @Override
-    void appendFlag(char flag, StringBuilder to) {
-      to.append((int) flag);
-      to.append(",");
-    }
   }
 
   /**
@@ -1378,12 +1365,6 @@ public class Dictionary {
       char[] flags = new char[builder.length()];
       builder.getChars(0, builder.length(), flags, 0);
       return flags;
-    }
-
-    @Override
-    void appendFlag(char flag, StringBuilder to) {
-      to.append((char) (flag >> 8));
-      to.append((char) (flag & 0xff));
     }
   }
 
