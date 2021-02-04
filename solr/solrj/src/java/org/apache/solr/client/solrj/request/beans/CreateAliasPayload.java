@@ -51,6 +51,9 @@ public class CreateAliasPayload implements ReflectMapWriter {
         public String field;
 
         @JsonProperty
+        public String start;
+
+        @JsonProperty
         public String interval;
 
         @JsonProperty

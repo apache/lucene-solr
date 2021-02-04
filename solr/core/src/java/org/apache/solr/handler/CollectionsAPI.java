@@ -194,9 +194,14 @@ public class CollectionsAPI {
                         v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM, v2MapVals.remove(V2ApiConstants.SHUFFLE_NODES));
                         break;
                     case V2ApiConstants.NODE_SET:
-                        final List<String> nodeSetList = (List<String>) v2MapVals.remove(V2ApiConstants.NODE_SET);
-                        final String nodeSetStr = String.join(",", nodeSetList);
-                        v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetStr);
+                        final Object nodeSetValUncast = v2MapVals.remove(V2ApiConstants.NODE_SET);
+                        if (nodeSetValUncast instanceof String) {
+                            v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetValUncast);
+                        } else {
+                            final List<String> nodeSetList = (List<String>) v2MapVals.remove(V2ApiConstants.NODE_SET);
+                            final String nodeSetStr = String.join(",", nodeSetList);
+                            v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetStr);
+                        }
                         break;
                     default:
                         break;
