@@ -1249,7 +1249,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     // Test1: test that leafReaders are sorted according to leafSorter provided in IndexWriterConfig
     {
-      try (DirectoryReader reader = open(writer)) {
+      try (DirectoryReader reader = writer.getReader()) {
         List<LeafReader> lrs =
             reader.leaves().stream().map(LeafReaderContext::reader).collect(toList());
         List<LeafReader> expectedSortedlrs =

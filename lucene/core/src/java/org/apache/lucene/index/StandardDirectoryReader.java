@@ -45,9 +45,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
   private final boolean writeAllDeletes;
 
   /**
-   * package private constructor, called only from static open() methods. If parameter {@code
-   * leafSorter} is not {@code null}, the provided {@code readers} are expected to be already sorted
-   * according to it.
+   * package private constructor, called only from static open() methods.
    */
   StandardDirectoryReader(
       Directory directory,
@@ -58,12 +56,19 @@ public final class StandardDirectoryReader extends DirectoryReader {
       boolean applyAllDeletes,
       boolean writeAllDeletes)
       throws IOException {
-    super(directory, readers);
+    super(directory, sortLeaves(readers, leafSorter));
     this.writer = writer;
     this.segmentInfos = sis;
     this.leafSorter = leafSorter;
     this.applyAllDeletes = applyAllDeletes;
     this.writeAllDeletes = writeAllDeletes;
+  }
+
+  private static LeafReader[] sortLeaves(LeafReader[] readers,  Comparator<LeafReader> leafSorter) {
+    if (leafSorter != null) {
+      Arrays.sort(readers, leafSorter);
+    }
+    return readers;
   }
 
   static DirectoryReader open(
@@ -97,10 +102,6 @@ public final class StandardDirectoryReader extends DirectoryReader {
           for (int i = sis.size() - 1; i >= 0; i--) {
             readers[i] =
                 new SegmentReader(sis.info(i), sis.getIndexCreatedVersionMajor(), IOContext.READ);
-          }
-
-          if (leafSorter != null) {
-            Arrays.sort(readers, leafSorter);
           }
           // This may throw CorruptIndexException if there are too many docs, so
           // it must be inside try clause so we close readers in that case:
@@ -157,10 +158,6 @@ public final class StandardDirectoryReader extends DirectoryReader {
       }
 
       writer.incRefDeleter(segmentInfos);
-
-      if (writer.getConfig().getLeafSorter() != null) {
-        readers.sort(writer.getConfig().getLeafSorter());
-      }
 
       StandardDirectoryReader result =
           new StandardDirectoryReader(
@@ -313,9 +310,6 @@ public final class StandardDirectoryReader extends DirectoryReader {
           decRefWhileHandlingException(newReaders);
         }
       }
-    }
-    if (leafSorter != null) {
-      Arrays.sort(newReaders, leafSorter);
     }
     return new StandardDirectoryReader(
         directory, newReaders, null, infos, leafSorter, false, false);
