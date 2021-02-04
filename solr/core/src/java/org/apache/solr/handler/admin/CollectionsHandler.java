@@ -16,6 +16,25 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -83,25 +102,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
@@ -1116,6 +1116,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         }
       }
 
+      boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
+
       // Check if the specified location is valid for this repository.
       final URI uri = repository.createURI(location);
       try {
@@ -1123,7 +1125,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
         }
       } catch (IOException ex) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existence of " + uri + ". Is it valid?", ex);
       }
 
       String strategy = req.getParams().get(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
@@ -1131,13 +1133,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown index backup strategy " + strategy);
       }
 
-      final Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME);
+      Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP,
+              FOLLOW_ALIASES, CoreAdminParams.COMMIT_NAME, CoreAdminParams.MAX_NUM_BACKUP_POINTS);
       params.put(CoreAdminParams.BACKUP_LOCATION, location);
       if (repo != null) {
         params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
       }
 
       params.put(CollectionAdminParams.INDEX_BACKUP_STRATEGY, strategy);
+      params.put(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
       return params;
     }),
     RESTORE_OP(RESTORE, (req, rsp, h) -> {

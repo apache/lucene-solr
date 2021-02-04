@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.NoSuchFileException;
+import java.util.Collection;
 import java.util.Objects;
 import java.lang.invoke.MethodHandles;
 
@@ -193,18 +195,33 @@ public class HdfsBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
-    try (HdfsDirectory dir = new HdfsDirectory(new Path(dest), NoLockFactory.INSTANCE,
-        hdfsConfig, copyBufferSize)) {
-      dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+  public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI destDir, String destFileName) throws IOException {
+    try (HdfsDirectory dir = new HdfsDirectory(new Path(destDir), NoLockFactory.INSTANCE,
+            hdfsConfig, copyBufferSize)) {
+      copyIndexFileFrom(sourceDir, sourceFileName, dir, destFileName);
     }
   }
 
   @Override
-  public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
+  public void copyIndexFileTo(URI sourceRepo, String sourceFileName, Directory dest, String destFileName) throws IOException {
     try (HdfsDirectory dir = new HdfsDirectory(new Path(sourceRepo), NoLockFactory.INSTANCE,
-        hdfsConfig, copyBufferSize)) {
-      dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+            hdfsConfig, copyBufferSize)) {
+      dest.copyFrom(dir, sourceFileName, destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
+
+  @Override
+  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
+    if (files.isEmpty())
+      return;
+
+    for (String file : files) {
+      Path filePath = new Path(new Path(path), file);
+      boolean success = fileSystem.delete(filePath, false);
+      if (!ignoreNoSuchFileException && !success) {
+        throw new NoSuchFileException(filePath.toString());
+      }
+    }
+  }
+
 }

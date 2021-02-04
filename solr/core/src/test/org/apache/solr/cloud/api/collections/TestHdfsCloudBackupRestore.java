@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 
@@ -45,6 +44,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.backup.BackupManager;
+import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.repository.HdfsBackupRepository;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
@@ -53,10 +53,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
-import static org.apache.solr.core.backup.BackupManager.BACKUP_NAME_PROP;
-import static org.apache.solr.core.backup.BackupManager.BACKUP_PROPS_FILE;
-import static org.apache.solr.core.backup.BackupManager.COLLECTION_NAME_PROP;
+import static org.apache.solr.core.backup.BackupManager.TRADITIONAL_BACKUP_PROPS_FILE;
 import static org.apache.solr.core.backup.BackupManager.CONFIG_STATE_DIR;
 import static org.apache.solr.core.backup.BackupManager.ZK_STATE_DIR;
 
@@ -185,6 +182,7 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
     CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
         .setRepositoryName(getBackupRepoName())
+        .setIncremental(false)
         .setIndexBackupStrategy(CollectionAdminParams.NO_INDEX_BACKUP_STRATEGY);
     backup.process(solrClient);
 
@@ -194,24 +192,24 @@ public class TestHdfsCloudBackupRestore extends AbstractCloudBackupRestoreTestCa
 
     HdfsBackupRepository repo = new HdfsBackupRepository();
     repo.init(new NamedList<>(params));
-    BackupManager mgr = new BackupManager(repo, solrClient.getZkStateReader());
 
     URI baseLoc = repo.createURI("/backup");
 
-    Properties props = mgr.readBackupProperties(baseLoc, backupName);
+    BackupManager mgr = BackupManager.forRestore(repo, solrClient.getZkStateReader(), repo.resolve(baseLoc, backupName));
+    BackupProperties props = mgr.readBackupProperties();
     assertNotNull(props);
-    assertEquals(collectionName, props.getProperty(COLLECTION_NAME_PROP));
-    assertEquals(backupName, props.getProperty(BACKUP_NAME_PROP));
-    assertEquals(configName, props.getProperty(COLL_CONF));
+    assertEquals(collectionName, props.getCollection());
+    assertEquals(backupName, props.getBackupName());
+    assertEquals(configName, props.getConfigName());
 
-    DocCollection collectionState = mgr.readCollectionState(baseLoc, backupName, collectionName);
+    DocCollection collectionState = mgr.readCollectionState(collectionName);
     assertNotNull(collectionState);
     assertEquals(collectionName, collectionState.getName());
 
     URI configDirLoc = repo.resolve(baseLoc, backupName, ZK_STATE_DIR, CONFIG_STATE_DIR, configName);
     assertTrue(repo.exists(configDirLoc));
 
-    Collection<String> expected = Arrays.asList(BACKUP_PROPS_FILE, ZK_STATE_DIR);
+    Collection<String> expected = Arrays.asList(TRADITIONAL_BACKUP_PROPS_FILE, ZK_STATE_DIR);
     URI backupLoc = repo.resolve(baseLoc, backupName);
     String[] dirs = repo.listAll(backupLoc);
     for (String d : dirs) {

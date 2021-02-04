@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.not;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -53,8 +50,13 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
+
 /**
- * This class implements the logic required to test Solr cloud backup/restore capability.
+ * Used to test the traditional (now deprecated) 'full-snapshot' method of backup/restoration.
+ *
+ * For a similar test harness for incremental backup/restoration see {@link AbstractIncrementalBackupTest}
  */
 public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -197,7 +199,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     {
       CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+          .setLocation(backupLocation)
+          .setIncremental(false)
+          .setRepositoryName(getBackupRepoName());
       assertEquals(0, backup.process(solrClient).getStatus());
     }
 
@@ -207,7 +211,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     {
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+          .setLocation(backupLocation)
+          .setRepositoryName(getBackupRepoName());
       if (backupCollection.getReplicas().size() > cluster.getJettySolrRunners().size()) {
         // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
         restore.setMaxShardsPerNode((int)Math.ceil(backupCollection.getReplicas().size()/cluster.getJettySolrRunners().size()));
@@ -250,6 +255,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     // Do not specify the backup location.
     CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
+        .setIncremental(false)
         .setRepositoryName(getBackupRepoName());
     try {
       backup.process(solrClient);
@@ -312,7 +318,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     {
       CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+          .setIncremental(false)
+          .setLocation(backupLocation)
+          .setRepositoryName(getBackupRepoName());
       if (random().nextBoolean()) {
         assertEquals(0, backup.process(client).getStatus());
       } else {
@@ -450,7 +458,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     // TODO Find the applicable core.properties on the file system but how?
   }
 
-  private Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
+  public static Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
     Map<String,Integer> shardToDocCount = new TreeMap<>();
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();

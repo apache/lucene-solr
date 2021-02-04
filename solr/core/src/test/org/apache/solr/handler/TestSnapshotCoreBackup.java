@@ -34,7 +34,7 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
-public class TestCoreBackup extends SolrTestCaseJ4 {
+public class TestSnapshotCoreBackup extends SolrTestCaseJ4 {
   @Before // unique core per test
   public void coreInit() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
@@ -65,10 +65,10 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     cores.getAllowPaths().add(Paths.get(location));
     try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
       SolrQueryResponse resp = new SolrQueryResponse();
-      admin.handleRequestBody
-          (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
-              "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location", location)
-              , resp);
+      admin.handleRequestBody(req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
+              "core", DEFAULT_TEST_COLLECTION_NAME, "name", snapshotName, "location",
+              location, CoreAdminParams.BACKUP_INCREMENTAL, "false"),
+              resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(location, "snapshot." + snapshotName), 2);
     }
@@ -104,7 +104,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
              "core", DEFAULT_TEST_COLLECTION_NAME,
              "name", "empty_backup1",
-             "location", backupDir.getAbsolutePath()),
+             "location", backupDir.getAbsolutePath(),
+             CoreAdminParams.BACKUP_INCREMENTAL, "false"),
          resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.empty_backup1"),
@@ -129,7 +130,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
              "core", DEFAULT_TEST_COLLECTION_NAME,
              "name", "empty_backup2",
-             "location", backupDir.getAbsolutePath()),
+             "location", backupDir.getAbsolutePath(),
+             CoreAdminParams.BACKUP_INCREMENTAL, "false"),
          resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.empty_backup2"),
@@ -164,7 +166,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
              "core", DEFAULT_TEST_COLLECTION_NAME,
              "name", name,
              "commitName", snapName,
-             "location", backupDir.getAbsolutePath()),
+             "location", backupDir.getAbsolutePath(),
+             CoreAdminParams.BACKUP_INCREMENTAL, "false"),
          resp);
       assertNull("Backup "+name+" should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot." + name),
@@ -207,7 +210,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
              "core", DEFAULT_TEST_COLLECTION_NAME,
              "name", "backup1a",
-             "location", backupDir.getAbsolutePath()),
+             "location", backupDir.getAbsolutePath(),
+             CoreAdminParams.BACKUP_INCREMENTAL, "false"),
          resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.backup1a"),
@@ -240,7 +244,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
              "core", DEFAULT_TEST_COLLECTION_NAME,
              "name", "backup1b",
-             "location", backupDir.getAbsolutePath()),
+             "location", backupDir.getAbsolutePath(),
+             CoreAdminParams.BACKUP_INCREMENTAL, "false"),
          resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.backup1b"),
@@ -271,7 +276,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
         (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
              "core", DEFAULT_TEST_COLLECTION_NAME,
              "name", "backup2",
-             "location", backupDir.getAbsolutePath()),
+             "location", backupDir.getAbsolutePath(),
+             CoreAdminParams.BACKUP_INCREMENTAL, "false"),
          resp);
       assertNull("Backup should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot.backup2"), 2);
@@ -288,7 +294,8 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
              "core", DEFAULT_TEST_COLLECTION_NAME,
              "name", name,
              "commitName", snapName,
-             "location", backupDir.getAbsolutePath()),
+             "location", backupDir.getAbsolutePath(),
+             CoreAdminParams.BACKUP_INCREMENTAL, "false"),
          resp);
       assertNull("Backup "+name+" should have succeeded", resp.getException());
       simpleBackupCheck(new File(backupDir, "snapshot." + name),

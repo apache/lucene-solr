@@ -1243,6 +1243,17 @@ Backs up Solr collections and associated configurations to a shared filesystem -
 
 The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
 
+Backup data is stored in the repository based on the provided `name` and `location`.
+Each backup location can hold multiple backups for the same collection, allowing users to later restore from any of these "backup points" as desired.
+Within a location backups are done incrementally, so that index files uploaded previously are skipped and not duplicated in the backup repository.
+
+[NOTE]
+====
+Previous versions of Solr supported a different snapshot-based backup method without the incremental support described above.
+Solr can still restore from backups that use this old format, but creating new backups of this format is not recommended and snapshot-based backups are officially deprecated.
+See the `incremental` parameter below for more information.
+====
+
 === BACKUP Parameters
 
 `collection`::
@@ -1252,16 +1263,28 @@ The name of the collection to be backed up. This parameter is required.
 What to name the backup that is created.  This is checked to make sure it doesn't already exist, and otherwise an error message is raised. This parameter is required.
 
 `location`::
-The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
+The location on a shared drive for the backup command to write to. This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 +
 If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
 Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
++
+Each backup location can only hold a backup for one collection, however the same location can be used for repeated backups of the same collection.  Repeated backups of the same collection are done incrementally, so that files unchanged since the last backup are not duplicated in the backup repository.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 `repository`::
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+
+`maxNumBackupPoints`::
+The upper-bound on how many backups should be retained at the backup location.
+If the current number exceeds this bound, older backups will be deleted until only `maxNumBackupPoints` backups remain.
+This parameter has no effect if `incremental=false` is specified.
+
+`incremental`::
+A boolean parameter allowing users to choose whether to create an incremental (`incremental=true`) or a "snapshot" (`incremental=false`) backup.
+If unspecified, backups are done incrementally by default.
+Incremental backups are preferred in all known circumstances and snapshot backups are deprecated, so this parameter should only be used after much consideration.
 
 [[restore]]
 == RESTORE: Restore Collection
@@ -1294,6 +1317,11 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 
 `repository`::
 The name of a repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
+
+`backupId`::
+The ID of a specific backup point to restore from.
++
+Backup locations can hold multiple backups of the same collection.  This parameter allows users to choose which of those backups should be used to restore from.  If not specified the most recent backup point is used.
 
 There are also optional parameters that determine the target collection layout.
 The following parameters are currently supported (described in detail in the <<create,CREATE collection>> section):

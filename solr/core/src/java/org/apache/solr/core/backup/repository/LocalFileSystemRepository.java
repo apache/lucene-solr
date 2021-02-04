@@ -23,22 +23,25 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collection;
 import java.util.Objects;
 
+import com.google.common.base.Preconditions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
-
-import com.google.common.base.Preconditions;
 
 /**
  * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of Solr indexes to a
@@ -83,7 +86,13 @@ public class LocalFileSystemRepository implements BackupRepository {
 
     Path result = Paths.get(baseUri);
     for (int i = 0; i < pathComponents.length; i++) {
-      result = result.resolve(pathComponents[i]);
+      try {
+        result = result.resolve(pathComponents[i]);
+      } catch (Exception e) {
+        // unlikely to happen
+        throw new RuntimeException(e);
+      }
+
     }
 
     return result.toUri();
@@ -91,7 +100,10 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public void createDirectory(URI path) throws IOException {
-    Files.createDirectory(Paths.get(path));
+    Path p = Paths.get(path);
+    if (!Files.exists(p, LinkOption.NOFOLLOW_LINKS)) {
+      Files.createDirectory(p);
+    }
   }
 
   @Override
@@ -130,7 +142,13 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public String[] listAll(URI dirPath) throws IOException {
-    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
+    // It is better to check the existence of the directory first since
+    // creating a FSDirectory will create a corresponds folder if the directory does not exist
+    if (!exists(dirPath)) {
+      return new String[0];
+    }
+
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(dirPath), NoLockFactory.INSTANCE)) {
       return dir.listAll();
     }
   }
@@ -141,16 +159,33 @@ public class LocalFileSystemRepository implements BackupRepository {
   }
 
   @Override
-  public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
-    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(dest), NoLockFactory.INSTANCE)) {
-      dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+  public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI destDir, String destFileName) throws IOException {
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(destDir), NoLockFactory.INSTANCE)) {
+      copyIndexFileFrom(sourceDir, sourceFileName, dir, destFileName);
     }
   }
 
   @Override
-  public void copyFileTo(URI sourceDir, String fileName, Directory dest) throws IOException {
-    try (FSDirectory dir = new SimpleFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
-      dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+  public void copyIndexFileTo(URI sourceDir, String sourceFileName, Directory dest, String destFileName) throws IOException {
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(sourceDir), NoLockFactory.INSTANCE)) {
+      dest.copyFrom(dir, sourceFileName, destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+    }
+  }
+
+  @Override
+  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
+    if (files.isEmpty())
+      return;
+
+    try (FSDirectory dir = new NIOFSDirectory(Paths.get(path), NoLockFactory.INSTANCE)) {
+      for (String file : files) {
+        try {
+          dir.deleteFile(file);
+        } catch (NoSuchFileException e) {
+          if (!ignoreNoSuchFileException)
+            throw e;
+        }
+      }
     }
   }
 
