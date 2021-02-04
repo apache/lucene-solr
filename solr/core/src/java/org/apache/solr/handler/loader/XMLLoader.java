@@ -44,7 +44,6 @@ import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
@@ -58,12 +57,13 @@ import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.scripting.util.xslt.XSLTParams;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.util.xslt.TransformerProvider;
+import org.apache.solr.scripting.util.xslt.TransformerProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -133,7 +133,7 @@ public class XMLLoader extends ContentStreamLoader {
     InputStream is = null;
     XMLStreamReader parser = null;
 
-    String tr = req.getParams().get(CommonParams.TR,null);
+    String tr = req.getParams().get(XSLTParams.TR,null);
     if(tr!=null) {
       if (req.getCore().getCoreDescriptor().isConfigSetTrusted() == false) {
           throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"

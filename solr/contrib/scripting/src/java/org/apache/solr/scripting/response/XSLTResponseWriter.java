@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package org.apache.solr.scripting.response;
 
 import java.io.BufferedReader;
 import java.io.CharArrayReader;
@@ -33,12 +33,15 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.xslt.TransformerProvider;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLWriter;
+import org.apache.solr.scripting.util.xslt.XSLTParams;
+import org.apache.solr.scripting.util.xslt.TransformerProvider;
 
 /** QueryResponseWriter which captures the output of the XMLWriter
  *  (in memory for now, not optimal performancewise), and applies an XSLT transform
@@ -117,9 +120,9 @@ public class XSLTResponseWriter implements QueryResponseWriter {
    *  depending on which one is called first, then the other one reuses the same Transformer
    */
   protected Transformer getTransformer(SolrQueryRequest request) throws IOException {
-    final String xslt = request.getParams().get(CommonParams.TR,null);
+    final String xslt = request.getParams().get(XSLTParams.TR,null);
     if(xslt==null) {
-      throw new IOException("'" + CommonParams.TR + "' request parameter is required to use the XSLTResponseWriter");
+      throw new IOException("'" + XSLTParams.TR + "' request parameter is required to use the XSLTResponseWriter");
     }
     // not the cleanest way to achieve this
     SolrConfig solrConfig = request.getCore().getSolrConfig();

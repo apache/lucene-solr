@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -33,6 +32,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.scripting.util.xslt.XSLTParams;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.Before;
@@ -69,7 +69,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       "</random>";
 
     Map<String,String> args = new HashMap<>();
-    args.put(CommonParams.TR, "xsl-update-handler-test.xsl");
+    args.put(XSLTParams.TR, "xsl-update-handler-test.xsl");
       
     SolrCore core = h.getCore();
     LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
@@ -115,7 +115,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
       "  <node name=\"foo_s\" value=\"&wacky;\"/>" +
       " </document>" +
       "</random>";
-    SolrQueryRequest req = req(CommonParams.TR, "xsl-update-handler-test.xsl");
+    SolrQueryRequest req = req(XSLTParams.TR, "xsl-update-handler-test.xsl");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
     XMLLoader loader = new XMLLoader().init(null);

@@ -14,10 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * XSLT related utilities (deprecated package, do not add new classes)
+package org.apache.solr.scripting.util.xslt;
+
+
+/**
+ * Parameters used across the XSLT related classes.
  */
-package org.apache.solr.util.xslt;
+public interface XSLTParams {
 
-
+  /** Transformer param -- used with XSLT */
+  String TR = "tr";
+  
+}
