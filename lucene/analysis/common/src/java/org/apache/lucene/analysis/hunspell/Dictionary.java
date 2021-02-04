@@ -87,15 +87,22 @@ public class Dictionary {
   FST<IntsRef> suffixes;
   Breaks breaks = Breaks.DEFAULT;
 
-  // all condition checks used by prefixes and suffixes. these are typically re-used across
-  // many affix stripping rules. so these are deduplicated, to save RAM.
+  /**
+   * All condition checks used by prefixes and suffixes. these are typically re-used across many
+   * affix stripping rules. so these are deduplicated, to save RAM.
+   */
   ArrayList<CharacterRunAutomaton> patterns = new ArrayList<>();
 
-  // the entries in the .dic file, mapping to their set of flags.
-  // the fst output is the ordinal list for flagLookup
+  /**
+   * The entries in the .dic file, mapping to their set of flags. the fst output is the ordinal list
+   * for flagLookup.
+   */
   FST<IntsRef> words;
-  // the list of unique flagsets (wordforms). theoretically huge, but practically
-  // small (e.g. for polish this is 756), otherwise humans wouldn't be able to deal with it either.
+
+  /**
+   * The list of unique flagsets (wordforms). theoretically huge, but practically small (for Polish
+   * this is 756), otherwise humans wouldn't be able to deal with it either.
+   */
   BytesRefHash flagLookup = new BytesRefHash();
 
   // the list of unique strip affixes.
@@ -126,8 +133,11 @@ public class Dictionary {
   // st: morphological entries (either directly, or aliased from AM)
   private String[] stemExceptions = new String[8];
   private int stemExceptionCount = 0;
-  // we set this during sorting, so we know to add an extra FST output.
-  // when set, some words have exceptional stems, and the last entry is a pointer to stemExceptions
+
+  /**
+   * we set this during sorting, so we know to add an extra FST output. when set, some words have
+   * exceptional stems, and the last entry is a pointer to stemExceptions
+   */
   boolean hasStemExceptions;
 
   boolean ignoreCase;
@@ -1481,34 +1491,21 @@ public class Dictionary {
     return ignoreCase;
   }
 
-  private static Path DEFAULT_TEMP_DIR;
-
-  /** Used by test framework */
-  @SuppressWarnings("unused")
-  public static void setDefaultTempDir(Path tempDir) {
-    DEFAULT_TEMP_DIR = tempDir;
-  }
-
   /**
-   * Returns the default temporary directory. By default, java.io.tmpdir. If not accessible or not
-   * available, an IOException is thrown
+   * Returns the default temporary directory pointed to by {@code java.io.tmpdir}. If not accessible
+   * or not available, an IOException is thrown.
    */
-  static synchronized Path getDefaultTempDir() throws IOException {
-    if (DEFAULT_TEMP_DIR == null) {
-      // Lazy init
-      String tempDirPath = System.getProperty("java.io.tmpdir");
-      if (tempDirPath == null) {
-        throw new IOException("Java has no temporary folder property (java.io.tmpdir)?");
-      }
-      Path tempDirectory = Paths.get(tempDirPath);
-      if (!Files.isWritable(tempDirectory)) {
-        throw new IOException(
-            "Java's temporary folder not present or writeable?: " + tempDirectory.toAbsolutePath());
-      }
-      DEFAULT_TEMP_DIR = tempDirectory;
+  static Path getDefaultTempDir() throws IOException {
+    String tmpDir = System.getProperty("java.io.tmpdir");
+    if (tmpDir == null) {
+      throw new IOException("No temporary path (java.io.tmpdir)?");
     }
-
-    return DEFAULT_TEMP_DIR;
+    Path tmpPath = Paths.get(tmpDir);
+    if (!Files.isWritable(tmpPath)) {
+      throw new IOException(
+          "Temporary path not present or writeable?: " + tmpPath.toAbsolutePath());
+    }
+    return tmpPath;
   }
 
   /** Possible word breaks according to BREAK directives */
