@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -33,7 +33,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
 /**
- * Lucene 5.0 live docs format
+ * Lucene 9.0 live docs format
  *
  * <p>The .liv file is optional, and only exists when a segment contains deletions.
  *
@@ -46,13 +46,13 @@ import org.apache.lucene.util.FixedBitSet;
  *   <li>Bits --&gt; &lt;{@link DataOutput#writeLong Int64}&gt; <sup>LongCount</sup>
  * </ul>
  */
-public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
+public final class Lucene90LiveDocsFormat extends LiveDocsFormat {
 
   /** extension of live docs */
   private static final String EXTENSION = "liv";
 
   /** codec of live docs */
-  private static final String CODEC_NAME = "Lucene50LiveDocs";
+  private static final String CODEC_NAME = "Lucene90LiveDocs";
 
   /** supported version range */
   private static final int VERSION_START = 0;
@@ -60,7 +60,7 @@ public final class Lucene50LiveDocsFormat extends LiveDocsFormat {
   private static final int VERSION_CURRENT = VERSION_START;
 
   /** Sole constructor. */
-  public Lucene50LiveDocsFormat() {}
+  public Lucene90LiveDocsFormat() {}
 
   @Override
   public Bits readLiveDocs(Directory dir, SegmentCommitInfo info, IOContext context)
