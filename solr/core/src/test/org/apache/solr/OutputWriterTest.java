@@ -76,7 +76,6 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy.xsl");
         String out = h.query(req("foo"));
-        // System.out.println(out);
         assertTrue(out.contains("DUMMY"));
     }
     
@@ -85,7 +84,6 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy-using-include.xsl");
         String out = h.query(req("foo"));
-        // System.out.println(out);
         assertTrue(out.contains("DUMMY"));
     }
 

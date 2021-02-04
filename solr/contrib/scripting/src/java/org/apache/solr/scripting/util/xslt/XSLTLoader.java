@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.loader;
+package org.apache.solr.scripting.util.xslt;
 
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.FactoryConfigurationError;
@@ -22,6 +22,11 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.dom.DOMResult;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.sax.SAXSource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +42,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -46,8 +52,10 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.handler.RequestHandlerUtils;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -57,21 +65,30 @@ import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 
 import static org.apache.solr.common.params.CommonParams.ID;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 
-public class XMLLoader extends ContentStreamLoader {
+public class XSLTLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicBoolean WARNED_ABOUT_INDEX_TIME_BOOSTS = new AtomicBoolean();
   static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-    
+  
+  public static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
+
+  private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
+
+  public static final int XSLT_CACHE_DEFAULT = 60;
+  
+  int xsltCacheLifetimeSeconds;
   XMLInputFactory inputFactory;
   SAXParserFactory saxFactory;
 
   @Override
-  public XMLLoader init(SolrParams args) {
+  public XSLTLoader init(SolrParams args) {
     // Init StAX parser:
     inputFactory = XMLInputFactory.newInstance();
     EmptyEntityResolver.configureXMLInputFactory(inputFactory);
@@ -95,6 +112,11 @@ public class XMLLoader extends ContentStreamLoader {
     saxFactory.setNamespaceAware(true); // XSL needs this!
     EmptyEntityResolver.configureSAXParserFactory(saxFactory);
     
+    xsltCacheLifetimeSeconds = XSLT_CACHE_DEFAULT;
+    if(args != null) {
+      xsltCacheLifetimeSeconds = args.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
+      log.debug("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
+    }
     return this;
   }
 
@@ -110,31 +132,89 @@ public class XMLLoader extends ContentStreamLoader {
     InputStream is = null;
     XMLStreamReader parser = null;
 
-    
-    try {
-      is = stream.getStream();
-      if (log.isTraceEnabled()) {
-        final byte[] body = IOUtils.toByteArray(is);
-        // TODO: The charset may be wrong, as the real charset is later
-        // determined by the XML parser, the content-type is only used as a hint!
-        if (log.isTraceEnabled()) {
-          log.trace("body: {}", new String(body, (charset == null) ?
-              ContentStreamBase.DEFAULT_CHARSET : charset));
-        }
-        IOUtils.closeQuietly(is);
-        is = new ByteArrayInputStream(body);
+    String tr = req.getParams().get(XSLTParams.TR,null);
+    if(tr!=null) {
+      if (req.getCore().getCoreDescriptor().isConfigSetTrusted() == false) {
+          throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
+                  + " and this operation is not available for collections with untrusted configsets. To use this feature, re-upload the configset"
+                  + " after enabling authentication and authorization.");
       }
-      parser = (charset == null) ?
-        inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
-      this.processUpdate(req, processor, parser);
-    } catch (XMLStreamException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
-    } finally {
-      if (parser != null) parser.close();
-      IOUtils.closeQuietly(is);
+
+      final Transformer t = getTransformer(tr,req);
+      final DOMResult result = new DOMResult();
+      
+      // first step: read XML and build DOM using Transformer (this is no overhead, as XSL always produces
+      // an internal result DOM tree, we just access it directly as input for StAX):
+      try {
+        is = stream.getStream();
+        final InputSource isrc = new InputSource(is);
+        isrc.setEncoding(charset);
+        final XMLReader xmlr = saxFactory.newSAXParser().getXMLReader();
+        xmlr.setErrorHandler(xmllog);
+        xmlr.setEntityResolver(EmptyEntityResolver.SAX_INSTANCE);
+        final SAXSource source = new SAXSource(xmlr, isrc);
+        t.transform(source, result);
+      } catch(TransformerException te) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, te.getMessage(), te);
+      } finally {
+        IOUtils.closeQuietly(is);
+      }
+      // second step: feed the intermediate DOM tree into StAX parser:
+      try {
+        parser = inputFactory.createXMLStreamReader(new DOMSource(result.getNode()));
+        this.processUpdate(req, processor, parser);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
+      } finally {
+        if (parser != null) parser.close();
+      }
+    }
+    // Normal XML Loader
+    else {
+      try {
+        is = stream.getStream();
+        if (log.isTraceEnabled()) {
+          final byte[] body = IOUtils.toByteArray(is);
+          // TODO: The charset may be wrong, as the real charset is later
+          // determined by the XML parser, the content-type is only used as a hint!
+          if (log.isTraceEnabled()) {
+            log.trace("body: {}", new String(body, (charset == null) ?
+                ContentStreamBase.DEFAULT_CHARSET : charset));
+          }
+          IOUtils.closeQuietly(is);
+          is = new ByteArrayInputStream(body);
+        }
+        parser = (charset == null) ?
+          inputFactory.createXMLStreamReader(is) : inputFactory.createXMLStreamReader(is, charset);
+        this.processUpdate(req, processor, parser);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e.getMessage(), e);
+      } finally {
+        if (parser != null) parser.close();
+        IOUtils.closeQuietly(is);
+      }
     }
   }
   
+
+  /** Get Transformer from request context, or from TransformerProvider.
+   *  This allows either getContentType(...) or write(...) to instantiate the Transformer,
+   *  depending on which one is called first, then the other one reuses the same Transformer
+   */
+  Transformer getTransformer(String xslt, SolrQueryRequest request) throws IOException {
+    // not the cleanest way to achieve this
+    // no need to synchronize access to context, right? 
+    // Nothing else happens with it at the same time
+    final Map<Object,Object> ctx = request.getContext();
+    Transformer result = (Transformer)ctx.get(CONTEXT_TRANSFORMER_KEY);
+    if(result==null) {
+      SolrConfig solrConfig = request.getCore().getSolrConfig();
+      result = TransformerProvider.instance.getTransformer(solrConfig, xslt, xsltCacheLifetimeSeconds);
+      result.setErrorListener(xmllog);
+      ctx.put(CONTEXT_TRANSFORMER_KEY,result);
+    }
+    return result;
+  }
 
 
   /**

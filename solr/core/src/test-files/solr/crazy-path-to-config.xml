@@ -48,10 +48,10 @@
       <str name="df">subject</str>
     </lst>
   </requestHandler>
-  
+
   <queryResponseWriter name="standard" class="solr.XMLResponseWriter"/>
   <queryResponseWriter name="useless" class="org.apache.solr.OutputWriterTest$UselessOutputWriter" startup="lazy"/>
-  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter"/>
+  <!--queryResponseWriter name="xslt" class="org.apache.solr.scripting.response.XSLTResponseWriter"/-->
 
   <admin>
     <defaultQuery>solr</defaultQuery>
