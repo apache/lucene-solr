@@ -53,10 +53,14 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermScorer;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.DFRSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SmallFloat;
 
 /**
  * A {@link Query} that treats multiple fields as a single stream and scores terms as if you had
@@ -72,8 +76,10 @@ import org.apache.lucene.util.RamUsageEstimator;
  * </ol>
  *
  * <p>In order for a similarity to be compatible, {@link Similarity#computeNorm} must be additive:
- * the norm of the combined field is the sum of norms for each individual field. This is usually
- * true, since norms often represent the field length. Per-field similarities are not supported.
+ * the norm of the combined field is the sum of norms for each individual field. The norms must also
+ * be encoded using {@link SmallFloat#intToByte4}. These requirements hold for all similarities that
+ * compute norms the same way as {@link SimilarityBase#computeNorm}, which includes {@link
+ * BM25Similarity} and {@link DFRSimilarity}. Per-field similarities are not supported.
  *
  * <p>The scoring is based on BM25F's simple formula described in:
  * http://www.staff.city.ac.uk/~sb317/papers/foundations_bm25_review.pdf. This query implements the
