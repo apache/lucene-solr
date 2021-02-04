@@ -54,48 +54,48 @@ import org.apache.lucene.search.TermScorer;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.DFRSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.SimilarityBase;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SmallFloat;
 
 /**
  * A {@link Query} that treats multiple fields as a single stream and scores terms as if you had
  * indexed them as a single term in a single field.
  *
- * <p>For scoring purposes this query implements the BM25F's simple formula described in:
- * http://www.staff.city.ac.uk/~sb317/papers/foundations_bm25_review.pdf
+ * <p>The query works as follows:
  *
- * <p>The per-field similarity is ignored but to be compatible each field must use a {@link
- * Similarity} at index time that encodes norms the same way as {@link SimilarityBase#computeNorm}.
+ * <ol>
+ *   <li>Given a list of fields and weights, it pretends there is a synthetic combined field where
+ *       all terms have been indexed. It computes new term and collection statistics for this
+ *       combined field.
+ *   <li>It uses a disjunction iterator and {@link IndexSearcher#getSimilarity} to score documents.
+ * </ol>
+ *
+ * <p>In order for a similarity to be compatible, {@link Similarity#computeNorm} must be additive:
+ * the norm of the combined field is the sum of norms for each individual field. The norms must also
+ * be encoded using {@link SmallFloat#intToByte4}. These requirements hold for all similarities that
+ * compute norms the same way as {@link SimilarityBase#computeNorm}, which includes {@link
+ * BM25Similarity} and {@link DFRSimilarity}. Per-field similarities are not supported.
+ *
+ * <p>The scoring is based on BM25F's simple formula described in:
+ * http://www.staff.city.ac.uk/~sb317/papers/foundations_bm25_review.pdf. This query implements the
+ * same approach but allows other similarities besides {@link
+ * org.apache.lucene.search.similarities.BM25Similarity}.
  *
  * @lucene.experimental
  */
-public final class BM25FQuery extends Query implements Accountable {
+public final class CombinedFieldQuery extends Query implements Accountable {
   private static final long BASE_RAM_BYTES =
-      RamUsageEstimator.shallowSizeOfInstance(BM25FQuery.class);
+      RamUsageEstimator.shallowSizeOfInstance(CombinedFieldQuery.class);
 
-  /** A builder for {@link BM25FQuery}. */
+  /** A builder for {@link CombinedFieldQuery}. */
   public static class Builder {
-    private final BM25Similarity similarity;
     private final Map<String, FieldAndWeight> fieldAndWeights = new HashMap<>();
     private final Set<BytesRef> termsSet = new HashSet<>();
-
-    /** Default builder. */
-    public Builder() {
-      this.similarity = new BM25Similarity();
-    }
-
-    /**
-     * Builder with the supplied parameter values.
-     *
-     * @param k1 Controls non-linear term frequency normalization (saturation).
-     * @param b Controls to what degree document length normalizes tf values.
-     */
-    public Builder(float k1, float b) {
-      this.similarity = new BM25Similarity(k1, b);
-    }
 
     /**
      * Adds a field to this builder.
@@ -129,14 +129,14 @@ public final class BM25FQuery extends Query implements Accountable {
       return this;
     }
 
-    /** Builds the {@link BM25FQuery}. */
-    public BM25FQuery build() {
+    /** Builds the {@link CombinedFieldQuery}. */
+    public CombinedFieldQuery build() {
       int size = fieldAndWeights.size() * termsSet.size();
       if (size > IndexSearcher.getMaxClauseCount()) {
         throw new IndexSearcher.TooManyClauses();
       }
       BytesRef[] terms = termsSet.toArray(new BytesRef[0]);
-      return new BM25FQuery(similarity, new TreeMap<>(fieldAndWeights), terms);
+      return new CombinedFieldQuery(new TreeMap<>(fieldAndWeights), terms);
     }
   }
 
@@ -150,8 +150,6 @@ public final class BM25FQuery extends Query implements Accountable {
     }
   }
 
-  // the similarity to use for scoring.
-  private final BM25Similarity similarity;
   // sorted map for fields.
   private final TreeMap<String, FieldAndWeight> fieldAndWeights;
   // array of terms, sorted.
@@ -161,11 +159,7 @@ public final class BM25FQuery extends Query implements Accountable {
 
   private final long ramBytesUsed;
 
-  private BM25FQuery(
-      BM25Similarity similarity,
-      TreeMap<String, FieldAndWeight> fieldAndWeights,
-      BytesRef[] terms) {
-    this.similarity = similarity;
+  private CombinedFieldQuery(TreeMap<String, FieldAndWeight> fieldAndWeights, BytesRef[] terms) {
     this.fieldAndWeights = fieldAndWeights;
     this.terms = terms;
     int numFieldTerms = fieldAndWeights.size() * terms.length;
@@ -194,7 +188,7 @@ public final class BM25FQuery extends Query implements Accountable {
 
   @Override
   public String toString(String field) {
-    StringBuilder builder = new StringBuilder("BM25F((");
+    StringBuilder builder = new StringBuilder("CombinedFieldQuery((");
     int pos = 0;
     for (FieldAndWeight fieldWeight : fieldAndWeights.values()) {
       if (pos++ != 0) {
@@ -225,7 +219,7 @@ public final class BM25FQuery extends Query implements Accountable {
 
   @Override
   public boolean equals(Object other) {
-    return sameClassAs(other) && Arrays.equals(terms, ((BM25FQuery) other).terms);
+    return sameClassAs(other) && Arrays.equals(terms, ((CombinedFieldQuery) other).terms);
   }
 
   @Override
@@ -277,7 +271,7 @@ public final class BM25FQuery extends Query implements Accountable {
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
     if (scoreMode.needsScores()) {
-      return new BM25FWeight(this, searcher, scoreMode, boost);
+      return new CombinedFieldWeight(this, searcher, scoreMode, boost);
     } else {
       // rewrite to a simple disjunction if the score is not needed.
       Query bq = rewriteToBoolean();
@@ -285,12 +279,12 @@ public final class BM25FQuery extends Query implements Accountable {
     }
   }
 
-  class BM25FWeight extends Weight {
+  class CombinedFieldWeight extends Weight {
     private final IndexSearcher searcher;
     private final TermStates termStates[];
     private final Similarity.SimScorer simWeight;
 
-    BM25FWeight(Query query, IndexSearcher searcher, ScoreMode scoreMode, float boost)
+    CombinedFieldWeight(Query query, IndexSearcher searcher, ScoreMode scoreMode, float boost)
         throws IOException {
       super(query);
       assert scoreMode.needsScores();
@@ -313,7 +307,8 @@ public final class BM25FQuery extends Query implements Accountable {
         CollectionStatistics pseudoCollectionStats = mergeCollectionStatistics(searcher);
         TermStatistics pseudoTermStatistics =
             new TermStatistics(new BytesRef("pseudo_term"), docFreq, Math.max(1, totalTermFreq));
-        this.simWeight = similarity.scorer(boost, pseudoCollectionStats, pseudoTermStatistics);
+        this.simWeight =
+            searcher.getSimilarity().scorer(boost, pseudoCollectionStats, pseudoTermStatistics);
       } else {
         this.simWeight = null;
       }
@@ -352,8 +347,8 @@ public final class BM25FQuery extends Query implements Accountable {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           final float freq;
-          if (scorer instanceof BM25FScorer) {
-            freq = ((BM25FScorer) scorer).freq();
+          if (scorer instanceof CombinedFieldScorer) {
+            freq = ((CombinedFieldScorer) scorer).freq();
           } else {
             assert scorer instanceof TermScorer;
             freq = ((TermScorer) scorer).freq();
@@ -365,13 +360,7 @@ public final class BM25FQuery extends Query implements Accountable {
           Explanation scoreExplanation = docScorer.explain(doc, freqExplanation);
           return Explanation.match(
               scoreExplanation.getValue(),
-              "weight("
-                  + getQuery()
-                  + " in "
-                  + doc
-                  + ") ["
-                  + similarity.getClass().getSimpleName()
-                  + "], result of:",
+              "weight(" + getQuery() + " in " + doc + "), result of:",
               scoreExplanation);
         }
       }
@@ -418,7 +407,7 @@ public final class BM25FQuery extends Query implements Accountable {
       // Even though it is called approximation, it is accurate since none of
       // the sub iterators are two-phase iterators.
       DocIdSetIterator iterator = new DisjunctionDISIApproximation(queue);
-      return new BM25FScorer(this, queue, iterator, scoringSimScorer);
+      return new CombinedFieldScorer(this, queue, iterator, scoringSimScorer);
     }
 
     @Override
@@ -440,12 +429,12 @@ public final class BM25FQuery extends Query implements Accountable {
     }
   }
 
-  private static class BM25FScorer extends Scorer {
+  private static class CombinedFieldScorer extends Scorer {
     private final DisiPriorityQueue queue;
     private final DocIdSetIterator iterator;
     private final MultiNormsLeafSimScorer simScorer;
 
-    BM25FScorer(
+    CombinedFieldScorer(
         Weight weight,
         DisiPriorityQueue queue,
         DocIdSetIterator iterator,
