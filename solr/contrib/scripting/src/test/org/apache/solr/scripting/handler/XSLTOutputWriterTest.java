@@ -21,28 +21,25 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests the ability to configure multiple query output writers, and select those
- * at query time.
+ * at query time.  This is specific to the XSLT writer, which isn't part of the core.
+ * 
+ * See the related unit test OutputWriterTest.
  *
  */
-public class OutputWriterTest extends SolrTestCaseJ4 {
+public class XSLTOutputWriterTest extends SolrTestCaseJ4 {
     
 
     
     @BeforeClass
     public static void beforeClass() throws Exception {
-      //initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
-    initCore("solrconfig.xml","schema.xml");
-     // initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
+      initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
     }
-    
-    
-  
     
     @Test
     public void testTrivialXsltWriter() throws Exception {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy.xsl");
-        String out = h.query(req("foo"));
+        String out = h.query(req("*:*"));
         assertTrue(out.contains("DUMMY"));
     }
     
@@ -50,7 +47,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
     public void testTrivialXsltWriterInclude() throws Exception {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy-using-include.xsl");
-        String out = h.query(req("foo"));
+        String out = h.query(req("*:*"));
         assertTrue(out.contains("DUMMY"));
     }
 
