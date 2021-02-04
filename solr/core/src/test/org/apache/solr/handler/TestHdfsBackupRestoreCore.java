@@ -16,13 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -56,6 +49,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
     SolrIgnoredThreadsFilter.class,
@@ -249,7 +249,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
         // Verify the permissions on the backup folder.
         final String backupPath = (testViaReplicationHandler) ?
                 "/backup/snapshot."+ backupName :
-                "/backup/shard_backup_ids";
+                "/backup/shard_backup_metadata";
         final FsAction expectedPerms = (testViaReplicationHandler) ? FsAction.ALL : FsAction.READ_EXECUTE;
 
         FileStatus status = fs.getFileStatus(new org.apache.hadoop.fs.Path(backupPath));

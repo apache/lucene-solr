@@ -65,12 +65,12 @@ public class BackupFilePaths {
     }
 
     /**
-     * Return a URI for the 'shard_backup_ids' location, which contains metadata files about each shard backup.
+     * Return a URI for the 'shard_backup_metadata' location, which contains metadata files about each shard backup.
      *
      * Only valid for incremental backups.
      */
     public URI getShardBackupMetadataDir() {
-        return repository.resolve(backupLoc, "shard_backup_ids");
+        return repository.resolve(backupLoc, "shard_backup_metadata");
     }
 
     public URI getBackupLocation() {
