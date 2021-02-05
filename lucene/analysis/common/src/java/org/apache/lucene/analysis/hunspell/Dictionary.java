@@ -152,7 +152,7 @@ public class Dictionary {
   char forbiddenword;
   char onlyincompound, compoundBegin, compoundMiddle, compoundEnd, compoundFlag;
   char compoundPermit, compoundForbid;
-  boolean checkCompoundCase, checkCompoundDup;
+  boolean checkCompoundCase, checkCompoundDup, checkCompoundRep;
   boolean checkCompoundTriple, simplifiedTriple;
   int compoundMin = 3, compoundMax = Integer.MAX_VALUE;
   List<CompoundRule> compoundRules; // nullable
@@ -425,6 +425,8 @@ public class Dictionary {
         checkCompoundCase = true;
       } else if ("CHECKCOMPOUNDDUP".equals(firstWord)) {
         checkCompoundDup = true;
+      } else if ("CHECKCOMPOUNDREP".equals(firstWord)) {
+        checkCompoundRep = true;
       } else if ("CHECKCOMPOUNDTRIPLE".equals(firstWord)) {
         checkCompoundTriple = true;
       } else if ("SIMPLIFIEDTRIPLE".equals(firstWord)) {

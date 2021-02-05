@@ -35,6 +35,10 @@ class RepEntry {
     patternLen = pattern.length();
   }
 
+  boolean isMiddle() {
+    return !mustStart && !mustEnd;
+  }
+
   List<String> substitute(String word) {
     if (mustStart) {
       boolean matches = mustEnd ? word.equals(pattern) : word.startsWith(pattern);
