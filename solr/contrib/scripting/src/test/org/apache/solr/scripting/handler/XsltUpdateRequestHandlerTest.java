@@ -40,8 +40,14 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * <p>
+ * This tests the UpdateRequestHandler ability to work with XSLT stylesheet and xml content.
+ * </p>
+*/
 public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
+  
   @BeforeClass
   public static void beforeTests() throws Exception {
     //initCore("solrconfig.xml","schema.xml");

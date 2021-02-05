@@ -47,8 +47,20 @@
 
   </updateHandler>
 
-  <queryResponseWriter name="xslt" class="org.apache.solr.scripting.response.XSLTResponseWriter"/>
-  
+  <queryResponseWriter name="xslt" class="org.apache.solr.scripting.response.XSLTResponseWriter" />
+
+  <requestHandler name="/update" class="solr.UpdateRequestHandler">
+    <!--contentStreamLoader mimetype="application/xml" class="org.apache.solr.scripting.util.xslt.XSLTLoader" /-->
+    <lst name="contentStreamLoaders">
+      <str name="application/xml">org.apache.solr.scripting.util.xslt.XSLTLoader</str>
+    </lst>
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <str name="indent">true</str>
+      <str name="df">text</str>
+    </lst>
+  </requestHandler>
+
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>

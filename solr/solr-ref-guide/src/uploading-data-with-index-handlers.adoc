@@ -271,7 +271,7 @@ This stylesheet transforms Solr's XML search result format into Solr's Update XM
 http://localhost:8983/solr/my_collection/select?q=*:*&wt=xslt&tr=updateXml.xsl&rows=1000
 ----
 
-You can also use the stylesheet in `XsltUpdateRequestHandler` to transform an index when updating:
+You can also use the stylesheet in `UpdateRequestHandler` to transform an index when updating:
 
 [source,bash]
 ----
