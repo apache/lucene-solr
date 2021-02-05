@@ -271,6 +271,8 @@ public class ZkStateWriter {
             } else {
               log.debug("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
+              if (c.getName().equals("coll192")) log.info("WPU 6.5: "+new String(data));
+
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
               clusterState = clusterState.copyWith(name, newCollection);
             }
@@ -285,6 +287,7 @@ public class ZkStateWriter {
 
           if (cmd.ops != null && !cmd.ops.isPreOp()) {
             cmd.ops.persist(path, reader.getZkClient());
+            if (c.getName().equals("coll192")) log.info("WPU 8.5");
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
             if ( currentCollState != null) {
               clusterState = clusterState.copyWith(name,
