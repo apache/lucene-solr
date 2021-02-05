@@ -44,9 +44,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
   private final boolean applyAllDeletes;
   private final boolean writeAllDeletes;
 
-  /**
-   * package private constructor, called only from static open() methods.
-   */
+  /** package private constructor, called only from static open() methods. */
   StandardDirectoryReader(
       Directory directory,
       LeafReader[] readers,
@@ -64,7 +62,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
     this.writeAllDeletes = writeAllDeletes;
   }
 
-  private static LeafReader[] sortLeaves(LeafReader[] readers,  Comparator<LeafReader> leafSorter) {
+  private static LeafReader[] sortLeaves(LeafReader[] readers, Comparator<LeafReader> leafSorter) {
     if (leafSorter != null) {
       Arrays.sort(readers, leafSorter);
     }
