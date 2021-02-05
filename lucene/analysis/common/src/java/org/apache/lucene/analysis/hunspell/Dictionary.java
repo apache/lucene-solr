@@ -832,7 +832,7 @@ public class Dictionary {
       if (ch == '\\' && i + 1 < entry.length()) {
         sb.append(entry.charAt(i + 1));
         i++;
-      } else if (ch == '/') {
+      } else if (ch == '/' && i > 0) {
         sb.append(FLAG_SEPARATOR);
       } else if (!shouldSkipEscapedChar(ch)) {
         sb.append(ch);
@@ -902,10 +902,7 @@ public class Dictionary {
         String line;
         while ((line = lines.readLine()) != null) {
           // wild and unpredictable code comment rules
-          if (line.isEmpty()
-              || line.charAt(0) == '/'
-              || line.charAt(0) == '#'
-              || line.charAt(0) == '\t') {
+          if (line.isEmpty() || line.charAt(0) == '#' || line.charAt(0) == '\t') {
             continue;
           }
           line = unescapeEntry(line);
