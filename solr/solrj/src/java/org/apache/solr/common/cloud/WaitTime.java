@@ -47,6 +47,18 @@ public class WaitTime {
 
   }
 
+  public static long timeElapsed() {
+    WaitTime val = null;
+    try {
+      val = current.get().peek();
+      if (val == null) return 0;
+      return System.currentTimeMillis() - val.start;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return 0;
+    }
+  }
+
   public static void end() {
     WaitTime val = null;
     try {

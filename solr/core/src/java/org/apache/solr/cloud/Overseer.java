@@ -56,6 +56,7 @@ import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.WaitTime;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -200,14 +201,18 @@ public class Overseer implements SolrCloseable {
                 }
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
+                WaitTime.start("processQueueItem");
                 try {
                   clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
+                  log.info("processQueueItem : {}", WaitTime.timeElapsed());
                 } catch (Exception e) {
                   if (isBadMessage(e)) {
                     log.warn("Exception when process message = {}, consider as bad message and poll out from the queue", message);
                     fallbackQueue.poll();
                   }
                   throw e;
+                } finally {
+                  WaitTime.end();
                 }
                 fallbackQueue.poll(); // poll-ing removes the element we got by peek-ing
                 data = fallbackQueue.peek();
@@ -390,7 +395,13 @@ public class Overseer implements SolrCloseable {
       if (collectionAction != null) {
         switch (collectionAction) {
           case CREATE:
-            return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).createCollection(clusterState, message));
+            WaitTime.start("createCollection");
+            try {
+              return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).createCollection(clusterState, message));
+            } finally {
+              log.info("createCollection time {}", WaitTime.timeElapsed());
+              WaitTime.end();
+            }
           case DELETE:
             return Collections.singletonList(new ClusterStateMutator(getSolrCloudManager()).deleteCollection(clusterState, message));
           case CREATESHARD:
