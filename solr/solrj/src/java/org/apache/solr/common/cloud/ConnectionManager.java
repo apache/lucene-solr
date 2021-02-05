@@ -88,8 +88,12 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public ZooKeeper getKeeper() {
-      SolrZooKeeper rKeeper = keeper;
-      return rKeeper;
+    if (isClosed) {
+      throw new AlreadyClosedException(this + " SolrZkClient is not currently connected state=" + keeper.getState());
+    }
+
+    SolrZooKeeper rKeeper = keeper;
+    return rKeeper;
   }
 
   public void setZkCredentialsToAddAutomatically(ZkCredentialsProvider zkCredentialsToAddAutomatically) {
@@ -222,10 +226,6 @@ public class ConnectionManager implements Watcher, Closeable {
         }
       }
 
-      //    if (isClosed()) {
-      //      log.debug("Client->ZooKeeper status change trigger but we are already closed");
-      //      return;
-      //    }
 
       KeeperState state = event.getState();
 

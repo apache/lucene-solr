@@ -103,7 +103,7 @@ public class SolrZooKeeper extends ZooKeeperAdmin {
 
   @Override
   public void close() {
-    if (closeTracker != null) closeTracker.close();
+    assert closeTracker != null ? closeTracker.close() : true;
     try {
       try {
         RequestHeader h = new RequestHeader();

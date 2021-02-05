@@ -379,7 +379,7 @@ public class ZkTestServer implements Closeable {
 
   public synchronized void shutdown() throws IOException, InterruptedException {
     log.info("Shutting down ZkTestServer.");
-    if (closeTracker != null) closeTracker.close();
+    assert closeTracker != null ? closeTracker.close() : true;
     try {
       if (chRootClient != null && chRootClient.isConnected()) {
         chRootClient.printLayout();

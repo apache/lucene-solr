@@ -124,10 +124,6 @@ public class SolrCmdDistributor implements Closeable {
 
     // this can happen in certain situations such as close
     if (isRetry) {
-      if (rspCode == 403 || rspCode == 503) {
-        doRetry = true;
-      }
-
       // if it's a io exception exception, lets try again
       if (err.t instanceof SolrServerException) {
         if (((SolrServerException) err.t).getRootCause() instanceof IOException  && !(((SolrServerException) err.t).getRootCause() instanceof ClosedChannelException)) {

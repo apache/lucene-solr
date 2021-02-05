@@ -25,12 +25,12 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SolrScheduledExecutorScheduler;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.servlet.SolrQoSFilter;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -573,7 +573,7 @@ public class JettySolrRunner implements Closeable {
         SolrZkClient zkClient = getCoreContainer().getZkController().getZkClient();
         CountDownLatch latch = new CountDownLatch(1);
 
-        Watcher watcher = new ClusterReadyWatcher(latch, zkClient);
+        ClusterReadyWatcher watcher = new ClusterReadyWatcher(latch, zkClient);
         try {
           Stat stat = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, watcher);
           if (stat == null) {
@@ -594,6 +594,8 @@ public class JettySolrRunner implements Closeable {
         } catch (InterruptedException e) {
           ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+        } finally {
+          IOUtils.closeQuietly(watcher);
         }
 // if we need this, us client, not reader
 //        log.info("waitForNode: {}", getNodeName());
@@ -927,7 +929,7 @@ public class JettySolrRunner implements Closeable {
     return proxy;
   }
 
-  private static class ClusterReadyWatcher implements Watcher {
+  private static class ClusterReadyWatcher implements Watcher, Closeable {
 
     private final CountDownLatch latch;
     private final SolrZkClient zkClient;
@@ -957,6 +959,17 @@ public class JettySolrRunner implements Closeable {
           log.info("interrupted");
           return;
         }
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      try {
+        zkClient.getSolrZooKeeper().removeWatches(ZkStateReader.COLLECTIONS_ZKNODE, this, WatcherType.Any, true);
+      } catch (KeeperException.NoWatcherException e) {
+
+      } catch (Exception e) {
+        if (log.isDebugEnabled()) log.debug("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
       }
     }
   }

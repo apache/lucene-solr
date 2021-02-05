@@ -95,6 +95,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
+import org.apache.solr.schema.ZkIndexSchemaReader;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -238,6 +239,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private volatile Counter newSearcherMaxReachedCounter;
   private volatile Counter newSearcherOtherErrorsCounter;
   private final CoreContainer coreContainer;
+
+  private volatile ZkIndexSchemaReader zkIndexSchemaReader;
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet(64);
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
@@ -1281,6 +1284,22 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       StopWatch timeRegConfListener = new StopWatch(this + "-startCore-regConfListener");
       registerConfListener();
       timeRegConfListener.done();
+
+      if (coreContainer.isZooKeeperAware() && schema instanceof ManagedIndexSchema) {
+        try {
+          this.zkIndexSchemaReader = new ZkIndexSchemaReader(((ManagedIndexSchema) schema).getManagedIndexSchemaFactory(), this);
+        } catch (KeeperException.NoNodeException e) {
+          // no managed schema file yet
+        } catch (KeeperException e) {
+          String msg = "Exception creating ZkIndexSchemaReader";
+          log.error(msg, e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
+        }
+      }
+
     } catch(Exception e) {
 //      try {
 //        close();
@@ -1862,6 +1881,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 //        }
 
         searcherExecutor.shutdown();
+
+        closer.collect(zkIndexSchemaReader);
 
         closer.collect("closeSearcher", () -> {
           closeSearcher();
@@ -3173,6 +3194,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private Object call() {
     IOUtils.closeQuietly(responseWriters);
     return "responseWriters";
+  }
+
+  public ZkIndexSchemaReader getZkIndexSchemaReader() {
+    return zkIndexSchemaReader;
   }
 
   public interface RawWriter {

@@ -154,7 +154,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, 
                                             SolrQueryResponse rsp, 
                                             UpdateRequestProcessor next) {
-    return new AddSchemaFieldsUpdateProcessor(next, typeMappings, inclusions, exclusions, solrResourceLoader, defaultFieldType);
+    return new AddSchemaFieldsUpdateProcessor(next, typeMappings, inclusions, exclusions, solrResourceLoader, defaultFieldType, req);
   }
 
   @Override
@@ -375,15 +375,17 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     private final SolrResourceLoader solrResourceLoader;
     private final List<TypeMapping> typeMappings;
     private final String defaultFieldType;
+    private final SolrQueryRequest req;
 
     public AddSchemaFieldsUpdateProcessor(UpdateRequestProcessor next, List<TypeMapping> typeMappings, SelectorParams inclusions, Collection<SelectorParams> exclusions,
-        SolrResourceLoader solrResourceLoader, String defaultFieldType) {
+        SolrResourceLoader solrResourceLoader, String defaultFieldType, SolrQueryRequest req) {
       super(next);
       this.inclusions = inclusions;
       this.typeMappings = typeMappings;
       this.exclusions = exclusions;
       this.solrResourceLoader = solrResourceLoader;
       this.defaultFieldType = defaultFieldType;
+      this.req = req;
     }
     
     @Override
@@ -509,7 +511,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           cmd.getReq().updateSchemaToLatest();
         } catch (ManagedIndexSchema.SchemaChangedInZkException e) {
           try {
-            ((ManagedIndexSchema) cmd.getReq().getSchema()).getManagedIndexSchemaFactory().getZkIndexSchemaReader().updateSchema();
+            req.getCore().getZkIndexSchemaReader().updateSchema(false);
             cmd.getReq().updateSchemaToLatest();
 
             if (log.isDebugEnabled()) log.debug("Schema changed while processing request ... current latest version {} try={}", ((ManagedIndexSchema) cmd.getReq().getSchema()).getSchemaZkVersion(), cnt);

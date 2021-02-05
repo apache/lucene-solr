@@ -55,7 +55,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
     if (isShutdown()) {
       return;
     }
-    if (closeTracker != null) closeTracker.close();
+    assert closeTracker != null ? closeTracker.close() : true;
     setKeepAliveTime(1, TimeUnit.NANOSECONDS);
     for (int i = 0; i < Math.max(0, getPoolSize() - getActiveCount() + 1); i++) {
       try {

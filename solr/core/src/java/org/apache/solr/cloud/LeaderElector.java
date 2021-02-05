@@ -521,6 +521,7 @@ public class LeaderElector implements Closeable {
   private class ElectionWatcher implements Watcher, Closeable {
     final String myNode, watchedNode;
     final ElectionContext context;
+    private volatile boolean closed;
 
     private ElectionWatcher(String myNode, String watchedNode, ElectionContext context) {
       this.myNode = myNode;
@@ -531,7 +532,7 @@ public class LeaderElector implements Closeable {
     @Override
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
-      if (EventType.None.equals(event.getType())) {
+      if (EventType.None.equals(event.getType()) || closed) {
         return;
       }
 
@@ -577,6 +578,7 @@ public class LeaderElector implements Closeable {
 
     @Override
     public void close() throws IOException {
+      this.closed = true;
       SolrZooKeeper zk = zkClient.getSolrZooKeeper();
       try {
         zk.removeWatches(watchedNode, this, WatcherType.Any, true);

@@ -40,7 +40,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.ZkStateWriter;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
@@ -50,6 +49,8 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -58,6 +59,7 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -73,6 +75,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -129,6 +132,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.SP
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.makeMap;
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -880,51 +884,28 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     CountDownLatch latch = new CountDownLatch(1);
     latches.add(latch);
     // mn- from DistributedMap
-    final String sucessAsyncPathToWaitOn = "/overseer/collection-map-completed" + "/mn-" + requestId;
+    final String successPath = "/overseer/collection-map-completed" + "/mn-" + requestId;
     final String failAsyncPathToWaitOn = "/overseer/collection-map-failure" + "/mn-" + requestId;
     final String runningAsyncPathToWaitOn = "/overseer/collection-map-running" + "/mn-" + requestId;
 
     if (zkController.getOverseerRunningMap().contains(requestId)) {
+      WatchForResponseNode waitForResponse = new WatchForResponseNode(latch, zkStateReader.getZkClient(), successPath);
       try {
-
-        Watcher waitForAsyncId = event -> {
-          if (log.isDebugEnabled()) log.debug("waitForAsyncId {}", event);
-          if (Watcher.Event.EventType.None.equals(event.getType())) {
-            return;
-          }
-          if (event.getType().equals(Watcher.Event.EventType.NodeCreated)) {
-            if (log.isDebugEnabled()) log.debug("Async response zk node created");
-            latch.countDown();
-            return;
-          } else if (event.getType().equals(Watcher.Event.EventType.NodeDeleted)) {
-            if (log.isDebugEnabled()) log.debug("Async response zk node deleted");
-            latch.countDown();
-            return;
-          }
-        };
-
-        Stat rstats = zkStateReader.getZkClient().exists(sucessAsyncPathToWaitOn, waitForAsyncId);
-        if (log.isDebugEnabled()) log.debug("created watch for async response, stat={}", rstats);
-        if (rstats != null) {
+        Stat rstats1 = zkStateReader.getZkClient().exists(successPath, waitForResponse);
+        if (log.isDebugEnabled()) log.debug("created watch for async response, stat={}", rstats1);
+        if (rstats1 != null) {
           latch.countDown();
         }
 
-        rstats = zkStateReader.getZkClient().exists(failAsyncPathToWaitOn, waitForAsyncId);
-        if (log.isDebugEnabled()) log.debug("created watch for async response, stat={}", rstats);
-        if (rstats != null) {
+        Stat rstats2 = zkStateReader.getZkClient().exists(failAsyncPathToWaitOn, waitForResponse);
+        if (log.isDebugEnabled()) log.debug("created watch for async response, stat={}", rstats2);
+        if (rstats2 != null) {
           latch.countDown();
         }
 
-        if (overseer.isClosed()) {
-          throw new AlreadyClosedException();
-        }
-
-        if (log.isDebugEnabled()) log.debug("created watch for async response {}", requestId);
+        if (log.isDebugEnabled()) log.debug("created watch for response {}", requestId);
         boolean success = false;
         for (int i = 0; i < 5; i++) {
-          if (overseer.isClosed() || overseer.getCoreContainer().isShutDown()) {
-            break;
-          }
           success = latch.await(3, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
           if (success) {
             if (log.isDebugEnabled()) log.debug("latch was triggered {}", requestId);
@@ -935,10 +916,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         }
 
         if (!success) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting to see async zk node " + sucessAsyncPathToWaitOn);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting to see async zk node " + successPath);
         }
 
       } finally {
+        IOUtils.closeQuietly(waitForResponse);
+        latch.countDown();
         latches.remove(latch);
       }
 
@@ -975,7 +958,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       results.add("STATUS", status);
     }
 
-    String r = ((NamedList<String>)srsp.getValues().get("STATUS")).get("state").toLowerCase(Locale.ROOT);
+    String r = ((NamedList<String>) srsp.getValues().get("STATUS")).get("state").toLowerCase(Locale.ROOT);
     if (r.equals("running")) {
       if (log.isDebugEnabled()) log.debug("The task is still RUNNING, continuing to wait.");
       throw new SolrException(ErrorCode.BAD_REQUEST,
@@ -1206,6 +1189,53 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     /** @deprecated consider to make it private after {@link CreateCollectionCmd} refactoring*/
     @Deprecated void track(String nodeName, String coreAdminAsyncId) {
       shardAsyncIdByNode.put(nodeName, coreAdminAsyncId);
+    }
+  }
+
+  private static class WatchForResponseNode implements Watcher, Closeable {
+    private final CountDownLatch latch;
+    private final SolrZkClient zkClient;
+    private final String watchPath;
+    private boolean closed;
+
+    public WatchForResponseNode(CountDownLatch latch, SolrZkClient zkClient, String watchPath) {
+      this.zkClient = zkClient;
+      this.latch = latch;
+      this.watchPath = watchPath;
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+      if (log.isDebugEnabled()) log.debug("waitForAsyncId {}", event);
+      if (Event.EventType.None.equals(event.getType()) || closed) {
+        return;
+      }
+      if (event.getType().equals(Event.EventType.NodeCreated)) {
+        if (log.isDebugEnabled()) log.debug("Overseer request response zk node created");
+        latch.countDown();
+        return;
+      } else if (event.getType().equals(Event.EventType.NodeDeleted)) {
+        if (log.isDebugEnabled()) log.debug("Overseer request response zk node deleted");
+        latch.countDown();
+        return;
+      } else if (event.getType().equals(Event.EventType.NodeDataChanged)) {
+        if (log.isDebugEnabled()) log.debug("Overseer request response zk node data changed");
+        latch.countDown();
+        return;
+      }
+    }
+
+    @Override
+    public void close() throws IOException {
+      this.closed = true;
+      SolrZooKeeper zk = zkClient.getSolrZooKeeper();
+      try {
+        zk.removeWatches(watchPath, this, WatcherType.Any, true);
+      } catch (KeeperException.NoWatcherException e) {
+
+      } catch (Exception e) {
+        log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
+      }
     }
   }
 }

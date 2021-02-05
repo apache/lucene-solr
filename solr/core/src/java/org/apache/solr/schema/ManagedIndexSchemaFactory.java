@@ -70,8 +70,6 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   private volatile String resourceName;
   private volatile ManagedIndexSchema schema;
 
-  private volatile ZkIndexSchemaReader zkIndexSchemaReader;
-
   private volatile String loadedResource;
   private volatile boolean shouldUpgrade = false;
 
@@ -427,22 +425,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     this.core = core;
     this.collection = core.getCoreDescriptor().getCollectionName();
     this.cc = core.getCoreContainer();
-    if (this.zkIndexSchemaReader == null && loader instanceof ZkSolrResourceLoader) {
-      try {
-        this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
-        core.setLatestSchema(getSchema());
-      } catch (KeeperException.NoNodeException e) {
-        // no managed schema file yet
-      } catch (KeeperException e) {
-        String msg = "Error attempting to access " + ((ZkSolrResourceLoader)loader).getConfigSetZkPath() + "/" + managedSchemaResourceName;
-        log.error(msg, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-      }
-    } else {
-      this.zkIndexSchemaReader = null;
-    }
+    core.setLatestSchema(getSchema());
   }
 
   public ManagedIndexSchema getSchema() {
@@ -462,9 +445,5 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
   public SolrConfig getConfig() {
     return config;
-  }
-
-  public ZkIndexSchemaReader getZkIndexSchemaReader() {
-    return zkIndexSchemaReader;
   }
 }

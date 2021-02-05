@@ -262,7 +262,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       } catch (Exception e) {
         assertTrue("Unrecognized exception message: " + e, 
             e.getMessage().contains("no servers hosting shard:") 
-                || e.getMessage().contains("ZooKeeper is not connected"));
+                || e.getMessage().contains("SolrZkClient is not currently connected,,"));
       }
     }
     finally {
