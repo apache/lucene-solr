@@ -221,8 +221,10 @@ public class ZkStateWriter {
     }
     if ((updates == this.updates)
         && !hasPendingUpdates()) {
+      log.info("WPU 1");
       return clusterState;
     }
+    
     Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
@@ -232,18 +234,32 @@ public class ZkStateWriter {
           String path = ZkStateReader.getCollectionPath(name);
           ZkWriteCommand cmd = entry.getValue();
           DocCollection c = cmd.collection;
+          
+          if (c.getName().equals("coll192")) log.info("WPU 2");
 
           if (cmd.ops != null && cmd.ops.isPreOp()) {
             cmd.ops.persist(path, reader.getZkClient());
             clusterState = clusterState.copyWith(name,
                   cmd.collection.copyWith(PerReplicaStates.fetch(cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
+          
+          if (c.getName().equals("coll192")) log.info("WPU 3");
+
           if (!cmd.persistCollState) continue;
+          
+          if (c.getName().equals("coll192")) log.info("WPU 4");
+
           if (c == null) {
             // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
             log.debug("going to delete state.json {}", path);
             reader.getZkClient().clean(path);
+            
+            if (c.getName().equals("coll192")) log.info("WPU 5");
+
           } else if (c.getStateFormat() > 1) {
+            
+            if (c.getName().equals("coll192")) log.info("WPU 6");
+
             byte[] data = Utils.toJSON(singletonMap(c.getName(), c));
             if (reader.getZkClient().exists(path, true)) {
               if (log.isDebugEnabled()) {
@@ -258,9 +274,15 @@ public class ZkStateWriter {
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0, path);
               clusterState = clusterState.copyWith(name, newCollection);
             }
+            
+            if (c.getName().equals("coll192")) log.info("WPU 7");
+
           } else if (c.getStateFormat() == 1) {
             isClusterStateModified = true;
           }
+          
+          if (c.getName().equals("coll192")) log.info("WPU 8");
+
           if (cmd.ops != null && !cmd.ops.isPreOp()) {
             cmd.ops.persist(path, reader.getZkClient());
             DocCollection currentCollState = clusterState.getCollection(cmd.name);
@@ -269,6 +291,9 @@ public class ZkStateWriter {
                   currentCollState.copyWith(PerReplicaStates.fetch(currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }
+          
+          if (c.getName().equals("coll192")) log.info("WPU 9");
+
         }
 
         updates.clear();

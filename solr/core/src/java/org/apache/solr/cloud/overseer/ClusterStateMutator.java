@@ -55,23 +55,34 @@ public class ClusterStateMutator {
   @SuppressWarnings({"unchecked"})
   public ZkWriteCommand createCollection(ClusterState clusterState, ZkNodeProps message) {
     String cName = message.getStr(NAME);
+    
+    if ("coll192".equals(cName)) log.info("here 1");
+    
     log.debug("building a new cName: {}", cName);
     if (clusterState.hasCollection(cName)) {
       log.warn("Collection {} already exists. exit", cName);
       return ZkStateWriter.NO_OP;
     }
 
+    if ("coll192".equals(cName)) log.info("here 2");
+
     Map<String, Object> routerSpec = DocRouter.getRouterSpec(message);
     String routerName = routerSpec.get(NAME) == null ? DocRouter.DEFAULT_NAME : (String) routerSpec.get(NAME);
     DocRouter router = DocRouter.getDocRouter(routerName);
+
+    if ("coll192".equals(cName)) log.info("here 3");
 
     Object messageShardsObj = message.get("shards");
 
     Map<String, Slice> slices;
     if (messageShardsObj instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
       slices = Slice.loadAllFromMap(cName, (Map<String, Object>)messageShardsObj);
+      if ("coll192".equals(cName)) log.info("here 4");
+
     } else {
       List<String> shardNames = new ArrayList<>();
+
+      if ("coll192".equals(cName)) log.info("here 5");
 
       if (router instanceof ImplicitDocRouter) {
         getShardNames(shardNames, message.getStr("shards", DocRouter.DEFAULT_NAME));
@@ -81,6 +92,9 @@ public class ClusterStateMutator {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "numShards is a required parameter for 'compositeId' router");
         getShardNames(numShards, shardNames);
       }
+      
+      if ("coll192".equals(cName)) log.info("here 6");
+
       List<DocRouter.Range> ranges = router.partitionRange(shardNames.size(), router.fullRange());//maybe null
 
       slices = new LinkedHashMap<>();
@@ -91,8 +105,16 @@ public class ClusterStateMutator {
         sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
 
         slices.put(sliceName, new Slice(sliceName, null, sliceProps,cName));
+        if ("coll192".equals(cName)) log.info("here 6.5");
+
       }
+      
+      if ("coll192".equals(cName)) log.info("here 7");
+
     }
+    
+    if ("coll192".equals(cName)) log.info("here 8");
+
 
     Map<String, Object> collectionProps = new HashMap<>();
 
@@ -105,16 +127,24 @@ public class ClusterStateMutator {
     }
     collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
+    if ("coll192".equals(cName)) log.info("here 9");
+
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
     }
+
+    if ("coll192".equals(cName)) log.info("here 10");
 
     //TODO default to 2; but need to debug why BasicDistributedZk2Test fails early on
     String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? null
         : ZkStateReader.getCollectionPath(cName);
 
+    if ("coll192".equals(cName)) log.info("here 11");
+
     DocCollection newCollection = new DocCollection(cName,
         slices, collectionProps, router, -1, znode);
+
+    if ("coll192".equals(cName)) log.info("here 12");
 
     return new ZkWriteCommand(cName, newCollection);
   }
