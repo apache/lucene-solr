@@ -29,7 +29,7 @@ Real Time Get relies on the update log feature, which is enabled by default and 
 </updateLog>
 ----
 
-Real Time Get requests can be performed using the `/get` handler which exists implicitly in Solr - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> - it's equivalent to the following configuration:
+Real Time Get requests can be performed using the `/get` handler which exists implicitly in Solr - see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>> - it's equivalent to the following configuration:
 
 [source,xml]
 ----

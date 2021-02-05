@@ -1698,16 +1698,18 @@ public class ZkStateReader implements SolrCloseable {
    * <p>
    * Note that the predicate may be called again even after it has returned true, so
    * implementors should avoid changing state within the predicate call itself.
+   * The predicate may also be called concurrently when multiple state changes are seen in rapid succession.
    * </p>
    *
    * @param collection the collection to watch
    * @param wait       how long to wait
    * @param unit       the units of the wait parameter
    * @param predicate  the predicate to call on state changes
+   * @return the state of the doc collection after the predicate succeeds
    * @throws InterruptedException on interrupt
    * @throws TimeoutException     on timeout
    */
-  public void waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
+  public DocCollection waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
     if (log.isDebugEnabled()) {
       log.debug("Waiting up to {}ms for state {}", unit.toMillis(wait), predicate);
@@ -1733,7 +1735,7 @@ public class ZkStateReader implements SolrCloseable {
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
         throw new TimeoutException("Timeout waiting to see state for collection=" + collection + " :" + docCollection.get());
-
+      return docCollection.get();
     } finally {
       removeDocCollectionWatcher(collection, watcher);
       waitLatches.remove(latch);

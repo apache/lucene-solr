@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.backward_codecs.lucene70;
 
+import org.apache.lucene.backward_codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
 import org.apache.lucene.backward_codecs.lucene60.Lucene60FieldInfosFormat;
@@ -34,7 +35,6 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -134,7 +134,7 @@ public class Lucene70Codec extends Codec {
   private final NormsFormat normsFormat = new Lucene70NormsFormat();
 
   @Override
-  public final NormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     return normsFormat;
   }
 }

@@ -39,7 +39,7 @@ There are two places in Solr to configure de-duplication: in `solrconfig.xml` an
 
 === In solrconfig.xml
 
-The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` as part of an <<update-request-processors.adoc#update-request-processors,Update Request Processor Chain>>, as in this example:
+The `SignatureUpdateProcessorFactory` has to be registered in `solrconfig.xml` as part of an <<update-request-processors.adoc#,Update Request Processor Chain>>, as in this example:
 
 [source,xml]
 ----

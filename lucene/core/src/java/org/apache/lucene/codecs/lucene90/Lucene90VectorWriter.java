@@ -123,7 +123,9 @@ public final class Lucene90VectorWriter extends VectorWriter {
             (RandomAccessVectorValuesProducer) vectors,
             vectorIndexOffset,
             offsets,
-            count);
+            count,
+            fieldInfo.getAttribute(HnswGraphBuilder.HNSW_MAX_CONN_ATTRIBUTE_KEY),
+            fieldInfo.getAttribute(HnswGraphBuilder.HNSW_BEAM_WIDTH_ATTRIBUTE_KEY));
       } else {
         throw new IllegalArgumentException(
             "Indexing an HNSW graph requires a random access vector values, got " + vectors);
@@ -188,9 +190,35 @@ public final class Lucene90VectorWriter extends VectorWriter {
       RandomAccessVectorValuesProducer vectorValues,
       long graphDataOffset,
       long[] offsets,
-      int count)
+      int count,
+      String maxConnStr,
+      String beamWidthStr)
       throws IOException {
-    HnswGraphBuilder hnswGraphBuilder = new HnswGraphBuilder(vectorValues);
+    int maxConn, beamWidth;
+    if (maxConnStr == null) {
+      maxConn = HnswGraphBuilder.DEFAULT_MAX_CONN;
+    } else {
+      try {
+        maxConn = Integer.parseInt(maxConnStr);
+      } catch (NumberFormatException e) {
+        throw new NumberFormatException(
+            "Received non integer value for max-connections parameter of HnswGraphBuilder, value: "
+                + maxConnStr);
+      }
+    }
+    if (beamWidthStr == null) {
+      beamWidth = HnswGraphBuilder.DEFAULT_BEAM_WIDTH;
+    } else {
+      try {
+        beamWidth = Integer.parseInt(beamWidthStr);
+      } catch (NumberFormatException e) {
+        throw new NumberFormatException(
+            "Received non integer value for beam-width parameter of HnswGraphBuilder, value: "
+                + beamWidthStr);
+      }
+    }
+    HnswGraphBuilder hnswGraphBuilder =
+        new HnswGraphBuilder(vectorValues, maxConn, beamWidth, HnswGraphBuilder.randSeed);
     hnswGraphBuilder.setInfoStream(segmentWriteState.infoStream);
     HnswGraph graph = hnswGraphBuilder.build(vectorValues.randomAccess());
 

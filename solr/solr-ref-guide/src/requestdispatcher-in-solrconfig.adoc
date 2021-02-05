@@ -33,7 +33,7 @@ It governs how Solr responds to requests such as `/select?qt=XXX`.
 The default value "false" will ignore requests to `/select` if a request handler is not explicitly registered with the name `/select`.
 A value of "true" will route query requests to the parser defined with the `qt` value if a request handler is not explicitly registered with the name `/select`.
 
-In recent versions of Solr, a `/select` request handler is defined by default, so a value of "false" will work fine. See the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandlers and SearchComponents in SolrConfig>> for more information.
+In recent versions of Solr, a `/select` request handler is defined by default, so a value of "false" will work fine. See the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>> for more information.
 
 [source,xml]
 ----

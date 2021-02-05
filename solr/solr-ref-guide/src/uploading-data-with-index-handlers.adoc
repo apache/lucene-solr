@@ -17,15 +17,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Index Handlers are Request Handlers designed to add, delete and update documents to the index. In addition to having plugins for importing rich documents <<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,using Tika>>, Solr natively supports indexing structured documents in XML, CSV and JSON.
+Index Handlers are Request Handlers designed to add, delete and update documents to the index. In addition to having plugins for importing rich documents <<uploading-data-with-solr-cell-using-apache-tika.adoc#,using Tika>>, Solr natively supports indexing structured documents in XML, CSV and JSON.
 
-The recommended way to configure and use request handlers is with path based names that map to paths in the request url. However, request handlers can also be specified with the `qt` (query type) parameter if the <<requestdispatcher-in-solrconfig.adoc#requestdispatcher-in-solrconfig,`requestDispatcher`>> is appropriately configured. It is possible to access the same handler using more than one name, which can be useful if you wish to specify different sets of default options.
+The recommended way to configure and use request handlers is with path based names that map to paths in the request url. However, request handlers can also be specified with the `qt` (query type) parameter if the <<requestdispatcher-in-solrconfig.adoc#,`requestDispatcher`>> is appropriately configured. It is possible to access the same handler using more than one name, which can be useful if you wish to specify different sets of default options.
 
-A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the <<content-streams.adoc#content-streams,ContentStream>>.
+A single unified update request handler supports XML, CSV, JSON, and javabin update requests, delegating to the appropriate `ContentStreamLoader` based on the `Content-Type` of the <<content-streams.adoc#,ContentStream>>.
 
 If you need to pre-process documents after they are loaded but before they are indexed (or even checked against the schema),
 Solr has document-preprocessing plugins for Update Request Handlers,
-called <<update-request-processors.adoc#update-request-processors,Update Request Processors>>,
+called <<update-request-processors.adoc#,Update Request Processors>>,
 which allow for default and custom configuration chains.
 
 == UpdateRequestHandler Configuration
@@ -136,7 +136,7 @@ It doesn't work for child/nested docs.
 [IMPORTANT]
 ====
 
-When using the Join query parser in a Delete By Query, you should use the `score` parameter with a value of "none" to avoid a `ClassCastException`. See the section on the <<other-parsers.adoc#other-parsers,Join Query Parser>> for more details on the `score` parameter.
+When using the Join query parser in a Delete By Query, you should use the `score` parameter with a value of "none" to avoid a `ClassCastException`. See the section on the <<other-parsers.adoc#,Join Query Parser>> for more details on the `score` parameter.
 
 ====
 
@@ -220,7 +220,7 @@ The status field will be non-zero in case of failure.
 
 === Using XSLT to Transform XML Index Updates
 
-The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#config-sets,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
 Here is an example XSLT stylesheet:
 
@@ -280,7 +280,7 @@ curl "http://localhost:8983/solr/my_collection/update?commit=true&tr=updateXml.x
 
 == JSON Formatted Index Updates
 
-Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents. If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described below in the section <<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>.
+Solr can accept JSON that conforms to a defined structure, or can accept arbitrary JSON-formatted documents. If sending arbitrarily formatted JSON, there are some additional parameters that need to be sent with the update request, described below in the section <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>.
 
 === Solr-Style JSON
 
@@ -419,7 +419,7 @@ The `/update/json` path may be useful for clients sending in JSON formatted upda
 
 === Custom JSON Documents
 
-Solr can support custom JSON. This is covered in the section <<transforming-and-indexing-custom-json.adoc#transforming-and-indexing-custom-json,Transforming and Indexing Custom JSON>>.
+Solr can support custom JSON. This is covered in the section <<transforming-and-indexing-custom-json.adoc#,Transforming and Indexing Custom JSON>>.
 
 
 == CSV Formatted Index Updates

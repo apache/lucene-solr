@@ -50,7 +50,7 @@ import org.jsoup.select.Elements;
  * Validates that no file contains the same anchor more then once.
  * </li>
  * <li>
- * Validates that relative links point to a file that actually exists, and if it's part of the ref-guide that the '#fragement' in the link refers to an ID that exists in that file.
+ * Validates that relative links point to a file that actually exists, and if it's part of the ref-guide that any '#fragment' in the link refers to an ID that exists in that file.
  * </li>
  * <li>
  * Our use of "<a href="https://getbootstrap.com/">Bootstrap</a>" features leverage some custom javascript
@@ -182,7 +182,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         nodesWithIds.add(new Element(Tag.valueOf("body"), "").attr("id", file.getName().replaceAll("\\.html$","")));
       } else {
         // We have to add Jekyll's <body> to the nodesWithIds so we check the main section anchor as well
-        // since we've already
+        // since we've already drilled down below it
         nodesWithIds.addAll(doc.select("body[id]"));
       }
 
@@ -214,7 +214,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         totalIds++; // Note: we specifically don't count 'preamble'
       }
 
-      // check for (relative) links that don't include a fragment
+      // build up the list of (relative) linksInThisFile
       final Elements links = mainContent.select("a[href]");
       for (Element link : links) {
         totalLinks++;
@@ -227,17 +227,8 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
           final URI uri = new URI(href);
           if (! uri.isAbsolute()) {
             totalRelativeLinks++;
-            final String frag = uri.getFragment();
-            if ((null == frag || "".equals(frag)) && ! uri.getPath().startsWith("../")) {
-              // we must have a fragment for intra-page links to work correctly
-              // but relative links "up and out" of ref-guide (Ex: local javadocs)
-              // don't require them (even if checkAllRelativeLinks is set)
-              problems++;
-              System.err.println(file.toURI().toString() + " contains relative link w/o an '#anchor': " + href);
-            } else {
-              // track the link to validate it exists in the target doc
-              linksInThisFile.add(uri);
-            }
+            // track the link to (later) validate the target doc exists and contains the linked anchor (if any)
+            linksInThisFile.add(uri);
           }
         } catch (URISyntaxException uri_ex) {
           // before reporting a problem, see if it can be parsed as a valid (absolute) URL
@@ -260,7 +251,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       problems += validateHtmlStructure(file, mainContent);
     }
 
-    // check every (realtive) link in every file to ensure the frag exists in the target page
+    // check every (relative) link in every file to ensure the target page exists, and contains the linked anchor (if any)
     for (Map.Entry<File,List<URI>> entry : filesToRelativeLinks.entrySet()) {
       final File source = entry.getKey();
       for (URI link : entry.getValue()) {
@@ -276,14 +267,16 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         } else {
           if ( ! path.startsWith("../") ) {
             // if the dest file is part of the ref guide (ie: not an "up and out" link to javadocs)
-            // then we validate the fragment is known and exists in that file...
+            // then we validate the fragment (if any) is known and exists in that file...
             final String frag = link.getFragment();
-            final Set<String> knownIdsInDest = filesToIds.get(dest.getName());
-            assert null != knownIdsInDest : dest.getName();
-            if (! knownIdsInDest.contains(frag) ) {
-              problems++;
-              System.err.println("Relative link points at id that doesn't exist in dest: " + link);
-              System.err.println(" ... source: " + source.toURI().toString());
+            if ( ! (null == frag || frag.isEmpty()) ) {
+              final Set<String> knownIdsInDest = filesToIds.get(dest.getName());
+              assert null != knownIdsInDest : dest.getName();
+              if (! knownIdsInDest.contains(frag) ) {
+                problems++;
+                System.err.println("Relative link points at id that doesn't exist in dest: " + link);
+                System.err.println(" ... source: " + source.toURI().toString());
+              }
             }
           }
         }

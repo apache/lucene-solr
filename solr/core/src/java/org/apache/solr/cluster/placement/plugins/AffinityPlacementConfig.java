@@ -28,7 +28,11 @@ import java.util.Objects;
  */
 public class AffinityPlacementConfig implements PlacementPluginConfig {
 
-  public static final AffinityPlacementConfig DEFAULT = new AffinityPlacementConfig(20L, 100L);
+  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 20L;
+  public static final long DEFAULT_PRIORITIZED_FREE_DISK_GB = 100L;
+
+  public static final AffinityPlacementConfig DEFAULT =
+      new AffinityPlacementConfig(DEFAULT_MINIMAL_FREE_DISK_GB, DEFAULT_PRIORITIZED_FREE_DISK_GB);
 
   /**
    * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
@@ -53,13 +57,13 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    * they are not already present.
    */
   @JsonProperty
-  public Map<String, String> withCollections;
+  public Map<String, String> withCollection;
 
   /**
    * Zero-arguments public constructor required for deserialization - don't use.
    */
   public AffinityPlacementConfig() {
-    this(0L, 0L);
+    this(DEFAULT_MINIMAL_FREE_DISK_GB, DEFAULT_PRIORITIZED_FREE_DISK_GB);
   }
 
   /**
@@ -75,14 +79,14 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    * Configuration for the {@link AffinityPlacementFactory}.
    * @param minimalFreeDiskGB minimal free disk GB.
    * @param prioritizedFreeDiskGB prioritized free disk GB.
-   * @param withCollections configuration of co-located collections: keys are
+   * @param withCollection configuration of co-located collections: keys are
    *                        primary collection names and values are secondary
    *                        collection names.
    */
-  public AffinityPlacementConfig(long minimalFreeDiskGB, long prioritizedFreeDiskGB, Map<String, String> withCollections) {
+  public AffinityPlacementConfig(long minimalFreeDiskGB, long prioritizedFreeDiskGB, Map<String, String> withCollection) {
     this.minimalFreeDiskGB = minimalFreeDiskGB;
     this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
-    Objects.requireNonNull(withCollections);
-    this.withCollections = withCollections;
+    Objects.requireNonNull(withCollection);
+    this.withCollection = withCollection;
   }
 }

@@ -72,6 +72,9 @@ Improvements
 * SOLR-14949: Docker: Ability to customize the FROM image when building.
   (Houston Putman)
 
+* SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
+when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -207,7 +210,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 New Features
 ---------------------
-(No changes)
+* SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
 
 Improvements
 ---------------------
@@ -215,7 +218,12 @@ Improvements
 
 * SOLR-15085: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was passed to it. (Tim Owen via Mike Drob)
 
-* SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consitency and clarity. (Eric Pugh)
+* SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
+
+* SOLR-13608: Backups are now done incrementally by default.  Multiple backups can be stored at the same location, and each
+  backup will only upload those files that are new since the last backup. (Jason Gerlowski, Shalin , Cao Manh Dat)
+
+* SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consistency and clarity. (Eric Pugh)
 
 Optimizations
 ---------------------

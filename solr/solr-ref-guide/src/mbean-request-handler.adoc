@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The MBean Request Handler offers programmatic access to the information provided on the <<plugins-stats-screen.adoc#plugins-stats-screen,Plugin/Stats>> page of the Admin UI.
+The MBean Request Handler offers programmatic access to the information provided on the <<plugins-stats-screen.adoc#,Plugin/Stats>> page of the Admin UI.
 
 The MBean Request Handler accepts the following parameters:
 
@@ -30,7 +30,7 @@ Restricts results by category name.
 Specifies whether statistics are returned with results. You can override the `stats` parameter on a per-field basis. The default is `false`.
 
 `wt`::
-The output format. This operates the same as the <<response-writers.adoc#response-writers,`wt` parameter in a query>>. The default is `json`.
+The output format. This operates the same as the <<response-writers.adoc#,`wt` parameter in a query>>. The default is `json`.
 
 == MBeanRequestHandler Examples
 

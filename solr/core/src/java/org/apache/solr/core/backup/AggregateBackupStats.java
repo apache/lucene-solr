@@ -14,16 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseLiveDocsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+package org.apache.solr.core.backup;
 
-public class TestLucene50LiveDocsFormat extends BaseLiveDocsFormatTestCase {
+/**
+ * Aggregate stats from multiple {@link ShardBackupMetadata}
+ *
+ * Counted stats may represent multiple shards within a given {@link BackupId}, or span multiple different {@link BackupId BackupIds}.
+ */
+public class AggregateBackupStats {
+    private int numFiles = 0;
+    private long totalSize = 0;
 
-  @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
-  }
+    public AggregateBackupStats() {
+    }
+
+    public void add(ShardBackupMetadata shardBackupMetadata) {
+        numFiles += shardBackupMetadata.numFiles();
+        totalSize += shardBackupMetadata.totalSize();
+    }
+
+    public int getNumFiles() {
+        return numFiles;
+    }
+
+    public long getTotalSize() {
+        return totalSize;
+    }
 }

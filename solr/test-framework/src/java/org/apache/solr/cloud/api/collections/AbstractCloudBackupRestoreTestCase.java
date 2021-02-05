@@ -54,7 +54,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class implements the logic required to test Solr cloud backup/restore capability.
+ * Used to test the traditional (now deprecated) 'full-snapshot' method of backup/restoration.
+ *
+ * For a similar test harness for incremental backup/restoration see {@link AbstractIncrementalBackupTest}
  */
 public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -182,7 +184,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     {
       CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+          .setLocation(backupLocation)
+          .setIncremental(false)
+          .setRepositoryName(getBackupRepoName());
       assertEquals(0, backup.process(solrClient).getStatus());
     }
 
@@ -192,7 +196,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     {
       CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+          .setLocation(backupLocation)
+          .setRepositoryName(getBackupRepoName());
 
       restore.setConfigName("confFaulty");
       assertEquals(RequestStatusState.FAILED, restore.processAndWait(solrClient, 30));
@@ -231,6 +236,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     // Do not specify the backup location.
     CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
+        .setIncremental(false)
         .setRepositoryName(getBackupRepoName());
     try {
       backup.process(solrClient);
@@ -293,7 +299,9 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     {
       CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
-          .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+          .setIncremental(false)
+          .setLocation(backupLocation)
+          .setRepositoryName(getBackupRepoName());
       if (random().nextBoolean()) {
         assertEquals(0, backup.process(client).getStatus());
       } else {
@@ -400,7 +408,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     // TODO Find the applicable core.properties on the file system but how?
   }
 
-  private Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
+  public static Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
     Map<String,Integer> shardToDocCount = new TreeMap<>();
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();

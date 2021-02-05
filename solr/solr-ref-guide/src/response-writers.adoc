@@ -170,7 +170,7 @@ The Content-Type of the response is set according to the `<xsl:output>` statemen
 
 === XSLT Configuration
 
-The example below, from the `sample_techproducts_configs` <<response-writers.adoc#response-writers,configset>> in the Solr distribution, shows how the XSLT Response Writer is configured.
+The example below, from the `sample_techproducts_configs` <<response-writers.adoc#,configset>> in the Solr distribution, shows how the XSLT Response Writer is configured.
 
 [source,xml]
 ----
@@ -188,7 +188,7 @@ A value of 5 for `xsltCacheLifetimeSeconds` is good for development, to see XSLT
 
 == Binary Response Writer
 
-This is a custom binary format used by Solr for inter-node communication as well as client-server communication. SolrJ uses this as the default for indexing as well as querying. See <<client-apis.adoc#client-apis,Client APIs>> for more details.
+This is a custom binary format used by Solr for inter-node communication as well as client-server communication. SolrJ uses this as the default for indexing as well as querying. See <<client-apis.adoc#,Client APIs>> for more details.
 
 == GeoJSON Response Writer
 
@@ -256,7 +256,7 @@ rsp['response']['docs'].each { |doc| puts 'name field = ' + doc['name'\] }
 
 The CSV response writer returns a list of documents in comma-separated values (CSV) format. Other information that would normally be included in a response, such as facet information, is excluded.
 
-The CSV response writer supports multi-valued fields, as well as <<transforming-result-documents.adoc#transforming-result-documents,pseudo-fields>>, and the output of this CSV format is compatible with Solr's <<uploading-data-with-index-handlers.adoc#csv-formatted-index-updates,CSV update format>>.
+The CSV response writer supports multi-valued fields, as well as <<transforming-result-documents.adoc#,pseudo-fields>>, and the output of this CSV format is compatible with Solr's <<uploading-data-with-index-handlers.adoc#csv-formatted-index-updates,CSV update format>>.
 
 === CSV Parameters
 

@@ -7,6 +7,9 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-9680: IndexWriter#getFieldNames() method added to get fields present in index.
+  This method was removed in LUCENE-8909. (Oren Ovadia)
+
 * LUCENE-9322: Vector-valued fields, Lucene90 Codec (Mike Sokolov, Julie Tibshirani, Tomoko Uchida)
 
 * LUCENE-9004: Approximate nearest vector search via NSW graphs
@@ -185,6 +188,9 @@ Improvements
 
 Bug fixes
 
+* LUCENE-9686: Fix read past EOF handling in DirectIODirectory. (Zach Chen, 
+  Julie Tibshirani)
+
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
@@ -255,7 +261,6 @@ API Changes
 
 New Features
 ---------------------
-(No changes)
 
 * LUCENE-9537:  Added smoothingScore method and default implementation to 
   Scorable abstract class.  The smoothing score allows scorers to calculate a 
@@ -273,7 +278,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9725: BM25FQuery was extended to handle similarities beyond BM25Similarity. It
+  was renamed to CombinedFieldQuery to reflect its more general scope. (Julie Tibshirani)
 
 Optimizations
 ---------------------
