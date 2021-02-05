@@ -56,4 +56,6 @@ configure(project(":solr")) {
       }
     }
   }
+
+  check.dependsOn validateConfigFileSanity
 }

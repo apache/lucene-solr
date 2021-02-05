@@ -40,7 +40,8 @@ allprojects {
     // javadoc rendering task below. The default javadoc task
     // will just invoke 'renderJavadoc' (to allow people to call
     // conventional task name).
-    tasks.matching { it.name == "javadoc" }.all {
+    def javadocTasks = tasks.matching { it.name == "javadoc" }
+    javadocTasks.all { task ->
       enabled = false
       dependsOn "renderJavadoc"
     }
@@ -56,6 +57,9 @@ allprojects {
 
       outputDir = project.javadoc.destinationDir
     }
+
+    // Attach javadoc task to check.
+    check.dependsOn renderJavadoc
 
     task renderSiteJavadoc(type: RenderJavadocTask) {
       description "Generates Javadoc API documentation for the site (relative links)."

@@ -28,10 +28,12 @@ configure(rootProject) {
 }
 
 allprojects {
-    task("rat", type: RatTask) {
+    task rat(type: RatTask) {
         group = 'Verification'
         description = 'Runs Apache Rat checks.'
     }
+
+    check.dependsOn rat
 }
 
 configure(rootProject) {

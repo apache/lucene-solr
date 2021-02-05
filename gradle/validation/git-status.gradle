@@ -119,4 +119,6 @@ configure(rootProject) {
       }
     }
   }
+
+  check.dependsOn checkWorkingCopyClean
 }
