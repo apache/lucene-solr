@@ -1332,11 +1332,15 @@
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked for
-       every xsltCacheLifetimeSeconds.
-    -->
+       every xsltCacheLifetimeSeconds.  This is part of the Scripting contrib module.
+
+       See more about this response writer at https://lucene.apache.org/solr/guide/response-writers.html#xslt-response-writer
+  -->
+  <!--
   <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
+  -->
 
   <!-- Query Parsers
 
