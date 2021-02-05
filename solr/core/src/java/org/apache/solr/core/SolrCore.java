@@ -201,13 +201,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * If we reload a core, the name remains same , but the id will be new
    */
   public final UUID uniqueId = UUID.randomUUID();
-
-  //TODO: This needs to become a time aware storage model
-  private final Set<UUID> activeQueryIDs = new ConcurrentHashSet<>();
-
-  // The main difference between this and activeQueryIDs is that the former is used by
-  // the aggregating node to generate new queryIDs, whereas activeCancellableQueries is
-  // used by executing nodes to control the wrapper which is actually executing the query
+  
   //TODO: This needs to become a time aware storage model
   private final Map<String, CancellableTask> activeCancellableQueries = new ConcurrentHashMap<>();
 
@@ -3255,15 +3249,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     });
     return blobRef;
-  }
-
-  // Used on local shards
-  public void addQueryID(String queryID) {
-    if (queryID == null) {
-      throw new IllegalArgumentException("Incoming queryID is null");
-    }
-
-    activeQueryIDs.add(UUID.fromString(queryID));
   }
 
   public String generateQueryID() {

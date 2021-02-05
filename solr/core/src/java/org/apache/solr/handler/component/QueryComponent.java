@@ -369,6 +369,9 @@ public class QueryComponent extends SearchComponent
     // Set the queryID for the searcher to consume
     String queryID = params.get(ShardParams.QUERY_ID);
 
+    boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+    cmd.setQueryCancellable(isCancellableQuery);
+
     if (queryID == null) {
       if (rb.isDistrib) {
         throw new IllegalStateException("QueryID is null for distributed query");

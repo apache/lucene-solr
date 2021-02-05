@@ -206,11 +206,16 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = postFilter;
     }
 
-    collector = new CancellableCollector(collector);
+    if (cmd.isQueryCancellable()) {
+      collector = new CancellableCollector(collector);
+
+      // Add this to the local active queries map
+      core.addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
+    }
+
     //Collector collector1 = new CancellableCollector(collector);
 
-    // Add this to the local active queries map
-    core.addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
+    //collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), 1000);
 
     try {
       super.search(query, collector);
@@ -232,7 +237,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ((DelegatingCollector) collector).finish();
     }
 
-    core.removeCancellableQuery(cmd.getQueryID());
+    if (cmd.isQueryCancellable()) {
+      core.removeCancellableQuery(cmd.getQueryID());
+    }
 
     return collector;
   }

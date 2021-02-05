@@ -16,6 +16,10 @@ public class CancellableCollector implements Collector, CancellableTask {
     private AtomicBoolean isQueryCancelled;
 
     public CancellableCollector(Collector collector) {
+        if (collector == null) {
+            throw new IllegalStateException("Internal collector not provided but wrapper collector accessed");
+        }
+
         this.collector = collector;
         this.isQueryCancelled = new AtomicBoolean();
     }
@@ -48,5 +52,9 @@ public class CancellableCollector implements Collector, CancellableTask {
     @Override
     public void cancelTask() {
         isQueryCancelled.compareAndSet(false, true);
+    }
+
+    public Collector getInternalCollector() {
+        return collector;
     }
 }
