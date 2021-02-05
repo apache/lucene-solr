@@ -120,6 +120,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("breakoff");
   }
 
+  public void testCheckCompoundRep() throws Exception {
+    doTest("checkcompoundrep");
+  }
+
   public void testCompoundrule() throws Exception {
     doTest("compoundrule");
   }
