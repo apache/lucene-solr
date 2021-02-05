@@ -20,10 +20,8 @@ import java.io.ByteArrayInputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
-import java.util.Random;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -291,31 +289,6 @@ public class TestDictionary extends LuceneTestCase {
     String asAscii = new String(src.getBytes(StandardCharsets.UTF_8), Dictionary.DEFAULT_CHARSET);
     assertNotEquals(src, asAscii);
     assertEquals(src, new String(strategy.parseFlags(asAscii)));
-  }
-
-  @Test
-  public void testFlagSerialization() {
-    Random r = random();
-    char[] flags = new char[r.nextInt(10)];
-    for (int i = 0; i < flags.length; i++) {
-      flags[i] = (char) r.nextInt(Character.MIN_SURROGATE);
-    }
-
-    String[] flagLines = {"FLAG long", "FLAG UTF-8", "FLAG num"};
-    Charset[] charsets = {StandardCharsets.UTF_8, Dictionary.DEFAULT_CHARSET};
-    for (String flagLine : flagLines) {
-      for (Charset charset : charsets) {
-        Dictionary.FlagParsingStrategy strategy =
-            Dictionary.getFlagParsingStrategy(flagLine, charset);
-        StringBuilder serialized = new StringBuilder();
-        for (char flag : flags) {
-          strategy.appendFlag(flag, serialized);
-        }
-
-        char[] deserialized = strategy.parseFlags(serialized.toString());
-        assertEquals(new String(flags), new String(deserialized));
-      }
-    }
   }
 
   private Directory getDirectory() {
