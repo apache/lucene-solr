@@ -17,10 +17,19 @@
 package org.apache.lucene.analysis.hunspell;
 
 enum WordCase {
+  /** e.g. WORD */
   UPPER,
+
+  /** e.g. Word */
   TITLE,
+
+  /** e.g. word */
   LOWER,
+
+  /** e.g. WoRd or wOrd */
   MIXED,
+
+  /** e.g "-" or "/" or "42" */
   NEUTRAL;
 
   static WordCase caseOf(char[] word, int length) {
