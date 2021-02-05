@@ -269,7 +269,7 @@ public class ZkStateWriter {
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), stat.getVersion(), path);
               clusterState = clusterState.copyWith(name, newCollection);
             } else {
-              log.debug("going to create_collection {}", path);
+              log.info("going to create_collection {}", path);
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               if (c.getName().equals("coll192")) log.info("WPU 6.5: "+new String(data));
 
