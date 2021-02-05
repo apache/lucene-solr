@@ -82,7 +82,7 @@ public class PackageTool extends SolrCLI.ToolBase {
 
       try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
         if (cmd != null) {
-          packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost); 
+          packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
           try {
             repositoryManager = new RepositoryManager(solrClient, packageManager);
 
@@ -98,7 +98,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                 repositoryManager.addKey(FileUtils.readFileToByteArray(new File(keyFilename)), Paths.get(keyFilename).getFileName().toString());
                 break;
               case "list-installed":
-                PackageUtils.printGreen("Installed packages:\n-----");                
+                PackageUtils.printGreen("Installed packages:\n-----");
                 for (SolrPackageInstance pkg: packageManager.fetchInstalledPackageInstances()) {
                   PackageUtils.printGreen(pkg);
                 }
@@ -118,7 +118,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                   Map<String, SolrPackageInstance> packages = packageManager.getPackagesDeployed(collection);
                   PackageUtils.printGreen("Packages deployed on " + collection + ":");
                   for (String packageName: packages.keySet()) {
-                    PackageUtils.printGreen("\t" + packages.get(packageName));                 
+                    PackageUtils.printGreen("\t" + packages.get(packageName));
                   }
                 } else {
                   String packageName = cli.getArgs()[1];
@@ -268,12 +268,12 @@ public class PackageTool extends SolrCLI.ToolBase {
         .argName("COLLECTIONS")
         .hasArg()
         .required(false)
-        .desc("Specifies that this is to be a collection(s) level action.")
+        .desc("Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
         .build(),
 
         Option.builder("cluster")
         .required(false)
-        .desc("Specifies that this is to be a cluster level action.")
+        .desc("Specifies that this action should affect cluster-level plugins only.")
         .build(),
 
         Option.builder("p")
