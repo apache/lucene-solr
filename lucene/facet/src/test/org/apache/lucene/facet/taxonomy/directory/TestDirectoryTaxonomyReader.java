@@ -413,7 +413,7 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
 
       // check that r1 doesn't see cp_b
       assertEquals(TaxonomyReader.INVALID_ORDINAL, r1.getOrdinal(cp_b));
-      assertNull(r1.getPath(2));
+      expectThrows(IllegalArgumentException.class, () -> r1.getPath(2));
 
       r1.close();
       r2.close();
@@ -568,5 +568,33 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     assertTrue(taxoReader.getChildResources().size() > 0);
     taxoReader.close();
     dir.close();
+  }
+
+  public void testCallingBulkPathReturnsCorrectResult() throws Exception {
+    Directory src = newDirectory();
+    DirectoryTaxonomyWriter w = new DirectoryTaxonomyWriter(src);
+    String randomArray[] = new String[random().nextInt(1000)];
+    Arrays.setAll(randomArray, i -> Integer.toString(random().nextInt()));
+
+    FacetLabel allPaths[] = new FacetLabel[randomArray.length];
+    int allOrdinals[] = new int[randomArray.length];
+
+    for (int i = 0; i < randomArray.length; i++) {
+      allPaths[i] = new FacetLabel(randomArray[i]);
+      w.addCategory(allPaths[i]);
+    }
+    w.commit();
+    w.close();
+
+    DirectoryTaxonomyReader r1 = new DirectoryTaxonomyReader(src);
+
+    for (int i = 0; i < allPaths.length; i++) {
+      allOrdinals[i] = r1.getOrdinal(allPaths[i]);
+    }
+
+    FacetLabel allBulkPaths[] = r1.getBulkPath(allOrdinals);
+    assertArrayEquals(allPaths, allBulkPaths);
+    r1.close();
+    src.close();
   }
 }
