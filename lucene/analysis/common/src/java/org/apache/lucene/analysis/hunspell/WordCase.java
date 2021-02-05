@@ -17,13 +17,23 @@
 package org.apache.lucene.analysis.hunspell;
 
 enum WordCase {
+  /** e.g. WORD */
   UPPER,
+
+  /** e.g. Word */
   TITLE,
+
+  /** e.g. word */
   LOWER,
-  MIXED;
+
+  /** e.g. WoRd or wOrd */
+  MIXED,
+
+  /** e.g "-" or "/" or "42" */
+  NEUTRAL;
 
   static WordCase caseOf(char[] word, int length) {
-    boolean startsWithLower = Character.isLowerCase(word[0]);
+    CharCase startCase = charCase(word[0]);
 
     boolean seenUpper = false;
     boolean seenLower = false;
@@ -34,7 +44,7 @@ enum WordCase {
       if (seenUpper && seenLower) break;
     }
 
-    return get(startsWithLower, seenUpper, seenLower);
+    return get(startCase, seenUpper, seenLower);
   }
 
   static WordCase caseOf(CharSequence word) {
@@ -42,7 +52,7 @@ enum WordCase {
   }
 
   static WordCase caseOf(CharSequence word, int length) {
-    boolean startsWithLower = Character.isLowerCase(word.charAt(0));
+    CharCase startCase = charCase(word.charAt(0));
 
     boolean seenUpper = false;
     boolean seenLower = false;
@@ -53,14 +63,19 @@ enum WordCase {
       if (seenUpper && seenLower) break;
     }
 
-    return get(startsWithLower, seenUpper, seenLower);
+    return get(startCase, seenUpper, seenLower);
   }
 
-  private static WordCase get(boolean startsWithLower, boolean seenUpper, boolean seenLower) {
-    if (!startsWithLower) {
-      return !seenLower ? UPPER : !seenUpper ? TITLE : MIXED;
+  private static WordCase get(CharCase startCase, boolean seenUpper, boolean seenLower) {
+    if (seenLower && seenUpper) return MIXED;
+    switch (startCase) {
+      case LOWER:
+        return seenUpper ? MIXED : LOWER;
+      case UPPER:
+        return !seenLower ? UPPER : TITLE;
+      default:
+        return seenLower ? LOWER : seenUpper ? UPPER : NEUTRAL;
     }
-    return seenUpper ? MIXED : LOWER;
   }
 
   private static CharCase charCase(char c) {
