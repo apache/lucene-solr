@@ -977,8 +977,8 @@ groups:
         tee: true
     post_description: 'Note at this point you will see the Jenkins job "Lucene-Solr-SmokeRelease-master" begin to fail, until you run the "Generate Backcompat Indexes" '
   - !Todo
-    id: publish_maven
-    title: Publish maven artifacts
+    id: stage_maven
+    title: Stage the maven artifacts for publishing
     vars:
       dist_folder: lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
     commands: !Commands
@@ -986,15 +986,22 @@ groups:
       confirm_each_command: true
       commands_text: In the source checkout do the following (note that this step will prompt you for your Apache LDAP credentials)
       commands:
-      - !Command
-        cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
-        logfile: publish_lucene_maven.log
-      - !Command
-        cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
-        logfile: publish_solr_maven.log
-    post_description: |
+        - !Command
+          cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'lucene', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
+          logfile: publish_lucene_maven.log
+        - !Command
+          cmd: ant clean stage-maven-artifacts  -Dmaven.dist.dir={{ [dist_file_path, dist_folder, 'solr', 'maven'] | path_join }}  -Dm2.repository.id=apache.releases.https  -Dm2.repository.url={{ m2_repository_url }}
+          logfile: publish_solr_maven.log
+    post_description: The artifacts are not published yet, please proceed with the next step to actually publish!
+    links:
+      - https://wiki.apache.org/lucene-java/PublishMavenArtifacts
+  - !Todo
+    id: publish_maven
+    depends: stage_maven
+    title: Publish the staged maven artifacts
+    description: |
       Once you have transferred all maven artifacts to repository.apache.org,
-      you will need to:
+      you will need to do some manual steps to actually release them to Maven Central:
 
       * Close the staging repository
       . Log in to https://repository.apache.org/ with your ASF credentials
