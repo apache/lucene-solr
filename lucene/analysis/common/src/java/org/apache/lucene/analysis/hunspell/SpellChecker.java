@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -38,7 +37,6 @@ import org.apache.lucene.util.IntsRef;
 public class SpellChecker {
   final Dictionary dictionary;
   final Stemmer stemmer;
-  private final BytesRef scratch = new BytesRef();
 
   public SpellChecker(Dictionary dictionary) {
     this.dictionary = dictionary;
@@ -66,7 +64,7 @@ public class SpellChecker {
     }
 
     char[] wordChars = word.toCharArray();
-    if (dictionary.isForbiddenWord(wordChars, wordChars.length, scratch)) {
+    if (dictionary.isForbiddenWord(wordChars, wordChars.length)) {
       return false;
     }
 
@@ -135,7 +133,7 @@ public class SpellChecker {
   }
 
   Boolean checkSimpleWord(char[] wordChars, int length, WordCase originalCase) {
-    if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
+    if (dictionary.isForbiddenWord(wordChars, length)) {
       return false;
     }
 
@@ -253,7 +251,7 @@ public class SpellChecker {
     if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
 
     IntsRef forms = dictionary.lookupWord(chars, offset, length);
-    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase, scratch);
+    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase);
   }
 
   private boolean equalsIgnoreCase(CharsRef cr1, CharsRef cr2) {
@@ -341,7 +339,7 @@ public class SpellChecker {
         words.add(forms);
 
         if (dictionary.compoundRules != null
-            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words, scratch))) {
+            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words))) {
           if (checkLastCompoundPart(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
@@ -364,8 +362,7 @@ public class SpellChecker {
     if (forms == null) return false;
 
     words.add(forms);
-    boolean result =
-        dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+    boolean result = dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words));
     words.remove(words.size() - 1);
     return result;
   }
@@ -474,7 +471,7 @@ public class SpellChecker {
         if (!spell(chunk)) {
           for (String chunkSug : suggest(chunk)) {
             String replaced = word.substring(0, chunkStart) + chunkSug + word.substring(chunkEnd);
-            if (!dictionary.isForbiddenWord(replaced.toCharArray(), replaced.length(), scratch)) {
+            if (!dictionary.isForbiddenWord(replaced.toCharArray(), replaced.length())) {
               result.add(replaced);
             }
           }
