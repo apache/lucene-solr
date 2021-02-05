@@ -54,11 +54,6 @@
     <lst name="contentStreamLoaders">
       <str name="application/xml">org.apache.solr.scripting.util.xslt.XSLTLoader</str>
     </lst>
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-      <str name="indent">true</str>
-      <str name="df">text</str>
-    </lst>
   </requestHandler>
 
   <requestHandler name="/select" class="solr.SearchHandler">
