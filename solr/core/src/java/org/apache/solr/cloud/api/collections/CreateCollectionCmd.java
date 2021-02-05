@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -173,6 +174,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       createCollectionZkNode(stateManager, collectionName, collectionParams);
       
       ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
+      ZkStateReader zksr = ((SolrClientCloudManager) ocmh.cloudManager).zkStateReader;
 
       // wait for a while until we see the collection
       WaitTime.start("create-coll-node");
@@ -182,8 +184,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         created = false;
         while (!waitUntil.hasTimedOut()) {
           waitUntil.sleep(100);
-          created = ocmh.cloudManager.getClusterStateProvider().getClusterState().hasCollection(collectionName);
-          if (created) break;
+          created = zksr.fetchCollectionState(collectionName, null, null) != null;
+          if (created) {
+            break;
+          }
         }
 
         if (!created) {

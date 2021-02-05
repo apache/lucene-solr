@@ -58,7 +58,7 @@ public class SolrClientCloudManager implements SolrCloudManager {
   protected final CloudSolrClient solrClient;
   private final ZkDistribStateManager stateManager;
   private final DistributedQueueFactory queueFactory;
-  private final ZkStateReader zkStateReader;
+  public final ZkStateReader zkStateReader;
   private final SolrZkClient zkClient;
   private final ObjectCache objectCache;
   private final boolean closeObjectCache;
