@@ -98,6 +98,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
 
   @Test
+  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15011")
   public void proxyLoggingHandlerAllNodes() throws IOException, SolrServerException {
     CollectionAdminRequest.createCollection("collection", "conf", 2, 2).process(solrClient);
     ModifiableSolrParams mparams = new ModifiableSolrParams();
