@@ -49,12 +49,7 @@
 
   <queryResponseWriter name="xslt" class="org.apache.solr.scripting.response.XSLTResponseWriter" />
 
-  <requestHandler name="/update" class="solr.UpdateRequestHandler">
-    <!--contentStreamLoader mimetype="application/xml" class="org.apache.solr.scripting.util.xslt.XSLTLoader" /-->
-    <lst name="contentStreamLoaders">
-      <str name="application/xml">org.apache.solr.scripting.util.xslt.XSLTLoader</str>
-    </lst>
-  </requestHandler>
+  <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
