@@ -1357,7 +1357,12 @@ public class ZkStateReader implements SolrCloseable {
     public void refreshAndWatch(EventType eventType) {
       try {
         if (eventType == null || eventType == EventType.NodeChildrenChanged) {
-          refreshAndWatchChildren();
+          WaitTime.start("refreshAndWatchChildren");
+          try {
+            refreshAndWatchChildren();
+          } finally {
+            WaitTime.end();
+          }
           if (eventType == EventType.NodeChildrenChanged) {
             //only per-replica states modified. return
             return;
