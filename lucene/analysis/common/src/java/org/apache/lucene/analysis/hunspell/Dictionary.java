@@ -109,6 +109,8 @@ public class Dictionary {
   char[] stripData;
   int[] stripOffsets;
 
+  String wordChars = "";
+
   // 4 chars per affix, each char representing an unsigned 2-byte integer
   char[] affixData = new char[32];
   private int currentAffix = 0;
@@ -384,11 +386,12 @@ public class Dictionary {
         fullStrip = true;
       } else if ("LANG".equals(firstWord)) {
         language = singleArgument(reader, line);
-        int underscore = language.indexOf("_");
-        String langCode = underscore < 0 ? language : language.substring(0, underscore);
+        String langCode = extractLanguageCode(language);
         alternateCasing = langCode.equals("tr") || langCode.equals("az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
+      } else if ("WORDCHARS".equals(firstWord)) {
+        wordChars = singleArgument(reader, line);
       } else if ("TRY".equals(firstWord)) {
         tryChars = singleArgument(reader, line);
       } else if ("REP".equals(firstWord)) {
@@ -458,6 +461,11 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  static String extractLanguageCode(String isoCode) {
+    int underscore = isoCode.indexOf("_");
+    return underscore < 0 ? isoCode : isoCode.substring(0, underscore);
   }
 
   private String singleArgument(LineNumberReader reader, String line) throws ParseException {
