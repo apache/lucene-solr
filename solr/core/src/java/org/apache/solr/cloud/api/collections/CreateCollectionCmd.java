@@ -179,20 +179,35 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       // wait for a while until we see the collection
       WaitTime.start("create-coll-node");
       try {
+        if (collectionName.equals("coll192")) log.info("CCN 1");
         boolean created;
         TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, timeSource);
         created = false;
+        if (collectionName.equals("coll192")) log.info("CCN 2");
         while (!waitUntil.hasTimedOut()) {
           waitUntil.sleep(100);
+          
+          if (collectionName.equals("coll192")) log.info("CCN 3");
+
           created = zksr.fetchCollectionState(collectionName, null, null) != null;
+          
+          if (collectionName.equals("coll192")) log.info("CCN 4");
+
           if (created) {
             break;
           }
+          
+          if (collectionName.equals("coll192")) log.info("CCN 5");
+
         }
 
         if (!created) {
+          if (collectionName.equals("coll192")) log.info("CCN 6");
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
         }
+        
+        if (collectionName.equals("coll192")) log.info("CCN 7");
+
       } finally {
         WaitTime.end();
       }
