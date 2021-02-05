@@ -1823,7 +1823,6 @@ public class ZkStateReader implements SolrCloseable {
     if (closed) {
       throw new AlreadyClosedException();
     }
-
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
@@ -1843,6 +1842,7 @@ public class ZkStateReader implements SolrCloseable {
     };
     registerCollectionStateWatcher(collection, watcher);
 
+    WaitTime.start("waitForState");
     try {
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
@@ -1851,6 +1851,7 @@ public class ZkStateReader implements SolrCloseable {
     } finally {
       removeCollectionStateWatcher(collection, watcher);
       waitLatches.remove(latch);
+      WaitTime.end();
     }
   }
 
