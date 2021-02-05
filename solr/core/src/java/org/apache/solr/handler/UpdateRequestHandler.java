@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -134,12 +135,23 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   }
   private Map<String ,ContentStreamLoader> pathVsLoaders = new HashMap<>();
   protected Map<String,ContentStreamLoader> createDefaultLoaders(@SuppressWarnings({"rawtypes"})NamedList args) {
+
     SolrParams p = null;
     if(args!=null) {
       p = args.toSolrParams();
     }
     Map<String,ContentStreamLoader> registry = new HashMap<>();
-    registry.put("application/xml", new XMLLoader().init(p) );
+
+    // Try to load the scripting contrib modules XSLTLoader, and if not, fall back to the XMLLoader.
+    // Enable the XSLTLoader by including the Scripting contrib module.
+    try {
+      final Class<?> clazz = Class.forName( "org.apache.solr.scripting.util.xslt.XSLTLoader" );
+      ContentStreamLoader loader = (ContentStreamLoader) clazz.getDeclaredConstructor().newInstance();
+      registry.put("application/xml", loader.init(p) );
+    } catch( ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e ) {
+       registry.put("application/xml", new XMLLoader().init(p) );
+     }
+
     registry.put("application/json", new JsonLoader().init(p) );
     registry.put("application/csv", new CSVLoader().init(p) );
     registry.put("application/javabin", new JavabinLoader(instance).init(p) );
