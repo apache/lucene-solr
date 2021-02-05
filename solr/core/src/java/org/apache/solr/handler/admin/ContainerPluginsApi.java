@@ -35,6 +35,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.WaitTime;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -69,6 +70,13 @@ public class ContainerPluginsApi {
         permission = PermissionNameProvider.Name.COLL_READ_PERM)
     public void list(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
       rsp.add(PLUGIN, plugins(zkClientSupplier));
+    }
+
+    @EndPoint(method = METHOD.GET,
+        path = "/node/wait-times",
+        permission = PermissionNameProvider.Name.COLL_READ_PERM)
+    public void waitTimes(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("wait-times" , WaitTime.getCounts());
     }
   }
 

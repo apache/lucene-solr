@@ -53,6 +53,7 @@ import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
+import org.apache.solr.common.cloud.WaitTime;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -174,21 +175,29 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
 
       // wait for a while until we see the collection
-      TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, timeSource);
-      boolean created = false;
-      while (! waitUntil.hasTimedOut()) {
-        waitUntil.sleep(100);
-        created = ocmh.cloudManager.getClusterStateProvider().getClusterState().hasCollection(collectionName);
-        if (created) break;
-      }
-      if (!created) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
+      WaitTime.start("create-coll-node");
+      try {
+        boolean created;
+        TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, timeSource);
+        created = false;
+        while (!waitUntil.hasTimedOut()) {
+          waitUntil.sleep(100);
+          created = ocmh.cloudManager.getClusterStateProvider().getClusterState().hasCollection(collectionName);
+          if (created) break;
+        }
+
+        if (!created) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
+        }
+      } finally {
+        WaitTime.end();
       }
 
       // refresh cluster state
       clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
 
       List<ReplicaPosition> replicaPositions = null;
+      WaitTime.start("buildReplicaPositions");
       try {
         replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames, sessionWrapper);
       } catch (Assign.AssignmentException e) {
@@ -196,6 +205,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
         // unwrap the exception
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
+      } finally {
+        WaitTime.end();
       }
 
       if (replicaPositions.isEmpty()) {
@@ -287,17 +298,28 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
       }
 
-      if(!isLegacyCloud) {
-        // wait for all replica entries to be created
-        Map<String, Replica> replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
-        for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
-          ShardRequest sreq = e.getValue();
-          sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
-          shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+      WaitTime.start("submitting-to-shardhandler");
+      try {
+        if(!isLegacyCloud) {
+          // wait for all replica entries to be created
+          Map<String, Replica> replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
+          for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
+            ShardRequest sreq = e.getValue();
+            sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+            shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+          }
         }
+      } finally {
+        WaitTime.end();
       }
 
-      shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+
+      WaitTime.start("shardRequestTracker.processResponses");
+      try {
+        shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+      } finally {
+        WaitTime.end();
+      }
       @SuppressWarnings({"rawtypes"})
       boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
       if (failure) {
