@@ -16,8 +16,8 @@
  */
  
 /** 
- * XSLT related utilities.
+ * XSLT related classes.
  */
-package org.apache.solr.scripting.util.xslt;
+package org.apache.solr.scripting.xslt;
 
 

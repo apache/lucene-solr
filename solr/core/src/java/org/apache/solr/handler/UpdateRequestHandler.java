@@ -145,7 +145,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
     // Try to load the scripting contrib modules XSLTLoader, and if not, fall back to the XMLLoader.
     // Enable the XSLTLoader by including the Scripting contrib module.
     try {
-      final Class<?> clazz = Class.forName( "org.apache.solr.scripting.util.xslt.XSLTLoader" );
+      final Class<?> clazz = Class.forName( "org.apache.solr.scripting.xslt.XSLTLoader" );
       ContentStreamLoader loader = (ContentStreamLoader) clazz.getDeclaredConstructor().newInstance();
       registry.put("application/xml", loader.init(p) );
     } catch( ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e ) {

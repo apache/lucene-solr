@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.scripting.util.xslt;
+package org.apache.solr.scripting.xslt;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

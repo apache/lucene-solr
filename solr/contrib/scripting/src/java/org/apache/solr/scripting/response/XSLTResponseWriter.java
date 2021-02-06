@@ -40,8 +40,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
-import org.apache.solr.scripting.util.xslt.XSLTParams;
-import org.apache.solr.scripting.util.xslt.TransformerProvider;
+import org.apache.solr.scripting.xslt.XSLTParams;
+import org.apache.solr.scripting.xslt.TransformerProvider;
 
 /** QueryResponseWriter which captures the output of the XMLWriter
  *  (in memory for now, not optimal performancewise), and applies an XSLT transform
