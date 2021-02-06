@@ -249,8 +249,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
           InterruptedException, IOException {
     SolrZkClient zkClient = zkClient();
     ZkStateReader reader = new ZkStateReader(zkClient);
-    LeaderElector overseerElector = new LeaderElector(null, new ZkController.ContextKey("overseer",
-            "overseer"));
+    LeaderElector overseerElector = new LeaderElector(null);
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     // TODO: close Overseer
     Overseer overseer = new Overseer(updateShardHandler, "/admin/cores", null, new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "solr").build());

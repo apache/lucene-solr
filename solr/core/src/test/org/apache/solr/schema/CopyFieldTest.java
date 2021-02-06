@@ -158,6 +158,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     
     assertTrue("schema should contain explicit field 'sku1'", schema.getFields().containsKey("sku1"));
     assertTrue("schema should contain explicit field 'sku2'", schema.getFields().containsKey("sku2"));

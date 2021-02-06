@@ -1696,15 +1696,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
     int cnt = refCount.incrementAndGet();
 
-//    if (log.isDebugEnabled()) {
-//      RuntimeException e = new RuntimeException();
-//      StackTraceElement[] stack = e.getStackTrace();
-//      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
-//        log.debug(stack[i].toString());
-//      }
-//
-//      log.debug("open refcount {} {}", this, cnt);
-//    }
+    if (log.isDebugEnabled()) {
+      RuntimeException e = new RuntimeException();
+      StackTraceElement[] stack = e.getStackTrace();
+      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+        log.debug(stack[i].toString());
+      }
+
+      log.debug("open refcount {} {} {}", this, name, cnt);
+    }
   }
 
   /**
@@ -1740,15 +1740,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     int count = refCount.decrementAndGet();
 
-//    if (log.isDebugEnabled()) {
-//      RuntimeException e = new RuntimeException();
-//      StackTraceElement[] stack = e.getStackTrace();
-//      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
-//        log.debug(stack[i].toString());
-//      }
-//
-//      log.debug("close refcount after {} {}", this, count);
-//    }
+    if (log.isDebugEnabled()) {
+      RuntimeException e = new RuntimeException();
+      StackTraceElement[] stack = e.getStackTrace();
+      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+        log.debug(stack[i].toString());
+      }
+
+      log.debug("close refcount after {} {} {}", this, name, count);
+    }
 
     if (count == 0) {
       try {
@@ -1787,23 +1787,34 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int cnt = 0;
     while (!canBeClosed() || refCount.get() != -1) {
+      if (cnt >= 2 && !closing) {
+        throw new IllegalStateException();
+      }
+      synchronized (closeAndWait) {
+        try {
+          closeAndWait.wait(250);
+        } catch (InterruptedException e) {
+          throw new IllegalStateException();
+        }
+      }
       cnt++;
-      try {
-        if (!closing) {
-          synchronized (closeAndWait) {
-            closeAndWait.wait(250);
-          }
-        }
-        if (cnt >= 2 && !closing) {
-          close();
-        }
-        if (log.isTraceEnabled()) log.trace("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
-      } catch (InterruptedException e) {
-
-      }
-      if (timeout.hasTimedOut()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting for SolrCore close timeout=" + timeouts + "s");
-      }
+//      cnt++;
+//      try {
+//        if (!closing) {
+//          synchronized (closeAndWait) {
+//            closeAndWait.wait(250);
+//          }
+//        }
+//        if (cnt >= 2 && !closing) {
+//          close();
+//        }
+//        if (log.isTraceEnabled()) log.trace("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
+//      } catch (InterruptedException e) {
+//
+//      }
+//      if (timeout.hasTimedOut()) {
+//        throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting for SolrCore close timeout=" + timeouts + "s");
+//      }
 
     }
   }

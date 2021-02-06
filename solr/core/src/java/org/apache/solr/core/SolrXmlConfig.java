@@ -72,7 +72,7 @@ public class SolrXmlConfig {
 
   }
 
-  public NodeConfig fromConfig(Path solrHome, XmlConfigFile config, boolean fromZookeeper) {
+  public NodeConfig fromConfig(Path solrHome, XmlConfigFile config, boolean fromZookeeper) throws XPathExpressionException {
 
     checkForIllegalConfig(config);
 
@@ -484,7 +484,7 @@ public class SolrXmlConfig {
     return configs;
   }
 
-  private MetricsConfig getMetricsConfig(XmlConfigFile config) {
+  private MetricsConfig getMetricsConfig(XmlConfigFile config) throws XPathExpressionException {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
     SolrResourceLoader loader = config.getResourceLoader();
     NodeInfo node = config.getNode(loader.counterExp, SolrResourceLoader.counterExpPath, false);
@@ -515,8 +515,8 @@ public class SolrXmlConfig {
         .build();
   }
 
-  private PluginInfo[] getMetricReporterPluginInfos(XmlConfigFile config) {
-    ArrayList<NodeInfo> nodes = (ArrayList) config.evaluate(config.tree, "solr/metrics/reporter", XPathConstants.NODESET);
+  private PluginInfo[] getMetricReporterPluginInfos(XmlConfigFile config) throws XPathExpressionException {
+    ArrayList<NodeInfo> nodes = (ArrayList) SolrResourceLoader.metricsReporterExp.evaluate(config.tree, XPathConstants.NODESET);
     List<PluginInfo> configs = new ArrayList<>();
     boolean hasJmxReporter = false;
     if (nodes != null && nodes.size() > 0) {

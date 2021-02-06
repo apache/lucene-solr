@@ -66,104 +66,106 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     //      return;
     //    }
     super.cancelElection();
-    try {
-      if (leaderZkNodeParentVersion != null) {
-        try {
-          //            if (!zkClient.exists(leaderSeqPath)) {
-          //              return;
-          //            }
-          // We need to be careful and make sure we *only* delete our own leader registration node.
-          // We do this by using a multi and ensuring the parent znode of the leader registration node
-          // matches the version we expect - there is a setData call that increments the parent's znode
-          // version whenever a leader registers.
-          log.info("Removing leader registration node on cancel, parent node: {} {}", Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion);
-          List<Op> ops = new ArrayList<>(3);
-          ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
-          ops.add(Op.delete(leaderSeqPath, -1));
-          ops.add(Op.delete(leaderPath, -1));
-          zkClient.multi(ops, false);
-        } catch (KeeperException e) {
-          if (e instanceof NoNodeException) {
-            // okay
+    if (zkClient.isAlive()) {
+      try {
+        if (leaderZkNodeParentVersion != null) {
+          try {
+            //            if (!zkClient.exists(leaderSeqPath)) {
+            //              return;
+            //            }
+            // We need to be careful and make sure we *only* delete our own leader registration node.
+            // We do this by using a multi and ensuring the parent znode of the leader registration node
+            // matches the version we expect - there is a setData call that increments the parent's znode
+            // version whenever a leader registers.
+            log.info("Removing leader registration node on cancel, parent node: {} {}", Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion);
+            List<Op> ops = new ArrayList<>(3);
+            ops.add(Op.check(Paths.get(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
+            ops.add(Op.delete(leaderSeqPath, -1));
+            ops.add(Op.delete(leaderPath, -1));
+            zkClient.multi(ops, false);
+          } catch (KeeperException e) {
+            if (e instanceof NoNodeException) {
+              // okay
+              if (leaderSeqPath != null) {
+                if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
+                zkClient.delete(leaderSeqPath, -1);
+              }
+              return;
+            }
+            if (e instanceof KeeperException.SessionExpiredException) {
+              log.warn("ZooKeeper session expired");
+              throw e;
+            }
+
+            int i = 0;
+            List<OpResult> results = e.getResults();
+            if (results != null) {
+              for (OpResult result : results) {
+                if (((OpResult.ErrorResult) result).getErr() == -101) {
+                  // no node, fine
+                  try {
+                    if (leaderSeqPath != null) {
+                      if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
+                      zkClient.delete(leaderSeqPath, -1);
+                    }
+                  } catch (NoNodeException e1) {
+                    // fine
+                  }
+                } else {
+                  if (result instanceof OpResult.ErrorResult) {
+                    OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
+                    if (dresult.getErr() != 0) {
+                      log.error("op=" + i++ + " err=" + dresult.getErr());
+                    }
+                  }
+                  try {
+                    if (leaderSeqPath != null) {
+                      if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
+                      zkClient.delete(leaderSeqPath, -1);
+                    }
+                  } catch (NoNodeException e1) {
+                    // fine
+                  }
+                  throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election " + e.getPath(), e);
+                }
+              }
+            }
+
+          } catch (InterruptedException | AlreadyClosedException e) {
+            ParWork.propagateInterrupt(e, true);
+          } catch (Exception e) {
             if (leaderSeqPath != null) {
               if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
               zkClient.delete(leaderSeqPath, -1);
             }
-            return;
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
           }
-          if (e instanceof KeeperException.SessionExpiredException) {
-            log.warn("ZooKeeper session expired");
-            throw e;
-          }
-
-          int i = 0;
-          List<OpResult> results = e.getResults();
-          if (results != null) {
-            for (OpResult result : results) {
-              if (((OpResult.ErrorResult) result).getErr() == -101) {
-                // no node, fine
-                try {
-                  if (leaderSeqPath != null) {
-                    if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-                    zkClient.delete(leaderSeqPath, -1);
-                  }
-                } catch (NoNodeException e1) {
-                  // fine
-                }
-              } else {
-                if (result instanceof OpResult.ErrorResult) {
-                  OpResult.ErrorResult dresult = (OpResult.ErrorResult) result;
-                  if (dresult.getErr() != 0) {
-                    log.error("op=" + i++ + " err=" + dresult.getErr());
-                  }
-                }
-                try {
-                  if (leaderSeqPath != null) {
-                    if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-                    zkClient.delete(leaderSeqPath, -1);
-                  }
-                } catch (NoNodeException e1) {
-                  // fine
-                }
-                throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election " + e.getPath(), e);
-              }
+        } else {
+          try {
+            if (leaderSeqPath != null) {
+              if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
+              zkClient.delete(leaderSeqPath, -1);
             }
+          } catch (NoNodeException e) {
+            // fine
           }
+          if (log.isDebugEnabled()) log.debug("No version found for ephemeral leader parent node, won't remove previous leader registration. {} {}", leaderPath, leaderSeqPath);
+        }
+      } catch (Exception e) {
 
-        } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propagateInterrupt(e, true);
-        } catch (Exception e) {
-          if (leaderSeqPath != null) {
-            if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
+        if (leaderSeqPath != null) {
+          if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
+          try {
             zkClient.delete(leaderSeqPath, -1);
+          } catch (NoNodeException e1) {
+            // fine
           }
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Exception canceling election", e);
         }
-      } else {
-        try {
-          if (leaderSeqPath != null) {
-            if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-            zkClient.delete(leaderSeqPath, -1);
-          }
-        } catch (NoNodeException e) {
-          // fine
-        }
-        if (log.isDebugEnabled()) log.debug("No version found for ephemeral leader parent node, won't remove previous leader registration. {} {}", leaderPath, leaderSeqPath);
-      }
-    } catch (Exception e) {
 
-      if (leaderSeqPath != null) {
-        if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
-        try {
-          zkClient.delete(leaderSeqPath, -1);
-        } catch (NoNodeException e1) {
-          // fine
-        }
+        log.info("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
       }
-
-      log.info("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
+      leaderZkNodeParentVersion = null;
     }
-    leaderZkNodeParentVersion = null;
   }
 
   @Override

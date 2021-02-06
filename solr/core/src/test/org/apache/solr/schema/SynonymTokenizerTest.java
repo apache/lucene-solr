@@ -19,7 +19,6 @@ package org.apache.solr.schema;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -36,8 +35,9 @@ public class SynonymTokenizerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSchemaLoading() {
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    assertTrue( schema.getFieldTypes().containsKey("text_synonyms") );
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+      assertTrue(schema.getFieldTypes().containsKey("text_synonyms"));
+    }
   }
 }

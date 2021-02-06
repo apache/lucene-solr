@@ -60,6 +60,7 @@ import java.util.TreeSet;
 /**
  * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
  */
+// MRM nocommit - figure out where to put and what to do with the config files that were in _default/lang
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -73,15 +74,6 @@ public class XmlConfigFile { // formerly simply "Config"
   protected final TinyDocumentImpl tree;
 
   private int zkVersion = -1;
-
-//  public static XPath getXpath() {
-//    XPath xPath = THREAD_LOCAL_XPATH.get();
-//    if (xPath == null) {
-//      xPath = xpathFactory.newXPath();
-//      THREAD_LOCAL_XPATH.set(xPath);
-//    }
-//    return xPath;
-//  }
 
   /**
    * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
@@ -155,9 +147,10 @@ public class XmlConfigFile { // formerly simply "Config"
         } else {
           po.setEntityResolver(null);
         }
-     //   po.setXIncludeAware(true);
-      //  po.setCheckEntityReferences(false);
-       // po.setExpandAttributeDefaults(false);
+        // Set via conf already
+        //   po.setXIncludeAware(true);
+        //  po.setCheckEntityReferences(false);
+        // po.setExpandAttributeDefaults(false);
         po.setDTDValidationMode(Validation.STRIP);
         po.setPleaseCloseAfterUse(true);
         Sender.send(source, builder, po);

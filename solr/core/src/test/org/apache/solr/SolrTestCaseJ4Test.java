@@ -20,6 +20,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -62,7 +63,9 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
 
   @Test
   public void testCorrectCore() throws Exception {
-    assertEquals("should be core1", "core1", h.getCore().getName());
+    SolrCore core = h.getCore();
+    assertEquals("should be core1", "core1", core.getName());
+    core.close();
   }
 
   @Test

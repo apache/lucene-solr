@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,7 +61,9 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
              new File(tmpSolrHome).getAbsolutePath());
     
     // See SOLR-2551
-    String configDir = h.getCore().getResourceLoader().getConfigDir();
+    SolrCore core = h.getCore();
+    String configDir = core.getResourceLoader().getConfigDir();
+    core.close();
     String filePath = configDir;
     if (configDir != null && !configDir.endsWith(File.separator))
       filePath += File.separator;

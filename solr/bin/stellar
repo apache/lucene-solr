@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [ -n "$JAVA_HOME" ]; then
+  for java in "$JAVA_HOME"/bin/amd64 "$JAVA_HOME"/bin; do
+    if [ -x "$java/java" ]; then
+      JAVA="$java/java"
+      break
+    fi
+  done
+  if [ -z "$JAVA" ]; then
+    echo >&2 "The currently defined JAVA_HOME ($JAVA_HOME) refers"
+    echo >&2 "to a location where Java could not be found.  Aborting."
+    echo >&2 "Either fix the JAVA_HOME variable or remove it from the"
+    echo >&2 "environment so that the system PATH will be searched."
+    exit 1
+  fi
+else
+  JAVA=java
+  JSTACK=jstack
+fi
+
+
+"$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS "-Dlog4j.configurationFile=${scriptDir}/../resources/log4j2-console.xml" \
+-classpath "${scriptDir}/../server/lib/ext/*" \
+org.apache.solr.cli.Stellar "$@"
+
+return $?

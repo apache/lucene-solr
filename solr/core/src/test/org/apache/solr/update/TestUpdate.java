@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -228,8 +229,8 @@ public class TestUpdate extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req()){
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = doc;
-      try {
-        h.getCore().getUpdateHandler().addDoc(cmd); // should throw
+      try (SolrCore core = h.getCore()) {
+        core.getUpdateHandler().addDoc(cmd); // should throw
       } catch (SolrException e) {
         if (e.getMessage().contains("serialize")) {
           return;//passed test

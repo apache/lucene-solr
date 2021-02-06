@@ -150,7 +150,9 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     ulogAdd(ulog, 501L, sdoc("id", "1", "val1_i_dvo", "3", "_version_", "502"));
 
     Object partialUpdate = ulog.lookup(DOC_1_INDEXED_ID);
-    SolrDocument partialDoc = RealTimeGetComponent.toSolrDoc((SolrInputDocument)((List)partialUpdate).get(4), h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    SolrDocument partialDoc = RealTimeGetComponent.toSolrDoc((SolrInputDocument)((List)partialUpdate).get(4), core.getLatestSchema());
+    core.close();
     long prevVersion = (Long)((List)partialUpdate).get(3);
     long prevPointer = (Long)((List)partialUpdate).get(2);
 

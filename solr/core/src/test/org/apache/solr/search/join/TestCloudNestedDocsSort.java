@@ -59,7 +59,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
     configureCluster(nodeCount)
-       .addConfig(configName, configDir)
+       .addConfig(configName, configDir).formatZk(true)
        .configure();
     
     int shards = 2;

@@ -23,11 +23,10 @@ import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.analytics.value.constant.ConstantValue;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class ExpressionFactoryTest extends SolrTestCaseJ4 {
@@ -55,7 +54,9 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
     ));
     assertU(commit());
 
-    indexSchema = h.getCore().getLatestSchema();
+    SolrCore core = h.getCore();
+    indexSchema = core.getLatestSchema();
+    core.close();
   }
 
   @After

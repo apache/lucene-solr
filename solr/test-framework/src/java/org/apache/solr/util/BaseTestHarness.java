@@ -95,10 +95,10 @@ abstract public class BaseTestHarness {
       if (resourceLoader != null) {
         po.setEntityResolver(resourceLoader.getSysIdResolver());
       }
-
-      po.setXIncludeAware(true);
-      po.setCheckEntityReferences(false);
-      po.setExpandAttributeDefaults(false);
+      // Set via conf already
+      // po.setXIncludeAware(true);
+      // po.setCheckEntityReferences(false);
+      // po.setExpandAttributeDefaults(false);
       po.setDTDValidationMode(Validation.STRIP);
       po.setPleaseCloseAfterUse(true);
       Sender.send(source, builder, po);

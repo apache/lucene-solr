@@ -172,7 +172,6 @@ public class ZkShardTerms implements Closeable {
   public void close() {
     // no watcher will be registered
     //isClosed.set(true);
-
     ParWork.close(listeners);
     listeners.clear();
     assert ObjectReleaseTracker.release(this);

@@ -33,15 +33,15 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooKeeperExposed;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.proto.RequestHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // we use this class to expose nasty stuff for tests
 @SuppressWarnings({"try"})
-public class SolrZooKeeper extends ZooKeeper {
+public class SolrZooKeeper extends ZooKeeperAdmin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final Set<Thread> spawnedThreads = ConcurrentHashMap.newKeySet();

@@ -123,7 +123,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     public ElectorSetup(OnReconnect onReconnect) {
       zkClient = server.getZkClient();
       zkStateReader = new ZkStateReader(zkClient);
-      elector = new LeaderElector(zkController, new ZkController.ContextKey("overseer", "overseer"));
+      elector = new LeaderElector(zkController);
       zkController = MockSolrSource.makeSimpleMock(null, zkStateReader, null);
     }
 

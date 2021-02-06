@@ -250,7 +250,9 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     inDoc.addField(SUBJECT_FLD,
         "2ndplace|" + RandomStrings.randomAsciiOfLength(random(), DocumentBuilder.MIN_LENGTH_TO_MOVE_LAST));
 
-    Document outDoc = DocumentBuilder.toDocument(inDoc, h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    Document outDoc = DocumentBuilder.toDocument(inDoc, core.getLatestSchema());
+    core.close();
 
     // filter outDoc by stored fields; convert to list.
     List<IndexableField> storedFields = StreamSupport.stream(outDoc.spliterator(), false)

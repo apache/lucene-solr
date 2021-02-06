@@ -78,7 +78,6 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   public void testWhiteBoxPhraseParsingLongInput() throws Exception {
     SolrCore core = h.getCore();
     final SchemaField field = core.getLatestSchema().getField("multigrams_body");
-    core.close();
     assertNotNull(field);
     final List<Phrase> phrases = Phrase.extractPhrases
       (" did  a Quick    brown FOX perniciously jump over the lAZy dog", field, 3, 7);
@@ -160,6 +159,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     
     // some blanket assumptions about the results...
     assertBasicSanityChecks(phrases, 11, 3, 7);
+    core.close();
   }
 
   public void testWhiteBoxPhraseParsingShortInput() throws Exception {
@@ -168,11 +168,11 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     fields.put("multigrams_body", 7); 
     fields.put("multigrams_body_short", 3);
     for (Map.Entry<String,Integer> entry : fields.entrySet()) {
-      try {
+      try (SolrCore core = h.getCore()) {
         final int maxQ = entry.getValue();
-        SolrCore core = h.getCore();
+
         final SchemaField field = core.getLatestSchema().getField(entry.getKey());
-        core.close();
+
         assertNotNull(field);
         
         // empty input shouldn't break anything
@@ -217,7 +217,6 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
           assertEquals(debug, fox, fox.getLargestIndexedSubPhrases().get(0));
           assertEquals(debug, 1, fox.getIndexedSuperPhrases().size());
         }
-        
         assertBasicSanityChecks(phrases, 2, 3, maxQ);
       } catch (AssertionError e) {
         throw new AssertionError(entry.getKey() + " => " + e.getMessage(), e);
@@ -307,91 +306,96 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
   }
 
   public void testWhiteboxStats() throws Exception {
-    SolrCore core = h.getCore();
-    final SchemaField analysisField = core.getLatestSchema().getField("multigrams_body");
-    core.close();
-    assertNotNull(analysisField);
-    final String input = "BROWN fox lAzY  dog xxxyyyzzz";
+    try (SolrCore core = h.getCore()) {
+      final SchemaField analysisField = core.getLatestSchema().getField("multigrams_body");
+      assertNotNull(analysisField);
+      final String input = "BROWN fox lAzY  dog xxxyyyzzz";
 
-    // a function we'll re-use on phrases generated from the above input
-    // the multiplier let's us simulate multiple shards returning the same values
-    BiConsumer<Integer,List<Phrase>> assertions = (mult, phrases) -> {
-      final Phrase brown_fox = phrases.get(1);
-      assertEquals("BROWN fox", brown_fox.getSubSequence());
-      
-      assertEquals(mult * 1, brown_fox.getTTF("multigrams_title"));
-      assertEquals(mult * 1, brown_fox.getDocFreq("multigrams_title"));
-      assertEquals(mult * 1, brown_fox.getConjunctionDocCount("multigrams_title"));
-      
-      assertEquals(mult * 3, brown_fox.getTTF("multigrams_body"));
-      assertEquals(mult * 2, brown_fox.getDocFreq("multigrams_body"));
-      assertEquals(mult * 2, brown_fox.getConjunctionDocCount("multigrams_body"));
-      
-      final Phrase fox_lazy = phrases.get(6);
-      assertEquals("fox lAzY", fox_lazy.getSubSequence());
-      
-      assertEquals(mult * 0, fox_lazy.getTTF("multigrams_title"));
-      assertEquals(mult * 0, fox_lazy.getDocFreq("multigrams_title"));
-      assertEquals(mult * 1, fox_lazy.getConjunctionDocCount("multigrams_title"));
-      
-      assertEquals(mult * 0, fox_lazy.getTTF("multigrams_body"));
-      assertEquals(mult * 0, fox_lazy.getDocFreq("multigrams_body"));
-      assertEquals(mult * 2, fox_lazy.getConjunctionDocCount("multigrams_body"));
-      
-      final Phrase bfld = phrases.get(3);
-      assertEquals("BROWN fox lAzY  dog", bfld.getSubSequence());
-      
-      expectThrows(SolrException.class, () -> { bfld.getTTF("multigrams_title"); });
-      expectThrows(SolrException.class, () -> { bfld.getDocFreq("multigrams_title"); });
-      assertEquals(mult * 0, bfld.getConjunctionDocCount("multigrams_title"));
-      
-      expectThrows(SolrException.class, () -> { bfld.getTTF("multigrams_body"); });
-      expectThrows(SolrException.class, () -> { bfld.getDocFreq("multigrams_body"); });
-      assertEquals(mult * 1, bfld.getConjunctionDocCount("multigrams_body"));
-      
-      final Phrase xyz = phrases.get(phrases.size()-1);
-      
-      assertEquals("xxxyyyzzz", xyz.getSubSequence());
-      assertEquals(mult * 0, xyz.getTTF("multigrams_title"));
-      assertEquals(mult * 0, xyz.getDocFreq("multigrams_title"));
-      assertEquals(mult * 0, xyz.getConjunctionDocCount("multigrams_title"));
-      
-      assertEquals(mult * 0, xyz.getTTF("multigrams_body"));
-      assertEquals(mult * 0, xyz.getDocFreq("multigrams_body"));
-      assertEquals(mult * 0, xyz.getConjunctionDocCount("multigrams_body"));
-      return;
-    };
+      // a function we'll re-use on phrases generated from the above input
+      // the multiplier let's us simulate multiple shards returning the same values
+      BiConsumer<Integer,List<Phrase>> assertions = (mult, phrases) -> {
+        final Phrase brown_fox = phrases.get(1);
+        assertEquals("BROWN fox", brown_fox.getSubSequence());
 
+        assertEquals(mult * 1, brown_fox.getTTF("multigrams_title"));
+        assertEquals(mult * 1, brown_fox.getDocFreq("multigrams_title"));
+        assertEquals(mult * 1, brown_fox.getConjunctionDocCount("multigrams_title"));
 
-    final List<Phrase> phrasesLocal = Phrase.extractPhrases(input, analysisField, 3, 7);
-    
-    // freshly parsed phrases, w/o any stats populated, all the stats should be 0
-    assertions.accept(0, phrasesLocal);
+        assertEquals(mult * 3, brown_fox.getTTF("multigrams_body"));
+        assertEquals(mult * 2, brown_fox.getDocFreq("multigrams_body"));
+        assertEquals(mult * 2, brown_fox.getConjunctionDocCount("multigrams_body"));
 
-    // If we populate with our index stats, we should get the basic values in our BiConsumer
-    try (SolrQueryRequest req = req()) {
-      Phrase.populateStats(phrasesLocal, Arrays.asList("multigrams_body","multigrams_title"),
-                           req.getSearcher());
+        final Phrase fox_lazy = phrases.get(6);
+        assertEquals("fox lAzY", fox_lazy.getSubSequence());
+
+        assertEquals(mult * 0, fox_lazy.getTTF("multigrams_title"));
+        assertEquals(mult * 0, fox_lazy.getDocFreq("multigrams_title"));
+        assertEquals(mult * 1, fox_lazy.getConjunctionDocCount("multigrams_title"));
+
+        assertEquals(mult * 0, fox_lazy.getTTF("multigrams_body"));
+        assertEquals(mult * 0, fox_lazy.getDocFreq("multigrams_body"));
+        assertEquals(mult * 2, fox_lazy.getConjunctionDocCount("multigrams_body"));
+
+        final Phrase bfld = phrases.get(3);
+        assertEquals("BROWN fox lAzY  dog", bfld.getSubSequence());
+
+        expectThrows(SolrException.class, () -> {
+          bfld.getTTF("multigrams_title");
+        });
+        expectThrows(SolrException.class, () -> {
+          bfld.getDocFreq("multigrams_title");
+        });
+        assertEquals(mult * 0, bfld.getConjunctionDocCount("multigrams_title"));
+
+        expectThrows(SolrException.class, () -> {
+          bfld.getTTF("multigrams_body");
+        });
+        expectThrows(SolrException.class, () -> {
+          bfld.getDocFreq("multigrams_body");
+        });
+        assertEquals(mult * 1, bfld.getConjunctionDocCount("multigrams_body"));
+
+        final Phrase xyz = phrases.get(phrases.size() - 1);
+
+        assertEquals("xxxyyyzzz", xyz.getSubSequence());
+        assertEquals(mult * 0, xyz.getTTF("multigrams_title"));
+        assertEquals(mult * 0, xyz.getDocFreq("multigrams_title"));
+        assertEquals(mult * 0, xyz.getConjunctionDocCount("multigrams_title"));
+
+        assertEquals(mult * 0, xyz.getTTF("multigrams_body"));
+        assertEquals(mult * 0, xyz.getDocFreq("multigrams_body"));
+        assertEquals(mult * 0, xyz.getConjunctionDocCount("multigrams_body"));
+        return;
+      };
+
+      final List<Phrase> phrasesLocal = Phrase.extractPhrases(input, analysisField, 3, 7);
+
+      // freshly parsed phrases, w/o any stats populated, all the stats should be 0
+      assertions.accept(0, phrasesLocal);
+
+      // If we populate with our index stats, we should get the basic values in our BiConsumer
+      try (SolrQueryRequest req = req()) {
+        Phrase.populateStats(phrasesLocal, Arrays.asList("multigrams_body", "multigrams_title"), req.getSearcher());
+      }
+      assertions.accept(1, phrasesLocal);
+
+      // likewise, if we create a new freshly parsed set of phrases, and "merge" in the previous index stats
+      // (ie: merge results from one shard) we should get the same results
+      final List<Phrase> phrasesMerged = Phrase.extractPhrases(input, analysisField, 3, 7);
+      Phrase.populateStats(phrasesMerged, Phrase.formatShardResponse(phrasesLocal));
+      assertions.accept(1, phrasesMerged);
+
+      // if we merge in a second copy of the same results (ie: two identical shards)
+      // our results should be double what we had before
+      Phrase.populateStats(phrasesMerged, Phrase.formatShardResponse(phrasesLocal));
+      assertions.accept(2, phrasesMerged);
     }
-    assertions.accept(1, phrasesLocal);
-
-    // likewise, if we create a new freshly parsed set of phrases, and "merge" in the previous index stats
-    // (ie: merge results from one shard) we should get the same results
-    final List<Phrase> phrasesMerged = Phrase.extractPhrases(input, analysisField, 3, 7);
-    Phrase.populateStats(phrasesMerged, Phrase.formatShardResponse(phrasesLocal));
-    assertions.accept(1, phrasesMerged);
-
-    // if we merge in a second copy of the same results (ie: two identical shards)
-    // our results should be double what we had before
-    Phrase.populateStats(phrasesMerged, Phrase.formatShardResponse(phrasesLocal));
-    assertions.accept(2, phrasesMerged);
-    
   }
   
   public void testWhiteboxScores() throws Exception {
     SolrCore core = h.getCore();
     final SchemaField analysisField = core.getLatestSchema().getField("multigrams_body");
-    core.close();
+
     assertNotNull(analysisField);
     final Map<String,Double> fieldWeights = new TreeMap<>();
     fieldWeights.put("multigrams_title", 1.0D);
@@ -458,7 +462,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getFieldScore("multigrams_title"), 0.0D);
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getFieldScore("multigrams_body"), 0.0D);
     assertEquals(bfwaw.toString(), -1.0D, bfwaw.getTotalScore(), 0.0D);
-    
+    core.close();
   }
   
   public void testWhiteboxScorcesStopwords() throws Exception {
@@ -466,12 +470,12 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
     final Map<String,Double> fieldWeights = new TreeMap<>();
     fieldWeights.put("multigrams_title", 1.0D); 
     fieldWeights.put("multigrams_title_stop", 1.0D);
-    
+    SolrCore core = h.getCore();
     { // If our analysisField uses all terms,
       // be we also generate scores from a field that filters stopwords...
-      SolrCore core = h.getCore();
+
       final SchemaField analysisField = core.getLatestSchema().getField("multigrams_title");
-      core.close();
+
       assertNotNull(analysisField);
       
       final List<Phrase> phrases = Phrase.extractPhrases(input, analysisField, 3, 7);
@@ -506,9 +510,8 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       //
       // (NOTE: the parser will still generate _some_ candidate phrases spaning the stop word position,
       // but not ones that start with the stopword)
-      SolrCore core = h.getCore();
       final SchemaField analysisField = core.getLatestSchema().getField("multigrams_title_stop");
-      core.close();
+
       assertNotNull(analysisField);
       
       final List<Phrase> phrases = Phrase.extractPhrases(input, analysisField, 3, 7);
@@ -535,7 +538,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
       assertThat(brown_fox.toString(), brown_fox.getFieldScore("multigrams_title_stop"), greaterThan(0.0D) );
       assertThat(brown_fox.toString(), brown_fox.getTotalScore(), greaterThan(0.0D));
     }
-    
+    core.close();
   }
   
   public void testExpectedUserErrors() throws Exception {
@@ -543,44 +546,43 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
               "must specify a (weighted) list of fields", 
               req("q","foo", "phrases","true",
                   "phrases.fields", " "),
-              ErrorCode.BAD_REQUEST);
+              ErrorCode.BAD_REQUEST, true);
     
     assertQEx("bogus field name should error",
               "does not exist",
               req("q","foo", "phrases","true",
                   "phrases.fields", "bogus1 bogus2"),
-              ErrorCode.BAD_REQUEST);
+              ErrorCode.BAD_REQUEST, true);
     
     assertQEx("lack of shingles should cause error",
               "Unable to determine max position length",
               req("q","foo", "phrases","true",
                   "phrases.fields", "title"),
-              ErrorCode.BAD_REQUEST);
+              ErrorCode.BAD_REQUEST, true);
     
     assertQEx("analyzer missmatch should cause error",
               "must have the same fieldType",
               req("q","foo", "phrases","true",
                   "phrases.fields", "multigrams_title multigrams_title_short"),
-              ErrorCode.BAD_REQUEST);
+              ErrorCode.BAD_REQUEST, true);
     
     assertQEx("analysis field must exist",
               "does not exist",
               req("q","foo", "phrases","true",
                   "phrases.analysis.field", "bogus",
                   "phrases.fields", "multigrams_title multigrams_title_short"),
-              ErrorCode.BAD_REQUEST);
+              ErrorCode.BAD_REQUEST, true);
 
     assertQEx("no query param should error",
               "requires a query string", 
               req("qt", "/phrases",
                   "phrases.fields", "multigrams_title"),
-              ErrorCode.BAD_REQUEST);
+              ErrorCode.BAD_REQUEST, true);
   }
   
   public void testMaxShingleSizeHelper() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
-    core.close();
     
     assertEquals(3, PhrasesIdentificationComponent.getMaxShingleSize
                  (schema.getFieldTypeByName("multigrams_3_7", schema.getFieldTypes()).getIndexAnalyzer()));
@@ -596,7 +598,7 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
                  (schema.getFieldTypeByName("text", schema.getFieldTypes()).getIndexAnalyzer()));
     assertEquals(-1, PhrasesIdentificationComponent.getMaxShingleSize
                  (schema.getFieldTypeByName("text", schema.getFieldTypes()).getQueryAnalyzer()));
-    
+    core.close();
   }
   
   public void testSimplePhraseRequest() throws Exception {

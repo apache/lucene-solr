@@ -51,6 +51,7 @@ public class RegexBoostProcessorTest extends SolrTestCaseJ4 {
     factory = new RegexpBoostProcessorFactory();
     factory.init(parameters.toNamedList());
     reProcessor = (RegexpBoostProcessor) factory.getInstance(req, resp, null);
+    core.close();
   }
   
   @AfterClass

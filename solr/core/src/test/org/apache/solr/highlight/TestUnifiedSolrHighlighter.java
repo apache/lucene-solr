@@ -17,6 +17,7 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.AfterClass;
@@ -35,7 +36,9 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     // test our config is sane, just to be sure:
 
     // 'text' and 'text3' should have offsets, 'text2' should not
-    IndexSchema schema = h.getCore().getLatestSchema();
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
     assertTrue(schema.getField("text").storeOffsetsWithPositions());
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());

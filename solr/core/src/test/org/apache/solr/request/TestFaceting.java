@@ -30,6 +30,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.uninverting.DocTermOrds;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -39,6 +40,9 @@ import org.junit.Test;
  *
  */
 public class TestFaceting extends SolrTestCaseJ4 {
+
+  public static final String[] EMPTY_STRINGS = new String[0];
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     // we need DVs on point fields to compute stats & facets
@@ -89,24 +93,24 @@ public class TestFaceting extends SolrTestCaseJ4 {
     assertEquals(size, dv.getValueCount());
 
     TermsEnum te = dv.termsEnum();
-
+    if (te == null) {
+      throw new NullPointerException();
+    }
     Random r = new Random(size);
     // test seeking by term string
     for (int i=0; i<size*2+10; i++) {
-      int rnum = r.nextInt(size+2);
+      int rnum = r.nextInt(size + 2);
       String s = t(rnum);
       //System.out.println("s=" + s);
       final BytesRef br;
-      if (te == null) {
+
+      TermsEnum.SeekStatus status = te.seekCeil(new BytesRef(s));
+      if (status == TermsEnum.SeekStatus.END) {
         br = null;
       } else {
-        TermsEnum.SeekStatus status = te.seekCeil(new BytesRef(s));
-        if (status == TermsEnum.SeekStatus.END) {
-          br = null;
-        } else {
-          br = te.term();
-        }
+        br = te.term();
       }
+
       assertEquals(br != null, rnum < size);
       if (rnum < size) {
         assertEquals(rnum, (int) te.ord());
@@ -285,7 +289,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
       fields.add("f_" + suffix);
       fields.add("42");
     }
-    assertU(adoc(fields.toArray(new String[0])));
+    assertU(adoc(fields.toArray(EMPTY_STRINGS)));
     assertU(commit());
     for (String suffix : suffixes) {
       for (String facetMethod : new String[] {FacetParams.FACET_METHOD_enum, FacetParams.FACET_METHOD_fc, FacetParams.FACET_METHOD_fcs, FacetParams.FACET_METHOD_uif}) {
@@ -409,7 +413,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
           "text_t", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
       assertU(commit());
   
-      for(String [] methodParam: new String[][]{ new String[]{}, new String []{"facet.method", "uif"}}) {
+      for(String [] methodParam: new String[][]{EMPTY_STRINGS, new String []{"facet.method", "uif"}}) {
         assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
               req(methodParam
                   , "q", "id:[42 TO 47]"
@@ -623,7 +627,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testThreadWait() throws Exception {
 
     add50ocs();
-    String[] methodParam = random().nextBoolean() ? new String[]{} : new String[]{"facet.method","uif"} ;
+    String[] methodParam = random().nextBoolean() ? EMPTY_STRINGS : new String[]{"facet.method","uif"} ;
     
     // All I really care about here is the chance to fire off a bunch of threads to the UnIninvertedField.get method
     // to insure that we get into/out of the lock. Again, it's not entirely deterministic, but it might catch bad
@@ -695,7 +699,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testMultiThreadedFacets() throws Exception {
     add50ocs();
     
-    String[] methodParam = random().nextBoolean() ? new String[]{} : new String[]{"facet.method","uif"} ;
+    String[] methodParam = random().nextBoolean() ? EMPTY_STRINGS : new String[]{"facet.method","uif"} ;
     
     assertQ("check no threading, threads == 0",
         req(methodParam
@@ -738,170 +742,64 @@ public class TestFaceting extends SolrTestCaseJ4 {
         , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
 
     );
+    try (SolrCore core = h.getCore()) {
+      core.withSearcher(currentSearcher -> {
 
-    h.getCore().withSearcher(currentSearcher -> {
+        SortedSetDocValues ui0 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f0_ws");
+        SortedSetDocValues ui1 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f1_ws");
+        SortedSetDocValues ui2 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f2_ws");
+        SortedSetDocValues ui3 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f3_ws");
+        SortedSetDocValues ui4 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f4_ws");
+        SortedSetDocValues ui5 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f5_ws");
+        SortedSetDocValues ui6 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f6_ws");
+        SortedSetDocValues ui7 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f7_ws");
+        SortedSetDocValues ui8 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f8_ws");
+        SortedSetDocValues ui9 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f9_ws");
 
-      SortedSetDocValues ui0 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f0_ws");
-      SortedSetDocValues ui1 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f1_ws");
-      SortedSetDocValues ui2 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f2_ws");
-      SortedSetDocValues ui3 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f3_ws");
-      SortedSetDocValues ui4 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f4_ws");
-      SortedSetDocValues ui5 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f5_ws");
-      SortedSetDocValues ui6 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f6_ws");
-      SortedSetDocValues ui7 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f7_ws");
-      SortedSetDocValues ui8 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f8_ws");
-      SortedSetDocValues ui9 = DocValues.getSortedSet(currentSearcher.getSlowAtomicReader(), "f9_ws");
+        assertQ("check threading, more threads than fields",
+            req(methodParam, "q", "id:*", "indent", "true", "fl", "id", "rows", "1", "facet", "true", "facet.field", "f0_ws", "facet.field", "f1_ws", "facet.field", "f2_ws", "facet.field", "f3_ws",
+                "facet.field", "f4_ws", "facet.field", "f5_ws", "facet.field", "f6_ws", "facet.field", "f7_ws", "facet.field", "f8_ws", "facet.field", "f9_ws", "facet.threads", "1000", "facet.limit",
+                "-1"), "*[count(//lst[@name='facet_fields']/lst)=10]", "*[count(//lst[@name='facet_fields']/lst/int)=20]", "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']",
+            "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']", "//lst[@name='f1_ws']/int[@name='one_1'][.='33']", "//lst[@name='f1_ws']/int[@name='one_3'][.='17']",
+            "//lst[@name='f2_ws']/int[@name='two_1'][.='37']", "//lst[@name='f2_ws']/int[@name='two_4'][.='13']", "//lst[@name='f3_ws']/int[@name='three_1'][.='40']",
+            "//lst[@name='f3_ws']/int[@name='three_5'][.='10']", "//lst[@name='f4_ws']/int[@name='four_1'][.='41']", "//lst[@name='f4_ws']/int[@name='four_6'][.='9']",
+            "//lst[@name='f5_ws']/int[@name='five_1'][.='42']", "//lst[@name='f5_ws']/int[@name='five_7'][.='8']", "//lst[@name='f6_ws']/int[@name='six_1'][.='43']",
+            "//lst[@name='f6_ws']/int[@name='six_8'][.='7']", "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']", "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']",
+            "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']", "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']", "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']",
+            "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
 
-      assertQ("check threading, more threads than fields",
-          req(methodParam
-              ,"q", "id:*", "indent", "true", "fl", "id", "rows", "1"
-              , "facet", "true"
-              , "facet.field", "f0_ws"
-              , "facet.field", "f1_ws"
-              , "facet.field", "f2_ws"
-              , "facet.field", "f3_ws"
-              , "facet.field", "f4_ws"
-              , "facet.field", "f5_ws"
-              , "facet.field", "f6_ws"
-              , "facet.field", "f7_ws"
-              , "facet.field", "f8_ws"
-              , "facet.field", "f9_ws"
-              , "facet.threads", "1000"
-              , "facet.limit", "-1"
-          )
-          , "*[count(//lst[@name='facet_fields']/lst)=10]"
-          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
-          , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
-          , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
-          , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
-          , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
-          , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
-          , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
-          , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
-          , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
-          , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
-          , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
-          , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
-          , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
-          , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
-          , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
-          , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
-          , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
-          , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
-          , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
-          , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
-          , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+        );
+        assertQ("check threading, fewer threads than fields",
+            req(methodParam, "q", "id:*", "indent", "true", "fl", "id", "rows", "1", "facet", "true", "facet.field", "f0_ws", "facet.field", "f1_ws", "facet.field", "f2_ws", "facet.field", "f3_ws",
+                "facet.field", "f4_ws", "facet.field", "f5_ws", "facet.field", "f6_ws", "facet.field", "f7_ws", "facet.field", "f8_ws", "facet.field", "f9_ws", "facet.threads", "3", "facet.limit",
+                "-1"), "*[count(//lst[@name='facet_fields']/lst)=10]", "*[count(//lst[@name='facet_fields']/lst/int)=20]", "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']",
+            "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']", "//lst[@name='f1_ws']/int[@name='one_1'][.='33']", "//lst[@name='f1_ws']/int[@name='one_3'][.='17']",
+            "//lst[@name='f2_ws']/int[@name='two_1'][.='37']", "//lst[@name='f2_ws']/int[@name='two_4'][.='13']", "//lst[@name='f3_ws']/int[@name='three_1'][.='40']",
+            "//lst[@name='f3_ws']/int[@name='three_5'][.='10']", "//lst[@name='f4_ws']/int[@name='four_1'][.='41']", "//lst[@name='f4_ws']/int[@name='four_6'][.='9']",
+            "//lst[@name='f5_ws']/int[@name='five_1'][.='42']", "//lst[@name='f5_ws']/int[@name='five_7'][.='8']", "//lst[@name='f6_ws']/int[@name='six_1'][.='43']",
+            "//lst[@name='f6_ws']/int[@name='six_8'][.='7']", "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']", "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']",
+            "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']", "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']", "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']",
+            "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
 
-      );
-      assertQ("check threading, fewer threads than fields",
-          req(methodParam
-              ,"q", "id:*", "indent", "true", "fl", "id", "rows", "1"
-              , "facet", "true"
-              , "facet.field", "f0_ws"
-              , "facet.field", "f1_ws"
-              , "facet.field", "f2_ws"
-              , "facet.field", "f3_ws"
-              , "facet.field", "f4_ws"
-              , "facet.field", "f5_ws"
-              , "facet.field", "f6_ws"
-              , "facet.field", "f7_ws"
-              , "facet.field", "f8_ws"
-              , "facet.field", "f9_ws"
-              , "facet.threads", "3"
-              , "facet.limit", "-1"
-          )
-          , "*[count(//lst[@name='facet_fields']/lst)=10]"
-          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
-          , "//lst[@name='f0_ws']/int[@name='zero_1'][.='25']"
-          , "//lst[@name='f0_ws']/int[@name='zero_2'][.='25']"
-          , "//lst[@name='f1_ws']/int[@name='one_1'][.='33']"
-          , "//lst[@name='f1_ws']/int[@name='one_3'][.='17']"
-          , "//lst[@name='f2_ws']/int[@name='two_1'][.='37']"
-          , "//lst[@name='f2_ws']/int[@name='two_4'][.='13']"
-          , "//lst[@name='f3_ws']/int[@name='three_1'][.='40']"
-          , "//lst[@name='f3_ws']/int[@name='three_5'][.='10']"
-          , "//lst[@name='f4_ws']/int[@name='four_1'][.='41']"
-          , "//lst[@name='f4_ws']/int[@name='four_6'][.='9']"
-          , "//lst[@name='f5_ws']/int[@name='five_1'][.='42']"
-          , "//lst[@name='f5_ws']/int[@name='five_7'][.='8']"
-          , "//lst[@name='f6_ws']/int[@name='six_1'][.='43']"
-          , "//lst[@name='f6_ws']/int[@name='six_8'][.='7']"
-          , "//lst[@name='f7_ws']/int[@name='seven_1'][.='44']"
-          , "//lst[@name='f7_ws']/int[@name='seven_9'][.='6']"
-          , "//lst[@name='f8_ws']/int[@name='eight_1'][.='45']"
-          , "//lst[@name='f8_ws']/int[@name='eight_10'][.='5']"
-          , "//lst[@name='f9_ws']/int[@name='nine_1'][.='45']"
-          , "//lst[@name='f9_ws']/int[@name='nine_11'][.='5']"
+        );
 
-      );
-
-      // After this all, the uninverted fields should be exactly the same as they were the first time, even if we
-      // blast a whole bunch of identical fields at the facet code.
-      // The way fetching the uninverted field is written, all this is really testing is if the cache is working.
-      // It's NOT testing whether the pending/sleep is actually functioning, I had to do that by hand since I don't
-      // see how to make sure that uninverting the field multiple times actually happens to hit the wait state.
-      assertQ("check threading, more threads than fields",
-          req(methodParam
-              ,"q", "id:*", "indent", "true", "fl", "id", "rows", "1"
-              , "facet", "true"
-              , "facet.field", "f0_ws"
-              , "facet.field", "f0_ws"
-              , "facet.field", "f0_ws"
-              , "facet.field", "f0_ws"
-              , "facet.field", "f0_ws"
-              , "facet.field", "f1_ws"
-              , "facet.field", "f1_ws"
-              , "facet.field", "f1_ws"
-              , "facet.field", "f1_ws"
-              , "facet.field", "f1_ws"
-              , "facet.field", "f2_ws"
-              , "facet.field", "f2_ws"
-              , "facet.field", "f2_ws"
-              , "facet.field", "f2_ws"
-              , "facet.field", "f2_ws"
-              , "facet.field", "f3_ws"
-              , "facet.field", "f3_ws"
-              , "facet.field", "f3_ws"
-              , "facet.field", "f3_ws"
-              , "facet.field", "f3_ws"
-              , "facet.field", "f4_ws"
-              , "facet.field", "f4_ws"
-              , "facet.field", "f4_ws"
-              , "facet.field", "f4_ws"
-              , "facet.field", "f4_ws"
-              , "facet.field", "f5_ws"
-              , "facet.field", "f5_ws"
-              , "facet.field", "f5_ws"
-              , "facet.field", "f5_ws"
-              , "facet.field", "f5_ws"
-              , "facet.field", "f6_ws"
-              , "facet.field", "f6_ws"
-              , "facet.field", "f6_ws"
-              , "facet.field", "f6_ws"
-              , "facet.field", "f6_ws"
-              , "facet.field", "f7_ws"
-              , "facet.field", "f7_ws"
-              , "facet.field", "f7_ws"
-              , "facet.field", "f7_ws"
-              , "facet.field", "f7_ws"
-              , "facet.field", "f8_ws"
-              , "facet.field", "f8_ws"
-              , "facet.field", "f8_ws"
-              , "facet.field", "f8_ws"
-              , "facet.field", "f8_ws"
-              , "facet.field", "f9_ws"
-              , "facet.field", "f9_ws"
-              , "facet.field", "f9_ws"
-              , "facet.field", "f9_ws"
-              , "facet.field", "f9_ws"
-              , "facet.threads", "1000"
-              , "facet.limit", "-1"
-          )
-          , "*[count(//lst[@name='facet_fields']/lst)=10]"
-          , "*[count(//lst[@name='facet_fields']/lst/int)=20]"
-      );
-      return null;
-    });
+        // After this all, the uninverted fields should be exactly the same as they were the first time, even if we
+        // blast a whole bunch of identical fields at the facet code.
+        // The way fetching the uninverted field is written, all this is really testing is if the cache is working.
+        // It's NOT testing whether the pending/sleep is actually functioning, I had to do that by hand since I don't
+        // see how to make sure that uninverting the field multiple times actually happens to hit the wait state.
+        assertQ("check threading, more threads than fields",
+            req(methodParam, "q", "id:*", "indent", "true", "fl", "id", "rows", "1", "facet", "true", "facet.field", "f0_ws", "facet.field", "f0_ws", "facet.field", "f0_ws", "facet.field", "f0_ws",
+                "facet.field", "f0_ws", "facet.field", "f1_ws", "facet.field", "f1_ws", "facet.field", "f1_ws", "facet.field", "f1_ws", "facet.field", "f1_ws", "facet.field", "f2_ws", "facet.field",
+                "f2_ws", "facet.field", "f2_ws", "facet.field", "f2_ws", "facet.field", "f2_ws", "facet.field", "f3_ws", "facet.field", "f3_ws", "facet.field", "f3_ws", "facet.field", "f3_ws",
+                "facet.field", "f3_ws", "facet.field", "f4_ws", "facet.field", "f4_ws", "facet.field", "f4_ws", "facet.field", "f4_ws", "facet.field", "f4_ws", "facet.field", "f5_ws", "facet.field",
+                "f5_ws", "facet.field", "f5_ws", "facet.field", "f5_ws", "facet.field", "f5_ws", "facet.field", "f6_ws", "facet.field", "f6_ws", "facet.field", "f6_ws", "facet.field", "f6_ws",
+                "facet.field", "f6_ws", "facet.field", "f7_ws", "facet.field", "f7_ws", "facet.field", "f7_ws", "facet.field", "f7_ws", "facet.field", "f7_ws", "facet.field", "f8_ws", "facet.field",
+                "f8_ws", "facet.field", "f8_ws", "facet.field", "f8_ws", "facet.field", "f8_ws", "facet.field", "f9_ws", "facet.field", "f9_ws", "facet.field", "f9_ws", "facet.field", "f9_ws",
+                "facet.field", "f9_ws", "facet.threads", "1000", "facet.limit", "-1"), "*[count(//lst[@name='facet_fields']/lst)=10]", "*[count(//lst[@name='facet_fields']/lst/int)=20]");
+        return null;
+      });
+    }
   }
 
   @Test

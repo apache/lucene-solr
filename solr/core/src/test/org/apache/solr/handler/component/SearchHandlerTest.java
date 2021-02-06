@@ -117,6 +117,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
     } catch (Exception e) {
       fail("Exception when closing SearchHandler");
     }
+    core.close();
   }
   
   @Test

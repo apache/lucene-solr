@@ -17,13 +17,14 @@
 package org.apache.solr.common.cloud;
 
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
-
+import java.util.concurrent.TimeoutException;
 
 public class ZkCmdExecutor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -63,22 +64,22 @@ public class ZkCmdExecutor {
    * Perform the given operation, retrying if the connection fails
    */
   @SuppressWarnings("unchecked")
-  public <T> T retryOperation(ZkOperation operation)
+  public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation)
       throws KeeperException, InterruptedException {
     KeeperException exception = null;
     int tryCnt = 0;
-    while (tryCnt < retryCount) {
+    while (tryCnt < zkCmdExecutor.retryCount) {
       try {
         return (T) operation.execute();
       } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-        log.warn("ConnectionLost to ZK");
+        log.warn("ConnectionLost to ZK", e);
         if (exception == null) {
           exception = e;
         }
-//        if (!solrZkClient.getSolrZooKeeper().getState().isAlive()) {
-//          break;
-//        }
-        retryDelay(tryCnt);
+        if (!zkCmdExecutor.solrZkClient.getSolrZooKeeper().getState().isAlive()) {
+          throw e;
+        }
+        zkCmdExecutor.retryDelay(tryCnt);
       }
       tryCnt++;
     }
@@ -95,9 +96,12 @@ public class ZkCmdExecutor {
     if (isClosed != null && isClosed.isClosed()) {
      throw new AlreadyClosedException();
     }
-    long sleep = retryDelay;
-    log.info("delaying for retry, attempt={} retryDelay={} sleep={}", attemptCount, retryDelay, sleep);
-    Thread.sleep(sleep);
+    log.info("retry, attempt={}", attemptCount);
+    try {
+      solrZkClient.getConnectionManager().waitForConnected(60000);
+    } catch (TimeoutException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
   }
 
 }

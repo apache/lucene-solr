@@ -84,73 +84,77 @@ public class XMLResponseParser extends ResponseParser
   public NamedList<Object> processResponse(Reader in) {
     XMLStreamReader2 parser = null;
     try {
-      parser = (XMLStreamReader2) inputFactory.createXMLStreamReader(in);
-      parser.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
-    } catch (XMLStreamException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-    }
+      try {
+        parser = (XMLStreamReader2) inputFactory.createXMLStreamReader(in);
+        parser.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, Boolean.TRUE);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+      }
 
-    return processResponse(parser);
+      return processResponse(parser);
+    } finally {
+      if (parser != null) {
+        try {
+          parser.closeCompletely();
+        } catch (Exception e) {
+          log.info("Exception closing xml parser " + e.getClass().getName() + " " + e.getMessage());
+        }
+      }
+    }
   }
 
   @Override
   public NamedList<Object> processResponse(InputStream in, String encoding)
   {
-     XMLStreamReader parser = null;
+    XMLStreamReader2 parser = null;
     try {
-      parser = inputFactory.createXMLStreamReader(in, encoding);
-    } catch (XMLStreamException e) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
-    }
+      try {
+        parser = (XMLStreamReader2) inputFactory.createXMLStreamReader(in, encoding);
+      } catch (XMLStreamException e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", e);
+      }
 
-    return processResponse(parser);
+      return processResponse(parser);
+    } finally {
+      if (parser != null) {
+        try {
+          parser.closeCompletely();
+        } catch(Exception e) {
+          log.info("Exception closing xml parser " + e.getClass().getName() + " " + e.getMessage());
+        }
+      }
+    }
   }
 
   /**
    * parse the text into a named list...
    */
-  private NamedList<Object> processResponse(XMLStreamReader parser)
-  {
+  private NamedList<Object> processResponse(XMLStreamReader parser) {
     try {
       NamedList<Object> response = null;
-      for (int event = parser.next();
-       event != XMLStreamConstants.END_DOCUMENT;
-       event = parser.next())
-      {
+      for (int event = parser.next(); event != XMLStreamConstants.END_DOCUMENT; event = parser.next()) {
         switch (event) {
           case XMLStreamConstants.START_ELEMENT:
 
-            if( response != null ) {
-              throw new Exception( "already read the response!" );
+            if (response != null) {
+              throw new Exception("already read the response!");
             }
 
             // only top-level element is "response
             String name = parser.getLocalName();
-            if( name.equals( "response" ) || name.equals( "result" ) ) {
-              response = readNamedList( parser );
-            }
-            else if( name.equals( "solr" ) ) {
+            if (name.equals("response") || name.equals("result")) {
+              response = readNamedList(parser);
+            } else if (name.equals("solr")) {
               return new SimpleOrderedMap<>();
-            }
-            else {
-              throw new Exception( "really needs to be response or result.  " +
-                  "not:"+parser.getLocalName() );
+            } else {
+              throw new Exception("really needs to be response or result.  " + "not:" + parser.getLocalName());
             }
             break;
         }
       }
       return response;
-    }
-    catch( Exception ex ) {
-      throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "parsing error", ex );
-    }
-    finally {
-      try {
-        parser.close();
-      }
-      catch( Exception ex ){
-        log.warn("Exception closing parser", ex);
-      }
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "parsing error", ex);
     }
   }
 

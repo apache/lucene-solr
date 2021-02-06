@@ -420,6 +420,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         assertQ("Make sure QEC handles null queries", req("qt", "/elevate", "q.alt", "*:*", "defType", "dismax"),
             "//*[@numFound='0']");
       }
+      core.close();
     } finally {
       delete();
     }
@@ -658,7 +659,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       NamedList<String> args = new NamedList<>();
       args.add(QueryElevationComponent.CONFIG_FILE, testfile);
       comp.init(args);
-      comp.inform(h.getCore());
+      comp.inform(core);
 
       QueryElevationComponent.ElevationProvider elevationProvider;
 

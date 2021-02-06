@@ -72,7 +72,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     args.put(CommonParams.TR, "xsl-update-handler-test.xsl");
       
     SolrCore core = h.getCore();
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args) );
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest( core, new MapSolrParams( args), true );
     ArrayList<ContentStream> streams = new ArrayList<>();
     streams.add(new ContentStreamBase.StringStream(xml));
     req.setContentStreams(streams);

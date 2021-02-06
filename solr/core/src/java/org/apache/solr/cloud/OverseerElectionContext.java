@@ -82,7 +82,7 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
       return false;
     }
 
-    if (!overseer.getZkController().getCoreContainer().isShutDown() && !overseer.getZkController().isShudownCalled()
+    if (!overseer.getZkController().getCoreContainer().isShutDown() && !overseer.getZkController().isShutdownCalled()
         && !overseer.isDone()) {
       log.info("Starting overseer after winning Overseer election {}", id);
       overseer.start(id, context);

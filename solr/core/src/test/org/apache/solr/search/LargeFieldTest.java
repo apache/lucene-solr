@@ -74,23 +74,25 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     assertQ(req("q", "101", "df", ID_FLD, "fl", ID_FLD)); // eager load ID_FLD; rest are lazy
 
     // fetch the document; we know it will be from the documentCache, docId 0
-    final Document d = h.getCore().withSearcher(searcher -> searcher.doc(0));
+    try (SolrCore core = h.getCore()) {
+      final Document d = core.withSearcher(searcher -> searcher.doc(0));
 
-    assertEager(d, ID_FLD);
-    assertLazyNotLoaded(d, LAZY_FIELD);
-    assertLazyNotLoaded(d, BIG_FIELD);
+      assertEager(d, ID_FLD);
+      assertLazyNotLoaded(d, LAZY_FIELD);
+      assertLazyNotLoaded(d, BIG_FIELD);
 
-    assertQ(req("q", "101", "df", ID_FLD, "fl", LAZY_FIELD)); // trigger load of LAZY_FIELD
+      assertQ(req("q", "101", "df", ID_FLD, "fl", LAZY_FIELD)); // trigger load of LAZY_FIELD
 
-    assertEager(d, ID_FLD);
-    assertLazyLoaded(d, LAZY_FIELD); // loaded now
-    assertLazyNotLoaded(d, BIG_FIELD); // because big fields are handled separately
+      assertEager(d, ID_FLD);
+      assertLazyLoaded(d, LAZY_FIELD); // loaded now
+      assertLazyNotLoaded(d, BIG_FIELD); // because big fields are handled separately
 
-    assertQ(req("q", "101", "df", ID_FLD, "fl", BIG_FIELD)); // trigger load of BIG_FIELD
+      assertQ(req("q", "101", "df", ID_FLD, "fl", BIG_FIELD)); // trigger load of BIG_FIELD
 
-    assertEager(d, ID_FLD);
-    assertLazyLoaded(d, LAZY_FIELD);
-    assertLazyLoaded(d, BIG_FIELD); // loaded now
+      assertEager(d, ID_FLD);
+      assertLazyLoaded(d, LAZY_FIELD);
+      assertLazyLoaded(d, BIG_FIELD); // loaded now
+    }
   }
 
   private void assertEager(Document d, String fieldName) {

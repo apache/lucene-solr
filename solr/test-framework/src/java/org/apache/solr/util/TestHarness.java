@@ -265,8 +265,8 @@ public class TestHarness extends BaseTestHarness {
    */
   public String update(String xml) {
     try {
-      try (SolrCore core = getCoreInc()) {
-        DirectSolrConnection connection = new DirectSolrConnection(core);
+      SolrCore core = getCoreInc();
+      try (DirectSolrConnection connection = new DirectSolrConnection(core)) {
         SolrRequestHandler handler = core.getRequestHandler("/update");
         // prefer the handler mapped to /update, but use our generic backup handler
         // if that lookup fails
@@ -276,7 +276,7 @@ public class TestHarness extends BaseTestHarness {
         return connection.request(handler, null, xml);
       }
     } catch (SolrException e) {
-      throw (SolrException)e;
+      throw e;
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);

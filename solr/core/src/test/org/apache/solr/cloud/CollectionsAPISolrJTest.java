@@ -362,13 +362,14 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 //      return true;
 //    });
 
+    // nocommit - just to remove from equation
     // Test splitting using split.key
-    response = CollectionAdminRequest.splitShard(collectionName)
-        .setSplitKey("b!")
-        .process(cluster.getSolrClient());
-
-    assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
+//    response = CollectionAdminRequest.splitShard(collectionName)
+//        .setSplitKey("b!")
+//        .process(cluster.getSolrClient());
+//
+//    assertEquals(0, response.getStatus());
+//    assertTrue(response.isSuccess());
   }
 
   @Test

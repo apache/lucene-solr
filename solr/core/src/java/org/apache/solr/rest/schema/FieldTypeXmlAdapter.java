@@ -118,10 +118,12 @@ public class FieldTypeXmlAdapter {
       PipelineConfiguration plc = loader.getConf().makePipelineConfiguration();
       ParseOptions po = plc.getParseOptions();
       po.setEntityResolver(loader.getSysIdResolver());
-      po.setXIncludeAware(true);
+      // Set via conf already
+      // po.setXIncludeAware(true);
+      //  po.setExpandAttributeDefaults(true);
+      //  po.setCheckEntityReferences(false);
       po.setDTDValidationMode(Validation.STRIP);
-      po.setExpandAttributeDefaults(true);
-      po.setCheckEntityReferences(false);
+
       po.setPleaseCloseAfterUse(true);
 
       return fieldType.toNodeInfo(plc.getConfiguration());

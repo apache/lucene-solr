@@ -109,54 +109,53 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
   //TODO, how to generalize?
 
   private void setupAllFields() throws IOException {
-
-    IndexSchema schema = h.getCore().getLatestSchema();
-
-    // Add all the types before the fields.
-    Map<String, Map<String, String>> fieldsToAdd = new HashMap<>();
-
-    // We need our special id fields to find the docs later.
-    typesHolder.addFieldType(schema, idNotStoredDv, RetrieveFieldType.TEST_TYPE.STRING);
-    fieldsToAdd.put(idNotStoredDv, map("stored", "false", "docValues", "true", "multiValued", "false"));
-
-    typesHolder.addFieldType(schema, idStoredNotDv, RetrieveFieldType.TEST_TYPE.STRING);
-    fieldsToAdd.put(idStoredNotDv, map("stored", "true", "docValues", "false", "multiValued", "false"));
-
-    for (RetrieveFieldType.TEST_TYPE type : RetrieveFieldType.solrClassMap.keySet()) {
-      // We happen to be naming the fields and types identically.
-      String myName = type.toString() + storedNotDvSv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "false"));
-
-      myName = type.toString() + storedAndDvSv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "false"));
-
-      myName = type.toString() + notStoredDvSv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "false"));
-
-      myName = type.toString() + storedNotDvMv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "true"));
-
-      myName = type.toString() + storedAndDvMv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "true"));
-
-      myName = type.toString() + notStoredDvMv;
-      typesHolder.addFieldType(schema, myName, type);
-      fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "true"));
-    }
-
-    schema = typesHolder.addFieldTypes(schema);
-
-    for (Map.Entry<String, Map<String, String>> ent : fieldsToAdd.entrySet()) {
-      fieldsHolder.addField(schema, ent.getKey(), ent.getKey(), ent.getValue(), typesHolder);
-    }
-    schema = fieldsHolder.addFields(schema);
-
     try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
+
+      // Add all the types before the fields.
+      Map<String,Map<String,String>> fieldsToAdd = new HashMap<>();
+
+      // We need our special id fields to find the docs later.
+      typesHolder.addFieldType(schema, idNotStoredDv, RetrieveFieldType.TEST_TYPE.STRING);
+      fieldsToAdd.put(idNotStoredDv, map("stored", "false", "docValues", "true", "multiValued", "false"));
+
+      typesHolder.addFieldType(schema, idStoredNotDv, RetrieveFieldType.TEST_TYPE.STRING);
+      fieldsToAdd.put(idStoredNotDv, map("stored", "true", "docValues", "false", "multiValued", "false"));
+
+      for (RetrieveFieldType.TEST_TYPE type : RetrieveFieldType.solrClassMap.keySet()) {
+        // We happen to be naming the fields and types identically.
+        String myName = type.toString() + storedNotDvSv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "false"));
+
+        myName = type.toString() + storedAndDvSv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "false"));
+
+        myName = type.toString() + notStoredDvSv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "false"));
+
+        myName = type.toString() + storedNotDvMv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "false", "multiValued", "true"));
+
+        myName = type.toString() + storedAndDvMv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "true", "docValues", "true", "multiValued", "true"));
+
+        myName = type.toString() + notStoredDvMv;
+        typesHolder.addFieldType(schema, myName, type);
+        fieldsToAdd.put(myName, map("stored", "false", "docValues", "true", "multiValued", "true"));
+      }
+
+      schema = typesHolder.addFieldTypes(schema);
+
+      for (Map.Entry<String,Map<String,String>> ent : fieldsToAdd.entrySet()) {
+        fieldsHolder.addField(schema, ent.getKey(), ent.getKey(), ent.getValue(), typesHolder);
+      }
+      schema = fieldsHolder.addFields(schema);
+
       core.setLatestSchema(schema);
 
       // All that setup work and we're only going to add a very few docs!
@@ -178,7 +177,7 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
         refCounted.decref();
       }
     }
-   }
+  }
 
    void addDocWithAllFields(int idx) {
 
@@ -308,15 +307,14 @@ public class TestRetrieveFieldsOptimizer extends SolrTestCaseJ4 {
     Set<String> setDedupe = new HashSet<>(Arrays.asList(flIn.split(",")));
     String fl = String.join(",", setDedupe);
 
-    SolrCore core = h.getCore();
-
     SolrQueryRequest req = lrf.makeRequest("q", "*:*", CommonParams.FL, fl);
     SolrQueryResponse rsp = h.queryAndResponse("", req);
 
-    BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) core.getQueryResponseWriter("javabin");
+    BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) req.getCore().getQueryResponseWriter("javabin");
+
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     writer.write(baos, req, rsp);
-    req.close();
+
     // This is really the main point!
     assertEquals("We didn't get the values from the expected places! ",
         source, ((SolrReturnFields) rsp.returnFields).getFieldSources());

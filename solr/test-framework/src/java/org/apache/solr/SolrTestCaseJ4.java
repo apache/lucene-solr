@@ -134,7 +134,6 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
@@ -220,7 +219,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
     System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
 
-    System.setProperty(ZK_WHITELIST_PROPERTY, "*");
     startTrackingSearchers();
     ignoreException("ignore_exception");
     newRandomConfig();
@@ -262,7 +260,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("solr.peerSync.useRangeVersions");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
-      System.clearProperty(ZK_WHITELIST_PROPERTY);
 
       clearNumericTypesProperties();
 
@@ -946,6 +943,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       req.close();
     }
   }
+
+  public static void assertQEx(String failMessage, SolrQueryRequest req, SolrException.ErrorCode code, boolean closeRequest ) {
+    assertQEx(failMessage, failMessage, req, code, closeRequest);
+  }
+
   /**
    * Makes sure a query throws a SolrException with the listed response code and expected message
    * @param failMessage The assert message to show when the query doesn't throw the expected exception
@@ -953,22 +955,29 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param req Solr request
    * @param code expected error code for the query
    */
-  public static void assertQEx(String failMessage, String exceptionMessage, SolrQueryRequest req, SolrException.ErrorCode code ) {
+  public static void assertQEx(String failMessage, String exceptionMessage, SolrQueryRequest req, SolrException.ErrorCode code, boolean closeRequest ) {
     try {
       ignoreException(".");
       h.query(req);
       fail( failMessage );
     } catch (SolrException e) {
       assertEquals( code.code, e.code() );
-      assertTrue("Unexpected error message. Expecting \"" + exceptionMessage + 
+      assertTrue("Unexpected error message. Expecting \"" + exceptionMessage +
           "\" but got \"" + e.getMessage() + "\"", e.getMessage()!= null && e.getMessage().contains(exceptionMessage));
     } catch (Exception e2) {
       ParWork.propagateInterrupt(e2);
       throw new RuntimeException("Exception during query", e2);
     } finally {
+      if (closeRequest) {
+        req.close();
+      }
       unIgnoreException(".");
-      req.close();
     }
+  }
+
+
+  public static void assertQEx(String failMessage, String exceptionMessage, SolrQueryRequest req, SolrException.ErrorCode code ) {
+    assertQEx(failMessage, exceptionMessage, req, code, false);
   }
 
 

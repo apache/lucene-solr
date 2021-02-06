@@ -509,7 +509,7 @@ public class Overseer implements SolrCloseable {
     if (!cd) {
       boolean retry;
       synchronized (this) {
-        retry = !zkController.getCoreContainer().isShutDown() && !zkController.isShudownCalled() && !zkController.isClosed() && !closeAndDone;
+        retry = !zkController.getCoreContainer().isShutDown() && !zkController.isShutdownCalled() && !zkController.isClosed() && !closeAndDone;
       }
       if (retry) {
         log.info("rejoining the overseer election after closing");

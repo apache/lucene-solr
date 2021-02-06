@@ -253,8 +253,10 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   public void testCatchAllCopyField() throws Exception {
     deleteCore();
     initCore("solrconfig.xml", "schema-copyfield-test.xml");
-    
-    IndexSchema schema = h.getCore().getLatestSchema();
+
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
     
     assertNull("'*' should not be (or match) a dynamic field", schema.getDynamicPattern("*"));
     

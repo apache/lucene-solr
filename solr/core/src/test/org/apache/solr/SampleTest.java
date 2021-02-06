@@ -109,11 +109,13 @@ public class SampleTest extends SolrTestCaseJ4 {
             ,"//result[@numFound=0]"
             );
 
+    req = l.makeRequest( "Mack Daddy" );
     /* you can access the harness directly as well*/
     assertNull("how did i find Mack Daddy? ",
-               h.validateQuery(l.makeRequest( "Mack Daddy" )
+               h.validateQuery(req
                                ,"//result[@numFound=0]"
                                ));
+    req.close();
         
   }
 }

@@ -224,59 +224,63 @@ public class Utils {
     return writer;
   }
 
-    public static String[] getSolrSubPackage(String packageName) {
-      if (packageName.startsWith("org.apache.solr")) {
-        String subPackage = packageName.substring("org.apache.solr".length() + 1) + ".";
-        if (subPackage.equals("request.")) {
-          return new String[]{"handler.", "handler.admin.", "handler.component."};
-        }
-//        if (subPackage.equals("update.processor.")) {
-//          return new String[]{"update.processor.", "processor."};
-//        }
-        return new String[]{subPackage};
-
-      } else if (packageName.startsWith("org.apache.lucene")) {
-        String subPackage = packageName.substring("org.apache.lucene".length() + 1) + ".";
-        if (subPackage.equals("analysis.util.")) {
-          return new String[]{"analysis."};
-        }
-        return new String[]{subPackage};
-      } else {
-        throw new IllegalArgumentException();
+  public static String[] getSolrSubPackage(String packageName) {
+    if (packageName.startsWith("org.apache.solr")) {
+      String subPackage = packageName.substring("org.apache.solr".length() + 1) + ".";
+      if (subPackage.equals("request.")) {
+        return new String[] {"handler.", "handler.admin.", "handler.component."};
       }
+      //        if (subPackage.equals("update.processor.")) {
+      //          return new String[]{"update.processor.", "processor."};
+      //        }
+      return new String[] {subPackage};
+
+    } else if (packageName.startsWith("org.apache.lucene")) {
+      String subPackage = packageName.substring("org.apache.lucene".length() + 1) + ".";
+      if (subPackage.equals("analysis.util.")) {
+        return new String[] {"analysis."};
+      }
+      return new String[] {subPackage};
+    } else {
+      throw new IllegalArgumentException();
+    }
+  }
+
+  private static class MapWriterJSONWriter extends JSONWriter {
+
+    public MapWriterJSONWriter(CharArr out, int indentSize) {
+      super(out, indentSize);
     }
 
-      private static class MapWriterJSONWriter extends JSONWriter {
-
-        public MapWriterJSONWriter(CharArr out, int indentSize) {
-          super(out, indentSize);
-        }
-
-        @Override
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        public void handleUnknownClass(Object o) {
-          if (o instanceof MapWriter) {
-            Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
-            write(m);
-          } else {
-            super.handleUnknownClass(o);
-          }
-        }
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public void handleUnknownClass(Object o) {
+      if (o instanceof MapWriter) {
+        Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
+        write(m);
+      } else {
+        super.handleUnknownClass(o);
       }
+    }
+  }
 
-      public static byte[] toJSON (Object o){
-        if (o == null) return EMPTY_BYTES;
-        CharArr out = new CharArr();
-        if (!(o instanceof List) && !(o instanceof Map)) {
-          if (o instanceof MapWriter) {
-            o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-          } else if (o instanceof IteratorWriter) {
-            o = ((IteratorWriter) o).toList(new ArrayList<>());
-          }
-        }
-        new MapWriterJSONWriter(out, 2).write(o); // indentation by default
-        return toUTF8(out);
+  public static byte[] toJSON(Object o) {
+    return toJSON(o, 2);
+  }
+
+  public static byte[] toJSON(Object o, int indent) {
+    if (o == null) return EMPTY_BYTES;
+    CharArr out = new CharArr();
+    if (!(o instanceof List) && !(o instanceof Map)) {
+      if (o instanceof MapWriter) {
+        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+      } else if (o instanceof IteratorWriter) {
+        o = ((IteratorWriter) o).toList(new ArrayList<>());
       }
+    }
+    new MapWriterJSONWriter(out, indent).write(o); // indentation by default
+    return toUTF8(out);
+  }
 
       public static String toJSONString (Object o){
         return new String(toJSON(o), StandardCharsets.UTF_8);
@@ -303,7 +307,8 @@ public class Utils {
                 JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
                 JSONParser.OPTIONAL_OUTER_BRACES);
         try {
-          return STANDARDOBJBUILDER.apply(parser).getValStrict();
+          Object result = STANDARDOBJBUILDER.apply(parser).getValStrict();
+          return result;
         } catch (IOException e) {
           throw new RuntimeException(e); // should never happen w/o using real IO
         }

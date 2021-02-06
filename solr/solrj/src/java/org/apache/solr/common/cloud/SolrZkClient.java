@@ -91,6 +91,8 @@ public class SolrZkClient implements Closeable {
   static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 15000;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final byte[] EMPTY_BYTES = new byte[0];
+  public static final String INDENT = "  ";
   private final int zkClientConnectTimeout;
   private CloseTracker closeTracker;
 
@@ -265,7 +267,7 @@ public class SolrZkClient implements Closeable {
       throws InterruptedException, KeeperException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      zkCmdExecutor.retryOperation(() -> {
+      ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> {
         keeper.delete(path, version);
         return null;
       });
@@ -311,7 +313,7 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.exists(path, wrapWatcher(watcher)));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.exists(path, wrapWatcher(watcher)));
     } else {
       return keeper.exists(path, wrapWatcher(watcher));
     }
@@ -324,7 +326,7 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      Stat existsStat = zkCmdExecutor.retryOperation(() -> keeper.exists(path, null));
+      Stat existsStat = ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.exists(path, null));
       if (log.isDebugEnabled()) log.debug("exists state return is {} {}", path, existsStat);
       return existsStat != null;
     } else {
@@ -345,7 +347,7 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher)));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.getChildren(path, wrapWatcher(watcher)));
     } else {
       return keeper.getChildren(path, wrapWatcher(watcher));
     }
@@ -355,7 +357,7 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher), stat));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.getChildren(path, wrapWatcher(watcher), stat));
     } else {
       return keeper.getChildren(path, wrapWatcher(watcher));
     }
@@ -375,7 +377,7 @@ public class SolrZkClient implements Closeable {
       if (keeper == null) {
         throw new IllegalStateException();
       }
-      return zkCmdExecutor.retryOperation(() -> keeper.getData(path, wrapWatcher(watcher), stat));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.getData(path, wrapWatcher(watcher), stat));
     } else {
       return keeper.getData(path, wrapWatcher(watcher), stat);
     }
@@ -388,7 +390,7 @@ public class SolrZkClient implements Closeable {
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(new SetData(keeper, path, data, version));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, new SetData(keeper, path, data, version));
     } else {
       return keeper.setData(path, data, version);
     }
@@ -450,7 +452,7 @@ public class SolrZkClient implements Closeable {
     List<ACL> acls = zkACLProvider.getACLsToAdd(path);
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> {
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> {
         return keeper.create(path, data, acls, createMode);
       });
     } else {
@@ -550,7 +552,7 @@ public class SolrZkClient implements Closeable {
     if (log.isDebugEnabled()) log.debug("makePath: {}", path);
     boolean retry = true;
     if (path.startsWith("/")) {
-      path = path.substring(1, path.length());
+      path = path.substring(1);
     }
     String[] paths = path.split("/");
     StringBuilder sbPath = new StringBuilder();
@@ -574,7 +576,7 @@ public class SolrZkClient implements Closeable {
         if (retry) {
           final CreateMode finalMode = mode;
           final byte[] finalBytes = bytes;
-          zkCmdExecutor.retryOperation(() -> {
+          ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> {
             keeper.create(currentPath, finalBytes, zkACLProvider.getACLsToAdd(currentPath), finalMode);
             return null;
           });
@@ -868,20 +870,7 @@ public class SolrZkClient implements Closeable {
     if (log.isDebugEnabled()) log.debug("mkdir path={}", path);
     boolean retryOnConnLoss = true; // nocommit
     if (retryOnConnLoss) {
-      zkCmdExecutor.retryOperation(() -> {
-
-        String createdPath;
-        try {
-          ZooKeeper keeper = connManager.getKeeper();
-          createdPath = keeper.create(path, data, getZkACLProvider().getACLsToAdd(path), createMode);
-        } catch (IllegalArgumentException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, path, e);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
-        }
-        return createdPath;
-      });
+      ZkCmdExecutor.retryOperation(zkCmdExecutor, new CreateZkOperation(path, data, createMode));
     } else {
       String createdPath;
       try {
@@ -925,76 +914,132 @@ public class SolrZkClient implements Closeable {
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
       ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return zkCmdExecutor.retryOperation(() -> keeper.multi(ops));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.multi(ops));
     } else {
       return keeper.multi(ops);
+    }
+  }
+
+  public void printLayout(String path, int indent, StringBuilder output) {
+    try {
+      printLayout(path, "", indent, new StringBuilder(64), output);
+    } catch (Exception e) {
+      log.error("Exception printing layout", e);
     }
   }
 
   /**
    * Fills string with printout of current ZooKeeper layout.
    */
-  public void printLayout(String path, int indent, StringBuilder string) {
-
-    byte[] data;
-    Stat stat = new Stat();
-    List<String> children;
+  public void printLayout(String path, String node, int indent, StringBuilder internal, StringBuilder output) {
     try {
-      data = getData(path, null, stat, true);
+      //log.info("path={} node={} indext={}", path, node, indent);
 
-      children = getChildren(path, null, true);
-      Collections.sort(children);
-    } catch (KeeperException | InterruptedException e1) {
-      if (e1 instanceof KeeperException.NoNodeException) {
-        // things change ...
-        return;
-      }
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1);
-    }
-    StringBuilder dent = new StringBuilder();
-    for (int i = 0; i < indent; i++) {
-      dent.append(" ");
-    }
-    string.append(dent).append(path).append(" (c=").append(children.size()).append(",v=" + (stat == null ? "?" : stat.getVersion()) + ")").append(NEWL);
-    if (data != null) {
-      String dataString = new String(data, StandardCharsets.UTF_8);
-      if ((stat != null && stat.getDataLength() < MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW && dataString.split("\\r\\n|\\r|\\n").length < 6) || path.endsWith("state.json") || path.endsWith("security.json")
-          || (path.endsWith("solrconfig.xml") && Boolean.getBoolean("solr.tests.printsolrconfig")) || path.endsWith("_statupdates")) {
-//        if (path.endsWith(".xml")) {
-//          // this is the cluster state in xml format - lets pretty print
-//          dataString = prettyPrint(path, dataString);
-//        }
+      //    if (node != null && node.length() > 0) {
+      //      path = path;
+      //    }
 
-        string.append(dent).append("DATA (" + (stat != null ? stat.getDataLength() : "?") + "b) :\n").append(dent).append("    ")
-            .append(dataString.replaceAll("\n", "\n" + dent + "    ")).append(NEWL);
+      List<String> children = null;
+      if (!path.trim().equals("/")) {
+        byte[] data = EMPTY_BYTES;
+        Stat stat = new Stat();
+
+        try {
+          data = getData(path, null, stat, true);
+          children = getChildren(path, null, true);
+          Collections.sort(children);
+        } catch (Exception e1) {
+          if (e1 instanceof KeeperException.NoNodeException) {
+            // things change ...
+            children = Collections.emptyList();
+          } else {
+            ParWork.propagateInterrupt(e1, true);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Problem with path='" + path + "'", e1);
+          }
+        }
+        StringBuilder dent = new StringBuilder();
+        for (int i = 0; i < indent; i++) {
+          dent.append(INDENT);
+        }
+        String childrenString;
+        if (children.size() > 0) {
+          childrenString = "c=" + children.size() + ",";
+        } else {
+          childrenString = "";
+        }
+        internal.append(path).append(children.size() > 0 ? node : "► " + node).append(" (").append(childrenString).append("v=" + (stat == null ? "?" : stat.getVersion()) + ")");
+        output.append(dent.toString()).append(children.size() == 0 ? node : "+" + node).append(" [").append(childrenString).append("v=").append ((stat == null ? "?" : stat.getVersion()) + "]");
+        StringBuilder dataBuilder = new StringBuilder();
+        String dataString;
+        if (data != null && data.length > 0) {
+//          if (path.endsWith(".json")) {
+//            dataString = Utils.fromJSON(data).toString();
+//          } else {
+            dataString = new String(data, StandardCharsets.UTF_8);
+        //  }
+          int lines = dataString.split("\\r\\n|\\r|\\n").length;
+          if ((stat != null && stat.getDataLength() < MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW && lines < 4) || path.endsWith("state.json") || path
+              .endsWith("security.json") || (path.endsWith("solrconfig.xml") && Boolean.getBoolean("solr.tests.printsolrconfig")) || path.endsWith("_statupdates")) {
+            //        if (path.endsWith(".xml")) {
+            //          // this is the cluster state in xml format - lets pretty print
+            //          dataString = prettyPrint(path, dataString);
+            //        }
+            dataString = dataString.replaceAll("\\n", "\n" + dent.toString() + INDENT);
+
+            dataBuilder.append(" (" + (stat != null ? stat.getDataLength() : "?") + "b) : " + (lines > 1 ? "\n" + dent.toString() + INDENT : "") + dataString.trim()).append(NEWL);
+          } else {
+            dataBuilder.append(" (" + (stat != null ? stat.getDataLength() : "?") + "b) : ...supressed...").append(NEWL);
+          }
+        } else {
+          output.append(NEWL);
+        }
+        internal.append(dataBuilder);
+        output.append(dataBuilder);
+        indent += 2;
       } else {
-        string.append(dent).append("DATA (" + (stat != null ? stat.getDataLength() : "?") + "b) : ...supressed...").append(NEWL);
+        internal.append("/");
+        output.append("/");
       }
-    }
-    indent += 1;
-    for (String child : children) {
-      if (!child.equals("quota")) {
-        printLayout(path + (path.equals("/") ? "" : "/") + child, indent,
-            string);
+      if (children == null) {
+        try {
+          children = getChildren(path, null, true);
+        } catch (KeeperException | InterruptedException e1) {
+          if (e1 instanceof KeeperException.NoNodeException) {
+            // things change ...
+            children = Collections.emptyList();
+          } else {
+            ParWork.propagateInterrupt(e1, true);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Problem with path='" + path + "'", e1);
+          }
+        }
       }
+      if (children != null) {
+        for (String child : children) {
+          if (!child.equals("quota") && !(internal.toString() + child).equals("/zookeeper")) {
+            printLayout(path.equals("/") ? "/" + child : path + "/" + child, child, indent, internal, output);
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.error("Exception printing layout", e);
     }
   }
 
   public void printLayout() {
-    StringBuilder sb = new StringBuilder();
-    printLayout("/", 0, sb);
+    StringBuilder sb = new StringBuilder(512);
+    printLayout("/",0, sb);
     log.warn("\n\n_____________________________________________________________________\n\n\nZOOKEEPER LAYOUT:\n\n" + sb.toString() + "\n\n_____________________________________________________________________\n\n");
   }
 
   public void printLayoutToStream(PrintStream out) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(512);
     printLayout("/", 0, sb);
     out.println(sb.toString());
   }
 
   public void printLayoutToFile(Path file) {
-    StringBuilder sb = new StringBuilder();
-    printLayout("/", 0, sb);
+    StringBuilder sb = new StringBuilder(512);
+    printLayout("/",0, sb);
     try {
       Files.writeString(file, sb.toString(), StandardOpenOption.CREATE);
     } catch (IOException e) {
@@ -1333,6 +1378,33 @@ public class SolrZkClient implements Closeable {
         log.error("Failed to set data for {}", p, ke);
         keeperExceptions[0] = ke;
       }
+    }
+  }
+
+  private class CreateZkOperation implements ZkOperation {
+    private final String path;
+    private final byte[] data;
+    private final CreateMode createMode;
+
+    public CreateZkOperation(String path, byte[] data, CreateMode createMode) {
+      this.path = path;
+      this.data = data;
+      this.createMode = createMode;
+    }
+
+    @Override
+    public Object execute() throws KeeperException {
+      String createdPath;
+      try {
+        ZooKeeper keeper = connManager.getKeeper();
+        createdPath = keeper.create(path, data, getZkACLProvider().getACLsToAdd(path), createMode);
+      } catch (IllegalArgumentException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, path, e);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, e);
+      }
+      return createdPath;
     }
   }
 }

@@ -40,6 +40,7 @@ public class NotRequiredUniqueKeyTest extends SolrTestCaseJ4 {
   {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();
+    core.close();
     SchemaField uniqueKey = schema.getUniqueKeyField();
     
     assertFalse( uniqueKey.isRequired() );

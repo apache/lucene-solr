@@ -274,15 +274,19 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
       port = Integer.parseInt(hostPort[1]);
     }
 
-    try (
-        Socket socket = new Socket(host, port);
-        Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8);
-        PrintWriter out = new PrintWriter(writer, true);
-        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
-      out.println(fourLetterWordCommand);
-      List<String> response = in.lines().collect(Collectors.toList());
-      log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
-      return response;
+    try (Socket socket = new Socket(host, port)) {
+      try (Writer writer = new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8)) {
+        try (PrintWriter out = new PrintWriter(writer, true)) {
+          try (InputStreamReader isr = new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8)) {
+            try (BufferedReader in = new BufferedReader(isr)) {
+              out.println(fourLetterWordCommand);
+              List<String> response = in.lines().collect(Collectors.toList());
+              if (log.isDebugEnabled()) log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
+              return response;
+            }
+          }
+        }
+      }
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed talking to Zookeeper " + zkHostPort, e);
     }

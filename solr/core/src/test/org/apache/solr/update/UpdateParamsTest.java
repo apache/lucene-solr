@@ -27,8 +27,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
-
-
 public class UpdateParamsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
@@ -70,7 +68,7 @@ public class UpdateParamsTest extends SolrTestCaseJ4 {
     } catch (Exception e) {
       assertEquals("Got wrong exception while testing update.chain", e.getMessage(), "unknown UpdateRequestProcessorChain: nonexistant");
     }
-    
+    core.close();
   }
 
 }

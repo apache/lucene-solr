@@ -16,13 +16,11 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.solr.cloud.ZkController.ContextKey;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.SolrZooKeeper;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -32,6 +30,7 @@ import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -68,7 +66,7 @@ public class LeaderElector implements Closeable {
 
   public final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
-  private static final String JOINED = "j2";
+
   private static final String JOIN = "j1";
   private static final String CHECK_IF_LEADER = "lc";
   private static final String OUT_OF_ELECTION = "o";
@@ -88,7 +86,7 @@ public class LeaderElector implements Closeable {
   private volatile Future<?> joinFuture;
   private volatile boolean isCancelled;
 
-  private ExecutorService executor = ParWork.getExecutorService(1);
+  private final ExecutorService executor = ParWork.getExecutorService(1);
 
   private volatile String state = OUT_OF_ELECTION;
 
@@ -98,7 +96,7 @@ public class LeaderElector implements Closeable {
 //    this.electionContexts = new ConcurrentHashMap<>(132, 0.75f, 50);
 //  }
 
-  public LeaderElector(ZkController zkController, ContextKey key) {
+  public LeaderElector(ZkController zkController) {
 
     this.zkClient = zkController.getZkClient();
     this.zkController = zkController;
@@ -117,8 +115,7 @@ public class LeaderElector implements Closeable {
    *
    * @param replacement has someone else been the leader already?
    */
-  private synchronized boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws KeeperException,
-          InterruptedException, IOException {
+  private synchronized boolean checkIfIamLeader(final ElectionContext context, boolean replacement) throws InterruptedException {
     //if (checkClosed(context)) return false;
     MDCLoggingContext.setCoreName(context.leaderProps.getName());
     try {
@@ -301,7 +298,7 @@ public class LeaderElector implements Closeable {
    * @return sequence number
    */
   public static int getSeq(String nStringSequence) {
-    int seq = 0;
+    int seq;
     Matcher m = LEADER_SEQ.matcher(nStringSequence);
     if (m.matches()) {
       seq = Integer.parseInt(m.group(1));
@@ -342,10 +339,9 @@ public class LeaderElector implements Closeable {
         try {
           isCancelled = false;
           doJoinElection(context, replacement, joinAtHead);
-        } catch (AlreadyClosedException e) {
-
         } catch (Exception e) {
           log.error("Exception trying to join election", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         } finally {
           MDCLoggingContext.clear();
         }
@@ -361,7 +357,7 @@ public class LeaderElector implements Closeable {
    * watch the next lowest numbered node.
    *
    */
-  public synchronized void doJoinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException, IOException {
+  public synchronized void doJoinElection(ElectionContext context, boolean replacement,boolean joinAtHead) throws KeeperException, InterruptedException {
     //if (checkClosed(context)) return false;
     if (shouldRejectJoins() || state == CLOSED) {
       log.info("Won't join election {}", state);
@@ -376,19 +372,18 @@ public class LeaderElector implements Closeable {
 
     isCancelled = false;
 
-    ParWork.getRootSharedExecutor().submit(() -> {
-      context.joinedElectionFired();
-    });
+    ParWork.getRootSharedExecutor().submit(context::joinedElectionFired);
 
     final String shardsElectZkPath = context.electionPath + LeaderElector.ELECTION_NODE;
 
-    long sessionId = zkClient.getSolrZooKeeper().getSessionId();
-    String id = sessionId + "-" + context.id;
-    String leaderSeqPath = null;
-    boolean cont = true;
-    int tries = 0;
-    while (cont) {
+    long sessionId;
+    String id = null;
+    String leaderSeqPath;
+
+    while (true) {
       try {
+        sessionId = zkClient.getSolrZooKeeper().getSessionId();
+        id = sessionId + "-" + context.id;
         if (joinAtHead){
           if (log.isDebugEnabled()) log.debug("Node {} trying to join election at the head", id);
           List<String> nodes = OverseerTaskProcessor.getSortedElectionNodes(zkClient, shardsElectZkPath);
@@ -397,7 +392,7 @@ public class LeaderElector implements Closeable {
                     CreateMode.EPHEMERAL_SEQUENTIAL, true);
           } else {
             String firstInLine = nodes.get(1);
-            log.debug("The current head: {}", firstInLine);
+            if (log.isDebugEnabled()) log.debug("The current head: {}", firstInLine);
             Matcher m = LEADER_SEQ.matcher(firstInLine);
             if (!m.matches()) {
               throw new IllegalStateException("Could not find regex match in:"
@@ -414,43 +409,30 @@ public class LeaderElector implements Closeable {
         log.info("Joined leadership election with path: {}", leaderSeqPath);
         context.leaderSeqPath = leaderSeqPath;
         state = JOIN;
-        cont = false;
+        break;
       } catch (ConnectionLossException e) {
+        if (zkClient.getConnectionManager().getKeeper().getState() == ZooKeeper.States.CLOSED) {
+          log.info("Won't retry to create election node on ConnectionLoss because the client state is closed");
+          break;
+        }
+
         // we don't know if we made our node or not...
         List<String> entries = zkClient.getChildren(shardsElectZkPath, null, true);
 
-        boolean foundId = false;
         for (String entry : entries) {
           String nodeId = getNodeId(entry);
           if (id.equals(nodeId)) {
             // we did create our node...
-            foundId  = true;
             break;
-          }
-        }
-        if (!foundId) {
-          cont = true;
-          if (tries++ > 5) {
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                    "", e);
           }
         }
 
       } catch (KeeperException.NoNodeException e) {
-        // we must have failed in creating the election node - someone else must
-        // be working on it, lets try again
-        log.info("No node found during election {} " + e.getMessage(), e.getPath());
-//        if (tries++ > 5) {
-//          log.error("No node found during election {} " + e.getMessage(), e.getPath());
-//          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-//              "", e);
-//        }
-//        cont = true;
         throw new AlreadyClosedException();
       }
     }
 
-    int seq = getSeq(context.leaderSeqPath);
+    getSeq(context.leaderSeqPath);
 
     if (log.isDebugEnabled()) log.debug("Do checkIfIamLeader");
     boolean tryagain = true;
@@ -588,10 +570,8 @@ public class LeaderElector implements Closeable {
         // we don't kick off recovery here, the leader sync will do that if necessary for its replicas
       } catch (AlreadyClosedException | InterruptedException e) {
         log.info("Already shutting down");
-        return;
       } catch (Exception e) {
         log.error("Exception in election", e);
-        return;
       }
     }
 
@@ -619,7 +599,7 @@ public class LeaderElector implements Closeable {
    * Sort n string sequence list.
    */
   public static void sortSeqs(List<String> seqs) {
-    Collections.sort(seqs, Comparator.comparingInt(LeaderElector::getSeq).thenComparing(o -> o));
+    seqs.sort(Comparator.comparingInt(LeaderElector::getSeq).thenComparing(o -> o));
   }
 
   synchronized void retryElection(boolean joinAtHead) {

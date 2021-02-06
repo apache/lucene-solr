@@ -99,7 +99,7 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     assertQ(req("id:1c"), "count(//*[@name='nouniq']/*)=3");
     assertQ(req("id:2c"), "count(//*[@name='nouniq']/*)=3");
     assertQ(req("id:2c"), "count(//*[@name='uniq2']/*)=1");
-
+    core.close();
   }
 
   private void addDoc(String doc) throws Exception {

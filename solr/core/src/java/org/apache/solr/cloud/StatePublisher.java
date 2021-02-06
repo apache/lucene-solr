@@ -27,6 +27,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +56,7 @@ public class StatePublisher implements Closeable {
 
   public static final NoOpMessage TERMINATE_OP = new NoOpMessage();
 
-  private final ArrayBlockingQueue<ZkNodeProps> workQueue = new ArrayBlockingQueue(64, true);
+  private final BlockingArrayQueue<ZkNodeProps> workQueue = new BlockingArrayQueue(64, 16);
   private final ZkDistributedQueue overseerJobQueue;
   private volatile Worker worker;
   private volatile Future<?> workerFuture;
@@ -77,7 +77,8 @@ public class StatePublisher implements Closeable {
           try {
             Thread.sleep(250);
           } catch (InterruptedException e) {
-
+            ParWork.propagateInterrupt(e, true);
+            return;
           }
           continue;
         }
@@ -88,9 +89,10 @@ public class StatePublisher implements Closeable {
         bulkMessage.getProperties().put(OPERATION, "state");
         try {
           try {
-            message = workQueue.poll(15, TimeUnit.SECONDS);
+            message = workQueue.poll(5, TimeUnit.SECONDS);
           } catch (InterruptedException e) {
-
+            ParWork.propagateInterrupt(e, true);
+            return;
           }
           if (message != null) {
             if (log.isDebugEnabled()) log.debug("Got state message " + message);

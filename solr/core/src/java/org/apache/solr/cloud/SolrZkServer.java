@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 public class SolrZkServer implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  // MRM TODO: use the new jetty based stuff instead of this deprecated stuff
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
 
   String zkRun;
@@ -106,13 +107,12 @@ public class SolrZkServer implements Closeable {
   public void start() {
     if (zkRun == null) return;
 
-    if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
-      System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
-    }
     zkThread = new Thread() {
       @Override
       public void run() {
         try {
+          System.setProperty(ZK_WHITELIST_PROPERTY, "*");
+
           if (zkProps.getServers().size() > 1) {
             QuorumPeerMain zkServer = new QuorumPeerMain();
             zkServer.runFromConfig(zkProps);

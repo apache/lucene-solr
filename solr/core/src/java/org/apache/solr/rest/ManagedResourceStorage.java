@@ -44,6 +44,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -255,10 +256,10 @@ public abstract class ManagedResourceStorage {
       }
       
       if (znodeData != null) {
-        log.debug("Read {} bytes from znode {}", znodeData.length, znodePath);
+        if (log.isDebugEnabled()) log.debug("Read {} bytes from znode {}", znodeData.length, znodePath);
       } else {
         znodeData = EMPTY_BYTES;
-        log.debug("No data found for znode {}", znodePath);
+        if (log.isDebugEnabled()) log.debug("No data found for znode {}", znodePath);
       }
       
       return new ByteArrayInputStream(znodeData);
@@ -268,31 +269,7 @@ public abstract class ManagedResourceStorage {
     public OutputStream openOutputStream(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
       final boolean retryOnConnLoss = this.retryOnConnLoss;
-      ByteArrayOutputStream baos = new ByteArrayOutputStream() {
-        @Override
-        public void close() {
-          byte[] znodeData = toByteArray();
-          try {
-            if (zkClient.exists(znodePath)) {
-              zkClient.setData(znodePath, znodeData, retryOnConnLoss);
-              log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
-            } else {
-              zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
-              log.info("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
-            }
-          } catch (Exception e) {
-            // have to throw a runtimer here as we're in close, 
-            // which doesn't throw IOException
-            if (e instanceof RuntimeException) {
-              throw (RuntimeException)e;              
-            } else {
-              throw new SolrException(ErrorCode.SERVER_ERROR,
-                  "Failed to save data to ZooKeeper znode: "+znodePath+" due to: "+e, e);
-            }
-          }
-        }
-      };
-      return baos;
+      return new MyByteArrayOutputStream(zkClient, znodePath, retryOnConnLoss);
     }
 
     /**
@@ -337,6 +314,48 @@ public abstract class ManagedResourceStorage {
     @Override
     public String getInfo() {
       return "ZooKeeperStorageIO:path="+znodeBase;
+    }
+
+    private static class MyByteArrayOutputStream extends ByteArrayOutputStream {
+      private final String znodePath;
+      private final boolean retryOnConnLoss;
+      private final SolrZkClient zkClient;
+
+      public MyByteArrayOutputStream(SolrZkClient zkClient, String znodePath, boolean retryOnConnLoss) {
+        this.znodePath = znodePath;
+        this.retryOnConnLoss = retryOnConnLoss;
+        this.zkClient = zkClient;
+      }
+
+      @Override
+      public void close() {
+        byte[] znodeData = toByteArray();
+        try {
+          zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
+          log.info("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
+
+        } catch (KeeperException.NodeExistsException e) {
+          try {
+            zkClient.setData(znodePath, znodeData, retryOnConnLoss);
+            log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
+          } catch (Exception e1) {
+            // have to throw a runtimer here as we're in close,
+            // which doesn't throw IOException
+
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to save data to ZooKeeper znode: " + znodePath + " due to: " + e1, e1);
+
+          }
+        } catch (Exception e) {
+          // have to throw a runtimer here as we're in close,
+          // which doesn't throw IOException
+          if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+          } else {
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to save data to ZooKeeper znode: " + znodePath + " due to: " + e, e);
+          }
+        }
+
+      }
     }
   } // end ZooKeeperStorageIO
   
@@ -420,9 +439,10 @@ public abstract class ManagedResourceStorage {
       String storedResourceId = getStoredResourceId(resourceId);
       OutputStreamWriter writer = null;
       try {
-        writer = new OutputStreamWriter(storageIO.openOutputStream(storedResourceId), UTF_8);
-        writer.write(json);
-        writer.flush();
+        try (OutputStream out = storageIO.openOutputStream(storedResourceId)) {
+          writer = new OutputStreamWriter(out, UTF_8); writer.write(json);
+          writer.flush();
+        }
       } finally {
         if (writer != null) {
           try {

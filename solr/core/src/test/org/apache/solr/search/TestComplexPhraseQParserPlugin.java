@@ -20,6 +20,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -165,15 +166,12 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
             "//result[@numFound='2']"
     );
 
-    assertQEx("don't parse subqueries",
-        "SyntaxError",
-        sumLRF.makeRequest("_query_:\"{!prefix f=name v=smi}\""), SolrException.ErrorCode.BAD_REQUEST
-    );
-    assertQEx("don't parse subqueries",
-        "SyntaxError",
-        sumLRF.makeRequest("{!prefix f=name v=smi}"), SolrException.ErrorCode.BAD_REQUEST
-    );
-
+    try (SolrQueryRequest req = sumLRF.makeRequest("_query_:\"{!prefix f=name v=smi}\"")) {
+      assertQEx("don't parse subqueries", "SyntaxError", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
+    try (SolrQueryRequest req = sumLRF.makeRequest("{!prefix f=name v=smi}")) {
+      assertQEx("don't parse subqueries", "SyntaxError", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 
   @Test

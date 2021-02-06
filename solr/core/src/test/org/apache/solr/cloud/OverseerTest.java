@@ -122,7 +122,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     private final SolrZkClient zkClient;
     private final ZkStateReader zkStateReader;
     private final String nodeName;
-    private final Map<String, ElectionContext> electionContext = Collections.synchronizedMap(new HashMap<String, ElectionContext>());
+    private final Map<String, ElectionContext> electionContext = Collections.synchronizedMap(new HashMap<>());
     private List<Overseer> overseers;
 
     public MockZKController(String zkAddress, String nodeName, List<Overseer> overseers) throws InterruptedException, TimeoutException, IOException, KeeperException {
@@ -227,8 +227,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
               nodeName, ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.SHARD_ID_PROP, shardId,
               ZkStateReader.COLLECTION_PROP, collection);
-          LeaderElector elector = new LeaderElector(overseer.getZkController(), new ZkController.ContextKey("overseer",
-                  "overseer"));
+          LeaderElector elector = new LeaderElector(overseer.getZkController());
           Replica replica = new Replica(coreName, props.getProperties(), collection, shardId, zkStateReader);
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               nodeName + "_" + coreName, shardId, collection, replica, null,
@@ -261,11 +260,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
         }
       }
       return null;
-    }
-
-
-    public ZkStateReader getZkReader() {
-      return zkStateReader;
     }
   }
 
@@ -703,8 +697,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
       ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader);
-      LeaderElector overseerElector = new LeaderElector(zkController, new ZkController.ContextKey("overseer",
-              "overseer"));
+      LeaderElector overseerElector = new LeaderElector(zkController);
       if (overseers.size() > 0) {
         overseers.get(overseers.size() -1).close();
         overseers.get(overseers.size() -1).getZkStateReader().getZkClient().close();
@@ -1227,8 +1220,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     ZkController zkController = createMockZkController(address, null, reader);
     zkControllers.add(zkController);
 
-    LeaderElector overseerElector = new LeaderElector(zkController, new ZkController.ContextKey("overseer",
-            "overseer"));
+    LeaderElector overseerElector = new LeaderElector(zkController);
     if (overseers.size() > 0) {
       overseers.get(0).close();
       overseers.get(0).getZkStateReader().getZkClient().close();

@@ -93,7 +93,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
       Map<String,Object> details = (Map<String,Object>) detailsList.get(0);
       assertEquals(true, details.get("ok"));
       int nodeCount = Integer.parseInt((String) details.get("zk_znode_count"));
-      assertTrue("nodeCount=" + nodeCount, nodeCount > 50);
+      assertTrue("nodeCount=" + nodeCount, nodeCount > 10);
     }
   }
 

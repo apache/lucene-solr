@@ -149,6 +149,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       changed = cc.getCore("changed");
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, true));
+      changed.close();
     } catch (Throwable e) {
       log.error("Test exception, logging so not swallowed if there is a (finally) shutdown exception: {}", e.getMessage(), e);
       throw e;

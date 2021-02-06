@@ -17,32 +17,21 @@
 package org.apache.solr.cloud;
 
 import javax.management.JMException;
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.net.UnknownHostException;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import com.google.common.util.concurrent.AtomicLongMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
@@ -53,11 +42,7 @@ import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 import org.apache.zookeeper.jmx.ManagedUtil;
-import org.apache.zookeeper.server.NIOServerCnxn;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxn;
 import org.apache.zookeeper.server.ServerCnxnFactory;
@@ -69,8 +54,6 @@ import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 
 public class ZkTestServer implements Closeable {
 
@@ -113,16 +96,33 @@ public class ZkTestServer implements Closeable {
 
   public volatile CountDownLatch startupWait = new CountDownLatch(1);
 
-  static public enum LimitViolationAction {
-    IGNORE, REPORT, FAIL,
+  private static class ShortTimeoutSession implements Session {
+    private final long sessionId;
+
+    public ShortTimeoutSession(long sessionId) {
+      this.sessionId = sessionId;
+    }
+
+    @Override
+    public long getSessionId() {
+      return sessionId;
+    }
+
+    @Override
+    public int getTimeout() {
+      return 4000;
+    }
+
+    @Override
+    public boolean isClosing() {
+      return false;
+    }
   }
 
   class ZKServerMain {
 
     private volatile ServerCnxnFactory cnxnFactory;
     private volatile ZooKeeperServer zooKeeperServer;
-    private volatile LimitViolationAction violationReportAction = LimitViolationAction.REPORT;
-    private volatile WatchLimiter limiter = new WatchLimiter(1, LimitViolationAction.IGNORE);
 
     protected void initializeAndRun(String[] args) throws ConfigException,
             IOException {
@@ -140,191 +140,6 @@ public class ZkTestServer implements Closeable {
       }
 
       runFromConfig(config);
-    }
-
-    private class WatchLimit {
-      private final String desc;
-      private volatile long limit;
-      private volatile LimitViolationAction action;
-      @SuppressWarnings("unchecked")
-      private AtomicLongMap<String> counters = AtomicLongMap.create(new ConcurrentHashMap<>(128, 0.75f, 64));
-      @SuppressWarnings("unchecked")
-      private Map<String,Long> maxCounters = new ConcurrentHashMap<>(128, 0.75f, 64);
-
-      WatchLimit(long limit, String desc, LimitViolationAction action) {
-        this.limit = limit;
-        this.desc = desc;
-        this.action = action;
-      }
-
-      public void setAction(LimitViolationAction action) {
-        this.action = action;
-      }
-
-      public void setLimit(long limit) {
-        this.limit = limit;
-      }
-
-      public void updateForWatch(String key, Watcher watcher) {
-        if (watcher != null) {
-          if (log.isDebugEnabled()) {
-            log.debug("Watch added: {}: {}", desc, key);
-          }
-          long count = counters.incrementAndGet(key);
-          Long lastCount = maxCounters.get(key);
-          if (lastCount == null || count > lastCount) {
-            maxCounters.put(key, count);
-          }
-          if (count > limit && action != LimitViolationAction.IGNORE) {
-            String msg = "Number of watches created in parallel for data: " + key +
-                    ", type: " + desc + " exceeds limit (" + count + " > " + limit + ")";
-            log.warn("{}", msg);
-            if (action == LimitViolationAction.FAIL) throw new AssertionError(msg);
-          }
-        }
-      }
-
-      public void updateForFire(WatchedEvent event) {
-        if (log.isDebugEnabled()) {
-          log.debug("Watch fired: {}: {}", desc, event.getPath());
-        }
-        counters.decrementAndGet(event.getPath());
-      }
-
-      private String reportLimitViolations() {
-        String[] maxKeys;
-        synchronized (maxCounters) {
-          maxKeys = maxCounters.keySet().toArray(new String[maxCounters.size()]);
-        }
-
-        Arrays.sort(maxKeys, new Comparator<String>() {
-          private final Comparator<Long> valComp = Comparator.<Long> naturalOrder().reversed();
-
-          @Override
-          public int compare(String o1, String o2) {
-            return valComp.compare(maxCounters.get(o1), maxCounters.get(o2));
-          }
-        });
-
-        StringBuilder sb = new StringBuilder();
-        boolean first = true;
-        for (String key : maxKeys) {
-          long value = maxCounters.get(key);
-          if (value <= limit) continue;
-          if (first) {
-            sb.append("\nMaximum concurrent ").append(desc).append(" watches above limit:\n\n");
-            first = false;
-          }
-          sb.append("\t").append(maxCounters.get(key)).append('\t').append(key).append('\n');
-        }
-        return sb.toString();
-      }
-    }
-
-    public class WatchLimiter {
-      private final WatchLimit statLimit;
-      private final WatchLimit dataLimit;
-      private final WatchLimit childrenLimit;
-
-      private WatchLimiter(long limit, LimitViolationAction action) {
-        statLimit = new WatchLimit(limit, "create/delete", action);
-        dataLimit = new WatchLimit(limit, "data", action);
-        childrenLimit = new WatchLimit(limit, "children", action);
-      }
-
-      public void setAction(LimitViolationAction action) {
-        statLimit.setAction(action);
-        dataLimit.setAction(action);
-        childrenLimit.setAction(action);
-      }
-
-      public void setLimit(long limit) {
-        statLimit.setLimit(limit);
-        dataLimit.setLimit(limit);
-        childrenLimit.setLimit(limit);
-      }
-
-      public String reportLimitViolations() {
-        return statLimit.reportLimitViolations() +
-                dataLimit.reportLimitViolations() +
-                childrenLimit.reportLimitViolations();
-      }
-
-      private void updateForFire(WatchedEvent event) {
-        switch (event.getType()) {
-          case None:
-            break;
-          case NodeCreated:
-          case NodeDeleted:
-            statLimit.updateForFire(event);
-            break;
-          case NodeDataChanged:
-            dataLimit.updateForFire(event);
-            break;
-          case NodeChildrenChanged:
-            childrenLimit.updateForFire(event);
-            break;
-          case ChildWatchRemoved:
-            break;
-          case DataWatchRemoved:
-            break;
-        }
-      }
-    }
-
-    private class TestServerCnxn extends NIOServerCnxn {
-
-      private final WatchLimiter limiter;
-
-      public TestServerCnxn(ZooKeeperServer zk, SocketChannel sock, SelectionKey sk,
-                            NIOServerCnxnFactory factory, WatchLimiter limiter) throws IOException {
-        super(zk, sock, sk, factory, null);
-        this.limiter = limiter;
-      }
-
-      @Override
-      public synchronized void process(WatchedEvent event) {
-        limiter.updateForFire(event);
-        super.process(event);
-      }
-    }
-
-    private class TestServerCnxnFactory extends NIOServerCnxnFactory {
-
-      private final WatchLimiter limiter;
-
-      public TestServerCnxnFactory(WatchLimiter limiter) throws IOException {
-        super();
-        this.limiter = limiter;
-      }
-    }
-
-    private class TestZKDatabase extends ZKDatabase {
-
-      private final WatchLimiter limiter;
-
-      public TestZKDatabase(FileTxnSnapLog snapLog, WatchLimiter limiter) {
-        super(snapLog);
-        this.limiter = limiter;
-      }
-
-      @Override
-      public Stat statNode(String path, ServerCnxn serverCnxn) throws KeeperException.NoNodeException {
-        limiter.statLimit.updateForWatch(path, serverCnxn);
-        return super.statNode(path, serverCnxn);
-      }
-
-      @Override
-      public byte[] getData(String path, Stat stat, Watcher watcher) throws KeeperException.NoNodeException {
-        limiter.dataLimit.updateForWatch(path, watcher);
-        return super.getData(path, stat, watcher);
-      }
-
-      @Override
-      public List<String> getChildren(String path, Stat stat, Watcher watcher) throws KeeperException.NoNodeException {
-        limiter.childrenLimit.updateForWatch(path, watcher);
-        return super.getChildren(path, stat, watcher);
-      }
     }
 
     /**
@@ -351,8 +166,8 @@ public class ZkTestServer implements Closeable {
 
         zooKeeperServer = new ZooKeeperServer(ftxn, config.getTickTime(),
                 config.getMinSessionTimeout(), config.getMaxSessionTimeout(), -1,
-                new TestZKDatabase(ftxn, limiter), "");
-        cnxnFactory = new TestServerCnxnFactory(limiter);
+                new ZKDatabase(ftxn), "");
+        cnxnFactory = new NIOServerCnxnFactory(); // MRM TODO: look again at the netty impl
         cnxnFactory.configure(config.getClientPortAddress(),
                 config.getMaxClientCnxns());
         cnxnFactory.startup(zooKeeperServer);
@@ -362,15 +177,6 @@ public class ZkTestServer implements Closeable {
         log.info("ZK Port:" + zooKeeperServer.getClientPort());
         cnxnFactory.join();
 
-        if (violationReportAction != LimitViolationAction.IGNORE) {
-          String limitViolations = limiter.reportLimitViolations();
-          if (!limitViolations.isEmpty()) {
-            log.warn("Watch limit violations: {}", limitViolations);
-            if (violationReportAction == LimitViolationAction.FAIL) {
-              throw new AssertionError("Parallel watch limits violated");
-            }
-          }
-        }
       } catch (InterruptedException e) {
         ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -416,14 +222,6 @@ public class ZkTestServer implements Closeable {
       }
       return port;
     }
-
-    public void setViolationReportAction(LimitViolationAction violationReportAction) {
-      this.violationReportAction = violationReportAction;
-    }
-
-    public WatchLimiter getLimiter() {
-      return limiter;
-    }
   }
 
   public ZkTestServer(Path zkDir) throws Exception {
@@ -433,16 +231,6 @@ public class ZkTestServer implements Closeable {
   public ZkTestServer(Path zkDir, int port) throws KeeperException, InterruptedException {
     this.zkDir = zkDir;
     this.clientPort = port;
-    String reportAction = System.getProperty("tests.zk.violationReportAction");
-    if (reportAction != null) {
-      log.info("Overriding violation report action to: {}", reportAction);
-      setViolationReportAction(LimitViolationAction.valueOf(reportAction));
-    }
-    String limiterAction = System.getProperty("tests.zk.limiterAction");
-    if (limiterAction != null) {
-      log.info("Overriding limiter action to: {}", limiterAction);
-      getLimiter().setAction(LimitViolationAction.valueOf(limiterAction));
-    }
     String zkMonFile = System.getProperty("solr.tests.zkmonfile");
     if (zkMonFile != null) {
       zkMonitoringFile = Paths.get(System.getProperty("solr.tests.zkmonfile"));
@@ -491,22 +279,7 @@ public class ZkTestServer implements Closeable {
   }
 
   public void expire(final long sessionId) {
-    zkServer.zooKeeperServer.expire(new Session() {
-      @Override
-      public long getSessionId() {
-        return sessionId;
-      }
-
-      @Override
-      public int getTimeout() {
-        return 4000;
-      }
-
-      @Override
-      public boolean isClosing() {
-        return false;
-      }
-    });
+    zkServer.zooKeeperServer.expire(new ShortTimeoutSession(sessionId));
   }
 
   public ZKDatabase getZKDatabase() {
@@ -524,14 +297,12 @@ public class ZkTestServer implements Closeable {
   public synchronized void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER dataDir={}", this.zkDir);
 
-    if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
-      System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
-    }
 
     // docs say no config for netty yet
    // System.setProperty("zookeeper.serverCnxnFactory", "org.apache.zookeeper.server.NettyServerCnxnFactory");
    // System.setProperty("zookeeper.clientCnxnSocket", "org.apache.zookeeper.ClientCnxnSocketNetty");
-
+    System.setProperty(SolrZkServer.ZK_WHITELIST_PROPERTY, "*");
+    System.setProperty("zookeeper.admin.enableServer", "false");
     if (zooThread != null) {
       throw new AlreadyClosedException();
     }
@@ -546,39 +317,34 @@ public class ZkTestServer implements Closeable {
 
         @Override
         public void run() {
-          try {
-            ServerConfig config = new ServerConfig() {
+          ServerConfig config = new ServerConfig() {
 
-              {
-                setClientPort(ZkTestServer.this.clientPort);
-                this.dataDir = zkDir.toFile();
-                this.dataLogDir = zkDir.toFile();
-                this.tickTime = theTickTime;
-                this.maxSessionTimeout = ZkTestServer.this.maxSessionTimeout;
-                this.minSessionTimeout = ZkTestServer.this.minSessionTimeout;
-              }
-
-              public void setClientPort(int clientPort) {
-                if (clientPortAddress != null) {
-                  try {
-                    this.clientPortAddress = new InetSocketAddress(
-                            InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
-                  } catch (UnknownHostException e) {
-                    throw new RuntimeException(e);
-                  }
-                } else {
-                  this.clientPortAddress = new InetSocketAddress(clientPort);
-                }
-
-              }
-            };
-            try {
-              zkServer.runFromConfig(config);
-            } catch (Throwable t) {
-              log.error("zkServer error", t);
+            {
+              setClientPort(ZkTestServer.this.clientPort);
+              this.dataDir = zkDir.toFile();
+              this.dataLogDir = zkDir.toFile();
+              this.tickTime = theTickTime;
+              this.maxSessionTimeout = ZkTestServer.this.maxSessionTimeout;
+              this.minSessionTimeout = ZkTestServer.this.minSessionTimeout;
             }
-          } finally {
-           // ParWork.closeMyPerThreadExecutor(true);
+
+            public void setClientPort(int clientPort) {
+              if (clientPortAddress != null) {
+                try {
+                  this.clientPortAddress = new InetSocketAddress(InetAddress.getByName(clientPortAddress.getHostName()), clientPort);
+                } catch (UnknownHostException e) {
+                  throw new RuntimeException(e);
+                }
+              } else {
+                this.clientPortAddress = new InetSocketAddress(clientPort);
+              }
+
+            }
+          };
+          try {
+            zkServer.runFromConfig(config);
+          } catch (Throwable t) {
+            log.error("zkServer error", t);
           }
         }
       };
@@ -731,44 +497,6 @@ public class ZkTestServer implements Closeable {
     }
   }
 
-  /**
-   * Send the 4letterword
-   *
-   * @param host
-   *          the destination host
-   * @param port
-   *          the destination port
-   * @param cmd
-   *          the 4letterword
-   * @return server response
-   *
-   */
-  public static String send4LetterWord(String host, int port, String cmd)
-          throws IOException {
-    log.info("connecting to " + host + " " + port);
-    BufferedReader reader = null;
-    try (Socket sock = new Socket(host, port)) {
-      OutputStream outstream = sock.getOutputStream();
-      outstream.write(cmd.getBytes(StandardCharsets.US_ASCII));
-      outstream.flush();
-      // this replicates NC - close the output stream before reading
-      sock.shutdownOutput();
-
-      reader = new BufferedReader(
-              new InputStreamReader(sock.getInputStream(), StandardCharsets.US_ASCII));
-      StringBuilder sb = new StringBuilder();
-      String line;
-      while ((line = reader.readLine()) != null) {
-        sb.append(line).append("\n");
-      }
-      return sb.toString();
-    } finally {
-      if (reader != null) {
-        reader.close();
-      }
-    }
-  }
-
   public static List<HostPort> parseHostPortList(String hplist) {
     log.info("parse host and port list: " + hplist);
     ArrayList<HostPort> alist = new ArrayList<>();
@@ -796,14 +524,6 @@ public class ZkTestServer implements Closeable {
 
   public Path getZkDir() {
     return zkDir;
-  }
-
-  public void setViolationReportAction(LimitViolationAction violationReportAction) {
-    zkServer.setViolationReportAction(violationReportAction);
-  }
-
-  public ZKServerMain.WatchLimiter getLimiter() {
-    return zkServer.getLimiter();
   }
 
   public int getMaxSessionTimeout() {

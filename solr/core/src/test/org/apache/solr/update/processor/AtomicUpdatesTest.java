@@ -25,6 +25,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.DateMathParser;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,6 +51,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     SolrInputDocument doc;
 
     doc = new SolrInputDocument();
+    doc.setField("id", "1");
     doc.setField("id", "1");
     doc.setField("cat", new String[]{"aaa", "bbb", "ccc", "ccc", "ddd"});
     assertU(adoc(doc));
@@ -566,7 +568,9 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    boolean isPointField = h.getCore().getLatestSchema().getField("dateRemove").getType().isPointField();
+    SolrCore core = h.getCore();
+    boolean isPointField = core.getLatestSchema().getField("dateRemove").getType().isPointField();
+    core.close();
     if (isPointField) {
       assertQ(req("q", "dateRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     } else {

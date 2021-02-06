@@ -91,7 +91,6 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
 
   private final static AtomicInteger counter = new AtomicInteger();
   private static ExecutorService exe;
-  private static boolean cachedMode;
 
   private static XMLInputFactory inputFactory;
 
@@ -105,7 +104,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     String oldCacheNamePropValue = System
         .getProperty("blockJoinParentFilterCache");
-    System.setProperty("blockJoinParentFilterCache", (cachedMode = random()
+    System.setProperty("blockJoinParentFilterCache", (random()
         .nextBoolean()) ? "blockJoinParentFilterCache" : "don't cache");
     if (oldCacheNamePropValue != null) {
       System.setProperty("blockJoinParentFilterCache", oldCacheNamePropValue);
@@ -484,6 +483,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     //null for the processor is all right here
     XMLLoader loader = new XMLLoader();
     SolrInputDocument document1 = loader.readDoc( parser );
+    parser.close();
 
     XMLStreamReader parser2 =
         inputFactory.createXMLStreamReader( new StringReader( xml_doc2 ) );
@@ -491,6 +491,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
       //null for the processor is all right here
       //XMLLoader loader = new XMLLoader();
       SolrInputDocument document2 = loader.readDoc( parser2 );
+    parser.close();
 
     docs.add(document1);
     docs.add(document2);
@@ -503,6 +504,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     requestWriter.write(req, os);
     assertBlockU(os.toString());
     assertU(commit());
+
 
     final SolrIndexSearcher searcher = getSearcher();
     assertSingleParentOf(searcher, one("yz"), "X");
@@ -813,16 +815,16 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private void indexSolrInputDocumentsDirectly(SolrInputDocument ... docs) throws IOException {
-    SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true);
-    AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
-    for (SolrInputDocument doc: docs) {
-      updateCmd.solrDoc = doc;
-      coreReq.getCore().getUpdateHandler().addDoc(updateCmd);
-      updateCmd.clear();
-      updateCmd.setReq(coreReq);
+    try (SolrQueryRequest coreReq = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams(), true)) {
+      AddUpdateCommand updateCmd = new AddUpdateCommand(coreReq);
+      for (SolrInputDocument doc : docs) {
+        updateCmd.solrDoc = doc;
+        coreReq.getCore().getUpdateHandler().addDoc(updateCmd);
+        updateCmd.clear();
+        updateCmd.setReq(coreReq);
+      }
+      assertU(commit());
     }
-    assertU(commit());
-    coreReq.close();
   }
 
   /**

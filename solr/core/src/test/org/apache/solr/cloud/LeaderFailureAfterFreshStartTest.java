@@ -23,7 +23,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -95,7 +94,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     // make sure that tlog stays intact after we restart a node
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
-    System.setProperty("tests.zk.violationReportAction", LimitViolationAction.IGNORE.toString());
     super.distribSetUp();
   }
 

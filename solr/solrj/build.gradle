@@ -54,6 +54,9 @@ dependencies {
   api 'io.netty:netty-transport-native-epoll'
   api 'io.netty:netty-transport-native-unix-common'
 
+  api 'commons-cli:commons-cli'
+  api 'org.jline:jline'
+
   api('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
     exclude group: "io.netty", module: "netty-all"

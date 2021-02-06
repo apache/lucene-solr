@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.XMLErrorLogger;
+import org.codehaus.stax2.XMLStreamReader2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,9 +188,9 @@ public class XPathRecordReader {
    * @param handler The callback instance
    */
   public void streamRecords(Reader r, Handler handler) {
-    XMLStreamReader parser = null;
+    XMLStreamReader2 parser = null;
     try {
-      parser = XMLResponseParser.inputFactory.createXMLStreamReader(r);
+      parser = (XMLStreamReader2) XMLResponseParser.inputFactory.createXMLStreamReader(r);
       rootNode.parse(parser, handler, new HashMap<>(),
           new Stack<>(), false);
     } catch (Exception e) {
@@ -197,7 +198,7 @@ public class XPathRecordReader {
     } finally {
       if (parser != null) {
         try {
-          parser.close();
+          parser.closeCompletely();
         } catch (XMLStreamException e) {
           log.warn("Exception closing parser", e);
         }

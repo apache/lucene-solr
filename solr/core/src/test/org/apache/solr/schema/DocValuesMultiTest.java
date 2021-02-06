@@ -36,15 +36,14 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
     initCore("solrconfig-basic.xml", "schema-docValuesMulti.xml");
     
     // sanity check our schema meets our expectations
-    final IndexSchema schema = h.getCore().getLatestSchema();
-    for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv", "booldv"}) {
-      final SchemaField sf = schema.getField(f);
-      assertTrue(f + " is not multiValued, test is useless, who changed the schema?",
-                 sf.multiValued());
-      assertFalse(f + " is indexed, test is useless, who changed the schema?",
-                  sf.indexed());
-      assertTrue(f + " has no docValues, test is useless, who changed the schema?",
-                 sf.hasDocValues());
+    try (SolrCore core = h.getCore()) {
+      final IndexSchema schema = core.getLatestSchema();
+      for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv", "booldv"}) {
+        final SchemaField sf = schema.getField(f);
+        assertTrue(f + " is not multiValued, test is useless, who changed the schema?", sf.multiValued());
+        assertFalse(f + " is indexed, test is useless, who changed the schema?", sf.indexed());
+        assertTrue(f + " has no docValues, test is useless, who changed the schema?", sf.hasDocValues());
+      }
     }
   }
 

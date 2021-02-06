@@ -181,25 +181,25 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertIntervalQueriesString("test_s_dv");
 
     // error cases
-    assertQEx("missing beginning of range",
+    assertQEx("Invalid start character b in facet interval",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "bird,bird]"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
-    assertQEx("only separator is escaped",
+    assertQEx("Missing unescaped comma separating interval ends in",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "(bird\\,turtle]"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
-    assertQEx("missing separator",
+    assertQEx("Missing unescaped comma separating interval ends in",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "(bird]"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
-    assertQEx("missing end of range",
+    assertQEx("Invalid end character e in facet interval",
         req("fl", "test_s_dv", "q", "*:*", "facet", "true", "facet.interval", "test_s_dv",
             "f.test_s_dv.facet.interval.set", "(bird,turtle"),
-        SolrException.ErrorCode.BAD_REQUEST
+        SolrException.ErrorCode.BAD_REQUEST, true
     );
   }
 
@@ -612,7 +612,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         "facet.interval", "test_s_dv",
         "facet.interval", "test_l_dv",
         "f.test_s_dv.facet.interval.set", "[cat,dog]"),
-        SolrException.ErrorCode.BAD_REQUEST);
+        SolrException.ErrorCode.BAD_REQUEST, true);
     
     // use of facet.interval.set
     assertQ(req("q", "*:*", "facet", "true",
@@ -676,7 +676,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         req("q", "*:*", "facet", "true",
         "facet.interval", "test_l_dv",
         "f.test_l_dv.facet.interval.set", "[cat,dog]"),
-        SolrException.ErrorCode.BAD_REQUEST);
+        SolrException.ErrorCode.BAD_REQUEST, true);
 
   }
 

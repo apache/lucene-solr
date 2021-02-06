@@ -47,39 +47,33 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
     // method.  Since this is a single threaded test, we can change the fields
     // willi-nilly
 
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getLatestSchema();
-    core.close();
-    final String fieldName = "runtimefield";
-    SchemaField sf = new SchemaField( fieldName, schema.getFieldTypes().get( "string" ) );
-    Map<String,SchemaField> fields = new HashMap<>(schema.getFields());
-    fields.put(fieldName, sf);
-    schema.setFields(fields);
+    try (SolrCore core = h.getCore()) {
+      IndexSchema schema = core.getLatestSchema();
 
-    // also register a new copy field (from our new field)
-    schema.registerCopyField( fieldName, "dynamic_runtime" );
-    schema.refreshAnalyzers();
+      final String fieldName = "runtimefield";
+      SchemaField sf = new SchemaField(fieldName, schema.getFieldTypes().get("string"));
+      Map<String,SchemaField> fields = new HashMap<>(schema.getFields());
+      fields.put(fieldName, sf);
+      schema.setFields(fields);
 
-    assertU(adoc("id", "10", "title", "test", fieldName, "aaa"));
-    assertU(commit());
+      // also register a new copy field (from our new field)
+      schema.registerCopyField(fieldName, "dynamic_runtime");
+      schema.refreshAnalyzers();
 
-    SolrQuery query = new SolrQuery( fieldName+":aaa" );
-    query.set( "indent", "true" );
-    SolrQueryRequest req = new LocalSolrQueryRequest( core, query );
+      assertU(adoc("id", "10", "title", "test", fieldName, "aaa"));
+      assertU(commit());
 
-    assertQ("Make sure they got in", req
-            ,"//*[@numFound='1']"
-            ,"//result/doc[1]/str[@name='id'][.='10']"
-            );
+      SolrQuery query = new SolrQuery(fieldName + ":aaa");
+      query.set("indent", "true");
+      SolrQueryRequest req = new LocalSolrQueryRequest(core, query);
 
-    // Check to see if our copy field made it out safely
-    query.setQuery( "dynamic_runtime:aaa" );
+      assertQ("Make sure they got in", req, "//*[@numFound='1']", "//result/doc[1]/str[@name='id'][.='10']");
 
-    h.getCore();
-    assertQ("Make sure they got in", req
-            ,"//*[@numFound='1']"
-            ,"//result/doc[1]/str[@name='id'][.='10']"
-            );
-    clearIndex();
+      // Check to see if our copy field made it out safely
+      query.setQuery("dynamic_runtime:aaa");
+
+      assertQ("Make sure they got in", req, "//*[@numFound='1']", "//result/doc[1]/str[@name='id'][.='10']");
+      clearIndex();
+    }
   }
 }

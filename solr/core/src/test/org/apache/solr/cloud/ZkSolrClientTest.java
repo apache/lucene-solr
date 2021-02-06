@@ -202,7 +202,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(server.getZkClient(), 3000);
       final long start = System.nanoTime();
       expectThrows(KeeperException.SessionExpiredException.class, () -> {
-        zkCmdExecutor.retryOperation(() -> {
+        ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> {
           if (System.nanoTime() - start > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
             throw new KeeperException.SessionExpiredException();
           }

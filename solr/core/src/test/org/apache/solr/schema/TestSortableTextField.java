@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 
@@ -125,12 +126,11 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
               , "//result/doc[2]/str[@name='id'][.=3]"
               );
     }
-    
-    // attempting to sort on docValues="false" field should give an error...
-    assertQEx("attempting to sort on docValues=false field should give an error",
-              "when docValues=\"false\"",
-              req("q","*:*", "sort", "whitespace_nodv_stxt asc"),
-              ErrorCode.BAD_REQUEST);
+
+    try (SolrQueryRequest req = req("q","*:*", "sort", "whitespace_nodv_stxt asc")) {
+      // attempting to sort on docValues="false" field should give an error...
+      assertQEx("attempting to sort on docValues=false field should give an error", "when docValues=\"false\"", req, ErrorCode.BAD_REQUEST);
+    }
 
     // sortMissing - whitespace_f_stxt copyField to whitespace_l_stxt
     assertQ(req("q","*:*", "sort", "whitespace_f_stxt asc")
@@ -478,73 +478,63 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     final List<String> test_fields = Arrays.asList("keyword_stxt", "keyword_dv_stxt",
                                                    "keyword_s_dv", "keyword_s");
     // we use embedded client instead of assertQ: we want to compare the responses from multiple requests
-    @SuppressWarnings("resource") final SolrClient client = new EmbeddedSolrServer(h.getCore());
-    
-    final int numDocs = atLeast(100);
-    final int magicIdx = TestUtil.nextInt(random(), 1, numDocs);
-    String magic = null;
-    for (int i = 1; i <= numDocs; i++) {
+    try (SolrCore core = h.getCore()) {
+      @SuppressWarnings("resource") final SolrClient client = new EmbeddedSolrServer(core);
 
-      // ideally we'd test all "realistic" unicode string, but EmbeddedSolrServer uses XML request writer
-      // and has no option to change this so ctrl-characters break the request
-      final String val = TestUtil.randomSimpleString(random(), 100);
-      if (i == magicIdx) {
-        magic = val;
-      }
-      assertEquals(0, client.add(sdoc("id", ""+i, "keyword_stxt", val)).getStatus());
-      
-    }
-    assertNotNull(magic);
-    
-    assertEquals(0, client.commit().getStatus());
+      final int numDocs = atLeast(100);
+      final int magicIdx = TestUtil.nextInt(random(), 1, numDocs);
+      String magic = null;
+      for (int i = 1; i <= numDocs; i++) {
 
-    // query for magic term should match same doc regardless of field (reminder: keyword tokenizer)
-    // (we need the filter in the unlikely event that magic value with randomly picked twice)
-    for (String f : test_fields) {
-      
-      final SolrDocumentList results = client.query(params("q", "{!field f="+f+" v=$v}",
-                                                           "v", magic,
-                                                           "fq", "id:" + magicIdx )).getResults();
-      assertEquals(f + ": Query ("+magic+") filtered by id: " + magicIdx + " ==> " + results,
-                   1L, results.getNumFound());
-      final SolrDocument doc = results.get(0);
-      assertEquals(f + ": Query ("+magic+") filtered by id: " + magicIdx + " ==> " + doc,
-                   ""+magicIdx, doc.getFieldValue("id"));
-      assertEquals(f + ": Query ("+magic+") filtered by id: " + magicIdx + " ==> " + doc,
-                   magic, doc.getFieldValue(f));
-    }
-
-    // do some random id range queries using all 3 fields for sorting.  results should be identical
-    final int numQ = atLeast(10);
-    for (int i = 0; i < numQ; i++) {
-      final int hi = TestUtil.nextInt(random(), 1, numDocs-1);
-      final int lo = TestUtil.nextInt(random(), 1, hi);
-      final boolean fwd = random().nextBoolean();
-      
-      SolrDocumentList previous = null;
-      String prevField = null;
-      for (String f : test_fields) {
-        final SolrDocumentList results = client.query(params("q","id_i:["+lo+" TO "+hi+"]",
-                                                             "sort", f + (fwd ? " asc" : " desc") +
-                                                             // secondary on id for determinism
-                                                             ", id asc")
-                                                      ).getResults();
-        assertEquals(results.toString(), (1L + hi - lo), results.getNumFound());
-        if (null != previous) {
-          assertEquals(prevField + " vs " + f,
-                       previous.getNumFound(), results.getNumFound());
-          for (int d = 0; d < results.size(); d++) {
-            assertEquals(prevField + " vs " + f + ": " + d,
-                         previous.get(d).getFieldValue("id"),
-                         results.get(d).getFieldValue("id"));
-            assertEquals(prevField + " vs " + f + ": " + d,
-                         previous.get(d).getFieldValue(prevField),
-                         results.get(d).getFieldValue(f));
-            
-          }
+        // ideally we'd test all "realistic" unicode string, but EmbeddedSolrServer uses XML request writer
+        // and has no option to change this so ctrl-characters break the request
+        final String val = TestUtil.randomSimpleString(random(), 100);
+        if (i == magicIdx) {
+          magic = val;
         }
-        previous = results;
-        prevField = f;
+        assertEquals(0, client.add(sdoc("id", "" + i, "keyword_stxt", val)).getStatus());
+
+      }
+      assertNotNull(magic);
+
+      assertEquals(0, client.commit().getStatus());
+
+      // query for magic term should match same doc regardless of field (reminder: keyword tokenizer)
+      // (we need the filter in the unlikely event that magic value with randomly picked twice)
+      for (String f : test_fields) {
+
+        final SolrDocumentList results = client.query(params("q", "{!field f=" + f + " v=$v}", "v", magic, "fq", "id:" + magicIdx)).getResults();
+        assertEquals(f + ": Query (" + magic + ") filtered by id: " + magicIdx + " ==> " + results, 1L, results.getNumFound());
+        final SolrDocument doc = results.get(0);
+        assertEquals(f + ": Query (" + magic + ") filtered by id: " + magicIdx + " ==> " + doc, "" + magicIdx, doc.getFieldValue("id"));
+        assertEquals(f + ": Query (" + magic + ") filtered by id: " + magicIdx + " ==> " + doc, magic, doc.getFieldValue(f));
+      }
+
+      // do some random id range queries using all 3 fields for sorting.  results should be identical
+      final int numQ = atLeast(10);
+      for (int i = 0; i < numQ; i++) {
+        final int hi = TestUtil.nextInt(random(), 1, numDocs - 1);
+        final int lo = TestUtil.nextInt(random(), 1, hi);
+        final boolean fwd = random().nextBoolean();
+
+        SolrDocumentList previous = null;
+        String prevField = null;
+        for (String f : test_fields) {
+          final SolrDocumentList results = client.query(params("q", "id_i:[" + lo + " TO " + hi + "]", "sort", f + (fwd ? " asc" : " desc") +
+              // secondary on id for determinism
+              ", id asc")).getResults();
+          assertEquals(results.toString(), (1L + hi - lo), results.getNumFound());
+          if (null != previous) {
+            assertEquals(prevField + " vs " + f, previous.getNumFound(), results.getNumFound());
+            for (int d = 0; d < results.size(); d++) {
+              assertEquals(prevField + " vs " + f + ": " + d, previous.get(d).getFieldValue("id"), results.get(d).getFieldValue("id"));
+              assertEquals(prevField + " vs " + f + ": " + d, previous.get(d).getFieldValue(prevField), results.get(d).getFieldValue(f));
+
+            }
+          }
+          previous = results;
+          prevField = f;
+        }
       }
     }
     

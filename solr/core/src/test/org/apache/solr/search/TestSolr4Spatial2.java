@@ -51,6 +51,8 @@ import org.locationtech.spatial4j.shape.Point;
 //Unlike TestSolr4Spatial, not parametrized / not generic.
 public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
+  public static final String[] EMPTY_STRINGS = new String[0];
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
@@ -139,10 +141,9 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   @Test
   public void testBadScoreParam() throws Exception {
     String fieldName = "bbox";
-    assertQEx("expect friendly error message",
-        "area2D",
-        req("{!field f=" + fieldName + " filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))"),
-        SolrException.ErrorCode.BAD_REQUEST);
+    try (SolrQueryRequest req = req("{!field f=" + fieldName + " filter=false score=bogus}Intersects(ENVELOPE(0,0,12,12))")) {
+      assertQEx("expect friendly error message", "area2D", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 
   @Test
@@ -176,6 +177,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     @SuppressWarnings({"resource", "IOResourceOpenedButNotSafelyClosed"})
     SolrCore core = h.getCore();
     SolrClient client = new EmbeddedSolrServer(core);// do NOT close it; it will close Solr
+    core.close();
 
     final String fld = "llp_1_dv_dvasst";
     String ptOrig = GeoTestUtil.nextLatitude() + "," + GeoTestUtil.nextLongitude();
@@ -204,7 +206,6 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     // lose the ability to round-trip -- 40 would become 39.99999997  (ugh).
     assertTrue("deltaCm too high: " + deltaCentimeters, deltaCentimeters < 1.48);
     // Pt(x=105.29894270124083,y=-0.4371673760042398) to  Pt(x=105.2989428,y=-0.4371673) is 1.38568
-    core.close();
   }
 
   @Test
@@ -270,10 +271,10 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     // check
     assertJQ(req("q","*:*", "sort", "id asc",
         "fl","*"),
-        assertJQsFlStar.toArray(new String[0]));
+        assertJQsFlStar.toArray(EMPTY_STRINGS));
     assertJQ(req("q","*:*", "sort", "id asc",
         "fl", "id," + combos.stream().map(c -> c.fieldName).collect(Collectors.joining(","))),
-        assertJQsFlListed.toArray(new String[0]));
+        assertJQsFlListed.toArray(EMPTY_STRINGS));
   }
 
   private static class RetrievalCombo {
@@ -312,11 +313,11 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
     if (testCache) {
       // The tricky thing is verifying the cache works correctly...
-        SolrCore core = sameReq.getCore();
+
         sameReq = req(
             "q", "{!cache=false field f=" + fieldName + "}Intersects(ENVELOPE(-20, -10.0001, 30, 15.0001))",
             "sort", "id asc");
-        MetricsMap cacheMetrics = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+        MetricsMap cacheMetrics = (MetricsMap) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
         assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
         assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
 
@@ -324,9 +325,9 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
         assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
 
-        assertEquals("1 segment", 1, getSearcher(core).getRawReader().leaves().size());
+        assertEquals("1 segment", 1, getSearcher(sameReq.getCore()).getRawReader().leaves().size());
         // Get key of first leaf reader -- this one contains the match for sure.
-        Object leafKey1 = getFirstLeafReaderKey(core);
+        Object leafKey1 = getFirstLeafReaderKey(sameReq.getCore());
 
         // add new segment
         assertU(adoc("id", "3"));
@@ -342,10 +343,10 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
         // (i.e. the cache instance is new but it should've been regenerated from the old one).
         // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
-        Object leafKey2 = getFirstLeafReaderKey(core);
+        Object leafKey2 = getFirstLeafReaderKey(sameReq.getCore());
         // get the current instance of metrics - the old one may not represent the current cache instance
 
-        cacheMetrics = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+        cacheMetrics = (MetricsMap) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
         assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
 
     }
@@ -402,12 +403,12 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
 
   @Test
   public void testErrorHandlingGeodist() throws Exception{
-    assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
-    assertQEx("wrong test exception message","sort param could not be parsed as a query, " +
-            "and is not a field that exists in the index: geodist(llp,47.36667,8.55)",
-        req(
-            "q", "*:*",
-            "sort", "geodist(llp,47.36667,8.55) asc"
-        ), SolrException.ErrorCode.BAD_REQUEST);
+    try (SolrQueryRequest req = req(
+        "q", "*:*",
+        "sort", "geodist(llp,47.36667,8.55) asc"
+    )) {
+      assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
+      assertQEx("wrong test exception message", "sort param could not be parsed as a query, " + "and is not a field that exists in the index: geodist(llp,47.36667,8.55)", req, SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 }

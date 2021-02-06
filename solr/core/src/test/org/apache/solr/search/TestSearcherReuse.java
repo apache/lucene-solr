@@ -21,6 +21,7 @@ import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
@@ -177,7 +178,9 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
       SchemaField newField = oldSchema.newField
         ("hoss", "string", Collections.<String,Object>emptyMap());
       IndexSchema newSchema = oldSchema.addField(newField);
-      h.getCore().setLatestSchema(newSchema);
+      SolrCore core = h.getCore();
+      core.setLatestSchema(newSchema);
+      core.close();
 
       // sanity check, later asserts assume this
       assertNotSame(oldSchema, newSchema); 

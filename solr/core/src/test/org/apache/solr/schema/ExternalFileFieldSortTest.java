@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -31,8 +32,9 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 
     final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
     String filename = "external_eff";
-    FileUtils.copyFile(new File(testHome + "/" + filename),
-        new File(h.getCore().getDataDir() + "/" + filename));
+    try (SolrCore core = h.getCore()) {
+      FileUtils.copyFile(new File(testHome + "/" + filename), new File(core.getDataDir() + "/" + filename));
+    }
   }
 
   private void addDocuments() {

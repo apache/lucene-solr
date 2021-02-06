@@ -54,9 +54,6 @@
         <AsyncLogger name="org.apache.solr.update.SolrCmdDistributor" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="DEBUG"/>
 
-        <AsyncLogger name="org.apache.solr.common.ParWork" level="DEBUG"/>
-
-
         <AsyncLogger name="com.google.inject.servlet" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="DEBUG"/>
 

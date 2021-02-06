@@ -28,8 +28,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,6 +78,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     assertTrue("wrong type of exception: " + rsp.getException().getClass(),
             rsp.getException() instanceof SolrException);
     assertEquals(404, ((SolrException) rsp.getException()).code());
+    core.close();
   }
 
   public void testDirList() throws SolrServerException, IOException {

@@ -126,6 +126,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   static String  zkHostPath = "solr/@zkHost";
   static String  coresPath = "solr/cores";
 
+  static String  metricsReporterPath = "solr/metrics/reporter";
+
+
   public static String schemaNamePath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.AT + IndexSchema.NAME);
   public static String schemaVersionPath = "/schema/@version";
 
@@ -173,6 +176,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public static XPathExpression nrtModeExp;
   public static XPathExpression unlockOnStartupExp;
 
+  public static XPathExpression metricsReporterExp;
+
   private final Configuration ourConf;
 
   {
@@ -193,7 +198,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public static void refreshConf() {
     try {
       if (conf != null) {
-        conf.close();
+        try {
+          conf.close();
+        } catch (Exception e) {
+          log.info("Exception closing Configuration " + e.getClass().getName() + " " + e.getMessage());
+        }
       }
       conf = Configuration.newConfiguration();
 
@@ -262,6 +271,8 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       fieldTypeXPathExpressionsExp = xpath.compile(fieldTypeXPathExpressions);
 
       copyFieldsExp = xpath.compile(copyFieldPath);
+
+      metricsReporterExp = xpath.compile(metricsReporterPath);
 
       FieldTypePluginLoader.refreshConf();
 
@@ -966,6 +977,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   @Override
   public void close() throws IOException {
+    try {
+      ourConf.close();
+    } catch (Exception e) {
+      log.info("Exception closing Configuration " + e.getClass().getName() + " " + e.getMessage());
+    }
     IOUtils.close(classLoader);
     IOUtils.close(resourceClassLoader);
     assert ObjectReleaseTracker.release(this);

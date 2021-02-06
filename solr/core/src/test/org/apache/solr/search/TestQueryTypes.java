@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -476,19 +477,22 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
     String badNumber = "NOT_A_NUMBER";
     for (String suffix:suffixes) {
       // Numeric bad requests
-      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!term f=foo_" + suffix + "}" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
-      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!terms f=foo_" + suffix + "}1 2 3 4 5 " + badNumber), SolrException.ErrorCode.BAD_REQUEST);
-      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!lucene}foo_" + suffix + ":" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
-      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!field f=foo_" + suffix + "}" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
-      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req("q","{!maxscore}foo_" + suffix + ":" + badNumber), SolrException.ErrorCode.BAD_REQUEST);
-      assertQEx("Expecting exception for suffix: " + suffix, badNumber,
-          req("q","{!xmlparser}<PointRangeQuery fieldName=\"foo_"+ suffix  + "\" lowerTerm=\"1\" upperTerm=\"" + badNumber + "\"/>"), SolrException.ErrorCode.BAD_REQUEST);
+      assertQExAndClose(badNumber, suffix, "{!term f=foo_", "}");
+      assertQExAndClose(badNumber, suffix, "{!terms f=foo_", "}1 2 3 4 5 ");
+      assertQExAndClose(badNumber, suffix, "{!lucene}foo_", ":");
+      assertQExAndClose(badNumber, suffix, "{!field f=foo_", "}");
+      assertQExAndClose(badNumber, suffix, "{!maxscore}foo_", ":");
+      try (SolrQueryRequest req = req("q","{!xmlparser}<PointRangeQuery fieldName=\"foo_"+ suffix  + "\" lowerTerm=\"1\" upperTerm=\"" + badNumber + "\"/>")) {
+        assertQEx("Expecting exception for suffix: " + suffix, badNumber, req, SolrException.ErrorCode.BAD_REQUEST);
+      }
       if (suffix.contains("_p")) {
         // prefix queries work in Trie fields
-        assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields",
-            req("q","{!prefix f=foo_" + suffix + "}NOT_A_NUMBER"), SolrException.ErrorCode.BAD_REQUEST);
-        assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields",
-            req("q","{!lucene}foo_" + suffix + ":123*"), SolrException.ErrorCode.BAD_REQUEST);
+        try (SolrQueryRequest req = req("q","{!prefix f=foo_" + suffix + "}NOT_A_NUMBER")) {
+          assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields", req, SolrException.ErrorCode.BAD_REQUEST);
+        }
+        try (SolrQueryRequest req = req("q","{!lucene}foo_" + suffix + ":123*")) {
+          assertQEx("Expecting exception for suffix: " + suffix, "Can't run prefix queries on numeric fields", req, SolrException.ErrorCode.BAD_REQUEST);
+        }
       }
       
       // Skipping: func, boost, raw, nested, frange, spatial*, join, surround, switch, parent, child, collapsing, 
@@ -496,5 +500,11 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
       // Maybe add: raw, join, parent, child, collapsing, graphTerms, igain, significantTerms, simple
     }
 
+  }
+
+  private void assertQExAndClose(String badNumber, String suffix, String s2, String s3) {
+    try (SolrQueryRequest req = req("q", s2 + suffix + s3 + badNumber)) {
+      assertQEx("Expecting exception for suffix: " + suffix, badNumber, req, SolrException.ErrorCode.BAD_REQUEST);
+    }
   }
 }

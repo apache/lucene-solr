@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -599,11 +600,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "2");
 
-    SolrException se = expectThrows(SolrException.class, "A syntax error should be thrown when "+ReRankQParserPlugin.RERANK_QUERY+" parameter is not specified",
-        () -> h.query(req(params))
-    );
+    SolrException se;
+    try (SolrQueryRequest req = req(params)) {
+      se = expectThrows(SolrException.class, "A syntax error should be thrown when " + ReRankQParserPlugin.RERANK_QUERY + " parameter is not specified", () -> h.query(req));
+    }
     assertTrue(se.code() == SolrException.ErrorCode.BAD_REQUEST.code);
-
   }
 
   @Test

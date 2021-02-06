@@ -41,7 +41,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -82,7 +81,6 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
     // make sure that tlog stays intact after we restart a node
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
-    System.setProperty("tests.zk.violationReportAction", LimitViolationAction.IGNORE.toString());
   }
 
   @AfterClass

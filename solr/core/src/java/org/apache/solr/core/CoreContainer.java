@@ -98,6 +98,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.zookeeper.KeeperException;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -410,7 +411,7 @@ public class CoreContainer implements Closeable {
     containerProperties.putAll(cfg.getSolrProperties());
 
     solrCoreExecutor = ParWork.getParExecutorService("Core",
-        4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new ArrayBlockingQueue(256, false));
+        4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new BlockingArrayQueue(64, 16));
   }
 
   @SuppressWarnings({"unchecked"})

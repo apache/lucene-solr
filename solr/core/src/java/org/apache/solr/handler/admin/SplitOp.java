@@ -112,100 +112,99 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     if (splitMethod == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported value of '" + CommonAdminParams.SPLIT_METHOD + "': " + methodStr);
     }
-    SolrCore parentCore = it.handler.coreContainer.getCore(cname);
+    try (SolrCore parentCore = it.handler.coreContainer.getCore(cname)) {
 
-    if (parentCore == null) {
-      throw new IllegalArgumentException("Parent core could not be found in corecontainer corename=" + cname);
-    }
-
-    Map<SolrCore,CoreDescriptor> newCoresMap = null;
-    List<SolrCore> newCores = null;
-    SolrQueryRequest req = null;
-
-    try {
-      // TODO: allow use of rangesStr in the future
-      List<String> paths = null;
-      int partitions = pathsArr != null ? pathsArr.length : newCoreNames.length;
-
-      DocRouter router = null;
-      String routeFieldName = null;
-      if (it.handler.coreContainer.isZooKeeperAware()) {
-        ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
-        String collectionName = parentCore.getCoreDescriptor().getCollectionName();
-        DocCollection collection = clusterState.getCollection(collectionName);
-        String sliceName = parentCore.getCoreDescriptor().getCloudDescriptor().getShardId();
-        Slice slice = collection.getSlice(sliceName);
-        router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
-        if (ranges == null) {
-          DocRouter.Range currentRange = slice.getRange();
-          ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
-        }
-        Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
-        if (routerObj instanceof Map) {
-          @SuppressWarnings({"rawtypes"})
-          Map routerProps = (Map) routerObj;
-          routeFieldName = (String) routerProps.get("field");
-        }
+      if (parentCore == null) {
+        throw new IllegalArgumentException("Parent core could not be found in corecontainer corename=" + cname);
       }
 
-      if (pathsArr == null) {
-        newCoresMap = new HashMap<>(partitions);
-        newCores = new ArrayList<>(partitions);
-        for (String newCoreName : newCoreNames) {
-          SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
+      Map<SolrCore,CoreDescriptor> newCoresMap = null;
+      List<SolrCore> newCores = null;
+      SolrQueryRequest req = null;
 
-          if (newcore == null) {
-            it.handler.coreContainer.waitForLoadingCore(newCoreName, 10000);
-            // above currently done in getCore, but shorter
-            newcore = it.handler.coreContainer.getCore(newCoreName);
+      try {
+        // TODO: allow use of rangesStr in the future
+        List<String> paths = null;
+        int partitions = pathsArr != null ? pathsArr.length : newCoreNames.length;
+
+        DocRouter router = null;
+        String routeFieldName = null;
+        if (it.handler.coreContainer.isZooKeeperAware()) {
+          ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
+          String collectionName = parentCore.getCoreDescriptor().getCollectionName();
+          DocCollection collection = clusterState.getCollection(collectionName);
+          String sliceName = parentCore.getCoreDescriptor().getCloudDescriptor().getShardId();
+          Slice slice = collection.getSlice(sliceName);
+          router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
+          if (ranges == null) {
+            DocRouter.Range currentRange = slice.getRange();
+            ranges = currentRange != null ? router.partitionRange(partitions, currentRange) : null;
           }
+          Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
+          if (routerObj instanceof Map) {
+            @SuppressWarnings({"rawtypes"}) Map routerProps = (Map) routerObj;
+            routeFieldName = (String) routerProps.get("field");
+          }
+        }
 
-          if (newcore != null) {
-            CoreDescriptor ncd = newcore.getCoreDescriptor();
-            newCoresMap.put(newcore, ncd);
-            newCores.add(newcore);
-            if (it.handler.coreContainer.isZooKeeperAware()) {
-              // this core must be the only replica in its shard otherwise
-              // we cannot guarantee consistency between replicas because when we add data to this replica
-              CloudDescriptor cd = ncd.getCloudDescriptor();
-              ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
-              if (clusterState.getCollection(cd.getCollectionName()).getSlice(cd.getShardId()).getReplicas().size() != 1) {
-                throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                    "Core with core name " + newCoreName + " must be the only replica in shard " + cd.getShardId());
-              }
+        if (pathsArr == null) {
+          newCoresMap = new HashMap<>(partitions);
+          newCores = new ArrayList<>(partitions);
+          for (String newCoreName : newCoreNames) {
+            SolrCore newcore = it.handler.coreContainer.getCore(newCoreName);
+
+            if (newcore == null) {
+              it.handler.coreContainer.waitForLoadingCore(newCoreName, 10000);
+              // above currently done in getCore, but shorter
+              newcore = it.handler.coreContainer.getCore(newCoreName);
             }
-          } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core with core name " + newCoreName + " expected but doesn't exist.");
+
+            if (newcore != null) {
+              CoreDescriptor ncd = newcore.getCoreDescriptor();
+              newCoresMap.put(newcore, ncd);
+              newCores.add(newcore);
+              if (it.handler.coreContainer.isZooKeeperAware()) {
+                // this core must be the only replica in its shard otherwise
+                // we cannot guarantee consistency between replicas because when we add data to this replica
+                CloudDescriptor cd = ncd.getCloudDescriptor();
+                ClusterState clusterState = it.handler.coreContainer.getZkController().getClusterState();
+                if (clusterState.getCollection(cd.getCollectionName()).getSlice(cd.getShardId()).getReplicas().size() != 1) {
+                  throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core with core name " + newCoreName + " must be the only replica in shard " + cd.getShardId());
+                }
+              }
+            } else {
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Core with core name " + newCoreName + " expected but doesn't exist.");
+            }
+          }
+        } else {
+          paths = Arrays.asList(pathsArr);
+        }
+
+        req = new LocalSolrQueryRequest(parentCore, params);
+
+        SplitIndexCommand cmd = new SplitIndexCommand(req, it.rsp, paths, newCores, ranges, router, routeFieldName, splitKey, splitMethod);
+        parentCore.getUpdateHandler().split(cmd);
+
+        if (it.handler.coreContainer.isZooKeeperAware()) {
+          Set<Map.Entry<SolrCore,CoreDescriptor>> entries = newCoresMap.entrySet();
+          for (Map.Entry<SolrCore,CoreDescriptor> entry : entries) {
+            // the index of the core changed from empty to have some data, its term must be not zero
+            CloudDescriptor cd = entry.getValue().getCloudDescriptor();
+            ZkShardTerms zkShardTerms = it.handler.coreContainer.getZkController().getShardTerms(cd.getCollectionName(), cd.getShardId());
+            zkShardTerms.ensureHighestTermsAreNotZero();
           }
         }
-      } else {
-        paths = Arrays.asList(pathsArr);
-      }
 
-      req = new LocalSolrQueryRequest(parentCore, params);
-
-      SplitIndexCommand cmd = new SplitIndexCommand(req, it.rsp, paths, newCores, ranges, router, routeFieldName, splitKey, splitMethod);
-      parentCore.getUpdateHandler().split(cmd);
-
-      if (it.handler.coreContainer.isZooKeeperAware()) {
-        Set<Map.Entry<SolrCore,CoreDescriptor>> entries = newCoresMap.entrySet();
-        for (Map.Entry<SolrCore,CoreDescriptor> entry : entries) {
-          // the index of the core changed from empty to have some data, its term must be not zero
-          CloudDescriptor cd = entry.getValue().getCloudDescriptor();
-          ZkShardTerms zkShardTerms = it.handler.coreContainer.getZkController().getShardTerms(cd.getCollectionName(), cd.getShardId());
-          zkShardTerms.ensureHighestTermsAreNotZero();
-        }
-      }
-
-      // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
-    } catch (Exception e) {
-      log.error("ERROR executing split:", e);
-      throw e;
-    } finally {
-      if (req != null) req.close();
-      if (newCores != null) {
-        for (SolrCore newCore : newCores) {
-          newCore.close();
+        // After the split has completed, someone (here?) should start the process of replaying the buffered updates.
+      } catch (Exception e) {
+        log.error("ERROR executing split:", e);
+        throw e;
+      } finally {
+        if (req != null) req.close();
+        if (newCores != null) {
+          for (SolrCore newCore : newCores) {
+            newCore.close();
+          }
         }
       }
     }

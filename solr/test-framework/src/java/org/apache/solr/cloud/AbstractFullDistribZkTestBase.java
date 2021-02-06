@@ -82,6 +82,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.StrUtils;
@@ -177,7 +178,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   private static volatile boolean cloudInit;
   protected volatile boolean useJettyDataDir = true;
 
-  private final List<RestTestHarness> restTestHarnesses = Collections.synchronizedList(new ArrayList<>());
+  private final Set<RestTestHarness> restTestHarnesses = ConcurrentHashMap.newKeySet();
 
   public static class CloudJettyRunner {
     public JettySolrRunner jetty;
@@ -2301,20 +2302,15 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void closeRestTestHarnesses() throws IOException {
-    synchronized (restTestHarnesses) {
-      for (RestTestHarness h : restTestHarnesses) {
-        h.close();
-      }
+
+      restTestHarnesses.forEach(restTestHarness -> IOUtils.closeQuietly(restTestHarness));
       restTestHarnesses.clear();
-    }
+
   }
 
   protected RestTestHarness randomRestTestHarness() {
-    return restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
-  }
-
-  protected RestTestHarness randomRestTestHarness(Random random) {
-    return restTestHarnesses.get(random.nextInt(restTestHarnesses.size()));
+    List<RestTestHarness> harnesses = new ArrayList<>(restTestHarnesses);
+    return harnesses.get(random().nextInt(restTestHarnesses.size()));
   }
 
   protected void forAllRestTestHarnesses(Consumer<RestTestHarness> op) {
