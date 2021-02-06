@@ -44,6 +44,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -80,6 +82,7 @@ public class Dictionary {
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX_PATTERN = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX_PATTERN = ".*%s";
+  private static final Pattern MORPH_KEY_PATTERN = Pattern.compile("\\s+(?=\\p{Alpha}{2}:)");
   static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
   CharsetDecoder decoder = replacingDecoder(DEFAULT_CHARSET);
 
@@ -386,8 +389,7 @@ public class Dictionary {
         fullStrip = true;
       } else if ("LANG".equals(firstWord)) {
         language = singleArgument(reader, line);
-        String langCode = extractLanguageCode(language);
-        alternateCasing = langCode.equals("tr") || langCode.equals("az");
+        this.alternateCasing = hasLanguage("tr", "az");
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
       } else if ("WORDCHARS".equals(firstWord)) {
@@ -461,6 +463,17 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private boolean hasLanguage(String... langCodes) {
+    if (language == null) return false;
+    String langCode = extractLanguageCode(language);
+    for (String code : langCodes) {
+      if (langCode.equals(code)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   static String extractLanguageCode(String isoCode) {
@@ -910,7 +923,7 @@ public class Dictionary {
           if (!hasStemExceptions) {
             int morphStart = line.indexOf(MORPH_SEPARATOR);
             if (morphStart >= 0 && morphStart < line.length()) {
-              hasStemExceptions = parseStemException(line.substring(morphStart + 1)) != null;
+              hasStemExceptions = hasStemException(line.substring(morphStart + 1));
             }
           }
 
@@ -961,6 +974,23 @@ public class Dictionary {
     reuse.append(HIDDEN_FLAG);
     reuse.append(afterSep, afterSep.charAt(0) == FLAG_SEPARATOR ? 1 : 0, afterSep.length());
     writer.write(reuse.toString().getBytes(StandardCharsets.UTF_8));
+  }
+
+  String toLowerCase(String word) {
+    char[] chars = new char[word.length()];
+    for (int i = 0; i < word.length(); i++) {
+      chars[i] = caseFold(word.charAt(i));
+    }
+    return new String(chars);
+  }
+
+  String toTitleCase(String word) {
+    char[] chars = new char[word.length()];
+    chars[0] = Character.toUpperCase(word.charAt(0));
+    for (int i = 1; i < word.length(); i++) {
+      chars[i] = caseFold(word.charAt(i));
+    }
+    return new String(chars);
   }
 
   private String sortWordsOffline(
@@ -1062,13 +1092,14 @@ public class Dictionary {
         }
         // we possibly have morphological data
         int stemExceptionID = 0;
-        if (hasStemExceptions && end + 1 < line.length()) {
-          String stemException = parseStemException(line.substring(end + 1));
-          if (stemException != null) {
-            stemExceptions = ArrayUtil.grow(stemExceptions, stemExceptionCount + 1);
-            stemExceptionID =
-                stemExceptionCount + 1; // we use '0' to indicate no exception for the form
-            stemExceptions[stemExceptionCount++] = stemException;
+        if (end + 1 < line.length()) {
+          String morphData = line.substring(end + 1);
+          for (String datum : splitMorphData(morphData)) {
+            if (datum.startsWith("st:")) {
+              stemExceptionID = addStemException(datum.substring(3));
+            } else if (datum.startsWith("ph:") && datum.length() > 3) {
+              addPhoneticRepEntries(entry, datum.substring(3));
+            }
           }
         }
 
@@ -1086,6 +1117,52 @@ public class Dictionary {
         IOUtils.deleteFilesIgnoringExceptions(tempDir, sorted);
       }
     }
+  }
+
+  private int addStemException(String stemException) {
+    stemExceptions = ArrayUtil.grow(stemExceptions, stemExceptionCount + 1);
+    stemExceptions[stemExceptionCount++] = stemException;
+    return stemExceptionCount; // we use '0' to indicate no exception for the form
+  }
+
+  private void addPhoneticRepEntries(String word, String ph) {
+    // e.g. "pretty ph:prity ph:priti->pretti" to suggest both prity->pretty and pritier->prettiest
+    int arrow = ph.indexOf("->");
+    String pattern;
+    String replacement;
+    if (arrow > 0) {
+      pattern = ph.substring(0, arrow);
+      replacement = ph.substring(arrow + 2);
+    } else {
+      pattern = ph;
+      replacement = word;
+    }
+
+    // when the ph: field ends with *, strip last character of pattern and replacement
+    // e.g., "pretty ph:prity*" results in "prit->prett" replacement instead of "prity->pretty",
+    // to get both prity->pretty and pritiest->prettiest suggestions.
+    if (pattern.endsWith("*") && pattern.length() > 2 && replacement.length() > 1) {
+      pattern = pattern.substring(0, pattern.length() - 2);
+      replacement = replacement.substring(0, replacement.length() - 1);
+    }
+
+    // capitalize lowercase pattern for capitalized words to support
+    // good suggestions also for capitalized misspellings,
+    // e.g. Wednesday ph:wendsay results in wendsay -> Wednesday and Wendsay -> Wednesday.
+    if (WordCase.caseOf(word) == WordCase.TITLE && WordCase.caseOf(pattern) == WordCase.LOWER) {
+      // add also lowercase word in the case of German or
+      // Hungarian to support lowercase suggestions lowercased by
+      // compound word generation or derivational suffixes
+      // for example by adjectival suffix "-i" of geographical names in Hungarian:
+      // Massachusetts ph:messzecsuzec
+      // messzecsuzeci -> massachusettsi (adjective)
+      // For lowercasing by conditional PFX rules, see e.g. germancompounding test
+      if (hasLanguage("de", "hu")) {
+        repTable.add(new RepEntry(pattern, toLowerCase(replacement)));
+      }
+      repTable.add(new RepEntry(toTitleCase(pattern), replacement));
+    }
+    repTable.add(new RepEntry(pattern, replacement));
   }
 
   boolean isDotICaseChangeDisallowed(char[] word) {
@@ -1220,29 +1297,31 @@ public class Dictionary {
     }
   }
 
-  private String parseStemException(String morphData) {
+  private boolean hasStemException(String morphData) {
+    for (String datum : splitMorphData(morphData)) {
+      if (datum.startsWith("st:")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private List<String> splitMorphData(String morphData) {
     // first see if it's an alias
     if (morphAliasCount > 0) {
       try {
         int alias = Integer.parseInt(morphData.trim());
         morphData = morphAliases[alias - 1];
-      } catch (NumberFormatException e) {
-        // fine
+      } catch (NumberFormatException ignored) {
       }
     }
-    // try to parse morph entry
-    int index = morphData.indexOf(" st:");
-    if (index < 0) {
-      index = morphData.indexOf("\tst:");
+    if (morphData.isBlank()) {
+      return Collections.emptyList();
     }
-    if (index >= 0) {
-      int endIndex = indexOfSpaceOrTab(morphData, index + 1);
-      if (endIndex < 0) {
-        endIndex = morphData.length();
-      }
-      return morphData.substring(index + 4, endIndex);
-    }
-    return null;
+    return Arrays.stream(MORPH_KEY_PATTERN.split(morphData))
+        .map(String::trim)
+        .filter(s -> !s.isBlank())
+        .collect(Collectors.toList());
   }
 
   boolean isForbiddenWord(char[] word, int length, BytesRef scratch) {

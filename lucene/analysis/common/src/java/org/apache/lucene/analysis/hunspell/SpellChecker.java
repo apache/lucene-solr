@@ -134,13 +134,22 @@ public class SpellChecker {
     return checkWord(word.toCharArray(), word.length(), null);
   }
 
-  private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
+  Boolean checkSimpleWord(char[] wordChars, int length, WordCase originalCase) {
     if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
       return false;
     }
 
     if (findStem(wordChars, 0, length, originalCase, SIMPLE_WORD) != null) {
       return true;
+    }
+
+    return null;
+  }
+
+  private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
+    Boolean simpleResult = checkSimpleWord(wordChars, length, originalCase);
+    if (simpleResult != null) {
+      return simpleResult;
     }
 
     if (dictionary.compoundRules != null
