@@ -16,6 +16,6 @@
  */
 
 /**
- * Support for transforming via XSL stylesheets search responses.
+ * Classes related to applying run time scripting changes to Solr.
  */
-package org.apache.solr.scripting.response;
+package org.apache.solr.scripting;
