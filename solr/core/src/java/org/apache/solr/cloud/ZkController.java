@@ -1243,11 +1243,11 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public void removeEphemeralLiveNode() throws KeeperException {
+    log.info("Removing our ephemeral live node");
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     try {
       zkClient.delete(nodePath, -1);
-      zkClient.setData(ZkStateReader.LIVE_NODES_ZKNODE, (byte[]) null, true);
     } catch (NoNodeException e) {
       // okay
     } catch (Exception e) {

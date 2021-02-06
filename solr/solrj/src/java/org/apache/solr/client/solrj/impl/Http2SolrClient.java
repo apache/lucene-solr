@@ -1032,6 +1032,13 @@ public class Http2SolrClient extends SolrClient {
     }
   }
 
+  private static class ContentStreamPredicate implements Predicate<ContentStream> {
+    @Override
+    public boolean test(ContentStream cs) {
+      return cs.getName() == null;
+    }
+  }
+
   public class AsyncTracker {
 
     private final Semaphore available;

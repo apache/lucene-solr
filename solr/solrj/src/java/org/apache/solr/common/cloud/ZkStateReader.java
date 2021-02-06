@@ -518,7 +518,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       // on reconnect of SolrZkClient force refresh and re-add watches.
       loadClusterProperties();
 
-      IOUtils.closeQuietly(this.liveNodesWatcher);
       this.liveNodesWatcher = new LiveNodeWatcher();
       refreshLiveNodes(this.liveNodesWatcher);
       this.collectionsChildWatcher = new CollectionsChildWatcher();
@@ -796,23 +795,14 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * Refresh live_nodes.
    */
   private void refreshLiveNodes(LiveNodeWatcher watcher) throws KeeperException, InterruptedException {
-    if (watcher != null) {
-      IOUtils.closeQuietly(watcher);
-    }
-
     SortedSet<String> oldLiveNodes;
     SortedSet<String> newLiveNodes = null;
     liveNodesLock.lock();
     try {
       try {
 
-        Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, watcher, true);
-        if (stat != null && this.liveNodesVersion >= 0) {
-          if (stat.getCversion() < this.liveNodesVersion) {
-            return;
-          }
-        }
-        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, null, stat, true);
+        Stat stat = new Stat();
+        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, watcher, stat, true);
         this.liveNodesVersion = stat.getCversion();
         newLiveNodes = new TreeSet<>(nodeList);
       } catch (KeeperException.NoNodeException e) {
@@ -1805,18 +1795,11 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (node != null) {
         MDCLoggingContext.setNode(node);
       }
-      if (event.getType() == EventType.NodeDataChanged) {
-        if (log.isDebugEnabled()) {
-          log.debug("A live node change: [{}], has occurred - updating... (previous live nodes size: [{}])", event, liveNodes.size());
-        }
-        refreshAndWatch();
-      } else {
-        try {
-          zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, this, true);
-        } catch (Exception e) {
-          log.error("A ZK error has occurred", e);
-        }
+
+      if (log.isDebugEnabled()) {
+        log.debug("A live node change: [{}], has occurred - updating... (previous live nodes size: [{}])", event, liveNodes.size());
       }
+      refreshAndWatch();
     }
 
     public void refreshAndWatch() {

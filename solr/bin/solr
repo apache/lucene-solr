@@ -824,7 +824,7 @@ function run_package() {
     fi
   fi
 
-  run_tool package -solrUrl "$runningSolrUrl" $@
+  run_tool package -solrUrl "$runningSolrUrl" "$@"
   #exit $?
 }
 
@@ -924,7 +924,7 @@ fi
 
 # assert tool
 if [ "$SCRIPT_CMD" == "assert" ]; then
-  run_tool assert $*
+  run_tool assert "$*"
   exit $?
 fi
 
@@ -1417,12 +1417,12 @@ fi
 
 
 if [[ "$SCRIPT_CMD" == "export" ]]; then
-  run_tool export $@
+  run_tool export "$@"
   exit $?
 fi
 
 if [[ "$SCRIPT_CMD" == "package" ]]; then
-  run_package $@
+  run_package "$@"
   exit $?
 fi
 
@@ -1562,7 +1562,7 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
         fi
       done
   fi
-  run_tool auth ${AUTH_PARAMS[@]} -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME" $VERBOSE
+  run_tool auth "${AUTH_PARAMS[@]}" -solrUrl "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$AUTH_PORT/solr" -authConfDir "$SOLR_HOME" $VERBOSE
   exit $?
 fi
 
@@ -1626,7 +1626,7 @@ fi
 FG="false"
 FORCE=false
 noprompt=false
-SOLR_OPTS=($SOLR_OPTS)
+SOLR_OPTS=("$SOLR_OPTS")
 PASS_TO_RUN_EXAMPLE=
 
 if [ $# -gt 0 ]; then
@@ -1899,7 +1899,7 @@ fi
 
 LOG4J_CONFIG=()
 if [ -n "$LOG4J_PROPS" ]; then
-  LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
+  LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS" '-Dlog4j2.is.webapp' '-Dlog4j2.garbagefreeThreadContextMap=true' '-Dlog4j2.enableDirectEncoders=true' '-Dlog4j2.enable.threadlocals=true')
 fi
 
 if [ "$SCRIPT_CMD" == "stop" ]; then
@@ -1941,7 +1941,7 @@ if [ -z ${GC_LOG_OPTS+x} ]; then
     GC_LOG_OPTS=('-Dno_gc_logging')
   fi
 else
-  GC_LOG_OPTS=($GC_LOG_OPTS)
+  GC_LOG_OPTS=("${GC_LOG_OPTS[@]}")
 fi
 
 # if verbose gc logging enabled, setup the location of the log file and rotation
@@ -2145,17 +2145,17 @@ function start_solr() {
     echo -e "    SOLR_HOST       = $SOLR_HOST"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[@]}"
-    echo -e "    GC_TUNE         = ${GC_TUNE[@]}"
-    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[@]}"
+    echo -e "    JAVA_MEM_OPTS   = " "${JAVA_MEM_OPTS[@]}"
+    echo -e "    GC_TUNE         = " "${GC_TUNE[@]}"
+    echo -e "    GC_LOG_OPTS     = " "${GC_LOG_OPTS[@]}"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
 
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[@]}"
+      echo -e "    CLOUD_MODE_OPTS = " "${CLOUD_MODE_OPTS[@]}"
     fi
 
     if [ "$SOLR_OPTS" != "" ]; then
-      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[@]}"
+      echo -e "    SOLR_OPTS       = " "${SOLR_OPTS[@]}"
     fi
 
     if [ "$SOLR_ADDL_ARGS" != "" ]; then
@@ -2164,7 +2164,7 @@ function start_solr() {
 
     if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
       echo -e "    RMI_PORT        = $RMI_PORT"
-      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
+      echo -e "    REMOTE_JMX_OPTS = " "${REMOTE_JMX_OPTS[@]}"
     fi
 
     if [ "$SOLR_LOG_LEVEL" != "" ]; then
@@ -2178,7 +2178,7 @@ function start_solr() {
   fi
 
   # need to launch solr from the server dir
-  cd "$SOLR_SERVER_DIR"
+  cd "$SOLR_SERVER_DIR" || exit 1
 
   if [ ! -e "$SOLR_SERVER_DIR/start.jar" ]; then
     echo -e "\nERROR: start.jar file not found in $SOLR_SERVER_DIR!\nPlease check your -d parameter to set the correct Solr server directory.\n"
@@ -2186,7 +2186,7 @@ function start_solr() {
   fi
 
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
+    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" "$SOLR_LOG_LEVEL_OPT" "-Dsolr.log.dir=$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
@@ -2214,16 +2214,16 @@ function start_solr() {
   fi
 
   if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" -Djetty.state=${SOLR_PID_DIR}/jetty.state -Dsolr.log.muteconsole "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS  -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true \
-       -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -XX:-UseBiasedLocking -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG
+    exec "$JAVA" -Djetty.state=${SOLR_PID_DIR}/jetty.state -Dsolr.log.muteconsole "${SOLR_START_OPTS[@]}" "${SOLR_ADDL_ARGS}"  -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true \
+       -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -XX:-UseBiasedLocking -jar start.jar "${SOLR_JETTY_CONFIG[@]}" "${SOLR_JETTY_ADDL_CONFIG}"
   else
     # run Solr in the background
     export JAVA=$JAVA
-    export JETTY_HOME="$SOLR_SERVER_DIR"
-    export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
-    export JETTY_ARGS="${SOLR_JETTY_CONFIG[@]} $SOLR_JETTY_ADDL_CONFIG"
-    export JAVA_OPTIONS="${SOLR_START_OPTS[@]} $SOLR_ADDL_ARGS -XX:-UseBiasedLocking -Dsolr.log.muteconsole"
-    export JETTY_STATE="${SOLR_PID_DIR}/jetty.state"
+    export JETTY_HOME="${SOLR_SERVER_DIR}"
+    export JETTY_PID="${SOLR_PID_DIR}/solr-$SOLR_PORT.pid"
+    export JETTY_ARGS[@]=("${SOLR_JETTY_CONFIG[@]}" "${SOLR_JETTY_ADDL_CONFIG[@]}")
+    export JAVA_OPTIONS[@]=("${SOLR_START_OPTS[@]}" "${SOLR_ADDL_ARGS[@]}" '-XX:-UseBiasedLocking' '-Dsolr.log.muteconsole')
+    export JETTY_STATE[@]=("${SOLR_PID_DIR}/jetty.state")
     bash $SOLR_SERVER_DIR/../bin/jetty.sh start
   fi
 

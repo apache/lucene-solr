@@ -1852,7 +1852,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return;
       }
 
-      log.info("{} CLOSING SolrCore {} {}", logid, this, new RuntimeException().getStackTrace()[0]);
+      log.info("CLOSING SolrCore {}", logid);
       assert ObjectReleaseTracker.release(this);
       this.closing = true;
 

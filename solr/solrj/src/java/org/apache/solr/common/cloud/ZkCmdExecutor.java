@@ -50,15 +50,6 @@ public class ZkCmdExecutor {
     this.isClosed = isClosed;
     this.solrZkClient = solrZkClient;
   }
-  
-  public long getRetryDelay() {
-    return retryDelay;
-  }
-  
-  public void setRetryDelay(long retryDelay) {
-    this.retryDelay = retryDelay;
-  }
-  
 
   /**
    * Perform the given operation, retrying if the connection fails
@@ -66,8 +57,8 @@ public class ZkCmdExecutor {
   @SuppressWarnings("unchecked")
   public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation)
       throws KeeperException, InterruptedException {
-    if (isClosed.isClosed()) {
-      throw new AlreadyClosedException(this + " SolrZkClient is already closed");
+    if (zkCmdExecutor.solrZkClient.isClosed()) {
+      throw new AlreadyClosedException("SolrZkClient is already closed");
     }
     KeeperException exception = null;
     int tryCnt = 0;
@@ -82,9 +73,12 @@ public class ZkCmdExecutor {
         if (!zkCmdExecutor.solrZkClient.getSolrZooKeeper().getState().isAlive()) {
           throw e;
         }
-        retryDelay(tryCnt);
+        zkCmdExecutor.retryDelay(tryCnt);
       }
       tryCnt++;
+    }
+    if (exception == null) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unexpected fail, we should have tracked the exception");
     }
     throw exception;
   }

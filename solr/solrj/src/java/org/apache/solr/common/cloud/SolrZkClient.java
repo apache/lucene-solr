@@ -1081,7 +1081,7 @@ public class SolrZkClient implements Closeable {
   }
 
   public boolean isClosed() {
-    return isClosed || (higherLevelIsClosed != null && higherLevelIsClosed.isClosed());
+    return isClosed;
   }
 
   public SolrZooKeeper getSolrZooKeeper() {
