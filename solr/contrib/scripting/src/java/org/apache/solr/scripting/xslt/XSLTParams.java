@@ -16,7 +16,6 @@
  */
 package org.apache.solr.scripting.xslt;
 
-
 /**
  * Parameters used across the XSLT related classes.
  */
@@ -24,5 +23,5 @@ public interface XSLTParams {
 
   /** Transformer param -- used with XSLT */
   String TR = "tr";
-  
+
 }

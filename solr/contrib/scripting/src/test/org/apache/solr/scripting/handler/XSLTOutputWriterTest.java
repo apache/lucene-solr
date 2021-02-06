@@ -20,37 +20,34 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests the ability to configure multiple query output writers, and select those
- * at query time.  This is specific to the XSLT writer, which isn't part of the core.
+/**
+ * Tests the ability to configure multiple query output writers, and select those at query time. This is specific to the
+ * XSLT writer, which isn't part of the core.
  * 
  * See the related unit test OutputWriterTest.
  *
  */
 public class XSLTOutputWriterTest extends SolrTestCaseJ4 {
-    
 
-    
-    @BeforeClass
-    public static void beforeClass() throws Exception {
-      initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
-    }
-    
-    @Test
-    public void testTrivialXsltWriter() throws Exception {
-        lrf.args.put("wt", "xslt");
-        lrf.args.put("tr", "dummy.xsl");
-        String out = h.query(req("*:*"));
-        assertTrue(out.contains("DUMMY"));
-    }
-    
-    @Test
-    public void testTrivialXsltWriterInclude() throws Exception {
-        lrf.args.put("wt", "xslt");
-        lrf.args.put("tr", "dummy-using-include.xsl");
-        String out = h.query(req("*:*"));
-        assertTrue(out.contains("DUMMY"));
-    }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
+  }
 
-  
-    
+  @Test
+  public void testTrivialXsltWriter() throws Exception {
+    lrf.args.put("wt", "xslt");
+    lrf.args.put("tr", "dummy.xsl");
+    String out = h.query(req("*:*"));
+    assertTrue(out.contains("DUMMY"));
+  }
+
+  @Test
+  public void testTrivialXsltWriterInclude() throws Exception {
+    lrf.args.put("wt", "xslt");
+    lrf.args.put("tr", "dummy-using-include.xsl");
+    String out = h.query(req("*:*"));
+    assertTrue(out.contains("DUMMY"));
+  }
+
 }
