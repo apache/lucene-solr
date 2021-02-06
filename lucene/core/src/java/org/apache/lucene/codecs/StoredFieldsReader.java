@@ -58,4 +58,95 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable, Accoun
   public StoredFieldsReader getMergeInstance() {
     return this;
   }
+
+  /**
+   * An option that allows the caller to select the range of document ids in the current fetching
+   * range so that the detailed implementation can perform some optimization internally. For
+   * example, {@link org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat} can use
+   * this information to avoid decompressing the same compressed block multiple times.
+   *
+   * @lucene.experimental
+   */
+  public interface PrefetchOption {
+    /**
+     * This method **might** be called by the detailed implementation of {@link StoredFieldsReader}
+     * created via {@link #getInstanceWithPrefetchOptions(PrefetchOption)} when it starts fetching a
+     * new range of documents.
+     *
+     * <p>The caller uses the parameters provided by this method and document ids that it will read
+     * to calculate the preferred range. For example, if the stored field reader starts fetching a
+     * new range [startRangeDocId=10, endRangeDocId=50] and the caller is reading (25, 28, 26, 27,
+     * 100) then the caller can return a preferred range [25-28] to tell the reader to "prefetch"
+     * only this range.
+     *
+     * @param startRangeDocId the lower bound of document id of the new fetching range (inclusive)
+     * @param endRangeDocId the upper bound of document id of the new fetching range (inclusive)
+     * @param currentDocId the document id that is being current visited
+     * @return a sub-range of the current fetching range that is optimal for the caller's interest.
+     *     The returned range must include the {@code currentDocId}.
+     */
+    PrefetchRange preferFetchRange(int startRangeDocId, int endRangeDocId, int currentDocId);
+
+    // TODO:
+    // Should we also pass the state of the fetching range (i.e., offsets and lengths) so the caller
+    // can make a better trade off? For example, if the fetching range [10, 50] and the caller is
+    // reading (25, 26, 27, 28, 30, 31, 100), then the caller might choose to prefetch [25-28] or
+    // [25-31] depending on the cost of decompressing the doc-29, which will be skipped, and the
+    // cost of re-decompressing of doc-30 and doc-31.
+  }
+
+  /**
+   * Returns an instance optimized for sequential access.
+   *
+   * @lucene.experimental
+   */
+  public StoredFieldsReader getInstanceWithPrefetchOptions(PrefetchOption prefetchOption) {
+    return this;
+  }
+
+  /**
+   * A {@link PrefetchOption} that always fetches the whole range. It's used by {@link
+   * #getMergeInstance()}.
+   */
+  public static PrefetchOption MERGE_PREFETCH_OPTION =
+      (minDocId, maxDocId, currentDocId) -> new PrefetchRange(minDocId, maxDocId);
+
+  /**
+   * Presents the preferred range that used in {@link PrefetchOption#preferFetchRange(int, int,
+   * int)}
+   */
+  public static final class PrefetchRange {
+    private final int fromDocId; // inclusive
+    private final int toDocId; // inclusive
+
+    /**
+     * Creates a prefetch range
+     *
+     * @param fromDocId the inclusive lower bound of the prefetch range
+     * @param toDocId the inclusive upper bound of the prefetch range
+     */
+    public PrefetchRange(int fromDocId, int toDocId) {
+      if (fromDocId < 0 || fromDocId > toDocId) {
+        throw new IllegalArgumentException(
+            "invalid values: fromDocId=" + fromDocId + ", toDocId=" + toDocId);
+      }
+      this.fromDocId = fromDocId;
+      this.toDocId = toDocId;
+    }
+
+    /** Returns the inclusive lower bound of the prefetch range */
+    public int getFromDocId() {
+      return fromDocId;
+    }
+
+    /** Returns the inclusive upper bound of the prefetch range */
+    public int getToDocId() {
+      return toDocId;
+    }
+
+    @Override
+    public String toString() {
+      return "fromDocId=" + fromDocId + ", toDocId=" + toDocId;
+    }
+  }
 }

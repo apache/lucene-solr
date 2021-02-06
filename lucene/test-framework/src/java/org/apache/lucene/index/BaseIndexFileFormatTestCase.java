@@ -782,10 +782,79 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   }
 
   protected final DirectoryReader maybeWrapWithMergingReader(DirectoryReader r) throws IOException {
-    if (shouldTestMergeInstance()) {
+    if (random().nextBoolean()) {
+      r = new RandomPrefetchStoredFieldsCodecDirectoryReader(r);
+    } else if (shouldTestMergeInstance()) {
       r = new MergingDirectoryReaderWrapper(r);
     }
     return r;
+  }
+
+  private static class RandomPrefetchStoredFieldsCodecDirectoryReader
+      extends FilterDirectoryReader {
+    RandomPrefetchStoredFieldsCodecDirectoryReader(DirectoryReader in) throws IOException {
+      super(
+          in,
+          new SubReaderWrapper() {
+            @Override
+            public LeafReader wrap(LeafReader reader) {
+              if (reader instanceof CodecReader) {
+                return new RandomPrefetchStoredFieldsCodecReader((CodecReader) reader);
+              } else {
+                return reader;
+              }
+            }
+          });
+    }
+
+    @Override
+    protected DirectoryReader doWrapDirectoryReader(DirectoryReader in) throws IOException {
+      return new RandomPrefetchStoredFieldsCodecDirectoryReader(in);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
+  }
+
+  private static class RandomPrefetchStoredFieldsCodecReader extends FilterCodecReader {
+    final CloseableThreadLocal<StoredFieldsReader> fieldsReader =
+        new CloseableThreadLocal<>() {
+          @Override
+          protected StoredFieldsReader initialValue() {
+            final StoredFieldsReader fieldsReader = in.getFieldsReader();
+            if (random().nextBoolean()) {
+              return fieldsReader.getInstanceWithPrefetchOptions(
+                  (minDocId, maxDocId, currentDocId) -> {
+                    final int fromDocId = minDocId + random().nextInt(currentDocId - minDocId + 1);
+                    final int toDocId = fromDocId + random().nextInt(maxDocId - fromDocId + 1);
+                    return new StoredFieldsReader.PrefetchRange(fromDocId, toDocId);
+                  });
+            } else {
+              return fieldsReader;
+            }
+          }
+        };
+
+    RandomPrefetchStoredFieldsCodecReader(CodecReader in) {
+      super(in);
+    }
+
+    @Override
+    public CacheHelper getReaderCacheHelper() {
+      return in.getReaderCacheHelper();
+    }
+
+    @Override
+    public CacheHelper getCoreCacheHelper() {
+      return in.getCoreCacheHelper();
+    }
+
+    @Override
+    public StoredFieldsReader getFieldsReader() {
+      return fieldsReader.get();
+    }
   }
 
   /** A directory that tracks created files that haven't been deleted. */

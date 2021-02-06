@@ -39,7 +39,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
   public StoredFieldsReader fieldsReader(
       Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     return new AssertingStoredFieldsReader(
-        in.fieldsReader(directory, si, fn, context), si.maxDoc(), false);
+        in.fieldsReader(directory, si, fn, context), si.maxDoc(), null);
   }
 
   @Override
@@ -51,13 +51,13 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
   static class AssertingStoredFieldsReader extends StoredFieldsReader {
     private final StoredFieldsReader in;
     private final int maxDoc;
-    private final boolean merging;
+    private final PrefetchOption prefetchOption;
     private final Thread creationThread;
 
-    AssertingStoredFieldsReader(StoredFieldsReader in, int maxDoc, boolean merging) {
+    AssertingStoredFieldsReader(StoredFieldsReader in, int maxDoc, PrefetchOption prefetchOption) {
       this.in = in;
       this.maxDoc = maxDoc;
-      this.merging = merging;
+      this.prefetchOption = prefetchOption;
       this.creationThread = Thread.currentThread();
       // do a few simple checks on init
       assert toString() != null;
@@ -80,8 +80,8 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
 
     @Override
     public StoredFieldsReader clone() {
-      assert merging == false : "Merge instances do not support cloning";
-      return new AssertingStoredFieldsReader(in.clone(), maxDoc, false);
+      assert prefetchOption == null : "Prefetch instances do not support cloning";
+      return new AssertingStoredFieldsReader(in.clone(), maxDoc, null);
     }
 
     @Override
@@ -104,8 +104,13 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
+    public StoredFieldsReader getInstanceWithPrefetchOptions(PrefetchOption prefetchOption) {
+      return new AssertingStoredFieldsReader(this, maxDoc, prefetchOption);
+    }
+
+    @Override
     public StoredFieldsReader getMergeInstance() {
-      return new AssertingStoredFieldsReader(in.getMergeInstance(), maxDoc, true);
+      return this.getInstanceWithPrefetchOptions(MERGE_PREFETCH_OPTION);
     }
 
     @Override

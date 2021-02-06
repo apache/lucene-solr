@@ -87,14 +87,15 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final CompressionMode compressionMode;
   private final Decompressor decompressor;
   private final int numDocs;
-  private final boolean merging;
+  private StoredFieldsReader.PrefetchOption prefetchOption;
   private final BlockState state;
   private final long numDirtyChunks; // number of incomplete compressed blocks written
   private final long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
   private boolean closed;
 
   // used by clone
-  private CompressingStoredFieldsReader(CompressingStoredFieldsReader reader, boolean merging) {
+  private CompressingStoredFieldsReader(
+      CompressingStoredFieldsReader reader, PrefetchOption prefetchOption) {
     this.version = reader.version;
     this.fieldInfos = reader.fieldInfos;
     this.fieldsStream = reader.fieldsStream.clone();
@@ -107,9 +108,10 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.numDocs = reader.numDocs;
     this.numDirtyChunks = reader.numDirtyChunks;
     this.numDirtyDocs = reader.numDirtyDocs;
-    this.merging = merging;
+    this.prefetchOption = prefetchOption;
     this.state = new BlockState();
     this.closed = false;
+    this.prefetchOption = prefetchOption;
   }
 
   /** Sole constructor. */
@@ -161,7 +163,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       }
 
       decompressor = compressionMode.newDecompressor();
-      this.merging = false;
+      this.prefetchOption = null;
       this.state = new BlockState();
 
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
@@ -423,6 +425,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private class BlockState {
 
     private int docBase, chunkDocs;
+    private int fetchedFromDocId = -1;
+    private int fetchedToDocId = -1;
 
     // whether the block has been sliced, this happens for large documents
     private boolean sliced;
@@ -437,7 +441,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     private final BytesRef bytes;
 
     BlockState() {
-      if (merging) {
+      if (prefetchOption != null) {
         spare = new BytesRef();
         bytes = new BytesRef();
       } else {
@@ -468,6 +472,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     }
 
     private void doReset(int docID) throws IOException {
+      fetchedFromDocId = -1;
+      fetchedToDocId = -1;
       docBase = fieldsStream.readVInt();
       final int token = fieldsStream.readVInt();
       chunkDocs = token >>> 1;
@@ -558,28 +564,60 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
       startPointer = fieldsStream.getFilePointer();
 
-      if (merging) {
-        final int totalLength = Math.toIntExact(offsets[chunkDocs]);
-        // decompress eagerly
-        if (sliced) {
-          bytes.offset = bytes.length = 0;
-          for (int decompressed = 0; decompressed < totalLength; ) {
-            final int toDecompress = Math.min(totalLength - decompressed, chunkSize);
-            decompressor.decompress(fieldsStream, toDecompress, 0, toDecompress, spare);
-            bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length + spare.length);
-            System.arraycopy(spare.bytes, spare.offset, bytes.bytes, bytes.length, spare.length);
-            bytes.length += spare.length;
-            decompressed += toDecompress;
-          }
-        } else {
-          decompressor.decompress(fieldsStream, totalLength, 0, totalLength, bytes);
+      if (prefetchOption != null) {
+        final int maxDocId = docBase + chunkDocs - 1;
+        final PrefetchRange range = prefetchOption.preferFetchRange(docBase, maxDocId, docID);
+        if (range.getFromDocId() > docID
+            || range.getFromDocId() > range.getToDocId()
+            || range.getToDocId() > maxDocId) {
+          throw new IllegalArgumentException(
+              "Invalid prefetch range ["
+                  + range
+                  + "] baseDocId ["
+                  + docBase
+                  + "] chunk docs ["
+                  + chunkDocs
+                  + "] docId ["
+                  + docID
+                  + "]");
         }
-        if (bytes.length != totalLength) {
-          throw new CorruptIndexException(
-              "Corrupted: expected chunk size = " + totalLength + ", got " + bytes.length,
-              fieldsStream);
+        if (range.getFromDocId() < range.getToDocId()) {
+          prefetch(range.getFromDocId(), range.getFromDocId());
         }
       }
+    }
+
+    private void prefetch(int fromDocId, int toDocId) throws IOException {
+      assert bytes != null;
+      final int fromIndex = fromDocId - docBase;
+      final int toIndex = toDocId - docBase;
+      final int offset = Math.toIntExact(offsets[fromIndex]);
+      final int length = Math.toIntExact(offsets[toIndex + 1] - offsets[fromIndex]);
+      if (offset > 0) {
+        fieldsStream.seek(startPointer);
+      }
+      if (sliced) {
+        bytes.offset = bytes.length = 0;
+        int sliceOffset = offset;
+        for (int decompressed = 0; decompressed < length; ) {
+          final int toDecompress = Math.min(length - decompressed, chunkSize);
+          decompressor.decompress(fieldsStream, toDecompress, sliceOffset, toDecompress, spare);
+          bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length + spare.length);
+          System.arraycopy(spare.bytes, spare.offset, bytes.bytes, bytes.length, spare.length);
+          bytes.length += spare.length;
+          decompressed += toDecompress;
+          sliceOffset = 0;
+        }
+      } else {
+        final int totalLength = Math.toIntExact(offsets[chunkDocs]);
+        decompressor.decompress(fieldsStream, totalLength, offset, length, bytes);
+      }
+      if (bytes.length != length) {
+        throw new CorruptIndexException(
+            "Corrupted: expected fetch length = " + length + ", got " + bytes.length, fieldsStream);
+      }
+      fetchedFromDocId = fromDocId;
+      fetchedFromDocId = toDocId;
     }
 
     /**
@@ -596,22 +634,21 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       final int length = Math.toIntExact(offsets[index + 1]) - offset;
       final int totalLength = Math.toIntExact(offsets[chunkDocs]);
       final int numStoredFields = Math.toIntExact(this.numStoredFields[index]);
-
-      final BytesRef bytes;
-      if (merging) {
-        bytes = this.bytes;
-      } else {
-        bytes = new BytesRef();
-      }
-
-      final DataInput documentInput;
       if (length == 0) {
-        // empty
-        documentInput = new ByteArrayDataInput();
-      } else if (merging) {
-        // already decompressed
-        documentInput = new ByteArrayDataInput(bytes.bytes, bytes.offset + offset, length);
-      } else if (sliced) {
+        return new SerializedDocument(new ByteArrayDataInput(), length, numStoredFields);
+      }
+      // already compressed
+      if (fetchedFromDocId <= docID && docID <= fetchedToDocId) {
+        final int bufferOffset =
+            Math.toIntExact(offsets[index] - offsets[fetchedFromDocId - docBase]);
+        return new SerializedDocument(
+            new ByteArrayDataInput(bytes.bytes, bytes.offset + bufferOffset, length),
+            length,
+            numStoredFields);
+      }
+      final BytesRef bytes = new BytesRef();
+      final DataInput documentInput;
+      if (sliced) {
         fieldsStream.seek(startPointer);
         decompressor.decompress(
             fieldsStream, chunkSize, offset, Math.min(length, chunkSize - offset), bytes);
@@ -705,13 +742,18 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public StoredFieldsReader clone() {
     ensureOpen();
-    return new CompressingStoredFieldsReader(this, false);
+    return new CompressingStoredFieldsReader(this, null);
   }
 
   @Override
   public StoredFieldsReader getMergeInstance() {
+    return getInstanceWithPrefetchOptions(MERGE_PREFETCH_OPTION);
+  }
+
+  @Override
+  public StoredFieldsReader getInstanceWithPrefetchOptions(PrefetchOption prefetchOption) {
     ensureOpen();
-    return new CompressingStoredFieldsReader(this, true);
+    return new CompressingStoredFieldsReader(this, prefetchOption);
   }
 
   int getVersion() {
