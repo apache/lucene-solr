@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.scripting.response;
+package org.apache.solr.scripting;
 
 import java.io.BufferedReader;
 import java.io.CharArrayReader;
@@ -43,7 +43,11 @@ import org.apache.solr.response.XMLWriter;
 import org.apache.solr.scripting.xslt.XSLTParams;
 import org.apache.solr.scripting.xslt.TransformerProvider;
 
-/** QueryResponseWriter which captures the output of the XMLWriter
+/**
+ *  Customize the format of your search results via XSL stylesheet applied to the default
+ *  XML response format.
+ *
+ *  QueryResponseWriter captures the output of the XMLWriter
  *  (in memory for now, not optimal performancewise), and applies an XSLT transform
  *  to it.
  */
@@ -51,14 +55,14 @@ public class XSLTResponseWriter implements QueryResponseWriter {
 
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
   public static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
-  
-  private Integer xsltCacheLifetimeSeconds = null; 
+
+  private Integer xsltCacheLifetimeSeconds = null;
   public static final int XSLT_CACHE_DEFAULT = 60;
-  private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
+  private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-  
+
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     final SolrParams p = n.toSolrParams();
@@ -66,7 +70,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       log.info("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
   }
 
-  
+
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     Transformer t = null;
@@ -76,7 +80,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       // TODO should our parent interface throw (IO)Exception?
       throw new RuntimeException("getTransformer fails in getContentType",e);
     }
-    
+
     String mediaType = t.getOutputProperty("media-type");
     if (mediaType == null || mediaType.length()==0) {
       // This did not happen in my tests, mediaTypeFromXslt is set to "text/xml"
@@ -84,7 +88,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       // if this is standard behavior or if it's just my JVM/libraries
       mediaType = DEFAULT_CONTENT_TYPE;
     }
-    
+
     if (!mediaType.contains("charset")) {
       String encoding = t.getOutputProperty("encoding");
       if (encoding == null || encoding.length()==0) {
@@ -92,18 +96,18 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       }
       mediaType = mediaType + "; charset=" + encoding;
     }
-    
+
     return mediaType;
   }
 
   @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     final Transformer t = getTransformer(request);
-    
+
     // capture the output of the XMLWriter
     final CharArrayWriter w = new CharArrayWriter();
     XMLWriter.writeResponse(w,request,response);
-    
+
     // and write transformed result to our writer
     final Reader r = new BufferedReader(new CharArrayReader(w.toCharArray()));
     final StreamSource source = new StreamSource(r);
@@ -114,7 +118,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       throw new IOException("XSLT transformation error", te);
     }
   }
-  
+
   /** Get Transformer from request context, or from TransformerProvider.
    *  This allows either getContentType(...) or write(...) to instantiate the Transformer,
    *  depending on which one is called first, then the other one reuses the same Transformer
@@ -126,7 +130,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     }
     // not the cleanest way to achieve this
     SolrConfig solrConfig = request.getCore().getSolrConfig();
-    // no need to synchronize access to context, right? 
+    // no need to synchronize access to context, right?
     // Nothing else happens with it at the same time
     final Map<Object,Object> ctx = request.getContext();
     Transformer result = (Transformer)ctx.get(CONTEXT_TRANSFORMER_KEY);
