@@ -16,6 +16,12 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.RamUsageTester;
+import org.junit.Assume;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -23,14 +29,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.Deque;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.RamUsageTester;
-import org.junit.Assume;
 
 /**
  * Loads all dictionaries from the directory specified in {@code hunspell.dictionaries} system
@@ -61,23 +68,40 @@ public class TestAllDictionaries extends LuceneTestCase {
   }
 
   public void testDictionariesLoadSuccessfully() throws Exception {
-    Deque<Path> failures = new ConcurrentLinkedDeque<>();
-    for (Path aff : findAllAffixFiles().collect(Collectors.toList())) {
-      try {
-        System.out.println(aff + "\t" + memoryUsage(loadDictionary(aff)));
-      } catch (Throwable e) {
-        failures.add(aff);
-        System.err.println("While checking " + aff + ":");
-        e.printStackTrace();
-      }
-    }
+    int threads = Runtime.getRuntime().availableProcessors();
+    ExecutorService executor = Executors.newFixedThreadPool(threads);
+    try {
+      Deque<Path> failures = new ConcurrentLinkedDeque<>();
+      Function<Path, Void> process =
+          (Path aff) -> {
+            try {
+              System.out.println(aff + "\t" + memoryUsage(loadDictionary(aff)));
+            } catch (Throwable e) {
+              failures.add(aff);
+              System.err.println("While checking " + aff + ":");
+              e.printStackTrace();
+            }
+            return null;
+          };
 
-    if (!failures.isEmpty()) {
-      throw new AssertionError(
-          "Certain dictionaries failed to parse:\n  - "
-              + failures.stream()
-                  .map(path -> path.toAbsolutePath().toString())
-                  .collect(Collectors.joining("\n  - ")));
+      for (Future<?> future :
+          executor.invokeAll(
+              findAllAffixFiles()
+                  .map(aff -> (Callable<?>) () -> process.apply(aff))
+                  .collect(Collectors.toList()))) {
+        future.get();
+      }
+
+      if (!failures.isEmpty()) {
+        throw new AssertionError(
+            "Certain dictionaries failed to parse:\n  - "
+                + failures.stream()
+                    .map(path -> path.toAbsolutePath().toString())
+                    .collect(Collectors.joining("\n  - ")));
+      }
+    } finally {
+      executor.shutdown();
+      executor.awaitTermination(1, TimeUnit.MINUTES);
     }
   }
 
