@@ -16,20 +16,27 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +46,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.RamUsageTester;
 import org.junit.Assume;
+import org.junit.Ignore;
 
 /**
  * Loads all dictionaries from the directory specified in {@code hunspell.dictionaries} system
@@ -64,6 +72,73 @@ public class TestAllDictionaries extends LuceneTestCase {
         InputStream affix = Files.newInputStream(aff);
         BaseDirectoryWrapper tempDir = newDirectory()) {
       return new Dictionary(tempDir, "dictionary", affix, dictionary);
+    }
+  }
+
+  /** Hack bais to expose current position. */
+  private static class ExposePosition extends ByteArrayInputStream {
+    public ExposePosition(byte[] buf) {
+      super(buf);
+    }
+
+    public long position() {
+      return super.pos;
+    }
+  }
+
+  @Ignore
+  public void testMaxPrologueNeeded() throws Exception {
+    AtomicBoolean failTest = new AtomicBoolean();
+
+    Map<String, List<Long>> global = new LinkedHashMap<>();
+    for (Path aff : findAllAffixFiles().collect(Collectors.toList())) {
+      Map<String, List<Long>> local = new LinkedHashMap<>();
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      try (ExposePosition is = new ExposePosition(Files.readAllBytes(aff))) {
+        int chr;
+        while ((chr = is.read()) >= 0) {
+          baos.write(chr);
+
+          if (chr == '\n') {
+            String line = baos.toString(StandardCharsets.ISO_8859_1);
+            if (!line.isBlank()) {
+              String firstWord = line.split("\\s")[0];
+              switch (firstWord) {
+                case "SET":
+                case "FLAG":
+                  local.computeIfAbsent(firstWord, (k) -> new ArrayList<>()).add(is.position());
+                  global.computeIfAbsent(firstWord, (k) -> new ArrayList<>()).add(is.position());
+                  break;
+              }
+            }
+
+            baos.reset();
+          }
+        }
+      }
+
+      local.forEach(
+          (flag, positions) -> {
+            if (positions.size() > 1) {
+              System.out.format(
+                  Locale.ROOT,
+                  "Flag %s at more than one position in %s: %s%n",
+                  flag,
+                  aff,
+                  positions);
+              failTest.set(true);
+            }
+          });
+    }
+
+    global.forEach(
+        (flag, positions) -> {
+          long max = positions.stream().mapToLong(v -> v).max().orElse(0);
+          System.out.printf(Locale.ROOT, "Flag %s at maximum offset %s%n", flag, max);
+        });
+
+    if (failTest.get()) {
+      throw new AssertionError("Duplicate flags were present in at least one .aff file.");
     }
   }
 
