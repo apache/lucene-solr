@@ -39,11 +39,7 @@ import org.junit.Test;
 public class TestDictionary extends LuceneTestCase {
 
   public void testSimpleDictionary() throws Exception {
-    InputStream affixStream = getClass().getResourceAsStream("simple.aff");
-    InputStream dictStream = getClass().getResourceAsStream("simple.dic");
-    Directory tempDir = getDirectory();
-
-    Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
+    Dictionary dictionary = loadDictionary("simple.aff", "simple.dic");
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
@@ -60,85 +56,44 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(1, ordList.length);
     flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
-
-    affixStream.close();
-    dictStream.close();
-    tempDir.close();
   }
 
   public void testCompressedDictionary() throws Exception {
-    InputStream affixStream = getClass().getResourceAsStream("compressed.aff");
-    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
-
-    Directory tempDir = getDirectory();
-    Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
+    Dictionary dictionary = loadDictionary("compressed.aff", "compressed.dic");
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
     char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
-
-    affixStream.close();
-    dictStream.close();
-    tempDir.close();
   }
 
   public void testCompressedBeforeSetDictionary() throws Exception {
-    InputStream affixStream = getClass().getResourceAsStream("compressed-before-set.aff");
-    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
-    Directory tempDir = getDirectory();
-
-    Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
+    Dictionary dictionary = loadDictionary("compressed-before-set.aff", "compressed.dic");
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
     char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
-
-    affixStream.close();
-    dictStream.close();
-    tempDir.close();
   }
 
   public void testCompressedEmptyAliasDictionary() throws Exception {
-    InputStream affixStream = getClass().getResourceAsStream("compressed-empty-alias.aff");
-    InputStream dictStream = getClass().getResourceAsStream("compressed.dic");
-    Directory tempDir = getDirectory();
-
-    Dictionary dictionary = new Dictionary(tempDir, "dictionary", affixStream, dictStream);
+    Dictionary dictionary = loadDictionary("compressed-empty-alias.aff", "compressed.dic");
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
     BytesRef ref = new BytesRef();
     char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
     assertEquals(1, flags.length);
-
-    affixStream.close();
-    dictStream.close();
-    tempDir.close();
   }
 
   // malformed rule causes ParseException
-  public void testInvalidData() throws Exception {
-    InputStream affixStream = getClass().getResourceAsStream("broken.aff");
-    InputStream dictStream = getClass().getResourceAsStream("simple.dic");
-    Directory tempDir = getDirectory();
-
+  public void testInvalidData() {
     ParseException expected =
-        expectThrows(
-            ParseException.class,
-            () -> new Dictionary(tempDir, "dictionary", affixStream, dictStream));
-    assertTrue(
-        expected
-            .getMessage()
-            .startsWith("The affix file contains a rule with less than four elements"));
+        expectThrows(ParseException.class, () -> loadDictionary("broken.aff", "simple.dic"));
+    assertTrue(expected.getMessage().startsWith("Invalid syntax"));
     assertEquals(24, expected.getErrorOffset());
-
-    affixStream.close();
-    dictStream.close();
-    tempDir.close();
   }
 
   public void testUsingFlagsBeforeFlagDirective() throws IOException, ParseException {
@@ -155,20 +110,21 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(42, dictionary.keepcase);
   }
 
-  // malformed flags causes ParseException
-  public void testInvalidFlags() throws Exception {
-    InputStream affixStream = getClass().getResourceAsStream("broken-flags.aff");
-    InputStream dictStream = getClass().getResourceAsStream("simple.dic");
-    Directory tempDir = getDirectory();
+  public void testForgivableErrors() throws Exception {
+    Dictionary dictionary = loadDictionary("forgivable-errors.aff", "simple.dic");
+    assertEquals(1, dictionary.repTable.size());
+    assertEquals(2, dictionary.compoundMax);
 
-    Exception expected =
-        expectThrows(
-            Exception.class, () -> new Dictionary(tempDir, "dictionary", affixStream, dictStream));
-    assertTrue(expected.getMessage().startsWith("expected only one flag"));
+    loadDictionary("forgivable-errors-long.aff", "single-word.dic");
+    loadDictionary("forgivable-errors-num.aff", "single-word.dic");
+  }
 
-    affixStream.close();
-    dictStream.close();
-    tempDir.close();
+  private Dictionary loadDictionary(String aff, String dic) throws IOException, ParseException {
+    try (InputStream affixStream = getClass().getResourceAsStream(aff);
+        InputStream dicStream = getClass().getResourceAsStream(dic);
+        Directory tempDir = getDirectory()) {
+      return new Dictionary(tempDir, "dictionary", affixStream, dicStream);
+    }
   }
 
   private static class CloseCheckInputStream extends FilterInputStream {
