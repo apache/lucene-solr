@@ -752,6 +752,9 @@ public class Dictionary {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, streamCharset));
     String line;
     while ((line = reader.readLine()) != null) {
+      line = line.trim();
+      if (line.isEmpty()) continue;
+
       String firstWord = line.split("\\s")[0];
       if ("SET".equals(firstWord)) {
         decoder = getDecoder(singleArgument(reader, line));

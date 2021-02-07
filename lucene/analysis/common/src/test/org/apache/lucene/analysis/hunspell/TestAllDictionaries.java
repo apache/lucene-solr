@@ -16,35 +16,42 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.text.ParseException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.RamUsageTester;
 import org.junit.Assume;
-import org.junit.Ignore;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * Loads all dictionaries from the directory specified in {@code -Dhunspell.dictionaries=...} and
- * prints their memory usage. All *.aff files are traversed directly inside the given directory or
- * in its immediate subdirectories. Each *.aff file must have a same-named sibling *.dic file. For
- * examples of such directories, refer to the {@link org.apache.lucene.analysis.hunspell package
- * documentation}
+ * Loads all dictionaries from the directory specified in {@code hunspell.dictionaries} system
+ * property and prints their memory usage. All *.aff files are traversed directly inside the given
+ * directory or in its immediate subdirectories. Each *.aff file must have a same-named sibling
+ * *.dic file. For examples of such directories, refer to the {@link
+ * org.apache.lucene.analysis.hunspell package documentation}.
  */
-@Ignore("enable manually")
 @SuppressSysoutChecks(bugUrl = "prints important memory utilization stats per dictionary")
 public class TestAllDictionaries extends LuceneTestCase {
-
   static Stream<Path> findAllAffixFiles() throws IOException {
     String dicDir = System.getProperty("hunspell.dictionaries");
-    Assume.assumeFalse("Missing -Dhunspell.dictionaries=...", dicDir == null);
-    return Files.walk(Path.of(dicDir), 2).filter(f -> f.toString().endsWith(".aff"));
+    Assume.assumeFalse(
+        "Requires Hunspell dictionaries at -Dhunspell.dictionaries=...", dicDir == null);
+    Path dicPath = Paths.get(dicDir);
+    return Files.walk(dicPath).filter(f -> f.toString().endsWith(".aff")).sorted();
   }
 
   static Dictionary loadDictionary(Path aff) throws IOException, ParseException {
@@ -59,42 +66,35 @@ public class TestAllDictionaries extends LuceneTestCase {
   }
 
   public void testDictionariesLoadSuccessfully() throws Exception {
-    int failures = 0;
+    Deque<Path> failures = new ConcurrentLinkedDeque<>();
     for (Path aff : findAllAffixFiles().collect(Collectors.toList())) {
       try {
         System.out.println(aff + "\t" + memoryUsage(loadDictionary(aff)));
       } catch (Throwable e) {
-        failures++;
+        failures.add(aff);
         System.err.println("While checking " + aff + ":");
         e.printStackTrace();
       }
     }
-    assertEquals(failures + " failures!", 0, failures);
+
+    if (!failures.isEmpty()) {
+      throw new AssertionError(
+          "Certain dictionaries failed to parse:\n  - "
+              + failures.stream()
+                  .map(path -> path.toAbsolutePath().toString())
+                  .collect(Collectors.joining("\n  - ")));
+    }
   }
 
   private static String memoryUsage(Dictionary dic) {
     return RamUsageTester.humanSizeOf(dic)
         + "\t("
-        + "words="
-        + RamUsageTester.humanSizeOf(dic.words)
-        + ", "
-        + "flags="
-        + RamUsageTester.humanSizeOf(dic.flagLookup)
-        + ", "
-        + "strips="
-        + RamUsageTester.humanSizeOf(dic.stripData)
-        + ", "
-        + "conditions="
-        + RamUsageTester.humanSizeOf(dic.patterns)
-        + ", "
-        + "affixData="
-        + RamUsageTester.humanSizeOf(dic.affixData)
-        + ", "
-        + "prefixes="
-        + RamUsageTester.humanSizeOf(dic.prefixes)
-        + ", "
-        + "suffixes="
-        + RamUsageTester.humanSizeOf(dic.suffixes)
-        + ")";
+        + ("words=" + RamUsageTester.humanSizeOf(dic.words) + ", ")
+        + ("flags=" + RamUsageTester.humanSizeOf(dic.flagLookup) + ", ")
+        + ("strips=" + RamUsageTester.humanSizeOf(dic.stripData) + ", ")
+        + ("conditions=" + RamUsageTester.humanSizeOf(dic.patterns) + ", ")
+        + ("affixData=" + RamUsageTester.humanSizeOf(dic.affixData) + ", ")
+        + ("prefixes=" + RamUsageTester.humanSizeOf(dic.prefixes) + ", ")
+        + ("suffixes=" + RamUsageTester.humanSizeOf(dic.suffixes) + ")");
   }
 }
