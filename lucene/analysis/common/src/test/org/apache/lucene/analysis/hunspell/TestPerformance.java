@@ -33,7 +33,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assume;
 import org.junit.AssumptionViolatedException;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
