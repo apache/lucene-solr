@@ -376,7 +376,7 @@ public class Dictionary {
         Arrays.sort(ignore);
         needsInputCleaning = true;
       } else if ("ICONV".equals(firstWord) || "OCONV".equals(firstWord)) {
-        int num = Integer.parseInt(singleArgument(reader, line));
+        int num = parseNum(reader, line);
         FST<CharsRef> res = parseConversions(reader, num);
         if (line.startsWith("I")) {
           iconv = res;
@@ -397,9 +397,9 @@ public class Dictionary {
       } else if ("TRY".equals(firstWord)) {
         tryChars = singleArgument(reader, line);
       } else if ("REP".equals(firstWord)) {
-        int count = Integer.parseInt(singleArgument(reader, line));
+        int count = parseNum(reader, line);
         for (int i = 0; i < count; i++) {
-          String[] parts = splitBySpace(reader, reader.readLine(), 3);
+          String[] parts = splitBySpace(reader, reader.readLine(), 3, Integer.MAX_VALUE);
           repTable.add(new RepEntry(parts[1], parts[2]));
         }
       } else if ("KEY".equals(firstWord)) {
@@ -409,11 +409,11 @@ public class Dictionary {
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
-        compoundMin = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
+        compoundMin = Math.max(1, parseNum(reader, line));
       } else if ("COMPOUNDWORDMAX".equals(firstWord)) {
-        compoundMax = Math.max(1, Integer.parseInt(singleArgument(reader, line)));
+        compoundMax = Math.max(1, parseNum(reader, line));
       } else if ("COMPOUNDRULE".equals(firstWord)) {
-        compoundRules = parseCompoundRules(reader, Integer.parseInt(singleArgument(reader, line)));
+        compoundRules = parseCompoundRules(reader, parseNum(reader, line));
       } else if ("COMPOUNDFLAG".equals(firstWord)) {
         compoundFlag = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDBEGIN".equals(firstWord)) {
@@ -437,7 +437,7 @@ public class Dictionary {
       } else if ("SIMPLIFIEDTRIPLE".equals(firstWord)) {
         simplifiedTriple = true;
       } else if ("CHECKCOMPOUNDPATTERN".equals(firstWord)) {
-        int count = Integer.parseInt(singleArgument(reader, line));
+        int count = parseNum(reader, line);
         for (int i = 0; i < count; i++) {
           checkCompoundPatterns.add(
               new CheckCompoundPattern(reader.readLine(), flagParsingStrategy, this));
@@ -481,16 +481,24 @@ public class Dictionary {
     return underscore < 0 ? isoCode : isoCode.substring(0, underscore);
   }
 
+  private int parseNum(LineNumberReader reader, String line) throws ParseException {
+    return Integer.parseInt(splitBySpace(reader, line, 2, Integer.MAX_VALUE)[1]);
+  }
+
   private String singleArgument(LineNumberReader reader, String line) throws ParseException {
     return splitBySpace(reader, line, 2)[1];
   }
 
   private String[] splitBySpace(LineNumberReader reader, String line, int expectedParts)
       throws ParseException {
+    return splitBySpace(reader, line, expectedParts, expectedParts);
+  }
+
+  private String[] splitBySpace(LineNumberReader reader, String line, int minParts, int maxParts)
+      throws ParseException {
     String[] parts = line.split("\\s+");
-    if (parts.length < expectedParts
-        || parts.length > expectedParts && !parts[expectedParts].startsWith("#")) {
-      throw new ParseException("Invalid syntax", reader.getLineNumber());
+    if (parts.length < minParts || parts.length > maxParts && !parts[maxParts].startsWith("#")) {
+      throw new ParseException("Invalid syntax: " + line, reader.getLineNumber());
     }
     return parts;
   }
@@ -509,7 +517,7 @@ public class Dictionary {
     Set<String> starting = new LinkedHashSet<>();
     Set<String> ending = new LinkedHashSet<>();
     Set<String> middle = new LinkedHashSet<>();
-    int num = Integer.parseInt(singleArgument(reader, line));
+    int num = parseNum(reader, line);
     for (int i = 0; i < num; i++) {
       String breakStr = singleArgument(reader, reader.readLine());
       if (breakStr.startsWith("^")) {
@@ -590,15 +598,8 @@ public class Dictionary {
 
     for (int i = 0; i < numLines; i++) {
       String line = reader.readLine();
-      String[] ruleArgs = line.split("\\s+");
-
       // from the manpage: PFX flag stripping prefix [condition [morphological_fields...]]
-      // condition is optional
-      if (ruleArgs.length < 4) {
-        throw new ParseException(
-            "The affix file contains a rule with less than four elements: " + line,
-            reader.getLineNumber());
-      }
+      String[] ruleArgs = splitBySpace(reader, line, 4, Integer.MAX_VALUE);
 
       char flag = flagParsingStrategy.parseFlag(ruleArgs[1]);
       String strip = ruleArgs[2].equals("0") ? "" : ruleArgs[2];
@@ -654,9 +655,11 @@ public class Dictionary {
               "Too many patterns, please report this to dev@lucene.apache.org");
         }
         seenPatterns.put(regex, patternIndex);
-        CharacterRunAutomaton pattern =
-            new CharacterRunAutomaton(new RegExp(regex, RegExp.NONE).toAutomaton());
-        patterns.add(pattern);
+        try {
+          patterns.add(new CharacterRunAutomaton(conditionRegexp(regex).toAutomaton()));
+        } catch (IllegalArgumentException e) {
+          throw new IllegalArgumentException("On line " + reader.getLineNumber() + ": " + line, e);
+        }
       }
 
       Integer stripOrd = seenStrips.get(strip);
@@ -706,6 +709,17 @@ public class Dictionary {
     }
   }
 
+  private static RegExp conditionRegexp(String regex) {
+    try {
+      return new RegExp(regex, RegExp.NONE);
+    } catch (IllegalArgumentException e) {
+      if (e.getMessage().contains("expected ']'")) {
+        return conditionRegexp(regex + "]");
+      }
+      throw e;
+    }
+  }
+
   char affixData(int affixIndex, int offset) {
     return affixData[affixIndex * 4 + offset];
   }
@@ -752,6 +766,8 @@ public class Dictionary {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, streamCharset));
     String line;
     while ((line = reader.readLine()) != null) {
+      if (line.isBlank()) continue;
+
       String firstWord = line.split("\\s")[0];
       if ("SET".equals(firstWord)) {
         decoder = getDecoder(singleArgument(reader, line));
@@ -767,11 +783,12 @@ public class Dictionary {
    *
    * @return {@code true} if the sequence matched and has been consumed.
    */
+  @SuppressWarnings("SameParameterValue")
   private static boolean maybeConsume(BufferedInputStream stream, byte[] bytes) throws IOException {
     stream.mark(bytes.length);
-    for (int i = 0; i < bytes.length; i++) {
+    for (byte b : bytes) {
       int nextByte = stream.read();
-      if (nextByte != (bytes[i] & 0xff)) { // covers EOF (-1) as well.
+      if (nextByte != (b & 0xff)) { // covers EOF (-1) as well.
         stream.reset();
         return false;
       }
@@ -1344,6 +1361,9 @@ public class Dictionary {
 
   /** Abstraction of the process of parsing flags taken from the affix and dic files */
   abstract static class FlagParsingStrategy {
+    // we don't check the flag count, as Hunspell accepts longer sequences
+    // https://github.com/hunspell/hunspell/issues/707
+    static final boolean checkFlags = false;
 
     /**
      * Parses the given String into a single flag
@@ -1353,7 +1373,7 @@ public class Dictionary {
      */
     char parseFlag(String rawFlag) {
       char[] flags = parseFlags(rawFlag);
-      if (flags.length != 1) {
+      if (checkFlags && flags.length != 1) {
         throw new IllegalArgumentException("expected only one flag, got: " + rawFlag);
       }
       return flags[0];
@@ -1406,7 +1426,8 @@ public class Dictionary {
           continue;
         }
         int flag = Integer.parseInt(replacement);
-        if (flag == FLAG_UNSET || flag >= Character.MAX_VALUE) { // read default flags as well
+        if (flag >= Character.MAX_VALUE) { // read default flags as well
+          // accept 0 due to https://github.com/hunspell/hunspell/issues/708
           throw new IllegalArgumentException(
               "Num flags should be between 0 and " + DEFAULT_FLAGS + ", found " + flag);
         }
@@ -1428,28 +1449,21 @@ public class Dictionary {
 
     @Override
     public char[] parseFlags(String rawFlags) {
-      if (rawFlags.length() == 0) {
-        return new char[0];
-      }
-
-      StringBuilder builder = new StringBuilder();
-      if (rawFlags.length() % 2 == 1) {
+      if (checkFlags && rawFlags.length() % 2 == 1) {
         throw new IllegalArgumentException(
             "Invalid flags (should be even number of characters): " + rawFlags);
       }
-      for (int i = 0; i < rawFlags.length(); i += 2) {
-        char f1 = rawFlags.charAt(i);
-        char f2 = rawFlags.charAt(i + 1);
+
+      char[] flags = new char[rawFlags.length() / 2];
+      for (int i = 0; i < flags.length; i++) {
+        char f1 = rawFlags.charAt(i * 2);
+        char f2 = rawFlags.charAt(i * 2 + 1);
         if (f1 >= 256 || f2 >= 256) {
           throw new IllegalArgumentException(
               "Invalid flags (LONG flags must be double ASCII): " + rawFlags);
         }
-        char combined = (char) (f1 << 8 | f2);
-        builder.append(combined);
+        flags[i] = (char) (f1 << 8 | f2);
       }
-
-      char[] flags = new char[builder.length()];
-      builder.getChars(0, builder.length(), flags, 0);
       return flags;
     }
   }
