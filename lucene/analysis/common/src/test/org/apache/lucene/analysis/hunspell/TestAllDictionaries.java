@@ -16,12 +16,6 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import org.apache.lucene.store.BaseDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.RamUsageTester;
-import org.junit.Assume;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -38,6 +32,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.lucene.store.BaseDirectoryWrapper;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.RamUsageTester;
+import org.junit.Assume;
 
 /**
  * Loads all dictionaries from the directory specified in {@code hunspell.dictionaries} system
