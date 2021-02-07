@@ -16,6 +16,10 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStream;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.Principal;
@@ -25,10 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 
 /**
  * 
@@ -82,25 +82,6 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   private StreamingResponseCallback callback;
   private Set<String> queryParams;
 
-  protected boolean usev2;
-  protected boolean useBinaryV2;
-
-  /**If set to true, every request that implements {@link V2RequestSupport} will be converted
-   * to a V2 API call
-   */
-  @SuppressWarnings({"rawtypes"})
-  public SolrRequest setUseV2(boolean flag){
-    this.usev2 = flag;
-    return this;
-  }
-
-  /**If set to true use javabin instead of json (default)
-   */
-  @SuppressWarnings({"rawtypes"})
-  public SolrRequest setUseBinaryV2(boolean flag){
-    this.useBinaryV2 = flag;
-    return this;
-  }
 
   private String basicAuthUser, basicAuthPwd;
 

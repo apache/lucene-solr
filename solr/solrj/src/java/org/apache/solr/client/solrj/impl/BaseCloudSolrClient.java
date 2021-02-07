@@ -877,9 +877,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     String stateVerParam = null;
     List<DocCollection> requestedCollections = null;
     boolean isCollectionRequestOfV2 = false;
-    if (request instanceof V2RequestSupport) {
-      request = ((V2RequestSupport) request).getV2Request();
-    }
     if (request instanceof V2Request) {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
