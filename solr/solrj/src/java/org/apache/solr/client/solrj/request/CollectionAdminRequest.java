@@ -110,7 +110,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     super(METHOD.GET, path);
     this.action = checkNotNull(CoreAdminParams.ACTION, action);
   }
-
+  
   @Override
   @SuppressWarnings({"rawtypes"})
   public SolrRequest getV2Request() {
