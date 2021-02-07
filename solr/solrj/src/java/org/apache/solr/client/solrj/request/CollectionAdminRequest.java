@@ -73,7 +73,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSI
  *
  * @since solr 4.5
  */
-public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements V2RequestSupport, MapWriter {
+public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> extends SolrRequest<T> implements MapWriter {
 
   /**
    * The set of modifiable collection properties
@@ -95,14 +95,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public CollectionAdminRequest(String path, CollectionAction action) {
     super(METHOD.GET, path);
     this.action = checkNotNull(CoreAdminParams.ACTION, action);
-  }
-
-  @Override
-  @SuppressWarnings({"rawtypes"})
-  public SolrRequest getV2Request() {
-    return usev2 ?
-        V1toV2ApiMapper.convert(this).useBinary(useBinaryV2).build() :
-        this;
   }
 
   @Override
