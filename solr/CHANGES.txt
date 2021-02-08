@@ -199,6 +199,8 @@ Other Changes
 * SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
  of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name. (Eric Pugh)
 
+* SOLR-15118: Switch /v2/collections APIs over to the now-preferred annotated-POJO implementation approach (Jason Gerlowski)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
@@ -238,7 +240,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
 
 ==================  8.8.0 ==================
 
