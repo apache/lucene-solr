@@ -264,8 +264,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName);
       } else {
+        //we want to wait till all the replicas are ACTIVE for PRS collections because
+          ocmh.zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, c) ->
+                  c.getPerReplicaStates() == null || // this is not a PRS collection
+                  c.getPerReplicaStates().allActive());
         log.debug("Finished create command on all shards for collection: {}", collectionName);
-
         // Emit a warning about production use of data driven functionality
         boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null ||
             message.getStr(COLL_CONF).equals(DEFAULT_CONFIGSET_NAME);
