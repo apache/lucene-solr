@@ -143,7 +143,7 @@ public class SpellChecker {
         length,
         originalCase,
         context,
-        (stem, forms, formID) -> {
+        (stem, formID, stemException) -> {
           result[0] = stem;
           return false;
         });
