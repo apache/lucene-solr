@@ -37,7 +37,7 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class TestHunspellRepositoryTestCases {
-  private static final Set<String> IGNORED =
+  private static final Set<String> EXPECTED_FAILURES =
       Set.of(
           "hu", // Hungarian is hard: a lot of its rules are hardcoded in Hunspell code, not aff/dic
           "morph", // we don't do morphological analysis yet
@@ -76,7 +76,7 @@ public class TestHunspellRepositoryTestCases {
   @Test
   public void test() throws Throwable {
     ThrowingRunnable test = () -> SpellCheckerTest.checkSpellCheckerExpectations(pathPrefix);
-    if (IGNORED.contains(testName)) {
+    if (EXPECTED_FAILURES.contains(testName)) {
       Assert.assertThrows(Throwable.class, test);
     } else {
       test.run();
