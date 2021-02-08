@@ -19,8 +19,8 @@ package org.apache.lucene.backward_codecs.lucene70;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWPostingsFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
-import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -31,12 +31,12 @@ public final class Lucene70RWCodec extends Lucene70Codec {
 
   private final PostingsFormat defaultPF = new Lucene50RWPostingsFormat();
   private final PostingsFormat postingsFormat =
-          new PerFieldPostingsFormat() {
-            @Override
-            public PostingsFormat getPostingsFormatForField(String field) {
-              return defaultPF;
-            }
-          };
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return defaultPF;
+        }
+      };
 
   /** Sole constructor. */
   public Lucene70RWCodec() {}

@@ -56,8 +56,8 @@ public class Lucene90Codec extends Codec {
     BEST_SPEED(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, Lucene80DocValuesFormat.Mode.BEST_SPEED),
     /** Trade retrieval speed for compression ratio. */
     BEST_COMPRESSION(
-            Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
-            Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
+        Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
+        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
 
     private final Lucene87StoredFieldsFormat.Mode storedMode;
     private final Lucene80DocValuesFormat.Mode dvMode;
@@ -76,20 +76,20 @@ public class Lucene90Codec extends Codec {
   private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat =
-          new PerFieldPostingsFormat() {
-            @Override
-            public PostingsFormat getPostingsFormatForField(String field) {
-              return Lucene90Codec.this.getPostingsFormatForField(field);
-            }
-          };
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return Lucene90Codec.this.getPostingsFormatForField(field);
+        }
+      };
 
   private final DocValuesFormat docValuesFormat =
-          new PerFieldDocValuesFormat() {
-            @Override
-            public DocValuesFormat getDocValuesFormatForField(String field) {
-              return Lucene90Codec.this.getDocValuesFormatForField(field);
-            }
-          };
+      new PerFieldDocValuesFormat() {
+        @Override
+        public DocValuesFormat getDocValuesFormatForField(String field) {
+          return Lucene90Codec.this.getDocValuesFormatForField(field);
+        }
+      };
 
   private final VectorFormat vectorFormat = new Lucene90VectorFormat();
 
@@ -108,7 +108,7 @@ public class Lucene90Codec extends Codec {
   public Lucene90Codec(Mode mode) {
     super("Lucene90");
     this.storedFieldsFormat =
-            new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
+        new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
     this.defaultFormat = new Lucene84PostingsFormat();
     this.defaultDVFormat = new Lucene80DocValuesFormat(mode.dvMode);
   }

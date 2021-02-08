@@ -61,20 +61,20 @@ public class Lucene84Codec extends Codec {
   private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat =
-          new PerFieldPostingsFormat() {
-            @Override
-            public PostingsFormat getPostingsFormatForField(String field) {
-              return Lucene84Codec.this.getPostingsFormatForField(field);
-            }
-          };
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return Lucene84Codec.this.getPostingsFormatForField(field);
+        }
+      };
 
   private final DocValuesFormat docValuesFormat =
-          new PerFieldDocValuesFormat() {
-            @Override
-            public DocValuesFormat getDocValuesFormatForField(String field) {
-              return Lucene84Codec.this.getDocValuesFormatForField(field);
-            }
-          };
+      new PerFieldDocValuesFormat() {
+        @Override
+        public DocValuesFormat getDocValuesFormatForField(String field) {
+          return Lucene84Codec.this.getDocValuesFormatForField(field);
+        }
+      };
 
   private final StoredFieldsFormat storedFieldsFormat;
 

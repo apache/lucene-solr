@@ -55,20 +55,20 @@ public class Lucene80Codec extends Codec {
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
 
   private final PostingsFormat postingsFormat =
-          new PerFieldPostingsFormat() {
-            @Override
-            public PostingsFormat getPostingsFormatForField(String field) {
-              throw new UnsupportedOperationException("Old codecs can't be used for writing");
-            }
-          };
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          throw new UnsupportedOperationException("Old codecs can't be used for writing");
+        }
+      };
 
   private final DocValuesFormat docValuesFormat =
-          new PerFieldDocValuesFormat() {
-            @Override
-            public DocValuesFormat getDocValuesFormatForField(String field) {
-              return defaultDVFormat;
-            }
-          };
+      new PerFieldDocValuesFormat() {
+        @Override
+        public DocValuesFormat getDocValuesFormatForField(String field) {
+          return defaultDVFormat;
+        }
+      };
   private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene80");
 
   private final StoredFieldsFormat storedFieldsFormat;
