@@ -333,7 +333,6 @@ public class DirectoryTaxonomyReader extends TaxonomyReader implements Accountab
 
     int readerIndex = ReaderUtil.subIndex(ordinal, indexReader.leaves());
     LeafReader leafReader = indexReader.leaves().get(readerIndex).reader();
-    // TODO: Use LUCENE-9476 to get the bulk lookup API for extracting BinaryDocValues
     BinaryDocValues values = leafReader.getBinaryDocValues(Consts.FULL);
 
     FacetLabel ret;
