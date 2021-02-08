@@ -44,16 +44,16 @@ You can also explicitly upload a configuration directory when creating a collect
 bin/solr create -c mycollection -d _default
 ----
 
-The create command will upload a copy of the `_default` configuration directory to ZooKeeper under `/configs/mycollection`. Refer to the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> page for more details about the create command for creating collections.
+The create command will upload a copy of the `_default` configuration directory to ZooKeeper under `/configs/mycollection`. Refer to the <<solr-control-script-reference.adoc#,Solr Control Script Reference>> page for more details about the create command for creating collections.
 
-Once a configuration directory has been uploaded to ZooKeeper, you can update them using the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>>
+Once a configuration directory has been uploaded to ZooKeeper, you can update them using the <<solr-control-script-reference.adoc#,Solr Control Script>>
 
 IMPORTANT: It's a good idea to keep these files under version control.
 
 
 == Uploading Configuration Files using bin/solr or SolrJ
 
-In production situations, <<config-sets.adoc#config-sets,Configsets>> can also be uploaded to ZooKeeper independent of collection creation using either Solr's <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> or SolrJ.
+In production situations, <<config-sets.adoc#,Configsets>> can also be uploaded to ZooKeeper independent of collection creation using either Solr's <<solr-control-script-reference.adoc#,Solr Control Script>> or SolrJ.
 
 The below command can be used to upload a new configset using the bin/solr script.
 

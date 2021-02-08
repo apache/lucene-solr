@@ -18,7 +18,7 @@
 
 If you use https://prometheus.io[Prometheus] and https://grafana.com[Grafana] for metrics storage and data visualization, Solr includes a Prometheus exporter to collect metrics and other data.
 
-A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from <<metrics-reporting.adoc#metrics-api,Metrics API>>, but also facet counts which come from <<searching.adoc#searching,Searching>> and responses to <<collections-api.adoc#collections-api,Collections API>> commands and <<ping.adoc#ping,PingRequestHandler>> requests.
+A Prometheus exporter (`solr-exporter`) allows users to monitor not only Solr metrics which come from <<metrics-reporting.adoc#metrics-api,Metrics API>>, but also facet counts which come from <<searching.adoc#,Searching>> and responses to <<collections-api.adoc#,Collections API>> commands and <<ping.adoc#,PingRequestHandler>> requests.
 
 This graphic provides a more detailed view:
 
@@ -143,11 +143,11 @@ All <<#command-line-parameters,command line parameters>> are able to be provided
 
 === Getting Metrics from a Secured SolrCloud
 
-Your SolrCloud might be secured by measures described in <<securing-solr.adoc#securing-solr,Securing Solr>>.
-The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#using-solrj,SolrJ>>.
+Your SolrCloud might be secured by measures described in <<securing-solr.adoc#,Securing Solr>>.
+The security configuration can be injected into `solr-exporter` using environment variables in a fashion similar to other clients using <<using-solrj.adoc#,SolrJ>>.
 This is possible because the main script picks up <<Environment Variable Options>>  and passes them on to the Java process.
 
-Example for a SolrCloud instance secured by <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>>, <<enabling-ssl.adoc#enabling-ssl,SSL>> and <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>:
+Example for a SolrCloud instance secured by <<basic-authentication-plugin.adoc#,Basic Authentication>>, <<enabling-ssl.adoc#,SSL>> and <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>:
 
 Suppose you have a file `basicauth.properties` with the Solr Basic-Auth credentials:
 
@@ -319,10 +319,10 @@ The `solr-exporter` configuration file always starts and closes with two simple 
 Between these elements, the data the `solr-exporter` should request is defined. There are several possible types of requests to make:
 
 [horizontal]
-`<ping>`:: Scrape the response to a <<ping.adoc#ping,PingRequestHandler>> request.
+`<ping>`:: Scrape the response to a <<ping.adoc#,PingRequestHandler>> request.
 `<metrics>`:: Scrape the response to a <<metrics-reporting.adoc#metrics-api,Metrics API>> request.
-`<collections>`:: Scrape the response to a <<collections-api.adoc#collections-api,Collections API>> request.
-`<search>`:: Scrape the response to a <<searching.adoc#searching,search>> request.
+`<collections>`:: Scrape the response to a <<collections-api.adoc#,Collections API>> request.
+`<search>`:: Scrape the response to a <<searching.adoc#,search>> request.
 
 Within each of these types, we need to define the query and how to work with the response. To do this, we define two additional elements:
 

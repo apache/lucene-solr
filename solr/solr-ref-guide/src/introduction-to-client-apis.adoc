@@ -26,4 +26,4 @@ Clients use Solr's five fundamental operations to work with Solr. The operations
 
 Queries are executed by creating a URL that contains all the query parameters. Solr examines the request URL, performs the query, and returns the results. The other operations are similar, although in certain cases the HTTP request is a POST operation and contains information beyond whatever is included in the request URL. An index operation, for example, may contain a document in the body of the request.
 
-Solr also features an EmbeddedSolrServer that offers a Java API without requiring an HTTP connection. For details, see <<using-solrj.adoc#using-solrj,Using SolrJ>>.
+Solr also features an EmbeddedSolrServer that offers a Java API without requiring an HTTP connection. For details, see <<using-solrj.adoc#,Using SolrJ>>.

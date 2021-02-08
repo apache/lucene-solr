@@ -18,7 +18,7 @@
 
 The `solr.xml` file defines some global configuration options that apply to all or many cores.
 
-This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>>.
+This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#,Defining core.properties>>.
 
 == Defining solr.xml
 
@@ -160,7 +160,7 @@ In SolrCloud mode, the URL of the ZooKeeper host that Solr should use for cluste
 If `TRUE`, node names are not based on the address of the node, but on a generic name that identifies the core. When a different machine takes over serving that core things will be much easier to understand.
 
 `zkCredentialsProvider` & `zkACLProvider`::
-Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
 
 
 === The <logging> Element

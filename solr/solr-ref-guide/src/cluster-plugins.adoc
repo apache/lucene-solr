@@ -69,7 +69,15 @@ Example plugin configuration:
 curl -X POST -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
-        "class": "org.apache.solr.cluster.placement.impl.CollectionsRepairEventListener"
+        "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+        "config": {
+          "minimalFreeDiskGB": 20,
+          "prioritizedFreeDiskGB": 100,
+          "withCollection": {
+            "A_primary": "A_secondary",
+            "B_primary": "B_secondary"
+          }
+        }
     }}'
   http://localhost:8983/api/cluster/plugin
 ----

@@ -140,7 +140,7 @@ The spellchecker can be configured with a traditional checker (i.e., `DirectSolr
 
 === Add It to a Request Handler
 
-Queries will be sent to a <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,RequestHandler>>. If every request should generate a suggestion, then you would add the following to the `requestHandler` that you are using:
+Queries will be sent to a <<query-syntax-and-parsing.adoc#,RequestHandler>>. If every request should generate a suggestion, then you would add the following to the `requestHandler` that you are using:
 
 [source,xml]
 ----
@@ -303,7 +303,7 @@ Results:
 The `SpellCheckComponent` also supports spellchecking on distributed indexes. If you are using the SpellCheckComponent on a request handler other than "/select", you must provide the following two parameters:
 
 `shards`::
-Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>
+Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#,Distributed Search with Index Sharding>>
 
 `shards.qt`::
 Specifies the request handler Solr uses for requests to shards. This parameter is not required for the `/select` request handler.

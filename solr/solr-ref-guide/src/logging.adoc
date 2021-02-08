@@ -32,4 +32,4 @@ When you select the *Level* link on the left, you see the hierarchy of classpath
 .Log level selection
 image::images/logging/level_menu.png[image,width=589,height=250]
 
-For an explanation of the various logging levels, see <<configuring-logging.adoc#configuring-logging,Configuring Logging>>.
+For an explanation of the various logging levels, see <<configuring-logging.adoc#,Configuring Logging>>.

@@ -31,7 +31,7 @@ Clusters discovered for a given query can be perceived as _dynamic facets_. This
 
 image::images/result-clustering/carrot2.png[image,width=900]
 
-The query issued to the system was _Apache Solr_. It seems clear that faceting could not yield a similar set of groups, although the goals of both techniques are similar—to let the user explore the set of search results and either rephrase the query or narrow the focus to a subset of current documents. Clustering is also similar to <<result-grouping.adoc#result-grouping,Result Grouping>> in that it can help to look deeper into search results, beyond the top few hits.
+The query issued to the system was _Apache Solr_. It seems clear that faceting could not yield a similar set of groups, although the goals of both techniques are similar—to let the user explore the set of search results and either rephrase the query or narrow the focus to a subset of current documents. Clustering is also similar to <<result-grouping.adoc#,Result Grouping>> in that it can help to look deeper into search results, beyond the top few hits.
 
 == Configuration Quick Starter
 

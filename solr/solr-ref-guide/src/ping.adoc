@@ -21,7 +21,7 @@ Choosing Ping under a core name issues a `ping` request to check whether the cor
 .Ping Option in Core Dropdown
 image::images/ping/ping.png[image,width=171,height=195]
 
-The search executed by a Ping is configured with the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>. See <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>> for the paramset to use for the `/admin/ping` endpoint.
+The search executed by a Ping is configured with the <<request-parameters-api.adoc#,Request Parameters API>>. See <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>> for the paramset to use for the `/admin/ping` endpoint.
 
 The Ping option doesn't open a page, but the status of the request can be seen on the core overview page shown when clicking on a collection name. The length of time the request has taken is displayed next to the Ping option, in milliseconds.
 
