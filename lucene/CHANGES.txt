@@ -7,11 +7,12 @@ http://s.apache.org/luceneversions
 
 New Features
 
+* LUCENE-9476: Add new getBulkPath API to DirectoryTaxonomyReader to more efficiently retrieve FacetLabels for multiple
+  facet ordinals at once (Gautam Worah, Mike McCandless)
+
 * LUCENE-9322: Vector-valued fields, Lucene90 Codec (Mike Sokolov, Julie Tibshirani, Tomoko Uchida)
 
 * LUCENE-9004: Approximate nearest vector search via NSW graphs
-
-* LUCENE-9476: DirectoryTaxonomyReader now provides a getBulkPath API (Gautam Worah)
 
 System Requirements
 

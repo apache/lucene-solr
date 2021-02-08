@@ -85,7 +85,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   // Opens up a pre-existing index and tries to run getBulkPath on it
-  public void testBulkPathFailsOnOlderCodec() throws Exception {
+  public void testGetBulkPathOnOlderCodec() throws Exception {
     Path indexDir = createTempDir(oldTaxonomyIndexName);
     TestUtil.unzip(getDataInputStream(oldTaxonomyIndexName + ".zip"), indexDir);
     Directory dir = newFSDirectory(indexDir);
@@ -99,9 +99,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     DirectoryTaxonomyReader reader = new DirectoryTaxonomyReader(writer);
 
-    int[] ordinals = new int[] {reader.getOrdinal(new FacetLabel("a")), reader.getOrdinal(cp_b)};
+    FacetLabel[] facetLabels = {new FacetLabel("a"), cp_b};
+    int[] ordinals =
+        new int[] {reader.getOrdinal(facetLabels[0]), reader.getOrdinal(facetLabels[1])};
     // The zip file already contains a category "a" stored with the older StoredFields codec
-    expectThrows(IOException.class, () -> reader.getBulkPath(ordinals));
+    assertArrayEquals(facetLabels, reader.getBulkPath(ordinals));
     reader.close();
     writer.close();
     dir.close();
