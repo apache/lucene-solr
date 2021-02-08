@@ -391,9 +391,9 @@ public class Dictionary {
       } else if ("BREAK".equals(firstWord)) {
         breaks = parseBreaks(reader, line);
       } else if ("WORDCHARS".equals(firstWord)) {
-        wordChars = singleArgument(reader, line);
+        wordChars = firstArgument(reader, line);
       } else if ("TRY".equals(firstWord)) {
-        tryChars = singleArgument(reader, line);
+        tryChars = firstArgument(reader, line);
       } else if ("REP".equals(firstWord)) {
         int count = parseNum(reader, line);
         for (int i = 0; i < count; i++) {
@@ -469,7 +469,7 @@ public class Dictionary {
   }
 
   private List<String> parseMapEntry(LineNumberReader reader, String line) throws ParseException {
-    String unparsed = singleArgument(reader, line);
+    String unparsed = firstArgument(reader, line);
     List<String> mapEntry = new ArrayList<>();
     for (int j = 0; j < unparsed.length(); j++) {
       if (unparsed.charAt(j) == '(') {
@@ -509,6 +509,10 @@ public class Dictionary {
 
   private String singleArgument(LineNumberReader reader, String line) throws ParseException {
     return splitBySpace(reader, line, 2)[1];
+  }
+
+  private String firstArgument(LineNumberReader reader, String line) throws ParseException {
+    return splitBySpace(reader, line, 2, Integer.MAX_VALUE)[1];
   }
 
   private String[] splitBySpace(LineNumberReader reader, String line, int expectedParts)
@@ -615,7 +619,12 @@ public class Dictionary {
     boolean crossProduct = args[2].equals("Y");
     boolean isSuffix = conditionPattern.equals(SUFFIX_CONDITION_REGEX);
 
-    int numLines = Integer.parseInt(args[3]);
+    int numLines;
+    try {
+      numLines = Integer.parseInt(args[3]);
+    } catch (NumberFormatException e) {
+      return;
+    }
     affixData = ArrayUtil.grow(affixData, currentAffix * 4 + numLines * 4);
 
     for (int i = 0; i < numLines; i++) {
@@ -905,14 +914,15 @@ public class Dictionary {
         || ch == MORPH_SEPARATOR; // BINARY EXECUTABLES EMBEDDED IN ZULU DICTIONARIES!!!!!!!
   }
 
-  static int morphBoundary(String line) {
+  private static int morphBoundary(String line) {
     int end = indexOfSpaceOrTab(line, 0);
     if (end == -1) {
       return line.length();
     }
     while (end >= 0 && end < line.length()) {
       if (line.charAt(end) == '\t'
-          || end + 3 < line.length()
+          || end > 0
+              && end + 3 < line.length()
               && Character.isLetter(line.charAt(end + 1))
               && Character.isLetter(line.charAt(end + 2))
               && line.charAt(end + 3) == ':') {
