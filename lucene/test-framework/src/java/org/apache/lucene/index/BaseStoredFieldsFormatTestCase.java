@@ -839,4 +839,38 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     IOUtils.close(iw, ir, everything);
     IOUtils.close(dirs);
   }
+
+  public void testPrefetch() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig config = newIndexWriterConfig().setCodec(getCodec());
+    IndexWriter writer = new IndexWriter(dir, config);
+    int numDocs = atLeast(100);
+    Map<Integer, Document> docs = new HashMap<>();
+    for (int i = 0; i < numDocs; i++) {
+      Document doc = new Document();
+      int numFields = random().nextInt(rarely() ? 1000 : 100);
+      doc.add(new StringField("num_fields", Integer.toString(numFields), Store.NO));
+      for (int f = 0; f < numFields; f++) {
+        String str = "doc=" + i + "f=" + f;
+        doc.add(new StringField("field-" + f, str, Store.YES));
+      }
+      writer.addDocument(doc);
+      docs.put(i, doc);
+    }
+    final DirectoryReader reader = new RandomPrefetchStoredFieldsCodecDirectoryReader(DirectoryReader.open(writer));
+    int iters = atLeast(100);
+    for (int i = 0; i < iters; i++) {
+      int docId = random().nextInt(numDocs);
+      int numFields = Integer.parseInt(docs.get(docId).getField("num_fields").stringValue());
+      Document doc = reader.document(docId);
+      assertEquals(numFields, doc.getFields().size());
+      for (int f = 0; f < numFields; f++) {
+        String expected = "doc=" + docId + "f=" + f;
+        IndexableField field = doc.getField("field-" + f);
+        assertNotNull(field);
+        assertEquals(expected, field.stringValue());
+      }
+    }
+    IOUtils.close(reader, writer, dir);
+  }
 }

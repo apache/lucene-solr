@@ -582,7 +582,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
                   + "]");
         }
         if (range.getFromDocId() < range.getToDocId()) {
-          prefetch(range.getFromDocId(), range.getFromDocId());
+          prefetch(range.getFromDocId(), range.getToDocId());
         }
       }
     }
@@ -617,7 +617,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
             "Corrupted: expected fetch length = " + length + ", got " + bytes.length, fieldsStream);
       }
       fetchedFromDocId = fromDocId;
-      fetchedFromDocId = toDocId;
+      fetchedToDocId = toDocId;
     }
 
     /**

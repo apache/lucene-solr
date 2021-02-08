@@ -790,7 +790,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     return r;
   }
 
-  private static class RandomPrefetchStoredFieldsCodecDirectoryReader
+  protected static class RandomPrefetchStoredFieldsCodecDirectoryReader
       extends FilterDirectoryReader {
     RandomPrefetchStoredFieldsCodecDirectoryReader(DirectoryReader in) throws IOException {
       super(
@@ -824,16 +824,12 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
           @Override
           protected StoredFieldsReader initialValue() {
             final StoredFieldsReader fieldsReader = in.getFieldsReader();
-            if (random().nextBoolean()) {
-              return fieldsReader.getInstanceWithPrefetchOptions(
-                  (minDocId, maxDocId, currentDocId) -> {
-                    final int fromDocId = minDocId + random().nextInt(currentDocId - minDocId + 1);
-                    final int toDocId = fromDocId + random().nextInt(maxDocId - fromDocId + 1);
-                    return new StoredFieldsReader.PrefetchRange(fromDocId, toDocId);
-                  });
-            } else {
-              return fieldsReader;
-            }
+            return fieldsReader.getInstanceWithPrefetchOptions(
+                    (minDocId, maxDocId, currentDocId) -> {
+                      final int fromDocId = minDocId + random().nextInt(currentDocId - minDocId + 1);
+                      final int toDocId = fromDocId + random().nextInt(maxDocId - fromDocId + 1);
+                      return new StoredFieldsReader.PrefetchRange(fromDocId, toDocId);
+                    });
           }
         };
 
