@@ -1028,11 +1028,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               + " parameter or as a default repository property or as a cluster property.");
         }
       }
-
+      log.debug("Provided backup location is: {}", location);
       boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
 
       // Check if the specified location is valid for this repository.
       final URI uri = repository.createURI(location);
+      log.debug("Provided backup location uri is: {}", uri);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");

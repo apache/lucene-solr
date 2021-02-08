@@ -19,6 +19,7 @@ package org.apache.solr.core.backup.repository;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileVisitResult;
@@ -42,6 +43,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 
 import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of Solr indexes to a
@@ -49,6 +52,8 @@ import com.google.common.base.Preconditions;
  * interface e.g. NFS).
  */
 public class LocalFileSystemRepository implements BackupRepository {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @SuppressWarnings("rawtypes")
   private NamedList config = null;
 
@@ -66,23 +71,26 @@ public class LocalFileSystemRepository implements BackupRepository {
   @Override
   public URI createURI(String location) {
     Objects.requireNonNull(location);
+    log.debug("Creating URI from location: {}", location);
 
     URI result = null;
     try {
       result = new URI(location);
       if (!result.isAbsolute()) {
-        result = Paths.get(location).toUri();
+        result = Paths.get(result).toUri();
       }
     } catch (URISyntaxException ex) {
       result = Paths.get(location).toUri();
     }
 
+    log.debug("Created URI is: {}", result);
     return result;
   }
 
   @Override
   public URI resolve(URI baseUri, String... pathComponents) {
     Preconditions.checkArgument(pathComponents.length > 0);
+    log.debug("Resolving URI from base: {}", baseUri);
 
     Path result = Paths.get(baseUri);
     for (int i = 0; i < pathComponents.length; i++) {
@@ -95,6 +103,9 @@ public class LocalFileSystemRepository implements BackupRepository {
 
     }
 
+    if (log.isDebugEnabled()) {
+      log.debug("Resolved URI is: {}", result.toUri());
+    }
     return result.toUri();
   }
 
@@ -125,6 +136,7 @@ public class LocalFileSystemRepository implements BackupRepository {
 
   @Override
   public boolean exists(URI path) throws IOException {
+    log.debug("Checking whether URI exists: {}", path);
     return Files.exists(Paths.get(path));
   }
 

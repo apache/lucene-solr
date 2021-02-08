@@ -90,7 +90,11 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     try (BackupRepository repository = cc.newBackupRepository(repo)) {
 
       // Backup location
+      if (log.isDebugEnabled()) {
+        log.debug("Backup location received by overseer is: {}", message.getStr(CoreAdminParams.BACKUP_LOCATION));
+      }
       URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
+      log.debug("Resolved backup URI in overseer is: {}", location);
       final URI backupPath = createAndValidateBackupPath(repository, incremental, location, backupName, collectionName);
 
       BackupManager backupMgr = (incremental) ?
@@ -146,6 +150,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
   private URI createAndValidateBackupPath(BackupRepository repository, boolean incremental, URI location, String backupName, String collection) throws IOException{
     final URI backupNamePath = repository.resolve(location, backupName);
+    log.debug("Location {} and backup-name {} combine to make path {}", location, backupName, backupNamePath);
 
     if ( (!incremental) && repository.exists(backupNamePath)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup directory already exists: " + backupNamePath);
