@@ -111,4 +111,13 @@ public class TestSimplifications extends LuceneTestCase {
             Intervals.term("a"), Intervals.term("b"), Intervals.term("c"), Intervals.term("d")),
         actual);
   }
+
+  public void testMinShouldMatchSimplifications() {
+    IntervalsSource expected = Intervals.unordered(Intervals.term("a"), Intervals.term("b"));
+    assertEquals(expected, Intervals.atLeast(2, Intervals.term("a"), Intervals.term("b")));
+
+    assertEquals(
+        "NOMATCH(Too few sources to match minimum of [3]: [a, b])",
+        Intervals.atLeast(3, Intervals.term("a"), Intervals.term("b")).toString());
+  }
 }
