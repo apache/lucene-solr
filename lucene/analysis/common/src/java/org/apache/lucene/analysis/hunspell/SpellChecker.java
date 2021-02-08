@@ -22,12 +22,14 @@ import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -438,7 +440,7 @@ public class SpellChecker {
         result.add(candidate);
       }
     }
-    return new ArrayList<>(result);
+    return result.stream().map(this::cleanOutput).collect(Collectors.toList());
   }
 
   private String adjustSuggestionCase(String candidate, WordCase original) {
@@ -479,5 +481,17 @@ public class SpellChecker {
       chunkStart = chunkEnd + 1;
     }
     return result;
+  }
+
+  private String cleanOutput(String s) {
+    if (!dictionary.needsOutputCleaning) return s;
+
+    try {
+      StringBuilder sb = new StringBuilder(s);
+      Dictionary.applyMappings(dictionary.oconv, sb);
+      return sb.toString();
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
   }
 }
