@@ -51,7 +51,7 @@ When using this parameter internal requests are sent by using HTTP/1.1.
 ./bin/solr start -c -Dsolr.http1=true -z localhost:2481/solr -s /path/to/solr/home
 ----
 +
-Note the above command *must* be customized for your environment. The section <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> has all the possible options. If you are running Solr as a service, you may prefer to review the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
+Note the above command *must* be customized for your environment. The section <<solr-control-script-reference.adoc#,Solr Control Script Reference>> has all the possible options. If you are running Solr as a service, you may prefer to review the section <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>.
 
 . When all nodes have been upgraded to 8.0, restart each one without the `-Dsolr.http1` parameter.
 
@@ -59,7 +59,7 @@ Note the above command *must* be customized for your environment. The section <<
 
 It is always strongly recommended that you fully reindex your documents after a major version upgrade.
 
-Solr has a new section of the Reference Guide, <<reindexing.adoc#reindexing,Reindexing>> which covers several strategies for how to reindex.
+Solr has a new section of the Reference Guide, <<reindexing.adoc#,Reindexing>> which covers several strategies for how to reindex.
 
 [#new-features-8]
 == New Features & Enhancements
@@ -134,8 +134,8 @@ then you must do so with a delete-by-query technique.
 * Solr has a new field in the `\_default` configset, called `_nest_path_`. This field stores the path of the document
 in the hierarchy for non-root documents.
 
-See the sections <<indexing-nested-documents.adoc#indexing-nested-documents,Indexing Nested Documents>> and
-<<searching-nested-documents.adoc#searching-nested-documents,Searching Nested Documents>> for more information
+See the sections <<indexing-nested-documents.adoc#,Indexing Nested Documents>> and
+<<searching-nested-documents.adoc#,Searching Nested Documents>> for more information
 and configuration details.
 
 [#config-changes-8]
@@ -159,8 +159,8 @@ See also the section <<other-schema-elements.adoc#similarity,Similarity>> for mo
 * Memory codecs have been removed from Lucene (`MemoryPostings`, `MemoryDocValues`) and are no longer available in Solr.
 If you used `postingsFormat="Memory"` or `docValuesFormat="Memory"` on any field or field type configuration then either remove that setting to use the default or experiment with one of the other options.
 +
-For more information on defining a codec, see the section <<codec-factory.adoc#codec-factory,Codec Factory>>;
-for more information on field properties, see the section <<field-type-definitions-and-properties.adoc#field-type-definitions-and-properties, Field Type Definitions and Properties>>.
+For more information on defining a codec, see the section <<codec-factory.adoc#,Codec Factory>>;
+for more information on field properties, see the section <<field-type-definitions-and-properties.adoc#, Field Type Definitions and Properties>>.
 
 *LowerCaseTokenizer*
 
@@ -191,13 +191,13 @@ This syntax has been removed entirely and if sent to Solr it will now produce an
 The pattern language is very similar but not the same.
 Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and that's it.
 +
-For the current recommended set of patterns in schemaless mode, see the section <<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>, or simply examine the `_default` configset (found in `server/solr/configsets`).
+For the current recommended set of patterns in schemaless mode, see the section <<schemaless-mode.adoc#,Schemaless Mode>>, or simply examine the `_default` configset (found in `server/solr/configsets`).
 +
 Also note that the default set of date patterns (formats) have expanded from previous releases to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika).
 
 *Solr Cell*
 
-* The extraction contrib (<<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Solr Cell>>) no longer does any date parsing, and thus no longer supports the `date.formats` parameter. To ensure date strings are properly parsed, use the `ParseDateFieldUpdateProcessorFactory` in your update chain. This update request processor is found by default with the "parse-date" update processor when running Solr in "<<schemaless-mode.adoc#set-the-default-updaterequestprocessorchain,schemaless mode>>".
+* The extraction contrib (<<uploading-data-with-solr-cell-using-apache-tika.adoc#,Solr Cell>>) no longer does any date parsing, and thus no longer supports the `date.formats` parameter. To ensure date strings are properly parsed, use the `ParseDateFieldUpdateProcessorFactory` in your update chain. This update request processor is found by default with the "parse-date" update processor when running Solr in "<<schemaless-mode.adoc#set-the-default-updaterequestprocessorchain,schemaless mode>>".
 
 *Langid Contrib*
 
@@ -209,7 +209,7 @@ The following changes impact query behavior.
 
 *Highlighting*
 
-* The Unified Highlighter parameter `hl.weightMatches` now defaults to `true`. See the section <<highlighting.adoc#highlighting,Highlighting>> for more information about Highlighter parameters.
+* The Unified Highlighter parameter `hl.weightMatches` now defaults to `true`. See the section <<highlighting.adoc#,Highlighting>> for more information about Highlighter parameters.
 
 *eDisMax Query Parser*
 
@@ -276,8 +276,8 @@ When upgrading to Solr 7.7.x, users should be aware of the following major chang
 *Admin UI*
 
 * The Admin UI now presents a login screen for any users with authentication enabled on their cluster.
-Clusters with <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication>> will prompt users to enter a username and password.
-On clusters configured to use <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication>>, authentication is handled transparently by the browser as before, but if authentication fails, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
+Clusters with <<basic-authentication-plugin.adoc#,Basic Authentication>> will prompt users to enter a username and password.
+On clusters configured to use <<kerberos-authentication-plugin.adoc#,Kerberos Authentication>>, authentication is handled transparently by the browser as before, but if authentication fails, users will be directed to configure their browser to provide an appropriate Kerberos ticket.
 +
 The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests were subject to authentication prior to 7.7 and still are today.  The login screen changes only the user experience of providing this authentication.
 
@@ -344,7 +344,7 @@ While most users are still encouraged to use the `NRTCachingDirectoryFactory`, w
 +
 For more information about the new directory factory, see the Jira issue https://issues.apache.org/jira/browse/LUCENE-8438[LUCENE-8438].
 +
-For more information about the directory factory configuration in Solr, see the section <<datadir-and-directoryfactory-in-solrconfig.adoc#datadir-and-directoryfactory-in-solrconfig,DataDir and DirectoryFactory in SolrConfig>>.
+For more information about the directory factory configuration in Solr, see the section <<datadir-and-directoryfactory-in-solrconfig.adoc#,DataDir and DirectoryFactory in SolrConfig>>.
 
 === Solr 7.5
 
@@ -373,7 +373,7 @@ The `TieredMergePolicy` will also reclaim resources from segments that exceed `m
 
 * Solr's logging configuration file is now located in `server/resources/log4j2.xml` by default.
 
-* A bug for Windows users has been corrected. When using Solr's examples (`bin/solr start -e`) log files will now be put in the correct location (`example/` instead of `server`). See also <<installing-solr.adoc#solr-examples,Solr Examples>> and <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for more information.
+* A bug for Windows users has been corrected. When using Solr's examples (`bin/solr start -e`) log files will now be put in the correct location (`example/` instead of `server`). See also <<installing-solr.adoc#solr-examples,Solr Examples>> and <<solr-control-script-reference.adoc#,Solr Control Script Reference>> for more information.
 
 
 === Solr 7.4
@@ -384,13 +384,13 @@ When upgrading to Solr 7.4, users should be aware of the following major changes
 
 *Logging*
 
-* Solr now uses Log4j v2.11. The Log4j configuration is now in `log4j2.xml` rather than `log4j.properties` files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let Log4j handle rotation of Solr logs at startup, and `bin/solr` start scripts will no longer attempt this nor move existing console or garbage collection logs into `logs/archived` either. See <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more details about Solr logging.
+* Solr now uses Log4j v2.11. The Log4j configuration is now in `log4j2.xml` rather than `log4j.properties` files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let Log4j handle rotation of Solr logs at startup, and `bin/solr` start scripts will no longer attempt this nor move existing console or garbage collection logs into `logs/archived` either. See <<configuring-logging.adoc#,Configuring Logging>> for more details about Solr logging.
 
 * Configuring `slowQueryThresholdMillis` now logs slow requests to a separate file named `solr_slow_requests.log`. Previously they would get logged in the `solr.log` file.
 
 *Legacy Scaling (non-SolrCloud)*
 
-* In the <<index-replication.adoc#index-replication,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
+* In the <<index-replication.adoc#,leader-follower model>> of scaling Solr, a follower no longer commits an empty index when a completely new index is detected on leader during replication. To return to the previous behavior pass `false` to `skipCommitOnLeaderVersionZero` in the follower section of replication handler configuration, or pass it to the `fetchindex` command.
 
 If you are upgrading from a version earlier than Solr 7.3, please see previous version notes below.
 
@@ -418,7 +418,7 @@ When upgrading to Solr 7.3, users should be aware of the following major changes
 
 *Logging*
 
-* The default Solr log file size and number of backups have been raised to 32MB and 10 respectively. See the section <<configuring-logging.adoc#configuring-logging,Configuring Logging>> for more information about how to configure logging.
+* The default Solr log file size and number of backups have been raised to 32MB and 10 respectively. See the section <<configuring-logging.adoc#,Configuring Logging>> for more information about how to configure logging.
 
 *SolrCloud*
 
@@ -430,7 +430,7 @@ This means to upgrade to Solr 8 in the future, you will need to be on Solr 7.3 o
 
 *Spatial*
 
-* If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0. This new version of JTS is now dual-licensed to include a BSD style license. See the section on <<spatial-search.adoc#spatial-search,Spatial Search>> for more information.
+* If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0. This new version of JTS is now dual-licensed to include a BSD style license. See the section on <<spatial-search.adoc#,Spatial Search>> for more information.
 
 *Highlighting*
 
@@ -446,7 +446,7 @@ When upgrading to Solr 7.2, users should be aware of the following major changes
 
 *Local Parameters*
 
-* Starting a query string with <<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameters>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local parameters will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
+* Starting a query string with <<local-parameters-in-queries.adoc#,local parameters>> `{!myparser ...}` is used to switch from one query parser to another, and is intended for use by Solr system developers, not end users doing searches. To reduce negative side-effects of unintended hack-ability, Solr now limits the cases when local parameters will be parsed to only contexts in which the default parser is "<<other-parsers.adoc#lucene-query-parser,lucene>>" or "<<other-parsers.adoc#function-query-parser,func>>".
 +
 So, if `defType=edismax` then `q={!myparser ...}` won't work. In that example, put the desired query parser into the `defType` parameter.
 +
@@ -503,4 +503,4 @@ See the section <<metrics-reporting.adoc#shard-and-cluster-reporters,Shard and C
 
 * In the XML query parser (`defType=xmlparser` or `{!xmlparser ... }`) the resolving of external entities is now disallowed by default.
 
-If you are upgrading from a version earlier than Solr 7.0, please see <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
+If you are upgrading from a version earlier than Solr 7.0, please see <<major-changes-in-solr-7.adoc#,Major Changes in Solr 7>> before starting your upgrade.

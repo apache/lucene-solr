@@ -19,6 +19,7 @@ package org.apache.lucene.backward_codecs.lucene70;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWPostingsFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
@@ -30,12 +31,12 @@ public final class Lucene70RWCodec extends Lucene70Codec {
 
   private final PostingsFormat defaultPF = new Lucene50RWPostingsFormat();
   private final PostingsFormat postingsFormat =
-      new PerFieldPostingsFormat() {
-        @Override
-        public PostingsFormat getPostingsFormatForField(String field) {
-          return defaultPF;
-        }
-      };
+          new PerFieldPostingsFormat() {
+            @Override
+            public PostingsFormat getPostingsFormatForField(String field) {
+              return defaultPF;
+            }
+          };
 
   /** Sole constructor. */
   public Lucene70RWCodec() {}
@@ -43,6 +44,11 @@ public final class Lucene70RWCodec extends Lucene70Codec {
   @Override
   public SegmentInfoFormat segmentInfoFormat() {
     return new Lucene70RWSegmentInfoFormat();
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return new Lucene70RWNormsFormat();
   }
 
   @Override
@@ -56,7 +62,7 @@ public final class Lucene70RWCodec extends Lucene70Codec {
   }
 
   @Override
-  public final CompoundFormat compoundFormat() {
+  public CompoundFormat compoundFormat() {
     return new Lucene50RWCompoundFormat();
   }
 }

@@ -21,18 +21,18 @@ An important aspect of Solr is that all operations and deployment can be done on
 
 Common administrative tasks include:
 
-<<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>>: This section provides information about all of the options available to the `bin/solr` / `bin\solr.cmd` scripts, which can start and stop Solr, configure authentication, and create or remove collections and cores.
+<<solr-control-script-reference.adoc#,Solr Control Script Reference>>: This section provides information about all of the options available to the `bin/solr` / `bin\solr.cmd` scripts, which can start and stop Solr, configure authentication, and create or remove collections and cores.
 
-<<solr-configuration-files.adoc#solr-configuration-files,Solr Configuration Files>>: Overview of the installation layout and major configuration files.
+<<solr-configuration-files.adoc#,Solr Configuration Files>>: Overview of the installation layout and major configuration files.
 
-<<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>: Detailed steps to help you install Solr as a service and take your application to production.
+<<taking-solr-to-production.adoc#,Taking Solr to Production>>: Detailed steps to help you install Solr as a service and take your application to production.
 
-<<making-and-restoring-backups.adoc#making-and-restoring-backups,Making and Restoring Backups>>: Describes backup strategies for your Solr indexes.
+<<making-and-restoring-backups.adoc#,Making and Restoring Backups>>: Describes backup strategies for your Solr indexes.
 
-<<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>>: How to use HDFS to store your Solr indexes and transaction logs.
+<<running-solr-on-hdfs.adoc#,Running Solr on HDFS>>: How to use HDFS to store your Solr indexes and transaction logs.
 
-<<aws-solrcloud-tutorial.adoc#aws-solrcloud-tutorial,SolrCloud on AWS EC2>>: A tutorial on deploying Solr in Amazon Web Services (AWS) using EC2 instances.
+<<aws-solrcloud-tutorial.adoc#,SolrCloud on AWS EC2>>: A tutorial on deploying Solr in Amazon Web Services (AWS) using EC2 instances.
 
-<<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>: Information for upgrading a production SolrCloud cluster.
+<<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>: Information for upgrading a production SolrCloud cluster.
 
-<<solr-upgrade-notes.adoc#solr-upgrade-notes,Solr Upgrade Notes>>: Information about changes made in Solr releases.
+<<solr-upgrade-notes.adoc#,Solr Upgrade Notes>>: Information about changes made in Solr releases.

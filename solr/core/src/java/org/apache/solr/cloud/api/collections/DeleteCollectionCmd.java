@@ -20,7 +20,7 @@ package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,6 +59,9 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Set<String> okayExceptions = Collections.singleton(NonExistentCoreException.class.getName());
+
   private final OverseerCollectionMessageHandler ocmh;
   private final TimeSource timeSource;
 
@@ -132,8 +135,6 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       String asyncId = message.getStr(ASYNC);
 
-      Set<String> okayExceptions = new HashSet<>(1);
-      okayExceptions.add(NonExistentCoreException.class.getName());
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
@@ -152,7 +153,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
-      zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, (collectionState) -> collectionState == null);
+      zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, Objects::isNull);
 
       // we can delete any remaining unique aliases
       if (!aliasReferences.isEmpty()) {

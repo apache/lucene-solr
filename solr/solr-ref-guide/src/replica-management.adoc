@@ -76,7 +76,7 @@ The number of `tlog` replicas that should be created (optional, defaults to 1 if
 The number of `pull` replicas that should be created (optional, defaults to 1 if `type` is `pull` otherwise 0).
 
 `property._name_=_value_`::
-Set core property _name_ to _value_. See <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details about supported properties and values.
+Set core property _name_ to _value_. See <<defining-core-properties.adoc#,Defining core.properties>> for details about supported properties and values.
 
 [WARNING]
 ====

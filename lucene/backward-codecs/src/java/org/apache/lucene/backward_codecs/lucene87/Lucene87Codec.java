@@ -19,6 +19,7 @@ package org.apache.lucene.backward_codecs.lucene87;
 
 import java.util.Objects;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50CompoundFormat;
+import org.apache.lucene.backward_codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.backward_codecs.lucene60.Lucene60FieldInfosFormat;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
@@ -33,7 +34,6 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
@@ -61,8 +61,8 @@ public class Lucene87Codec extends Codec {
     BEST_SPEED(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, Lucene80DocValuesFormat.Mode.BEST_SPEED),
     /** Trade retrieval speed for compression ratio. */
     BEST_COMPRESSION(
-        Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
-        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
+            Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
+            Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
 
     private final Lucene87StoredFieldsFormat.Mode storedMode;
     private final Lucene80DocValuesFormat.Mode dvMode;
@@ -82,20 +82,20 @@ public class Lucene87Codec extends Codec {
   private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat =
-      new PerFieldPostingsFormat() {
-        @Override
-        public PostingsFormat getPostingsFormatForField(String field) {
-          return Lucene87Codec.this.getPostingsFormatForField(field);
-        }
-      };
+          new PerFieldPostingsFormat() {
+            @Override
+            public PostingsFormat getPostingsFormatForField(String field) {
+              return Lucene87Codec.this.getPostingsFormatForField(field);
+            }
+          };
 
   private final DocValuesFormat docValuesFormat =
-      new PerFieldDocValuesFormat() {
-        @Override
-        public DocValuesFormat getDocValuesFormatForField(String field) {
-          return Lucene87Codec.this.getDocValuesFormatForField(field);
-        }
-      };
+          new PerFieldDocValuesFormat() {
+            @Override
+            public DocValuesFormat getDocValuesFormatForField(String field) {
+              return Lucene87Codec.this.getDocValuesFormatForField(field);
+            }
+          };
 
   private final StoredFieldsFormat storedFieldsFormat;
 

@@ -20,7 +20,7 @@ The SuggestComponent in Solr provides users with automatic suggestions for query
 
 You can use this to implement a powerful auto-suggest feature in your search application.
 
-Although it is possible to use the <<spell-checking.adoc#spell-checking,Spell Checking>> functionality to power autosuggest behavior, Solr has a dedicated http://lucene.apache.org/solr/api/solr-core/org/apache/solr/handler/component/SuggestComponent.html[SuggestComponent] designed for this functionality.
+Although it is possible to use the <<spell-checking.adoc#,Spell Checking>> functionality to power autosuggest behavior, Solr has a dedicated http://lucene.apache.org/solr/api/solr-core/org/apache/solr/handler/component/SuggestComponent.html[SuggestComponent] designed for this functionality.
 
 This approach utilizes Lucene's Suggester implementation and supports all of the lookup implementations available in Lucene.
 
@@ -30,7 +30,7 @@ The main features of this Suggester are:
 * Term dictionary pluggability, giving you the flexibility to choose the dictionary implementation
 * Distributed support
 
-The `solrconfig.xml` found in Solr's "```techproducts```" example has a Suggester implementation configured already. For more on search components, see the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandlers and SearchComponents in SolrConfig>>.
+The `solrconfig.xml` found in Solr's "```techproducts```" example has a Suggester implementation configured already. For more on search components, see the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>>.
 
 The "```techproducts```" example `solrconfig.xml` has a `suggest` search component and a `/suggest` request handler already configured. You can use that as the basis for your configuration, or create it from scratch, as detailed below.
 
@@ -78,7 +78,7 @@ If not set, the default dictionary implementation is `HighFrequencyDictionaryFac
 `field`::
 A field from the index to use as the basis of suggestion terms. If `sourceLocation` is empty (meaning any dictionary implementation other than `FileDictionaryFactory`), then terms from this field in the index will be used.
 +
-To be used as the basis for a suggestion, the field must be stored. You may want to <<copying-fields.adoc#copying-fields,use copyField rules>> to create a special 'suggest' field comprised of terms from other fields in documents. In any event, you very likely want a minimal amount of analysis on the field, so an additional option is to create a field type in your schema that only uses basic tokenizers or filters. One option for such a field type is shown here:
+To be used as the basis for a suggestion, the field must be stored. You may want to <<copying-fields.adoc#,use copyField rules>> to create a special 'suggest' field comprised of terms from other fields in documents. In any event, you very likely want a minimal amount of analysis on the field, so an additional option is to create a field type in your schema that only uses basic tokenizers or filters. One option for such a field type is shown here:
 +
 [source,xml]
 ----
@@ -349,7 +349,7 @@ When using these Suggesters in a query, you would define multiple `suggest.dicti
 
 == Adding the Suggest Request Handler
 
-After adding the search component, a request handler must be added to `solrconfig.xml`. This request handler works the <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,same as any other request handler>>, and allows you to configure default parameters for serving suggestion requests. The request handler definition must incorporate the "suggest" search component defined previously.
+After adding the search component, a request handler must be added to `solrconfig.xml`. This request handler works the <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,same as any other request handler>>, and allows you to configure default parameters for serving suggestion requests. The request handler definition must incorporate the "suggest" search component defined previously.
 
 [source,xml]
 ----

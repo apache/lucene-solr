@@ -83,7 +83,7 @@ The center point using the format "lat,lon" if latitude & longitude. Otherwise, 
 A spatial indexed field.
 
 `score`::
-(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-parameters-in-queries.adoc#local-parameters-in-queries,local parameter>>_ determines what scores will be produced. Valid values are:
+(Advanced option; not supported by LatLonType (deprecated) or PointType) If the query is used in a scoring context (e.g., as the main query in `q`), this _<<local-parameters-in-queries.adoc#,local parameter>>_ determines what scores will be produced. Valid values are:
 
 * `none`: A fixed score of 1.0. (the default)
 * `kilometers`: distance in kilometers between the field value and the specified center point
@@ -169,7 +169,7 @@ There are four distance function queries:
 * <<function-queries.adoc#hsin-function,`hsin`>>, to calculate the distance between two points on a sphere;
 * <<function-queries.adoc#sqedist-function,`sqedist`>>, to calculate the squared Euclidean distance between two points.
 
-For more information about these function queries, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
+For more information about these function queries, see the section on <<function-queries.adoc#,Function Queries>>.
 
 === geodist
 
@@ -207,7 +207,7 @@ There are other ways to do it too, like using a `{!geofilt}` in each facet.query
 
 === Boost Nearest Results
 
-Using the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>> or <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
+Using the <<the-dismax-query-parser.adoc#,DisMax>> or <<the-extended-dismax-query-parser.adoc#,Extended DisMax>>, you can combine spatial search with the boost function to boost the nearest results:
 
 [source,text]
 &q.alt=*:*&fq={!geofilt}&sfield=store&pt=45.15,-93.85&d=50&bf=recip(geodist(),2,200,20)&sort=score desc
@@ -381,7 +381,7 @@ An optional in-memory cache can be defined in `solrconfig.xml`, which should be 
            regenerator="solr.NoOpRegenerator"/>
 ----
 
-When using this field type, you will likely _not_ want to mark the field as stored because it's redundant with the DocValues data and surely larger because of the formatting (be it WKT or GeoJSON). To retrieve the spatial data in search results from DocValues, use the `[geo]` transformer -- <<transforming-result-documents.adoc#transforming-result-documents,Transforming Result Documents>>.
+When using this field type, you will likely _not_ want to mark the field as stored because it's redundant with the DocValues data and surely larger because of the formatting (be it WKT or GeoJSON). To retrieve the spatial data in search results from DocValues, use the `[geo]` transformer -- <<transforming-result-documents.adoc#,Transforming Result Documents>>.
 
 === Heatmap Faceting
 

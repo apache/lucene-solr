@@ -87,8 +87,7 @@ public class Lucene70NormsFormat extends NormsFormat {
 
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene70NormsConsumer(
-        state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    throw new UnsupportedOperationException("Old codecs may only be used for reading");
   }
 
   @Override
@@ -97,10 +96,10 @@ public class Lucene70NormsFormat extends NormsFormat {
         state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
 
-  private static final String DATA_CODEC = "Lucene70NormsData";
-  private static final String DATA_EXTENSION = "nvd";
-  private static final String METADATA_CODEC = "Lucene70NormsMetadata";
-  private static final String METADATA_EXTENSION = "nvm";
+  static final String DATA_CODEC = "Lucene70NormsData";
+  static final String DATA_EXTENSION = "nvd";
+  static final String METADATA_CODEC = "Lucene70NormsMetadata";
+  static final String METADATA_EXTENSION = "nvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 }

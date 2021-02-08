@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cluster.events.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cluster.events.ClusterEvent;
 import org.apache.solr.cluster.events.ClusterEventListener;
 import org.apache.solr.cluster.events.ClusterEventProducer;
@@ -29,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
+import java.util.concurrent.Phaser;
 
 /**
  * This implementation allows Solr to dynamically change the underlying implementation
@@ -38,6 +40,8 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private ClusterEventProducer delegate;
+  // support for tests to make sure the update is completed
+  private volatile Phaser phaser;
 
   public DelegatingClusterEventProducer(CoreContainer cc) {
     super(cc);
@@ -51,6 +55,16 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
     }
     IOUtils.closeQuietly(delegate);
     super.close();
+  }
+
+  /**
+   * A phaser that will advance phases every time {@link #setDelegate(ClusterEventProducer)} is called.
+   * Useful for allowing tests to know when a new delegate is finished getting set.
+   */
+  @VisibleForTesting
+  public void setDelegationPhaser(Phaser phaser) {
+    phaser.register();
+    this.phaser = phaser;
   }
 
   public void setDelegate(ClusterEventProducer newDelegate) {
@@ -86,6 +100,11 @@ public final class DelegatingClusterEventProducer extends ClusterEventProducerBa
       if (log.isDebugEnabled()) {
         log.debug("--- delegate {} already in state {}", delegate, delegate.getState());
       }
+    }
+    Phaser localPhaser = phaser; // volatile read
+    if (localPhaser != null) {
+      assert localPhaser.getRegisteredParties() == 1;
+      localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
     }
   }
 

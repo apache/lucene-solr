@@ -16,24 +16,104 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Objects;
+import java.text.ParseException;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.junit.Test;
 
 public class SpellCheckerTest extends StemmerTestBase {
-  @Test
-  public void allcaps() throws Exception {
+
+  public void testBase() throws Exception {
+    doTest("base");
+  }
+
+  public void testBaseUtf() throws Exception {
+    doTest("base_utf");
+  }
+
+  public void testKeepcase() throws Exception {
+    doTest("keepcase");
+  }
+
+  public void testAllcaps() throws Exception {
     doTest("allcaps");
   }
 
-  @Test
-  public void i53643_numbersWithSeparators() throws Exception {
+  public void testRepSuggestions() throws Exception {
+    doTest("rep");
+  }
+
+  public void testPhSuggestions() throws Exception {
+    doTest("ph");
+  }
+
+  public void testPhSuggestions2() throws Exception {
+    doTest("ph2");
+  }
+
+  public void testForceUCase() throws Exception {
+    doTest("forceucase");
+  }
+
+  public void testCheckSharpS() throws Exception {
+    doTest("checksharps");
+  }
+
+  public void testIJ() throws Exception {
+    doTest("IJ");
+  }
+
+  public void testI53643_numbersWithSeparators() throws Exception {
     doTest("i53643");
+  }
+
+  public void testCheckCompoundPattern() throws Exception {
+    doTest("checkcompoundpattern");
+  }
+
+  public void testCheckCompoundPattern2() throws Exception {
+    doTest("checkcompoundpattern2");
+  }
+
+  public void testCheckCompoundPattern3() throws Exception {
+    doTest("checkcompoundpattern3");
+  }
+
+  public void testDotless_i() throws Exception {
+    doTest("dotless_i");
+  }
+
+  public void testNeedAffixOnAffixes() throws Exception {
+    doTest("needaffix5");
+  }
+
+  public void testCompoundFlag() throws Exception {
+    doTest("compoundflag");
+  }
+
+  public void testCheckCompoundCase() throws Exception {
+    doTest("checkcompoundcase");
+  }
+
+  public void testCheckCompoundDup() throws Exception {
+    doTest("checkcompounddup");
+  }
+
+  public void testCheckCompoundTriple() throws Exception {
+    doTest("checkcompoundtriple");
+  }
+
+  public void testSimplifiedTriple() throws Exception {
+    doTest("simplifiedtriple");
+  }
+
+  public void testCompoundForbid() throws Exception {
+    doTest("compoundforbid");
   }
 
   public void testBreak() throws Exception {
@@ -46,6 +126,10 @@ public class SpellCheckerTest extends StemmerTestBase {
 
   public void testBreakOff() throws Exception {
     doTest("breakoff");
+  }
+
+  public void testCheckCompoundRep() throws Exception {
+    doTest("checkcompoundrep");
   }
 
   public void testCompoundrule() throws Exception {
@@ -80,15 +164,31 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("compoundrule8");
   }
 
+  public void testDisallowCompoundOnlySuffixesAtTheVeryEnd() throws Exception {
+    doTest("onlyincompound2");
+  }
+
   public void testGermanCompounding() throws Exception {
     doTest("germancompounding");
   }
 
+  public void testModifyingSuggestions() throws Exception {
+    doTest("sug");
+  }
+
+  public void testModifyingSuggestions2() throws Exception {
+    doTest("sug2");
+  }
+
   protected void doTest(String name) throws Exception {
-    InputStream affixStream =
-        Objects.requireNonNull(getClass().getResourceAsStream(name + ".aff"), name);
-    InputStream dictStream =
-        Objects.requireNonNull(getClass().getResourceAsStream(name + ".dic"), name);
+    checkSpellCheckerExpectations(
+        Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name), true);
+  }
+
+  static void checkSpellCheckerExpectations(Path basePath, boolean checkSuggestions)
+      throws IOException, ParseException {
+    InputStream affixStream = Files.newInputStream(Path.of(basePath.toString() + ".aff"));
+    InputStream dictStream = Files.newInputStream(Path.of(basePath.toString() + ".dic"));
 
     SpellChecker speller;
     try {
@@ -100,18 +200,30 @@ public class SpellCheckerTest extends StemmerTestBase {
       IOUtils.closeWhileHandlingException(dictStream);
     }
 
-    URL good = StemmerTestBase.class.getResource(name + ".good");
-    if (good != null) {
-      for (String word : Files.readAllLines(Path.of(good.toURI()))) {
-        assertTrue("Unexpectedly considered misspelled: " + word, speller.spell(word));
+    Path good = Path.of(basePath + ".good");
+    if (Files.exists(good)) {
+      for (String word : Files.readAllLines(good)) {
+        assertTrue("Unexpectedly considered misspelled: " + word, speller.spell(word.trim()));
       }
     }
 
-    URL wrong = StemmerTestBase.class.getResource(name + ".wrong");
-    if (wrong != null) {
-      for (String word : Files.readAllLines(Path.of(wrong.toURI()))) {
-        assertFalse("Unexpectedly considered correct: " + word, speller.spell(word));
+    Path wrong = Path.of(basePath + ".wrong");
+    Path sug = Path.of(basePath + ".sug");
+    if (Files.exists(wrong)) {
+      List<String> wrongWords = Files.readAllLines(wrong);
+      for (String word : wrongWords) {
+        assertFalse("Unexpectedly considered correct: " + word, speller.spell(word.trim()));
       }
+      if (Files.exists(sug) && checkSuggestions) {
+        String suggestions =
+            wrongWords.stream()
+                .map(s -> String.join(", ", speller.suggest(s)))
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.joining("\n"));
+        assertEquals(Files.readString(sug).trim(), suggestions);
+      }
+    } else {
+      assertFalse(".sug file without .wrong file!", Files.exists(sug));
     }
   }
 }

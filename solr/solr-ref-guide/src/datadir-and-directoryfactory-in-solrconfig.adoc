@@ -29,7 +29,7 @@ By default, Solr stores its index data in a directory called `/data` under the c
 
 The `${solr.core.name}` substitution will cause the name of the current core to be substituted, which results in each core's data being kept in a separate subdirectory.
 
-If you are using replication to replicate the Solr index (as described in <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>), then the `<dataDir>` directory should correspond to the index directory used in the replication configuration.
+If you are using replication to replicate the Solr index (as described in <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>), then the `<dataDir>` directory should correspond to the index directory used in the replication configuration.
 
 NOTE: If the environment variable `SOLR_DATA_HOME` is defined, or if `solr.data.home` is configured for your DirectoryFactory, or if `solr.xml` contains an
 element `<solrDataHome>` then the location of data directory will be `<SOLR_DATA_HOME>/<instance_name>/data`.
@@ -55,5 +55,5 @@ The {solr-javadocs}/core/org/apache/solr/core/RAMDirectoryFactory.html[`solr.RAM
 
 [NOTE]
 ====
-If you are using Hadoop and would like to store your indexes in HDFS, you should use the {solr-javadocs}/core/org/apache/solr/core/HdfsDirectoryFactory.html[`solr.HdfsDirectoryFactory`] instead of either of the above implementations. For more details, see the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>>.
+If you are using Hadoop and would like to store your indexes in HDFS, you should use the {solr-javadocs}/core/org/apache/solr/core/HdfsDirectoryFactory.html[`solr.HdfsDirectoryFactory`] instead of either of the above implementations. For more details, see the section <<running-solr-on-hdfs.adoc#,Running Solr on HDFS>>.
 ====
