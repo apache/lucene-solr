@@ -827,7 +827,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
             return fieldsReader.getInstanceWithPrefetchOptions(
                 (minDocId, maxDocId, currentDocId) -> {
                   final int fromDocId = minDocId + random().nextInt(currentDocId - minDocId + 1);
-                  final int toDocId = fromDocId + random().nextInt(maxDocId - fromDocId + 1);
+                  final int toDocId = currentDocId + random().nextInt(maxDocId - currentDocId + 1);
                   return new StoredFieldsReader.PrefetchRange(fromDocId, toDocId);
                 });
           }

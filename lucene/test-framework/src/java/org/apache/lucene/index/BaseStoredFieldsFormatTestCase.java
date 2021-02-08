@@ -863,7 +863,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     for (int i = 0; i < iters; i++) {
       int docId = random().nextInt(numDocs);
       final IndexableField numFieldStr = docs.get(docId).getField("num_fields");
-      assertNotNull(numFieldStr);
+      assert numFieldStr != null;
       int numFields = Integer.parseInt(numFieldStr.stringValue());
       Document doc = reader.document(docId);
       assertEquals(numFields, doc.getFields().size());

@@ -563,37 +563,39 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       }
 
       startPointer = fieldsStream.getFilePointer();
-
-      if (prefetchOption != null) {
-        final int maxDocId = docBase + chunkDocs - 1;
-        final PrefetchRange range = prefetchOption.preferFetchRange(docBase, maxDocId, docID);
-        if (range.getFromDocId() > docID
-            || range.getFromDocId() > range.getToDocId()
-            || range.getToDocId() > maxDocId) {
-          throw new IllegalArgumentException(
-              "Invalid prefetch range ["
-                  + range
-                  + "] baseDocId ["
-                  + docBase
-                  + "] chunk docs ["
-                  + chunkDocs
-                  + "] docId ["
-                  + docID
-                  + "]");
-        }
-        if (range.getFromDocId() < range.getToDocId()) {
-          prefetch(range.getFromDocId(), range.getToDocId());
-        }
-      }
+      maybePrefetch(docID, true);
     }
 
-    private void prefetch(int fromDocId, int toDocId) throws IOException {
+    private boolean maybePrefetch(int docID, boolean firstTime) throws IOException {
+      assert wasFetched(docID) == false : docID + " was fetched already";
+      if (prefetchOption == null) {
+        return false;
+      }
+      final int maxDocId = docBase + chunkDocs - 1;
+      final PrefetchRange range = prefetchOption.preferFetchRange(docBase, maxDocId, docID);
+      if (range.getFromDocId() > docID
+          || range.getToDocId() < docID
+          || range.getToDocId() > maxDocId) {
+        throw new IllegalArgumentException(
+            "Invalid prefetch range ["
+                + range
+                + "] baseDocId ["
+                + docBase
+                + "] chunk docs ["
+                + chunkDocs
+                + "] docId ["
+                + docID
+                + "]");
+      }
+      if (range.getFromDocId() == range.getToDocId()) {
+        return false;
+      }
       assert bytes != null;
-      final int fromIndex = fromDocId - docBase;
-      final int toIndex = toDocId - docBase;
+      final int fromIndex = range.getFromDocId() - docBase;
+      final int toIndex = range.getToDocId() - docBase;
       final int offset = Math.toIntExact(offsets[fromIndex]);
       final int length = Math.toIntExact(offsets[toIndex + 1] - offsets[fromIndex]);
-      if (offset > 0) {
+      if (firstTime == false || offset > 0) {
         fieldsStream.seek(startPointer);
       }
       if (sliced) {
@@ -616,8 +618,14 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
         throw new CorruptIndexException(
             "Corrupted: expected fetch length = " + length + ", got " + bytes.length, fieldsStream);
       }
-      fetchedFromDocId = fromDocId;
-      fetchedToDocId = toDocId;
+      fetchedFromDocId = range.getFromDocId();
+      fetchedToDocId = range.getToDocId();
+      assert wasFetched(docID);
+      return true;
+    }
+
+    private boolean wasFetched(int docID) {
+      return fetchedFromDocId <= docID && docID <= fetchedToDocId;
     }
 
     /**
@@ -637,8 +645,12 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       if (length == 0) {
         return new SerializedDocument(new ByteArrayDataInput(), length, numStoredFields);
       }
-      // already compressed
-      if (fetchedFromDocId <= docID && docID <= fetchedToDocId) {
+      boolean wasFetched = wasFetched(docID);
+      if (wasFetched == false) {
+        wasFetched = maybePrefetch(docID, false);
+        assert wasFetched == wasFetched(docID);
+      }
+      if (wasFetched) {
         final int bufferOffset =
             Math.toIntExact(offsets[index] - offsets[fetchedFromDocId - docBase]);
         return new SerializedDocument(
