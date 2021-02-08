@@ -756,6 +756,27 @@ public class TestIntervals extends LuceneTestCase {
     assertEquals(3, source.minExtent());
   }
 
+  public void testDegenerateMinShouldMatch() throws IOException {
+    IntervalsSource source =
+        Intervals.ordered(
+            Intervals.atLeast(1, Intervals.term("interest")),
+            Intervals.atLeast(1, Intervals.term("anyone")));
+
+    MatchesIterator mi = getMatches(source, 0, "field1");
+    assertMatch(mi, 2, 4, 11, 29);
+    MatchesIterator subs = mi.getSubMatches();
+    assertNotNull(subs);
+    assertMatch(subs, 2, 2, 11, 19);
+    assertMatch(subs, 4, 4, 23, 29);
+    assertFalse(subs.next());
+    assertFalse(mi.next());
+  }
+
+  public void testNoMatchMinShouldMatch() throws IOException {
+    IntervalsSource source = Intervals.atLeast(4, Intervals.term("a"), Intervals.term("b"));
+    checkIntervals(source, "field", 0, new int[][] {});
+  }
+
   public void testDefinedGaps() throws IOException {
     IntervalsSource source =
         Intervals.phrase(
