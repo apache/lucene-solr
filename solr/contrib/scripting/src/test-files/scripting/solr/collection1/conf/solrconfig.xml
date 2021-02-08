@@ -51,6 +51,8 @@
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 
+  <requestHandler name="/update/xslt" class="org.apache.solr.scripting.xslt.XSLTUpdateRequestHandler" />
+
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>

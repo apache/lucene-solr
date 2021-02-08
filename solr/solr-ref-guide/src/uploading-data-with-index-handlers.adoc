@@ -220,9 +220,9 @@ The status field will be non-zero in case of failure.
 
 === Using XSLT to Transform XML Index Updates
 
-The UpdateRequestHandler allows you to index any arbitrary XML using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
+The Scripting contrib module provides a XSLTUpdateRequestHandler that allows you to index any arbitrary XML by using the `<tr>` parameter to apply an https://en.wikipedia.org/wiki/XSLT[XSL transformation]. You must have an XSLT stylesheet in the `conf/xslt` directory of your <<config-sets.adoc#,configset>> that can transform the incoming data to the expected `<add><doc/></add>` format, and use the `tr` parameter to specify the name of that stylesheet.
 
-The `tr` parameter is exposed only if the scripting contrib is present in the server classpath. 
+The `tr` parameter is exposed only if the scripting contrib is present in the server classpath.
 
 Here is an example XSLT stylesheet:
 
@@ -273,7 +273,7 @@ This stylesheet transforms Solr's XML search result format into Solr's Update XM
 http://localhost:8983/solr/my_collection/select?q=*:*&wt=xslt&tr=updateXml.xsl&rows=1000
 ----
 
-You can also use the stylesheet in `UpdateRequestHandler` to transform an index when updating:
+You can also use the stylesheet in `XSLTUpdateRequestHandler` to transform an index when updating:
 
 [source,bash]
 ----

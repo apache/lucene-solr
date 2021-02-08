@@ -40,15 +40,14 @@ import org.junit.Test;
 
 /**
  * <p>
- * This tests the UpdateRequestHandler ability to work with XSLT stylesheet and xml content.
+ * This tests the XSLTUpdateRequestHandler ability to work with XSLT stylesheet and xml content.
  * </p>
 */
-public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
+public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
-  
+
   @BeforeClass
   public static void beforeTests() throws Exception {
-    //initCore("solrconfig.xml","schema.xml");
     initCore("solrconfig.xml", "schema.xml", getFile("scripting/solr").getAbsolutePath());
   }
 
@@ -84,7 +83,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     req.setContentStreams(streams);
     SolrQueryResponse rsp = new SolrQueryResponse();
     //try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
-    try (XsltUpdateRequestHandler handler = new XsltUpdateRequestHandler()) {
+    try (XSLTUpdateRequestHandler handler = new XSLTUpdateRequestHandler()) {
       handler.init(new NamedList<String>());
       handler.handleRequestBody(req, rsp);
     }

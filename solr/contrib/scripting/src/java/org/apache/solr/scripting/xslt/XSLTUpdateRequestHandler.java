@@ -28,13 +28,12 @@ import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.handler.loader.XMLLoader;
 
 /**
- * Add XML formatted documents to Solr, transforming them to the Solr XML format using 
- * a XSLT stylesheet via the 'tr' parameter.
- * 
- * use {@link UpdateRequestHandler}
+ * Send XML formatted documents to Solr, transforming them from the original XML
+ * format to the Solr XML format using an XSLT stylesheet via the 'tr' parameter.
+ *
  */
 
-public class XsltUpdateRequestHandler extends UpdateRequestHandler {
+public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
@@ -49,15 +48,15 @@ public class XsltUpdateRequestHandler extends UpdateRequestHandler {
     SolrParams p = null;
     if(args!=null) {
       p = args.toSolrParams();
-    }    
+    }
     Map<String,ContentStreamLoader> registry = new HashMap<>();
 
     boolean allowTransforms = true;
     registry.put("application/xml", new XMLLoader(allowTransforms).init(p) );
     registry.put("text/xml", registry.get("application/xml") );
-    
+
     return registry;
-  }  
+  }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 

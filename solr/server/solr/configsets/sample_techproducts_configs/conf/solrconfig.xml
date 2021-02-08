@@ -1331,13 +1331,13 @@
   </queryResponseWriter>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
-       in Solr's conf/xslt directory.  Changes to xslt files are checked for
+       in Solr's conf/xslt directory.  Changes to xslt files are checked
        every xsltCacheLifetimeSeconds.  This is part of the Scripting contrib module.
 
        See more about this response writer at https://lucene.apache.org/solr/guide/response-writers.html#xslt-response-writer
   -->
   <!--
-  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
+  <queryResponseWriter name="xslt" class="org.apache.solr.scripting.xslt.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
   -->

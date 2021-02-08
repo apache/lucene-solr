@@ -162,7 +162,7 @@ The default behavior is not to indent.
 
 The XSLT Response Writer applies an XML stylesheet to output. It can be used for tasks such as formatting results for an RSS feed.
 
-This response writer has been added as part of the scripting library, and will only work if the scripting contrib is present in the server classpath. 
+This response writer has been added as part of the scripting library, and will only work if the scripting contrib is present in the server classpath.
 
 === tr Parameter
 
@@ -181,7 +181,7 @@ The example below, from the `sample_techproducts_configs` <<response-writers.ado
   every xsltCacheLifetimeSeconds at most.
 -->
 <queryResponseWriter name="xslt"
-                     class="org.apache.solr.scripting.XSLTResponseWriter">
+                     class="org.apache.solr.scripting.xslt.XSLTResponseWriter">
   <int name="xsltCacheLifetimeSeconds">5</int>
 </queryResponseWriter>
 ----
