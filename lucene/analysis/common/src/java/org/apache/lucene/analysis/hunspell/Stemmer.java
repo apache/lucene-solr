@@ -613,7 +613,7 @@ final class Stemmer {
       return context.isCompound() || !dictionary.hasFlag(append, dictionary.onlyincompound);
     }
 
-    if (isCrossProduct(affix)) {
+    if (dictionary.isCrossProduct(affix)) {
       // cross check incoming continuation class (flag of previous affix) against list.
       if (context.isCompound() || !dictionary.hasFlag(append, dictionary.onlyincompound)) {
         return previousWasPrefix || dictionary.hasFlag(append, prevFlag);
@@ -629,7 +629,7 @@ final class Stemmer {
   // but this is a little bit more complicated.
   private boolean checkCondition(
       int affix, char[] c1, int c1off, int c1len, char[] c2, int c2off, int c2len) {
-    int condition = dictionary.affixData(affix, Dictionary.AFFIX_CONDITION) >>> 1;
+    int condition = dictionary.getAffixCondition(affix);
     if (condition != 0) {
       CharacterRunAutomaton pattern = dictionary.patterns.get(condition);
       int state = 0;
@@ -736,7 +736,7 @@ final class Stemmer {
       circumfix = isFlagAppendedByAffix(affix, dictionary.circumfix);
     }
 
-    if (isCrossProduct(affix) && recursionDepth <= 1) {
+    if (dictionary.isCrossProduct(affix) && recursionDepth <= 1) {
       boolean doPrefix;
       if (recursionDepth == 0) {
         if (prefix) {
@@ -797,9 +797,5 @@ final class Stemmer {
     if (affixId < 0 || flag == Dictionary.FLAG_UNSET) return false;
     int appendId = dictionary.affixData(affixId, Dictionary.AFFIX_APPEND);
     return dictionary.hasFlag(appendId, flag);
-  }
-
-  private boolean isCrossProduct(int affix) {
-    return (dictionary.affixData(affix, Dictionary.AFFIX_CONDITION) & 1) == 1;
   }
 }

@@ -423,7 +423,7 @@ public class SpellChecker {
 
     if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
       suggestions.addAll(
-          new GeneratingSuggester(dictionary)
+          new GeneratingSuggester(this)
               .suggest(dictionary.toLowerCase(word), wordCase, suggestions));
     }
 
