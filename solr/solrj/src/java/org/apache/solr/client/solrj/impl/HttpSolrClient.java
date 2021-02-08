@@ -346,9 +346,6 @@ public class HttpSolrClient extends BaseHttpSolrClient {
 
   @SuppressWarnings({"unchecked"})
   protected HttpRequestBase createMethod(@SuppressWarnings({"rawtypes"})SolrRequest request, String collection) throws IOException, SolrServerException {
-    if (request instanceof V2RequestSupport) {
-      request = ((V2RequestSupport) request).getV2Request();
-    }
     SolrParams params = request.getParams();
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(request);
     Collection<ContentStream> streams = contentWriter == null ? requestWriter.getContentStreams(request) : null;

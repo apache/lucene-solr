@@ -518,9 +518,6 @@ public class Http2SolrClient extends SolrClient {
     if (solrRequest.getBasePath() == null && serverBaseUrl == null)
       throw new IllegalArgumentException("Destination node is not provided!");
 
-    if (solrRequest instanceof V2RequestSupport) {
-      solrRequest = ((V2RequestSupport) solrRequest).getV2Request();
-    }
     SolrParams params = solrRequest.getParams();
     RequestWriter.ContentWriter contentWriter = requestWriter.getContentWriter(solrRequest);
     Collection<ContentStream> streams = contentWriter == null ? requestWriter.getContentStreams(solrRequest) : null;
