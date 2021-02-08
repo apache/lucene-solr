@@ -32,7 +32,7 @@ import org.junit.runners.Parameterized;
 
 /**
  * Same as {@link SpellCheckerTest}, but checks all Hunspell's test data. The path to the checked
- * out Hunspell repository should be in {@code -Dhunspell.repo.path=...} system property.
+ * out Hunspell repository should be in {@code hunspell.repo.path} system property.
  */
 @RunWith(Parameterized.class)
 public class TestHunspellRepositoryTestCases {
