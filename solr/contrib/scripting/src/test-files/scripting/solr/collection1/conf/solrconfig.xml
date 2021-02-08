@@ -47,7 +47,7 @@
 
   </updateHandler>
 
-  <queryResponseWriter name="xslt" class="org.apache.solr.scripting.XSLTResponseWriter" />
+  <queryResponseWriter name="xslt" class="org.apache.solr.scripting.xslt.XSLTResponseWriter" />
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler" />
 

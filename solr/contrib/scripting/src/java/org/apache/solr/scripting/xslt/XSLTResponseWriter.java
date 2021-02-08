@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.scripting;
+package org.apache.solr.scripting.xslt;
 
 import java.io.BufferedReader;
 import java.io.CharArrayReader;
@@ -41,7 +41,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
-import org.apache.solr.scripting.xslt.TransformerProvider;
+import org.apache.solr.util.xslt.TransformerProvider;
 
 /**
  *  Customize the format of your search results via XSL stylesheet applied to the default

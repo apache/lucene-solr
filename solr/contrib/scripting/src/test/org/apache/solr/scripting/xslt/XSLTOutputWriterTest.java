@@ -14,15 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.scripting.handler;
+package org.apache.solr.scripting.xslt;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests the ability to configure multiple query output writers, and select those at query time. This is specific to the
- * XSLT writer, which isn't part of the core.
+ * Tests the ability to configure multiple query output writers, and select those at query time. This test 
+ * is specific to the XSLT writer, which isn't part of the core.
  * 
  * See the related unit test OutputWriterTest.
  *

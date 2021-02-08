@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.scripting.handler;
+package org.apache.solr.scripting.xslt;
 
 import org.apache.solr.SolrTestCaseJ4;
 import java.io.StringWriter;
@@ -27,12 +27,11 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.scripting.xslt.XSLTLoader;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.Before;
@@ -84,7 +83,8 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     streams.add(new ContentStreamBase.StringStream(xml));
     req.setContentStreams(streams);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
+    //try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
+    try (XsltUpdateRequestHandler handler = new XsltUpdateRequestHandler()) {
       handler.init(new NamedList<String>());
       handler.handleRequestBody(req, rsp);
     }
@@ -105,7 +105,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testEntities() throws Exception
   {
-    // use a binary file, so when it's loaded fail with XML eror:
+    // use a binary file, so when it's loaded fail with XML error:
     String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml =
       "<?xml version=\"1.0\"?>" +
@@ -125,7 +125,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("tr", "xsl-update-handler-test.xsl");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    XSLTLoader loader = new XSLTLoader().init(null);
+    XMLLoader loader = new XMLLoader(true).init(null);
     loader.load(req, rsp, new ContentStreamBase.StringStream(xml), p);
 
     AddUpdateCommand add = p.addCommands.get(0);

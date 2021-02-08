@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.scripting;
+package org.apache.solr.scripting.xslt;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ import org.apache.solr.handler.loader.XMLLoader;
 public class XsltUpdateRequestHandler extends UpdateRequestHandler {
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     super.init(args);
     setAssumeContentType("application/xml");
     loaders = Collections.unmodifiableMap(createXSLTLoader(args));
@@ -54,6 +54,7 @@ public class XsltUpdateRequestHandler extends UpdateRequestHandler {
 
     boolean allowTransforms = true;
     registry.put("application/xml", new XMLLoader(allowTransforms).init(p) );
+    registry.put("text/xml", registry.get("application/xml") );
     
     return registry;
   }  
