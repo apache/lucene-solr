@@ -168,6 +168,7 @@ public class Dictionary {
   String[] neighborKeyGroups = new String[0];
   boolean enableSplitSuggestions = true;
   List<RepEntry> repTable = new ArrayList<>();
+  List<List<String>> mapTable = new ArrayList<>();
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
@@ -399,6 +400,11 @@ public class Dictionary {
           String[] parts = splitBySpace(reader, reader.readLine(), 3, Integer.MAX_VALUE);
           repTable.add(new RepEntry(parts[1], parts[2]));
         }
+      } else if ("MAP".equals(firstWord)) {
+        int count = parseNum(reader, line);
+        for (int i = 0; i < count; i++) {
+          mapTable.add(parseMapEntry(reader, reader.readLine()));
+        }
       } else if ("KEY".equals(firstWord)) {
         neighborKeyGroups = singleArgument(reader, line).split("\\|");
       } else if ("NOSPLITSUGS".equals(firstWord)) {
@@ -460,6 +466,25 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private List<String> parseMapEntry(LineNumberReader reader, String line) throws ParseException {
+    String unparsed = singleArgument(reader, line);
+    List<String> mapEntry = new ArrayList<>();
+    for (int j = 0; j < unparsed.length(); j++) {
+      if (unparsed.charAt(j) == '(') {
+        int closing = unparsed.indexOf(')', j);
+        if (closing < 0) {
+          throw new ParseException("Unclosed parenthesis: " + line, reader.getLineNumber());
+        }
+
+        mapEntry.add(unparsed.substring(j + 1, closing));
+        j = closing;
+      } else {
+        mapEntry.add(String.valueOf(unparsed.charAt(j)));
+      }
+    }
+    return mapEntry;
   }
 
   private boolean hasLanguage(String... langCodes) {
