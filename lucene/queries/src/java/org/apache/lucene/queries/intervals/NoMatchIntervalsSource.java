@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
@@ -26,7 +25,6 @@ import org.apache.lucene.search.QueryVisitor;
 
 /** A source returning no matches */
 class NoMatchIntervalsSource extends IntervalsSource {
-
   final String reason;
 
   NoMatchIntervalsSource(String reason) {
