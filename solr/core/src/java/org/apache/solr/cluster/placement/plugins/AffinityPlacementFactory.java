@@ -23,6 +23,7 @@ import org.apache.solr.cluster.*;
 import org.apache.solr.cluster.placement.*;
 import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,6 +132,8 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
    */
   public static final String REPLICA_TYPE_SYSPROP = "replica_type";
 
+  public static final String NODE_TYPE_SYSPROP = "node_type";
+
   /**
    * This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe)
    */
@@ -210,16 +213,22 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       Set<Node> nodes = request.getTargetNodes();
       SolrCollection solrCollection = request.getCollection();
 
-      nodes = filterNodesWithCollection(placementContext.getCluster(), request, nodes);
-
       // Request all needed attributes
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
-      attributeFetcher.requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP).requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
+      attributeFetcher
+          .requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP)
+          .requestNodeSystemProperty(NODE_TYPE_SYSPROP)
+          .requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
       attributeFetcher
           .requestNodeMetric(NodeMetricImpl.NUM_CORES)
           .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
       attributeFetcher.fetchFrom(nodes);
       final AttributeValues attrValues = attributeFetcher.fetchAttributes();
+
+      // filter out nodes that don't meet the `withCollection` constraint
+      nodes = filterNodesWithCollection(placementContext.getCluster(), request, attrValues, nodes);
+      // filter out nodes that don't match the "node types" specified in the collection props
+      nodes = filterNodesByNodeType(placementContext.getCluster(), request, attrValues, nodes);
 
       // Split the set of nodes into 3 sets of nodes accepting each replica type (sets can overlap if nodes accept multiple replica types)
       // These subsets sets are actually maps, because we capture the number of cores (of any replica type) present on each node.
@@ -632,7 +641,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       }
     }
 
-    private Set<Node> filterNodesWithCollection(Cluster cluster, PlacementRequest request, Set<Node> initialNodes) throws PlacementException {
+    private Set<Node> filterNodesWithCollection(Cluster cluster, PlacementRequest request, AttributeValues attributeValues, Set<Node> initialNodes) throws PlacementException {
       // if there's a `withCollection` constraint for this collection then remove nodes
       // that are not eligible
       String withCollectionName = withCollections.get(request.getCollection().getName());
@@ -654,6 +663,29 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       filteredNodes.retainAll(withCollectionNodes);
       if (filteredNodes.isEmpty()) {
         throw new PlacementException("Collection " + withCollection + " defined in `withCollection` has no replicas on eligible nodes.");
+      }
+      return filteredNodes;
+    }
+
+    private Set<Node> filterNodesByNodeType(Cluster cluster, PlacementRequest request, AttributeValues attributeValues, Set<Node> initialNodes) throws PlacementException {
+      String collProperty = request.getCollection().getCustomProperty(AffinityPlacementConfig.COLLECTION_NODE_TYPE_PROPERTY);
+      if (collProperty == null) {
+        // no filtering by node type
+        return initialNodes;
+      }
+      Set<String> collNodeTypes = Set.copyOf(StrUtils.splitSmart(collProperty, ','));
+      Set<Node> filteredNodes = initialNodes.stream()
+          .filter(n -> {
+            Optional<String> nodePropOpt = attributeValues.getSystemProperty(n, AffinityPlacementConfig.COLLECTION_NODE_TYPE_PROPERTY);
+            if (!nodePropOpt.isPresent()) {
+              return false;
+            }
+            Set<String> nodeTypes = Set.copyOf(StrUtils.splitSmart(nodePropOpt.get(), ','));
+            nodeTypes.retainAll(collNodeTypes);
+            return !nodeTypes.isEmpty();
+          }).collect(Collectors.toSet());
+      if (filteredNodes.isEmpty()) {
+        throw new PlacementException("There are no nodes with types: " + collNodeTypes + " expected by collection " + request.getCollection().getName());
       }
       return filteredNodes;
     }

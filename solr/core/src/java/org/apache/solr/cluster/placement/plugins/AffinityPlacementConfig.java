@@ -19,6 +19,7 @@ package org.apache.solr.cluster.placement.plugins;
 
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.common.params.CollectionAdminParams;
 
 import java.util.Map;
 import java.util.Objects;
@@ -27,6 +28,8 @@ import java.util.Objects;
  * Configuration bean for {@link AffinityPlacementFactory}.
  */
 public class AffinityPlacementConfig implements PlacementPluginConfig {
+
+  public static final String COLLECTION_NODE_TYPE_PROPERTY = CollectionAdminParams.PROPERTY_PREFIX + "placement.affinity.node_type";
 
   public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 20L;
   public static final long DEFAULT_PRIORITIZED_FREE_DISK_GB = 100L;
