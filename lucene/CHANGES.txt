@@ -10,10 +10,11 @@ Bug Fixes
 
 * LUCENE-9870: Fix Circle2D intersectsLine t-value (distance) range clamp (Jørgen Nystad)
 
+* LUCENE-9744: NPE on a degenerate query in MinimumShouldMatchIntervalsSource
+  $MinimumMatchesIterator.getSubMatches(). (Alan Woodward)
+
 ======================= Lucene 8.8.1 =======================
 
-Bug Fixes
----------------------
 (No changes)
 
 ======================= Lucene 8.8.0 =======================
