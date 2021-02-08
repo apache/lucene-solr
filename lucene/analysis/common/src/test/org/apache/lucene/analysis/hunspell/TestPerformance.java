@@ -24,13 +24,15 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assume;
-import org.junit.Ignore;
+import org.junit.AssumptionViolatedException;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -40,8 +42,15 @@ import org.junit.Test;
  * en.txt}) in a directory specified in {@code -Dhunspell.corpora=...}
  */
 @TestCaseOrdering(TestCaseOrdering.AlphabeticOrder.class)
-@Ignore("enable manually")
 public class TestPerformance extends LuceneTestCase {
+  private static Path corporaDir;
+
+  @BeforeClass
+  public static void resolveCorpora() {
+    String dir = System.getProperty("hunspell.corpora");
+    Assume.assumeFalse("Requires test word corpora at -Dhunspell.corpora=...", dir == null);
+    corporaDir = Paths.get(dir);
+  }
 
   @Test
   public void en() throws Exception {
@@ -60,6 +69,7 @@ public class TestPerformance extends LuceneTestCase {
 
   private void checkPerformance(String code, int wordCount) throws Exception {
     Path aff = findAffFile(code);
+
     Dictionary dictionary = TestAllDictionaries.loadDictionary(aff);
     System.out.println("Loaded " + aff);
 
@@ -92,15 +102,17 @@ public class TestPerformance extends LuceneTestCase {
               return code.equals(Dictionary.extractLanguageCode(parentName));
             })
         .findFirst()
-        .orElseThrow(() -> new IllegalArgumentException("Cannot find aff/dic for " + code));
+        .orElseThrow(
+            () -> new AssumptionViolatedException("Ignored, cannot find aff/dic for: " + code));
   }
 
   private List<String> loadWords(String code, int wordCount, Dictionary dictionary)
       throws IOException {
-    String corpusDir = System.getProperty("hunspell.corpora");
-    Assume.assumeFalse("", corpusDir == null);
+    Path dataPath = corporaDir.resolve(code + ".txt");
+    if (!Files.isReadable(dataPath)) {
+      throw new AssumptionViolatedException("Missing text corpora at: " + dataPath);
+    }
 
-    Path dataPath = Path.of(corpusDir).resolve(code + ".txt");
     List<String> words = new ArrayList<>();
     try (InputStream stream = Files.newInputStream(dataPath)) {
       BufferedReader reader =
