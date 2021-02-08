@@ -35,7 +35,7 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
 
 ==================  8.8.0 ==================
 

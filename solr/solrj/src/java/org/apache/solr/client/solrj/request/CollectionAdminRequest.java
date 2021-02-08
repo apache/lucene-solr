@@ -111,6 +111,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     this.action = checkNotNull(CoreAdminParams.ACTION, action);
   }
 
+  /**
+   *
+   * @deprecated because several "collection-admin" APIs have been reimplemented and no longer use the "JSON-spec"
+   * driven approach that this method relies on.  Use {@link V2Request} directly instead if V2 admin functionality is
+   * desired.
+   */
+  @Deprecated
   @Override
   @SuppressWarnings({"rawtypes"})
   public SolrRequest getV2Request() {
