@@ -17,16 +17,14 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Map;
 
 public class TestV1toV2ApiMapper extends SolrTestCase {
 
