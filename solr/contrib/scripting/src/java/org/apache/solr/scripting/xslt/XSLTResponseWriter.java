@@ -33,6 +33,7 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -40,7 +41,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
-import org.apache.solr.scripting.xslt.XSLTParams;
 import org.apache.solr.scripting.xslt.TransformerProvider;
 
 /**
@@ -48,7 +48,7 @@ import org.apache.solr.scripting.xslt.TransformerProvider;
  *  XML response format.
  *
  *  QueryResponseWriter captures the output of the XMLWriter
- *  (in memory for now, not optimal performancewise), and applies an XSLT transform
+ *  (in memory for now, not optimal performance-wise), and applies an XSLT transform
  *  to it.
  */
 public class XSLTResponseWriter implements QueryResponseWriter {
@@ -124,9 +124,9 @@ public class XSLTResponseWriter implements QueryResponseWriter {
    *  depending on which one is called first, then the other one reuses the same Transformer
    */
   protected Transformer getTransformer(SolrQueryRequest request) throws IOException {
-    final String xslt = request.getParams().get(XSLTParams.TR,null);
+    final String xslt = request.getParams().get(XMLLoader.TR,null);
     if(xslt==null) {
-      throw new IOException("'" + XSLTParams.TR + "' request parameter is required to use the XSLTResponseWriter");
+      throw new IOException("'" + XMLLoader.TR + "' request parameter is required to use the XSLTResponseWriter");
     }
     // not the cleanest way to achieve this
     SolrConfig solrConfig = request.getCore().getSolrConfig();

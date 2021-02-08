@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -65,7 +64,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
   public static final String COMMIT_WITHIN = "commitWithin";
 
-  Map<String,ContentStreamLoader> loaders = null;
+  protected Map<String,ContentStreamLoader> loaders = null;
 
   ContentStreamLoader instance = new ContentStreamLoader() {
     @Override
@@ -142,16 +141,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
     }
     Map<String,ContentStreamLoader> registry = new HashMap<>();
 
-    // Try to load the scripting contrib modules XSLTLoader, and if not, fall back to the XMLLoader.
-    // Enable the XSLTLoader by including the Scripting contrib module.
-    try {
-      final Class<?> clazz = Class.forName( "org.apache.solr.scripting.xslt.XSLTLoader" );
-      ContentStreamLoader loader = (ContentStreamLoader) clazz.getDeclaredConstructor().newInstance();
-      registry.put("application/xml", loader.init(p) );
-    } catch( ClassNotFoundException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | NoSuchMethodException | SecurityException e ) {
-       registry.put("application/xml", new XMLLoader().init(p) );
-     }
-
+    registry.put("application/xml", new XMLLoader(false).init(p) );
     registry.put("application/json", new JsonLoader().init(p) );
     registry.put("application/csv", new CSVLoader().init(p) );
     registry.put("application/javabin", new JavabinLoader(instance).init(p) );

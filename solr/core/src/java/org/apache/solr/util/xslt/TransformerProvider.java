@@ -37,7 +37,8 @@ import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrConfig;
 
-/** Singleton that creates a Transformer for the XSLTServletFilter.
+/** 
+ *  Singleton that creates a Transformer for XSLT
  *  For now, only caches the last created Transformer, but
  *  could evolve to use an LRU cache of Transformers.
  *  
