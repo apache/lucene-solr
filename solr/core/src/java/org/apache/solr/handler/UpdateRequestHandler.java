@@ -134,13 +134,11 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   }
   private Map<String ,ContentStreamLoader> pathVsLoaders = new HashMap<>();
   protected Map<String,ContentStreamLoader> createDefaultLoaders(@SuppressWarnings({"rawtypes"})NamedList args) {
-
     SolrParams p = null;
     if(args!=null) {
       p = args.toSolrParams();
     }
     Map<String,ContentStreamLoader> registry = new HashMap<>();
-
     registry.put("application/xml", new XMLLoader(false).init(p) );
     registry.put("application/json", new JsonLoader().init(p) );
     registry.put("application/csv", new CSVLoader().init(p) );
