@@ -1412,30 +1412,26 @@ public class Dictionary {
   private static class NumFlagParsingStrategy extends FlagParsingStrategy {
     @Override
     public char[] parseFlags(String rawFlags) {
-      String[] rawFlagParts = rawFlags.trim().split(",");
-      char[] flags = new char[rawFlagParts.length];
-      int upto = 0;
-
-      for (String rawFlagPart : rawFlagParts) {
-        // note, removing the trailing X/leading I for nepali... what is the rule here?!
-        String replacement = rawFlagPart.replaceAll("[^0-9]", "");
-        // note, ignoring empty flags (this happens in danish, for example)
-        if (replacement.isEmpty()) {
-          continue;
+      StringBuilder result = new StringBuilder();
+      StringBuilder group = new StringBuilder();
+      for (int i = 0; i <= rawFlags.length(); i++) {
+        if (i == rawFlags.length() || rawFlags.charAt(i) == ',') {
+          if (group.length() > 0) { // ignoring empty flags (this happens in danish, for example)
+            int flag = Integer.parseInt(group, 0, group.length(), 10);
+            if (flag >= DEFAULT_FLAGS) {
+              // accept 0 due to https://github.com/hunspell/hunspell/issues/708
+              throw new IllegalArgumentException(
+                  "Num flags should be between 0 and " + DEFAULT_FLAGS + ", found " + flag);
+            }
+            result.append((char) flag);
+            group.setLength(0);
+          }
+        } else if (rawFlags.charAt(i) >= '0' && rawFlags.charAt(i) <= '9') {
+          group.append(rawFlags.charAt(i));
         }
-        int flag = Integer.parseInt(replacement);
-        if (flag >= Character.MAX_VALUE) { // read default flags as well
-          // accept 0 due to https://github.com/hunspell/hunspell/issues/708
-          throw new IllegalArgumentException(
-              "Num flags should be between 0 and " + DEFAULT_FLAGS + ", found " + flag);
-        }
-        flags[upto++] = (char) flag;
       }
 
-      if (upto < flags.length) {
-        flags = ArrayUtil.copyOfSubArray(flags, 0, upto);
-      }
-      return flags;
+      return result.toString().toCharArray();
     }
   }
 
