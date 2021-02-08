@@ -857,7 +857,8 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
       writer.addDocument(doc);
       docs.put(i, doc);
     }
-    final DirectoryReader reader = new RandomPrefetchStoredFieldsCodecDirectoryReader(DirectoryReader.open(writer));
+    final DirectoryReader reader =
+        new RandomPrefetchStoredFieldsCodecDirectoryReader(DirectoryReader.open(writer));
     int iters = atLeast(100);
     for (int i = 0; i < iters; i++) {
       int docId = random().nextInt(numDocs);
