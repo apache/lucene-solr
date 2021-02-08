@@ -20,13 +20,14 @@ import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.ParseException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import org.junit.Assert;
 import org.junit.AssumptionViolatedException;
 import org.junit.Test;
+import org.junit.function.ThrowingRunnable;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -36,9 +37,18 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Parameterized.class)
 public class TestHunspellRepositoryTestCases {
+  private static final Set<String> EXPECTED_FAILURES =
+      Set.of(
+          "hu", // Hungarian is hard: a lot of its rules are hardcoded in Hunspell code, not aff/dic
+          "morph", // we don't do morphological analysis yet
+          "nepali", // not supported yet
+          "phone" // not supported yet, used only for suggestions in en_ZA
+          );
+  private final String testName;
   private final Path pathPrefix;
 
   public TestHunspellRepositoryTestCases(String testName, Path pathPrefix) {
+    this.testName = testName;
     this.pathPrefix = pathPrefix;
   }
 
@@ -64,7 +74,12 @@ public class TestHunspellRepositoryTestCases {
   }
 
   @Test
-  public void test() throws IOException, ParseException {
-    SpellCheckerTest.checkSpellCheckerExpectations(pathPrefix, false);
+  public void test() throws Throwable {
+    ThrowingRunnable test = () -> SpellCheckerTest.checkSpellCheckerExpectations(pathPrefix);
+    if (EXPECTED_FAILURES.contains(testName)) {
+      Assert.assertThrows(Throwable.class, test);
+    } else {
+      test.run();
+    }
   }
 }
