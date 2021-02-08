@@ -59,12 +59,12 @@ public class TestPerformance extends LuceneTestCase {
 
   @Test
   public void de() throws Exception {
-    checkPerformance("de", 100_000);
+    checkPerformance("de", 200_000);
   }
 
   @Test
   public void fr() throws Exception {
-    checkPerformance("fr", 20_000);
+    checkPerformance("fr", 40_000);
   }
 
   private void checkPerformance(String code, int wordCount) throws Exception {
