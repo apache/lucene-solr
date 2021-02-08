@@ -111,46 +111,47 @@ final class Stemmer {
 
     WordCase wordCase = caseOf(word, length);
     if (wordCase == WordCase.UPPER || wordCase == WordCase.TITLE) {
-      addCaseVariations(word, length, wordCase, processor);
+      CaseVariationProcessor variationProcessor =
+          (variant, varLength, originalCase) ->
+              doStem(variant, 0, varLength, originalCase, WordContext.SIMPLE_WORD, processor);
+      varyCase(word, length, wordCase, variationProcessor);
     }
     return list;
   }
 
-  private void addCaseVariations(
-      char[] word, int length, WordCase wordCase, RootProcessor processor) {
+  interface CaseVariationProcessor {
+    boolean process(char[] word, int length, WordCase originalCase);
+  }
+
+  boolean varyCase(char[] word, int length, WordCase wordCase, CaseVariationProcessor processor) {
     if (wordCase == WordCase.UPPER) {
       caseFoldTitle(word, length);
       char[] aposCase = capitalizeAfterApostrophe(titleBuffer, length);
-      if (aposCase != null) {
-        if (!doStem(aposCase, 0, length, wordCase, WordContext.SIMPLE_WORD, processor)) {
-          return;
-        }
+      if (aposCase != null && !processor.process(aposCase, length, wordCase)) {
+        return false;
       }
-      if (!doStem(titleBuffer, 0, length, wordCase, WordContext.SIMPLE_WORD, processor)) {
-        return;
+      if (!processor.process(titleBuffer, length, wordCase)) {
+        return false;
       }
-      for (char[] variation : sharpSVariations(titleBuffer, length)) {
-        if (!doStem(variation, 0, variation.length, null, WordContext.SIMPLE_WORD, processor)) {
-          return;
-        }
+      if (dictionary.checkSharpS && !varySharpS(titleBuffer, length, processor)) {
+        return false;
       }
     }
 
     if (dictionary.isDotICaseChangeDisallowed(word)) {
-      return;
+      return true;
     }
 
     caseFoldLower(wordCase == WordCase.UPPER ? titleBuffer : word, length);
-    if (!doStem(lowerBuffer, 0, length, wordCase, WordContext.SIMPLE_WORD, processor)) {
-      return;
+    if (!processor.process(lowerBuffer, length, wordCase)) {
+      return false;
     }
-    if (wordCase == WordCase.UPPER) {
-      for (char[] variation : sharpSVariations(lowerBuffer, length)) {
-        if (!doStem(variation, 0, variation.length, null, WordContext.SIMPLE_WORD, processor)) {
-          return;
-        }
-      }
+    if (wordCase == WordCase.UPPER
+        && dictionary.checkSharpS
+        && !varySharpS(lowerBuffer, length, processor)) {
+      return false;
     }
+    return true;
   }
 
   // temporary buffers for case variants
@@ -167,26 +168,24 @@ final class Stemmer {
   }
 
   /** folds titlecase variant of word to titleBuffer */
-  char[] caseFoldTitle(char[] word, int length) {
+  private void caseFoldTitle(char[] word, int length) {
     titleBuffer = ArrayUtil.grow(titleBuffer, length);
     System.arraycopy(word, 0, titleBuffer, 0, length);
     for (int i = 1; i < length; i++) {
       titleBuffer[i] = dictionary.caseFold(titleBuffer[i]);
     }
-    return titleBuffer;
   }
 
   /** folds lowercase variant of word (title cased) to lowerBuffer */
-  char[] caseFoldLower(char[] word, int length) {
+  private void caseFoldLower(char[] word, int length) {
     lowerBuffer = ArrayUtil.grow(lowerBuffer, length);
     System.arraycopy(word, 0, lowerBuffer, 0, length);
     lowerBuffer[0] = dictionary.caseFold(lowerBuffer[0]);
-    return lowerBuffer;
   }
 
   // Special prefix handling for Catalan, French, Italian:
   // prefixes separated by apostrophe (SANT'ELIA -> Sant'+Elia).
-  static char[] capitalizeAfterApostrophe(char[] word, int length) {
+  private static char[] capitalizeAfterApostrophe(char[] word, int length) {
     for (int i = 1; i < length - 1; i++) {
       if (word[i] == '\'') {
         char next = word[i + 1];
@@ -201,9 +200,7 @@ final class Stemmer {
     return null;
   }
 
-  List<char[]> sharpSVariations(char[] word, int length) {
-    if (!dictionary.checkSharpS) return Collections.emptyList();
-
+  private boolean varySharpS(char[] word, int length, CaseVariationProcessor processor) {
     Stream<String> result =
         new Object() {
           int findSS(int start) {
@@ -233,10 +230,15 @@ final class Stemmer {
             }
           }
         }.replaceSS(0, 0);
-    if (result == null) return Collections.emptyList();
+    if (result == null) return true;
 
     String src = new String(word, 0, length);
-    return result.filter(s -> !s.equals(src)).map(String::toCharArray).collect(Collectors.toList());
+    for (String s : result.collect(Collectors.toList())) {
+      if (!s.equals(src) && !processor.process(s.toCharArray(), s.length(), null)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   boolean doStem(

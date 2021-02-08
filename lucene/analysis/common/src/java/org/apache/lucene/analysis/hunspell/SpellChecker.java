@@ -73,8 +73,12 @@ public class SpellChecker {
     }
 
     WordCase wc = stemmer.caseOf(wordChars, wordChars.length);
-    if ((wc == WordCase.UPPER || wc == WordCase.TITLE) && checkCaseVariants(wordChars, wc)) {
-      return true;
+    if ((wc == WordCase.UPPER || wc == WordCase.TITLE)) {
+      Stemmer.CaseVariationProcessor variationProcessor =
+          (variant, varLength, originalCase) -> !checkWord(variant, varLength, originalCase);
+      if (!stemmer.varyCase(wordChars, wordChars.length, wc, variationProcessor)) {
+        return true;
+      }
     }
 
     if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
@@ -90,42 +94,6 @@ public class SpellChecker {
       length--;
     }
     return spellClean(word.substring(0, length)) || spellClean(word.substring(0, length + 1));
-  }
-
-  private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
-    char[] caseVariant = wordChars;
-    if (wordCase == WordCase.UPPER) {
-      caseVariant = stemmer.caseFoldTitle(caseVariant, wordChars.length);
-      if (checkWord(caseVariant, wordChars.length, wordCase)) {
-        return true;
-      }
-      char[] aposCase = Stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
-      if (aposCase != null && checkWord(aposCase, aposCase.length, wordCase)) {
-        return true;
-      }
-      for (char[] variation : stemmer.sharpSVariations(caseVariant, wordChars.length)) {
-        if (checkWord(variation, variation.length, null)) {
-          return true;
-        }
-      }
-    }
-
-    if (dictionary.isDotICaseChangeDisallowed(wordChars)) {
-      return false;
-    }
-
-    char[] lower = stemmer.caseFoldLower(caseVariant, wordChars.length);
-    if (checkWord(lower, wordChars.length, wordCase)) {
-      return true;
-    }
-    if (wordCase == WordCase.UPPER) {
-      for (char[] variation : stemmer.sharpSVariations(lower, wordChars.length)) {
-        if (checkWord(variation, variation.length, null)) {
-          return true;
-        }
-      }
-    }
-    return false;
   }
 
   boolean checkWord(String word) {
