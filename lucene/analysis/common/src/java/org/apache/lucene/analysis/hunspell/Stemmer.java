@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -37,7 +36,6 @@ import org.apache.lucene.util.fst.FST;
  */
 final class Stemmer {
   private final Dictionary dictionary;
-  private final BytesRef scratch = new BytesRef();
   private final StringBuilder segment = new StringBuilder();
 
   // used for normalization
@@ -96,7 +94,7 @@ final class Stemmer {
       word = scratchBuffer;
     }
 
-    if (dictionary.isForbiddenWord(word, length, scratch)) {
+    if (dictionary.isForbiddenWord(word, length)) {
       return Collections.emptyList();
     }
 
@@ -251,25 +249,25 @@ final class Stemmer {
     IntsRef forms = dictionary.lookupWord(word, offset, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
-        char[] wordFlags = dictionary.decodeFlags(forms.ints[forms.offset + i], scratch);
-        if (!acceptCase(originalCase, wordFlags, word, offset, length)) {
+        int entryId = forms.ints[forms.offset + i];
+        if (!acceptCase(originalCase, entryId, word, offset, length)) {
           continue;
         }
         // we can't add this form, it's a pseudostem requiring an affix
-        if (Dictionary.hasFlag(wordFlags, dictionary.needaffix)) {
+        if (dictionary.hasFlag(entryId, dictionary.needaffix)) {
           continue;
         }
         // we can't add this form, it only belongs inside a compound word
-        if (!context.isCompound() && Dictionary.hasFlag(wordFlags, dictionary.onlyincompound)) {
+        if (!context.isCompound() && dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
           continue;
         }
         if (context.isCompound()) {
           if (context != WordContext.COMPOUND_END
-              && Dictionary.hasFlag(wordFlags, dictionary.compoundForbid)) {
+              && dictionary.hasFlag(entryId, dictionary.compoundForbid)) {
             return false;
           }
-          if (!Dictionary.hasFlag(wordFlags, dictionary.compoundFlag)
-              && !Dictionary.hasFlag(wordFlags, context.requiredFlag(dictionary))) {
+          if (!dictionary.hasFlag(entryId, dictionary.compoundFlag)
+              && !dictionary.hasFlag(entryId, context.requiredFlag(dictionary))) {
             continue;
           }
         }
@@ -300,8 +298,8 @@ final class Stemmer {
   }
 
   private boolean acceptCase(
-      WordCase originalCase, char[] wordFlags, char[] word, int offset, int length) {
-    boolean keepCase = Dictionary.hasFlag(wordFlags, dictionary.keepcase);
+      WordCase originalCase, int entryId, char[] word, int offset, int length) {
+    boolean keepCase = dictionary.hasFlag(entryId, dictionary.keepcase);
     if (originalCase != null) {
       if (keepCase
           && dictionary.checkSharpS
@@ -311,7 +309,7 @@ final class Stemmer {
       }
       return !keepCase;
     }
-    return !Dictionary.hasHiddenFlag(wordFlags);
+    return !dictionary.hasFlag(entryId, Dictionary.HIDDEN_FLAG);
   }
 
   private boolean containsSharpS(char[] word, int offset, int length) {
@@ -593,32 +591,30 @@ final class Stemmer {
     int append = dictionary.affixData(affix, Dictionary.AFFIX_APPEND);
 
     if (context.isCompound()) {
-      if (!isPrefix && dictionary.hasFlag(append, dictionary.compoundForbid, scratch)) {
+      if (!isPrefix && dictionary.hasFlag(append, dictionary.compoundForbid)) {
         return false;
       }
       WordContext allowed = isPrefix ? WordContext.COMPOUND_BEGIN : WordContext.COMPOUND_END;
-      if (context != allowed && !dictionary.hasFlag(append, dictionary.compoundPermit, scratch)) {
+      if (context != allowed && !dictionary.hasFlag(append, dictionary.compoundPermit)) {
         return false;
       }
       if (context == WordContext.COMPOUND_END
           && !isPrefix
           && !previousWasPrefix
-          && dictionary.hasFlag(append, dictionary.onlyincompound, scratch)) {
+          && dictionary.hasFlag(append, dictionary.onlyincompound)) {
         return false;
       }
     }
 
     if (recursionDepth == 0) {
       // check if affix is allowed in a non-compound word
-      return context.isCompound()
-          || !dictionary.hasFlag(append, dictionary.onlyincompound, scratch);
+      return context.isCompound() || !dictionary.hasFlag(append, dictionary.onlyincompound);
     }
 
     if (isCrossProduct(affix)) {
       // cross check incoming continuation class (flag of previous affix) against list.
-      char[] appendFlags = dictionary.decodeFlags(append, scratch);
-      if (context.isCompound() || !Dictionary.hasFlag(appendFlags, dictionary.onlyincompound)) {
-        return previousWasPrefix || Dictionary.hasFlag(appendFlags, prevFlag);
+      if (context.isCompound() || !dictionary.hasFlag(append, dictionary.onlyincompound)) {
+        return previousWasPrefix || dictionary.hasFlag(append, prevFlag);
       }
     }
 
@@ -686,15 +682,15 @@ final class Stemmer {
     IntsRef forms = skipLookup ? null : dictionary.lookupWord(strippedWord, offset, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
-        char[] wordFlags = dictionary.decodeFlags(forms.ints[forms.offset + i], scratch);
-        if (Dictionary.hasFlag(wordFlags, flag) || isFlagAppendedByAffix(prefixId, flag)) {
+        int entryId = forms.ints[forms.offset + i];
+        if (dictionary.hasFlag(entryId, flag) || isFlagAppendedByAffix(prefixId, flag)) {
           // confusing: in this one exception, we already chained the first prefix against the
           // second,
           // so it doesnt need to be checked against the word
           boolean chainedPrefix = dictionary.complexPrefixes && recursionDepth == 1 && prefix;
           if (!chainedPrefix && prefixId >= 0) {
             char prefixFlag = dictionary.affixData(prefixId, Dictionary.AFFIX_FLAG);
-            if (!Dictionary.hasFlag(wordFlags, prefixFlag)
+            if (!dictionary.hasFlag(entryId, prefixFlag)
                 && !isFlagAppendedByAffix(affix, prefixFlag)) {
               continue;
             }
@@ -710,17 +706,17 @@ final class Stemmer {
           }
 
           // we are looking for a case variant, but this word does not allow it
-          if (!acceptCase(originalCase, wordFlags, strippedWord, offset, length)) {
+          if (!acceptCase(originalCase, entryId, strippedWord, offset, length)) {
             continue;
           }
-          if (!context.isCompound() && Dictionary.hasFlag(wordFlags, dictionary.onlyincompound)) {
+          if (!context.isCompound() && dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
             continue;
           }
           if (context.isCompound()) {
             char cFlag = context.requiredFlag(dictionary);
-            if (!Dictionary.hasFlag(wordFlags, cFlag)
+            if (!dictionary.hasFlag(entryId, cFlag)
                 && !isFlagAppendedByAffix(affix, cFlag)
-                && !Dictionary.hasFlag(wordFlags, dictionary.compoundFlag)
+                && !dictionary.hasFlag(entryId, dictionary.compoundFlag)
                 && !isFlagAppendedByAffix(affix, dictionary.compoundFlag)) {
               continue;
             }
@@ -798,7 +794,7 @@ final class Stemmer {
   private boolean isFlagAppendedByAffix(int affixId, char flag) {
     if (affixId < 0 || flag == Dictionary.FLAG_UNSET) return false;
     int appendId = dictionary.affixData(affixId, Dictionary.AFFIX_APPEND);
-    return dictionary.hasFlag(appendId, flag, scratch);
+    return dictionary.hasFlag(appendId, flag);
   }
 
   private boolean isCrossProduct(int affix) {

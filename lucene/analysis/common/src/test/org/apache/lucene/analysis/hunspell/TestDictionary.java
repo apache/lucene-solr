@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -46,16 +45,20 @@ public class TestDictionary extends LuceneTestCase {
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
 
-    BytesRef ref = new BytesRef();
-    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
-    assertEquals(1, flags.length);
+    assertEquals('B', assertSingleFlag(dictionary, ordList));
 
     int offset = random().nextInt(10);
     ordList = dictionary.lookupWord((" ".repeat(offset) + "lucen").toCharArray(), offset, 5);
     assertNotNull(ordList);
     assertEquals(1, ordList.length);
-    flags = dictionary.decodeFlags(ordList.ints[0], ref);
+    assertEquals('A', assertSingleFlag(dictionary, ordList));
+  }
+
+  private static char assertSingleFlag(Dictionary dictionary, IntsRef ordList) {
+    int entryId = ordList.ints[0];
+    char[] flags = dictionary.flagLookup.getFlags(entryId);
     assertEquals(1, flags.length);
+    return flags[0];
   }
 
   public void testCompressedDictionary() throws Exception {
@@ -63,9 +66,7 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
-    BytesRef ref = new BytesRef();
-    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
-    assertEquals(1, flags.length);
+    assertSingleFlag(dictionary, ordList);
   }
 
   public void testCompressedBeforeSetDictionary() throws Exception {
@@ -73,9 +74,7 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
-    BytesRef ref = new BytesRef();
-    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
-    assertEquals(1, flags.length);
+    assertSingleFlag(dictionary, ordList);
   }
 
   public void testCompressedEmptyAliasDictionary() throws Exception {
@@ -83,9 +82,7 @@ public class TestDictionary extends LuceneTestCase {
     assertEquals(3, dictionary.lookupSuffix(new char[] {'e'}).length);
     assertEquals(1, dictionary.lookupPrefix(new char[] {'s'}).length);
     IntsRef ordList = dictionary.lookupWord(new char[] {'o', 'l', 'r'}, 0, 3);
-    BytesRef ref = new BytesRef();
-    char[] flags = dictionary.decodeFlags(ordList.ints[0], ref);
-    assertEquals(1, flags.length);
+    assertSingleFlag(dictionary, ordList);
   }
 
   // malformed rule causes ParseException
