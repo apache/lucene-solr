@@ -108,7 +108,7 @@ public class TestDictionary extends LuceneTestCase {
   }
 
   public void testForgivableErrors() throws Exception {
-    Dictionary dictionary = loadDictionary("forgivable-errors.aff", "simple.dic");
+    Dictionary dictionary = loadDictionary("forgivable-errors.aff", "forgivable-errors.dic");
     assertEquals(1, dictionary.repTable.size());
     assertEquals(2, dictionary.compoundMax);
 
