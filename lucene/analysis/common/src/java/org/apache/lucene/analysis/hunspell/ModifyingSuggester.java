@@ -21,33 +21,29 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
+/** A class that modifies the given misspelled word in various ways to get correct suggestions */
 class ModifyingSuggester {
   private static final int MAX_CHAR_DISTANCE = 4;
   private final LinkedHashSet<String> result = new LinkedHashSet<>();
   private final char[] tryChars;
   private final SpellChecker speller;
+  boolean hasGoodSuggestions;
 
   ModifyingSuggester(SpellChecker speller) {
     this.speller = speller;
     tryChars = speller.dictionary.tryChars.toCharArray();
   }
 
-  LinkedHashSet<String> suggest(String word) {
+  LinkedHashSet<String> suggest(String word, WordCase wordCase) {
     tryVariationsOf(word);
 
-    WordCase wc = WordCase.caseOf(word);
-
-    if (wc == WordCase.UPPER) {
+    if (wordCase == WordCase.TITLE) {
+      tryVariationsOf(speller.dictionary.toLowerCase(word));
+    } else if (wordCase == WordCase.UPPER) {
       tryVariationsOf(speller.dictionary.toLowerCase(word));
       tryVariationsOf(speller.dictionary.toTitleCase(word));
-      return result.stream()
-          .map(this::tryUpperCase)
-          .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    if (wc == WordCase.MIXED) {
+    } else if (wordCase == WordCase.MIXED) {
       int dot = word.indexOf('.');
       if (dot > 0
           && dot < word.length() - 1
@@ -61,17 +57,8 @@ class ModifyingSuggester {
     return result;
   }
 
-  private String tryUpperCase(String candidate) {
-    String upper = candidate.toUpperCase(Locale.ROOT);
-    if (upper.contains(" ") || speller.spell(upper)) {
-      return upper;
-    }
-    String title = speller.dictionary.toTitleCase(candidate);
-    return speller.spell(title) ? title : candidate;
-  }
-
   private void tryVariationsOf(String word) {
-    boolean hasGoodSuggestions = trySuggestion(word.toUpperCase(Locale.ROOT));
+    hasGoodSuggestions |= trySuggestion(word.toUpperCase(Locale.ROOT));
     hasGoodSuggestions |= tryRep(word);
 
     if (!speller.dictionary.mapTable.isEmpty()) {

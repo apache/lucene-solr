@@ -169,6 +169,9 @@ public class Dictionary {
   boolean enableSplitSuggestions = true;
   List<RepEntry> repTable = new ArrayList<>();
   List<List<String>> mapTable = new ArrayList<>();
+  int maxDiff = 5;
+  int maxNGramSuggestions = Integer.MAX_VALUE;
+  boolean onlyMaxDiff;
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
@@ -409,6 +412,16 @@ public class Dictionary {
         neighborKeyGroups = singleArgument(reader, line).split("\\|");
       } else if ("NOSPLITSUGS".equals(firstWord)) {
         enableSplitSuggestions = false;
+      } else if ("MAXNGRAMSUGS".equals(firstWord)) {
+        maxNGramSuggestions = Integer.parseInt(singleArgument(reader, line));
+      } else if ("MAXDIFF".equals(firstWord)) {
+        int i = Integer.parseInt(singleArgument(reader, line));
+        if (i < 0 || i > 10) {
+          throw new ParseException("MAXDIFF should be between 0 and 10", reader.getLineNumber());
+        }
+        maxDiff = i;
+      } else if ("ONLYMAXDIFF".equals(firstWord)) {
+        onlyMaxDiff = true;
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
@@ -487,7 +500,7 @@ public class Dictionary {
     return mapEntry;
   }
 
-  private boolean hasLanguage(String... langCodes) {
+  boolean hasLanguage(String... langCodes) {
     if (language == null) return false;
     String langCode = extractLanguageCode(language);
     for (String code : langCodes) {
