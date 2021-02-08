@@ -180,6 +180,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("sug2");
   }
 
+  public void testMixedCaseSuggestionHeuristics() throws Exception {
+    doTest("i58202");
+  }
+
   public void testMapSuggestions() throws Exception {
     doTest("map");
   }
