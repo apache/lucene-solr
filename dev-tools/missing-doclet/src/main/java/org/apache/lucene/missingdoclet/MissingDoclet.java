@@ -430,7 +430,7 @@ public class MissingDoclet extends StandardDoclet {
     fullMessage.append(element.getKind().toString().toLowerCase(Locale.ROOT));
     fullMessage.append("): ");
     fullMessage.append(message);
-    if (((element.getKind() == ElementKind.PACKAGE) && (fullMessage.toString().contains("javadocs are missing")))){
+    if (element.getKind() == ElementKind.PACKAGE){
       reporter.print(Diagnostic.Kind.ERROR, fullMessage.toString());
     }
     else {
