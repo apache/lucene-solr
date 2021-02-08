@@ -35,6 +35,8 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
+  private static final boolean STORE_BASE_URL = Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "true"));
+
   protected final Map<String,Object> propMap;
 
   /**
@@ -45,7 +47,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
 
     // don't store base_url if we have a node_name to recompute from when we read back from ZK
     // sub-classes that know they need a base_url (Replica) can eagerly compute in their ctor
-    if (this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+    if (!STORE_BASE_URL && this.propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
       this.propMap.remove(ZkStateReader.BASE_URL_PROP);
     }
 
@@ -118,14 +120,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public void write(JSONWriter jsonWriter) {
     // don't write out the base_url if we have a node_name
-    if (propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
-      final Map<String,Object> filtered = new HashMap<>();
-      // stream / collect is no good here as the Collector doesn't like null values
-      propMap.forEach((key, value) -> {
-        if (!ZkStateReader.BASE_URL_PROP.equals(key)) {
-          filtered.put(key, value);
-        }
-      });
+    if (!STORE_BASE_URL && propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
+      final Map<String,Object> filtered = new HashMap<>(propMap);
+      filtered.remove(ZkStateReader.BASE_URL_PROP);
       jsonWriter.write(filtered);
     } else {
       jsonWriter.write(propMap);
