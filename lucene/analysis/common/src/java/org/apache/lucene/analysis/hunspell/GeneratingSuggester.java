@@ -237,20 +237,18 @@ class GeneratingSuggester {
   }
 
   private static int lcs(String s1, String s2) {
-    int[][] lengths = new int[s1.length() + 1][s2.length() + 1];
+    int[] lengths = new int[s2.length() + 1];
 
-    for (int i = 0; i <= s1.length(); i++) {
-      for (int j = 0; j <= s2.length(); j++) {
-        if (i == 0 || j == 0) {
-          lengths[i][j] = 0;
-        } else if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
-          lengths[i][j] = lengths[i - 1][j - 1] + 1;
-        } else {
-          lengths[i][j] = Math.max(lengths[i - 1][j], lengths[i][j - 1]);
-        }
+    for (int i = 1; i <= s1.length(); i++) {
+      int prev = 0;
+      for (int j = 1; j <= s2.length(); j++) {
+        int cur = lengths[j];
+        lengths[j] =
+            s1.charAt(i - 1) == s2.charAt(j - 1) ? prev + 1 : Math.max(cur, lengths[j - 1]);
+        prev = cur;
       }
     }
-    return lengths[s1.length()][s2.length()];
+    return lengths[s2.length()];
   }
 
   private static int commonCharacterPositionScore(String s1, String s2) {
