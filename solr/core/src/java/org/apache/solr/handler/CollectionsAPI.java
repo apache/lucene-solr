@@ -198,7 +198,7 @@ public class CollectionsAPI {
                         if (nodeSetValUncast instanceof String) {
                             v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetValUncast);
                         } else {
-                            final List<String> nodeSetList = (List<String>) v2MapVals.remove(V2ApiConstants.NODE_SET);
+                            final List<String> nodeSetList = (List<String>) nodeSetValUncast;
                             final String nodeSetStr = String.join(",", nodeSetList);
                             v2MapVals.put(CollectionAdminParams.CREATE_NODE_SET_PARAM, nodeSetStr);
                         }
