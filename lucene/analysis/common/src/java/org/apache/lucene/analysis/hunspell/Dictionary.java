@@ -175,6 +175,7 @@ public class Dictionary {
   int maxDiff = 5;
   int maxNGramSuggestions = Integer.MAX_VALUE;
   boolean onlyMaxDiff;
+  char noSuggest, subStandard;
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
@@ -431,6 +432,10 @@ public class Dictionary {
         onlyMaxDiff = true;
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("NOSUGGEST".equals(firstWord)) {
+        noSuggest = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("SUBSTANDARD".equals(firstWord)) {
+        subStandard = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
         compoundMin = Math.max(1, parseNum(reader, line));
       } else if ("COMPOUNDWORDMAX".equals(firstWord)) {

@@ -144,10 +144,16 @@ public class SpellChecker {
         originalCase,
         context,
         (stem, formID, stemException) -> {
-          result[0] = stem;
+          if (acceptsStem(formID)) {
+            result[0] = stem;
+          }
           return false;
         });
     return result[0];
+  }
+
+  boolean acceptsStem(int formID) {
+    return true;
   }
 
   private boolean checkCompounds(CharsRef word, WordCase originalCase, CompoundPart prev) {
@@ -424,12 +430,20 @@ public class SpellChecker {
     }
 
     WordCase wordCase = WordCase.caseOf(word);
-    ModifyingSuggester modifier = new ModifyingSuggester(this);
+    SpellChecker suggestionSpeller =
+        new SpellChecker(dictionary) {
+          @Override
+          boolean acceptsStem(int formID) {
+            return !dictionary.hasFlag(formID, dictionary.noSuggest)
+                && !dictionary.hasFlag(formID, dictionary.subStandard);
+          }
+        };
+    ModifyingSuggester modifier = new ModifyingSuggester(suggestionSpeller);
     Set<String> suggestions = modifier.suggest(word, wordCase);
 
     if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
       suggestions.addAll(
-          new GeneratingSuggester(this)
+          new GeneratingSuggester(suggestionSpeller)
               .suggest(dictionary.toLowerCase(word), wordCase, suggestions));
     }
 
