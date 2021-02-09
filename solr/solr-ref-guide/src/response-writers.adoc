@@ -183,7 +183,7 @@ The example below, from the `sample_techproducts_configs` <<config-sets.adoc#,co
   every xsltCacheLifetimeSeconds at most.
 -->
 <queryResponseWriter name="xslt"
-                     class="org.apache.solr.scripting.xslt.XSLTResponseWriter">
+                     class="solr.scripting.xslt.XSLTResponseWriter">
   <int name="xsltCacheLifetimeSeconds">5</int>
 </queryResponseWriter>
 ----
@@ -227,8 +227,8 @@ could round trip your data via:
 
 [source,bash]
 ----
-curl -o docs_to_add.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xslt&tr=updateXml.xsl"
-curl -X POST -H "Content-Type: application/xml" -d @docs_to_add.xml 'http://localhost:8983/solr/techproducts/update?commitWithin=1000&overwrite=true"
+curl -o docs_formatted_as_solr_add.xml "http://localhost:8983/solr/techproducts/select?q=ipod&fl=id,cat,name,popularity,price,score&wt=xslt&tr=updateXml.xsl"
+curl -X POST -H "Content-Type: text/xml" -d @docs_formatted_as_solr_add.xml "http://localhost:8983/solr/techproducts/update?commitWithin=1000&overwrite=true"
 
 ----
 
