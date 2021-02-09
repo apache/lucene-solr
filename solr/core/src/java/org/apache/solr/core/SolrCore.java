@@ -72,6 +72,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CancellableCollector;
 import org.apache.lucene.search.CancellableTask;
+import org.apache.lucene.search.SentinelEmptyCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -201,7 +202,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * If we reload a core, the name remains same , but the id will be new
    */
   public final UUID uniqueId = UUID.randomUUID();
-  
+
   //TODO: This needs to become a time aware storage model
   private final Map<String, CancellableTask> activeCancellableQueries = new ConcurrentHashMap<>();
 
@@ -3261,7 +3262,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // This is only a placeholder collector -- the aggregating node should not have any collector
     // associated with the queryID.
 
-    CancellableCollector cancellableCollector = new CancellableCollector(null);
+    CancellableCollector cancellableCollector = new CancellableCollector(new SentinelEmptyCollector());
     activeCancellableQueries.put(queryID.toString(), cancellableCollector);
 
     return queryID.toString();

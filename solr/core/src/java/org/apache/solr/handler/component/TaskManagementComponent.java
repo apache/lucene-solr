@@ -4,17 +4,14 @@ import org.apache.lucene.search.CancellableTask;
 
 import java.io.IOException;
 
-/** Responsible for handling query cancellation requests */
-public class QueryCancellationComponent extends SearchComponent {
-
-    public static final String COMPONENT_NAME = "querycancellation";
+public class TaskManagementComponent extends SearchComponent {
+    public static final String COMPONENT_NAME = "taskmanagement";
 
     private boolean shouldProcess;
 
     @Override
-    public void prepare(ResponseBuilder rb) throws IOException
-    {
-        if (rb.isCancellation()) {
+    public void prepare(ResponseBuilder rb) throws IOException {
+        if (rb.isTaskListRequest()) {
             shouldProcess = true;
         }
     }

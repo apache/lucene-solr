@@ -1567,7 +1567,11 @@ public class QueryComponent extends SearchComponent
 
     final String localQueryID = req.getCore().generateQueryID();
 
-    return nodeName.concat(localQueryID);
+    if (nodeName != null) {
+      return nodeName.concat(localQueryID);
+    }
+
+    return localQueryID;
   }
 
   /**

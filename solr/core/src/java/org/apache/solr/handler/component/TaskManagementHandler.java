@@ -21,8 +21,15 @@ import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.QUERY_CANCELLATION_UUID;
 import static org.apache.solr.handler.component.ShardRequest.PURPOSE_CANCEL_TASK;
 
-public class CancellationHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
+public class TaskManagementHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
+    private enum TaskRequestType {
+        TASK_CANCEL,
+        TASK_LIST
+    };
+
     private ShardHandlerFactory shardHandlerFactory;
+    private TaskRequestType taskRequestType;
+
 
     @SuppressWarnings("unchecked")
     @Override
@@ -31,10 +38,7 @@ public class CancellationHandler extends RequestHandlerBase implements SolrCoreA
         boolean isZkAware = cc.isZooKeeperAware();
         boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
 
-        QueryCancellationComponent component = new QueryCancellationComponent();
-        List<SearchComponent> components = new ArrayList<>(1);
-        components.add(component);
-
+        List<SearchComponent> components = buildComponentsList();
         ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
 
         ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
@@ -49,8 +53,20 @@ public class CancellationHandler extends RequestHandlerBase implements SolrCoreA
 
         rb.setCancellationUUID(cancellationUUID);
 
+        if (taskRequestType == TaskRequestType.TASK_CANCEL) {
+            rb.setCancellation(true);
+        } else if (taskRequestType == TaskRequestType.TASK_LIST) {
+            rb.setTaskListRequest(true);
+        }
+
+        for(SearchComponent c : components ) {
+            c.prepare(rb);
+        }
+
         if (!isDistrib) {
-            component.process(rb);
+            for (SearchComponent component : components) {
+                component.process(rb);
+            }
         } else {
             ShardRequest sreq = new ShardRequest();
             sreq.purpose = PURPOSE_CANCEL_TASK;
@@ -115,9 +131,26 @@ public class CancellationHandler extends RequestHandlerBase implements SolrCoreA
 
     @Override
     public SolrRequestHandler getSubHandler(String path) {
-        if (path.equals("/cancel")) return this;
+        if (path.equals("/tasks/cancel")) {
+            taskRequestType = TaskRequestType.TASK_CANCEL;
+            return this;
+        } else if (path.equals("/tasks/list")) {
+            taskRequestType = TaskRequestType.TASK_LIST;
+            return this;
+        }
         return null;
     }
 
+    private List<SearchComponent> buildComponentsList() {
+        List<SearchComponent> components = new ArrayList<>(1);
+
+        QueryCancellationComponent component = new QueryCancellationComponent();
+        components.add(component);
+
+        TaskManagementComponent taskManagementComponent = new TaskManagementComponent();
+        components.add(taskManagementComponent);
+
+        return components;
+    }
 }
 
