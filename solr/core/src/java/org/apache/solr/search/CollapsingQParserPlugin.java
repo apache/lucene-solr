@@ -983,8 +983,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                   boolean needsScores,
                                   FieldType fieldType,
                                   IntIntHashMap boostDocsMap,
-                                  boolean onlyElevatedRepresentativeVisible,
-                                  FunctionQuery funcQuery, IndexSearcher searcher) throws IOException{
+                                  FunctionQuery funcQuery, IndexSearcher searcher,
+                                  boolean onlyElevatedRepresentativeVisible) throws IOException{
 
       assert ! GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type);
 
@@ -1914,7 +1914,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         if (collapseFieldType instanceof StrField) {
           if (blockCollapse) {
-            return new BlockOrdScoreCollector(collapseField, nullPolicy, boostDocs, onlyElevatedRepresentativeVisible);
+            return new BlockOrdScoreCollector(collapseField, nullPolicy, boostDocs);
           }
           return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs, searcher, onlyElevatedRepresentativeVisible);
 
@@ -2126,7 +2126,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                           BoostedDocsCollector boostedDocsCollector,
                           SortedDocValues values,
                           boolean onlyElevatedRepresentativeVisible) throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector, values);
+      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector, values, onlyElevatedRepresentativeVisible);
       this.field = groupHeadSelector.selectorText;
 
       assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
