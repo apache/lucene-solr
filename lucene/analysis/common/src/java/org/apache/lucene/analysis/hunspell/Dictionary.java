@@ -1407,14 +1407,6 @@ public class Dictionary {
         .collect(Collectors.toList());
   }
 
-  boolean isForbiddenWord(char[] word, int length) {
-    if (forbiddenword != FLAG_UNSET) {
-      IntsRef forms = lookupWord(word, 0, length);
-      return forms != null && hasFlag(forms, forbiddenword);
-    }
-    return false;
-  }
-
   boolean hasFlag(IntsRef forms, char flag) {
     int formStep = formStep();
     for (int i = 0; i < forms.length; i += formStep) {

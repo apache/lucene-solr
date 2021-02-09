@@ -172,6 +172,18 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("onlyincompound2");
   }
 
+  public void testForbiddenWord() throws Exception {
+    doTest("forbiddenword");
+  }
+
+  public void testForbiddenWord1() throws Exception {
+    doTest("opentaal_forbiddenword1");
+  }
+
+  public void testForbiddenWord2() throws Exception {
+    doTest("opentaal_forbiddenword2");
+  }
+
   public void testGermanCompounding() throws Exception {
     doTest("germancompounding");
   }
