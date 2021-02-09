@@ -45,6 +45,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.RamUsageTester;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Ignore;
 
@@ -135,6 +136,9 @@ public class TestAllDictionaries extends LuceneTestCase {
         (flag, positions) -> {
           long max = positions.stream().mapToLong(v -> v).max().orElse(0);
           System.out.printf(Locale.ROOT, "Flag %s at maximum offset %s%n", flag, max);
+          Assert.assertTrue(
+              "Flags beyond max prologue scan window: " + max,
+              max < Dictionary.MAX_PROLOGUE_SCAN_WINDOW);
         });
 
     if (failTest.get()) {
