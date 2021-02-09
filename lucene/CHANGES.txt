@@ -186,6 +186,9 @@ Improvements
 * LUCENE-9674: Implement faster advance on VectorValues using binary search.
   (Anand Kotriwal, Mike Sokolov)
 
+* LUCENE-9663: Adding compression to terms dict from SortedSet/Sorted DocValues.
+  (Jaison Bi via Bruno Roustant)
+
 Bug fixes
 
 * LUCENE-9686: Fix read past EOF handling in DirectIODirectory. (Zach Chen, 
