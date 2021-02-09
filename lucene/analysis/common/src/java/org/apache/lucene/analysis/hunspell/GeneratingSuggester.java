@@ -194,7 +194,8 @@ class GeneratingSuggester {
 
   private static int commonPrefix(String s1, String s2) {
     int i = 0;
-    while (i < s1.length() && i < s2.length() && s1.charAt(i) == s2.charAt(i)) {
+    int limit = Math.min(s1.length(), s2.length());
+    while (i < limit && s1.charAt(i) == s2.charAt(i)) {
       i++;
     }
     return i;
