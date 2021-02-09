@@ -1414,7 +1414,7 @@ Deletes backup files stored at the specified repository location.
 ====
 Previous versions of Solr supported a different snapshot-based backup file structure that did not support the storage of multiple backups at the same location.
 Solr can still restore backups stored in this old format, but it is deprecated and will be removed in subsequent versions of Solr.
-The DELETEBACKUP API does not support the deprecated format and attempts to use this API on a location holding an older backup will result in an error message. 
+The DELETEBACKUP API does not support the deprecated format and attempts to use this API on a location holding an older backup will result in an error message.
 ====
 
 Solr allows storing multiple backups for the same collection at any given logical "location".
@@ -1432,7 +1432,7 @@ The following API command deletes the the first backup (`backupId=0`) at the spe
 
 [.dynamic-tabs]
 --
-[example.tab-pane#v1listbackup]
+[example.tab-pane#v1deletebackup]
 ====
 [.tab-label]*V1 API*
 
@@ -1442,7 +1442,7 @@ http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupNa
 ----
 ====
 
-[example.tab-pane#v2listbackup]
+[example.tab-pane#v2deletebackup]
 ====
 [.tab-label]*V2 API*
 
