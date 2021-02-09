@@ -24,7 +24,9 @@ import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
@@ -415,14 +417,42 @@ public class SpellChecker {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
+    WordCase wordCase = WordCase.caseOf(word);
     ModifyingSuggester modifier = new ModifyingSuggester(this);
-    Set<String> result = modifier.suggest(word);
+    Set<String> suggestions = modifier.suggest(word, wordCase);
 
-    if (word.contains("-") && result.stream().noneMatch(s -> s.contains("-"))) {
-      result.addAll(modifyChunksBetweenDashes(word));
+    if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
+      suggestions.addAll(
+          new GeneratingSuggester(dictionary)
+              .suggest(dictionary.toLowerCase(word), wordCase, suggestions));
     }
 
+    if (word.contains("-") && suggestions.stream().noneMatch(s -> s.contains("-"))) {
+      suggestions.addAll(modifyChunksBetweenDashes(word));
+    }
+
+    Set<String> result = new LinkedHashSet<>();
+    for (String candidate : suggestions) {
+      result.add(adjustSuggestionCase(candidate, wordCase));
+      if (wordCase == WordCase.UPPER && dictionary.checkSharpS && candidate.contains("ß")) {
+        result.add(candidate);
+      }
+    }
     return new ArrayList<>(result);
+  }
+
+  private String adjustSuggestionCase(String candidate, WordCase original) {
+    if (original == WordCase.UPPER) {
+      String upper = candidate.toUpperCase(Locale.ROOT);
+      if (upper.contains(" ") || spell(upper)) {
+        return upper;
+      }
+    }
+    if (original == WordCase.UPPER || original == WordCase.TITLE) {
+      String title = dictionary.toTitleCase(candidate);
+      return spell(title) ? title : candidate;
+    }
+    return candidate;
   }
 
   private List<String> modifyChunksBetweenDashes(String word) {
