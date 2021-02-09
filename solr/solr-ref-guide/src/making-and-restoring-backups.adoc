@@ -33,10 +33,12 @@ Support for backups when running SolrCloud is provided with the <<collection-man
 
 NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
 
-Two commands are available:
+Four different API commands are supported:
 
 * `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collection-management.adoc#backup,Backup Collection>>.
 * `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collection-management.adoc#restore,Restore Collection>>.
+* `action=LISTBACKUP`: This command lists the backup points available at a specified location, displaying metadata for each.  More information is available in the section <<collection-management.adoc#listbackup,List Backups>>.
+* `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.  More information is available in the section <<collection-management.adoc#deletebackup,Delete Backups>>.
 
 == Standalone Mode Backups
 
