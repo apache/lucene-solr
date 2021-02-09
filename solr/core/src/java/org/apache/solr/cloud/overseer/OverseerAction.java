@@ -32,7 +32,8 @@ public enum OverseerAction {
   UPDATESHARDSTATE,
   STATE,
   QUIT,
-  DOWNNODE;
+  DOWNNODE,
+  REFRESH_STATE;
 
   public static OverseerAction get(String p) {
     if (p != null) {

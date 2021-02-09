@@ -77,6 +77,7 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -318,6 +319,24 @@ public class Overseer implements SolrCloseable {
       final String operation = message.getStr(QUEUE_OPERATION);
       if (operation == null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Message missing " + QUEUE_OPERATION + ":" + message);
+      }
+      if(OverseerAction.REFRESH_STATE.toString().equals(operation)) {
+        String c =  message.getStr(ZkStateReader.COLLECTION_PROP);
+        if(c != null) {
+          Stat stat = getZkStateReader().getZkClient().exists(ZkStateReader.getCollectionPath(c), null,true);
+          if(stat == null) {
+            //collection does not exist
+            return clusterState.copyWith(c, null);
+          }
+          DocCollection coll = clusterState.getCollectionOrNull(c);
+          if(coll != null && !coll.isModified(stat.getVersion(), stat.getCversion())) {
+            //our state is uptodate
+            return clusterState;
+          } else  {
+            coll = getZkStateReader().fetchCollectionState(c, null, null);
+            return clusterState.copyWith(c, coll);
+          }
+        }
       }
       List<ZkWriteCommand> zkWriteCommands = null;
       final Timer.Context timerContext = stats.time(operation);
