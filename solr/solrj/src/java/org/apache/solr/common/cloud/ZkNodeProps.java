@@ -35,7 +35,12 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  */
 public class ZkNodeProps implements JSONWriter.Writable {
 
-  private static final boolean STORE_BASE_URL = Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "true"));
+  /**
+   * Feature flag to enable storing the 'base_url' property; base_url will not be stored as of Solr 9.x.
+   * Installations that use an older (pre-8.8) SolrJ against a 8.8.0 or newer server will need to set this system
+   * property to true to avoid NPEs when reading cluster state from Zookeeper, see SOLR-15145.
+   */
+  static final boolean STORE_BASE_URL = Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "true"));
 
   protected final Map<String,Object> propMap;
 
