@@ -87,7 +87,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private final CompressionMode compressionMode;
   private final Decompressor decompressor;
   private final int numDocs;
-  private StoredFieldsReader.PrefetchOption prefetchOption;
+  private final StoredFieldsReader.PrefetchOption prefetchOption;
   private final BlockState state;
   private final long numDirtyChunks; // number of incomplete compressed blocks written
   private final long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
@@ -111,7 +111,6 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
     this.prefetchOption = prefetchOption;
     this.state = new BlockState();
     this.closed = false;
-    this.prefetchOption = prefetchOption;
   }
 
   /** Sole constructor. */
