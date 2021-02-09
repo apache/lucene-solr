@@ -14,34 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.lucene84;
+package org.apache.lucene.backward_codecs.Lucene87;
 
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
-import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
-import org.apache.lucene.backward_codecs.lucene60.Lucene60RWPointsFormat;
-import org.apache.lucene.backward_codecs.lucene70.Lucene70RWSegmentInfoFormat;
+import org.apache.lucene.backward_codecs.lucene87.Lucene87Codec;
 import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.PointsFormat;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.StoredFieldsFormat;
 
-/** RW impersonation of {@link Lucene84Codec}. */
-public class Lucene84RWCodec extends Lucene84Codec {
-
-  @Override
-  public PointsFormat pointsFormat() {
-    return new Lucene60RWPointsFormat();
-  }
-
-  @Override
-  public SegmentInfoFormat segmentInfoFormat() {
-    return new Lucene70RWSegmentInfoFormat();
-  }
-
-  @Override
-  public StoredFieldsFormat storedFieldsFormat() {
-    return new Lucene50RWStoredFieldsFormat();
-  }
+/** RW impersonation of {@link Lucene87Codec}. */
+public class Lucene87RWCodec extends Lucene87Codec {
 
   @Override
   public final CompoundFormat compoundFormat() {
