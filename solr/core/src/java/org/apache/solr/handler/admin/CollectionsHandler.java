@@ -1161,7 +1161,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
                           MAX_NUM_BACKUP_POINTS, BACKUP_PURGE_UNUSED, BACKUP_ID));
         }
 
-        final Map<String, Object> params = copy(req.getParams(), null, NAME, COLLECTION_PROP, BACKUP_REPOSITORY,
+        final Map<String, Object> params = copy(req.getParams(), null, NAME, BACKUP_REPOSITORY,
                 BACKUP_LOCATION, BACKUP_ID, MAX_NUM_BACKUP_POINTS, BACKUP_PURGE_UNUSED);
         params.put(BACKUP_LOCATION, location);
         if (repo != null) {

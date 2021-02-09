@@ -42,7 +42,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 public class CollectionBackupsAPI {
 
   public static final String LIST_BACKUP_CMD = "list-backups";
-  public static final String DELETE_BACKUP_CMD = "delete-backup";
+  public static final String DELETE_BACKUP_CMD = "delete-backups";
 
   private final CollectionsHandler collectionsHandler;
 
@@ -51,6 +51,7 @@ public class CollectionBackupsAPI {
   }
 
   @Command(name = LIST_BACKUP_CMD)
+  @SuppressWarnings("unchecked")
   public void listBackups(PayloadObj<ListBackupPayload> obj) throws Exception {
     final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.LISTBACKUP.toLower());
@@ -59,6 +60,7 @@ public class CollectionBackupsAPI {
   }
 
   @Command(name = DELETE_BACKUP_CMD)
+  @SuppressWarnings("unchecked")
   public void deleteBackups(PayloadObj<DeleteBackupPayload> obj) throws Exception {
     final Map<String, Object> v1Params = obj.get().toMap(new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.DELETEBACKUP.toLower());

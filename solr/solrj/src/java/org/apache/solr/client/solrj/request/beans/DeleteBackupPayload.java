@@ -31,9 +31,6 @@ public class DeleteBackupPayload implements ReflectMapWriter {
   public String repository;
 
   @JsonProperty
-  public String collection;
-
-  @JsonProperty
   public Integer backupId;
 
   @JsonProperty
