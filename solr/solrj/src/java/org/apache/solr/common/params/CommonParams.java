@@ -161,11 +161,6 @@ public interface CommonParams {
   String TIME_ALLOWED = "timeAllowed";
 
   /**
-   * Is this a query cancellation request?
-   */
-  String QUERY_CANCELLATION_REQUEST = "cancel";
-
-  /**
    * Is the query cancellable?
    */
   String IS_QUERY_CANCELLABLE = "canCancel";

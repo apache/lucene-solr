@@ -27,12 +27,14 @@ public class QueryCancellationComponent extends SearchComponent {
 
         CancellableTask cancellableTask = rb.req.getCore().getCancellableTask(rb.getCancellationUUID());
 
-        cancellableTask.cancelTask();
+        if (cancellableTask != null) {
+            cancellableTask.cancelTask();
+        }
     }
 
     @Override
     public String getDescription() {
-        return "Handle query cancellation";
+        return "querycancellation";
     }
 
     @Override

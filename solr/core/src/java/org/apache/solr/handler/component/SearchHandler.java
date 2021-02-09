@@ -235,7 +235,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     return result;
   }
 
-  private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
+  public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCore().getCoreContainer();
@@ -295,15 +295,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     rb.setDebug(dbg);
     if (dbg == false){//if it's true, we are doing everything anyway.
       SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
-    }
-
-    boolean isCancellationRequest = req.getParams().getBool(CommonParams.QUERY_CANCELLATION_REQUEST, false);
-    rb.setCancellation(isCancellationRequest);
-
-    if (isCancellationRequest) {
-      String cancellationUUID = req.getParams().get(QUERY_CANCELLATION_UUID, null);
-
-      rb.setCancellationUUID(cancellationUUID);
     }
 
     final RTimerTree timer = rb.isDebug() ? req.getRequestTimer() : null;

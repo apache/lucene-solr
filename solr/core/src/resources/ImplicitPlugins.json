@@ -153,6 +153,13 @@
         "echoParams": "explicit",
         "echoHandler": true
       }
+    },
+    "/cancel": {
+      "class": "solr.CancellationHandler",
+      "useParams":"_QUERY_CANCELLATION",
+      "components": [
+        "querycancellation"
+      ]
     }
   }
 }
