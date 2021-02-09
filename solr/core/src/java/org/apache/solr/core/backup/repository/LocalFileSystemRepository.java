@@ -77,7 +77,7 @@ public class LocalFileSystemRepository implements BackupRepository {
     try {
       result = new URI(location);
       if (!result.isAbsolute()) {
-        result = Paths.get(result).toUri();
+        result = Paths.get(location).toUri();
       }
     } catch (URISyntaxException ex) {
       result = Paths.get(location).toUri();
