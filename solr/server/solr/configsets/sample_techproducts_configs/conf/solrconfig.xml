@@ -833,7 +833,9 @@
        https://lucene.apache.org/solr/guide/uploading-data-with-index-handlers.html#using-xslt-to-transform-xml-index-updates
 
     -->
-  <requestHandler name="/update/xslt" class="solr.scripting.xslt.XSLTUpdateRequestHandler" >
+  <requestHandler name="/update/xslt"
+                  startup="lazy"
+                  class="solr.scripting.xslt.XSLTUpdateRequestHandler" >
     <int name="xsltCacheLifetimeSeconds">5</int>
   </requestHandler>
 
@@ -1345,7 +1347,9 @@
 
        See more about this response writer at https://lucene.apache.org/solr/guide/response-writers.html#xslt-response-writer
   -->
-  <queryResponseWriter name="xslt" class="solr.scripting.xslt.XSLTResponseWriter">
+  <queryResponseWriter name="xslt"
+                          startup="lazy"
+                          class="solr.scripting.xslt.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
 
