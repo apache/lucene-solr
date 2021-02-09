@@ -183,7 +183,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if (isPrs) {
         ZkWriteCommand command = new ClusterStateMutator(ocmh.cloudManager).createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-        log.info("collection created : {}", new String(data, StandardCharsets.UTF_8));
+//        log.info("collection created : {}", new String(data, StandardCharsets.UTF_8));
         zksr.getZkClient().create(ZkStateReader.getCollectionPath(collectionName), data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
       } else {
@@ -333,7 +333,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
         // element, which may be interpreted by the user as a positive ack
         ocmh.cleanupCollection(collectionName, new NamedList<Object>());
-        log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
+//        log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName);
       } else {
         log.debug("Finished create command on all shards for collection: {}", collectionName);

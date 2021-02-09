@@ -687,7 +687,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     Map<String, Replica> result = new HashMap<>();
     TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
     while (true) {
-      DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
+      DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+      if(coll == null) {
+        if (timeout.hasTimedOut()) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state. Last state: " + coll);
+        }
+
+        Thread.sleep(100);
+        continue;
+
+      }
       for (String coreName : coreNames) {
         if (result.containsKey(coreName)) continue;
         for (Slice slice : coll.getSlices()) {
