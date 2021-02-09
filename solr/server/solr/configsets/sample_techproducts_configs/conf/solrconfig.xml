@@ -1336,11 +1336,9 @@
 
        See more about this response writer at https://lucene.apache.org/solr/guide/response-writers.html#xslt-response-writer
   -->
-  <!--
   <queryResponseWriter name="xslt" class="org.apache.solr.scripting.xslt.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
-  -->
 
   <!-- Query Parsers
 
