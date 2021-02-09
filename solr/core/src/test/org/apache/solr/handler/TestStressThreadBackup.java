@@ -51,7 +51,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -63,7 +62,6 @@ import org.slf4j.LoggerFactory;
 
 @Nightly
 @SuppressCodecs({"SimpleText"})
-@LogLevel("org.apache.solr.handler.SnapShooter=DEBUG;org.apache.solr.core.IndexDeletionPolicyWrapper=DEBUG")
 public class TestStressThreadBackup extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -369,7 +367,8 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     public void makeBackup(final String backupName, final String snapName) throws Exception {
       ModifiableSolrParams p = params(CoreAdminParams.CORE, coreName,
                                       CoreAdminParams.NAME, backupName,
-                                      CoreAdminParams.BACKUP_LOCATION, backupDir.getAbsolutePath());
+                                      CoreAdminParams.BACKUP_LOCATION, backupDir.getAbsolutePath(),
+                                      CoreAdminParams.BACKUP_INCREMENTAL, "false");
       if (null != snapName) {
         p.add(CoreAdminParams.COMMIT_NAME, snapName);
       }

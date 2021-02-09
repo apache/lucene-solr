@@ -718,9 +718,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @SuppressWarnings({"rawtypes"})
-  void cleanBackup(BackupRepository  repository, URI backupPath, BackupId backupId) throws Exception {
+  void cleanBackup(BackupRepository  repository, URI backupUri, BackupId backupId) throws Exception {
     ((DeleteBackupCmd)commandMap.get(DELETEBACKUP))
-            .deleteBackupIds(backupPath, repository, Collections.singleton(backupId), new NamedList());
+            .deleteBackupIds(backupUri, repository, Collections.singleton(backupId), new NamedList());
   }
 
   void deleteBackup(BackupRepository repository, URI backupPath,
