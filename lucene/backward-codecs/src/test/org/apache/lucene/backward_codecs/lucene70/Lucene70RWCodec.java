@@ -19,11 +19,13 @@ package org.apache.lucene.backward_codecs.lucene70;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWPostingsFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
+import org.apache.lucene.backward_codecs.lucene50.Lucene50RWTermVectorsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /** RW impersonation of {@link Lucene70Codec}. */
@@ -64,5 +66,10 @@ public final class Lucene70RWCodec extends Lucene70Codec {
   @Override
   public CompoundFormat compoundFormat() {
     return new Lucene50RWCompoundFormat();
+  }
+
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return new Lucene50RWTermVectorsFormat();
   }
 }

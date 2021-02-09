@@ -14,9 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene90;
 
-/**
- * Components from the Lucene 5.0 index format See {@link org.apache.lucene.codecs.lucene90} for an
- * overview of the index format.
- */
-package org.apache.lucene.codecs.lucene50;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
+import org.apache.lucene.util.TestUtil;
+
+public class TestLucene90TermVectorsFormat extends BaseTermVectorsFormatTestCase {
+  @Override
+  protected Codec getCodec() {
+    return TestUtil.getDefaultCodec();
+  }
+}

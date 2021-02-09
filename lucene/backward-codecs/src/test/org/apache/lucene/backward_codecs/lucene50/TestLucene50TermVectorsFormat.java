@@ -14,24 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.Lucene87;
+package org.apache.lucene.backward_codecs.lucene50;
 
-import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
-import org.apache.lucene.backward_codecs.lucene50.Lucene50RWTermVectorsFormat;
-import org.apache.lucene.backward_codecs.lucene87.Lucene87Codec;
-import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.backward_codecs.Lucene87.Lucene87RWCodec;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
 
-/** RW impersonation of {@link Lucene87Codec}. */
-public class Lucene87RWCodec extends Lucene87Codec {
+public class TestLucene50TermVectorsFormat extends BaseTermVectorsFormatTestCase {
 
   @Override
-  public final CompoundFormat compoundFormat() {
-    return new Lucene50RWCompoundFormat();
-  }
-
-  @Override
-  public TermVectorsFormat termVectorsFormat() {
-    return new Lucene50RWTermVectorsFormat();
+  protected Codec getCodec() {
+    return new Lucene87RWCodec();
   }
 }

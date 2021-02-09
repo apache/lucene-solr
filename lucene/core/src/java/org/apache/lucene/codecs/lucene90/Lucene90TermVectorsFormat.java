@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.codecs.lucene90;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsFormat;
@@ -27,7 +27,7 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Lucene 5.0 {@link TermVectorsFormat term vectors format}.
+ * Lucene 9.0 {@link TermVectorsFormat term vectors format}.
  *
  * <p>Very similarly to {@link Lucene87StoredFieldsFormat}, this format is based on compressed
  * chunks of data, with document-level granularity so that a document can never span across distinct
@@ -151,10 +151,10 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * @lucene.experimental
  */
-public final class Lucene50TermVectorsFormat extends CompressingTermVectorsFormat {
+public final class Lucene90TermVectorsFormat extends CompressingTermVectorsFormat {
 
   /** Sole constructor. */
-  public Lucene50TermVectorsFormat() {
-    super("Lucene50TermVectorsData", "", CompressionMode.FAST, 1 << 12, 10);
+  public Lucene90TermVectorsFormat() {
+    super("Lucene90TermVectorsData", "", CompressionMode.FAST, 1 << 12, 10);
   }
 }

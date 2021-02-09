@@ -14,7 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.backward_codecs.compressing;
+
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.FLAGS_BITS;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.MAX_DOCUMENTS_PER_CHUNK;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.OFFSETS;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.PACKED_BLOCK_SIZE;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.PAYLOADS;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.POSITIONS;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_EXTENSION;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_INDEX_CODEC_NAME;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_INDEX_EXTENSION;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_META_EXTENSION;
+import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VERSION_CURRENT;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -28,6 +40,9 @@ import java.util.TreeSet;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
+import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.compressing.Compressor;
+import org.apache.lucene.codecs.compressing.MatchingReaders;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -51,30 +66,11 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link TermVectorsWriter} for {@link CompressingTermVectorsFormat}.
+ * {@link TermVectorsWriter} for {@link Lucene50CompressingTermVectorsFormat}.
  *
  * @lucene.experimental
  */
-public final class CompressingTermVectorsWriter extends TermVectorsWriter {
-
-  // hard limit on the maximum number of documents per chunk
-  static final int MAX_DOCUMENTS_PER_CHUNK = 128;
-
-  static final String VECTORS_EXTENSION = "tvd";
-  static final String VECTORS_INDEX_EXTENSION = "tvx";
-  static final String VECTORS_META_EXTENSION = "tvm";
-  static final String VECTORS_INDEX_CODEC_NAME = "Lucene90TermVectorsIndex";
-
-  static final int VERSION_START = 0;
-  static final int VERSION_CURRENT = VERSION_START;
-  static final int META_VERSION_START = 0;
-
-  static final int PACKED_BLOCK_SIZE = 64;
-
-  static final int POSITIONS = 0x01;
-  static final int OFFSETS = 0x02;
-  static final int PAYLOADS = 0x04;
-  static final int FLAGS_BITS = PackedInts.bitsRequired(POSITIONS | OFFSETS | PAYLOADS);
+public final class Lucene50CompressingTermVectorsWriter extends TermVectorsWriter {
 
   private final String segment;
   private FieldsIndexWriter indexWriter;
@@ -223,7 +219,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   private final BlockPackedWriter writer;
 
   /** Sole constructor. */
-  CompressingTermVectorsWriter(
+  Lucene50CompressingTermVectorsWriter(
       Directory directory,
       SegmentInfo si,
       String segmentSuffix,
@@ -788,7 +784,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   // we try to be extra safe with this impl, but add an escape hatch to
   // have a workaround for undiscovered bugs.
   static final String BULK_MERGE_ENABLED_SYSPROP =
-      CompressingTermVectorsWriter.class.getName() + ".enableBulkMerge";
+      Lucene50CompressingTermVectorsWriter.class.getName() + ".enableBulkMerge";
   static final boolean BULK_MERGE_ENABLED;
 
   static {
@@ -814,12 +810,13 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     MatchingReaders matching = new MatchingReaders(mergeState);
 
     for (int readerIndex = 0; readerIndex < numReaders; readerIndex++) {
-      CompressingTermVectorsReader matchingVectorsReader = null;
+      Lucene50CompressingTermVectorsReader matchingVectorsReader = null;
       final TermVectorsReader vectorsReader = mergeState.termVectorsReaders[readerIndex];
       if (matching.matchingReaders[readerIndex]) {
         // we can only bulk-copy if the matching reader is also a CompressingTermVectorsReader
-        if (vectorsReader != null && vectorsReader instanceof CompressingTermVectorsReader) {
-          matchingVectorsReader = (CompressingTermVectorsReader) vectorsReader;
+        if (vectorsReader != null
+            && vectorsReader instanceof Lucene50CompressingTermVectorsReader) {
+          matchingVectorsReader = (Lucene50CompressingTermVectorsReader) vectorsReader;
         }
       }
 
@@ -932,7 +929,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
    * some worst-case situations (e.g. frequent reopen with tiny flushes), over time the compression
    * ratio can degrade. This is a safety switch.
    */
-  boolean tooDirty(CompressingTermVectorsReader candidate) {
+  boolean tooDirty(Lucene50CompressingTermVectorsReader candidate) {
     // more than 1% dirty, or more than hard limit of 1024 dirty chunks
     return candidate.getNumDirtyChunks() > 1024
         || candidate.getNumDirtyDocs() * 100 > candidate.getNumDocs();

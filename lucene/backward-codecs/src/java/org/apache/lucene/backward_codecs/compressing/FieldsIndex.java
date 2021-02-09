@@ -14,15 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.backward_codecs.compressing;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
+import java.io.Closeable;
+import java.io.IOException;
+import org.apache.lucene.util.Accountable;
 
-public class TestLucene50TermVectorsFormat extends BaseTermVectorsFormatTestCase {
+abstract class FieldsIndex implements Accountable, Cloneable, Closeable {
+
+  /** Get the start pointer for the block that contains the given docID. */
+  abstract long getStartPointer(int docID);
+
+  /** Check the integrity of the index. */
+  abstract void checkIntegrity() throws IOException;
+
   @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
-  }
+  public abstract FieldsIndex clone();
 }

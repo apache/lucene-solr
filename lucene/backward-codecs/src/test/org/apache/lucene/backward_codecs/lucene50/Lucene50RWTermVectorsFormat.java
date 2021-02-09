@@ -14,24 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.Lucene87;
+package org.apache.lucene.backward_codecs.lucene50;
 
-import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
-import org.apache.lucene.backward_codecs.lucene50.Lucene50RWTermVectorsFormat;
-import org.apache.lucene.backward_codecs.lucene87.Lucene87Codec;
-import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.backward_codecs.compressing.Lucene50RWCompressingTermVectorsFormat;
+import org.apache.lucene.codecs.compressing.CompressionMode;
 
-/** RW impersonation of {@link Lucene87Codec}. */
-public class Lucene87RWCodec extends Lucene87Codec {
+/** RW impersonation of Lucene50StoredFieldsFormat. */
+public final class Lucene50RWTermVectorsFormat extends Lucene50RWCompressingTermVectorsFormat {
 
-  @Override
-  public final CompoundFormat compoundFormat() {
-    return new Lucene50RWCompoundFormat();
-  }
-
-  @Override
-  public TermVectorsFormat termVectorsFormat() {
-    return new Lucene50RWTermVectorsFormat();
+  /** Sole constructor. */
+  public Lucene50RWTermVectorsFormat() {
+    super("Lucene50TermVectorsData", "", CompressionMode.FAST, 1 << 12, 10);
   }
 }
