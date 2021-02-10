@@ -122,7 +122,7 @@ public class Dictionary {
   // offsets in affixData
   static final int AFFIX_FLAG = 0;
   static final int AFFIX_STRIP_ORD = 1;
-  static final int AFFIX_CONDITION = 2;
+  private static final int AFFIX_CONDITION = 2;
   static final int AFFIX_APPEND = 3;
 
   // Default flag parsing strategy
@@ -777,6 +777,14 @@ public class Dictionary {
 
   char affixData(int affixIndex, int offset) {
     return affixData[affixIndex * 4 + offset];
+  }
+
+  boolean isCrossProduct(int affix) {
+    return (affixData(affix, AFFIX_CONDITION) & 1) == 1;
+  }
+
+  int getAffixCondition(int affix) {
+    return affixData(affix, AFFIX_CONDITION) >>> 1;
   }
 
   private FST<CharsRef> parseConversions(LineNumberReader reader, int num)
