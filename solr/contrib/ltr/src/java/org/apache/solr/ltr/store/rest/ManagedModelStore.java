@@ -294,11 +294,18 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     return modelMap;
   }
 
-  private static Feature lookupFeatureFromFeatureMap(Map<String,Object> featureMap,
-      FeatureStore featureStore) {
-    final String featureName = (String)featureMap.get(NAME_KEY);
-    return (featureName == null ? null
-        : featureStore.get(featureName));
+  private static Feature lookupFeatureFromFeatureMap(Map<String, Object> featureMap, FeatureStore featureStore)
+  {
+    final String featureName = (String) featureMap.get(NAME_KEY);
+    Feature extractedFromStore = featureName == null ? null : featureStore.get(featureName);
+    if (extractedFromStore == null) {
+      if (featureStore.getFeatures().isEmpty()) {
+        throw new ModelException("Feature Store not found: " + featureStore.getName());
+      } else {
+        throw new ModelException("Feature:" + featureName + " not found in store: " + featureStore.getName());
+      }
+    }
+    return extractedFromStore;
   }
 
   @SuppressWarnings("unchecked")

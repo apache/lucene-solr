@@ -1,0 +1,39 @@
+{
+    "class":"org.apache.solr.ltr.model.MultipleAdditiveTreesModel",
+    "name":"multipleadditivetreesmodel",
+    "store": "not_existent_store",
+    "features":[
+        { "name": "matchedTitle"},
+        { "name": "constantScoreToForceMultipleAdditiveTreesScoreAllDocs"}
+    ],
+    "params":{
+        "trees": [
+            {
+                "weight" : "1f",
+                "root": {
+                    "feature": "matchedTitle",
+                    "threshold": "0.5f",
+                    "left" : {
+                        "value" : "-100"
+                    },
+                    "right": {
+                        "feature" : "constantScoreToForceMultipleAdditiveTreesScoreAllDocs",
+                        "threshold": "10.0f",
+                        "left" : {
+                            "value" : "50"
+                        },
+                        "right" : {
+                            "value" : "75"
+                        }
+                    }
+                }
+            },
+            {
+                "weight" : "2f",
+                "root": {
+                    "value" : "-10"
+                }
+            }
+        ]
+    }
+}

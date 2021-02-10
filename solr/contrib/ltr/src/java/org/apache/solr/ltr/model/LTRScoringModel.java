@@ -108,7 +108,7 @@ public abstract class LTRScoringModel implements Accountable {
         SolrPluginUtils.invokeSetters(model, params.entrySet());
       }
     } catch (final Exception e) {
-      throw new ModelException("Model type does not exist " + className, e);
+      throw new ModelException("Model creation failed for " + className, e);
     }
     model.validate();
     return model;

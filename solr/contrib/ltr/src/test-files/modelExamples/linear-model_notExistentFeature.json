@@ -1,0 +1,24 @@
+{
+  "class": "org.apache.solr.ltr.model.LinearModel",
+  "name": "6029760550880411648",
+  "store": "test",
+  "features": [
+    {
+      "name": "notExist1"
+    },
+    {
+      "name": "notExist2"
+    }
+  ],
+  "params": {
+    "weights": {
+      "title": 0.0000000000,
+      "description": 0.1000000000,
+      "keywords": 0.2000000000,
+      "popularity": 0.3000000000,
+      "text": 0.4000000000,
+      "queryIntentPerson": 0.1231231,
+      "queryIntentCompany": 0.12121211
+    }
+  }
+}
