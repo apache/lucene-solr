@@ -152,8 +152,8 @@ public class Overseer implements SolrCloseable {
       return workQueue.getZkStats();
     }
 
-    private boolean refreshClusterState = false;
-
+    Set<String> refreshCollections = Collections.synchronizedSet(new HashSet<String>());
+    
     @Override
     public void run() {
       MDCLoggingContext.setNode(zkController.getNodeName() );
@@ -170,7 +170,7 @@ public class Overseer implements SolrCloseable {
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
-        refreshClusterState = true; // let's refresh in the first iteration
+        boolean refreshClusterState = true; // let's refresh in the first iteration
 
         // we write updates in batch, but if an exception is thrown when writing new clusterstate,
         // we do not sure which message is bad message, therefore we will re-process node one by one
@@ -187,9 +187,17 @@ public class Overseer implements SolrCloseable {
           }
 
           //TODO consider removing 'refreshClusterState' and simply check if clusterState is null
-          if (refreshClusterState) {
+          if (refreshClusterState || refreshCollections.size() != 0) {
             try {
-              reader.forciblyRefreshAllClusterStateSlow();
+              if (refreshClusterState) {
+                reader.forciblyRefreshAllClusterStateSlow();
+              } else {
+                Set<String> collectionsToRefresh = new HashSet<>(refreshCollections);
+                for (String c: collectionsToRefresh) {
+                  reader.forceUpdateCollection(c);
+                  refreshCollections.remove(c);
+                }
+              }
               clusterState = reader.getClusterState();
               zkStateWriter = new ZkStateWriter(reader, stats);
               refreshClusterState = false;
@@ -309,8 +317,8 @@ public class Overseer implements SolrCloseable {
     }
 
     // nocommit: javadocs
-    public void refreshClusterState() {
-      refreshClusterState = true;
+    public void refreshClusterState(String collection) {
+      refreshCollections.add(collection);
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
