@@ -26,9 +26,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
@@ -49,7 +47,6 @@ import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
@@ -608,26 +605,20 @@ public class MiniSolrCloudCluster {
     ZkStateReader reader = solrClient.getZkStateReader();
 
     reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
-    Map<String,Exception> errors = new HashMap<>();
-    final Set<String> collections = reader.getClusterState().getCollectionsMap().keySet();
-    collections.parallelStream().forEach(collection -> {
-      try {
-        CollectionAdminRequest.deleteCollection(collection).process(solrClient);
-      } catch (BaseHttpSolrClient.RemoteSolrException e) {
-        if (!e.getMessage().contains("Could not find") && !e.getMessage().contains("Error handling 'UNLOAD' action") && !e.getMessage().contains("Cannot unload non-existent core")) {
-          errors.put(collection, e);
-        }
-      } catch (Exception e) {
-        errors.put(collection, e);
-      }
-    });
 
-    if (!errors.isEmpty()) {
-      errors.forEach((k,v) -> {
-        log.error("Failed to delete collection {}", k, v);
+    final Set<String> collections = reader.getClusterState().getCollectionsMap().keySet();
+    try (ParWork work = new ParWork(this, false, true)) {
+      collections.forEach(collection -> {
+         work.collect("", ()->{
+           try {
+             CollectionAdminRequest.deleteCollection(collection).process(solrClient);
+           } catch (Exception e) {
+             throw new SolrException(ErrorCode.SERVER_ERROR, e);
+           }
+         });
       });
-      throw errors.values().iterator().next();
     }
+
 
     // may be deleted, but may not be gone yet - we only wait to not see it in ZK, not for core unloads
     for (JettySolrRunner jetty : jettys) {

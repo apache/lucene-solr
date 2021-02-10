@@ -84,7 +84,7 @@ public class CollectionMutator {
       // TODO - fix, no makePath (ensure every path part exists), async, single node
       try {
 
-        stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" +  shardId, null, CreateMode.PERSISTENT, false);
+       // stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/" +  shardId, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" +  shardId, null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leader_elect/" +  shardId + "/election", null, CreateMode.PERSISTENT, false);
         stateManager.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName + "/leaders/" +  shardId, null, CreateMode.PERSISTENT, false);

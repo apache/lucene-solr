@@ -667,9 +667,11 @@ public abstract class LBSolrClient extends SolrClient {
         request.setBasePath(wrapper.baseUrl);
         return getClient(wrapper.getBaseUrl()).request(request, collection);
       } catch (SolrException e) {
+        e.printStackTrace();
         // Server is alive but the request was malformed or invalid
         throw e;
       } catch (SolrServerException e) {
+        e.printStackTrace();
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           moveAliveToDead(wrapper);
@@ -679,6 +681,7 @@ public abstract class LBSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
+        e.printStackTrace();
         ParWork.propagateInterrupt(e);
         throw new SolrServerException(e);
       }

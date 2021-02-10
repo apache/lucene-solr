@@ -668,6 +668,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       return null;
     }
 
+    clusterState = zkController.getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
     Slice slice = coll.getRouter().getTargetSlice(id, doc, route, req.getParams(), coll);
 
@@ -697,26 +698,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     String shardId = slice.getName();
     Replica leaderReplica = null;
-    LeaderElector elector = zkController.getLeaderElector(desc.getName());
     try {
-      isLeader = elector != null && elector.isLeader();
+      // Not equivalent to getLeaderProps, which  retries to find a leader.
+      // Replica leader = slice.getLeader();
+      leaderReplica = clusterState.getCollection(collection).getSlice(shardId).getLeader();
+      isLeader = leaderReplica.getName().equals(desc.getName());
       if (log.isTraceEnabled()) log.trace("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
           shardId = cloudDesc.getShardId();
+          leaderReplica = clusterState.getCollection(collection).getSlice(shardId).getLeader();
         }
-      }
-
-      if (!isLeader && !isSubShardLeader) {
-        leaderReplica = slice.getLeader();
-        if (desc.getName().equals(slice.getLeader().getName()) && slice.getReplicas().size() > 1) {
-          assert !desc.getName().equals(slice.getLeader().getName()) : elector == null ? null : elector.getState();
-        } else {
-          isLeader = true;
-        }
-      } else {
-        leaderReplica = clusterState.getCollection(collection).getReplica(req.getCore().getName());
       }
 
       doDefensiveChecks(phase);
@@ -725,7 +718,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // even if its phase is FROMLEADER
       String fromCollection = updateCommand.getReq().getParams().get(DISTRIB_FROM_COLLECTION);
 
-      if (DistribPhase.FROMLEADER == phase && !isSubShardLeader && !isLeader && fromCollection == null) {
+      if (DistribPhase.FROMLEADER == phase && !isSubShardLeader && fromCollection == null) {
         // we are coming from the leader, just go local - add no urls
         forwardToLeader = false;
         return null;
@@ -777,7 +770,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collection, shardId, maxRetriesToFollowers));
           }
         }
-        if (log.isDebugEnabled()) log.debug("We are the leader, forward update to replicas.. {}", nodes);
+        if (log.isDebugEnabled()) log.debug("We are the leader {}, forward update to replicas.. {} {}", req.getCore().getName(), nodes);
         return nodes;
 
       } else {
@@ -1058,6 +1051,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   private void doDefensiveChecks(DistribPhase phase) {
+    // MRM TODO: could use LeaderElector elector = zkController.getLeaderElector(desc.getName());
+
     boolean isReplayOrPeersync = (updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0;
     if (isReplayOrPeersync) return;
 

@@ -980,7 +980,7 @@ public class SolrZkClient implements Closeable {
         //  }
           int lines = dataString.split("\\r\\n|\\r|\\n").length;
           if ((stat != null && stat.getDataLength() < MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW && lines < 4) || path.endsWith("state.json") || path
-              .endsWith("security.json") || (path.endsWith("solrconfig.xml") && Boolean.getBoolean("solr.tests.printsolrconfig")) || path.endsWith("_statupdates")) {
+              .endsWith("security.json") || (path.endsWith("solrconfig.xml") && Boolean.getBoolean("solr.tests.printsolrconfig")) || path.endsWith("_statupdates") || path.contains("/terms/")) {
             //        if (path.endsWith(".xml")) {
             //          // this is the cluster state in xml format - lets pretty print
             //          dataString = prettyPrint(path, dataString);
@@ -1035,6 +1035,12 @@ public class SolrZkClient implements Closeable {
   public void printLayoutToStream(PrintStream out) {
     StringBuilder sb = new StringBuilder(512);
     printLayout("/", 0, sb);
+    out.println(sb.toString());
+  }
+
+  public void printLayoutToStream(PrintStream out, String path) {
+    StringBuilder sb = new StringBuilder(512);
+    printLayout(path, 0, sb);
     out.println(sb.toString());
   }
 

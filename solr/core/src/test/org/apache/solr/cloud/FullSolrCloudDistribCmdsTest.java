@@ -112,7 +112,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   public static String createAndSetNewDefaultCollection() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String name = "test_collection_" + NAME_COUNTER.getAndIncrement();
-    CollectionAdminRequest.createCollection(name, "_default", 3, 4).setMaxShardsPerNode(10)
+    CollectionAdminRequest.createCollection(name, "_default", 3, 3).setMaxShardsPerNode(10)
                  .process(cloudClient);
     cloudClient.setDefaultCollection(name);
     return name;
@@ -480,6 +480,8 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     long found = cloudClient.query(params("q", "*:*")).getResults().getNumFound();
     assertEquals(numDocs + " found " + found, numDocs, found);
 
+
+    cluster.getSolrClient().getZkStateReader().checkShardConsistency(collectionName, false, true);
     //checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }

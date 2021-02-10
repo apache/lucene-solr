@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.zookeeper.Watcher.Event.KeeperState.AuthFailed;
+import static org.apache.zookeeper.Watcher.Event.KeeperState.Closed;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Disconnected;
 import static org.apache.zookeeper.Watcher.Event.KeeperState.Expired;
 
@@ -88,7 +89,7 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public ZooKeeper getKeeper() {
-    if (isClosed) {
+    if (keeper.getState() == ZooKeeper.States.CLOSED) {
       throw new AlreadyClosedException(this + " SolrZkClient is not currently connected state=" + keeper.getState());
     }
 

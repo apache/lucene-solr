@@ -58,6 +58,7 @@ public abstract class SolrCoreState {
   protected int solrCoreStateRefCnt = 1;
 
   public void increfSolrCoreState() {
+    if (log.isDebugEnabled()) log.debug("SolrCoreState ref count {}", solrCoreStateRefCnt);
     synchronized (this) {
       if (solrCoreStateRefCnt == 0) {
         throw new CoreIsClosedException("IndexWriter has been closed");

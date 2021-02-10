@@ -410,6 +410,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new Create(collection, config, ImplicitDocRouter.NAME, null, checkNotNull("shards",shards), numNrtReplicas, numTlogReplicas, numPullReplicas);
   }
 
+  public static Create createCollection(String collection, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) {
+    return new Create(collection, null, null, numShards, null, numNrtReplicas, numTlogReplicas, numPullReplicas);
+  }
+
   /**
    * Returns a SolrRequest for modifying a collection with the given properties
    * @param collection  the collection name
@@ -451,7 +455,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private Create(String collection, String config, String routerName, Integer numShards, String shards, Integer numNrtReplicas, Integer  numTlogReplicas, Integer numPullReplicas) {
       super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
       // NOTE: there's very little we can assert about the args because nothing but "collection" is required by the server
-      if ((null != shards) && (null != numShards)) {
+      if ((null != shards) && (null != numShards && numShards != 0)) {
         throw new IllegalArgumentException("Can not specify both a numShards and a list of shards");
       }
       this.configName = config;

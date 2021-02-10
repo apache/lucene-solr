@@ -18,6 +18,7 @@
 
 package org.apache.solr.cli;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -70,7 +71,7 @@ public class Stellar {
     protected ZooKeeper zk;
     protected ZkStateReader zkStateReader;
     protected String host = "";
-
+    protected CloudHttp2SolrClient solrClient;
 
     public boolean getPrintWatches() {
         return printWatches;
@@ -105,7 +106,12 @@ public class Stellar {
         new GetAllChildrenNumberCommand().addToMap(commandMapCli);
         new VersionCommand().addToMap(commandMapCli);
         new AddWatchCommand().addToMap(commandMapCli);
-        new ClusterCommand().addToMap(commandMapCli);
+
+        new CreateCollectionCommand().addToMap(commandMapCli);
+        new DeleteCollectionCommand().addToMap(commandMapCli);
+        new ClusterStateCommand().addToMap(commandMapCli);
+        new ClusterCheckCommand().addToMap(commandMapCli);
+
 
         // add all to commandMap
         for (Entry<String, CliCommand> entry : commandMapCli.entrySet()) {
@@ -293,6 +299,7 @@ public class Stellar {
 
         zkStateReader = new ZkStateReader(host, Integer.parseInt(cl.getOption("timeout")), 10000);
         zk = zkStateReader.getZkClient().getSolrZooKeeper();
+        solrClient = new CloudHttp2SolrClient.Builder(zkStateReader).build();
         zkStateReader.createClusterStateWatchersAndUpdate();
     }
 
@@ -427,6 +434,7 @@ public class Stellar {
         if (cliCmd != null) {
             cliCmd.setZk(zk);
             cliCmd.setZkStateReader(zkStateReader);
+            cliCmd.setSolrClient(solrClient);
             watch = cliCmd.parse(args).exec();
         } else if (!commandMap.containsKey(cmd)) {
             usage();

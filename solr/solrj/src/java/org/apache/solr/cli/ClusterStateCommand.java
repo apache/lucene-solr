@@ -27,24 +27,24 @@ import org.apache.commons.cli.PosixParser;
 /**
  * ls command for cli
  */
-public class ClusterCommand extends CliCommand {
+public class ClusterStateCommand extends CliCommand {
 
   private static Options options = new Options();
   private String[] args;
   private CommandLine cl;
 
   static {
-    options.addOption("s", "state", false, "Outputs the Solr state in Zookeeper");
+    //options.addOption("s", "state", false, "Outputs the Solr state in Zookeeper");
 
   }
 
-  public ClusterCommand() {
-    super("cluster", "");
+  public ClusterStateCommand() {
+    super("cluster_state", "[path]");
   }
 
   private void printHelp() {
     HelpFormatter formatter = new HelpFormatter();
-    formatter.printHelp("cluster [cmd]", options);
+    formatter.printHelp("cluster_state", options);
   }
 
   @Override
@@ -56,9 +56,9 @@ public class ClusterCommand extends CliCommand {
       throw new CliParseException(ex);
     }
     args = cl.getArgs();
-    if (args.length < 2) {
-      throw new CliParseException(getUsageStr());
-    }
+//    if (args.length < 2) {
+//      throw new CliParseException(getUsageStr());
+//    }
 
     return this;
   }
@@ -68,17 +68,26 @@ public class ClusterCommand extends CliCommand {
     if (args.length < 1) {
       throw new MalformedCommandException(getUsageStr());
     }
-    System.out.println("cluster:" + args + " " + options);
-    boolean withState = cl.hasOption("s");
 
-    try {
-      if (withState) {
-        System.out.println("print the layout");
-        zkStateReader.getZkClient().printLayoutToStream(out);
-      }
-    } catch (IllegalArgumentException ex) {
-      throw new MalformedPathException(ex.getMessage());
-    }
+   if (args.length == 2) {
+     try {
+
+       zkStateReader.getZkClient().printLayoutToStream(out, args[1]);
+
+     } catch (IllegalArgumentException ex) {
+       throw new MalformedPathException(ex.getMessage());
+     }
+   } else {
+     try {
+
+       zkStateReader.getZkClient().printLayoutToStream(out);
+
+     } catch (IllegalArgumentException ex) {
+       throw new MalformedPathException(ex.getMessage());
+     }
+   }
+
+
     return false;
   }
 }

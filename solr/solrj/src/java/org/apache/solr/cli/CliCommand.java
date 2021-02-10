@@ -18,6 +18,7 @@
 
 package org.apache.solr.cli;
 
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.ZooKeeper;
 
@@ -31,6 +32,8 @@ public abstract class CliCommand {
 
     protected ZooKeeper zk;
     protected ZkStateReader zkStateReader;
+    protected CloudHttp2SolrClient solrClient;
+
     protected PrintStream out;
     protected PrintStream err;
     private String cmdStr;
@@ -75,6 +78,10 @@ public abstract class CliCommand {
 
     public void setZkStateReader(ZkStateReader zkStateReader) {
         this.zkStateReader = zkStateReader;
+    }
+
+    public void setSolrClient(CloudHttp2SolrClient solrClient) {
+        this.solrClient = solrClient;
     }
 
     /**

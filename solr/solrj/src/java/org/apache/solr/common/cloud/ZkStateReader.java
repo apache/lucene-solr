@@ -50,14 +50,22 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.cloud.CloudInspectUtil;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -1414,9 +1422,16 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       byte[] data = null;
 
       IOUtils.closeQuietly(stateUpdateWatcher);
-      data = getZkClient().getData(stateUpdatesPath, stateUpdateWatcher, null, true);
+
+      try {
+        data = getZkClient().getData(stateUpdatesPath, stateUpdateWatcher, null, true);
+      } catch (NoNodeException e) {
+        log.info("No node found for {}", stateUpdatesPath);
+        return;
+      }
 
       if (data == null) {
+        log.info("No data found for {}", stateUpdatesPath);
         return;
       }
 
@@ -2735,6 +2750,199 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
       return false;
     };
+  }
+
+  /* Checks both shard replcia consistency and against the control shard.
+   * The test will be failed if differences are found.
+   */
+  protected void checkShardConsistency(String collection) throws Exception {
+    checkShardConsistency(collection, true, false);
+  }
+
+  /* Checks shard consistency and optionally checks against the control shard.
+   * The test will be failed if differences are found.
+   */
+  public void checkShardConsistency(String collection, boolean checkVsControl, boolean verbose)
+      throws Exception {
+    checkShardConsistency(collection, checkVsControl, verbose, null, null);
+  }
+
+  /* Checks shard consistency and optionally checks against the control shard.
+   * The test will be failed if differences are found.
+   */
+  protected void checkShardConsistency(String collection, boolean checkVsControl, boolean verbose, Set<String> addFails, Set<String> deleteFails)
+      throws Exception {
+
+    Set<String> theShards = getClusterState().getCollection(collection).getSlicesMap().keySet();
+    String failMessage = null;
+    for (String shard : theShards) {
+      String shardFailMessage = checkShardConsistency(collection, shard, false, verbose);
+      if (shardFailMessage != null && failMessage == null) {
+        failMessage = shardFailMessage;
+      }
+    }
+
+    if (failMessage != null) {
+      System.err.println(failMessage);
+      // MRM TODO: fail test if from tests
+
+      throw new AssertionError(failMessage);
+    }
+
+    if (!checkVsControl) return;
+
+    SolrParams q = params("q","*:*","rows","0", "tests","checkShardConsistency(vsControl)");    // add a tag to aid in debugging via logs
+
+//    SolrDocumentList controlDocList = controlClient.query(q).getResults();
+//    long controlDocs = controlDocList.getNumFound();
+//
+//    SolrDocumentList cloudDocList = cloudClient.query(q).getResults();
+//    long cloudClientDocs = cloudDocList.getNumFound();
+
+
+    // now check that the right # are on each shard
+    //    theShards = shardToJetty.keySet();
+    //    int cnt = 0;
+    //    for (String s : theShards) {
+    //      int times = shardToJetty.get(s).size();
+    //      for (int i = 0; i < times; i++) {
+    //        try {
+    //          CloudJettyRunner cjetty = shardToJetty.get(s).get(i);
+    //          ZkNodeProps props = cjetty.info;
+    //          SolrClient client = cjetty.client.solrClient;
+    //          boolean active = Replica.State.getState(props.getStr(ZkStateReader.STATE_PROP)) == Replica.State.ACTIVE;
+    //          if (active) {
+    //            SolrQuery query = new SolrQuery("*:*");
+    //            query.set("distrib", false);
+    //            long results = client.query(query).getResults().getNumFound();
+    //            if (verbose) System.err.println(props + " : " + results);
+    //            if (verbose) System.err.println("shard:"
+    //                + props.getStr(ZkStateReader.SHARD_ID_PROP));
+    //            cnt += results;
+    //            break;
+    //          }
+    //        } catch (Exception e) {
+    //          ParWork.propagateInterrupt(e);
+    //          // if we have a problem, try the next one
+    //          if (i == times - 1) {
+    //            throw e;
+    //          }
+    //        }
+    //      }
+    //    }
+
+    //controlDocs != cnt ||
+    int cnt = -1;
+//    if (cloudClientDocs != controlDocs) {
+//      String msg = "document count mismatch.  control=" + controlDocs + " sum(shards)="+ cnt + " cloudClient="+cloudClientDocs;
+//      log.error(msg);
+//
+//      boolean shouldFail = CloudInspectUtil.compareResults(controlClient, cloudClient, addFails, deleteFails);
+//      if (shouldFail) {
+//        fail(msg);
+//      }
+//    }
+  }
+
+  /**
+   * Returns a non-null string if replicas within the same shard do not have a
+   * consistent number of documents.
+   * If expectFailure==false, the exact differences found will be logged since
+   * this would be an unexpected failure.
+   * verbose causes extra debugging into to be displayed, even if everything is
+   * consistent.
+   */
+  protected String checkShardConsistency(String collection, String shard, boolean expectFailure, boolean verbose)
+      throws Exception {
+
+
+    long num = -1;
+    long lastNum = -1;
+    String failMessage = null;
+    if (verbose) System.err.println("check const of " + shard);
+    int cnt = 0;
+
+    DocCollection coll = getClusterState().getCollection(collection);
+
+    Slice replicas = coll.getSlice(shard);
+
+    Replica lastReplica = null;
+    for (Replica replica : replicas) {
+
+      if (verbose) System.err.println("client" + cnt++);
+      if (verbose) System.err.println("Replica:" + replica);
+      try (SolrClient client = getHttpClient(replica.getCoreUrl())) {
+        try {
+          SolrParams query = params("q","*:*", "rows","0", "distrib","false", "tests","checkShardConsistency"); // "tests" is just a tag that won't do anything except be echoed in logs
+          num = client.query(query).getResults().getNumFound();
+        } catch (SolrException | SolrServerException e) {
+          if (verbose) System.err.println("error contacting client: "
+              + e.getMessage() + "\n");
+          continue;
+        }
+
+        boolean live = false;
+        String nodeName = replica.getNodeName();
+        if (isNodeLive(nodeName)) {
+          live = true;
+        }
+        if (verbose) System.err.println(" live:" + live);
+        if (verbose) System.err.println(" num:" + num + "\n");
+
+        boolean active = replica.getState() == Replica.State.ACTIVE;
+        if (active && live) {
+          if (lastNum > -1 && lastNum != num && failMessage == null) {
+            failMessage = shard + " is not consistent.  Got " + lastNum + " from " + lastReplica.getCoreUrl() + " (previous client)" + " and got " + num + " from " + replica.getCoreUrl();
+
+            if (!expectFailure || verbose) {
+              System.err.println("######" + failMessage);
+              SolrQuery query = new SolrQuery("*:*");
+              query.set("distrib", false);
+              query.set("fl", "id,_version_");
+              query.set("rows", "100000");
+              query.set("sort", "id asc");
+              query.set("tests", "checkShardConsistency/showDiff");
+
+              try (SolrClient lastClient = getHttpClient(lastReplica.getCoreUrl())) {
+                SolrDocumentList lst1 = lastClient.query(query).getResults();
+                SolrDocumentList lst2 = client.query(query).getResults();
+
+                CloudInspectUtil.showDiff(lst1, lst2, lastReplica.getCoreUrl(), replica.getCoreUrl());
+              }
+            }
+
+          }
+          lastNum = num;
+          lastReplica = replica;
+        }
+      }
+    }
+    return failMessage;
+
+  }
+
+  /**
+   * Generates the correct SolrParams from an even list of strings.
+   * A string in an even position will represent the name of a parameter, while the following string
+   * at position (i+1) will be the assigned value.
+   *
+   * @param params an even list of strings
+   * @return the ModifiableSolrParams generated from the given list of strings.
+   */
+  public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i=0; i<params.length; i+=2) {
+      msp.add(params[i], params[i+1]);
+    }
+    return msp;
+  }
+
+  public Http2SolrClient getHttpClient(String baseUrl) {
+    Http2SolrClient client = new Http2SolrClient.Builder(baseUrl)
+        .idleTimeout(Integer.getInteger("socketTimeout", 30000))
+        .build();
+    return client;
   }
 
   private class CloudCollectionsListenerConsumer implements Consumer<CloudCollectionsListener> {

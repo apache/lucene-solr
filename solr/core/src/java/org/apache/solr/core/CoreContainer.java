@@ -1286,10 +1286,10 @@ public class CoreContainer implements Closeable {
           try {
             Future<?> future = solrCoreExecutor.submit(() -> {
               log.info("Closing replaced core {}", cd.getName());
-              finalCore.closeAndWait();
+              finalCore.close();
             });
           } catch (RejectedExecutionException e) {
-            finalCore.closeAndWait();
+            finalCore.close();
           }
         }
       }

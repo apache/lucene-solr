@@ -23,13 +23,13 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,7 +176,7 @@ public class CloudInspectUtil {
   public static boolean compareResults(SolrClient controlClient, SolrClient cloudClient, Set<String> addFails, Set<String> deleteFails)
       throws SolrServerException, IOException {
     
-    SolrParams q = SolrTestCaseJ4.params("q","*:*","rows","0", "tests","checkShardConsistency(vsControl)");    // add a tag to aid in debugging via logs
+    SolrParams q = ZkStateReader.params("q","*:*","rows","0", "tests","checkShardConsistency(vsControl)");    // add a tag to aid in debugging via logs
 
     SolrDocumentList controlDocList = controlClient.query(q).getResults();
     long controlDocs = controlDocList.getNumFound();
@@ -185,7 +185,7 @@ public class CloudInspectUtil {
     long cloudClientDocs = cloudDocList.getNumFound();
     
     // re-execute the query getting ids
-    q = SolrTestCaseJ4.params("q", "*:*", "rows", "100000", "fl", "id", "tests", "checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
+    q = ZkStateReader.params("q", "*:*", "rows", "100000", "fl", "id", "tests", "checkShardConsistency(vsControl)/getIds");    // add a tag to aid in debugging via logs
     controlDocList = controlClient.query(q).getResults();
     if (controlDocs != controlDocList.getNumFound()) {
       log.error("Something changed! control now {}", controlDocList.getNumFound());
@@ -222,7 +222,7 @@ public class CloudInspectUtil {
 
       if (foundId) {
         // get versions for those ids that don't match
-        q = SolrTestCaseJ4.params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
+        q = ZkStateReader.params("q", ids.toString(), "rows", "100000", "fl", "id,_version_",
             "sort", "id asc", "tests",
             "checkShardConsistency(vsControl)/getVers"); // add a tag to aid in
         // debugging via logs

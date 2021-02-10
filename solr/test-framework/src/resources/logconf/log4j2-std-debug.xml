@@ -20,14 +20,11 @@
     <Appenders>
 
         <Console name="STDERR_COLOR" target="SYSTEM_ERR">
-            <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
-                            eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
-                            prettyPrintEnabled="true"
-                            stackTraceEnabled="true"/>
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </Console>
 
         <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
-            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-1p}{20}} %style{(%t)}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%t)}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </File>
 
     </Appenders>
@@ -39,7 +36,12 @@
         <AsyncLogger name="org.apache.hadoop" level="WARN"/>
         <AsyncLogger name="org.apache.directory" level="WARN"/>
         <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
-        <AsyncLogger name="org.eclipse.jetty" level="DEBUG"/>
+        <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
+
+        <AsyncLogger name="org.apache.solr.core.SolrCore" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.core.DefaultSolrCore" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.core.SolrCoreState" level="DEBUG"/>
+
         <AsyncLogger name="org.apache.solr.handler.admin.CollectionsHandler" level="INFO"/>
         <AsyncLogger name="org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler" level="INFO"/>
         <AsyncLogger name="org.apache.solr.cloud.api.collections.CreateCollectionCmd" level="INFO"/>
@@ -52,13 +54,16 @@
         <AsyncLogger name="org.apache.solr.client.solrj.impl.LBSolrClient" level="INFO"/>
         <AsyncLogger name="org.apache.solr.cloud.ZkController" level="INFO"/>
         <AsyncLogger name="org.apache.solr.common.cloud.ZkMaintenanceUtils" level="INFO"/>
-        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.update.processor.DistributedUpdateProcessor" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.update.SolrCmdDistributor" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedUpdateProcessor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.SolrCmdDistributor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="INFO"/>
 
-        <AsyncLogger name="com.google.inject.servlet" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.common.ParWork" level="INFO"/>
+
+
+        <AsyncLogger name="com.google.inject.servlet" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="INFO"/>
 
         <AsyncRoot level="INFO">
             <AppenderRef ref="STDERR_COLOR"/>

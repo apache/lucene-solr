@@ -1713,15 +1713,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
     int cnt = refCount.incrementAndGet();
 
-    if (log.isDebugEnabled()) {
-      RuntimeException e = new RuntimeException();
-      StackTraceElement[] stack = e.getStackTrace();
-      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
-        log.debug(stack[i].toString());
-      }
-
-      log.debug("open refcount {} {} {}", this, name, cnt);
-    }
+//    if (log.isDebugEnabled()) {
+//      RuntimeException e = new RuntimeException();
+//      StackTraceElement[] stack = e.getStackTrace();
+//      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+//        log.debug(stack[i].toString());
+//      }
+//
+//      log.debug("open refcount {} {} {}", this, name, cnt);
+//    }
   }
 
   /**
@@ -1751,21 +1751,23 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   @Override
   public void close() {
-    if (refCount.get() == -1) {
-      return;
+    int cref = refCount.get();
+    if (cref == -1 || cref == 0) {
+      throw new IllegalStateException("Already closed " + cref);
     }
+
 
     int count = refCount.decrementAndGet();
 
-    if (log.isDebugEnabled()) {
-      RuntimeException e = new RuntimeException();
-      StackTraceElement[] stack = e.getStackTrace();
-      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
-        log.debug(stack[i].toString());
-      }
-
-      log.debug("close refcount after {} {} {}", this, name, count);
-    }
+//    if (log.isDebugEnabled()) {
+//      RuntimeException e = new RuntimeException();
+//      StackTraceElement[] stack = e.getStackTrace();
+//      for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+//        log.debug(stack[i].toString());
+//      }
+//
+//      log.debug("close refcount after {} {} {}", this, name, count);
+//    }
 
     if (count == 0) {
       try {
@@ -1801,11 +1803,16 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     int timeouts = 30;
 
+    // MRM TODO: put this timeout in play again
     TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int cnt = 0;
     while (!canBeClosed() || refCount.get() != -1) {
-      if (cnt >= 2 && !closing) {
-        throw new IllegalStateException();
+//      if (cnt >= 2 && !closing) {
+//        throw new IllegalStateException();
+//      }
+      if (refCount.get() == 0 && !closing) {
+        doClose();
+        break;
       }
       synchronized (closeAndWait) {
         try {
@@ -1814,25 +1821,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           throw new IllegalStateException();
         }
       }
+      if (log.isDebugEnabled()) log.debug("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
       cnt++;
-//      cnt++;
-//      try {
-//        if (!closing) {
-//          synchronized (closeAndWait) {
-//            closeAndWait.wait(250);
-//          }
-//        }
-//        if (cnt >= 2 && !closing) {
-//          close();
-//        }
-//        if (log.isTraceEnabled()) log.trace("close count is {} {} closing={} isClosed={}", name, refCount.get(), closing, isClosed);
-//      } catch (InterruptedException e) {
-//
-//      }
-//      if (timeout.hasTimedOut()) {
-//        throw new SolrException(ErrorCode.SERVER_ERROR, "Timeout waiting for SolrCore close timeout=" + timeouts + "s");
-//      }
-
     }
   }
 
@@ -1840,6 +1830,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     try {
       if (closing) {
+        this.closing = true;
         while (!isClosed) {
           synchronized (closeAndWait) {
             try {
@@ -1854,7 +1845,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       log.info("CLOSING SolrCore {}", logid);
       assert ObjectReleaseTracker.release(this);
-      this.closing = true;
+
 
       searcherReadyLatch.countDown();
 

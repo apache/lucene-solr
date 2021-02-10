@@ -326,7 +326,7 @@ CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
 esac
 
 
-JETTY_ARGS=(${JETTY_ARGS[*]} "-Djetty.state=$JETTY_STATE")
+JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE")
 
 ##################################################
 # Get the list of config.xml files from jetty.conf

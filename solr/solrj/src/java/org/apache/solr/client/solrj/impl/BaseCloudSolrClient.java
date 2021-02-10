@@ -1136,6 +1136,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...
 
+    System.out.println("path:" + request.getPath());
+
     if (request instanceof V2Request) {
       if (!liveNodes.isEmpty()) {
         List<String> liveNodesList = new ArrayList<>(liveNodes);
@@ -1145,6 +1147,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
+      System.out.println("isadmin:" + request.getPath() + " livenodes:" + liveNodes);
       for (String liveNode : liveNodes) {
         theUrlList.add(Utils.getBaseUrlForNodeName(liveNode,
             getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));
@@ -1215,7 +1218,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
             "Could not find a healthy node to handle the request, collection names: " + collectionNames);
       }
     }
-
+    System.out.println("urllist:" + theUrlList);
     LBSolrClient.Req req = new LBSolrClient.Req(request, theUrlList);
     LBSolrClient.Rsp rsp = getLbClient().request(req);
     return rsp.getResponse();
