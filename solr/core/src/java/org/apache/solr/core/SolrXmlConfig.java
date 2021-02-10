@@ -308,6 +308,9 @@ public class SolrXmlConfig {
         case "configSetsHandler":
           builder.setConfigSetsHandlerClass(value);
           break;
+        case "configSetService":
+          builder.setConfigSetServiceClass(value);
+          break;
         case "coreRootDirectory":
           builder.setCoreRootDirectory(value);
           break;

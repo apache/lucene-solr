@@ -89,6 +89,8 @@ public class NodeConfig {
   private final boolean fromZookeeper;
   private final String defaultZkHost;
 
+  private final String configSetServiceClass;
+
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
                      Path configSetBaseDirectory, String sharedLibDirectory,
                      PluginInfo shardHandlerFactoryConfig, UpdateShardHandlerConfig updateShardHandlerConfig,
@@ -99,7 +101,7 @@ public class NodeConfig {
                      Path solrHome, SolrResourceLoader loader,
                      Properties solrProperties, PluginInfo[] backupRepositoryPlugins,
                      MetricsConfig metricsConfig, PluginInfo transientCacheConfig, PluginInfo tracerConfig,
-                     boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths) {
+                     boolean fromZookeeper, String defaultZkHost, Set<Path> allowPaths,String configSetServiceClass) {
     // all Path params here are absolute and normalized.
     this.nodeName = nodeName;
     this.coreRootDirectory = coreRootDirectory;
@@ -131,6 +133,7 @@ public class NodeConfig {
     this.fromZookeeper = fromZookeeper;
     this.defaultZkHost = defaultZkHost;
     this.allowPaths = allowPaths;
+    this.configSetServiceClass = configSetServiceClass;
 
     if (this.cloudConfig != null && this.getCoreLoadThreadCount(false) < 2) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -138,6 +141,10 @@ public class NodeConfig {
     }
     if (null == this.solrHome) throw new NullPointerException("solrHome");
     if (null == this.loader) throw new NullPointerException("loader");
+  }
+
+  public String getConfigSetServiceClass() {
+    return this.configSetServiceClass;
   }
 
   public String getNodeName() {
@@ -333,6 +340,7 @@ public class NodeConfig {
     private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
+    private String configSetServiceClass;
 
     private final Path solrHome;
     private final String nodeName;
@@ -507,6 +515,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setConfigSetServiceClass(String configSetServiceClass){
+      this.configSetServiceClass = configSetServiceClass;
+      return this;
+    }
+
     public NodeConfig build() {
       // if some things weren't set then set them now.  Simple primitives are set on the field declaration
       if (loader == null) {
@@ -517,7 +530,7 @@ public class NodeConfig {
                             updateShardHandlerConfig, coreAdminHandlerClass, collectionsAdminHandlerClass, healthCheckHandlerClass, infoHandlerClass, configSetsHandlerClass,
                             logWatcherConfig, cloudConfig, coreLoadThreads, replayUpdatesThreads, transientCacheSize, useSchemaCache, managementPath,
                             solrHome, loader, solrProperties,
-                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper, defaultZkHost, allowPaths);
+                            backupRepositoryPlugins, metricsConfig, transientCacheConfig, tracerConfig, fromZookeeper, defaultZkHost, allowPaths, configSetServiceClass);
     }
 
     public NodeConfigBuilder setSolrResourceLoader(SolrResourceLoader resourceLoader) {

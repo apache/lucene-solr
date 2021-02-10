@@ -2027,6 +2027,10 @@ public class CoreContainer {
     return configSetsHandler;
   }
 
+  public ConfigSetService getCoreConfigService() {
+    return this.coreConfigService;
+  }
+
   public String getHostName() {
     return this.hostName;
   }

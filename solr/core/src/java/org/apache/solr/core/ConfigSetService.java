@@ -20,6 +20,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,11 +58,24 @@ public abstract class ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
-    if (zkController == null) {
+
+    String configSetServiceClass = nodeConfig.getConfigSetServiceClass();
+
+    if(configSetServiceClass != null){
+      try {
+        Class<? extends ConfigSetService> clazz = loader.findClass(configSetServiceClass, ConfigSetService.class);
+        Constructor<? extends ConfigSetService> constructor
+                = clazz.getConstructor(SolrResourceLoader.class, Boolean.TYPE, ZkController.class);
+        return constructor.newInstance(loader, nodeConfig.hasSchemaCache(), zkController);
+      } catch (Exception e) {
+        throw new RuntimeException("create configSetService instance faild,configSetServiceClass:"+ configSetServiceClass,e);
+      }
+    }else if(zkController == null){
       return new Standalone(loader, nodeConfig.hasSchemaCache(), nodeConfig.getConfigSetBaseDirectory());
-    } else {
+    }else{
       return new CloudConfigSetService(loader, nodeConfig.hasSchemaCache(), zkController);
     }
+
   }
 
   protected final SolrResourceLoader parentLoader;
