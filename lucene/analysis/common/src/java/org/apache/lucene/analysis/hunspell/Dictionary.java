@@ -233,7 +233,7 @@ public class Dictionary {
     try (BufferedInputStream affixStream =
         new BufferedInputStream(affix, MAX_PROLOGUE_SCAN_WINDOW) {
           @Override
-          public void close() throws IOException {
+          public void close() {
             // TODO: maybe we should consume and close it? Why does it need to stay open?
             // Don't close the affix stream as per javadoc.
           }
@@ -466,11 +466,12 @@ public class Dictionary {
               new CheckCompoundPattern(reader.readLine(), flagParsingStrategy, this));
         }
       } else if ("SET".equals(firstWord)) {
-        // We could add some sanity-checking whether set command is identical to what was
-        // parsed in readConfig. This would handle cases of flags too far in the file or
-        // duplicated (both are incorrect, I assume).
+        checkCriticalDirectiveSame(
+            "SET", reader, decoder.charset(), getDecoder(singleArgument(reader, line)).charset());
       } else if ("FLAG".equals(firstWord)) {
-        // Similar for FLAG.
+        FlagParsingStrategy strategy = getFlagParsingStrategy(line, decoder.charset());
+        checkCriticalDirectiveSame(
+            "FLAG", reader, flagParsingStrategy.getClass(), strategy.getClass());
       }
     }
 
@@ -492,6 +493,19 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private void checkCriticalDirectiveSame(
+      String directive, LineNumberReader reader, Object expected, Object actual)
+      throws ParseException {
+    if (!expected.equals(actual)) {
+      throw new ParseException(
+          directive
+              + " directive should occur at most once, and in the first "
+              + MAX_PROLOGUE_SCAN_WINDOW
+              + " bytes of the *.aff file",
+          reader.getLineNumber());
+    }
   }
 
   private List<String> parseMapEntry(LineNumberReader reader, String line) throws ParseException {
