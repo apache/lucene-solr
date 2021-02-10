@@ -72,11 +72,7 @@ curl -X POST -H 'Content-type: application/json' -d '{
         "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
         "config": {
           "minimalFreeDiskGB": 20,
-          "prioritizedFreeDiskGB": 100,
-          "withCollections": {
-            "A_primary": "A_secondary",
-            "B_primary": "B_secondary"
-          }
+          "prioritizedFreeDiskGB": 100
         }
     }}'
   http://localhost:8983/api/cluster/plugin
@@ -146,19 +142,25 @@ property are not configurable, and set respectively to `availability_zone` and `
 This plugin supports enforcing additional constraint named `withCollection`, which causes
 replicas of two paired collections to be placed on the same nodes.
 
-Users can define the collection pairs in the plugin configuration, in the `config/withCollection`
-element, which is a JSON map where keys are the primary collection names, and the values are the
-secondary collection names (currently only 1:1 mapping is supported - however, multiple primary
-collections may use the same secondary collection, which effectively relaxes this to N:1 mapping).
+Users can define the collection pairs in the primary collection properties using
+MODIFYCOLLECTION admin API like in the example below:
 
-Unlike previous versions of Solr, this plugin does NOT automatically place replicas of the
+[source,bash]
+----
+curl http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=primary&property.placement.affinity.withCollection=secondary
+----
+
+The name of the property to set in the primary collection is `property.placement.affinity.withCollection`. Please note that the `property.` prefix is mandatory and indicates
+a custom collection property that is ignored by other parts of Solr.
+
+Unlike previous versions of Solr, this plugin does NOT automatically create replicas of the
 secondary collection - those replicas are assumed to be already in place, and it's the
 responsibility of the user to already place them on the right nodes (most likely simply by
 using this plugin to create the secondary collection first, with large enough replication
 factor to ensure that the target node set is populated with secondary replicas).
 
-When a request to compute placements is processed for the primary collection that has a
-key in the `withCollection` map, the set of candidate nodes is first filtered to eliminate nodes
+When a request to compute placements is processed for the primary collection that has
+the `withCollection` property, the set of candidate nodes is first filtered to eliminate nodes
 that don't contain the replicas of the secondary collection. Please note that this may
 result in an empty set, and an exception - in this case the sufficient number of secondary
 replicas needs to be created first.
@@ -183,12 +185,6 @@ of GB of free disk space regardless of the number of cores on these nodes rather
 replicas to nodes with less than this amount of free disk space if that's an option (if that's
 not an option, replicas can still be assigned to nodes with less than this amount of free space).
 Default value is 100.
-
-`withCollection`::
-(optional, map) this property defines additional constraints that primary collections (keys)
-must be located on the same nodes as the secondary collections (values). The plugin will
-assume that the secondary collection replicas are already in place and ignore candidate
-nodes where they are not already present. Default value is none.
 
 === Example configurations
 This is a simple configuration that uses default values:
@@ -220,20 +216,18 @@ curl -X POST -H 'Content-type: application/json' -d '{
 
 This configuration defines that collection `A_primary` must be co-located with
 collection `Common_secondary`, and collection `B_primary` must be co-located also with the
-collection `Common_secondary`:
+collection `Common_secondary` (the example below assumes all collections already exist):
 
 [source,bash]
 ----
 curl -X POST -H 'Content-type: application/json' -d '{
     "add":{
         "name": ".placement-plugin",
-        "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
-        "config": {
-          "withCollection": {
-            "A_primary": "Common_secondary",
-            "B_primary": "Common_secondary"
-          }
+        "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory"
         }
     }}'
   http://localhost:8983/api/cluster/plugin
+
+curl http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=A_primary&property.placement.affinity.withCollection=Common_secondary
+curl http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=B_primary&property.placement.affinity.withCollection=Common_secondary
 ----

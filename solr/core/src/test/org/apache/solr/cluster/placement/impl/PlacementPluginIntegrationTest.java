@@ -41,6 +41,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 
@@ -241,7 +242,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = AffinityPlacementFactory.class.getName();
-    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(COLLECTION, SECONDARY_COLLECTION));
+    plugin.config = new AffinityPlacementConfig(1, 2);
     V2Request req = new V2Request.Builder("/cluster/plugin")
         .forceV2(true)
         .POST()
@@ -264,6 +265,11 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     assertTrue(rsp.isSuccess());
     cluster.waitForActiveCollection(COLLECTION, 2, 4);
+    rsp = CollectionAdminRequest.modifyCollection(COLLECTION,
+            Map.of(CollectionAdminParams.PROPERTY_PREFIX + AffinityPlacementConfig.WITH_COLLECTION_PROPERTY, SECONDARY_COLLECTION))
+        .process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+
     // make sure the primary replicas were placed on the nodeset
     DocCollection primary = cloudManager.getClusterStateProvider().getClusterState().getCollection(COLLECTION);
     primary.forEachReplica((shard, replica) ->

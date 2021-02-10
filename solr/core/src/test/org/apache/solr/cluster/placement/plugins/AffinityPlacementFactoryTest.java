@@ -57,8 +57,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   public static void setupPlugin() {
     AffinityPlacementConfig config = new AffinityPlacementConfig(
         MINIMAL_FREE_DISK_GB,
-        PRIORITIZED_FREE_DISK_GB,
-        Map.of(primaryCollectionName, secondaryCollectionName));
+        PRIORITIZED_FREE_DISK_GB);
     AffinityPlacementFactory factory = new AffinityPlacementFactory();
     factory.configure(config);
     plugin = factory.createPluginInstance();
@@ -661,6 +660,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
     collectionBuilder.initializeShardsReplicas(0, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.addCustomProperty(AffinityPlacementConfig.WITH_COLLECTION_PROPERTY, secondaryCollectionName);
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
@@ -703,6 +703,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
     collectionBuilder = Builders.newCollectionBuilder(primaryCollectionName);
     collectionBuilder.initializeShardsReplicas(2, 2, 0, 0, clusterBuilder.getLiveNodeBuilders());
+    collectionBuilder.addCustomProperty(AffinityPlacementConfig.WITH_COLLECTION_PROPERTY, secondaryCollectionName);
     clusterBuilder.addCollection(collectionBuilder);
 
     PlacementContext placementContext = clusterBuilder.buildPlacementContext();
