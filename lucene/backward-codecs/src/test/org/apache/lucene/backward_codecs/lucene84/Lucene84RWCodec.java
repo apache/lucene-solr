@@ -16,9 +16,11 @@
  */
 package org.apache.lucene.backward_codecs.lucene84;
 
+import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
 import org.apache.lucene.backward_codecs.lucene60.Lucene60RWPointsFormat;
 import org.apache.lucene.backward_codecs.lucene70.Lucene70RWSegmentInfoFormat;
+import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
@@ -55,5 +57,10 @@ public class Lucene84RWCodec extends Lucene84Codec {
   @Override
   public PostingsFormat postingsFormat() {
     return postingsFormat;
+  }
+
+  @Override
+  public final CompoundFormat compoundFormat() {
+    return new Lucene50RWCompoundFormat();
   }
 }

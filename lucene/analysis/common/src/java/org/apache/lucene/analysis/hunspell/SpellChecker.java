@@ -22,11 +22,14 @@ import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
-import org.apache.lucene.util.BytesRef;
+import java.util.stream.Collectors;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -38,7 +41,6 @@ import org.apache.lucene.util.IntsRef;
 public class SpellChecker {
   final Dictionary dictionary;
   final Stemmer stemmer;
-  private final BytesRef scratch = new BytesRef();
 
   public SpellChecker(Dictionary dictionary) {
     this.dictionary = dictionary;
@@ -66,7 +68,7 @@ public class SpellChecker {
     }
 
     char[] wordChars = word.toCharArray();
-    if (dictionary.isForbiddenWord(wordChars, wordChars.length, scratch)) {
+    if (dictionary.isForbiddenWord(wordChars, wordChars.length)) {
       return false;
     }
 
@@ -75,8 +77,12 @@ public class SpellChecker {
     }
 
     WordCase wc = stemmer.caseOf(wordChars, wordChars.length);
-    if ((wc == WordCase.UPPER || wc == WordCase.TITLE) && checkCaseVariants(wordChars, wc)) {
-      return true;
+    if ((wc == WordCase.UPPER || wc == WordCase.TITLE)) {
+      Stemmer.CaseVariationProcessor variationProcessor =
+          (variant, varLength, originalCase) -> !checkWord(variant, varLength, originalCase);
+      if (!stemmer.varyCase(wordChars, wordChars.length, wc, variationProcessor)) {
+        return true;
+      }
     }
 
     if (dictionary.breaks.isNotEmpty() && !hasTooManyBreakOccurrences(word)) {
@@ -94,53 +100,26 @@ public class SpellChecker {
     return spellClean(word.substring(0, length)) || spellClean(word.substring(0, length + 1));
   }
 
-  private boolean checkCaseVariants(char[] wordChars, WordCase wordCase) {
-    char[] caseVariant = wordChars;
-    if (wordCase == WordCase.UPPER) {
-      caseVariant = stemmer.caseFoldTitle(caseVariant, wordChars.length);
-      if (checkWord(caseVariant, wordChars.length, wordCase)) {
-        return true;
-      }
-      char[] aposCase = Stemmer.capitalizeAfterApostrophe(caseVariant, wordChars.length);
-      if (aposCase != null && checkWord(aposCase, aposCase.length, wordCase)) {
-        return true;
-      }
-      for (char[] variation : stemmer.sharpSVariations(caseVariant, wordChars.length)) {
-        if (checkWord(variation, variation.length, null)) {
-          return true;
-        }
-      }
-    }
-
-    if (dictionary.isDotICaseChangeDisallowed(wordChars)) {
-      return false;
-    }
-
-    char[] lower = stemmer.caseFoldLower(caseVariant, wordChars.length);
-    if (checkWord(lower, wordChars.length, wordCase)) {
-      return true;
-    }
-    if (wordCase == WordCase.UPPER) {
-      for (char[] variation : stemmer.sharpSVariations(lower, wordChars.length)) {
-        if (checkWord(variation, variation.length, null)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
   boolean checkWord(String word) {
     return checkWord(word.toCharArray(), word.length(), null);
   }
 
-  private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
-    if (dictionary.isForbiddenWord(wordChars, length, scratch)) {
+  Boolean checkSimpleWord(char[] wordChars, int length, WordCase originalCase) {
+    if (dictionary.isForbiddenWord(wordChars, length)) {
       return false;
     }
 
     if (findStem(wordChars, 0, length, originalCase, SIMPLE_WORD) != null) {
       return true;
+    }
+
+    return null;
+  }
+
+  private boolean checkWord(char[] wordChars, int length, WordCase originalCase) {
+    Boolean simpleResult = checkSimpleWord(wordChars, length, originalCase);
+    if (simpleResult != null) {
+      return simpleResult;
     }
 
     if (dictionary.compoundRules != null
@@ -244,7 +223,7 @@ public class SpellChecker {
     if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
 
     IntsRef forms = dictionary.lookupWord(chars, offset, length);
-    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase, scratch);
+    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase);
   }
 
   private boolean equalsIgnoreCase(CharsRef cr1, CharsRef cr2) {
@@ -282,12 +261,16 @@ public class SpellChecker {
         return false;
       }
 
-      //noinspection RedundantIfStatement
       if (dictionary.checkCompoundRep
           && isMisspelledSimpleWord(length + nextPartLength, originalCase)) {
         return false;
       }
-      return true;
+
+      String spaceSeparated =
+          new String(tail.chars, tail.offset, length)
+              + " "
+              + new String(tail.chars, tail.offset + length, nextPartLength);
+      return !checkWord(spaceSeparated);
     }
 
     private boolean isMisspelledSimpleWord(int length, WordCase originalCase) {
@@ -332,7 +315,7 @@ public class SpellChecker {
         words.add(forms);
 
         if (dictionary.compoundRules != null
-            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words, scratch))) {
+            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words))) {
           if (checkLastCompoundPart(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
@@ -355,8 +338,7 @@ public class SpellChecker {
     if (forms == null) return false;
 
     words.add(forms);
-    boolean result =
-        dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words, scratch));
+    boolean result = dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words));
     words.remove(words.size() - 1);
     return result;
   }
@@ -441,14 +423,44 @@ public class SpellChecker {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
+    WordCase wordCase = WordCase.caseOf(word);
     ModifyingSuggester modifier = new ModifyingSuggester(this);
-    Set<String> result = modifier.suggest(word);
+    Set<String> suggestions = modifier.suggest(word, wordCase);
 
-    if (word.contains("-") && result.stream().noneMatch(s -> s.contains("-"))) {
-      result.addAll(modifyChunksBetweenDashes(word));
+    if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
+      suggestions.addAll(
+          new GeneratingSuggester(this)
+              .suggest(dictionary.toLowerCase(word), wordCase, suggestions));
     }
 
-    return new ArrayList<>(result);
+    if (word.contains("-") && suggestions.stream().noneMatch(s -> s.contains("-"))) {
+      suggestions.addAll(modifyChunksBetweenDashes(word));
+    }
+
+    Set<String> result = new LinkedHashSet<>();
+    for (String candidate : suggestions) {
+      result.add(adjustSuggestionCase(candidate, wordCase, word));
+      if (wordCase == WordCase.UPPER && dictionary.checkSharpS && candidate.contains("ß")) {
+        result.add(candidate);
+      }
+    }
+    return result.stream().map(this::cleanOutput).collect(Collectors.toList());
+  }
+
+  private String adjustSuggestionCase(String candidate, WordCase originalCase, String original) {
+    if (originalCase == WordCase.UPPER) {
+      String upper = candidate.toUpperCase(Locale.ROOT);
+      if (upper.contains(" ") || spell(upper)) {
+        return upper;
+      }
+    }
+    if (Character.isUpperCase(original.charAt(0))) {
+      String title = Character.toUpperCase(candidate.charAt(0)) + candidate.substring(1);
+      if (title.contains(" ") || spell(title)) {
+        return title;
+      }
+    }
+    return candidate;
   }
 
   private List<String> modifyChunksBetweenDashes(String word) {
@@ -465,7 +477,7 @@ public class SpellChecker {
         if (!spell(chunk)) {
           for (String chunkSug : suggest(chunk)) {
             String replaced = word.substring(0, chunkStart) + chunkSug + word.substring(chunkEnd);
-            if (!dictionary.isForbiddenWord(replaced.toCharArray(), replaced.length(), scratch)) {
+            if (!dictionary.isForbiddenWord(replaced.toCharArray(), replaced.length())) {
               result.add(replaced);
             }
           }
@@ -475,5 +487,17 @@ public class SpellChecker {
       chunkStart = chunkEnd + 1;
     }
     return result;
+  }
+
+  private String cleanOutput(String s) {
+    if (!dictionary.needsOutputCleaning) return s;
+
+    try {
+      StringBuilder sb = new StringBuilder(s);
+      Dictionary.applyMappings(dictionary.oconv, sb);
+      return sb.toString();
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
   }
 }

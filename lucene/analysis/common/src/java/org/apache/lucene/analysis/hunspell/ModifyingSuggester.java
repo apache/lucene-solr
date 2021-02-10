@@ -16,27 +16,40 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
+/** A class that modifies the given misspelled word in various ways to get correct suggestions */
 class ModifyingSuggester {
   private static final int MAX_CHAR_DISTANCE = 4;
   private final LinkedHashSet<String> result = new LinkedHashSet<>();
   private final char[] tryChars;
   private final SpellChecker speller;
+  boolean hasGoodSuggestions;
 
   ModifyingSuggester(SpellChecker speller) {
     this.speller = speller;
     tryChars = speller.dictionary.tryChars.toCharArray();
   }
 
-  LinkedHashSet<String> suggest(String word) {
+  LinkedHashSet<String> suggest(String word, WordCase wordCase) {
+    String low = wordCase != WordCase.LOWER ? speller.dictionary.toLowerCase(word) : word;
+    if (wordCase == WordCase.UPPER || wordCase == WordCase.MIXED) {
+      trySuggestion(low);
+    }
+
     tryVariationsOf(word);
 
-    WordCase wc = WordCase.caseOf(word);
-
-    if (wc == WordCase.MIXED) {
+    if (wordCase == WordCase.TITLE) {
+      tryVariationsOf(low);
+    } else if (wordCase == WordCase.UPPER) {
+      tryVariationsOf(low);
+      tryVariationsOf(speller.dictionary.toTitleCase(word));
+    } else if (wordCase == WordCase.MIXED) {
       int dot = word.indexOf('.');
       if (dot > 0
           && dot < word.length() - 1
@@ -44,27 +57,45 @@ class ModifyingSuggester {
         result.add(word.substring(0, dot + 1) + " " + word.substring(dot + 1));
       }
 
-      tryVariationsOf(toLowerCase(word));
+      boolean capitalized = Character.isUpperCase(word.charAt(0));
+      if (capitalized) {
+        tryVariationsOf(speller.dictionary.caseFold(word.charAt(0)) + word.substring(1));
+      }
+
+      tryVariationsOf(low);
+
+      if (capitalized) {
+        tryVariationsOf(speller.dictionary.toTitleCase(low));
+      }
+
+      return result.stream()
+          .map(s -> capitalizeAfterSpace(low, s))
+          .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     return result;
   }
 
-  private String toLowerCase(String word) {
-    char[] chars = new char[word.length()];
-    for (int i = 0; i < word.length(); i++) {
-      chars[i] = speller.dictionary.caseFold(word.charAt(i));
+  // aNew -> "a New" (instead of "a new")
+  private String capitalizeAfterSpace(String lowMisspelled, String candidate) {
+    int space = candidate.indexOf(' ');
+    int tail = candidate.length() - space - 1;
+    if (space > 0
+        && lowMisspelled.regionMatches(lowMisspelled.length() - tail, candidate, space + 1, tail)) {
+      return candidate.substring(0, space + 1)
+          + Character.toUpperCase(candidate.charAt(space + 1))
+          + candidate.substring(space + 2);
     }
-    return new String(chars);
+    return candidate;
   }
 
   private void tryVariationsOf(String word) {
-    trySuggestion(word.toUpperCase(Locale.ROOT));
-    if (checkDictionaryForSplitSuggestions(word)) {
-      return;
-    }
+    hasGoodSuggestions |= trySuggestion(word.toUpperCase(Locale.ROOT));
+    hasGoodSuggestions |= tryRep(word);
 
-    tryRep(word);
+    if (!speller.dictionary.mapTable.isEmpty()) {
+      enumerateMapReplacements(word, "", 0);
+    }
 
     trySwappingChars(word);
     tryLongSwap(word);
@@ -75,12 +106,24 @@ class ModifyingSuggester {
     tryReplacingChar(word);
     tryTwoDuplicateChars(word);
 
-    if (speller.dictionary.enableSplitSuggestions) {
+    List<String> goodSplit = checkDictionaryForSplitSuggestions(word);
+    if (!goodSplit.isEmpty()) {
+      List<String> copy = new ArrayList<>(result);
+      result.clear();
+      result.addAll(goodSplit);
+      if (hasGoodSuggestions) {
+        result.addAll(copy);
+      }
+      hasGoodSuggestions = true;
+    }
+
+    if (!hasGoodSuggestions && speller.dictionary.enableSplitSuggestions) {
       trySplitting(word);
     }
   }
 
-  private void tryRep(String word) {
+  private boolean tryRep(String word) {
+    int before = result.size();
     for (RepEntry entry : speller.dictionary.repTable) {
       for (String candidate : entry.substitute(word)) {
         if (trySuggestion(candidate)) {
@@ -88,11 +131,37 @@ class ModifyingSuggester {
         }
 
         if (candidate.contains(" ")
-            && Arrays.stream(candidate.split(" ")).allMatch(speller::checkWord)) {
+            && Arrays.stream(candidate.split(" ")).allMatch(this::checkSimpleWord)) {
           result.add(candidate);
         }
       }
     }
+    return result.size() > before;
+  }
+
+  private void enumerateMapReplacements(String word, String accumulated, int offset) {
+    if (offset == word.length()) {
+      trySuggestion(accumulated);
+      return;
+    }
+
+    for (List<String> entries : speller.dictionary.mapTable) {
+      for (String entry : entries) {
+        if (word.regionMatches(offset, entry, 0, entry.length())) {
+          for (String replacement : entries) {
+            if (!entry.equals(replacement)) {
+              enumerateMapReplacements(word, accumulated + replacement, offset + entry.length());
+            }
+          }
+        }
+      }
+    }
+
+    enumerateMapReplacements(word, accumulated + word.charAt(offset), offset + 1);
+  }
+
+  private boolean checkSimpleWord(String part) {
+    return Boolean.TRUE.equals(speller.checkSimpleWord(part.toCharArray(), part.length(), null));
   }
 
   private void trySwappingChars(String word) {
@@ -213,24 +282,30 @@ class ModifyingSuggester {
     }
   }
 
-  private boolean checkDictionaryForSplitSuggestions(String word) {
-    boolean found = false;
+  private List<String> checkDictionaryForSplitSuggestions(String word) {
+    List<String> result = new ArrayList<>();
     for (int i = 1; i < word.length() - 1; i++) {
       String w1 = word.substring(0, i);
       String w2 = word.substring(i);
-      found |= trySuggestion(w1 + " " + w2);
+      String spaced = w1 + " " + w2;
+      if (speller.checkWord(spaced)) {
+        result.add(spaced);
+      }
       if (shouldSplitByDash()) {
-        found |= trySuggestion(w1 + "-" + w2);
+        String dashed = w1 + "-" + w2;
+        if (speller.checkWord(dashed)) {
+          result.add(dashed);
+        }
       }
     }
-    return found;
+    return result;
   }
 
   private void trySplitting(String word) {
     for (int i = 1; i < word.length() - 1; i++) {
       String w1 = word.substring(0, i);
       String w2 = word.substring(i);
-      if (speller.checkWord(w1) && speller.checkWord(w2)) {
+      if (checkSimpleWord(w1) && checkSimpleWord(w2)) {
         result.add(w1 + " " + w2);
         if (shouldSplitByDash()) {
           result.add(w1 + "-" + w2);
@@ -244,10 +319,6 @@ class ModifyingSuggester {
   }
 
   private boolean trySuggestion(String candidate) {
-    if (speller.checkWord(candidate)) {
-      result.add(candidate);
-      return true;
-    }
-    return false;
+    return speller.checkWord(candidate) && result.add(candidate);
   }
 }

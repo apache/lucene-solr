@@ -288,7 +288,9 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9744: NPE on a degenerate query in MinimumShouldMatchIntervalsSource
+  $MinimumMatchesIterator.getSubMatches(). (Alan Woodward)
 
 Other
 ---------------------

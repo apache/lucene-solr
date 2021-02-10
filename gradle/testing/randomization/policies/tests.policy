@@ -91,10 +91,12 @@ grant {
   // allows LuceneTestCase#runWithRestrictedPermissions to execute with lower (or no) permission
   permission java.security.SecurityPermission "createAccessControlContext";
 
-  // Some Hunspell tests may read from external files specified in system properties
+  // Hunspell regression and validation tests can read from external files
+  // specified in system properties.
   permission java.io.FilePermission "${hunspell.repo.path}${/}-", "read";
-  permission java.io.FilePermission "${hunspell.dictionaries}${/}-", "read";
   permission java.io.FilePermission "${hunspell.corpora}${/}-", "read";
+  permission java.io.FilePermission "${hunspell.dictionaries}", "read";
+  permission java.io.FilePermission "${hunspell.dictionaries}${/}-", "read";
 };
 
 // Permissions to support ant build
