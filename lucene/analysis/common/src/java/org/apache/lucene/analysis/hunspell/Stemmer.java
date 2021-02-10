@@ -289,8 +289,6 @@ final class Stemmer {
           -1,
           0,
           true,
-          true,
-          false,
           false,
           originalCase,
           processor);
@@ -408,12 +406,9 @@ final class Stemmer {
    *     checked against the word
    * @param recursionDepth current recursiondepth
    * @param doPrefix true if we should remove prefixes
-   * @param doSuffix true if we should remove suffixes
    * @param previousWasPrefix true if the previous removal was a prefix: if we are removing a
    *     suffix, and it has no continuation requirements, it's ok. but two prefixes
    *     (COMPLEXPREFIXES) or two suffixes must have continuation requirements to recurse.
-   * @param circumfix true if the previous prefix removal was signed as a circumfix this means inner
-   *     most suffix must also contain circumfix flag.
    * @param originalCase if non-null, represents original word case to disallow case variations of
    *     word with KEEPCASE flags
    * @return whether the processing should be continued
@@ -428,9 +423,7 @@ final class Stemmer {
       int prefixId,
       int recursionDepth,
       boolean doPrefix,
-      boolean doSuffix,
       boolean previousWasPrefix,
-      boolean circumfix,
       WordCase originalCase,
       RootProcessor processor)
       throws IOException {
@@ -478,7 +471,6 @@ final class Stemmer {
                 -1,
                 recursionDepth,
                 true,
-                circumfix,
                 originalCase,
                 processor)) {
               return false;
@@ -488,7 +480,7 @@ final class Stemmer {
       }
     }
 
-    if (doSuffix && dictionary.suffixes != null) {
+    if (dictionary.suffixes != null) {
       FST<IntsRef> fst = dictionary.suffixes;
       FST.Arc<IntsRef> arc = suffixArcs[recursionDepth];
       fst.getFirstArc(arc);
@@ -533,7 +525,6 @@ final class Stemmer {
                 prefixId,
                 recursionDepth,
                 false,
-                circumfix,
                 originalCase,
                 processor)) {
               return false;
@@ -674,13 +665,12 @@ final class Stemmer {
       int prefixId,
       int recursionDepth,
       boolean prefix,
-      boolean circumfix,
       WordCase originalCase,
       RootProcessor processor)
       throws IOException {
     char flag = dictionary.affixData(affix, Dictionary.AFFIX_FLAG);
 
-    boolean skipLookup = needsAnotherAffix(affix, previousAffix, !prefix);
+    boolean skipLookup = needsAnotherAffix(affix, previousAffix, !prefix, prefixId);
     IntsRef forms = skipLookup ? null : dictionary.lookupWord(strippedWord, offset, length);
     if (forms != null) {
       for (int i = 0; i < forms.length; i += formStep) {
@@ -694,15 +684,6 @@ final class Stemmer {
             char prefixFlag = dictionary.affixData(prefixId, Dictionary.AFFIX_FLAG);
             if (!dictionary.hasFlag(entryId, prefixFlag)
                 && !isFlagAppendedByAffix(affix, prefixFlag)) {
-              continue;
-            }
-          }
-
-          // if circumfix was previously set by a prefix, we must check this suffix,
-          // to ensure it has it, and vice versa
-          if (dictionary.circumfix != Dictionary.FLAG_UNSET) {
-            boolean suffixCircumfix = isFlagAppendedByAffix(affix, dictionary.circumfix);
-            if (circumfix != suffixCircumfix) {
               continue;
             }
           }
@@ -728,12 +709,6 @@ final class Stemmer {
           }
         }
       }
-    }
-
-    // if a circumfix flag is defined in the dictionary, and we are a prefix, we need to check if we
-    // have that flag
-    if (dictionary.circumfix != Dictionary.FLAG_UNSET && !circumfix && prefix) {
-      circumfix = isFlagAppendedByAffix(affix, dictionary.circumfix);
     }
 
     if (dictionary.isCrossProduct(affix) && recursionDepth <= 1) {
@@ -774,9 +749,7 @@ final class Stemmer {
           prefixId,
           recursionDepth + 1,
           doPrefix,
-          true,
           prefix,
-          circumfix,
           originalCase,
           processor);
     }
@@ -784,7 +757,15 @@ final class Stemmer {
     return true;
   }
 
-  private boolean needsAnotherAffix(int affix, int previousAffix, boolean isSuffix) {
+  private boolean needsAnotherAffix(int affix, int previousAffix, boolean isSuffix, int prefixId) {
+    char circumfix = dictionary.circumfix;
+    // if circumfix was previously set by a prefix, we must check this suffix,
+    // to ensure it has it, and vice versa
+    if (isSuffix
+        && isFlagAppendedByAffix(prefixId, circumfix) != isFlagAppendedByAffix(affix, circumfix)) {
+      return true;
+    }
+
     if (isFlagAppendedByAffix(affix, dictionary.needaffix)) {
       return !isSuffix
           || previousAffix < 0
