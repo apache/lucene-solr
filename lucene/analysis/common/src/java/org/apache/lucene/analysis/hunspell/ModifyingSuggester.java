@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /** A class that modifies the given misspelled word in various ways to get correct suggestions */
 class ModifyingSuggester {
@@ -36,12 +37,17 @@ class ModifyingSuggester {
   }
 
   LinkedHashSet<String> suggest(String word, WordCase wordCase) {
+    String low = wordCase != WordCase.LOWER ? speller.dictionary.toLowerCase(word) : word;
+    if (wordCase == WordCase.UPPER || wordCase == WordCase.MIXED) {
+      trySuggestion(low);
+    }
+
     tryVariationsOf(word);
 
     if (wordCase == WordCase.TITLE) {
-      tryVariationsOf(speller.dictionary.toLowerCase(word));
+      tryVariationsOf(low);
     } else if (wordCase == WordCase.UPPER) {
-      tryVariationsOf(speller.dictionary.toLowerCase(word));
+      tryVariationsOf(low);
       tryVariationsOf(speller.dictionary.toTitleCase(word));
     } else if (wordCase == WordCase.MIXED) {
       int dot = word.indexOf('.');
@@ -51,10 +57,36 @@ class ModifyingSuggester {
         result.add(word.substring(0, dot + 1) + " " + word.substring(dot + 1));
       }
 
-      tryVariationsOf(speller.dictionary.toLowerCase(word));
+      boolean capitalized = Character.isUpperCase(word.charAt(0));
+      if (capitalized) {
+        tryVariationsOf(speller.dictionary.caseFold(word.charAt(0)) + word.substring(1));
+      }
+
+      tryVariationsOf(low);
+
+      if (capitalized) {
+        tryVariationsOf(speller.dictionary.toTitleCase(low));
+      }
+
+      return result.stream()
+          .map(s -> capitalizeAfterSpace(low, s))
+          .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     return result;
+  }
+
+  // aNew -> "a New" (instead of "a new")
+  private String capitalizeAfterSpace(String lowMisspelled, String candidate) {
+    int space = candidate.indexOf(' ');
+    int tail = candidate.length() - space - 1;
+    if (space > 0
+        && lowMisspelled.regionMatches(lowMisspelled.length() - tail, candidate, space + 1, tail)) {
+      return candidate.substring(0, space + 1)
+          + Character.toUpperCase(candidate.charAt(space + 1))
+          + candidate.substring(space + 2);
+    }
+    return candidate;
   }
 
   private void tryVariationsOf(String word) {

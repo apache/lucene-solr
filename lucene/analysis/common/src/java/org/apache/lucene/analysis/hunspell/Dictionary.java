@@ -70,7 +70,7 @@ import org.apache.lucene.util.fst.Util;
 
 /** In-memory structure for the dictionary (.dic) and affix (.aff) data of a hunspell dictionary. */
 public class Dictionary {
-  // Derived from woorm/ openoffice dictionaries.
+  // Derived from woorm/LibreOffice dictionaries.
   // See TestAllDictionaries.testMaxPrologueNeeded.
   static final int MAX_PROLOGUE_SCAN_WINDOW = 30 * 1024;
 
@@ -122,7 +122,7 @@ public class Dictionary {
   // offsets in affixData
   static final int AFFIX_FLAG = 0;
   static final int AFFIX_STRIP_ORD = 1;
-  static final int AFFIX_CONDITION = 2;
+  private static final int AFFIX_CONDITION = 2;
   static final int AFFIX_APPEND = 3;
 
   // Default flag parsing strategy
@@ -777,6 +777,14 @@ public class Dictionary {
 
   char affixData(int affixIndex, int offset) {
     return affixData[affixIndex * 4 + offset];
+  }
+
+  boolean isCrossProduct(int affix) {
+    return (affixData(affix, AFFIX_CONDITION) & 1) == 1;
+  }
+
+  int getAffixCondition(int affix) {
+    return affixData(affix, AFFIX_CONDITION) >>> 1;
   }
 
   private FST<CharsRef> parseConversions(LineNumberReader reader, int num)

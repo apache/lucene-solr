@@ -132,6 +132,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("checkcompoundrep");
   }
 
+  public void testDisallowCompoundsWhenDictionaryContainsSeparatedWordPair() throws Exception {
+    doTest("wordpair");
+  }
+
   public void testCompoundrule() throws Exception {
     doTest("compoundrule");
   }
@@ -172,12 +176,20 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("germancompounding");
   }
 
+  public void testApplyOconvToSuggestions() throws Exception {
+    doTest("oconv");
+  }
+
   public void testModifyingSuggestions() throws Exception {
     doTest("sug");
   }
 
   public void testModifyingSuggestions2() throws Exception {
     doTest("sug2");
+  }
+
+  public void testMixedCaseSuggestionHeuristics() throws Exception {
+    doTest("i58202");
   }
 
   public void testMapSuggestions() throws Exception {

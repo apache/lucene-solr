@@ -22,12 +22,14 @@ import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -259,12 +261,16 @@ public class SpellChecker {
         return false;
       }
 
-      //noinspection RedundantIfStatement
       if (dictionary.checkCompoundRep
           && isMisspelledSimpleWord(length + nextPartLength, originalCase)) {
         return false;
       }
-      return true;
+
+      String spaceSeparated =
+          new String(tail.chars, tail.offset, length)
+              + " "
+              + new String(tail.chars, tail.offset + length, nextPartLength);
+      return !checkWord(spaceSeparated);
     }
 
     private boolean isMisspelledSimpleWord(int length, WordCase originalCase) {
@@ -423,7 +429,7 @@ public class SpellChecker {
 
     if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
       suggestions.addAll(
-          new GeneratingSuggester(dictionary)
+          new GeneratingSuggester(this)
               .suggest(dictionary.toLowerCase(word), wordCase, suggestions));
     }
 
@@ -433,24 +439,26 @@ public class SpellChecker {
 
     Set<String> result = new LinkedHashSet<>();
     for (String candidate : suggestions) {
-      result.add(adjustSuggestionCase(candidate, wordCase));
+      result.add(adjustSuggestionCase(candidate, wordCase, word));
       if (wordCase == WordCase.UPPER && dictionary.checkSharpS && candidate.contains("ß")) {
         result.add(candidate);
       }
     }
-    return new ArrayList<>(result);
+    return result.stream().map(this::cleanOutput).collect(Collectors.toList());
   }
 
-  private String adjustSuggestionCase(String candidate, WordCase original) {
-    if (original == WordCase.UPPER) {
+  private String adjustSuggestionCase(String candidate, WordCase originalCase, String original) {
+    if (originalCase == WordCase.UPPER) {
       String upper = candidate.toUpperCase(Locale.ROOT);
       if (upper.contains(" ") || spell(upper)) {
         return upper;
       }
     }
-    if (original == WordCase.UPPER || original == WordCase.TITLE) {
-      String title = dictionary.toTitleCase(candidate);
-      return spell(title) ? title : candidate;
+    if (Character.isUpperCase(original.charAt(0))) {
+      String title = Character.toUpperCase(candidate.charAt(0)) + candidate.substring(1);
+      if (title.contains(" ") || spell(title)) {
+        return title;
+      }
     }
     return candidate;
   }
@@ -479,5 +487,17 @@ public class SpellChecker {
       chunkStart = chunkEnd + 1;
     }
     return result;
+  }
+
+  private String cleanOutput(String s) {
+    if (!dictionary.needsOutputCleaning) return s;
+
+    try {
+      StringBuilder sb = new StringBuilder(s);
+      Dictionary.applyMappings(dictionary.oconv, sb);
+      return sb.toString();
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
   }
 }

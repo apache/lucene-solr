@@ -406,7 +406,7 @@ public class MissingDoclet extends StandardDoclet {
   /** logs a new error for the particular element */
   private void error(Element element, String message) {
     var fullMessage = new StringBuilder();
-    switch(element.getKind()) {
+    switch (element.getKind()) {
       case MODULE:
       case PACKAGE:
         // for modules/packages, we don't have filename + line number, fully qualify
@@ -426,10 +426,19 @@ public class MissingDoclet extends StandardDoclet {
         fullMessage.append(element.getSimpleName());
         break;
     }
+
     fullMessage.append(" (");
     fullMessage.append(element.getKind().toString().toLowerCase(Locale.ROOT));
     fullMessage.append("): ");
     fullMessage.append(message);
-    reporter.print(Diagnostic.Kind.ERROR, element, fullMessage.toString());
+
+    if (Runtime.version().feature() == 11 && element.getKind() == ElementKind.PACKAGE) {
+      // Avoid JDK 11 bug:
+      // https://issues.apache.org/jira/browse/LUCENE-9747
+      // https://bugs.openjdk.java.net/browse/JDK-8224082
+      reporter.print(Diagnostic.Kind.ERROR, fullMessage.toString());
+    } else {
+      reporter.print(Diagnostic.Kind.ERROR, element, fullMessage.toString());
+    }
   }
 }
