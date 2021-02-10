@@ -54,6 +54,7 @@ public class Config {
   private HashMap<String, Object> valByRound = new HashMap<>();
   private HashMap<String, String> colForValByRound = new HashMap<>();
   private String algorithmText;
+  private int numThreads = 1;
 
   /**
    * Read both algorithm and config properties.
@@ -111,6 +112,14 @@ public class Config {
     if (Boolean.valueOf(props.getProperty("print.props", DEFAULT_PRINT_PROPS)).booleanValue()) {
       printProps();
     }
+  }
+
+  public void setNumThreads(int numThreads) {
+    this.numThreads = numThreads;
+  }
+
+  public int getNumThreads() {
+    return numThreads;
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

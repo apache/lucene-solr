@@ -52,6 +52,8 @@ public class ReutersContentSource extends ContentSource {
   private ArrayList<Path> inputFiles = new ArrayList<>();
   private int nextFile = 0;
   private int iteration = 0;
+  private int[] threadIndex;
+  private volatile boolean threadIndexCreated;
 
   @Override
   public void setConfig(Config config) {
@@ -102,18 +104,35 @@ public class ReutersContentSource extends ContentSource {
   public DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     Path f = null;
     String name = null;
-    synchronized (this) {
-      if (nextFile >= inputFiles.size()) {
-        // exhausted files, start a new round, unless forever set to false.
-        if (!forever) {
-          throw new NoMoreDataException();
-        }
-        nextFile = 0;
-        iteration++;
-      }
-      f = inputFiles.get(nextFile++);
-      name = f.toRealPath() + "_" + iteration;
+    int inputFilesSize = inputFiles.size();
+
+    /**
+     * synchronized (this) { if (nextFile >= inputFiles.size()) { // exhausted files, start a new
+     * round, unless forever set to false. if (!forever) { throw new NoMoreDataException(); }
+     * nextFile = 0; iteration++; } f = inputFiles.get(nextFile++); name = f.toRealPath() + "_" +
+     * iteration; }*
+     */
+    if (!threadIndexCreated) {
+      createThreadIndex();
     }
+
+    int index = (int) Thread.currentThread().getId() % threadIndex.length;
+    int fIndex = index + threadIndex[index] * threadIndex.length;
+    threadIndex[index]++;
+
+    // Sanity check, if # threads is greater than # input files, wrap index
+    if (index >= inputFilesSize) index %= inputFilesSize;
+
+    // Check if this thread has exhausted its files
+    if (fIndex >= inputFilesSize) {
+      threadIndex[index] = 0;
+      fIndex = index + threadIndex[index] * threadIndex.length;
+      threadIndex[index]++;
+      iteration++;
+    }
+
+    f = inputFiles.get(fIndex);
+    name = f.toRealPath() + "_" + iteration;
 
     try (BufferedReader reader = Files.newBufferedReader(f, StandardCharsets.UTF_8)) {
       // First line is the date, 3rd is the title, rest is body
@@ -145,5 +164,12 @@ public class ReutersContentSource extends ContentSource {
     super.resetInputs();
     nextFile = 0;
     iteration = 0;
+  }
+
+  private synchronized void createThreadIndex() {
+    if (!threadIndexCreated) {
+      threadIndex = new int[getConfig().getNumThreads()];
+      threadIndexCreated = true;
+    }
   }
 }
