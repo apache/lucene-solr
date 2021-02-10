@@ -144,7 +144,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       createCollectionZkNode(stateManager, collectionName, collectionParams);
 
-      if(isPrs) {
+      if (isPrs) {
         ZkWriteCommand command = new ClusterStateMutator(ocmh.cloudManager).createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
         ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
@@ -218,11 +218,15 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             ZkStateReader.NODE_NAME_PROP, nodeName,
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
-        if(isPrs) {
+        if (isPrs) {
           ZkWriteCommand command = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, props);
           byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-//        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
           ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
+
+          // Since we're directly updating the state here, instead of doing it via a queue in the overseer,
+          // we need to make sure that the cluster state updater used in the Overseer can see this update
+          // upon refreshing itself
+          ((Overseer.ClusterStateUpdater) ocmh.overseer.getUpdaterThread().getThread()).refreshClusterState();
           clusterState = clusterState.copyWith(collectionName, command.collection);
           newColl = command.collection;
         } else {
@@ -299,8 +303,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName);
       } else {
-
         log.debug("Finished create command on all shards for collection: {}", collectionName);
+        if (isPrs) {
+          // Since we created this collection without some of the sub-operations going through the overseer queues,
+          // we need to make sure that the cluster state in the overseer can see this collection upon refreshing itself
+          ((Overseer.ClusterStateUpdater) ocmh.overseer.getUpdaterThread().getThread()).refreshClusterState();
+        }
         // Emit a warning about production use of data driven functionality
         boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null ||
             message.getStr(COLL_CONF).equals(DEFAULT_CONFIGSET_NAME);
