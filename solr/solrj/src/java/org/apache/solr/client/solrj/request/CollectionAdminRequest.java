@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -2759,23 +2760,23 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   // LISTBACKUP request
   public static class ListBackup extends CollectionAdminRequest<CollectionAdminResponse> {
-    private String backupName;
-    private String backupRepo;
-    private String backupLocation;
+    private final ListBackupPayload listPayload;
 
     public ListBackup(String backupRepo, String backupLocation, String backupName) {
       super(CollectionAction.LISTBACKUP);
-      this.backupName = backupName;
-      this.backupRepo = backupRepo;
-      this.backupLocation = backupLocation;
+
+      this.listPayload = new ListBackupPayload();
+      this.listPayload.repository = backupRepo;
+      this.listPayload.name = backupName;
+      this.listPayload.location = backupLocation;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, backupName);
-      params.set(CoreAdminParams.BACKUP_LOCATION, backupLocation);
-      params.set(CoreAdminParams.BACKUP_REPOSITORY, backupRepo);
+      params.setNonNull(CoreAdminParams.NAME, listPayload.name);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, listPayload.location);
+      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, listPayload.repository);
 
       return params;
     }

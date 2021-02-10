@@ -29,7 +29,4 @@ public class ListBackupPayload implements ReflectMapWriter {
 
   @JsonProperty
   public String repository;
-
-  @JsonProperty
-  public String async;
 }

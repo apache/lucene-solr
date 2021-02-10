@@ -99,15 +99,13 @@ public class V2CollectionBackupsAPIMappingTest extends SolrTestCaseJ4 {
             "{'list-backups': {" +
                     "'name': 'backupName', " +
                     "'location': '/some/location/uri', " +
-                    "'repository': 'someRepository', " +
-                    "'async': 'requestTrackingId'" +
+                    "'repository': 'someRepository' " +
                     "}}");
 
     assertEquals(CollectionParams.CollectionAction.LISTBACKUP.lowerName, v1Params.get(ACTION));
     assertEquals("backupName", v1Params.get(NAME));
     assertEquals("/some/location/uri", v1Params.get(CoreAdminParams.BACKUP_LOCATION));
     assertEquals("someRepository", v1Params.get(CoreAdminParams.BACKUP_REPOSITORY));
-    assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
   }
 
   private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody) throws Exception {
