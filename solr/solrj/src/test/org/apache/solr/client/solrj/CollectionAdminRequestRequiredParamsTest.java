@@ -151,6 +151,20 @@ public class CollectionAdminRequestRequiredParamsTest extends SolrTestCase {
                          ACTION, NAME, "shards", "router.name", ZkStateReader.NRT_REPLICAS);
   }
   
+  public void testModifyCollection() {
+    
+    final CollectionAdminRequest.Modify request =  CollectionAdminRequest.modifyCollection("collection")
+        .withProperty("maxShardsPerNode", "2");
+    assertContainsParams(request.getParams(), ACTION, NAME, "maxShardsPerNode"); 
+ 
+    final CollectionAdminRequest.Modify request2 =  CollectionAdminRequest.modifyCollection("collection")
+        .withProperty("maxShardsPerNode", "2")
+        .withProperty("replicationFactor", "1");
+    assertContainsParams(request2.getParams(), ACTION, NAME, "maxShardsPerNode","replicationFactor"); 
+ 
+    
+  }
+  
   public void testReloadCollection() {
     final CollectionAdminRequest.Reload request = CollectionAdminRequest.reloadCollection("collection");
     assertContainsParams(request.getParams(), ACTION, NAME);

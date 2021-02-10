@@ -98,6 +98,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.set(PROPERTY_PREFIX + propertyName, props.getProperty(propertyName));
     }
   }
+  
+  protected void addAttributes(ModifiableSolrParams params, Properties props) {
+    for (String propertyName : props.stringPropertyNames()) {
+      params.set(propertyName, props.getProperty(propertyName));
+    }
+  }
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
@@ -557,7 +563,63 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
   }
+  
+  
+  public static Modify modifyCollection(String collection)
+  {
+    return new Modify(collection);
+  }
+  
+  // MODIFY request
+  public static class Modify extends AsyncCollectionSpecificAdminRequest {
+    
+    private Modify(String collection) {
+      super(CollectionAction.MODIFYCOLLECTION, collection);
+    }
 
+    private Properties properties;
+     
+    @Override
+    public Modify setCollectionName(String collection) {
+      return null;
+    }
+
+    public Properties getProperties() {
+      return properties;
+    }
+
+    public Modify setProperties(Properties properties) {
+      this.properties = properties;
+      return this;
+    }
+
+    public Modify setProperties(Map<String, String> properties) {
+      this.properties = new Properties();
+      this.properties.putAll(properties);
+      return this;
+    }
+
+    public Modify withProperty(String key, String value) {
+      if (this.properties == null)
+        this.properties = new Properties();
+      this.properties.setProperty(key, value);
+      return this;
+    }
+    
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+
+     
+      if(properties != null) {
+        addAttributes(params, properties);
+      }
+     
+      return params;
+    }
+    
+  }
+  
   /**
    * Returns a SolrRequest to reload a collection
    */
