@@ -301,7 +301,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     }
 
     if (r.nextBoolean()) {
-      DocValuesType values[] = getDocValuesTypes();
+      DocValuesType[] values = DocValuesType.values();
       type.setDocValuesType(values[r.nextInt(values.length)]);
     }
 
@@ -310,17 +310,6 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
 
   /** Hook to add any codec attributes to fieldinfo instances added in this test. */
   protected void addAttributes(FieldInfo fi) {}
-
-  /**
-   * Docvalues types to test.
-   *
-   * @deprecated only for Only available to ancient codecs can limit this to the subset of types
-   *     they support.
-   */
-  @Deprecated
-  protected DocValuesType[] getDocValuesTypes() {
-    return DocValuesType.values();
-  }
 
   /** equality for entirety of fieldinfos */
   protected void assertEquals(FieldInfos expected, FieldInfos actual) {
