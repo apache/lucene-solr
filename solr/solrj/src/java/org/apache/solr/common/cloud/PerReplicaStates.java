@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import org.apache.solr.cluster.api.SimpleMap;
@@ -68,7 +67,7 @@ public class PerReplicaStates implements ReflectMapWriter {
   @JsonProperty
   public final SimpleMap<State> states;
 
-  private volatile AtomicBoolean allActive = null;
+  private volatile Boolean allActive;
 
   /**
    * Construct with data read from ZK
@@ -95,21 +94,18 @@ public class PerReplicaStates implements ReflectMapWriter {
 
   }
 
-  /**
-   * Check and return if all replicas are ACTIVE
+  /** Check and return if all replicas are ACTIVE
    */
   public boolean allActive() {
-    if (this.allActive != null) return allActive.get();
+    if (this.allActive != null) return allActive;
     boolean[] result = new boolean[]{true};
     states.forEachEntry((r, s) -> {
       if (s.state != Replica.State.ACTIVE) result[0] = false;
     });
-    this.allActive.set(result[0]);
-    return this.allActive.get();
+    return this.allActive = result[0];
   }
 
-  /**
-   * Get the changed replicas
+  /**Get the changed replicas
    */
   public static Set<String> findModifiedReplicas(PerReplicaStates old, PerReplicaStates fresh) {
     Set<String> result = new HashSet<>();

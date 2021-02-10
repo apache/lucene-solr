@@ -159,7 +159,7 @@ public class Overseer implements SolrCloseable {
    *
    * <p>The cluster state updater is a single thread dequeueing and executing requests.</p>
    */
-  public class ClusterStateUpdater implements Runnable, Closeable {
+  private class ClusterStateUpdater implements Runnable, Closeable {
 
     private final ZkStateReader reader;
     private final SolrZkClient zkClient;
@@ -206,8 +206,6 @@ public class Overseer implements SolrCloseable {
       return workQueue.getZkStats();
     }
 
-    private boolean refreshClusterState = false;
-
     @Override
     public void run() {
       MDCLoggingContext.setNode(zkController.getNodeName() );
@@ -224,8 +222,7 @@ public class Overseer implements SolrCloseable {
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
-        refreshClusterState = true; // let's refresh in the first iteration
-
+        boolean refreshClusterState = true; // let's refresh in the first iteration
         // we write updates in batch, but if an exception is thrown when writing new clusterstate,
         // we do not sure which message is bad message, therefore we will re-process node one by one
         int fallbackQueueSize = Integer.MAX_VALUE;
@@ -356,11 +353,6 @@ public class Overseer implements SolrCloseable {
         //do this in a separate thread because any wait is interrupted in this main thread
         new Thread(this::checkIfIamStillLeader, "OverseerExitThread").start();
       }
-    }
-
-    // nocommit: javadocs
-    public void refreshClusterState() {
-      refreshClusterState = true;
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
