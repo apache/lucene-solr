@@ -25,7 +25,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 /**
  * POJO for Rate Limiter Metadata Configuration
  */
-public class RateLimiterMeta implements ReflectMapWriter {
+public class RateLimiterPayload implements ReflectMapWriter {
   @JsonProperty
   public Boolean enabled;
 
@@ -41,8 +41,8 @@ public class RateLimiterMeta implements ReflectMapWriter {
   @JsonProperty
   public Integer slotAcquisitionTimeoutInMS;
 
-  public RateLimiterMeta copy() {
-    RateLimiterMeta result = new RateLimiterMeta();
+  public RateLimiterPayload copy() {
+    RateLimiterPayload result = new RateLimiterPayload();
 
     result.enabled = enabled;
     result.guaranteedSlots = guaranteedSlots;
@@ -55,8 +55,8 @@ public class RateLimiterMeta implements ReflectMapWriter {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof RateLimiterMeta) {
-      RateLimiterMeta that = (RateLimiterMeta) obj;
+    if (obj instanceof RateLimiterPayload) {
+      RateLimiterPayload that = (RateLimiterPayload) obj;
       return Objects.equals(this.enabled, that.enabled) &&
           Objects.equals(this.guaranteedSlots, that.guaranteedSlots) &&
           Objects.equals(this.allowedRequests, that.allowedRequests) &&

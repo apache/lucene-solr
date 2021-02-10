@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.backward_codecs.lucene50;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;

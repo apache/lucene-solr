@@ -27,6 +27,7 @@ import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +38,7 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
+@LogLevel("org.apache.solr.cloud.api.collections.BackupCmd=DEBUG;org.apache.solr.handler.admin.BackupCoreOp=DEBUG;org.apache.solr.core.backup.repository.LocalFileSystemRepository=DEBUG")
 public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     @Before // unique core per test
     public void coreInit() throws Exception {

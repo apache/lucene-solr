@@ -152,7 +152,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
   @Override
   public PlacementPlugin createPluginInstance() {
-    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB, config.withCollection);
+    return new AffinityPlacementPlugin(config.minimalFreeDiskGB, config.prioritizedFreeDiskGB);
   }
 
   @Override
@@ -176,29 +176,14 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     private final long prioritizedFreeDiskGB;
 
-    // primary to secondary (1:1)
-    private final Map<String, String> withCollections;
-    // secondary to primary (1:N)
-    private final Map<String, Set<String>> colocatedWith;
-
     private final Random replicaPlacementRandom = new Random(); // ok even if random sequence is predictable.
 
     /**
      * The factory has decoded the configuration for the plugin instance and passes it the parameters it needs.
      */
-    private AffinityPlacementPlugin(long minimalFreeDiskGB, long prioritizedFreeDiskGB, Map<String, String> withCollections) {
+    private AffinityPlacementPlugin(long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
       this.minimalFreeDiskGB = minimalFreeDiskGB;
       this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
-      Objects.requireNonNull(withCollections, "withCollections must not be null");
-      this.withCollections = withCollections;
-      if (withCollections.isEmpty()) {
-        colocatedWith = Map.of();
-      } else {
-        colocatedWith = new HashMap<>();
-        withCollections.forEach((primary, secondary) ->
-            colocatedWith.computeIfAbsent(secondary, s -> new HashSet<>())
-                .add(primary));
-      }
 
       // We make things reproducible in tests by using test seed if any
       String seed = System.getProperty("tests.seed");
@@ -289,25 +274,31 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
 
     private void verifyDeleteCollection(DeleteCollectionRequest deleteCollectionRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
       Cluster cluster = placementContext.getCluster();
-      Set<String> colocatedCollections = colocatedWith.getOrDefault(deleteCollectionRequest.getCollection().getName(), Set.of());
-      for (String primaryName : colocatedCollections) {
-        try {
-          if (cluster.getCollection(primaryName) != null) {
-            // still exists
-            throw new PlacementModificationException("colocated collection " + primaryName +
-                " of " + deleteCollectionRequest.getCollection().getName() + " still present");
-          }
-        } catch (IOException e) {
-          throw new PlacementModificationException("failed to retrieve colocated collection information", e);
+      Set<String> colocatedWith = new HashSet<>();
+      for (SolrCollection collection : cluster.collections()) {
+        String withCollection = collection.getCustomProperty(AffinityPlacementConfig.WITH_COLLECTION_PROPERTY);
+        if (withCollection != null && withCollection.equals(deleteCollectionRequest.getCollection().getName())) {
+          colocatedWith.add(collection.getName());
         }
+      }
+      if (!colocatedWith.isEmpty()) {
+        // still exists
+        throw new PlacementModificationException("primary colocated collections: " + colocatedWith +
+            " of the secondary collection " + deleteCollectionRequest.getCollection().getName() + " still present!");
       }
     }
 
     private void verifyDeleteReplicas(DeleteReplicasRequest deleteReplicasRequest, PlacementContext placementContext) throws PlacementModificationException, InterruptedException {
       Cluster cluster = placementContext.getCluster();
       SolrCollection secondaryCollection = deleteReplicasRequest.getCollection();
-      Set<String> colocatedCollections = colocatedWith.get(secondaryCollection.getName());
-      if (colocatedCollections == null) {
+      Set<String> colocatedCollections = new HashSet<>();
+      for (SolrCollection collection : cluster.collections()) {
+        String withCollection = collection.getCustomProperty(AffinityPlacementConfig.WITH_COLLECTION_PROPERTY);
+        if (withCollection != null && withCollection.equals(deleteReplicasRequest.getCollection().getName())) {
+          colocatedCollections.add(collection.getName());
+        }
+      }
+      if (colocatedCollections.isEmpty()) {
         return;
       }
       Map<Node, Map<String, AtomicInteger>> secondaryNodeShardReplicas = new HashMap<>();
@@ -644,7 +635,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     private Set<Node> filterNodesWithCollection(Cluster cluster, PlacementRequest request, AttributeValues attributeValues, Set<Node> initialNodes) throws PlacementException {
       // if there's a `withCollection` constraint for this collection then remove nodes
       // that are not eligible
-      String withCollectionName = withCollections.get(request.getCollection().getName());
+      String withCollectionName = request.getCollection().getCustomProperty(AffinityPlacementConfig.WITH_COLLECTION_PROPERTY);
       if (withCollectionName == null) {
         return initialNodes;
       }

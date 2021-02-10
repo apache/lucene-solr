@@ -137,6 +137,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       ZkStateReader zkStateReader = ocmh.zkStateReader;
 
+      // this also creates the collection zk node as a side-effect
       OverseerCollectionMessageHandler.createConfNode(stateManager, configName, collectionName);
 
       Map<String,String> collectionParams = new HashMap<>();
