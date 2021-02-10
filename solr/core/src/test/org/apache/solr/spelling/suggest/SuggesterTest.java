@@ -19,12 +19,12 @@ package org.apache.solr.spelling.suggest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // MRM-TEST TODO: finish closing things right
 public class SuggesterTest extends SolrTestCaseJ4 {
   /**
    * Expected URI at which the given suggester will live.
@@ -102,7 +102,9 @@ public class SuggesterTest extends SolrTestCaseJ4 {
     NamedList params = new NamedList();
     params.add("field", "test_field");
     params.add("lookupImpl", "org.apache.solr.spelling.suggest.tst.TSTLookupFactory");
-    suggester.init(params, h.getCore());
+    SolrCore core = h.getCore();
+    suggester.init(params, core);
+    core.close();
     assertTrue(suggester.getQueryAnalyzer() != null);
   }
 }

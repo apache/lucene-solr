@@ -517,6 +517,7 @@ public class StatelessScriptUpdateProcessorFactory extends UpdateRequestProcesso
     }
 
     public Reader openReader(SolrResourceLoader resourceLoader) throws IOException {
+      // TODO: close the inputstream as well
       InputStream input = resourceLoader.openResource(fileName);
       return org.apache.lucene.util.IOUtils.getDecodingReader
         (input, StandardCharsets.UTF_8);

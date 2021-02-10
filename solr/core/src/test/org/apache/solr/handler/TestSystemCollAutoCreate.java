@@ -22,7 +22,6 @@ import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.junit.Ignore;
 
-@Ignore // MRM-TEST TODO: finish closing things right
 public class TestSystemCollAutoCreate extends SolrCloudBridgeTestCase {
 
   public TestSystemCollAutoCreate() {

@@ -421,17 +421,11 @@ public class ParWork implements Closeable {
 
       if (exception.get() != null) {
         Throwable exp = exception.get();
+        exp.fillInStackTrace();
         if (exp instanceof Error) {
           throw (Error) exp;
         }
         if (exp instanceof RuntimeException) {
-          //exp.fillInStackTrace();
-          Throwable rootCause = exp;
-          while (rootCause.getCause() != null) {
-            rootCause = rootCause.getCause();
-          }
-          rootCause.initCause(new SolrException(SolrException.ErrorCode.SERVER_ERROR, ""));
-
           throw (RuntimeException) exp;
         }
         throw new RuntimeException(exp);

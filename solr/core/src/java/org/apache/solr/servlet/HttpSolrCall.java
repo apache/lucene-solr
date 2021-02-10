@@ -190,7 +190,7 @@ public class HttpSolrCall {
     // put the core container in request attribute
     req.setAttribute("org.apache.solr.CoreContainer", cores);
     path = ServletUtils.getPathAfterContext(req);
-    if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
+    if (log.isTraceEnabled()) log.trace("Path is parsed as {}", path);
   }
 
   public String getPath() {
@@ -224,11 +224,11 @@ public class HttpSolrCall {
       }
     }
 
-    if (log.isDebugEnabled()) log.debug("Full path {} Path is parsed as {} managment path is {}", req.getRequestURI() + req.getQueryString(), path);
+    if (log.isTraceEnabled()) log.trace("Full path {} Path is parsed as {} managment path is {}", req.getRequestURI() + req.getQueryString(), path);
       // Check for container handlers
 
     handler = cores.getRequestHandler(path);
-    if (log.isDebugEnabled()) log.debug("Check for handler {} returned {} handlers={}", path, handler, cores.getRequestHandlers().keySet());
+    if (log.isTraceEnabled()) log.trace("Check for handler {} returned {} handlers={}", path, handler, cores.getRequestHandlers().keySet());
     if (handler != null) {
       solrReq = SolrRequestParsers.DEFAULT.parse(null, path, req);
       solrReq.getContext().put(CoreContainer.class.getName(), cores);
@@ -266,11 +266,6 @@ public class HttpSolrCall {
       }
 
       if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
-
-//      if (core == null) {
-//        // nocommit
-//        log.info("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
-//      }
 
       if (core != null) {
         path = path.substring(idx);
@@ -448,9 +443,9 @@ public class HttpSolrCall {
       }
     }
     if (uniqueList != null) {
-      return new ArrayList<>(uniqueList);
+      return Collections.unmodifiableList(new ArrayList<>(uniqueList));
     } else {
-      return result;
+      return Collections.unmodifiableList(result);
     }
   }
 
@@ -458,10 +453,10 @@ public class HttpSolrCall {
    * Extract handler from the URL path if not set.
    */
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
-    if (log.isDebugEnabled()) log.debug("Extract handler from url path {} {}", handler, path);
+    if (log.isTraceEnabled()) log.trace("Extract handler from url path {} {}", handler, path);
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-      if (log.isDebugEnabled()) log.debug("handler={} name={}", handler, path);
+      if (log.isTraceEnabled()) log.trace("handler={} name={}", handler, path);
       // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {
@@ -688,7 +683,7 @@ public class HttpSolrCall {
   void destroy() {
     try {
       if (solrReq != null) {
-        log.debug("Closing out SolrRequest: {}", solrReq);
+        if (log.isTraceEnabled()) log.trace("Closing out SolrRequest: {}", solrReq);
         IOUtils.closeQuietly(solrReq);
       }
     } finally {
@@ -1078,9 +1073,9 @@ public class HttpSolrCall {
     }
 
     List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
-    if (log.isDebugEnabled()) log.debug("replicas for node {} {}", replicas, cores.getZkController().getNodeName());
+    if (log.isTraceEnabled()) log.trace("replicas for node {} {}", replicas, cores.getZkController().getNodeName());
     SolrCore returnCore = randomlyGetSolrCore(cores.getZkController().getZkStateReader().getLiveNodes(), replicas);
-    if (log.isDebugEnabled()) log.debug("returning core by collection {}", returnCore == null ? null : returnCore.getName());
+    if (log.isTraceEnabled()) log.trace("returning core by collection {}", returnCore == null ? null : returnCore.getName());
     return  returnCore;
   }
 

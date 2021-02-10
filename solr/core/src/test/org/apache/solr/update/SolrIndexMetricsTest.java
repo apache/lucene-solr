@@ -24,16 +24,15 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test proper registration and collection of index and directory metrics.
  */
-@Ignore // MRM-TEST TODO: finish closing things right
 public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
   @Before
@@ -52,19 +51,20 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
   }
 
   private void addDocs() throws Exception {
-    SolrQueryRequest req = lrf.makeRequest();
-    UpdateHandler uh = req.getCore().getUpdateHandler();
-    AddUpdateCommand add = new AddUpdateCommand(req);
-    for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
-      add.clear();
-      add.solrDoc = new SolrInputDocument();
-      add.solrDoc.addField("id", "" + i);
-      add.solrDoc.addField("foo_s", "foo-" + i);
-      uh.addDoc(add);
+    try (SolrQueryRequest req = lrf.makeRequest()) {
+      UpdateHandler uh = req.getCore().getUpdateHandler();
+      AddUpdateCommand add = new AddUpdateCommand(req);
+      for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
+        add.clear();
+        add.solrDoc = new SolrInputDocument();
+        add.solrDoc.addField("id", "" + i);
+        add.solrDoc.addField("foo_s", "foo-" + i);
+        uh.addDoc(add);
+      }
+      uh.commit(new CommitUpdateCommand(req, false));
+      // make sure all merges are finished
+      h.reload();
     }
-    uh.commit(new CommitUpdateCommand(req, false));
-    // make sure all merges are finished
-    h.reload();
   }
 
   @Test
@@ -75,7 +75,9 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     addDocs();
 
-    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    SolrCore core = h.getCore();
+    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(core.getCoreMetricManager().getRegistryName());
+    core.close();
     assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();
@@ -101,7 +103,9 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
 
     addDocs();
 
-    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    SolrCore core = h.getCore();
+    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(core.getCoreMetricManager().getRegistryName());
+    core.close();
     assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();
@@ -116,8 +120,9 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
     initCore("solrconfig-indexmetrics.xml", "schema.xml");
 
     addDocs();
-
-    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(h.getCore().getCoreMetricManager().getRegistryName());
+    SolrCore core = h.getCore();
+    MetricRegistry registry = h.getCoreContainer().getMetricManager().registry(core.getCoreMetricManager().getRegistryName());
+    core.close();
     assertNotNull(registry);
 
     Map<String, Metric> metrics = registry.getMetrics();

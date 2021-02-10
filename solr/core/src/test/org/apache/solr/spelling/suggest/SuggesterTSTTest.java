@@ -17,9 +17,7 @@
 package org.apache.solr.spelling.suggest;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
-@Ignore // MRM-TEST TODO: finish closing things right
 public class SuggesterTSTTest extends SuggesterTest {
   @BeforeClass
   public static void beforeSuggesterTSTTest() throws Exception {

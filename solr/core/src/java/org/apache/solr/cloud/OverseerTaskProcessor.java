@@ -116,8 +116,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   };
 
-  private final Object waitLock = new Object();
-
   protected final OverseerMessageHandlerSelector selector;
 
   private final String thisNode;

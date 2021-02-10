@@ -264,7 +264,7 @@ public class Aliases {
       }
     }
     if (uniqueResult == null) {
-      return level1;
+      return Collections.unmodifiableList(level1);
     } else {
       return Collections.unmodifiableList(new ArrayList<>(uniqueResult));
     }

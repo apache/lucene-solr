@@ -923,7 +923,7 @@ public class SolrZkClient implements Closeable {
 
   public void printLayout(String path, int indent, StringBuilder output) {
     try {
-      printLayout(path, "", indent, new StringBuilder(64), output);
+      printLayout(path, "", indent, output);
     } catch (Exception e) {
       log.error("Exception printing layout", e);
     }
@@ -932,7 +932,7 @@ public class SolrZkClient implements Closeable {
   /**
    * Fills string with printout of current ZooKeeper layout.
    */
-  public void printLayout(String path, String node, int indent, StringBuilder internal, StringBuilder output) {
+  public void printLayout(String path, String node, int indent, StringBuilder output) {
     try {
       //log.info("path={} node={} indext={}", path, node, indent);
 
@@ -968,7 +968,6 @@ public class SolrZkClient implements Closeable {
         } else {
           childrenString = "";
         }
-        internal.append(path).append(children.size() > 0 ? node : "► " + node).append(" (").append(childrenString).append("v=" + (stat == null ? "?" : stat.getVersion()) + ")");
         output.append(dent.toString()).append(children.size() == 0 ? node : "+" + node).append(" [").append(childrenString).append("v=").append ((stat == null ? "?" : stat.getVersion()) + "]");
         StringBuilder dataBuilder = new StringBuilder();
         String dataString;
@@ -994,11 +993,9 @@ public class SolrZkClient implements Closeable {
         } else {
           output.append(NEWL);
         }
-        internal.append(dataBuilder);
         output.append(dataBuilder);
         indent += 2;
       } else {
-        internal.append("/");
         output.append("/");
       }
       if (children == null) {
@@ -1016,8 +1013,8 @@ public class SolrZkClient implements Closeable {
       }
       if (children != null) {
         for (String child : children) {
-          if (!child.equals("quota") && !(internal.toString() + child).equals("/zookeeper")) {
-            printLayout(path.equals("/") ? "/" + child : path + "/" + child, child, indent, internal, output);
+          if (!child.equals("quota") && !child.equals("/zookeeper")) {
+            printLayout(path.equals("/") ? "/" + child : path + "/" + child, child, indent, output);
           }
         }
       }

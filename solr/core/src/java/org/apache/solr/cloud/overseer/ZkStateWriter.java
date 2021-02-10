@@ -286,7 +286,7 @@ public class ZkStateWriter {
           //            return new SliceMutator(cloudManager).addRoutingRule(clusterState, message);
           //          case REMOVEROUTINGRULE:
           //            return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
-          case UPDATESHARDSTATE:
+          case UPDATESHARDSTATE:  // MRM TODO: look at how we handle this and make it so it can use StatePublisher
             String collection = message.getStr("collection");
             message.getProperties().remove("collection");
             message.getProperties().remove(StatePublisher.OPERATION);
@@ -469,6 +469,7 @@ public class ZkStateWriter {
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
                   updates.getProperties().clear();
+                  writeStateUpdates(lastVersion, collection, updates);
                 }
               }
 
@@ -499,17 +500,7 @@ public class ZkStateWriter {
             if (dirtyState.contains(collection.getName())) {
               ZkNodeProps updates = stateUpdates.get(collection.getName());
               if (updates != null) {
-                String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
-                if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
-                dirtyState.remove(collection.getName());
-                try {
-                  reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
-                } catch (KeeperException.NoNodeException e) {
-                    if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
-                    lastVersion.set(-1);
-                    trackVersions.remove(collection.getName());
-                    // likely deleted
-                  }
+                writeStateUpdates(lastVersion, collection, updates);
               }
             }
 
@@ -544,6 +535,20 @@ public class ZkStateWriter {
     //    if (log.isDebugEnabled()) {
     //      log.debug("writePendingUpdates() - end - New Cluster State is: {}", newClusterState);
     //    }
+  }
+
+  private void writeStateUpdates(AtomicInteger lastVersion, DocCollection collection, ZkNodeProps updates) throws KeeperException, InterruptedException {
+    String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
+    if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
+    dirtyState.remove(collection.getName());
+    try {
+      reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
+    } catch (KeeperException.NoNodeException e) {
+      if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
+      lastVersion.set(-1);
+      trackVersions.remove(collection.getName());
+      // likely deleted
+    }
   }
 
   private void waitForStateWePublishedToComeBack() {

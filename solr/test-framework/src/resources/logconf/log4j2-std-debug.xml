@@ -39,8 +39,8 @@
         <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
 
         <AsyncLogger name="org.apache.solr.core.SolrCore" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.core.DefaultSolrCore" level="DEBUG"/>
-        <AsyncLogger name="org.apache.solr.core.SolrCoreState" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.core.DefaultSolrCore" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.core.SolrCoreState" level="INFO"/>
 
         <AsyncLogger name="org.apache.solr.handler.admin.CollectionsHandler" level="INFO"/>
         <AsyncLogger name="org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler" level="INFO"/>

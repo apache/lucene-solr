@@ -94,6 +94,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -1562,7 +1563,7 @@ public class IndexFetcher {
 
       try {
         Files.walk(dir.toPath()).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
-      } catch (NoSuchFileException e) {
+      } catch (NoSuchFileException | UncheckedIOException e) {
 
       } catch (IOException e) {
         log.warn("Unable to delete directory : {}", dir, e);

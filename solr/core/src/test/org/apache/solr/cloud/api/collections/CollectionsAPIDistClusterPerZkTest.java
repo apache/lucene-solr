@@ -303,7 +303,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     final String collectionName = "reloaded_collection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2).setMaxShardsPerNode(10).process(cluster.getSolrClient());
 
-    CollectionAdminRequest.reloadCollection(collectionName).processAsync(cluster.getSolrClient());
+    CollectionAdminRequest.reloadCollection(collectionName).process(cluster.getSolrClient());
   }
 
   private void checkInstanceDirs(JettySolrRunner jetty) throws IOException {

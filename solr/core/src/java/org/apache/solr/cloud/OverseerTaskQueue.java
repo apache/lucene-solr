@@ -294,11 +294,10 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       if (bytes == null || bytes.length == 0) {
         log.error("Found no data at response node, Overseer likely changed {}", watchID);
       }
-      // create the event before deleting the node, otherwise we can get the deleted
-      // event from the watcher.
+
       QueueEvent event =  new QueueEvent(watchID, bytes, watcher.getWatchedEvent());
 
-      // zookeeper.delete(watchID,  -1);
+      zookeeper.delete(watchID,-1);
 
       return event;
     } finally {

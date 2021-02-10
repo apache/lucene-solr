@@ -30,10 +30,8 @@ import org.apache.solr.common.SolrException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // MRM TEST TODO: core closing
 public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   private String fieldName = "VerificationTest";

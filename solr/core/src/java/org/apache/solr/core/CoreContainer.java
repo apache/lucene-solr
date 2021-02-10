@@ -117,6 +117,7 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
@@ -1625,7 +1626,7 @@ public class CoreContainer implements Closeable {
                 while (new File(dataDir).exists()) {
                   try {
                     Files.walk(new File(dataDir).toPath()).sorted(Comparator.reverseOrder()).forEach(new FileConsumer());
-                  } catch (NoSuchFileException e) {
+                  } catch (NoSuchFileException | UncheckedIOException e) {
 
                   }
                 }
@@ -2043,7 +2044,7 @@ public class CoreContainer implements Closeable {
           while (Files.exists(cd.getInstanceDir())) {
             try {
               Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).forEach(new FileConsumer());
-            } catch (NoSuchFileException e) {
+            } catch (NoSuchFileException | UncheckedIOException e) {
 
             }
           }
@@ -2372,8 +2373,8 @@ public class CoreContainer implements Closeable {
     public void accept(Path file) {
       try {
         Files.delete(file);
-      }catch (IOException e) {
-        log.warn("Could not delete file {}", file, e);
+      } catch (IOException e) {
+        log.info("Could not delete file {} {} {}", file, e.getClass().getName(), e.getMessage());
       }
     }
   }

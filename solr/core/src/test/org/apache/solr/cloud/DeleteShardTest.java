@@ -56,6 +56,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
   }
 
   @Test
+  // MRM TODO: we need to pump slice changes through the StatePublish mechanism
   public void test() throws Exception {
 
     final String collection = "deleteShard";
@@ -87,8 +88,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
   }
 
   protected void setSliceState(String collection, String slice, State state) throws Exception {
-
-    CloudHttp2SolrClient client = cluster.getSolrClient();
 
     // TODO can this be encapsulated better somewhere?
     DistributedQueue inQueue =  cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();

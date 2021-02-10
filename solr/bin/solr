@@ -850,7 +850,7 @@ function stop_solr() {
   JETTY_RUN="$SOLR_PID_DIR"
   JETTY_PID="solr-$SOLR_PORT.pid"
 
-  echo -e "Sending stop command to Solr running on port $SOLR_PORT ...  "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS org.apache.solr.servlet.StopJetty "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY""
+  echo -e "Sending stop command to Solr running on port $SOLR_PORT ...  $JAVA -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS org.apache.solr.servlet.StopJetty "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY""
   "$JAVA" -cp $SOLR_TIP/server/lib/ext/solr-core*.jar $SOLR_SSL_OPTS $AUTHC_OPTS "-DSTOP.PORT=$THIS_STOP_PORT" "-DSTOP.KEY=$STOP_KEY" org.apache.solr.servlet.StopJetty || true
 
   if [ ! -f "$SOLR_PID_DIR/$JETTY_PID" ] ; then
@@ -2037,8 +2037,7 @@ else
 fi
 
 # Enable java security manager (allowing filesystem access and other things)
-# MRM TODO: enable security manager
-if [ "${SOLR_SECURITY_MANAGER_ENABLED:-false}" == "true" ]; then
+if [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true" ]; then
   SECURITY_MANAGER_OPTS=('-Djava.security.manager' \
       "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
       "-Djava.security.properties=${SOLR_SERVER_DIR}/etc/security.properties" \
@@ -2205,7 +2204,7 @@ function start_solr() {
   SOLR_START_OPTS+=("-Dsolr.log.dir=${SOLR_LOGS_DIR}" "-Djetty.port=${SOLR_PORT}" "-DSTOP.PORT=${stop_port}" "-DSTOP.KEY=${STOP_KEY}")
   SOLR_START_OPTS+=("-Duser.timezone=${SOLR_TIMEZONE}" "-Djetty.home=${SOLR_SERVER_DIR}" "-Dsolr.solr.home=${SOLR_HOME}" "-Dsolr.data.home=${SOLR_DATA_HOME}" "-Dsolr.install.dir=${SOLR_TIP}")
   SOLR_START_OPTS+=("-Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault" "-Djava.net.preferIPv4Stack=true" "-Dsolr.default.confdir=${DEFAULT_CONFDIR}")
-  SOLR_START_OPTS+=("-XX:-UseBiasedLocking")
+  SOLR_START_OPTS+=("-XX:-UseBiasedLocking" "-Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.Slf4jLog")
 
   # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
   # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
@@ -2239,11 +2238,12 @@ function start_solr() {
 
   if [ "$run_in_foreground" == "true" ]; then
     #set -x
+    SOLR_START_OPTS+=("-Djetty.state=${SOLR_PID_DIR}/jetty.state" "-DLOG4J_APPENDER=STDOUT")
     exec "$JAVA" "${SOLR_START_OPTS[@]}" -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
   else
     # run Solr in the background MRM-TODO: Move relevant parts in from jetty.sh
 
-    SOLR_START_OPTS+=("-Djetty.state=${SOLR_PID_DIR}/jetty.state" "-Dsolr.log.muteconsole=true")
+    SOLR_START_OPTS+=("-Djetty.state=${SOLR_PID_DIR}/jetty.state" "-DLOG4J_APPENDER=MainLogFile")
 
     export JAVA=$JAVA
     export JETTY_HOME="${SOLR_SERVER_DIR}"
@@ -2251,7 +2251,7 @@ function start_solr() {
     export JETTY_RUN="$SOLR_PID_DIR"
     export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
     export JETTY_ARGS="${SOLR_JETTY_CONFIG[*]}"
-    export JAVA_OPTIONS="${SOLR_START_OPTS[@]}"
+    export JAVA_OPTIONS="${SOLR_START_OPTS[*]}"
     export JETTY_STATE="${SOLR_PID_DIR}/jetty.state"
     bash "${SOLR_SERVER_DIR}"/../bin/jetty.sh -d start
   fi

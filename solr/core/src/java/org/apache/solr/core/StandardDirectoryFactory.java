@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.FileSystems;
@@ -112,7 +113,7 @@ public class StandardDirectoryFactory extends CachingDirectoryFactory {
     while (Files.exists(dirFile)) {
       try {
         Files.walk(dirFile).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
-      } catch (NoSuchFileException e) {
+      } catch (NoSuchFileException | UncheckedIOException e) {
 
       }
     }

@@ -56,12 +56,10 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.hll.HLL;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 
 /**
  * Statistics Component Test (which also checks some equivalent json.facet functionality)
  */
-@Ignore // MRM-TEST TODO: finish closing things right
 public class StatsComponentTest extends SolrTestCaseJ4 {
 
   final static String XPRE = "/response/lst[@name='stats']/";
@@ -76,8 +74,13 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @Override
+  public void tearDown() throws Exception {
     clearIndex();
     assertU(commit());
+    super.tearDown();
   }
 
   @Nightly
@@ -395,7 +398,6 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   public void testFieldStatisticsResultsStringField() throws Exception {
     String f = "active_s";
 
-    SolrCore core = h.getCore();
     assertU(adoc("id", "1", f, "string1"));
     assertU(adoc("id", "2", f, "string2"));
     assertU(adoc("id", "3", f, "string3"));
@@ -476,7 +478,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("f.active_dt.stats.calcdistinct","true");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
 
     assertQ("test date statistics values", req,
             "//long[@name='count'][.='2']",
@@ -507,7 +509,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
 
     assertQ("test date statistics values", req,
             "//long[@name='count'][.='1']",
@@ -522,6 +524,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "3", "active_dt", "2215-12-14T09:00:00Z"));
     assertU(commit());
 
+    req = new LocalSolrQueryRequest(h.getCore(), new MapSolrParams(args), true);
     assertQ("test date statistics values", req,
         "//long[@name='count'][.='3']",
         "//date[@name='min'][.='2015-12-14T09:00:00Z']",
@@ -774,7 +777,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_i");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
 
     assertQ("test string statistics values", req
             ,"//lst[@name='active_i']/long[@name='count'][.='0']"
@@ -814,7 +817,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_s");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
 
     assertQ("test string statistics values", req
             ,"//lst[@name='active_s']/long[@name='count'][.='0']"
@@ -848,7 +851,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
 
     assertQ("test string statistics values", req
             ,"//lst[@name='active_dt']/long[@name='count'][.='0']"
@@ -875,6 +878,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   public void testStatsFacetMultivaluedErrorHandling() throws Exception {
     SolrCore core = h.getCore();
     SchemaField foo_ss = core.getLatestSchema().getField("foo_ss");
+    core.close();
 
     assertU(adoc("id", "1", "active_i", "1", "foo_ss", "aa" ));
     assertU(commit());
@@ -884,14 +888,12 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     assertTrue("schema no longer satisfies test requirements: foo_ss no longer multivalued", foo_ss.multiValued());
     assertTrue("schema no longer satisfies test requirements: foo_ss's fieldtype no longer single valued", ! foo_ss.getType().isMultiValued());
-    
-    assertQEx("no failure trying to get stats facet on foo_ss",
-              req("q", "*:*", 
-                  "stats", "true",
-                  "stats.field", "active_i",
-                  "stats.facet", "foo_ss"),
-              400);
 
+    SolrQueryRequest req = req("q", "*:*",
+        "stats", "true",
+        "stats.field", "active_i",
+        "stats.facet", "foo_ss");
+      assertQEx("no failure trying to get stats facet on foo_ss", req, 400);
   }
 
   //SOLR-3177
@@ -908,7 +910,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "{!ex=id}id_i");
     args.put("fq", "{!tag=id}id_i:[2 TO 3]");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
 
     assertQ("test exluding filter query", req
             , "//lst[@name='id_i']/double[@name='min'][.='1.0']"
@@ -957,7 +959,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "cat_docValues");
     args.put("indent", "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
     
     assertQ("test min/max on docValues and multiValued", req
         , "//lst[@name='cat_docValues']/str[@name='min'][.='test']"
@@ -970,92 +972,85 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   public void testFieldStatisticsDocValuesAndMultiValuedInteger() throws Exception {
-      SolrCore core = h.getCore();
-      String fieldName = "cat_intDocValues";
-      // precondition for the test
-      SchemaField catDocValues = core.getLatestSchema().getField(fieldName);
-      assertTrue("schema no longer satisfies test requirements: cat_docValues no longer multivalued", catDocValues.multiValued());
-      assertTrue("schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued", !catDocValues.getType().isMultiValued());
-      assertTrue("schema no longer satisfies test requirements: cat_docValues no longer has docValues", catDocValues.hasDocValues());
+    SolrCore core = h.getCore();
+    String fieldName = "cat_intDocValues";
+    // precondition for the test
+    SchemaField catDocValues = core.getLatestSchema().getField(fieldName);
 
-      List<FldType> types = new ArrayList<>();
-      types.add(new FldType("id", ONE_ONE, new SVal('A', 'Z', 4, 4)));
-      types.add(new FldType(fieldName, ONE_ONE, new IRange(0, 0)));
+    assertTrue("schema no longer satisfies test requirements: cat_docValues no longer multivalued", catDocValues.multiValued());
+    assertTrue("schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued", !catDocValues.getType().isMultiValued());
+    assertTrue("schema no longer satisfies test requirements: cat_docValues no longer has docValues", catDocValues.hasDocValues());
 
-      Doc d1 = createDocValuesDocument(types, fieldName, "1", -1, 3, 5);
-      updateJ(toJSON(d1), null);
+    List<FldType> types = new ArrayList<>();
+    types.add(new FldType("id", ONE_ONE, new SVal('A', 'Z', 4, 4)));
+    types.add(new FldType(fieldName, ONE_ONE, new IRange(0, 0)));
 
-      Doc d2 = createDocValuesDocument(types, fieldName, "2", 3, -2, 6);
-      updateJ(toJSON(d2), null);
+    Doc d1 = createDocValuesDocument(types, fieldName, "1", -1, 3, 5);
+    updateJ(toJSON(d1), null);
 
-      Doc d3 = createDocValuesDocument(types, fieldName, "3", 16, -3, 11);
-      updateJ(toJSON(d3), null);
+    Doc d2 = createDocValuesDocument(types, fieldName, "2", 3, -2, 6);
+    updateJ(toJSON(d2), null);
 
-      assertU(commit());
+    Doc d3 = createDocValuesDocument(types, fieldName, "3", 16, -3, 11);
+    updateJ(toJSON(d3), null);
 
-      Map<String, String> args = new HashMap<>();
-      args.put(CommonParams.Q, "*:*");
-      args.put(StatsParams.STATS, "true");
-      args.put(StatsParams.STATS_FIELD, fieldName);
-      args.put(StatsParams.STATS_CALC_DISTINCT, "true");
-      args.put("indent", "true");
+    assertU(commit());
 
-      SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    Map<String,String> args = new HashMap<>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, fieldName);
+    args.put(StatsParams.STATS_CALC_DISTINCT, "true");
+    args.put("indent", "true");
 
-      assertQ("test min/max on docValues and multiValued", req
-          , "//lst[@name='" + fieldName + "']/double[@name='min'][.='-3.0']"
-          , "//lst[@name='" + fieldName + "']/double[@name='max'][.='16.0']"
-          , "//lst[@name='" + fieldName + "']/long[@name='count'][.='12']"
-          , "//lst[@name='" + fieldName + "']/long[@name='countDistinct'][.='9']"
-          , "//lst[@name='" + fieldName + "']/double[@name='sum'][.='38.0']"
-          , "//lst[@name='" + fieldName + "']/double[@name='mean'][.='3.1666666666666665']"
-          , "//lst[@name='" + fieldName + "']/double[@name='stddev'][.='5.638074031784151']"
-          , "//lst[@name='" + fieldName + "']/double[@name='sumOfSquares'][.='470.0']"
-          , "//lst[@name='" + fieldName + "']/long[@name='missing'][.='0']");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
 
-    assertQ("cardinality", 
-            req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}" + fieldName)
-            , "//lst[@name='"+fieldName+"']/long[@name='cardinality'][.='9']");
+    assertQ("test min/max on docValues and multiValued", req, "//lst[@name='" + fieldName + "']/double[@name='min'][.='-3.0']", "//lst[@name='" + fieldName + "']/double[@name='max'][.='16.0']",
+        "//lst[@name='" + fieldName + "']/long[@name='count'][.='12']", "//lst[@name='" + fieldName + "']/long[@name='countDistinct'][.='9']",
+        "//lst[@name='" + fieldName + "']/double[@name='sum'][.='38.0']", "//lst[@name='" + fieldName + "']/double[@name='mean'][.='3.1666666666666665']",
+        "//lst[@name='" + fieldName + "']/double[@name='stddev'][.='5.638074031784151']", "//lst[@name='" + fieldName + "']/double[@name='sumOfSquares'][.='470.0']",
+        "//lst[@name='" + fieldName + "']/long[@name='missing'][.='0']");
+
+    assertQ("cardinality", req("q", "*:*", "stats", "true", "stats.field", "{!cardinality=true}" + fieldName), "//lst[@name='" + fieldName + "']/long[@name='cardinality'][.='9']");
 
   }
 
   public void testFieldStatisticsDocValuesAndMultiValuedIntegerFacetStats() throws Exception {
-       SolrCore core = h.getCore();
-       String fieldName = "cat_intDocValues";
-       // precondition for the test
-       SchemaField catDocValues = core.getLatestSchema().getField(fieldName);
-       assertTrue("schema no longer satisfies test requirements: cat_docValues no longer multivalued", catDocValues.multiValued());
-       assertTrue("schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued", !catDocValues.getType().isMultiValued());
-       assertTrue("schema no longer satisfies test requirements: cat_docValues no longer has docValues", catDocValues.hasDocValues());
+    SolrCore core = h.getCore();
+    String fieldName = "cat_intDocValues";
+    // precondition for the test
+    SchemaField catDocValues = core.getLatestSchema().getField(fieldName);
 
-       List<FldType> types = new ArrayList<>();
-       types.add(new FldType("id", ONE_ONE, new SVal('A', 'Z', 4, 4)));
-       types.add(new FldType(fieldName, ONE_ONE, new IRange(0, 0)));
+    assertTrue("schema no longer satisfies test requirements: cat_docValues no longer multivalued", catDocValues.multiValued());
+    assertTrue("schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued", !catDocValues.getType().isMultiValued());
+    assertTrue("schema no longer satisfies test requirements: cat_docValues no longer has docValues", catDocValues.hasDocValues());
 
-       Doc d1 = createDocValuesDocument(types, fieldName, "1", -1, 3, 5);
-       updateJ(toJSON(d1), null);
+    List<FldType> types = new ArrayList<>();
+    types.add(new FldType("id", ONE_ONE, new SVal('A', 'Z', 4, 4)));
+    types.add(new FldType(fieldName, ONE_ONE, new IRange(0, 0)));
 
-       Doc d2 = createDocValuesDocument(types, fieldName, "2", 3, -2, 6);
-       updateJ(toJSON(d2), null);
+    Doc d1 = createDocValuesDocument(types, fieldName, "1", -1, 3, 5);
+    updateJ(toJSON(d1), null);
 
-       Doc d3 = createDocValuesDocument(types, fieldName, "3", 16, -3, 11);
-       updateJ(toJSON(d3), null);
+    Doc d2 = createDocValuesDocument(types, fieldName, "2", 3, -2, 6);
+    updateJ(toJSON(d2), null);
 
-       assertU(commit());
+    Doc d3 = createDocValuesDocument(types, fieldName, "3", 16, -3, 11);
+    updateJ(toJSON(d3), null);
 
-       Map<String, String> args = new HashMap<>();
-       args.put(CommonParams.Q, "*:*");
-       args.put(StatsParams.STATS, "true");
-       args.put(StatsParams.STATS_FIELD, fieldName);
-       args.put(StatsParams.STATS_FACET, fieldName);
-       args.put(StatsParams.STATS_CALC_DISTINCT, "true");
-       args.put("indent", "true");
+    assertU(commit());
 
-       SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+    Map<String,String> args = new HashMap<>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, fieldName);
+    args.put(StatsParams.STATS_FACET, fieldName);
+    args.put(StatsParams.STATS_CALC_DISTINCT, "true");
+    args.put("indent", "true");
 
-       assertQEx("can not use FieldCache on multivalued field: cat_intDocValues", req, 400);
-
-     }
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args), true);
+    assertQEx("can not use FieldCache on multivalued field: cat_intDocValues", req, 400);
+  }
 
 
   public void testMiscQueryStats() throws Exception {
@@ -1151,6 +1146,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     String fieldName = "cat_floatDocValues";
     // precondition for the test
     SchemaField catDocValues = core.getLatestSchema().getField(fieldName);
+    core.close();
     assertTrue("schema no longer satisfies test requirements: cat_docValues no longer multivalued", catDocValues.multiValued());
     assertTrue("schema no longer satisfies test requirements: cat_docValues fieldtype no longer single valued", !catDocValues.getType().isMultiValued());
     assertTrue("schema no longer satisfies test requirements: cat_docValues no longer has docValues", catDocValues.hasDocValues());
@@ -1341,6 +1337,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
 
     SolrCore core = h.getCore();
     SchemaField field = core.getLatestSchema().getField("a_i");
+    core.close();
     HllOptions hllOpts = HllOptions.parseHllOptions(params("cardinality","true"), field);
     
     HLL hll = hllOpts.newHLL();
@@ -1630,7 +1627,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     // insure we have the same hasher a_l would use
     HashFunction hasher = HllOptions.parseHllOptions
       (params("cardinality","true"), core.getLatestSchema().getField("a_l")).getHasher();
-
+    core.close();
     String[] baseParams = new String[] { "q","*:*", "stats","true", "indent","true", "rows","0" };
     assertQ("empty cardinalities"
             , req(params("stats.field","{!key=a cardinality=true}a_l",
@@ -1701,7 +1698,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     SchemaField field_i = core.getLatestSchema().getField("field_i");
     SchemaField field_f = core.getLatestSchema().getField("field_f");
     SchemaField field_severity = core.getLatestSchema().getField("severity");
-
+    core.close();
     // simple cases that shouldn't use HLL
     assertNull(HllOptions.parseHllOptions(params(), field_l));
     assertNull(HllOptions.parseHllOptions(params("cardinality","false"), field_l));
@@ -1812,7 +1809,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     SchemaField foo_s = core.getLatestSchema().getField("foo_s");
     SchemaField foo_i = core.getLatestSchema().getField("foo_i");
-
+    core.close();
     ignoreException("hllPreHashed");
     for (SchemaField field : new SchemaField[] { foo_s, foo_i }) {
       // whitebox - field
@@ -1825,7 +1822,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       assertQEx("hllPreHashed " + field.getName(), "hllPreHashed is only supported with Long",
                 req(params("stats.field","{!cardinality=true hllPreHashed=true}" + field.getName()),
                     baseParams),
-                ErrorCode.BAD_REQUEST);
+                ErrorCode.BAD_REQUEST, true);
     }
 
     // whitebox - function
@@ -1839,7 +1836,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     assertQEx("hllPreHashed function", "hllPreHashed is only supported with Long",
               req(params("stats.field","{!func cardinality=true hllPreHashed=true}sum(foo_i,foo_l)"),
                   baseParams),
-              ErrorCode.BAD_REQUEST);
+              ErrorCode.BAD_REQUEST, true);
 
 
     ignoreException("accuracy");
@@ -1853,7 +1850,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       assertQEx("cardinality="+invalid, "number between 0 and 1",
                 req(params("stats.field","{!cardinality="+invalid+"}foo_s"),
                     baseParams),
-                ErrorCode.BAD_REQUEST);
+                ErrorCode.BAD_REQUEST, true);
     }
     
     ignoreException("hllLog2m must be");
@@ -1868,7 +1865,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       assertQEx("hllLog2m="+invalid, "hllLog2m must be",
                 req(params("stats.field","{!cardinality=true hllLog2m="+invalid+"}foo_s"),
                     baseParams),
-                ErrorCode.BAD_REQUEST);
+                ErrorCode.BAD_REQUEST, true);
     }
 
     ignoreException("hllRegwidth must be");
@@ -1885,7 +1882,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
       assertQEx("hllRegwidth="+invalid, "hllRegwidth must be",
                 req(params("stats.field","{!cardinality=true hllRegwidth="+invalid+"}foo_s"),
                     baseParams),
-                ErrorCode.BAD_REQUEST);
+                ErrorCode.BAD_REQUEST, true);
     }
   }
 

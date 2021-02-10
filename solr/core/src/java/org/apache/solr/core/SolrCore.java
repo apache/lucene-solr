@@ -142,6 +142,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
@@ -2618,15 +2619,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (_searcher != null && !forceNew) {
           if (returnSearcher) {
             _searcher.incref();
-
-            if (log.isDebugEnabled()) {
-              log.debug("getSearcher(boolean, boolean, Future[], boolean) - end return={}", _searcher);
-            }
             return _searcher;
           } else {
-            if (log.isDebugEnabled()) {
-              log.debug("getSearcher(boolean, boolean, Future[], boolean) - end return=null");
-            }
             return null;
           }
         }
@@ -2644,15 +2638,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (_searcher != null && !forceNew) {
           if (returnSearcher) {
             _searcher.incref();
-
-            if (log.isDebugEnabled()) {
-              log.debug("getSearcher(boolean, boolean, Future[], boolean) - end return={}", _searcher);
-            }
             return _searcher;
           } else {
-            if (log.isDebugEnabled()) {
-              log.debug("getSearcher(boolean, boolean, Future[], boolean) - end return=null");
-            }
             return null;
           }
         }
@@ -3422,7 +3409,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           while (Files.exists(dataDir)) {
             try {
               Files.walk(dataDir).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
-            } catch (NoSuchFileException e) {
+            } catch (NoSuchFileException | UncheckedIOException e) {
 
             }
           }
@@ -3435,7 +3422,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         while (Files.exists(cd.getInstanceDir())) {
           try {
             Files.walk(cd.getInstanceDir()).sorted(Comparator.reverseOrder()).forEach(new CoreContainer.FileConsumer());
-          } catch (NoSuchFileException e) {
+          } catch (NoSuchFileException | UncheckedIOException e) {
 
           }
         }

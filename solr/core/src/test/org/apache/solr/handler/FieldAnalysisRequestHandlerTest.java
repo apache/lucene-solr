@@ -40,13 +40,13 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TextField;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -55,7 +55,6 @@ import org.junit.Test;
  *
  * @since solr 1.4
  */
-@Ignore // MRM-TEST TODO: finish closing things right
 public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestBase {
   
   private FieldAnalysisRequestHandler handler;
@@ -77,8 +76,10 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     FieldAnalysisRequest request = new FieldAnalysisRequest();
     request.addFieldType("pint");
     request.setFieldValue("5");
-    
-    NamedList<NamedList> nl = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+
+    SolrCore core = h.getCore();
+    NamedList<NamedList> nl = handler.handleAnalysisRequest(request, core.getLatestSchema());
+    core.close();
     NamedList pintNL = (NamedList)nl.get("field_types").get("pint");
     NamedList indexNL = (NamedList)pintNL.get("index");
     ArrayList analyzerNL = (ArrayList)indexNL.get("org.apache.solr.schema.FieldType$DefaultAnalyzer$1");
@@ -97,7 +98,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     params.add(AnalysisParams.FIELD_VALUE, "the quick red fox jumped over the lazy brown dogs");
     params.add(CommonParams.Q, "fox brown");
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params, true);
     FieldAnalysisRequest request = handler.resolveAnalysisRequest(req);
     List<String> fieldNames = request.getFieldNames();
     assertEquals("Expecting 2 field names", 2, fieldNames.size());
@@ -114,20 +115,20 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     // testing overide of query value using analysis.query param
     params.add(AnalysisParams.QUERY, "quick lazy");
-    req=new LocalSolrQueryRequest(h.getCore(), params);
+    req=new LocalSolrQueryRequest(h.getCore(), params, true);
     request = handler.resolveAnalysisRequest(req);
     assertEquals("quick lazy", request.getQuery());
     req.close();
 
     // testing analysis.showmatch param
     params.add(AnalysisParams.SHOW_MATCH, "false");
-    req=new LocalSolrQueryRequest(h.getCore(), params);
+    req=new LocalSolrQueryRequest(h.getCore(), params, true);
     request = handler.resolveAnalysisRequest(req);
     assertFalse(request.isShowMatch());
     req.close();
 
     params.set(AnalysisParams.SHOW_MATCH, "true");
-    req=new LocalSolrQueryRequest(h.getCore(), params);
+    req=new LocalSolrQueryRequest(h.getCore(), params, true);
     request = handler.resolveAnalysisRequest(req);
     assertTrue(request.isShowMatch());
     req.close();
@@ -135,7 +136,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     // testing absence of query value
     params.remove(CommonParams.Q);
     params.remove(AnalysisParams.QUERY);
-    req=new LocalSolrQueryRequest(h.getCore(), params);
+    req=new LocalSolrQueryRequest(h.getCore(), params, true);
     request = handler.resolveAnalysisRequest(req);
     assertNull(request.getQuery());
     req.close();
@@ -145,25 +146,21 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     params.add(CommonParams.Q, "quick lazy");
     request = handler.resolveAnalysisRequest(req);
     assertEquals("quick lazy", request.getQuery());
-    req.close();
 
     // test absence of index-time value and presence of query
     params.remove(CommonParams.Q);
     params.add(AnalysisParams.QUERY, "quick lazy");
     request = handler.resolveAnalysisRequest(req);
     assertEquals("quick lazy", request.getQuery());
-    req.close();
 
     // must fail if all of q, analysis.query or analysis.value are absent
     params.remove(CommonParams.Q);
     params.remove(AnalysisParams.QUERY);
     params.remove(AnalysisParams.FIELD_VALUE);
-    try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), params)) {
+    try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), params, true)) {
       SolrException ex = expectThrows(SolrException.class, () -> handler.resolveAnalysisRequest(solrQueryRequest));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     }
-
-    req.close();
   }
 
   /**
@@ -182,7 +179,9 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setQuery("fox brown");
     request.setShowMatch(true);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, core.getLatestSchema());
+    core.close();
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -353,7 +352,9 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setFieldValue("<html><body>whátëvêr</body></html>");
     request.setShowMatch(false);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, core.getLatestSchema());
+    core.close();
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -381,7 +382,9 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.setFieldValue("hi, 3456-12 a Test");
     request.setShowMatch(false);
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, core.getLatestSchema());
+    core.close();
     assertTrue("result is null and it shouldn't be", result != null);
 
     NamedList<NamedList> fieldTypes = result.get("field_types");
@@ -425,7 +428,9 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     request.addFieldType("location_rpt");
     request.setFieldValue("MULTIPOINT ((10 40), (40 30), (20 20), (30 10))");
 
-    NamedList<NamedList> result = handler.handleAnalysisRequest(request, h.getCore().getLatestSchema());
+    SolrCore core = h.getCore();
+    NamedList<NamedList> result = handler.handleAnalysisRequest(request, core.getLatestSchema());
+    core.close();
     NamedList<List<NamedList>> tokens = (NamedList<List<NamedList>>)
         ((NamedList)result.get("field_types").get("location_rpt")).get("index");
     List<NamedList> tokenList = tokens.get("org.apache.lucene.spatial.prefix.PrefixTreeStrategy$ShapeTokenStream");
@@ -475,8 +480,10 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   public void testNoDefaultField() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.Q, "fox brown");
-    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
-    handler.resolveAnalysisRequest(req);
+    try (SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params, true)) {
+      handler.resolveAnalysisRequest(req);
+    }
+
   }
 
   /** A custom impl of a standard attribute impl; test this instance is used. */

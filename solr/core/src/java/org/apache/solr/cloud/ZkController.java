@@ -66,6 +66,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrLifcycleListener;
 import org.apache.solr.update.UpdateLog;
+import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -100,7 +101,6 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -2095,20 +2095,24 @@ public class ZkController implements Closeable, Runnable {
   }
 
   private void unregisterConfListener(String confDir, Runnable listener) {
-    synchronized (confDirectoryListeners) {
-      final Set<Runnable> listeners = confDirectoryListeners.get(confDir);
-      if (listeners == null) {
-        log.warn("{} has no more registered listeners, but a live one attempted to unregister!", confDir);
-        return;
-      }
-      if (listeners.remove(listener)) {
-        log.debug("removed listener for config directory [{}]", confDir);
-      }
-      if (listeners.isEmpty()) {
-        // no more listeners for this confDir, remove it from the map
-        log.debug("No more listeners for config directory [{}]", confDir);
-        confDirectoryListeners.remove(confDir);
-      }
+    final ConfListeners confListeners = confDirectoryListeners.get(confDir);
+    if (confListeners == null) {
+      log.warn("{} has no more registered listeners, but a live one attempted to unregister!", confDir);
+      return;
+    }
+    if (confListeners.confDirListeners.remove(listener)) {
+      if (log.isDebugEnabled()) log.debug("removed listener for config directory [{}]", confDir);
+    }
+    if (confListeners.confDirListeners.isEmpty()) {
+      // no more listeners for this confDir, remove it from the map
+      if (log.isDebugEnabled()) log.debug("No more listeners for config directory [{}]", confDir);
+      zkClient.getSolrZooKeeper().removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true, (rc, path, ctx) -> {
+        if (rc != 0) {
+          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
+          log.error("Exception removing watch for " + path, ex);
+        }
+      }, "confWatcher");
+      confDirectoryListeners.remove(confDir);
     }
   }
 
@@ -2122,52 +2126,65 @@ public class ZkController implements Closeable, Runnable {
     if (listener == null) {
       throw new NullPointerException("listener cannot be null");
     }
-    synchronized (confDirectoryListeners) {
-      final Set<Runnable> confDirListeners = getConfDirListeners(confDir);
-      confDirListeners.add(listener);
-      core.addCloseHook(new CloseHook() {
-        @Override
-        public void preClose(SolrCore core) {
-          unregisterConfListener(confDir, listener);
-        }
+    final ConfListeners confDirListeners = getConfDirListeners(confDir);
+    confDirListeners.confDirListeners.add(listener);
+    core.addCloseHook(new CloseHook() {
+      @Override
+      public void preClose(SolrCore core) {
+        unregisterConfListener(confDir, listener);
+      }
 
-        @Override
-        public void postClose(SolrCore core) {
-        }
-      });
+      @Override
+      public void postClose(SolrCore core) {
+      }
+    });
+  }
+
+  private static class ConfListeners {
+
+    private Set<Runnable> confDirListeners;
+    private final Watcher watcher;
+
+    ConfListeners( Set<Runnable> confDirListeners, Watcher watcher) {
+      this.confDirListeners = confDirListeners;
+      this.watcher = watcher;
     }
   }
 
-  // this method is called in a protected confDirListeners block
-  private Set<Runnable> getConfDirListeners(final String confDir) {
-    assert Thread.holdsLock(confDirectoryListeners) : "confDirListeners lock not held by thread";
-    Set<Runnable> confDirListeners = confDirectoryListeners.get(confDir);
+  private ConfListeners getConfDirListeners(final String confDir) {
+    ConfListeners confDirListeners = confDirectoryListeners.get(confDir);
     if (confDirListeners == null) {
-      log.debug("watch zkdir {}" , confDir);
-      confDirListeners = new HashSet<>();
+      if (log.isDebugEnabled()) log.debug("watch zkdir {}" , confDir);
+      ConfDirWatcher watcher = new ConfDirWatcher(confDir, cc, confDirectoryListeners);
+      confDirListeners = new ConfListeners(ConcurrentHashMap.newKeySet(), watcher);
       confDirectoryListeners.put(confDir, confDirListeners);
-      setConfWatcher(confDir, new WatcherImpl(confDir), null);
+      setConfWatcher(confDir, watcher, null, cc, confDirectoryListeners, cc.getZkController().getZkClient());
     }
     return confDirListeners;
   }
 
-  private final Map<String, Set<Runnable>> confDirectoryListeners = new ConcurrentHashMap<>();
+  private final Map<String, ConfListeners> confDirectoryListeners = new ConcurrentHashMap<>();
 
-  private class
-  WatcherImpl implements Watcher {
+  private static class ConfDirWatcher implements Watcher {
     private final String zkDir;
+    private final CoreContainer cc;
+    private final SolrZkClient zkClient;
+    private final Map<String, ConfListeners> confDirectoryListeners;
 
-    private WatcherImpl(String dir) {
+    private ConfDirWatcher(String dir, CoreContainer cc, Map<String, ConfListeners> confDirectoryListeners) {
       this.zkDir = dir;
+      this.cc = cc;
+      this.zkClient = cc.getZkController().getZkClient();
+      this.confDirectoryListeners = confDirectoryListeners;
     }
 
     @Override
     public void process(WatchedEvent event) {
       // session events are not change events, and do not remove the watcher
-      if (Event.EventType.None.equals(event.getType()) || isClosed() || cc.isShutDown()) {
+      if (Event.EventType.None.equals(event.getType())) {
         return;
       }
-      if (isClosed() || getCoreContainer().isShutDown() || isDcCalled()) {
+      if (cc.getZkController().isClosed() || cc.isShutDown() || cc.getZkController().isDcCalled()) {
         return;
       }
       Stat stat = null;
@@ -2180,56 +2197,44 @@ public class ZkController implements Closeable, Runnable {
         return;
       }
 
-      boolean resetWatcher = false;
-      try {
-        resetWatcher = fireEventListeners(zkDir);
-      } finally {
-
-        if (!isClosed() && !cc.isShutDown()) {
-          if (resetWatcher) {
-            setConfWatcher(zkDir, this, stat);
-          } else {
-            log.debug("A node got unwatched for {}", zkDir);
-          }
-        }
-      }
+      fireEventListeners(zkDir, confDirectoryListeners, cc);
     }
   }
 
-  private boolean fireEventListeners(String zkDir) {
+  private static boolean fireEventListeners(String zkDir, Map<String, ConfListeners> confDirectoryListeners, CoreContainer cc) {
     if (cc.isShutDown()) {
       return false;
     }
 
     // if this is not among directories to be watched then don't set the watcher anymore
     if (!confDirectoryListeners.containsKey(zkDir)) {
-      log.debug("Watcher on {} is removed ", zkDir);
+      if (log.isDebugEnabled()) log.debug("Watcher on {} is removed ", zkDir);
       return false;
     }
 
-    final Set<Runnable> listeners = confDirectoryListeners.get(zkDir);
+    final Set<Runnable> listeners = confDirectoryListeners.get(zkDir).confDirListeners;
     if (listeners != null) {
-
-      // run these in a separate thread because this can be long running
-      if (cc.isShutDown() || isDcCalled()) {
+      if (cc.isShutDown() || cc.getZkController().isDcCalled()) {
         return false;
       }
-      listeners.forEach(Runnable::run);
-
+      listeners.forEach(runnable -> cc.coreContainerExecutor.submit(runnable));
     }
     return true;
   }
 
-  private void setConfWatcher(String zkDir, Watcher watcher, Stat stat) {
-    if (isClosed() || isDcCalled() || getCoreContainer().isShutDown()) {
-      return;
-    }
+  private static void setConfWatcher(String zkDir, Watcher watcher, Stat stat, CoreContainer cc, Map<String, ConfListeners> confDirectoryListeners, SolrZkClient zkClient) {
     try {
-      Stat newStat = zkClient.exists(zkDir, watcher);
+      zkClient.getSolrZooKeeper().addWatch(zkDir, watcher, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
+        if (rc != 0) {
+          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
+          log.error("Exception creating watch for " + path, ex);
+        }
+      }, "confWatcher");
+      Stat newStat = zkClient.exists(zkDir, null);
       if (stat != null && newStat.getVersion() > stat.getVersion()) {
         //a race condition where a we missed an event fired
         //so fire the event listeners
-        fireEventListeners(zkDir);
+        fireEventListeners(zkDir, confDirectoryListeners, cc);
       }
     } catch (KeeperException e) {
       log.error("failed to set watcher for conf dir {} ", zkDir);
@@ -2242,7 +2247,7 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public OnReconnect getConfigDirListener() {
-    return new ZkControllerOnReconnect(confDirectoryListeners);
+    return new ZkControllerOnReconnect(confDirectoryListeners, cc);
   }
 
   /**
@@ -2313,19 +2318,21 @@ public class ZkController implements Closeable, Runnable {
 //    }
   }
 
-  private class ZkControllerOnReconnect implements OnReconnect {
+  private static class ZkControllerOnReconnect implements OnReconnect {
 
-    private final Map<String,Set<Runnable>> confDirectoryListeners;
+    private final Map<String, ConfListeners> confDirectoryListeners;
+    private final CoreContainer cc;
 
-    ZkControllerOnReconnect(Map<String, Set<Runnable>> confDirectoryListeners) {
+    ZkControllerOnReconnect(Map<String, ConfListeners> confDirectoryListeners, CoreContainer cc) {
       this.confDirectoryListeners = confDirectoryListeners;
+      this.cc = cc;
     }
     
     @Override
     public void command() {
         confDirectoryListeners.forEach((s, runnables) -> {
-          setConfWatcher(s, new WatcherImpl(s), null);
-          fireEventListeners(s);
+          setConfWatcher(s, new ConfDirWatcher(s, cc, confDirectoryListeners), null, cc, confDirectoryListeners, cc.getZkController().getZkClient());
+          fireEventListeners(s, confDirectoryListeners, cc);
         });
     }
 

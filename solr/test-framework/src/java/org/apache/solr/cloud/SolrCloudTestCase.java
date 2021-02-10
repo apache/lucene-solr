@@ -92,7 +92,7 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final int DEFAULT_TIMEOUT = 30; // this is SECONDS, not MILLIS
+  public static final int DEFAULT_TIMEOUT = 10; // this is SECONDS, not MILLIS
   public static final TimeUnit DEFAULT_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
   protected static volatile SolrQueuedThreadPool qtp;
