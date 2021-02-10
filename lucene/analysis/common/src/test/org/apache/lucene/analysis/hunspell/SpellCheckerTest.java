@@ -172,6 +172,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("germancompounding");
   }
 
+  public void testApplyOconvToSuggestions() throws Exception {
+    doTest("oconv");
+  }
+
   public void testModifyingSuggestions() throws Exception {
     doTest("sug");
   }
