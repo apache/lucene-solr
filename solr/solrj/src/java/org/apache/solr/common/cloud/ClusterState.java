@@ -51,13 +51,14 @@ public class ClusterState implements JSONWriter.Writable {
 
   private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
   private Set<String> liveNodes;
+  private Set<String> liveQueryNodes;
 
   /**
    * Use this constr when ClusterState is meant for consumption.
    */
   public ClusterState(Integer znodeVersion, Set<String> liveNodes,
       Map<String, DocCollection> collectionStates) {
-    this(liveNodes, getRefMap(collectionStates),znodeVersion);
+    this(liveNodes, Collections.emptySet(), getRefMap(collectionStates),znodeVersion);
   }
 
   private static Map<String, CollectionRef> getRefMap(Map<String, DocCollection> collectionStates) {
@@ -71,10 +72,12 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**Use this if all the collection states are not readily available and some needs to be lazily loaded
    */
-  public ClusterState(Set<String> liveNodes, Map<String, CollectionRef> collectionStates, Integer znodeVersion){
+  public ClusterState(Set<String> liveNodes, Set<String> liveQueryNodes, Map<String, CollectionRef> collectionStates, Integer znodeVersion){
     this.znodeVersion = znodeVersion;
     this.liveNodes = new HashSet<>(liveNodes.size());
     this.liveNodes.addAll(liveNodes);
+    this.liveQueryNodes = new HashSet<>(liveQueryNodes.size());
+    this.liveQueryNodes.addAll(liveQueryNodes);
     this.collectionStates = new LinkedHashMap<>(collectionStates);
     this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
   }
@@ -88,7 +91,7 @@ public class ClusterState implements JSONWriter.Writable {
    * @return the updated cluster state which preserves the current live nodes and zk node version
    */
   public ClusterState copyWith(String collectionName, DocCollection collection) {
-    ClusterState result = new ClusterState(liveNodes, new LinkedHashMap<>(collectionStates), znodeVersion);
+    ClusterState result = new ClusterState(liveNodes, liveQueryNodes, new LinkedHashMap<>(collectionStates), znodeVersion);
     if (collection == null) {
       result.collectionStates.remove(collectionName);
     } else {
@@ -120,7 +123,7 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public DocCollection getCollection(String collection) {
     DocCollection coll = getCollectionOrNull(collection);
-    if (coll == null) throw new SolrException(ErrorCode.BAD_REQUEST, "Could not find collection : " + collection);
+    if (coll == null) throw new SolrException(ErrorCode.NOT_FOUND, "Could not find collection : " + collection);
     return coll;
   }
 
@@ -177,6 +180,10 @@ public class ClusterState implements JSONWriter.Writable {
    */
   public Set<String> getLiveNodes() {
     return Collections.unmodifiableSet(liveNodes);
+  }
+
+  public Set<String> getLiveQueryNodes() {
+    return Collections.unmodifiableSet(liveQueryNodes);
   }
 
   public String getShardId(String nodeName, String coreName) {
@@ -255,7 +262,7 @@ public class ClusterState implements JSONWriter.Writable {
       collections.put(collectionName, new CollectionRef(coll));
     }
 
-    return new ClusterState( liveNodes, collections,version);
+    return new ClusterState( liveNodes, Collections.emptySet(), collections, version);
   }
 
   // TODO move to static DocCollection.loadFromMap
@@ -359,6 +366,10 @@ public class ClusterState implements JSONWriter.Writable {
    */
   void setLiveNodes(Set<String> liveNodes){
     this.liveNodes = liveNodes;
+  }
+
+  void setLiveQueryNodes(Set<String> liveQueryNodes){
+    this.liveQueryNodes = liveQueryNodes;
   }
 
   /** Be aware that this may return collections which may not exist now.

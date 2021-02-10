@@ -128,6 +128,19 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testProxyCore() throws Exception {
+    System.setProperty(CoreContainer.SOLR_QUERY_AGGREGATOR, "true");
+    CoreContainer cores = init(CONFIGSETS_SOLR_XML);
+    try {
+      SolrCore core = cores.create("core1", ImmutableMap.of("configSet", "minimal"));
+      assertTrue(core instanceof SolrCoreProxy);
+    } finally {
+      cores.shutdown();
+      System.clearProperty(CoreContainer.SOLR_QUERY_AGGREGATOR);
+    }
+  }
+
+  @Test
   public void testReloadSequential() throws Exception {
     final CoreContainer cc = init(CONFIGSETS_SOLR_XML);
     try {

@@ -110,8 +110,17 @@ public class HealthCheckHandler extends RequestHandlerBase {
       return;
     }
 
-    // Fail if not in live_nodes
-    if (!clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
+    boolean failed = false;
+    // Fail if not in live_nodes or query nodes
+    if (!cores.isQueryAggregator()
+        && !clusterState.getLiveNodes().contains(cores.getZkController().getNodeName())) {
+      failed = true;
+    } else if (cores.isQueryAggregator()
+        && !clusterState.getLiveQueryNodes().contains(cores.getZkController().getNodeName())) {
+      failed = true;
+    }
+
+    if (failed) {
       rsp.add(STATUS, FAILURE);
       rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk"));
       return;

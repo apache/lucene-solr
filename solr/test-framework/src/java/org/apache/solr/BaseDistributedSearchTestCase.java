@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import javax.servlet.Filter;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -43,8 +44,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.Filter;
-
+import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.TestUtil;
@@ -65,6 +65,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.core.CoreContainer;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -74,8 +75,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import junit.framework.Assert;
 
 /**
  * Helper base class for distributed search test cases
@@ -381,6 +380,23 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
 
     shards = sb.toString();
+  }
+
+  protected void createQueryNode() throws Exception {
+    System.setProperty("configSetBaseDir", getSolrHome());
+    System.setProperty(CoreContainer.SOLR_QUERY_AGGREGATOR, "true");
+    final String shardname = DEFAULT_TEST_CORENAME;
+    Path jettyHome = testDir.toPath().resolve(shardname);
+    File jettyHomeFile = jettyHome.toFile();
+    seedSolrQueryNodeHome(jettyHomeFile);
+    Path jettycore = jettyHome.resolve("cores");
+    Files.createDirectories(jettycore);
+
+    JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+    j.start();
+    jettys.add(j);
+    clients.add(createNewSolrClient(j.getLocalPort()));
+    System.clearProperty(CoreContainer.SOLR_QUERY_AGGREGATOR);
   }
 
 
@@ -1204,6 +1220,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (solrxml != null) {
       FileUtils.copyFile(new File(getSolrHome(), solrxml), new File(jettyHome, "solr.xml"));
     }
+  }
+
+  protected void seedSolrQueryNodeHome(File jettyHome) throws IOException {
+    FileUtils.copyFile(new File(getSolrHome(), "solr.xml"), new File(jettyHome, "solr.xml"));
   }
 
   /**

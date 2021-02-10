@@ -75,11 +75,13 @@ import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.CloudCollectionsListener;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -157,6 +159,8 @@ import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGI
  */
 public class CoreContainer {
 
+  public static final String SOLR_QUERY_AGGREGATOR = "SolrQueryAggregator";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final SolrCores solrCores = new SolrCores(this);
@@ -205,6 +209,8 @@ public class CoreContainer {
       new SolrNamedThreadFactory("coreContainerWorkExecutor"));
 
   private final OrderedExecutor replayUpdatesExecutor;
+
+  private final boolean isQueryAggregator = Boolean.getBoolean(SOLR_QUERY_AGGREGATOR);
 
   @SuppressWarnings({"rawtypes"})
   protected volatile LogWatcher logging = null;
@@ -371,6 +377,26 @@ public class CoreContainer {
     } catch (Exception e) {
       log.warn("Unable to create [{}].  Features requiring this directory may fail.", userFilesPath, e);
     }
+    log.info("Initialized core container as {}", isQueryAggregator ? "query aggregator" : "data node");
+  }
+
+  private void registerCollectionListener() {
+    getZkController().getZkStateReader().registerCloudCollectionsListener(new CloudCollectionsListener() {
+      @Override
+      public void onChange(Set<String> oldCollections, Set<String> newCollections) {
+        // if core is not in newCollections and it exists locally, we delete the core
+        for (SolrCore core : getCores()) {
+          if (!newCollections.contains(core.getName())) {
+            try {
+              log.info("unloading/deleting core {} ", core.getName());
+              unload(core.getName(), true, true, true);
+            } catch (Exception ex) {
+              log.warn("Unable to unlaod core " + core.getName(), ex);
+            }
+          }
+        }
+      }
+    });
   }
 
   @SuppressWarnings({"unchecked"})
@@ -906,6 +932,9 @@ public class CoreContainer {
       autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
       containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
       autoScalingHandler.initializeMetrics(solrMetricsContext, AutoScalingHandler.HANDLER_PATH);
+      if (isQueryAggregator) {
+        registerCollectionListener();
+      }
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
@@ -1425,17 +1454,21 @@ public class CoreContainer {
     try {
       MDCLoggingContext.setCoreDescriptor(this, dcore);
       SolrIdentifierValidator.validateCoreName(dcore.getName());
-      if (zkSys.getZkController() != null) {
+      // We are not registering proxy core
+      if (!isQueryAggregator && zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore, publishState);
       }
-
       ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
       if (log.isInfoEnabled()) {
         log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       }
       try {
-        core = new SolrCore(this, dcore, coreConfig);
+        if (isQueryAggregator) {
+          core = new SolrCoreProxy(this, dcore, coreConfig);
+        } else {
+          core = new SolrCore(this, dcore, coreConfig);
+        }
       } catch (SolrException e) {
         core = processCoreCreateException(e, dcore, coreConfig);
       }
@@ -1469,6 +1502,34 @@ public class CoreContainer {
       throw t;
     } finally {
       MDCLoggingContext.clear();
+    }
+  }
+
+  SolrCore createProxyCore(String collectionName) {
+    DocCollection collection = getCollection(collectionName);
+
+    if (collection == null) {
+      return null;
+    }
+
+    Map<String, String> coreProps = new HashMap<>();
+    coreProps.put(CoreAdminParams.CORE_NODE_NAME, this.getHostName());
+    coreProps.put(CoreAdminParams.COLLECTION, collection.getName());
+
+    CoreDescriptor ret = new CoreDescriptor(
+        collection.getName(),
+        Paths.get(this.getSolrHome() + "/" + collection.getName()),
+        coreProps, this.getContainerProperties(), this.getZkController());
+
+    try {
+      SolrCore solrCore = solrCores.waitAddPendingCoreOps(ret.getName());
+      if (solrCore == null) {
+        solrCore = createFromDescriptor(ret, false, false);
+      }
+      solrCore.open();
+      return solrCore;
+    } finally {
+      solrCores.removeFromPendingOps(ret.getName());
     }
   }
 
@@ -1735,7 +1796,7 @@ public class CoreContainer {
         }
 
 
-        if (docCollection != null) {
+        if (!isQueryAggregator && docCollection != null) {
           Replica replica = docCollection.getReplica(cd.getCloudDescriptor().getCoreNodeName());
           assert replica != null;
           if (replica.getType() == Replica.Type.TLOG) { // TODO: needed here?
@@ -1849,7 +1910,7 @@ public class CoreContainer {
     // delete metrics specific to this core
     metricManager.removeRegistry(core.getCoreMetricManager().getRegistryName());
 
-    if (zkSys.getZkController() != null) {
+    if (!isQueryAggregator && zkSys.getZkController() != null) {
       // cancel recovery in cloud mode
       core.getSolrCoreState().cancelRecovery();
       if (cd.getCloudDescriptor().getReplicaType() == Replica.Type.PULL
@@ -1863,7 +1924,7 @@ public class CoreContainer {
     if (close)
       core.closeAndWait();
 
-    if (zkSys.getZkController() != null) {
+    if (!isQueryAggregator && zkSys.getZkController() != null) {
       try {
         zkSys.getZkController().unregister(name, cd);
       } catch (InterruptedException e) {
@@ -1942,6 +2003,10 @@ public class CoreContainer {
     // If a core is loaded, we're done just return it.
     if (core != null) {
       return core;
+    }
+
+    if (isQueryAggregator) {
+      return createProxyCore(name);
     }
 
     // If it's not yet loaded, we can check if it's had a core init failure and "do the right thing"
@@ -2130,6 +2195,10 @@ public class CoreContainer {
     return solrCores.isCoreLoading(name);
   }
 
+  public boolean isQueryAggregator() {
+    return isQueryAggregator;
+  }
+
   public AuthorizationPlugin getAuthorizationPlugin() {
     return authorizationPlugin == null ? null : authorizationPlugin.plugin;
   }
@@ -2177,7 +2246,7 @@ public class CoreContainer {
     // Try to read the coreNodeName from the cluster state.
 
     String coreName = cd.getName();
-    DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(cd.getCollectionName());
+    DocCollection coll = getCollection(cd.getConfigName());
     for (Replica rep : coll.getReplicas()) {
       if (coreName.equals(rep.getCoreName())) {
         log.warn("Core properties file for node {} found with no coreNodeName, attempting to repair with value {}. See SOLR-11503. {}"
@@ -2190,6 +2259,11 @@ public class CoreContainer {
     }
     log.error("Could not repair coreNodeName in core.properties file for core {}", coreName);
     return false;
+  }
+
+  private DocCollection getCollection(String collectionName) {
+    DocCollection coll = getZkController().getZkStateReader().getClusterState().getCollection(collectionName);
+    return coll;
   }
 
   /**

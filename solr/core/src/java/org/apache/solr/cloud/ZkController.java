@@ -389,7 +389,11 @@ public class ZkController implements Closeable {
               }
 
               // we have to register as live first to pick up docs in the buffer
-              createEphemeralLiveNode();
+              if (cc.isQueryAggregator()) {
+                createEphemeralLiveQueryNode();
+              } else {
+                createEphemeralLiveNode();
+              }
 
               List<CoreDescriptor> descriptors = registerOnReconnect.getCurrentDescriptors();
               // re register all descriptors
@@ -596,7 +600,11 @@ public class ZkController implements Closeable {
     this.isClosed = true;
 
     try {
-      this.removeEphemeralLiveNode();
+      if (cc.isQueryAggregator()) {
+        removeEphemeralLiveQueryNode();
+      } else {
+        removeEphemeralLiveNode();
+      }
     } catch (AlreadyClosedException | SessionExpiredException | KeeperException.ConnectionLossException e) {
 
     } catch (Exception e) {
@@ -853,6 +861,7 @@ public class ZkController implements Closeable {
       throws KeeperException, InterruptedException, IOException {
     ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zkClient.getZkClientTimeout());
     cmdExecutor.ensureExists(ZkStateReader.LIVE_NODES_ZKNODE, zkClient);
+    cmdExecutor.ensureExists(ZkStateReader.LIVE_QUERY_NODES_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.COLLECTIONS_ZKNODE, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.ALIASES, zkClient);
     cmdExecutor.ensureExists(ZkStateReader.SOLR_AUTOSCALING_EVENTS_PATH, zkClient);
@@ -912,7 +921,8 @@ public class ZkController implements Closeable {
       // this must happen after zkStateReader has initialized the cluster props
       this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
-      checkForExistingEphemeralNode();
+      String nodePath = (cc.isQueryAggregator() ? zkStateReader.LIVE_QUERY_NODES_ZKNODE : ZkStateReader.LIVE_NODES_ZKNODE) + "/" + getNodeName();
+      checkForExistingEphemeralNode(nodePath);
       registerLiveNodesListener();
 
       // start the overseer first as following code may need it's processing
@@ -932,7 +942,12 @@ public class ZkController implements Closeable {
       }
 
       // Do this last to signal we're up.
-      createEphemeralLiveNode();
+      if (cc.isQueryAggregator()) {
+        createEphemeralLiveQueryNode();
+      } else {
+        createEphemeralLiveNode();
+      }
+
     } catch (IOException e) {
       log.error("", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -951,12 +966,10 @@ public class ZkController implements Closeable {
 
   }
 
-  private void checkForExistingEphemeralNode() throws KeeperException, InterruptedException {
+  private void checkForExistingEphemeralNode(String nodePath) throws KeeperException, InterruptedException {
     if (zkRunOnly) {
       return;
     }
-    String nodeName = getNodeName();
-    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
 
     if (!zkClient.exists(nodePath, true)) {
       return;
@@ -1130,6 +1143,19 @@ public class ZkController implements Closeable {
     zkClient.multi(ops, true);
   }
 
+  private void createEphemeralLiveQueryNode() throws KeeperException,
+      InterruptedException {
+    if (zkRunOnly) {
+      return;
+    }
+    String nodeName = getNodeName();
+    String nodePath = ZkStateReader.LIVE_QUERY_NODES_ZKNODE + "/" + nodeName;
+    log.info("Register query node as live in ZooKeeper:" + nodePath);
+    List<Op> ops = new ArrayList<>(1);
+    ops.add(Op.create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL));
+    zkClient.multi(ops, true);
+  }
+
   public void removeEphemeralLiveNode() throws KeeperException, InterruptedException {
     if (zkRunOnly) {
       return;
@@ -1141,6 +1167,23 @@ public class ZkController implements Closeable {
     List<Op> ops = new ArrayList<>(2);
     ops.add(Op.delete(nodePath, -1));
     ops.add(Op.delete(nodeAddedPath, -1));
+
+    try {
+      zkClient.multi(ops, true);
+    } catch (NoNodeException e) {
+
+    }
+  }
+
+  public void removeEphemeralLiveQueryNode() throws KeeperException, InterruptedException {
+    if (zkRunOnly) {
+      return;
+    }
+    String nodeName = getNodeName();
+    String nodePath = ZkStateReader.LIVE_QUERY_NODES_ZKNODE + "/" + nodeName;
+    log.info("Remove query node as live in ZooKeeper:" + nodePath);
+    List<Op> ops = new ArrayList<>(2);
+    ops.add(Op.delete(nodePath, -1));
 
     try {
       zkClient.multi(ops, true);
