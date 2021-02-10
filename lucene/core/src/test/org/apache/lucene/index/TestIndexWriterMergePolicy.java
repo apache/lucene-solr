@@ -388,6 +388,69 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     dir.close();
   }
 
+  private class TesIndexWriterEventListener implements IndexWriterEventListener {
+    private boolean beginMergeCalled = false;
+    private boolean endMergeCalled = false;
+
+    @Override
+    public void beginMergeOnFullFlush(MergePolicy.OneMerge merge) {
+      beginMergeCalled = true;
+    }
+
+    @Override
+    public void endMergeOnFullFlush(MergePolicy.OneMerge merge) {
+      endMergeCalled = true;
+    }
+
+    public boolean isEventsRecorded() {
+      return beginMergeCalled && endMergeCalled;
+    }
+  }
+
+  // Test basic semantics of merge on commit and events recording invocation
+  public void testMergeOnCommitWithEventListener() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter firstWriter =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                .setMergePolicy(NoMergePolicy.INSTANCE));
+    for (int i = 0; i < 5; i++) {
+      TestIndexWriter.addDoc(firstWriter);
+      firstWriter.flush();
+    }
+    DirectoryReader firstReader = DirectoryReader.open(firstWriter);
+    assertEquals(5, firstReader.leaves().size());
+    firstReader.close();
+    firstWriter.close(); // When this writer closes, it does not merge on commit.
+
+    TesIndexWriterEventListener eventListener = new TesIndexWriterEventListener();
+
+    IndexWriterConfig iwc =
+        newIndexWriterConfig(new MockAnalyzer(random()))
+            .setMergePolicy(new MergeOnXMergePolicy(newMergePolicy(), MergeTrigger.COMMIT))
+            .setMaxFullFlushMergeWaitMillis(Integer.MAX_VALUE)
+            .setIndexWriterEventListener(eventListener);
+
+    IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
+    writerWithMergePolicy.commit(); // No changes. Commit doesn't trigger a merge.
+
+    DirectoryReader unmergedReader = DirectoryReader.open(writerWithMergePolicy);
+    assertEquals(5, unmergedReader.leaves().size());
+    unmergedReader.close();
+
+    TestIndexWriter.addDoc(writerWithMergePolicy);
+
+    assertFalse(eventListener.isEventsRecorded());
+    writerWithMergePolicy.commit(); // Doc added, do merge on commit.
+    assertEquals(1, writerWithMergePolicy.getSegmentCount()); //
+    assertTrue(eventListener.isEventsRecorded());
+
+    writerWithMergePolicy.close();
+    dir.close();
+  }
+
   private void assertSetters(MergePolicy lmp) {
     lmp.setMaxCFSSegmentSizeMB(2.0);
     assertEquals(2.0, lmp.getMaxCFSSegmentSizeMB(), EPSILON);
