@@ -67,7 +67,6 @@ public class V2HttpCall extends HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private Api api;
   List<String> pieces;
-  private String prefix;
   HashMap<String, String> parts = new HashMap<>();
   static final Set<String> knownPrefixes = ImmutableSet.of("cluster", "node", "collections", "cores", "c");
 
@@ -81,14 +80,9 @@ public class V2HttpCall extends HttpSolrCall {
     final String fullPath = path = path.substring(7);//strip off '/____v2'
     try {
       pieces = getPathSegments(path);
+      String prefix;
       if (pieces.size() == 0 || (pieces.size() == 1 && path.endsWith(CommonParams.INTROSPECT))) {
-        api = new Api(null) {
-          @Override
-          public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
-            rsp.add("documentation", "https://lucene.apache.org/solr/guide/v2-api.html");
-            rsp.add("description", "V2 API root path");
-          }
-        };
+        api = new MyApi();
         initAdminRequest(path);
         return;
       } else {
@@ -122,12 +116,9 @@ public class V2HttpCall extends HttpSolrCall {
           if (core == null) {
             //this collection exists , but this node does not have a replica for that collection
             if (log.isDebugEnabled()) log.debug("check remote path extraction {} {}", collection.getName(), origCorename);
-//            if (origCorename != null) {
-//              extractRemotePath(null, origCorename);
-//            }
-            if (origCorename == null || collection.getName().equals(origCorename)) {
-              extractRemotePath(collection.getName(), null);
-            }
+
+            extractRemotePath(collection.getName());
+
             if (action == REMOTEQUERY) {
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
               this.path = path = path.substring(prefix.length() + collection.getName().length() + 2);
@@ -286,7 +277,7 @@ public class V2HttpCall extends HttpSolrCall {
     return compositeApi.add(new Api(() -> ValidatingJsonMap.EMPTY) {
       @Override
       public void call(SolrQueryRequest req1, SolrQueryResponse rsp) {
-        String prefix = null;
+        String prefix;
         prefix = fullPath.endsWith(CommonParams.INTROSPECT) ?
             fullPath.substring(0, fullPath.length() - CommonParams.INTROSPECT.length()) :
             fullPath;
@@ -313,8 +304,7 @@ public class V2HttpCall extends HttpSolrCall {
         HashSet<String> subPaths = new HashSet<>();
         registry.lookup(path, new HashMap<>(), subPaths);
         for (String subPath : subPaths) {
-          Set<String> supportedMethods = pathsVsMethod.get(subPath);
-          if (supportedMethods == null) pathsVsMethod.put(subPath, supportedMethods = new HashSet<>());
+          Set<String> supportedMethods = pathsVsMethod.computeIfAbsent(subPath, k -> new HashSet<>());
           supportedMethods.add(m.toString());
         }
       }
@@ -322,7 +312,7 @@ public class V2HttpCall extends HttpSolrCall {
   }
 
   public static class CompositeApi extends Api {
-    private LinkedList<Api> apis = new LinkedList<>();
+    private final LinkedList<Api> apis = new LinkedList<>();
 
     public CompositeApi(Api api) {
       super(ApiBag.EMPTY_SPEC);
@@ -383,5 +373,17 @@ public class V2HttpCall extends HttpSolrCall {
   @Override
   protected Map<String, JsonSchemaValidator> getValidators() {
     return api == null ? null : api.getCommandSchema();
+  }
+
+  private static class MyApi extends Api {
+    public MyApi() {
+      super(null);
+    }
+
+    @Override
+    public void call(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("documentation", "https://lucene.apache.org/solr/guide/v2-api.html");
+      rsp.add("description", "V2 API root path");
+    }
   }
 }

@@ -86,7 +86,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
@@ -305,12 +304,9 @@ public class HttpSolrCall {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
             if (log.isDebugEnabled()) log.debug("check remote path extraction {} {}", collectionName, origCorename);
-//            if (origCorename != null) {
-//              extractRemotePath(null, origCorename);
-//            }
-            if (origCorename == null || collectionName.equals(origCorename)) {
-              extractRemotePath(collectionName, null);
-            }
+
+            extractRemotePath(collectionName);
+
             if (action == REMOTEQUERY) {
               path = path.substring(idx);
               if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
@@ -476,11 +472,11 @@ public class HttpSolrCall {
     }
   }
 
-  protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException, TimeoutException {
+  protected void extractRemotePath(String collectionName) throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException, TimeoutException {
 
     ensureStatesAreAtLeastAtClient();
 
-    coreUrl = getRemoteCoreUrl(collectionName, origCorename);
+    coreUrl = getRemoteCoreUrl(collectionName);
     // don't proxy for internal update requests
     Map<String,Integer> invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
@@ -1102,7 +1098,7 @@ public class HttpSolrCall {
     return core;
   }
 
-  protected String getRemoteCoreUrl(String collectionName, String origCorename) throws SolrException {
+  protected String getRemoteCoreUrl(String collectionName) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName, false);
     if (docCollection == null) {
@@ -1114,13 +1110,13 @@ public class HttpSolrCall {
       return null;
     }
 
-    String coreUrl = getCoreUrl(origCorename, slices);
+    String coreUrl = getCoreUrl(slices);
 
     if (log.isDebugEnabled()) log.debug("get remote core url returning {} for {} {}", coreUrl, collectionName, origCorename);
     return coreUrl;
   }
 
-  private String getCoreUrl(String origCorename, Collection<Slice> slices) {
+  private String getCoreUrl(Collection<Slice> slices) {
     String coreUrl;
 
     for (Slice slice : slices) {
@@ -1130,15 +1126,6 @@ public class HttpSolrCall {
       for (Replica replica : randomizedReplicas) {
         if (cores.getZkController().zkStateReader.getLiveNodes().contains(replica.getNodeName())
             && replica.getState() == Replica.State.ACTIVE) {
-
-          if (origCorename != null && !origCorename.equals(replica.getStr(CORE_NAME_PROP))) {
-            // if it's by core name, make sure they match
-            continue;
-          }
-          if (replica.getBaseUrl().equals(cores.getZkController().getBaseUrl())) {
-            // don't count a local core
-            continue;
-          }
 
           coreUrl = replica.getCoreUrl();
 
