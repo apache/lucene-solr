@@ -273,11 +273,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
             log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
             zksr.getZkClient().setData(ZkStateReader.getCollectionPath(collectionName), data, true);
-            // Since we're directly updating the state here, instead of doing it via a queue in the overseer,
-            // we need to make sure that the cluster state updater used in the Overseer can see this update
-            // upon refreshing itself
-            ((Overseer.ClusterStateUpdater) ocmh.overseer.getUpdaterThread().getThread()).refreshClusterState(collectionName);
-
             clusterState = clusterState.copyWith(collectionName, command.collection);
           } else {
             ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
