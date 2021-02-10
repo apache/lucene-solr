@@ -107,17 +107,17 @@ public class ReutersContentSource extends ContentSource {
     int inputFilesSize = inputFiles.size();
 
     /*
-     * synchronized (this) { 
-     * if (nextFile >= inputFiles.size()) { // exhausted files, start a new round, unless forever set to false. 
-     * if (!forever) { 
-     *    throw new NoMoreDataException(); 
+     * synchronized (this) {
+     * if (nextFile >= inputFiles.size()) { // exhausted files, start a new round, unless forever set to false.
+     * if (!forever) {
+     *    throw new NoMoreDataException();
      * }
-     * nextFile = 0; 
-     * iteration++; 
-     * } 
-     * f = inputFiles.get(nextFile++); 
-     * name = f.toRealPath() + "_" +iteration; 
-     * }*
+     * nextFile = 0;
+     * iteration++;
+     * }
+     * f = inputFiles.get(nextFile++);
+     * name = f.toRealPath() + "_" +iteration;
+     * }
      */
     if (!threadIndexCreated) {
       createThreadIndex();
