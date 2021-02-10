@@ -46,7 +46,7 @@
 # ensuring that no include files exist in the aforementioned search list.
 
 SOLR_SCRIPT="$0"
-verbose=false
+verbose=true
 THIS_OS=`uname -s`
 
 # What version of Java is required to run this version of Solr.
@@ -95,10 +95,6 @@ if [ -z "$SOLR_INCLUDE" ]; then
   done
 elif [ -r "$SOLR_INCLUDE" ]; then
   . "$SOLR_INCLUDE"
-fi
-
-if [ -z "$SOLR_PID_DIR" ]; then
-  SOLR_PID_DIR="$SOLR_TIP/bin"
 fi
 
 if [ -n "$SOLR_JAVA_HOME" ]; then
@@ -706,7 +702,7 @@ function solr_pid_by_port() {
 # extract the value of the -Djetty.port parameter from a running Solr process
 function jetty_port() {
   SOLR_PID="$1"
-  SOLR_PROC=`ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port`
+  SOLR_PROC=$(ps auxww | grep -w $SOLR_PID | grep start\.jar | grep jetty\.port)
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
@@ -879,7 +875,8 @@ function stop_solr() {
   done
 
   rm -f "$SOLR_PID_DIR/$JETTY_PID"
-  rm -f "${SOLR_HOME}/jetty.state"
+  JETTY_STATE="${SOLR_PID_DIR}/jetty.state"
+  rm -f "${JETTY_STATE}"
   echo OK
 } # end stop_solr
 
@@ -1138,7 +1135,8 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
   fi
 
   if [ -z "$CREATE_PORT" ]; then
-    for ID in `ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r`
+    running=$(ps auxww | grep java | grep start\.jar | awk '{print $2}' | sort -r)
+    for ID in $running
       do
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
@@ -1541,8 +1539,11 @@ if [[ "$SCRIPT_CMD" == "auth" ]]; then
       SOLR_HOME="$(pwd)/$SOLR_HOME"
     elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
       SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
-      SOLR_PID_DIR="$SOLR_HOME"
     fi
+  fi
+
+  if [ -z "$SOLR_PID_DIR" ]; then
+    SOLR_PID_DIR="$SOLR_HOME"
   fi
 
   if [ -z "$AUTH_OP" ]; then
@@ -1626,7 +1627,7 @@ fi
 FG="false"
 FORCE=false
 noprompt=false
-SOLR_OPTS=("$SOLR_OPTS")
+SOLR_OPTS=($SOLR_OPTS)
 PASS_TO_RUN_EXAMPLE=
 
 if [ $# -gt 0 ]; then
@@ -1873,12 +1874,15 @@ fi
 if [ -z "$SOLR_HOME" ]; then
   SOLR_HOME="$SOLR_SERVER_DIR/solr"
 elif [[ $SOLR_HOME != /* ]]; then
-  if [[ -d "`pwd`/$SOLR_HOME" ]]; then
-    SOLR_HOME="$(pwd)/$SOLR_HOME"
+   if [[ -d "`pwd`/$SOLR_HOME" ]]; then
+     SOLR_HOME="$(pwd)/$SOLR_HOME"
   elif [[ -d "$SOLR_SERVER_DIR/$SOLR_HOME" ]]; then
     SOLR_HOME="$SOLR_SERVER_DIR/$SOLR_HOME"
-    SOLR_PID_DIR="$SOLR_HOME"
   fi
+fi
+
+if [ -z "$SOLR_PID_DIR" ]; then
+  SOLR_PID_DIR="$SOLR_HOME"
 fi
 
 # Set the default configset dir to be bootstrapped as _default
@@ -1899,7 +1903,11 @@ fi
 
 LOG4J_CONFIG=()
 if [ -n "$LOG4J_PROPS" ]; then
-  LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS" '-Dlog4j2.is.webapp' '-Dlog4j2.garbagefreeThreadContextMap=true' '-Dlog4j2.enableDirectEncoders=true' '-Dlog4j2.enable.threadlocals=true')
+  LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
+  LOG4J_CONFIG+=('-Dlog4j2.is.webapp')
+  LOG4J_CONFIG+=('-Dlog4j2.garbagefreeThreadContextMap=true')
+  LOG4J_CONFIG+=('-Dlog4j2.enableDirectEncoders=true')
+  LOG4J_CONFIG+=('-Dlog4j2.enable.threadlocals=true')
 fi
 
 if [ "$SCRIPT_CMD" == "stop" ]; then
@@ -2108,7 +2116,7 @@ function start_solr() {
         '-XX:MaxTenuringThreshold=16' \
         '-XX:+ExplicitGCInvokesConcurrent')
   else
-    GC_TUNE=($GC_TUNE)
+    GC_TUNE=${GC_TUNE[@]}
   fi
 
   if [ -n "$SOLR_WAIT_FOR_ZK" ]; then
@@ -2145,17 +2153,17 @@ function start_solr() {
     echo -e "    SOLR_HOST       = $SOLR_HOST"
     echo -e "    SOLR_PORT       = $SOLR_PORT"
     echo -e "    STOP_PORT       = $STOP_PORT"
-    echo -e "    JAVA_MEM_OPTS   = " "${JAVA_MEM_OPTS[@]}"
-    echo -e "    GC_TUNE         = " "${GC_TUNE[@]}"
-    echo -e "    GC_LOG_OPTS     = " "${GC_LOG_OPTS[@]}"
+    echo -e "    JAVA_MEM_OPTS   = ${JAVA_MEM_OPTS[@]}"
+    echo -e "    GC_TUNE         = ${GC_TUNE[@]}"
+    echo -e "    GC_LOG_OPTS     = ${GC_LOG_OPTS[@]}"
     echo -e "    SOLR_TIMEZONE   = $SOLR_TIMEZONE"
 
     if [ "$SOLR_MODE" == "solrcloud" ]; then
-      echo -e "    CLOUD_MODE_OPTS = " "${CLOUD_MODE_OPTS[@]}"
+      echo -e "    CLOUD_MODE_OPTS = ${CLOUD_MODE_OPTS[@]}"
     fi
 
     if [ "$SOLR_OPTS" != "" ]; then
-      echo -e "    SOLR_OPTS       = " "${SOLR_OPTS[@]}"
+      echo -e "    SOLR_OPTS       = ${SOLR_OPTS[@]}"
     fi
 
     if [ "$SOLR_ADDL_ARGS" != "" ]; then
@@ -2164,7 +2172,7 @@ function start_solr() {
 
     if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
       echo -e "    RMI_PORT        = $RMI_PORT"
-      echo -e "    REMOTE_JMX_OPTS = " "${REMOTE_JMX_OPTS[@]}"
+      echo -e "    REMOTE_JMX_OPTS = ${REMOTE_JMX_OPTS[@]}"
     fi
 
     if [ "$SOLR_LOG_LEVEL" != "" ]; then
@@ -2185,15 +2193,25 @@ function start_solr() {
     exit 1
   fi
 
-  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
-    "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" "$SOLR_LOG_LEVEL_OPT" "-Dsolr.log.dir=$SOLR_LOGS_DIR" \
-    "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
-    # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
-    # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
-    "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
-    # MRM TODO: this is hard to deref properly with arguments "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR" \
-    "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "-Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault" "-Djava.net.preferIPv4Stack=true" "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}" "${SOLR_ADMIN_UI}")
+  LOG4J_CONFIG+=(${SOLR_LOG_LEVEL_OPT[@]})
+  LOG4J_CONFIG+=("-Dlog4j2.is.webapp=false")
+  LOG4J_CONFIG+=("-Dlog4j2.garbagefreeThreadContextMap=true")
+  LOG4J_CONFIG+=("-Dlog4j2.enableDirectEncoders=true")
+  LOG4J_CONFIG+=("-Dlog4j2.enable.threadlocals=true")
+
+  SOLR_START_OPTS=(${JAVA_MEM_OPTS[@]} ${GC_TUNE[@]} ${GC_LOG_OPTS[@]} ${IP_ACL_OPTS[@]} ${REMOTE_JMX_OPTS[@]} ${CLOUD_MODE_OPTS[@]})
+  SOLR_START_OPTS+=(${SOLR_HOST_ARG[@]} ${LOG4J_CONFIG[@]} ${SECURITY_MANAGER_OPTS[@]} ${SOLR_ADMIN_UI})
+
+  SOLR_START_OPTS+=("-Dsolr.log.dir=${SOLR_LOGS_DIR}" "-Djetty.port=${SOLR_PORT}" "-DSTOP.PORT=${stop_port}" "-DSTOP.KEY=${STOP_KEY}")
+  SOLR_START_OPTS+=("-Duser.timezone=${SOLR_TIMEZONE}" "-Djetty.home=${SOLR_SERVER_DIR}" "-Dsolr.solr.home=${SOLR_HOME}" "-Dsolr.data.home=${SOLR_DATA_HOME}" "-Dsolr.install.dir=${SOLR_TIP}")
+  SOLR_START_OPTS+=("-Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault" "-Djava.net.preferIPv4Stack=true" "-Dsolr.default.confdir=${DEFAULT_CONFDIR}")
+  SOLR_START_OPTS+=("-XX:-UseBiasedLocking")
+
+  # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
+  # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
+  SOLR_START_OPTS+=("-XX:-OmitStackTraceInFastThrow")
+
+  # MRM TODO: this is hard to deref properly with arguments "-XX:OnOutOfMemoryError=$SOLR_TIP/bin/oom_solr.sh $SOLR_PORT $SOLR_LOGS_DIR"
 
   mk_writable_dir "$SOLR_LOGS_DIR" "Logs"
   if [[ -n "$SOLR_HEAP_DUMP_DIR" ]]; then
@@ -2213,18 +2231,29 @@ function start_solr() {
 	  echo ""
   fi
 
+  SOLR_JETTY_ADDL_CONFIG+=(SOLR_JETTY_ADDL_CONFIG[@])
+  SOLR_START_OPTS+=(${SOLR_OPTS[@]})
+
+  # MRM TODO: enable
+  #SOLR_START_OPTS+=("-XX:OnOutOfMemoryError=${SOLR_TIP}/bin/oom_solr.sh ${SOLR_PORT} ${SOLR_LOGS_DIR}")
+
   if [ "$run_in_foreground" == "true" ]; then
-    exec "$JAVA" -Djetty.state=${SOLR_PID_DIR}/jetty.state -Dsolr.log.muteconsole "${SOLR_START_OPTS[@]}" "${SOLR_ADDL_ARGS}"  -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true \
-       -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true -XX:-UseBiasedLocking -jar start.jar "${SOLR_JETTY_CONFIG[@]}" "${SOLR_JETTY_ADDL_CONFIG}"
+    #set -x
+    exec "$JAVA" "${SOLR_START_OPTS[@]}" -jar start.jar "${SOLR_JETTY_CONFIG[@]}"
   else
-    # run Solr in the background
+    # run Solr in the background MRM-TODO: Move relevant parts in from jetty.sh
+
+    SOLR_START_OPTS+=("-Djetty.state=${SOLR_PID_DIR}/jetty.state" "-Dsolr.log.muteconsole=true")
+
     export JAVA=$JAVA
     export JETTY_HOME="${SOLR_SERVER_DIR}"
-    export JETTY_PID="${SOLR_PID_DIR}/solr-$SOLR_PORT.pid"
-    export JETTY_ARGS[@]=("${SOLR_JETTY_CONFIG[@]}" "${SOLR_JETTY_ADDL_CONFIG[@]}")
-    export JAVA_OPTIONS[@]=("${SOLR_START_OPTS[@]}" "${SOLR_ADDL_ARGS[@]}" '-XX:-UseBiasedLocking' '-Dsolr.log.muteconsole')
-    export JETTY_STATE[@]=("${SOLR_PID_DIR}/jetty.state")
-    bash $SOLR_SERVER_DIR/../bin/jetty.sh start
+    export JETTY_PID="solr-$SOLR_PORT.pid"
+    export JETTY_RUN="$SOLR_PID_DIR"
+    export JETTY_PID="$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
+    export JETTY_ARGS="${SOLR_JETTY_CONFIG[*]}"
+    export JAVA_OPTIONS="${SOLR_START_OPTS[@]}"
+    export JETTY_STATE="${SOLR_PID_DIR}/jetty.state"
+    bash "${SOLR_SERVER_DIR}"/../bin/jetty.sh -d start
   fi
 
 }

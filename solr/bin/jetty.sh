@@ -91,7 +91,7 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 #   have shell access, e.g. /bin/false
 #
 # JETTY_START_TIMEOUT
-#   Time spent waiting to see if startup was successful/failed. Defaults to 60 seconds
+#   Time spent waiting to see if startup was successful/failed. Defaults to 10 seconds
 #
 
 usage()
@@ -387,7 +387,7 @@ fi
 #####################################################
 if [ -z "$JETTY_START_TIMEOUT" ]
 then
-  JETTY_START_TIMEOUT=60
+  JETTY_START_TIMEOUT=10
 fi
 
 #####################################################
@@ -480,11 +480,11 @@ case "$ACTION" in
         # FIXME: Broken solution: wordsplitting, pathname expansion, arbitrary command execution, etc.
         su - "$JETTY_USER" $SU_SHELL -c "
           cd \"$JETTY_BASE\"
-          exec ${RUN_CMD[*]} start-log-file=\"$JETTY_START_LOG\" > /dev/null &
+          exec ("${RUN_CMD[@]}") start-log-file=\"$JETTY_START_LOG\" > /dev/null &
           disown \$!
           echo \$! > \"$JETTY_PID\""
       else
-        "${RUN_CMD[@]}" > /dev/null &
+        ("${RUN_CMD[@]}") > /dev/null &
         disown $!
         echo $! > "$JETTY_PID"
       fi

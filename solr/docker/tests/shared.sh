@@ -54,7 +54,7 @@ function wait_for_server_started {
   log="${BUILD_DIR}/${container_name}.log"
   while true; do
     set -x
-    docker cp "${container_name}":/var/solr/logs/solr.log "${log}" || echo "log not found"
+    docker logs "$container_name" > "${log}" 2>&1
     if grep -E -q '(o\.e\.j\.s\.Server Started|Started SocketConnector|SolrDispatchFilter\.init\(\) end)' "${log}" ; then
       break
     fi

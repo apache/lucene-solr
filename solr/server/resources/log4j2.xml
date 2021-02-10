@@ -21,20 +21,30 @@
   <Appenders>
 
     <Console name="STDOUT" target="SYSTEM_OUT">
-      <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+      <PatternLayout>
+        <Pattern>
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+        </Pattern>
+      </PatternLayout>
+      <!-- <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
                       eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
                       prettyPrintEnabled="true"
-                      stackTraceEnabled="true"/>
+                      stackTraceEnabled="true"/> -->
     </Console>
 
     <RollingRandomAccessFile
         name="MainLogFile"
         fileName="${sys:solr.log.dir}/solr.log"
         filePattern="${sys:solr.log.dir}/solr.log.%i" >
-      <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+      <PatternLayout>
+        <Pattern>
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+        </Pattern>
+      </PatternLayout>
+      <!-- <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
                       eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
                       prettyPrintEnabled="true"
-                      stackTraceEnabled="true"/>
+                      stackTraceEnabled="true"/> -->
       <Policies>
         <OnStartupTriggeringPolicy />
         <SizeBasedTriggeringPolicy size="64 MB"/>
@@ -46,15 +56,20 @@
         name="SlowLogFile"
         fileName="${sys:solr.log.dir}/solr_slow_requests.log"
         filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
-      <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+      <PatternLayout>
+        <Pattern>
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+        </Pattern>
+      </PatternLayout>
+      <!-- <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
                       eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
                       prettyPrintEnabled="true"
-                      stackTraceEnabled="true"/>
+                      stackTraceEnabled="true"/> -->
       <Policies>
         <OnStartupTriggeringPolicy />
-        <SizeBasedTriggeringPolicy size="32 MB"/>
+        <SizeBasedTriggeringPolicy size="64 MB"/>
       </Policies>
-      <DefaultRolloverStrategy max="10"/>
+      <DefaultRolloverStrategy max="20"/>
     </RollingRandomAccessFile>
 
   </Appenders>
@@ -68,7 +83,7 @@
     <AsyncLogger name="org.apache.zookeeper.ClientCnxn" level="ERROR"/>
     <AsyncLogger name="org.apache.zookeeper.server.ZooKeeperCriticalThread" level="OFF"/>
 
-    <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="DEBUG"/>
+    <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="INFO"/>
     <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
     <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="INFO" additivity="false">
       <AppenderRef ref="SlowLogFile"/>
@@ -76,6 +91,7 @@
 
     <AsyncRoot level="INFO">
       <AppenderRef ref="MainLogFile"/>
+      <AppenderRef ref="STDOUT"/>
     </AsyncRoot>
   </Loggers>
 </Configuration>
