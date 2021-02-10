@@ -278,7 +278,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             // Since we're directly updating the state here, instead of doing it via a queue in the overseer,
             // we need to make sure that the cluster state updater used in the Overseer can see this update
             // upon refreshing itself
-            ((Overseer.ClusterStateUpdater) ocmh.overseer.getUpdaterThread().getThread()).refreshClusterState();
+            //((Overseer.ClusterStateUpdater) ocmh.overseer.getUpdaterThread().getThread()).refreshClusterState();
 
             clusterState = clusterState.copyWith(collectionName, command.collection);
           } else {
