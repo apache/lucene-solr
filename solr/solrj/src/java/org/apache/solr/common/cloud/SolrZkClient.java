@@ -921,9 +921,17 @@ public class SolrZkClient implements Closeable {
     }
   }
 
+  public void printLayout(String path, int indent, int maxBytesBeforeSuppress, StringBuilder output) {
+    try {
+      printLayout(path, "", indent, maxBytesBeforeSuppress, output);
+    } catch (Exception e) {
+      log.error("Exception printing layout", e);
+    }
+  }
+
   public void printLayout(String path, int indent, StringBuilder output) {
     try {
-      printLayout(path, "", indent, output);
+      printLayout(path, "", indent, MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW, output);
     } catch (Exception e) {
       log.error("Exception printing layout", e);
     }
@@ -932,7 +940,7 @@ public class SolrZkClient implements Closeable {
   /**
    * Fills string with printout of current ZooKeeper layout.
    */
-  public void printLayout(String path, String node, int indent, StringBuilder output) {
+  public void printLayout(String path, String node, int indent, int maxBytesBeforeSuppress, StringBuilder output) {
     try {
       //log.info("path={} node={} indext={}", path, node, indent);
 
@@ -977,8 +985,14 @@ public class SolrZkClient implements Closeable {
 //          } else {
             dataString = new String(data, StandardCharsets.UTF_8);
         //  }
-          int lines = dataString.split("\\r\\n|\\r|\\n").length;
-          if ((stat != null && stat.getDataLength() < MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW && lines < 4) || path.endsWith("state.json") || path
+          int lines;
+          if (maxBytesBeforeSuppress != MAX_BYTES_FOR_ZK_LAYOUT_DATA_SHOW) {
+            lines = 0;
+          } else {
+            lines = dataString.split("\\r\\n|\\r|\\n").length;
+          }
+
+          if ((stat != null && stat.getDataLength() < maxBytesBeforeSuppress && lines < 4) || path.endsWith("state.json") || path
               .endsWith("security.json") || (path.endsWith("solrconfig.xml") && Boolean.getBoolean("solr.tests.printsolrconfig")) || path.endsWith("_statupdates") || path.contains("/terms/")) {
             //        if (path.endsWith(".xml")) {
             //          // this is the cluster state in xml format - lets pretty print
@@ -1014,7 +1028,7 @@ public class SolrZkClient implements Closeable {
       if (children != null) {
         for (String child : children) {
           if (!child.equals("quota") && !child.equals("/zookeeper")) {
-            printLayout(path.equals("/") ? "/" + child : path + "/" + child, child, indent, output);
+            printLayout(path.equals("/") ? "/" + child : path + "/" + child, child, indent, maxBytesBeforeSuppress, output);
           }
         }
       }
@@ -1024,25 +1038,37 @@ public class SolrZkClient implements Closeable {
   }
 
   public void printLayout() {
-    StringBuilder sb = new StringBuilder(512);
+    StringBuilder sb = new StringBuilder(1024);
     printLayout("/",0, sb);
     log.warn("\n\n_____________________________________________________________________\n\n\nZOOKEEPER LAYOUT:\n\n" + sb.toString() + "\n\n_____________________________________________________________________\n\n");
   }
 
   public void printLayoutToStream(PrintStream out) {
-    StringBuilder sb = new StringBuilder(512);
+    StringBuilder sb = new StringBuilder(1024);
     printLayout("/", 0, sb);
     out.println(sb.toString());
   }
 
   public void printLayoutToStream(PrintStream out, String path) {
-    StringBuilder sb = new StringBuilder(512);
+    StringBuilder sb = new StringBuilder(1024);
     printLayout(path, 0, sb);
     out.println(sb.toString());
   }
 
+  public void printLayoutToStream(PrintStream out, int maxBytesBeforeSuppress) {
+    StringBuilder sb = new StringBuilder(1024);
+    printLayout("/", 0, maxBytesBeforeSuppress, sb);
+    out.println(sb.toString());
+  }
+
+  public void printLayoutToStream(PrintStream out, String path, int maxBytesBeforeSuppress) {
+    StringBuilder sb = new StringBuilder(1024);
+    printLayout(path, 0, maxBytesBeforeSuppress, sb);
+    out.println(sb.toString());
+  }
+
   public void printLayoutToFile(Path file) {
-    StringBuilder sb = new StringBuilder(512);
+    StringBuilder sb = new StringBuilder(1024);
     printLayout("/",0, sb);
     try {
       Files.writeString(file, sb.toString(), StandardOpenOption.CREATE);

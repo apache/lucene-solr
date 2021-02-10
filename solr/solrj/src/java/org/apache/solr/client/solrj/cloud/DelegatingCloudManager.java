@@ -78,11 +78,6 @@ public class DelegatingCloudManager implements SolrCloudManager {
     }
 
     @Override
-    public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
-        return delegate.httpRequest(url, method, headers, payload, timeout, followRedirects);
-    }
-
-    @Override
     public void close() throws IOException {
         delegate.close();
     }

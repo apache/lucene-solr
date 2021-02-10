@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -446,10 +446,10 @@ public class TestPackages extends SolrCloudTestCase {
   }
 
   private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
-    try(HttpSolrClient client = (HttpSolrClient) jetty.newHttp1Client()){
+    try(Http2SolrClient client = (Http2SolrClient) jetty.newHttp2Client()){
       TestDistribPackageStore.assertResponseValues(10,
           () -> {
-            Object o = Utils.executeGET(client.getHttpClient(),
+            Object o = Utils.executeGET(client,
                 jetty.getBaseUrl() + uri, parser);
             if(o instanceof NavigableObject) return (NavigableObject) o;
             if(o instanceof Map) return new MapWriterMap((Map) o);
@@ -591,8 +591,8 @@ public class TestPackages extends SolrCloudTestCase {
         TestDistribPackageStore.assertResponseValues(10, new Callable<NavigableObject>() {
           @Override
           public NavigableObject call() throws Exception {
-            try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newHttp1Client()) {
-              return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), path, Utils.JAVABINCONSUMER);
+            try (Http2SolrClient solrClient = (Http2SolrClient) jetty.newHttp2Client()) {
+              return (NavigableObject) Utils.executeGET(solrClient, path, Utils.JAVABINCONSUMER);
             }
           }
         }, Utils.makeMap(

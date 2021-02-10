@@ -105,7 +105,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   
   @After
   public void tearDownCluster() throws Exception {
-    cluster.deleteAllCollections();
+
   }
 
   @Test

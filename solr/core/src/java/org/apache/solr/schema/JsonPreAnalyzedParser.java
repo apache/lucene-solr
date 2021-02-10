@@ -70,7 +70,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
   public ParseResult parse(Reader reader, AttributeSource parent)
       throws IOException {
     ParseResult res = new ParseResult();
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(128);
     char[] buf = new char[128];
     int cnt;
     while ((cnt = reader.read(buf)) > 0) {

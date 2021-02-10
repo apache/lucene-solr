@@ -20,7 +20,6 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -86,7 +85,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Run solr using jetty
@@ -145,12 +144,12 @@ public class JettySolrRunner implements Closeable {
   public static class DebugFilter implements Filter {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private final AtomicLong nRequests = new AtomicLong();
+    private final LongAdder nRequests = new LongAdder();
 
     private Set<Delay> delays = ConcurrentHashMap.newKeySet(12);
 
     public long getTotalRequests() {
-      return nRequests.get();
+      return nRequests.longValue();
 
     }
     
@@ -178,7 +177,7 @@ public class JettySolrRunner implements Closeable {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-      nRequests.incrementAndGet();
+      nRequests.increment();
       executeDelay();
       filterChain.doFilter(servletRequest, servletResponse);
     }
@@ -842,9 +841,9 @@ public class JettySolrRunner implements Closeable {
   }
 
 
-  public SolrClient newHttp1Client() {
-    return new HttpSolrClient.Builder(getBaseUrl()).
-        withHttpClient(getCoreContainer().getUpdateShardHandler().getDefaultHttpClient()).build();
+  public SolrClient newHttp2Client() {
+    return new Http2SolrClient.Builder(getBaseUrl()).
+        withHttpClient(getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient()).build();
   }
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {

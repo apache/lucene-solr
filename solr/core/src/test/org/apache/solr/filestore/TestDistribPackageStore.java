@@ -23,7 +23,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -176,8 +176,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
       if (verifyContent) {
-        try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newHttp1Client()) {
-          ByteBuffer buf = Utils.executeGET(solrClient.getHttpClient(), baseUrl + "/node/files" + path,
+        try (Http2SolrClient solrClient = (Http2SolrClient) jettySolrRunner.newHttp2Client()) {
+          ByteBuffer buf = Utils.executeGET(solrClient, baseUrl + "/node/files" + path,
               Utils.newBytesConsumer(Integer.MAX_VALUE));
           assertEquals(
               "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
@@ -199,8 +199,8 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     }
     @Override
     public NavigableObject call() throws Exception {
-      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newHttp1Client()) {
-        return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
+      try (Http2SolrClient solrClient = (Http2SolrClient) jetty.newHttp2Client()) {
+        return (NavigableObject) Utils.executeGET(solrClient, this.url, JAVABINCONSUMER);
       }
     }
 
@@ -254,10 +254,12 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster) throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    try(HttpSolrClient client = (HttpSolrClient) jetty.newHttp1Client()) {
-      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()), client);
-      Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
-      log.info("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp);
+    try(Http2SolrClient client = (Http2SolrClient) jetty.newHttp2Client()) {
+      PackageUtils.uploadKey(bytes, path, Paths.get(jetty.getCoreContainer().getSolrHome()));
+
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", client);
+      
+      log.info("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp.asString);
     }
     waitForAllNodesHaveFile(cluster,path, Utils.makeMap(":files:" + path + ":name", (Predicate<Object>) Objects::nonNull),
         false);

@@ -17,8 +17,6 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -33,8 +31,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.util.TestInjection;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -58,8 +56,8 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     return configSet;
   }
 
-  @Before
-  public void setupCluster() throws Exception {
+  @BeforeClass
+  public static void setupCluster() throws Exception {
     // we don't want this test to have zk timeouts
     System.setProperty("zkClientTimeout", "60000");
     if (TEST_NIGHTLY) {
@@ -74,8 +72,8 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
         .configure();
   }
   
-  @After
-  public void tearDownCluster() throws Exception {
+  @AfterClass
+  public static void tearDownCluster() throws Exception {
     if (cluster != null) cluster.shutdown();
     cluster = null;
   }

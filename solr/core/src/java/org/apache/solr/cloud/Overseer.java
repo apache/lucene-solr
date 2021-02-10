@@ -295,13 +295,13 @@ public class Overseer implements SolrCloseable {
 //     stateManagmentExecutor = ParWork.getParExecutorService("stateManagmentExecutor",
 //        1, 1, 3000, new SynchronousQueue());
      taskExecutor = (ParWorkExecutor) ParWork.getParExecutorService("overseerTaskExecutor",
-         4, SysStats.PROC_COUNT, 1000, new BlockingArrayQueue<>(32, 64));
+         4, SysStats.PROC_COUNT * 2, 1000, new BlockingArrayQueue<>(32, 64));
     for (int i = 0; i < 4; i++) {
       taskExecutor.prestartCoreThread();
     }
 
     zkWriterExecutor = (ParWorkExecutor) ParWork.getParExecutorService("overseerZkWriterExecutor",
-        4, SysStats.PROC_COUNT, 1000, new BlockingArrayQueue<>(64, 128));
+        4, SysStats.PROC_COUNT * 2, 1000, new BlockingArrayQueue<>(64, 128));
     for (int i = 0; i < 4; i++) {
       zkWriterExecutor.prestartCoreThread();
     }

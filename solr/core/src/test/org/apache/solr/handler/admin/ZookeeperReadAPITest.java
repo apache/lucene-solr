@@ -20,7 +20,7 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -63,17 +63,17 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
     String basezk = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk/data";
     String basezkls = baseUrl.toString().replace("/solr", "/api") + "/cluster/zk/ls";
 
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
-      Object o = Utils.executeGET(client.getHttpClient(),
+    try (Http2SolrClient client = new Http2SolrClient.Builder(baseUrl.toString()).build()) {
+      Object o = Utils.executeGET(client,
           basezk + "/security.json",
           Utils.JSONCONSUMER);
       assertNotNull(o);
-      o = Utils.executeGET(client.getHttpClient(),
+      o = Utils.executeGET(client,
           basezkls + "/configs",
           Utils.JSONCONSUMER);
       assertEquals("0", String.valueOf(getObjectByPath(o, true, split(":/configs:_default:dataLength", ':'))));
 
-      o = Utils.executeGET(client.getHttpClient(),
+      o = Utils.executeGET(client,
           basezk + "/configs",
           Utils.JSONCONSUMER);
       assertTrue(((Map)o).containsKey("/configs"));
@@ -84,7 +84,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
         bytes[i] = (byte) random().nextInt(128);
       }
       cluster.getZkClient().create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
-      Utils.executeGET(client.getHttpClient(),
+      Utils.executeGET(client,
           basezk + "/configs/_default/testdata",
           is -> {
             byte[] newBytes = new byte[bytes.length];

@@ -334,10 +334,8 @@ public class ConnectionManager implements Watcher, Closeable {
 
     client.zkCallbackExecutor.shutdown();
 
-    ExecutorUtil.awaitTermination(client.zkCallbackExecutor);
     SolrZooKeeper fkeeper = keeper;
     if (fkeeper != null) {
-      fkeeper.register(new NullWatcher());
       fkeeper.close();
     }
     client.zkConnManagerCallbackExecutor.shutdown();
@@ -396,6 +394,10 @@ public class ConnectionManager implements Watcher, Closeable {
 
   protected SolrZooKeeper createSolrZooKeeper(final String serverAddress, final int zkSessionTimeout,
                                               final Watcher watcher) throws IOException {
+    if (isClosed) {
+      throw new AlreadyClosedException();
+    }
+
     SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkSessionTimeout, watcher);
 
     if (zkCredentialsToAddAutomatically != null) {

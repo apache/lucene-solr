@@ -25,12 +25,10 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -82,7 +80,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       log.info("ZK: {}", zkHost);
       String cmd = cli.getArgList().size() == 0? "help": cli.getArgs()[0];
 
-      try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).markInternalRequest().build()) {
+      try (Http2SolrClient solrClient = new Http2SolrClient.Builder(solrBaseUrl).markInternalRequest().build()) {
         if (cmd != null) {
           packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost); 
           try {
@@ -279,7 +277,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       return zkHost;
 
     String systemInfoUrl = solrUrl+"/admin/info/system";
-    CloseableHttpClient httpClient = SolrCLI.getHttpClient();
+    Http2SolrClient httpClient = SolrCLI.getHttpClient();
     try {
       // hit Solr to get system info
       Map<String,Object> systemInfo = SolrCLI.getJson(httpClient, systemInfoUrl, 2, true);
@@ -296,7 +294,7 @@ public class PackageTool extends SolrCLI.ToolBase {
         zkHost = zookeeper;
       }
     } finally {
-      HttpClientUtil.close(httpClient);
+      httpClient.close();
     }
 
     return zkHost;

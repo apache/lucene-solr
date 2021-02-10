@@ -31,7 +31,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
@@ -66,6 +65,7 @@ import static java.util.Collections.emptyMap;
 public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter {
   public static final String METRICS_PREFIX = "metrics:";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String[] EMPTY_STRINGS = new String[0];
   //only for debugging
   public static SolrClientNodeStateProvider INST;
 
@@ -73,12 +73,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
   private final BaseCloudSolrClient solrClient;
   protected final Map<String, Map<String, Map<String, List<ReplicaInfo>>>> nodeVsCollectionVsShardVsReplicaInfo = new HashMap<>();
-  private final HttpClient httpClient;
+  private final Http2SolrClient httpClient;
   private Map<String, Object> snitchSession = new HashMap<>();
   private Map<String, Map> nodeVsTags = new HashMap<>();
   private Map<String, String> withCollectionsMap = new HashMap<>();
 
-  public SolrClientNodeStateProvider(BaseCloudSolrClient solrClient, HttpClient httpClient) {
+  public SolrClientNodeStateProvider(BaseCloudSolrClient solrClient, Http2SolrClient httpClient) {
     this.solrClient = solrClient;
     this.httpClient = httpClient;
     try {
@@ -188,7 +188,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   static void fetchReplicaMetrics(String solrNode, ClientSnitchCtx ctx, Map<String, Object> metricsKeyVsTag) {
     if (!ctx.isNodeAlive(solrNode)) return;
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("key", metricsKeyVsTag.keySet().toArray(new String[0]));
+    params.add("key", metricsKeyVsTag.keySet().toArray(EMPTY_STRINGS));
     try {
       SimpleSolrResponse rsp = ctx.invokeWithRetry(solrNode, CommonParams.METRICS_PATH, params);
       metricsKeyVsTag.forEach((key, tag) -> {
@@ -317,7 +317,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     ZkClientClusterStateProvider zkClientClusterStateProvider;
     BaseCloudSolrClient solrClient;
 
-    HttpClient httpClient;
+    Http2SolrClient httpClient;
 
     public boolean isNodeAlive(String node) {
       if (zkClientClusterStateProvider != null) {
@@ -327,7 +327,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
     public ClientSnitchCtx(SnitchInfo perSnitch,
                            String node, Map<String, Object> session,
-                           BaseCloudSolrClient solrClient, HttpClient httpClient) {
+                           BaseCloudSolrClient solrClient, Http2SolrClient httpClient) {
       super(perSnitch, node, session);
       this.solrClient = solrClient;
       this.httpClient = httpClient;
@@ -381,7 +381,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
       try {
         GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
-        try (HttpSolrClient client = new HttpSolrClient.Builder().withHttpClient(httpClient).withBaseSolrUrl(url).withResponseParser(new BinaryResponseParser()).markInternalRequest().build()) {
+        try (Http2SolrClient client = new Http2SolrClient.Builder().withHttpClient(httpClient).withBaseUrl(url).markInternalRequest().build()) {
           NamedList<Object> rsp = client.request(request);
           request.response.nl = rsp;
           return request.response;

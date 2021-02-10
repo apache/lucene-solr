@@ -33,7 +33,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -59,7 +59,7 @@ import com.jayway.jsonpath.PathNotFoundException;
 public class PackageManager implements Closeable {
 
   final String solrBaseUrl;
-  final HttpSolrClient solrClient;
+  final Http2SolrClient solrClient;
   final SolrZkClient zkClient;
 
   private Map<String, List<SolrPackageInstance>> packages = null;
@@ -67,7 +67,7 @@ public class PackageManager implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  public PackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
+  public PackageManager(Http2SolrClient solrClient, String solrBaseUrl, String zkHost) {
     this.solrBaseUrl = solrBaseUrl;
     this.solrClient = solrClient;
     this.zkClient = new SolrZkClient(zkHost, 30000);
@@ -117,7 +117,7 @@ public class PackageManager implements Closeable {
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
     Map<String, String> packages = null;
     try {
-      NavigableObject result = (NavigableObject) Utils.executeGET(solrClient.getHttpClient(),
+      NavigableObject result = (NavigableObject) Utils.executeGET(solrClient,
           solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS?omitHeader=true&wt=javabin", Utils.JAVABINCONSUMER);
       packages = (Map<String, String>) result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
     } catch (PathNotFoundException ex) {
@@ -171,7 +171,7 @@ public class PackageManager implements Closeable {
 
       // Get package params
       try {
-        boolean packageParamsExist = ((Map)PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/packages", Map.class)
+        boolean packageParamsExist = ((Map)PackageUtils.getJson(solrClient, solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/packages", Map.class)
             .getOrDefault("response", Collections.emptyMap())).containsKey("params");
         SolrCLI.postJsonToSolr(solrClient, PackageUtils.getCollectionParamsPath(collection),
             getMapper().writeValueAsString(Collections.singletonMap(packageParamsExist? "update": "set",
@@ -274,7 +274,7 @@ public class PackageManager implements Closeable {
   Map<String, String> getPackageParams(String packageName, String collection) {
     try {
       return (Map<String, String>)((Map)((Map)((Map)
-          PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/packages", Map.class)
+          PackageUtils.getJson(solrClient, solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/packages", Map.class)
           .get("response"))
           .get("params"))
           .get("packages")).get(packageName);
@@ -301,7 +301,7 @@ public class PackageManager implements Closeable {
           PackageUtils.printGreen("Executing " + url + " for collection:" + collection);
 
           if ("GET".equalsIgnoreCase(cmd.method)) {
-            String response = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), url);
+            String response = PackageUtils.getJsonStringFromUrl(solrClient, url);
             PackageUtils.printGreen(response);
             String actualValue = JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
                 .read(PackageUtils.resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
@@ -439,7 +439,7 @@ public class PackageManager implements Closeable {
     Map<String, String> deployed = new HashMap<String, String>();
     for (String collection: allCollections) {
       // Check package version installed
-      String paramsJson = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS?omitHeader=true");
+      String paramsJson = PackageUtils.getJsonStringFromUrl(solrClient,solrBaseUrl + PackageUtils.getCollectionParamsPath(collection) + "/PKG_VERSIONS?omitHeader=true");
       String version = null;
       try {
         version = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())

@@ -86,7 +86,7 @@
         <AsyncLogger name="org.apache.zookeeper.ClientCnxn" level="ERROR"/>
         <AsyncLogger name="org.apache.zookeeper.server.ZooKeeperCriticalThread" level="OFF"/>
 
-        <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="WARN"/>
         <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
         <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="INFO" additivity="false">
             <AppenderRef ref="SlowLogFile"/>

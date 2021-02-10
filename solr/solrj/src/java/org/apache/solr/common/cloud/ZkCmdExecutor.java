@@ -20,6 +20,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +71,7 @@ public class ZkCmdExecutor {
         if (exception == null) {
           exception = e;
         }
-        if (!zkCmdExecutor.solrZkClient.getSolrZooKeeper().getState().isAlive()) {
+        if (zkCmdExecutor.solrZkClient.getSolrZooKeeper().getState() == ZooKeeper.States.CLOSED) {
           throw e;
         }
         zkCmdExecutor.retryDelay(tryCnt);

@@ -236,8 +236,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
     } finally {
-      if (cores != null) {
-        this.httpClient = cores.getUpdateShardHandler().getTheSharedHttpClient().getHttpClient();
+      if (coresInit != null) {
+        this.httpClient = coresInit.getUpdateShardHandler().getTheSharedHttpClient().getHttpClient();
       }
       init.countDown();
       log.info("SolrDispatchFilter.init() end");

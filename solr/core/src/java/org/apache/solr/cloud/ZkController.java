@@ -749,7 +749,7 @@ public class ZkController implements Closeable, Runnable {
       cloudManager = new SolrClientCloudManager(
           new ZkDistributedQueueFactory(zkClient),
           cloudSolrClient,
-          cc.getObjectCache(), cc.getUpdateShardHandler().getDefaultHttpClient());
+          cc.getObjectCache(), cc.getUpdateShardHandler().getTheSharedHttpClient());
       cloudManager.getClusterStateProvider().connect();
     }
     return cloudManager;

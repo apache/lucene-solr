@@ -26,14 +26,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
@@ -109,7 +106,7 @@ public class PackageUtils {
   /**
    * Download JSON from the url and deserialize into klass.
    */
-  public static <T> T getJson(HttpClient client, String url, Class<T> klass) {
+  public static <T> T getJson(Http2SolrClient client, String url, Class<T> klass) {
     try {
       return getMapper().readValue(getJsonStringFromUrl(client, url), klass);
     } catch (IOException e) {
@@ -139,15 +136,14 @@ public class PackageUtils {
   /**
    * Returns JSON string from a given URL
    */
-  public static String getJsonStringFromUrl(HttpClient client, String url) {
+  public static String getJsonStringFromUrl(Http2SolrClient client, String url) {
     try {
-      HttpResponse resp = client.execute(new HttpGet(url));
-      if (resp.getStatusLine().getStatusCode() != 200) {
-        throw new SolrException(ErrorCode.NOT_FOUND,
-            "Error (code="+resp.getStatusLine().getStatusCode()+") fetching from URL: "+url);
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(url, client);
+      if (resp.status != 200) {
+        throw new SolrException(ErrorCode.NOT_FOUND, "Error (code=" + resp.status + ") fetching from URL: " + url);
       }
-      return IOUtils.toString(resp.getEntity().getContent(), "UTF-8");
-    } catch (UnsupportedOperationException | IOException e) {
+      return resp.asString;
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -162,8 +158,8 @@ public class PackageUtils {
   /**
    * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after fetching.
    */
-  public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
-    String manifestJson = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
+  public static Manifest fetchManifest(Http2SolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
+    String manifestJson = PackageUtils.getJsonStringFromUrl(solrClient, solrBaseUrl + "/api/node/files" + manifestFilePath);
     String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
     if (expectedSHA512.equals(calculatedSHA512) == false) {
       throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
@@ -254,7 +250,7 @@ public class PackageUtils {
     return "/api/collections/" + collection + "/config/params";
   }
 
-  public static void uploadKey(byte bytes[], String path, Path home, HttpSolrClient client) throws IOException {
+  public static void uploadKey(byte bytes[], String path, Path home) throws IOException {
     ByteBuffer buf = ByteBuffer.wrap(bytes);
     PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(buf, null);
     DistribPackageStore._persistToFile(home, path, buf, ByteBuffer.wrap(Utils.toJSON(meta)));

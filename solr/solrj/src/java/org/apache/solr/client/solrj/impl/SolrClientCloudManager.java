@@ -17,28 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.DistributedQueueFactory;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -48,6 +31,9 @@ import org.apache.solr.common.util.ObjectCache;
 import org.apache.solr.common.util.TimeSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 
 /**
  * Class that implements {@link SolrCloudManager} using a SolrClient
@@ -62,14 +48,14 @@ public class SolrClientCloudManager implements SolrCloudManager {
   private final SolrZkClient zkClient;
   private final ObjectCache objectCache;
   private final boolean closeObjectCache;
-  private final HttpClient httpClient;
+  private final Http2SolrClient httpClient;
   private volatile boolean isClosed;
 
   public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient) {
     this(queueFactory, solrClient, null, null);
   }
 
-  public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient, HttpClient httpClient) {
+  public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient, Http2SolrClient httpClient) {
     this(queueFactory, solrClient, null, httpClient);
   }
 
@@ -79,12 +65,12 @@ public class SolrClientCloudManager implements SolrCloudManager {
   }
 
   public SolrClientCloudManager(DistributedQueueFactory queueFactory, BaseCloudSolrClient solrClient,
-                                ObjectCache objectCache, HttpClient httpClient) {
+                                ObjectCache objectCache, Http2SolrClient httpClient) {
     this.queueFactory = queueFactory;
     this.solrClient = solrClient;
 
     if (httpClient == null && solrClient instanceof  CloudSolrClient) {
-      this.httpClient = ((CloudSolrClient) solrClient).getHttpClient();
+      this.httpClient = ((CloudHttp2SolrClient) solrClient).getHttpClient();
     } else if (httpClient == null) {
       throw new IllegalArgumentException("Must specify apache httpclient with non CloudSolrServer impls");
     } else {
@@ -152,60 +138,6 @@ public class SolrClientCloudManager implements SolrCloudManager {
   }
 
   private static final byte[] EMPTY = new byte[0];
-
-  @Override
-  public byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException {
-    HttpClient client = httpClient;
-    final HttpRequestBase req;
-    HttpEntity entity = null;
-    if (payload != null) {
-      entity = new StringEntity(payload, "UTF-8");
-    }
-    switch (method) {
-      case GET:
-        req = new HttpGet(url);
-        break;
-      case POST:
-        req = new HttpPost(url);
-        if (entity != null) {
-          ((HttpPost)req).setEntity(entity);
-        }
-        break;
-      case PUT:
-        req = new HttpPut(url);
-        if (entity != null) {
-          ((HttpPut)req).setEntity(entity);
-        }
-        break;
-      case DELETE:
-        req = new HttpDelete(url);
-        break;
-      default:
-        throw new IOException("Unsupported method " + method);
-    }
-    if (headers != null) {
-      headers.forEach((k, v) -> req.addHeader(k, v));
-    }
-    RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
-    if (timeout > 0) {
-      requestConfigBuilder.setSocketTimeout(timeout);
-      requestConfigBuilder.setConnectTimeout(timeout);
-    }
-    requestConfigBuilder.setRedirectsEnabled(followRedirects);
-    req.setConfig(requestConfigBuilder.build());
-    HttpClientContext httpClientRequestContext = HttpClientUtil.createNewHttpClientRequestContext();
-    HttpResponse rsp = client.execute(req, httpClientRequestContext);
-    int statusCode = rsp.getStatusLine().getStatusCode();
-    if (statusCode != 200) {
-      throw new IOException("Error sending request to " + url + ", HTTP response: " + rsp.toString());
-    }
-    HttpEntity responseEntity = rsp.getEntity();
-    if (responseEntity != null && responseEntity.getContent() != null) {
-      return EntityUtils.toByteArray(responseEntity);
-    } else {
-      return EMPTY;
-    }
-  }
 
   @Override
   public DistributedQueueFactory getDistributedQueueFactory() {

@@ -65,7 +65,7 @@ public class SimpleCollectionCreateDeleteTest extends SolrCloudBridgeTestCase {
       assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
       
       // currently, removing a collection does not wait for cores to be unloaded
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, 50, TimeSource.NANO_TIME);
       while (true) {
         
         if( timeout.hasTimedOut() ) {

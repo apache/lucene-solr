@@ -16,6 +16,36 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapWriterMap;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableSet;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -47,46 +77,14 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.VersionedData;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
-import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.unmodifiableList;
-import static java.util.Collections.unmodifiableSet;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
 public class Utils {
   @SuppressWarnings({"rawtypes"})
@@ -803,30 +801,33 @@ public class Utils {
       }
 
 
-      public static <T > T executeGET(HttpClient client, String url, InputStreamConsumer < T > consumer) throws SolrException {
+      public static <T > T executeGET(Http2SolrClient client, String url, InputStreamConsumer < T > consumer) throws SolrException {
         T result = null;
-        HttpGet httpGet = new HttpGet(url);
-        HttpResponse rsp = null;
+
+        Http2SolrClient.SimpleResponse resp = null;
         try {
-          rsp = client.execute(httpGet);
-        } catch (IOException e) {
-          log.error("Error in request to url : {}", url, e);
-          throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
+          resp = Http2SolrClient.GET(url, client);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e, true);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (ExecutionException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        } catch (TimeoutException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-        int statusCode = rsp.getStatusLine().getStatusCode();
+
+        int statusCode = resp.status;
         if (statusCode != 200) {
-          try {
-            log.error("Failed a request to: {}, status: {}, body: {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8)); // logOk
-          } catch (IOException e) {
-            log.error("could not print error", e);
-          }
+
+          log.error("Failed a request to: {}, status: {}, body: {}", url, resp.status, resp.asString); // logOk
+
           throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
         }
-        HttpEntity entity = rsp.getEntity();
+
         InputStream is = null;
 
         try {
-          is = entity.getContent();
+          is = new ByteArrayInputStream(resp.bytes);
           if (consumer != null) {
 
             result = consumer.accept(is);

@@ -34,7 +34,7 @@ public class ClusterStateCommand extends CliCommand {
   private CommandLine cl;
 
   static {
-    //options.addOption("s", "state", false, "Outputs the Solr state in Zookeeper");
+    options.addOption("u", "unlimited", false, "Don't suppress node output by byte size");
 
   }
 
@@ -71,16 +71,22 @@ public class ClusterStateCommand extends CliCommand {
 
    if (args.length == 2) {
      try {
-
-       zkStateReader.getZkClient().printLayoutToStream(out, args[1]);
+       if (cl.hasOption("u")) {
+         zkStateReader.getZkClient().printLayoutToStream(out, args[1], Integer.MAX_VALUE);
+       } else {
+         zkStateReader.getZkClient().printLayoutToStream(out, args[1]);
+       }
 
      } catch (IllegalArgumentException ex) {
        throw new MalformedPathException(ex.getMessage());
      }
    } else {
      try {
-
-       zkStateReader.getZkClient().printLayoutToStream(out);
+       if (cl.hasOption("u")) {
+         zkStateReader.getZkClient().printLayoutToStream(out, Integer.MAX_VALUE);
+       } else {
+         zkStateReader.getZkClient().printLayoutToStream(out);
+       }
 
      } catch (IllegalArgumentException ex) {
        throw new MalformedPathException(ex.getMessage());

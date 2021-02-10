@@ -23,8 +23,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -60,8 +58,6 @@ public class UpdateShardHandler implements SolrInfoBean {
   private final Http2SolrClient searchOnlyClient;
 
   private final Http2SolrClient recoveryOnlyClient;
-
-  private final CloseableHttpClient defaultClient;
 
   private ExecutorService recoveryExecutor;
 
@@ -99,8 +95,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
     //updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
-
-    defaultClient = HttpClientUtil.createClient(clientParams, defaultConnectionManager, true, httpRequestExecutor);
 
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
@@ -200,11 +194,6 @@ public class UpdateShardHandler implements SolrInfoBean {
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
-
-  // if you are looking for a client to use, it's probably this one.
-  public HttpClient getDefaultHttpClient() {
-    return defaultClient;
-  }
   
   // don't introduce a bug, this client is for sending updates only!
   public Http2SolrClient getTheSharedHttpClient() {
@@ -240,10 +229,6 @@ public class UpdateShardHandler implements SolrInfoBean {
 
 
     try (ParWork closer = new ParWork(this, true, false)) {
-      closer.collect("", () -> {
-        HttpClientUtil.close(defaultClient);
-        return defaultClient;
-      });
       closer.collect(recoveryOnlyClient);
       closer.collect(searchOnlyClient);
       closer.collect(updateOnlyClient);

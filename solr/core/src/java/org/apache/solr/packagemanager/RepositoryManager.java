@@ -40,6 +40,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
@@ -70,9 +71,9 @@ public class RepositoryManager {
 
   public static final String systemVersion = Version.LATEST.toString();
 
-  final HttpSolrClient solrClient;
+  final Http2SolrClient solrClient;
 
-  public RepositoryManager(HttpSolrClient solrClient, PackageManager packageManager) {
+  public RepositoryManager(Http2SolrClient solrClient, PackageManager packageManager) {
     this.packageManager = packageManager;
     this.solrClient = solrClient;
   }
@@ -136,13 +137,13 @@ public class RepositoryManager {
   public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
     // get solr_home directory from info servlet
     String systemInfoUrl = solrClient.getBaseURL() + "/solr/admin/info/system";
-    Map<String,Object> systemInfo = SolrCLI.getJson(solrClient.getHttpClient(), systemInfoUrl, 2, true);
+    Map<String,Object> systemInfo = SolrCLI.getJson(solrClient, systemInfoUrl, 2, true);
     String solrHome = (String) systemInfo.get("solr_home");
     
     // put the public key into package store's trusted key store and request a sync.
     String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Paths.get(solrHome), solrClient);
-    PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
+    PackageUtils.uploadKey(key, path, Paths.get(solrHome));
+    PackageUtils.getJsonStringFromUrl(solrClient, solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {

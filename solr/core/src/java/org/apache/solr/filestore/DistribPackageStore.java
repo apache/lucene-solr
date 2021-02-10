@@ -198,7 +198,7 @@ public class DistribPackageStore implements PackageStore {
       ByteBuffer metadata = null;
       Map m = null;
       try {
-        metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+        metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getTheSharedHttpClient(),
             baseUrl + "/node/files" + getMetaPath(),
             Utils.newBytesConsumer((int) MAX_PKG_SIZE));
         m = (Map) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
@@ -207,7 +207,7 @@ public class DistribPackageStore implements PackageStore {
       }
 
       try {
-        ByteBuffer filedata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+        ByteBuffer filedata = Utils.executeGET(coreContainer.getUpdateShardHandler().getTheSharedHttpClient(),
             baseUrl + "/node/files" + path,
             Utils.newBytesConsumer((int) MAX_PKG_SIZE));
         String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(filedata));
@@ -235,7 +235,7 @@ public class DistribPackageStore implements PackageStore {
           String reqUrl = url + "/node/files" + path +
               "?meta=true&wt=javabin&omitHeader=true";
           boolean nodeHasBlob = false;
-          Object nl = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), reqUrl, Utils.JAVABINCONSUMER);
+          Object nl = Utils.executeGET(coreContainer.getUpdateShardHandler().getTheSharedHttpClient(), reqUrl, Utils.JAVABINCONSUMER);
           if (Utils.getObjectByPath(nl, false, Arrays.asList("files", path)) != null) {
             nodeHasBlob = true;
           }

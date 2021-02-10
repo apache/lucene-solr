@@ -86,8 +86,8 @@ public abstract class DocRouter {
   // TODO: ranges may not be all contiguous in the future (either that or we will
   // need an extra class to model a collection of ranges)
   public static class Range implements JSONWriter.Writable, Comparable<Range> {
-    public int min;  // inclusive
-    public int max;  // inclusive
+    public final int min;  // inclusive
+    public final int max;  // inclusive
 
     public Range(int min, int max) {
       assert min <= max;

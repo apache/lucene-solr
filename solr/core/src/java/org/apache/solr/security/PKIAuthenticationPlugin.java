@@ -34,9 +34,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
 import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -191,13 +189,11 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
     InputStream is = null;
     try {
       String uri = url + PublicKeyHandler.PATH + "?wt=json&omitHeader=true";
-      log.debug("Fetching fresh public key from : {}",uri);
-      HttpResponse rsp = cores.getUpdateShardHandler().getDefaultHttpClient()
-          .execute(new HttpGet(uri), HttpClientUtil.createNewHttpClientRequestContext());
-      is  = rsp.getEntity().getContent();
+      if (log.isDebugEnabled()) log.debug("Fetching fresh public key from : {}",uri);
 
-      byte[] bytes = is.readAllBytes();
-      Map m = (Map) Utils.fromJSON(bytes);
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(uri, cores.getUpdateShardHandler().getTheSharedHttpClient());
+
+      Map m = (Map) Utils.fromJSON(resp.bytes);
       String key = (String) m.get("key");
       if (key == null) {
         log.error("No key available from {} {}", url, PublicKeyHandler.PATH);
