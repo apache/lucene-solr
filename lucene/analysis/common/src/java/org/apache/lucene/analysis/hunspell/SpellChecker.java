@@ -261,12 +261,16 @@ public class SpellChecker {
         return false;
       }
 
-      //noinspection RedundantIfStatement
       if (dictionary.checkCompoundRep
           && isMisspelledSimpleWord(length + nextPartLength, originalCase)) {
         return false;
       }
-      return true;
+
+      String spaceSeparated =
+          new String(tail.chars, tail.offset, length)
+              + " "
+              + new String(tail.chars, tail.offset + length, nextPartLength);
+      return !checkWord(spaceSeparated);
     }
 
     private boolean isMisspelledSimpleWord(int length, WordCase originalCase) {

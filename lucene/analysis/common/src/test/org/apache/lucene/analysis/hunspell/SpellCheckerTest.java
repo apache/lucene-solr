@@ -132,6 +132,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("checkcompoundrep");
   }
 
+  public void testDisallowCompoundsWhenDictionaryContainsSeparatedWordPair() throws Exception {
+    doTest("wordpair");
+  }
+
   public void testCompoundrule() throws Exception {
     doTest("compoundrule");
   }
