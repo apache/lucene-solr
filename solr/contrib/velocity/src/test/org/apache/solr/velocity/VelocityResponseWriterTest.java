@@ -22,7 +22,9 @@ import java.io.StringWriter;
 import java.security.AccessControlException;
 import java.util.Properties;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -39,7 +41,7 @@ import org.junit.Test;
 public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml", getFile("velocity/solr").getAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", SolrTestUtil.getFile("velocity/solr").getAbsolutePath());
   }
 
   @AfterClass
@@ -63,7 +65,7 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   public void testSecureUberspector() throws Exception {
     VelocityResponseWriter vrw = new VelocityResponseWriter();
     NamedList<String> nl = new NamedList<>();
-    nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
+    nl.add("template.base.dir", SolrTestUtil.getFile("velocity").getAbsolutePath());
     vrw.init(nl);
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"outside_the_box");
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -75,10 +77,10 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @Test
   @Ignore("SOLR-14025: Velocity's SecureUberspector addresses this")
   public void testTemplateSandbox() throws Exception {
-    assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
+    LuceneTestCase.assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     VelocityResponseWriter vrw = new VelocityResponseWriter();
     NamedList<String> nl = new NamedList<>();
-    nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
+    nl.add("template.base.dir", SolrTestUtil.getFile("velocity").getAbsolutePath());
     vrw.init(nl);
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"outside_the_box");
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -96,10 +98,10 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @Test
   @Ignore("SOLR-14025: Velocity's SecureUberspector addresses this")
   public void testSandboxIntersection() throws Exception {
-    assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
+    LuceneTestCase.assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     VelocityResponseWriter vrw = new VelocityResponseWriter();
     NamedList<String> nl = new NamedList<>();
-    nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
+    nl.add("template.base.dir", SolrTestUtil.getFile("velocity").getAbsolutePath());
     vrw.init(nl);
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"sandbox_intersection");
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -118,7 +120,7 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   public void testFileResourceLoader() throws Exception {
     VelocityResponseWriter vrw = new VelocityResponseWriter();
     NamedList<String> nl = new NamedList<>();
-    nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
+    nl.add("template.base.dir", SolrTestUtil.getFile("velocity").getAbsolutePath());
     vrw.init(nl);
     SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"file");
     SolrQueryResponse rsp = new SolrQueryResponse();

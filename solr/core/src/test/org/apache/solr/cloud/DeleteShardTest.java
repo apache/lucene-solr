@@ -20,9 +20,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.DistributedQueue;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -36,7 +37,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class DeleteShardTest extends SolrCloudTestCase {
@@ -46,7 +46,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
   
@@ -72,7 +72,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     assertEquals(State.ACTIVE, state.getSlice("s2").getState());
 
     // Can't delete an ACTIVE shard
-    expectThrows(Exception.class, () -> {
+    LuceneTestCase.expectThrows(Exception.class, () -> {
       CollectionAdminRequest.deleteShard(collection, "s1").process(cluster.getSolrClient());
     });
 

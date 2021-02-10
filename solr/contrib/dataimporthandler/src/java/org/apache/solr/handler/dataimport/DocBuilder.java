@@ -184,12 +184,7 @@ public class DocBuilder {
       dataImporter.store(DataImporter.STATUS_MSGS, statusMessages);
       config = dataImporter.getConfig();
       final AtomicLong startTime = new AtomicLong(System.nanoTime());
-      statusMessages.put(TIME_ELAPSED, new Object() {
-        @Override
-        public String toString() {
-          return getTimeElapsedSince(startTime.get());
-        }
-      });
+      statusMessages.put(TIME_ELAPSED, new MyObject(startTime));
 
       statusMessages.put(DataImporter.MSG.TOTAL_QUERIES_EXECUTED,
               importStatistics.queryCount);
@@ -1001,4 +996,17 @@ public class DocBuilder {
 
   public static final String LAST_INDEX_TIME = "last_index_time";
   public static final String INDEX_START_TIME = "index_start_time";
+
+  private static class MyObject {
+    private final AtomicLong startTime;
+
+    public MyObject(AtomicLong startTime) {
+      this.startTime = startTime;
+    }
+
+    @Override
+    public String toString() {
+      return getTimeElapsedSince(startTime.get());
+    }
+  }
 }

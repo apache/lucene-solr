@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.TestRerankBase;
@@ -108,9 +109,8 @@ public class TestLinearModel extends TestRerankBase {
         {"constant1", "constant5"});
     final List<Normalizer> norms =
         new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
-    ModelException ex = expectThrows(ModelException.class, () -> {
-      createLinearModel("test2",
-          features, norms, "test", fstore.getFeatures(), null);
+    ModelException ex = SolrTestCaseUtil.expectThrows(ModelException.class, () -> {
+      createLinearModel("test2", features, norms, "test", fstore.getFeatures(), null);
     });
     assertEquals(expectedException.toString(), ex.toString());
   }
@@ -131,9 +131,8 @@ public class TestLinearModel extends TestRerankBase {
 
     Map<String,Object> params = new HashMap<>();
     params.put("weights", weights);
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      final LTRScoringModel ltrScoringModel = createLinearModel("test3",
-          features, norms, "test", fstore.getFeatures(), params);
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      final LTRScoringModel ltrScoringModel = createLinearModel("test3", features, norms, "test", fstore.getFeatures(), params);
       store.addModel(ltrScoringModel);
       final LTRScoringModel m = store.getModel("test3");
       assertEquals(ltrScoringModel, m);
@@ -156,9 +155,8 @@ public class TestLinearModel extends TestRerankBase {
 
     Map<String,Object> params = new HashMap<>();
     params.put("weights", weights);
-    ModelException ex = expectThrows(ModelException.class, () -> {
-      final LTRScoringModel ltrScoringModel = createLinearModel("test4",
-          features, norms, "test", fstore.getFeatures(), params);
+    ModelException ex = SolrTestCaseUtil.expectThrows(ModelException.class, () -> {
+      final LTRScoringModel ltrScoringModel = createLinearModel("test4", features, norms, "test", fstore.getFeatures(), params);
       store.addModel(ltrScoringModel);
     });
     assertEquals(expectedException.toString(), ex.toString());
@@ -180,9 +178,8 @@ public class TestLinearModel extends TestRerankBase {
 
     Map<String,Object> params = new HashMap<>();
     params.put("weights", weights);
-    ModelException ex = expectThrows(ModelException.class, () -> {
-      createLinearModel("test5",
-          features, norms, "test", fstore.getFeatures(), params);
+    ModelException ex = SolrTestCaseUtil.expectThrows(ModelException.class, () -> {
+      createLinearModel("test5", features, norms, "test", fstore.getFeatures(), params);
     });
     assertEquals(expectedException.toString(), ex.toString());
   }
@@ -200,10 +197,8 @@ public class TestLinearModel extends TestRerankBase {
 
     Map<String,Object> params = new HashMap<>();
     params.put("weights", weights);
-    ModelException ex = expectThrows(ModelException.class, () -> {
-      final LTRScoringModel ltrScoringModel = createLinearModel("test6",
-          features, norms, "test", fstore.getFeatures(),
-          params);
+    ModelException ex = SolrTestCaseUtil.expectThrows(ModelException.class, () -> {
+      final LTRScoringModel ltrScoringModel = createLinearModel("test6", features, norms, "test", fstore.getFeatures(), params);
       store.addModel(ltrScoringModel);
     });
     assertEquals(expectedException.toString(), ex.toString());

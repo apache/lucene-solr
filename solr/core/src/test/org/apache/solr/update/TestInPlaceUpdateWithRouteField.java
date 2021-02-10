@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -58,7 +59,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = TestUtil.nextInt(random(), 1, 3);

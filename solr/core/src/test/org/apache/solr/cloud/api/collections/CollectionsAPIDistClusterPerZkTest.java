@@ -17,8 +17,10 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.curator.shaded.com.google.common.collect.ImmutableList;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -97,9 +99,9 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     }
 
     configureCluster(TEST_NIGHTLY ? 4 : 2)
-        .addConfig("conf", configset(getConfigSet()))
-        .addConfig("conf2", configset(getConfigSet()))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .addConfig("conf", SolrTestUtil.configset(getConfigSet()))
+        .addConfig("conf2", SolrTestUtil.configset(getConfigSet()))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
   }
   
@@ -149,7 +151,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
     String nn1 = cluster.getJettySolrRunner(0).getNodeName();
     String nn2 = cluster.getJettySolrRunner(1).getNodeName();
 
-    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+    LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       CollectionAdminResponse resp = CollectionAdminRequest.createCollection("halfcollection", "conf", 2, 1)
           .setCreateNodeSet(nn1 + "," + nn2)
           .process(cluster.getSolrClient());
@@ -157,7 +159,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // needs 4 nodes
+  @LuceneTestCase.Nightly // needs 4 nodes
   public void testCoresAreDistributedAcrossNodes() throws Exception {
     CollectionAdminRequest.createCollection("nodes_used_collection", "conf", 2, 2)
         .process(cluster.getSolrClient());
@@ -413,7 +415,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void addReplicaTest() throws Exception {
     String collectionName = "addReplicaColl";
 
@@ -434,7 +436,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         cluster.getSolrClient().getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)),
         newReplica.getBaseUrl());
 
-    Path instancePath = createTempDir();
+    Path instancePath = SolrTestUtil.createTempDir();
     response = CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .withProperty(CoreAdminParams.INSTANCE_DIR, instancePath.toString())
         .process(cluster.getSolrClient());

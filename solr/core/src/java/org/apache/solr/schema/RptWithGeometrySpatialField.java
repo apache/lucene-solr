@@ -151,40 +151,7 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
         return targetFuncValues; // no caching; no configured cache
       }
 
-      return new ShapeValues() {
-        int docId = -1;
-
-        @Override
-        public Shape value() throws IOException {
-          //lookup in cache
-          IndexReader.CacheHelper cacheHelper = readerContext.reader().getCoreCacheHelper();
-          if (cacheHelper == null) {
-            throw new IllegalStateException("Leaf " + readerContext.reader() + " is not suited for caching");
-          }
-          PerSegCacheKey key = new PerSegCacheKey(cacheHelper.getKey(), docId);
-          Shape shape = cache.computeIfAbsent(key, k -> {
-            try {
-              return targetFuncValues.value();
-            } catch (IOException e) {
-              return null;
-            }
-          });
-          if (shape != null) {
-            //optimize shape on a cache hit if possible. This must be thread-safe and it is.
-            if (shape instanceof JtsGeometry) {
-              ((JtsGeometry) shape).index(); // TODO would be nice if some day we didn't have to cast
-            }
-          }
-          return shape;
-        }
-
-        @Override
-        public boolean advanceExact(int doc) throws IOException {
-          this.docId = doc;
-          return targetFuncValues.advanceExact(doc);
-        }
-
-      };
+      return new MyShapeValues(readerContext, cache, targetFuncValues);
 
     }
 
@@ -193,6 +160,50 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
       return targetValueSource.isCacheable(ctx);
     }
 
+    private static class MyShapeValues extends ShapeValues {
+      private final LeafReaderContext readerContext;
+      private final SolrCache<PerSegCacheKey,Shape> cache;
+      private final ShapeValues targetFuncValues;
+      int docId;
+
+      public MyShapeValues(LeafReaderContext readerContext, SolrCache<PerSegCacheKey,Shape> cache, ShapeValues targetFuncValues) {
+        this.readerContext = readerContext;
+        this.cache = cache;
+        this.targetFuncValues = targetFuncValues;
+        docId = -1;
+      }
+
+      @Override
+      public Shape value() throws IOException {
+        //lookup in cache
+        IndexReader.CacheHelper cacheHelper = readerContext.reader().getCoreCacheHelper();
+        if (cacheHelper == null) {
+          throw new IllegalStateException("Leaf " + readerContext.reader() + " is not suited for caching");
+        }
+        PerSegCacheKey key = new PerSegCacheKey(cacheHelper.getKey(), docId);
+        Shape shape = cache.computeIfAbsent(key, k -> {
+          try {
+            return targetFuncValues.value();
+          } catch (IOException e) {
+            return null;
+          }
+        });
+        if (shape != null) {
+          //optimize shape on a cache hit if possible. This must be thread-safe and it is.
+          if (shape instanceof JtsGeometry) {
+            ((JtsGeometry) shape).index(); // TODO would be nice if some day we didn't have to cast
+          }
+        }
+        return shape;
+      }
+
+      @Override
+      public boolean advanceExact(int doc) throws IOException {
+        this.docId = doc;
+        return targetFuncValues.advanceExact(doc);
+      }
+
+    }
   }
 
   public static final String CACHE_KEY_PREFIX = "perSegSpatialFieldCache_";//then field name

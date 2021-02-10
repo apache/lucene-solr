@@ -23,12 +23,13 @@ import java.util.Date;
 
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 
 public class DateFieldTest extends SolrTestCaseJ4 {
-  private final String testInstanceDir = TEST_HOME() + File.separator + "collection1";
+  private final String testInstanceDir = SolrTestUtil.TEST_HOME() + File.separator + "collection1";
   private final String testConfHome = testInstanceDir + File.separator + "conf"+ File.separator;
   private FieldType f = null;
 

@@ -23,6 +23,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -50,7 +53,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public static void createCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
     CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2)
         .process(cluster.getSolrClient());
@@ -71,8 +74,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         .withPayload(payload)
         .build();
     v2Request.setResponseParser(responseParser);
-    BaseHttpSolrClient.RemoteSolrException ex =  expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-        () -> v2Request.process(cluster.getSolrClient()));
+    BaseHttpSolrClient.RemoteSolrException ex = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> v2Request.process(cluster.getSolrClient()));
     assertEquals(expectedCode, ex.code());
   }
 
@@ -159,13 +161,14 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  @LuceneTestCase.AwaitsFix(bugUrl = "Flakey test: fails 1/10, or maybe a bit less?")
   public void testCollectionsApi() throws Exception {
     CloudHttp2SolrClient client = cluster.getSolrClient();
-    Map result = resAsMap(client, new V2Request.Builder("/c/"+COLL_NAME+"/get/_introspect").build());
+    Map result = resAsMap(client, new V2Request.Builder("/estLTRReRankingPipelinec/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result = resAsMap(client, new V2Request.Builder("/collections/"+COLL_NAME+"/get/_introspect").build());
     assertEquals("/collections/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
-    String tempDir = createTempDir().toFile().getPath();
+    String tempDir = SolrTestUtil.createTempDir().toFile().getPath();
     Map<String, Object> backupPayload = new HashMap<>();
     Map<String, Object> backupParams = new HashMap<>();
     backupPayload.put("backup-collection", backupParams);

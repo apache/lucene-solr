@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
@@ -31,7 +32,7 @@ import org.junit.Test;
  * Tests that defaults are set for Primitive (non-analyzed) fields
  */
 public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
-  private final String testConfHome = TEST_HOME() + File.separator + "collection1" + File.separator + "conf"+ File.separator; 
+  private final String testConfHome = SolrTestUtil.TEST_HOME() + File.separator + "collection1" + File.separator + "conf"+ File.separator;
   protected SolrConfig config;
   protected IndexSchema schema;
   protected HashMap<String,String> initMap;
@@ -46,7 +47,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
 
     initMap = new HashMap<>();
-    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
       config = new SolrConfig(loader, testConfHome + "solrconfig.xml");
     }
   }

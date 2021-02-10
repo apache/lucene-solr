@@ -49,6 +49,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -113,7 +115,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
   }
 
   @Override
@@ -130,7 +132,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   public void testCreateErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    solrCluster.uploadConfigSet(configset("configset-2"), "configSet");
+    solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), "configSet");
 
     // no action
     CreateNoErrorChecking createNoAction = new CreateNoErrorChecking();
@@ -177,8 +179,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   private void setupBaseConfigSet(String baseConfigSetName, Map<String, String> oldProps) throws Exception {
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
+    final File configDir = SolrTestUtil.getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+    final File tmpConfigDir = SolrTestUtil.createTempDir().toFile();
     tmpConfigDir.deleteOnExit();
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null && oldProps.size() > 0) {
@@ -355,9 +357,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
       final String untrustedSuffix = "-untrusted";
       uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
-      Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-        createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
-      1, 1, solrCluster.getSolrClient());
+      Throwable thrown = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+        createCollection("newcollection2", "with-script-processor" + untrustedSuffix, 1, 1, solrCluster.getSolrClient());
       });
 
     assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
@@ -381,7 +382,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final String untrustedSuffix = "-untrusted";
     uploadConfigSetWithAssertions("with-lib-directive", untrustedSuffix, null, null);
     // try to create a collection with the uploaded configset
-    Throwable thrown = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+    Throwable thrown = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       createCollection("newcollection3", "with-lib-directive" + untrustedSuffix, 1, 1, solrCluster.getSolrClient());
     });
 
@@ -499,7 +500,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     File zipFile = new File(solrCluster.getBaseDir().toFile().getAbsolutePath() +
         File.separator + TestUtil.randomSimpleString(random(), 6, 8) + ".zip");
 
-    File directory = SolrTestCaseJ4.getFile(directoryPath);
+    File directory = SolrTestUtil.getFile(directoryPath);
     if (log.isInfoEnabled()) {
       log.info("Directory: {}", directory.getAbsolutePath());
     }
@@ -635,7 +636,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private byte[] readFile(String fname) throws IOException {
     byte[] buf = null;
-    try (FileInputStream fis = new FileInputStream(getFile(fname))) {
+    try (FileInputStream fis = new FileInputStream(SolrTestUtil.getFile(fname))) {
       buf = new byte[fis.available()];
       fis.read(buf);
     }
@@ -646,8 +647,8 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   public void testDeleteErrors() throws Exception {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
-    final File configDir = getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
-    final File tmpConfigDir = createTempDir().toFile();
+    final File configDir = SolrTestUtil.getFile("solr").toPath().resolve("configsets/configset-2/conf").toFile();
+    final File tmpConfigDir = SolrTestUtil.createTempDir().toFile();
     tmpConfigDir.deleteOnExit();
     // Ensure ConfigSet is immutable
     FileUtils.copyDirectory(configDir, tmpConfigDir);
@@ -672,7 +673,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
   private void verifyException(SolrClient solrClient, ConfigSetAdminRequest request,
       String errorContains) throws Exception {
-    Exception e = expectThrows(Exception.class, () -> solrClient.request(request));
+    Exception e = SolrTestCaseUtil.expectThrows(Exception.class, () -> solrClient.request(request));
     assertTrue("Expected exception message to contain: " + errorContains
         + " got: " + e.getMessage(), e.getMessage().contains(errorContains));
   }
@@ -682,7 +683,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final String configSet = "configSet";
-    solrCluster.uploadConfigSet(configset("configset-2"), configSet);
+    solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), configSet);
 
     SolrZkClient zkClient = zkClient();
     ZkConfigManager configManager = new ZkConfigManager(zkClient);
@@ -713,7 +714,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     Set<String> configSets = new HashSet<String>();
     for (int i = 0; i < 5; ++i) {
       String configSet = "configSet" + i;
-      solrCluster.uploadConfigSet(configset("configset-2"), configSet);
+      solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), configSet);
       configSets.add(configSet);
     }
     response = list.process(solrClient);

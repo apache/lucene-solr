@@ -26,6 +26,8 @@ import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -74,7 +76,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
 
-    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), buildJettyConfig("/solr"));
+    miniCluster = new MiniSolrCloudCluster(NUM_SERVERS, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
     JettySolrRunner runnerPrimary = miniCluster.getJettySolrRunners().get(0);
     solrClientPrimary =
         new HttpSolrClient.Builder(runnerPrimary.getBaseUrl().toString())
@@ -434,8 +436,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
       // test with param -- should throw an exception
       ModifiableSolrParams tokenParam = new ModifiableSolrParams();
       tokenParam.set("delegation", "invalidToken");
-      expectThrows(IllegalArgumentException.class,
-          () -> doSolrRequest(ssWToken, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
+      SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> doSolrRequest(ssWToken, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
     } finally {
       ssWToken.close();
     }

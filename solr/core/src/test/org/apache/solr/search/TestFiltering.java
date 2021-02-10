@@ -25,6 +25,7 @@ import java.util.Locale;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -406,12 +407,12 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomFiltering() throws Exception {
-    int indexIter=(TEST_NIGHTLY ? 5 : 2) * RANDOM_MULTIPLIER;
-    int queryIter=(TEST_NIGHTLY ? 250 : 25) * RANDOM_MULTIPLIER;
+    int indexIter=(TEST_NIGHTLY ? 5 : 2) * LuceneTestCase.RANDOM_MULTIPLIER;
+    int queryIter=(TEST_NIGHTLY ? 250 : 25) * LuceneTestCase.RANDOM_MULTIPLIER;
     Model model = new Model();
 
     for (int iiter = 0; iiter<indexIter; iiter++) {
-      model.indexSize = random().nextInt((TEST_NIGHTLY ? 40 : 15) * RANDOM_MULTIPLIER) + 1;
+      model.indexSize = random().nextInt((TEST_NIGHTLY ? 40 : 15) * LuceneTestCase.RANDOM_MULTIPLIER) + 1;
       clearIndex();
 
       for (int i=0; i<model.indexSize; i++) {

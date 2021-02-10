@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient.Builder;
@@ -50,7 +51,7 @@ public class ConcurrentUpdateSolrClientBuilderTest extends SolrTestCase {
    * Test that connection timeout information is passed to the HttpSolrClient that handles non add operations.
    */
   @Test(timeout = 10000)
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testSocketTimeoutOnCommit() throws IOException, SolrServerException {
     InetAddress localHost = InetAddress.getLocalHost(); // this can fail java.net.BindException: Can't assign requested address (Bind failed) (seen on OSX)
     try (ServerSocket server = new ServerSocket(0, 1, localHost);

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.JavabinTupleStreamParser;
@@ -186,7 +187,7 @@ public class TestJavabinTupleStreamParser extends SolrTestCaseJ4 {
     }
     assertEquals(l.size(), list.size());
     for(int i =0;i<list.size();i++){
-      compareSolrDocument(l.get(i),new SolrDocument((Map<String, Object>) list.get(i)));
+      SolrTestUtil.compareSolrDocument(l.get(i), new SolrDocument((Map<String,Object>) list.get(i)));
     }
 
   }

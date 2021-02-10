@@ -53,7 +53,10 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -664,11 +667,11 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     topDocument.addField("parent_f1", "v1");
     topDocument.addField("parent_f2", "v2");
 
-    int childsNum = atLeast(10);
+    int childsNum = SolrTestUtil.atLeast(10);
     Map<String, SolrInputDocument> children = new HashMap<>(childsNum);
     for(int i = 0; i < childsNum; ++i) {
       SolrInputDocument child = new SolrInputDocument();
-      child.addField("key", (i + 5) * atLeast(4));
+      child.addField("key", (i + 5) * SolrTestUtil.atLeast(4));
       String childKey = String.format(Locale.ROOT, "child%d", i);
       topDocument.addField(childKey, child);
       children.put(childKey, child);
@@ -695,7 +698,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     topDocument.addField("parent_f1", "v1");
     topDocument.addField("parent_f2", "v2");
 
-    int childsNum = atLeast(10);
+    int childsNum = SolrTestUtil.atLeast(10);
     for (int index = 0; index < childsNum; ++index) {
       addChildren("child", topDocument, index, false);
     }
@@ -889,7 +892,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
           assertBlockU(msg);
           return null;
         });
-        if (rarely()) {
+        if (LuceneTestCase.rarely()) {
           rez.add(() -> {
             assertBlockU(commit());
             return null;
@@ -905,7 +908,7 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
   }
 
   private void assertFailedBlockU(final String msg) {
-    expectThrows(Exception.class, () -> assertBlockU(msg, "1"));
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> assertBlockU(msg, "1"));
   }
 
   private void assertBlockU(final String msg, String expected) {

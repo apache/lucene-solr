@@ -17,13 +17,14 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +48,8 @@ public class TestPrepRecovery extends SolrCloudTestCase {
 
     
     configureCluster(2)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
   }
 
@@ -86,7 +87,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testLeaderNotResponding() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
 

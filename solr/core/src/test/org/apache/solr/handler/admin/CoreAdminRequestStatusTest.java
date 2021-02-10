@@ -22,6 +22,7 @@ import java.nio.file.Path;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -40,7 +41,7 @@ public class CoreAdminRequestStatusTest extends SolrTestCaseJ4{
 
   @Test
   public void testCoreAdminRequestStatus() throws Exception {
-    final File workDir = createTempDir().toFile();
+    final File workDir = SolrTestUtil.createTempDir().toFile();
 
     final CoreContainer cores = h.getCoreContainer();
 

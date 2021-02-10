@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -76,7 +77,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     SolrTestCaseJ4.randomizeNumericTypesProperties();
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", configset("cloud-managed"))
+        .addConfig("conf1", SolrTestUtil.configset("cloud-managed"))
         .configure();
 
     // Need enough shards that we have some shards that don't have any docs on them.

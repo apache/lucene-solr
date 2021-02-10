@@ -181,7 +181,7 @@ public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   /** Tests JSON Facet module implementation of heatmaps. */
   @SuppressWarnings("unchecked")
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testJsonFacets() throws Exception {
     /*
     THIS IS THE MOSTLY SAME CODE as above with tweaks to request it using the JSON Facet approach.

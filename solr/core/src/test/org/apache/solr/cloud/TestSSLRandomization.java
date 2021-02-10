@@ -21,6 +21,7 @@ import java.util.Arrays;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
@@ -210,9 +211,9 @@ public class TestSSLRandomization extends SolrCloudTestCase {
     for (Class c : Arrays.asList(SSLOutOfRangeAnnotated.class,
                                  ClientAuthOutOfRangeAnnotated.class,
                                  InheritedOutOfRangeAnnotated.class)) {
-      expectThrows(IllegalArgumentException.class, () -> {
-          Object trash = SSLRandomizer.getSSLRandomizerForClass(c);
-        });
+      SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+        Object trash = SSLRandomizer.getSSLRandomizerForClass(c);
+      });
     }
     
   }

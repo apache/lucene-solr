@@ -113,7 +113,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     if (schemaFile != null)
       nodeProps.setProperty("schema", schemaFile);
     if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
-      nodeProps.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
+      nodeProps.setProperty("solr.data.dir", SolrTestUtil.createTempDir().toFile().getCanonicalPath());
     }
 
     return createAndStartJetty(solrHome, nodeProps, jettyConfig);
@@ -134,7 +134,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   public static JettySolrRunner createAndStartJetty(String solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
 
 
-    Path coresDir = createTempDir().resolve("cores");
+    Path coresDir = SolrTestUtil.createTempDir().resolve("cores");
 
     Properties props = new Properties();
     props.setProperty("name", DEFAULT_TEST_CORENAME);

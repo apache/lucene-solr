@@ -31,8 +31,10 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -63,7 +65,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     
     differentUniqueId = random().nextBoolean();
     
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
@@ -97,8 +99,8 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   @SuppressWarnings("serial")
   @Test
   public void test() throws Exception {
-    int peopleMultiplier = atLeast(1);
-    int deptMultiplier = atLeast(1);
+    int peopleMultiplier = SolrTestUtil.atLeast(1);
+    int deptMultiplier = SolrTestUtil.atLeast(1);
     
     createIndex(people, peopleMultiplier, depts, deptMultiplier);
     
@@ -226,10 +228,10 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     for (Iterator<String> iterator = docs.iterator(); iterator.hasNext();) {
       String add =  iterator.next();
       upd.append(add);
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         upd.append(SolrTestCaseJ4.commit("softCommit", "true"));
       }
-      if (rarely() || !iterator.hasNext()) {
+      if (LuceneTestCase.rarely() || !iterator.hasNext()) {
         if (!iterator.hasNext()) {
           upd.append(SolrTestCaseJ4.commit("softCommit", "false"));
         }

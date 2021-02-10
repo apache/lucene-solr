@@ -30,8 +30,10 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableList;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -84,8 +86,8 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public static void beforeCollectionsAPISolrJTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster( TEST_NIGHTLY ? 4 : 2).formatZk(true)
-            .addConfig("conf", configset("cloud-minimal"))
-            .addConfig("conf2", configset("cloud-dynamic"))
+            .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
+            .addConfig("conf2", SolrTestUtil.configset("cloud-dynamic"))
             .configure();
   }
 
@@ -125,7 +127,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testCreateCollWithDefaultClusterPropertiesNewFormat() throws Exception {
     String COLL_NAME = "CollWithDefaultClusterProperties";
       V2Response rsp = new V2Request.Builder("/cluster")
@@ -379,7 +381,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
     String collectionName = "solrj_test_core_props";
 
-    Path tmpDir = createTempDir("testPropertyParamsForCreate");
+    Path tmpDir = SolrTestUtil.createTempDir("testPropertyParamsForCreate");
     Path dataDir = tmpDir.resolve("dataDir-" + TestUtil.randomSimpleString(random(), 1, 5));
     Path ulogDir = tmpDir.resolve("ulogDir-" + TestUtil.randomSimpleString(random(), 1, 5));
 
@@ -508,7 +510,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testColStatus() throws Exception {
     final String collectionName = "collectionStatusTest";
     CollectionAdminRequest.createCollection(collectionName, "conf2", 2, 2)
@@ -573,7 +575,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "Alias issue")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Alias issue")
   public void testRenameCollection() throws Exception {
     doTestRenameCollection(true);
     CollectionAdminRequest.deleteAlias("col1").process(cluster.getSolrClient());
@@ -827,21 +829,21 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForState("Expecting attribute 'router' to be deleted", collection,
         (n, c) -> null == c.get("router"));
 
-    expectThrows(IllegalArgumentException.class,
+    LuceneTestCase.expectThrows(IllegalArgumentException.class,
         "An attempt to set unknown collection attribute should have failed",
         () -> CollectionAdminRequest.modifyCollection(collection, null)
             .setAttribute("non_existent_attr", 25)
             .process(cluster.getSolrClient())
     );
 
-    expectThrows(IllegalArgumentException.class,
+    LuceneTestCase.expectThrows(IllegalArgumentException.class,
         "An attempt to set null value should have failed",
         () -> CollectionAdminRequest.modifyCollection(collection, null)
             .setAttribute("non_existent_attr", null)
             .process(cluster.getSolrClient())
     );
 
-    expectThrows(IllegalArgumentException.class,
+    LuceneTestCase.expectThrows(IllegalArgumentException.class,
         "An attempt to unset unknown collection attribute should have failed",
         () -> CollectionAdminRequest.modifyCollection(collection, null)
             .unsetAttribute("non_existent_attr")

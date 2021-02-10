@@ -49,28 +49,38 @@ public class CalciteJDBCStream extends JDBCStream {
       final String columnName = metadata.getColumnLabel(columnNumber);
       final String className = metadata.getColumnClassName(columnNumber);
       if (Array.class.getName().equals(className)) {
-        valueSelector = new ResultSetValueSelector() {
-          @Override
-          public Object selectValue(ResultSet resultSet) throws SQLException {
-            Object o = resultSet.getObject(columnNumber);
-            if (resultSet.wasNull()) {
-              return null;
-            }
-            if (o instanceof Array) {
-              Array array = (Array) o;
-              return array.getArray();
-            } else {
-              return o;
-            }
-          }
-
-          @Override
-          public String getColumnName() {
-            return columnName;
-          }
-        };
+        valueSelector = new MyResultSetValueSelector(columnNumber, columnName);
       }
     }
     return valueSelector;
+  }
+
+  private static class MyResultSetValueSelector implements ResultSetValueSelector {
+    private final int columnNumber;
+    private final String columnName;
+
+    public MyResultSetValueSelector(int columnNumber, String columnName) {
+      this.columnNumber = columnNumber;
+      this.columnName = columnName;
+    }
+
+    @Override
+    public Object selectValue(ResultSet resultSet) throws SQLException {
+      Object o = resultSet.getObject(columnNumber);
+      if (resultSet.wasNull()) {
+        return null;
+      }
+      if (o instanceof Array) {
+        Array array = (Array) o;
+        return array.getArray();
+      } else {
+        return o;
+      }
+    }
+
+    @Override
+    public String getColumnName() {
+      return columnName;
+    }
   }
 }

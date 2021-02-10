@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -278,7 +279,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   @Test
   @Ignore("Fix Me. See SOLR-4103.")
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
-    File tmpdir = createTempDir().toFile();
+    File tmpdir = SolrTestUtil.createTempDir().toFile();
 
     @SuppressWarnings({"unchecked"})
     Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());

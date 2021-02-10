@@ -113,28 +113,7 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
     Double exponent = params.get(EXPONENT) == null ? null : Double.valueOf(params.get(EXPONENT).toString());
 
     try {
-      return new BlendedInfixSuggester(FSDirectory.open(new File(indexPath).toPath()),
-                                       indexAnalyzer, queryAnalyzer, minPrefixChars,
-                                       blenderType, numFactor, exponent, true,
-                                       allTermsRequired, highlight) {
-        @Override
-        public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-          List<LookupResult> res = super.lookup(key, contexts, num, allTermsRequired, doHighlight);
-          if (doHighlight) {
-            List<LookupResult> res2 = new ArrayList<>();
-            for(LookupResult hit : res) {
-              res2.add(new LookupResult(hit.highlightKey.toString(),
-                                        hit.highlightKey,
-                                        hit.value,
-                                        hit.payload,
-                                        hit.contexts));
-            }
-            res = res2;
-          }
-
-          return res;
-        }
-      };
+      return new MyBlendedInfixSuggester(indexPath, indexAnalyzer, queryAnalyzer, minPrefixChars, blenderType, numFactor, exponent, allTermsRequired, highlight);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -152,5 +131,30 @@ public class BlendedInfixLookupFactory extends AnalyzingInfixLookupFactory {
       blenderType = BlenderType.valueOf(blenderTypeStr);
     }
     return blenderType;
+  }
+
+  private static class MyBlendedInfixSuggester extends BlendedInfixSuggester {
+    public MyBlendedInfixSuggester(String indexPath, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars, BlenderType blenderType, int numFactor, Double exponent,
+        boolean allTermsRequired, boolean highlight) throws IOException {
+      super(FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer, queryAnalyzer, minPrefixChars, blenderType, numFactor, exponent, true, allTermsRequired, highlight);
+    }
+
+    @Override
+    public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+      List<LookupResult> res = super.lookup(key, contexts, num, allTermsRequired, doHighlight);
+      if (doHighlight) {
+        List<LookupResult> res2 = new ArrayList<>();
+        for(LookupResult hit : res) {
+          res2.add(new LookupResult(hit.highlightKey.toString(),
+                                    hit.highlightKey,
+                                    hit.value,
+                                    hit.payload,
+                                    hit.contexts));
+        }
+        res = res2;
+      }
+
+      return res;
+    }
   }
 }

@@ -23,6 +23,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 
@@ -59,7 +60,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
       openCalled = true;
 
       // we pass NoLockFactory, because the real lock factory is set later by injectLockFactory:
-      return dir = newFSDirectory(new File(path).toPath(), lockFactory);
+      return dir = LuceneTestCase.newFSDirectory(new File(path).toPath(), lockFactory);
     }
 
   }

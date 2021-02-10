@@ -16,6 +16,8 @@
  */
 package org.apache.solr.search.join;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -49,12 +51,12 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     vals = new ArrayList<>();
-    final int numVals = atLeast(10);
+    final int numVals = SolrTestUtil.atLeast(10);
     for (int i=0; i < numVals; i++) {
       vals.add(""+Integer.toString(random().nextInt(100000), Character.MAX_RADIX));
     }
     
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
 
     String configName = "solrCloudCollectionConfig";
     int nodeCount = 5;
@@ -76,7 +78,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     {
       int id = 42;
       final List<SolrInputDocument> docs = new ArrayList<>();
-      final int parentsNum = atLeast(20);
+      final int parentsNum = SolrTestUtil.atLeast(20);
           ;
       for (int i=0; i<parentsNum || (matchingParent==null ||matchingChild==null); i++) {
         final String parentTieVal = "" + random().nextInt(5);
@@ -87,14 +89,14 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
             "parent_id_s1", parentId
             );
         final List<String> parentFilter = addValsField(parent, "parentFilter_s");
-        final int kids = usually() ? atLeast(20) : 0;
+        final int kids = LuceneTestCase.usually() ? SolrTestUtil.atLeast(20) : 0;
         for(int c = 0; c< kids; c++){
           SolrInputDocument child = new SolrInputDocument("id", ""+(id++),
               "type_s", "child",
               "parentTie_s1", parentTieVal,
               "parent_id_s1", parentId);
           child.addField("parentFilter_s", parentFilter);
-          if (usually()) {
+          if (LuceneTestCase.usually()) {
             child.addField( "val_s1", Integer.toString(random().nextInt(1000), Character.MAX_RADIX)+"" );
           }
           final List<String> chVals = addValsField(child, "childFilter_s");
@@ -103,7 +105,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
           // let's pickup at least matching child
           final boolean canPickMatchingChild = !chVals.isEmpty() && !parentFilter.isEmpty();
           final boolean haveNtPickedMatchingChild = matchingParent==null ||matchingChild==null;
-          if (canPickMatchingChild && haveNtPickedMatchingChild && usually()) {
+          if (canPickMatchingChild && haveNtPickedMatchingChild && LuceneTestCase.usually()) {
             matchingParent = (String) parentFilter.iterator().next();
             matchingChild = (String) chVals.iterator().next();
           }
@@ -135,7 +137,7 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
     String childFilter = "+childFilter_s:("+matchingChild+" "+anyValsSpaceDelim(4)+")^=0";
     final String fl = "id,type_s,parent_id_s1,val_s1,score,parentFilter_s,childFilter_s,parentTie_s1";
     String sortClause = "val_s1 "+dir+", "+"parent_id_s1 "+ascDesc();
-    if(rarely()) {
+    if(LuceneTestCase.rarely()) {
       sortClause ="parentTie_s1 "+ascDesc()+","+sortClause;
     }
     final SolrQuery q = new SolrQuery("q", "+type_s:child^=0 "+parentFilter+" "+

@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -66,7 +67,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(1).addConfig("conf", SolrTestUtil.configset("cloud-minimal")).configure();
   }
   
   @After

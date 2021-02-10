@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -52,7 +53,7 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-    File tempDir = createTempDir("TestCSVLoader").toFile();
+    File tempDir = SolrTestUtil.createTempDir("TestCSVLoader").toFile();
     file = new File(tempDir, "solr_tmp.csv");
     filename = file.getPath();
     cleanup();

@@ -20,6 +20,7 @@ import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -38,7 +39,7 @@ public class TestTestInjection extends SolrTestCase {
   public void testBasics() {
     TestInjection.failReplicaRequests = "true:100";
 
-    Exception e = expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
+    Exception e = SolrTestCaseUtil.expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
     assertFalse("Should not fail based on bad syntax",
         e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
     
@@ -71,7 +72,7 @@ public class TestTestInjection extends SolrTestCase {
 
   public void testBadSyntax(String syntax) {
     TestInjection.failReplicaRequests = syntax;
-    Exception e = expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
+    Exception e = SolrTestCaseUtil.expectThrows(Exception.class, TestInjection::injectFailReplicaRequests);
     assertTrue(e.getMessage().toLowerCase(Locale.ENGLISH).contains("bad syntax"));
   }
   

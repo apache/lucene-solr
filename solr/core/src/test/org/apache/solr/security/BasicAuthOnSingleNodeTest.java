@@ -19,6 +19,7 @@ package org.apache.solr.security;
 
 import java.lang.invoke.MethodHandles;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -38,7 +39,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .withSecurityJson(STD_CONF)
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 4, 1)

@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
@@ -60,11 +61,11 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
+      log.info("####SETUP_START {}", SolrTestUtil.getTestName());
     }
-    createTempDir();
+    SolrTestUtil.createTempDir();
     
-    zkDir = createTempDir().resolve("zookeeper/server1/data");
+    zkDir = SolrTestUtil.createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run(false);
@@ -99,7 +100,7 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     zkClient.close();
 
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
+      log.info("####SETUP_END {}", SolrTestUtil.getTestName());
     }
   }
   

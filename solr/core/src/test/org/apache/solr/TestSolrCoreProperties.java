@@ -49,7 +49,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTestSolrCoreProperties() throws Exception {
-    File homeDir = createTempDir().toFile();
+    File homeDir = SolrTestUtil.createTempDir().toFile();
 
     File collDir = new File(homeDir, "collection1");
     File dataDir = new File(collDir, "data");
@@ -60,8 +60,8 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     dataDir.mkdirs();
     confDir.mkdirs();
 
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
-    String src_dir = TEST_HOME() + "/collection1/conf";
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    String src_dir = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(src_dir, "schema-tiny.xml"), 
                        new File(confDir, "schema.xml"));
     FileUtils.copyFile(new File(src_dir, "solrconfig-solcoreproperties.xml"), 
@@ -82,7 +82,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     Properties nodeProperties = new Properties();
     // this sets the property for jetty starting SolrDispatchFilter
     if (System.getProperty("solr.data.dir") == null && System.getProperty("solr.hdfs.home") == null) {
-      nodeProperties.setProperty("solr.data.dir", createTempDir().toFile().getCanonicalPath());
+      nodeProperties.setProperty("solr.data.dir", SolrTestUtil.createTempDir().toFile().getCanonicalPath());
     }
     jetty = new JettySolrRunner(homeDir.getAbsolutePath(), nodeProperties, buildJettyConfig("/solr"));
 

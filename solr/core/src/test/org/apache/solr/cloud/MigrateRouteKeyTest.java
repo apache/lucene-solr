@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -49,7 +50,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -89,7 +90,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(targetCollection, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-    BaseHttpSolrClient.RemoteSolrException remoteSolrException = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+    BaseHttpSolrClient.RemoteSolrException remoteSolrException = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
         "Expected an exception in case split.key is not specified", () -> {
           CollectionAdminRequest.migrateData(sourceCollection, targetCollection, "")
               .setForwardTimeout(45)
@@ -99,7 +100,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void multipleShardMigrateTest() throws Exception  {
 
     CollectionAdminRequest.createCollection("sourceCollection", "conf", 2, 1).process(cluster.getSolrClient());

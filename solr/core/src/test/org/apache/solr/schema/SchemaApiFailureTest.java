@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -54,8 +55,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
         (Utils.makeMap("name","myfield", "type","string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);
 
-    BaseHttpSolrClient.RemoteExecutionException ex = expectThrows(BaseHttpSolrClient.RemoteExecutionException.class,
-        () -> fieldAddition.process(client, COLLECTION));
+    BaseHttpSolrClient.RemoteExecutionException ex = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, () -> fieldAddition.process(client, COLLECTION));
 
     assertTrue("expected error message 'Field 'myfield' already exists'.",Utils.getObjectByPath(ex.getMetaData(), false, "error/details[0]/errorMessages[0]").toString().contains("Field 'myfield' already exists.") );
 

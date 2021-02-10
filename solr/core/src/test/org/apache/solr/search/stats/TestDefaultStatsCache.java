@@ -50,7 +50,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
         int currentId = docId++;
         index_specific(i, id,currentId , "a_t", "one two three",
             "shard_i", shard);
-        aDocId = rarely() ? currentId+"":aDocId;
+        aDocId = LuceneTestCase.rarely() ? currentId+"":aDocId;
       }
     }
     commit();
@@ -70,7 +70,7 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
         int currentId = docId++;
         index_specific(i, id, currentId, "a_t", "one two three four five",
             "shard_i", shard);
-        aDocId = rarely() ? currentId+"":aDocId;
+        aDocId = LuceneTestCase.rarely() ? currentId+"":aDocId;
       }
     }
     commit();

@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.junit.Test;
@@ -253,7 +254,7 @@ public class PreAnalyzedFieldTest extends SolrTestCaseJ4 {
       // use JSON format
       args.put(PreAnalyzedField.PARSER_IMPL, JsonPreAnalyzedParser.class.getName());
       paf.init(core.getLatestSchema(), args);
-      expectThrows(Exception.class, () -> paf.fromString(field, valid[0]));
+      SolrTestCaseUtil.expectThrows(Exception.class, () -> paf.fromString(field, valid[0]));
 
       byte[] deadbeef = new byte[] {(byte) 0xd, (byte) 0xe, (byte) 0xa, (byte) 0xd, (byte) 0xb, (byte) 0xe, (byte) 0xe, (byte) 0xf};
       PreAnalyzedParser parser = new JsonPreAnalyzedParser();

@@ -22,6 +22,7 @@ import java.security.Principal;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.http.client.HttpClient;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -54,7 +55,7 @@ public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
                "authentication", singletonMap("class", MockAuthenticationPlugin.class.getName())));
     
     configureCluster(2)
-      .addConfig("conf", configset("cloud-minimal"))
+      .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
       .withSecurityJson(SECURITY_CONF)
       .configure();
 

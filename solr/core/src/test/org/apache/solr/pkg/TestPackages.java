@@ -26,6 +26,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -102,7 +103,7 @@ public class TestPackages extends SolrCloudTestCase {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
             .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("conf", configset("cloud-minimal"))
+            .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
             .configure();
     try {
       String FILE1 = "/mypkg/runtimelibs.jar";
@@ -482,7 +483,7 @@ public class TestPackages extends SolrCloudTestCase {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
             .withJettyConfig(jetty -> jetty.enableV2(true))
-            .addConfig("conf", configset("cloud-minimal"))
+            .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
             .configure();
     try {
       String errPath = "/error/details[0]/errorMessages[0]";

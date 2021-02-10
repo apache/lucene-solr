@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.request.json;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
@@ -26,7 +27,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidFieldName() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new HeatmapFacetMap(null);
     });
     assertThat(thrown.getMessage(), containsString("must be non-null"));
@@ -40,7 +41,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDoesntSupportSubfacets() {
-    final Throwable thrown = expectThrows(UnsupportedOperationException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(UnsupportedOperationException.class, () -> {
       new HeatmapFacetMap("ANY_FIELD_NAME")
           .withSubFacet("ANY_NAME", new TermsFacetMap("ANY_OTHER_FIELD_NAME"));
     });
@@ -49,7 +50,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidRegionQueries() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new HeatmapFacetMap("ANY_FIELD_NAME")
           .setRegionQuery(null);
     });
@@ -65,7 +66,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidCellSize() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new HeatmapFacetMap("ANY_FIELD_NAME")
           .setGridLevel(0);
     });
@@ -81,7 +82,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidDistanceError() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new HeatmapFacetMap("ANY_FIELD_NAME")
           .setDistErr(-1.0);
     });
@@ -97,7 +98,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidDistanceErrorPercentageWithCorrectKey() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new HeatmapFacetMap("ANY_FIELD_NAME")
           .setDistErrPct(2.0);
     });
@@ -113,7 +114,7 @@ public class HeatmapFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidHeatmapFormat() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new HeatmapFacetMap("ANY_FIELD_NAME")
           .setHeatmapFormat(null);
     });

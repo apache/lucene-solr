@@ -24,6 +24,8 @@ import java.util.concurrent.Executors;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -231,9 +233,8 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
             params("update.chain","external-version-failhard"));
     assertU(commit());
 
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      updateJ(jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "42")),
-          params("update.chain","external-version-failhard"));
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "42")), params("update.chain", "external-version-failhard"));
     });
     assertEquals(409, ex.code());
 
@@ -241,9 +242,8 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     assertJQ(req("qt","/get", "id","aaa", "fl","name")
              , "=={'doc':{'name':'a1'}}");
 
-    ex = expectThrows(SolrException.class, () -> {
-      deleteAndGetVersion("aaa", params("del_version", "7",
-          "update.chain","external-version-failhard"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      deleteAndGetVersion("aaa", params("del_version", "7", "update.chain", "external-version-failhard"));
     });
     assertEquals(409, ex.code());
 
@@ -254,9 +254,8 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     // fail low version delete against uncommitted doc from updateLog
     updateJ(jsonAdd(sdoc("id", "aaa", "name", "a2", "my_version_l", "1002")), 
             params("update.chain","external-version-failhard"));
-    ex = expectThrows(SolrException.class, () -> {
-      deleteAndGetVersion("aaa", params("del_version", "8",
-          "update.chain","external-version-failhard"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      deleteAndGetVersion("aaa", params("del_version", "8", "update.chain", "external-version-failhard"));
     });
     assertEquals(409, ex.code());
 
@@ -271,9 +270,8 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
     // fail low version add against uncommitted "delete" from updateLog
     deleteAndGetVersion("aaa", params("del_version", "1010",
                                       "update.chain","external-version-failhard"));
-    ex = expectThrows(SolrException.class, () -> {
-      updateJ(jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1005")),
-          params("update.chain","external-version-failhard"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1005")), params("update.chain", "external-version-failhard"));
     });
     assertEquals(409, ex.code());
 
@@ -287,9 +285,8 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
 
     // fail low version add against committed "delete"
     // (delete was already done & committed above)
-    ex = expectThrows(SolrException.class, () -> {
-      updateJ(jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1009")),
-          params("update.chain","external-version-failhard"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "XX", "my_version_l", "1009")), params("update.chain", "external-version-failhard"));
     });
     assertEquals(409, ex.code());
 
@@ -308,22 +305,19 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
       params("update.chain","external-version-failhard-multiple"));
     assertU(commit());
     // All variations of additional versions should fail other than my_version_l greater or my_version_f greater.
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X1", "my_version_l", "1000", "my_version_f", "1.0")),
-          params("update.chain","external-version-failhard-multiple"));
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X1", "my_version_l", "1000", "my_version_f", "1.0")), params("update.chain", "external-version-failhard-multiple"));
     });
     assertEquals(409, ex.code());
 
-    ex = expectThrows(SolrException.class, () -> {
-      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X2", "my_version_l", "1001", "my_version_f", "0.9")),
-          params("update.chain","external-version-failhard-multiple"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X2", "my_version_l", "1001", "my_version_f", "0.9")), params("update.chain", "external-version-failhard-multiple"));
     });
     assertEquals(409, ex.code());
 
     // Also fails on the exact same version
-    ex = expectThrows(SolrException.class, () -> {
-      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X3", "my_version_l", "1001", "my_version_f", "1.0")),
-          params("update.chain","external-version-failhard-multiple"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      updateJ(jsonAdd(sdoc("id", "aaa", "name", "X3", "my_version_l", "1001", "my_version_f", "1.0")), params("update.chain", "external-version-failhard-multiple"));
     });
     assertEquals(409, ex.code());
 
@@ -349,23 +343,20 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
         params("update.chain","external-version-failhard-multiple"));
     assertU(commit());
 
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      deleteAndGetVersion("aaa", params("del_version", "1000", "del_version_2", "1.0",
-          "update.chain","external-version-failhard-multiple"));
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      deleteAndGetVersion("aaa", params("del_version", "1000", "del_version_2", "1.0", "update.chain", "external-version-failhard-multiple"));
     });
     assertEquals(409, ex.code());
 
-    ex = expectThrows(SolrException.class, () -> {
-      deleteAndGetVersion("aaa", params("del_version", "1001", "del_version_2", "0.9",
-          "update.chain","external-version-failhard-multiple"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      deleteAndGetVersion("aaa", params("del_version", "1001", "del_version_2", "0.9", "update.chain", "external-version-failhard-multiple"));
     });
     assertEquals(409, ex.code());
 
     // And just verify if we pass version 1, we still error if version 2 isn't found.
     ignoreException("Delete by ID must specify doc version param");
-    ex = expectThrows(SolrException.class, () -> {
-      deleteAndGetVersion("aaa", params("del_version", "1001",
-          "update.chain","external-version-failhard-multiple"));
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      deleteAndGetVersion("aaa", params("del_version", "1001", "update.chain", "external-version-failhard-multiple"));
     });
     assertEquals(400, ex.code());
     unIgnoreException("Delete by ID must specify doc version param");
@@ -451,15 +442,15 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
    */
   @Ignore // nocommit - something not air tight about DocBasedVersionConstraintsProcessor?
   public void testConcurrentAdds() throws Exception {
-    final int NUM_DOCS = atLeast(50);
-    final int MAX_CONCURENT = atLeast(10);
+    final int NUM_DOCS = SolrTestUtil.atLeast(50);
+    final int MAX_CONCURENT = SolrTestUtil.atLeast(10);
     ExecutorService runner = ExecutorUtil.newMDCAwareFixedThreadPool(MAX_CONCURENT, new SolrNamedThreadFactory("TestDocBasedVersionConstraints"));
     // runner = Executors.newFixedThreadPool(1);    // to test single threaded
     try {
       for (int id = 0; id < NUM_DOCS; id++) {
         final int numAdds = TestUtil.nextInt(random(), 3, MAX_CONCURENT);
         final int winner = TestUtil.nextInt(random(), 0, numAdds - 1);
-        final int winnerVersion = atLeast(100);
+        final int winnerVersion = SolrTestUtil.atLeast(100);
         final boolean winnerIsDeleted = (0 == TestUtil.nextInt(random(), 0, 4));
         List<Callable<Object>> tasks = new ArrayList<>(numAdds);
         for (int variant = 0; variant < numAdds; variant++) {
@@ -510,9 +501,8 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
             params("update.chain", "external-version-constraint"));
 
     ignoreException("Doc exists in index, but has null versionField: my_version_l");
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + newVersion + "}]"),
-          params("update.chain", "external-version-constraint"));
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      updateJ(json("[{\"id\": \"b\", \"name\": \"b1\", \"my_version_l\": " + newVersion + "}]"), params("update.chain", "external-version-constraint"));
     });
     assertEquals("Doc exists in index, but has null versionField: my_version_l", ex.getMessage());
     unIgnoreException("Doc exists in index, but has null versionField: my_version_l");

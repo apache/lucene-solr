@@ -235,7 +235,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
 
     // Check optimistic concurrency works
     long v20 = addAndGetVersion(sdoc("id", "20", "title_s","first", "inplace_updatable_float", 100), params());    
-    SolrException exception = expectThrows(SolrException.class, () -> {
+    SolrException exception = LuceneTestCase.expectThrows(SolrException.class, () -> {
       addAndGetVersion(sdoc("id","20", "_version_", -1, "inplace_updatable_float", map("inc", 1)), null);
     });
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
@@ -245,7 +245,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
 
     long oldV20 = v20;
     v20 = addAndAssertVersion(v20, "id","20", "_version_", v20, "inplace_updatable_float", map("inc", 1));
-    exception = expectThrows(SolrException.class, () -> {
+    exception = LuceneTestCase.expectThrows(SolrException.class, () -> {
       addAndGetVersion(sdoc("id","20", "_version_", oldV20, "inplace_updatable_float", map("inc", 1)), null);
     });
     assertEquals(exception.toString(), SolrException.ErrorCode.CONFLICT.code, exception.code());
@@ -543,7 +543,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testOnlyPartialUpdatesBetweenCommits() throws Exception {
     // Full updates
     long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "val1_i_dvo", "1", "val2_l_dvo", "1"), params());
@@ -786,7 +786,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   public void testReplay_Random_ManyDocsManyUpdates() throws Exception {
     
     // build up a random list of updates
-    final int maxDocId = atLeast(TEST_NIGHTLY ? 50 : 5);
+    final int maxDocId = LuceneTestCase.atLeast(TEST_NIGHTLY ? 50 : 5);
     final int numUpdates = maxDocId * 3;
     checkRandomReplay(maxDocId, numUpdates);
   }
@@ -796,7 +796,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   public void testReplay_Random_FewDocsManyUpdates() throws Exception {
     
     // build up a random list of updates
-    final int maxDocId = atLeast(3);
+    final int maxDocId = LuceneTestCase.atLeast(3);
     final int numUpdates = maxDocId * 50;
     checkRandomReplay(maxDocId, numUpdates);
   }
@@ -806,10 +806,10 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   public void testReplay_Random_FewDocsManyShortSequences() throws Exception {
     
     // build up a random list of updates
-    final int numIters = atLeast(TEST_NIGHTLY ? 50 : 5);
+    final int numIters = LuceneTestCase.atLeast(TEST_NIGHTLY ? 50 : 5);
     
     for (int i = 0; i < numIters; i++) {
-      final int maxDocId = atLeast(3);
+      final int maxDocId = LuceneTestCase.atLeast(3);
       final int numUpdates = maxDocId * 5;
       checkRandomReplay(maxDocId, numUpdates);
       deleteAllAndCommit();
@@ -1212,7 +1212,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     params.add("_version_", "-1");
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "first2");
     SolrInputDocument doc2 = new SolrInputDocument("id", "2", "title_s", "second");
-    SolrException ex = expectThrows(SolrException.class, "This should have failed", () -> updateJ(jsonAdd(doc, doc2), params));
+    SolrException ex = LuceneTestCase.expectThrows(SolrException.class, "This should have failed", () -> updateJ(jsonAdd(doc, doc2), params));
 
     assertTrue(ex.getMessage().contains("version conflict for"));
     params.add(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");

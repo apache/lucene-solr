@@ -21,6 +21,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.index.UpgradeIndexMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
@@ -52,8 +53,7 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
   public void testFailsIfNoClassSpecifiedForWrappedPolicy() {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();
     args.add(WrapperMergePolicyFactory.WRAPPED_PREFIX, "foo");
-    expectThrows(IllegalArgumentException.class,
-        () -> new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null).getMergePolicy());
+    SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null).getMergePolicy());
   }
 
   public void testProperlyInitializesWrappedMergePolicy() {

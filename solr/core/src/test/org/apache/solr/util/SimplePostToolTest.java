@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.util.SimplePostTool.PageFetcher;
 import org.apache.solr.util.SimplePostTool.PageFetcherResult;
 import org.junit.Before;
@@ -156,7 +157,7 @@ public class SimplePostToolTest extends SolrTestCaseJ4 {
   @Test
   public void testDoFilesMode() {
     t_file_auto.recursive = 0;
-    File dir = getFile("exampledocs");
+    File dir = SolrTestUtil.getFile("exampledocs");
     int num = t_file_auto.postFiles(new File[] {dir}, 0, null, null);
     assertEquals(2, num);
   }

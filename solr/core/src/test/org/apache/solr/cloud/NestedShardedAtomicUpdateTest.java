@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -202,10 +203,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
         )
     );
 
-    SolrException e = expectThrows(SolrException.class,
-        "wrong \"_route_\" param should throw an exception",
-        () -> indexDocAndRandomlyCommit(aClient, wrongRootParams, grandChildDoc)
-    );
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, "wrong \"_route_\" param should throw an exception", () -> indexDocAndRandomlyCommit(aClient, wrongRootParams, grandChildDoc));
 
     assertTrue("message should suggest the wrong \"_route_\" param was supplied",
         e.getMessage().contains("perhaps the wrong \"_route_\" param was supplied"));

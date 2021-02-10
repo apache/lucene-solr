@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
@@ -43,7 +39,7 @@ public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTest
 
   public void testConvertType() throws Throwable {
     final Locale loc = Locale.getDefault();
-    assumeFalse("Derby is not happy with locale sr-Latn-*",
+    LuceneTestCase.assumeFalse("Derby is not happy with locale sr-Latn-*",
         Objects.equals(new Locale("sr").getLanguage(), loc.getLanguage()) &&
         Objects.equals("Latn", loc.getScript()));
 

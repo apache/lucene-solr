@@ -16,8 +16,10 @@
  */
 package org.apache.solr.search.facet;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -100,8 +102,8 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     final int numShards;
 
     if (TEST_NIGHTLY) {
-      numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
-      repFactor = usually() ? 1 : 2;
+      numShards = TestUtil.nextInt(random(), 1, (LuceneTestCase.usually() ? 2 :3));
+      repFactor = LuceneTestCase.usually() ? 1 : 2;
     } else {
       numShards = 1;
       repFactor = 1;
@@ -110,7 +112,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -128,12 +130,12 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
       CLIENTS.add(SolrTestCaseJ4.getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    final int numDocs = atLeast(TEST_NIGHTLY ? 100 : 25);
+    final int numDocs = LuceneTestCase.atLeast(TEST_NIGHTLY ? 100 : 25);
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
         // NOTE: some docs may have no value in a field
-        final int numValsThisDoc = TestUtil.nextInt(random(), 0, (usually() ? 3 : 6));
+        final int numValsThisDoc = TestUtil.nextInt(random(), 0, (LuceneTestCase.usually() ? 3 : 6));
         for (int v = 0; v < numValsThisDoc; v++) {
           final String fieldValue = randFieldValue(fieldNum);
           
@@ -209,7 +211,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
                                      "{ from:foo_s }",
                                      "{ from:foo_s, to:foo_s, bogus:'what what?' }",
                                      "{ to:foo_s, bogus:'what what?' }")) {
-      SolrException e = expectThrows(SolrException.class, () -> {
+      SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
           final SolrParams req = params("q", "*:*", "json.facet",
                                         "{ x : { type:terms, field:x_s, domain: { join:"+join+" } } }");
           final NamedList trash = getRandClient(random()).request(new QueryRequest(req));
@@ -260,7 +262,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * easier to trace/debug then a pure random monstrosity.
    * (ie: if something obvious gets broken, this test may fail faster and in a more obvious way then testRandom)
    */
-  @Nightly // needs larger docs counts and such
+  @LuceneTestCase.Nightly // needs larger docs counts and such
   public void testBespoke() throws Exception {
 
     { // sanity check our test methods can handle a query matching no docs
@@ -373,7 +375,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   public void testTheTestRandomRefineParam() {
     // sanity check that randomRefineParam never violates isRefinementNeeded
     // (should be imposisble ... unless someone changes/breaks the randomization logic in the future)
-    final int numIters = atLeast(TEST_NIGHTLY ? 100 : 10);
+    final int numIters = LuceneTestCase.atLeast(TEST_NIGHTLY ? 100 : 10);
     for (int iter = 0; iter < numIters; iter++) {
       final Integer limit = TermFacet.randomLimitParam(random());
       final Integer overrequest = TermFacet.randomOverrequestParam(random());
@@ -386,7 +388,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
   }
   
   public void testTheTestTermFacetShouldFreakOutOnBadRefineOptions() {
-    expectThrows(AssertionError.class, () -> {
+    LuceneTestCase.expectThrows(AssertionError.class, () -> {
         final TermFacet bogus = new TermFacet("foo", null, 5, 0, false);
       });
   }
@@ -399,10 +401,10 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     // we get a really big one early on, we can test as much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of them)
-    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 200);
+    final int maxBucketsAllowed = LuceneTestCase.atLeast(TEST_NIGHTLY ? 2000 : 200);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
     
-    final int numIters = atLeast(TEST_NIGHTLY ? 20 : 3);
+    final int numIters = LuceneTestCase.atLeast(TEST_NIGHTLY ? 20 : 3);
     for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
       assertFacetCountsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(), buildRandomQuery());
     }
@@ -627,7 +629,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     public static Map<String,TermFacet> buildRandomFacets() {
       // for simplicity, use a unique facet key regardless of depth - simplifies verification
       AtomicInteger keyCounter = new AtomicInteger(0);
-      final int maxDepth = TestUtil.nextInt(random(), 0, (usually() ? 2 : 3));
+      final int maxDepth = TestUtil.nextInt(random(), 0, (LuceneTestCase.usually() ? 2 : 3));
       return buildRandomFacets(keyCounter, maxDepth);
     }
 

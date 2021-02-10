@@ -53,19 +53,7 @@ public class StreamingUpdateRequest extends AbstractUpdateRequest {
   }
 
   public StreamingUpdateRequest(String path, File f, String contentType) {
-    this(path, new RequestWriter.ContentWriter() {
-      @Override
-      public void write(OutputStream os) throws IOException {
-        try (InputStream is = new FastInputStream(new FileInputStream(f))) {
-          is.transferTo(os);
-        }
-      }
-
-      @Override
-      public String getContentType() {
-        return contentType;
-      }
-    });
+    this(path, new MyContentWriter(f, contentType));
   }
 
   @Override
@@ -73,4 +61,25 @@ public class StreamingUpdateRequest extends AbstractUpdateRequest {
     return contentWriter;
   }
 
+  private static class MyContentWriter implements RequestWriter.ContentWriter {
+    private final File f;
+    private final String contentType;
+
+    public MyContentWriter(File f, String contentType) {
+      this.f = f;
+      this.contentType = contentType;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      try (InputStream is = new FastInputStream(new FileInputStream(f))) {
+        is.transferTo(os);
+      }
+    }
+
+    @Override
+    public String getContentType() {
+      return contentType;
+    }
+  }
 }

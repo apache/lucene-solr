@@ -19,6 +19,7 @@ package org.apache.solr.search.facet;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -151,7 +152,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     // invalid format for ranges
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i,start:-10,end:10,gap:2," +
         "ranges:[{key:\"0-200\", to:200}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
 
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
       assertEquals("Cannot set gap/start/end and ranges params together", ex.getMessage());
@@ -159,81 +160,81 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," +
         "ranges:bleh}}")){
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected List for ranges but got String"));
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," +
         "ranges:[bleh]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected Map for range but got String"));
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:0, to:200, inclusive_to:bleh}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected boolean type for param 'inclusive_to' but got String"));
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:0, to:200, inclusive_from:bleh}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Expected boolean type for param 'inclusive_from' but got String"));
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:bleh, to:200}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:0, to:bleh}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{from:200, to:0}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("'from' is higher than 'to' in range for key: [200,0)", ex.getMessage());
 
     // with old format
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"\"}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("empty facet range"));
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"bl\"}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Invalid start character b in facet range bl"));
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(bl\"}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Invalid end character l in facet range (bl"));
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(bleh,12)\"}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(12,bleh)\"}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("Can't parse value bleh for field: num_i", ex.getMessage());
 
     try (SolrQueryRequest req = req(params, "json.facet", "{price:{type :range, field : num_i," + "ranges:[{range:\"(200,12)\"}]}}")) {
-      ex = expectThrows(SolrException.class, () -> h.query(req));
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
     }
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertEquals("'start' is higher than 'end' in range for key: (200,12)", ex.getMessage());
@@ -338,7 +339,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
 
     SolrException e;
     try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}")) {
-      e = expectThrows(SolrException.class, () -> {
+      e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         h.query(req);
       });
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
@@ -346,7 +347,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     }
 
     try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}")) {
-      e = expectThrows(SolrException.class, () -> {
+      e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         h.query(req);
       });
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
@@ -354,7 +355,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     }
 
     try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}")) {
-      e = expectThrows(SolrException.class, () -> {
+      e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         h.query(req);
       });
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
@@ -362,7 +363,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
     }
 
     try (SolrQueryRequest req = req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}")) {
-      e = expectThrows(SolrException.class, () -> {
+      e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         h.query(req);
       });
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());

@@ -34,7 +34,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -43,7 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -119,16 +118,17 @@ import static org.apache.solr.common.util.Utils.makeMap;
 @Slow
 public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected static final boolean VERBOSE = false ;
   private static Path confDir;
   protected volatile SolrQueuedThreadPool qtp;
 
   private static void copyConfigFileToTmpConf(Path confDir, String file) throws IOException {
-    Files.copy(Paths.get(SolrTestCaseJ4.TEST_HOME(), "collection1", "conf", file),
+    Files.copy(Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf", file),
             Paths.get(confDir.toString(), file), StandardCopyOption.REPLACE_EXISTING);
   }
 
   private static void copyConfigFileToTmpConf(Path confDir, String file, String zkFile) throws IOException {
-    Files.copy(Paths.get(SolrTestCaseJ4.TEST_HOME(), "collection1", "conf", file),
+    Files.copy(Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf", file),
             Paths.get(confDir.toString(), zkFile), StandardCopyOption.REPLACE_EXISTING);
   }
   
@@ -271,7 +271,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   public void distribSetUp() throws Exception {
     super.distribSetUp();
     // ignoreException(".*");
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     confDir = Paths.get(tmpDir.toString(), "conf");
     Files.createDirectories(confDir);
     copyConfigFileToTmpConf(confDir, configString != null ? configString : "solrconfig.xml", "solrconfig.xml");
@@ -367,7 +367,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   @Override
   protected void createServers(int numServers) throws Exception {
-    File controlJettyDir = createTempDir("control").toFile();
+    File controlJettyDir = SolrTestUtil.createTempDir("control").toFile();
     setupJettySolrHome(controlJettyDir);
     controlJetty = createJetty(controlJettyDir, useJettyDataDir ? getDataDir(testDir
         + "/control/data") : null);
@@ -455,7 +455,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         if (sb.length() > 0) sb.append(',');
         int cnt = this.jettyIntCntr.incrementAndGet();
 
-        File jettyDir = createTempDir("shard-" + i).toFile();
+        File jettyDir = SolrTestUtil.createTempDir("shard-" + i).toFile();
 
         jettyDir.mkdirs();
         setupJettySolrHome(jettyDir);

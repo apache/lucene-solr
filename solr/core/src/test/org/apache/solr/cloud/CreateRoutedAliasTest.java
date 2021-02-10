@@ -26,6 +26,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -82,7 +83,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   @Test
   public void testV2() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
 
     String createNode = cluster.getRandomJetty(random()).getNodeName();
 
@@ -162,7 +163,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   @Test
   public void testV1() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     Instant start = Instant.now().truncatedTo(ChronoUnit.HOURS); // mostly make sure no millis
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
@@ -204,7 +205,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
   // TZ should not affect the first collection name if absolute date given for start
   @Test
   public void testTimezoneAbsoluteDate() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     try (SolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster)) {
       CollectionAdminRequest.createTimeRoutedAlias(
           aliasName,
@@ -231,7 +232,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
-        "&name=" + getTestName() +
+        "&name=" + SolrTestUtil.getTestName() +
         "&collections=collection1meta,collection2meta" +
         "&router.field=evt_dt" +
         "&router.name=time" +
@@ -259,7 +260,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   @Test
   public void testRandomRouterNameFails() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
@@ -275,7 +276,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   @Test
   public void testTimeStampWithMsFails() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
@@ -291,7 +292,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   @Test
   public void testBadDateMathIntervalFails() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +
@@ -308,7 +309,7 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
 
   @Test
   public void testNegativeFutureFails() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=CREATEALIAS" +
         "&wt=json" +

@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import io.opentracing.mock.MockSpan;
 import io.opentracing.mock.MockTracer;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -50,8 +51,8 @@ public class TestDistributedTracing extends SolrCloudTestCase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     configureCluster(4)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .withSolrXml(TEST_PATH().resolve("solr-tracing.xml"))
+        .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr-tracing.xml"))
         .configure();
     CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "100.0")
         .process(cluster.getSolrClient());

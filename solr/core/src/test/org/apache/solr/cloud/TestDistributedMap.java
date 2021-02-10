@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -36,7 +37,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setUpClass() throws Exception {
-    zkDir = createTempDir("TestDistributedMap");
+    zkDir = SolrTestUtil.createTempDir("TestDistributedMap");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
   }
@@ -177,7 +178,7 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   }
 
   protected String getAndMakeInitialPath(SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    String path = String.format(Locale.ROOT, "/%s/%s", getClass().getName(), getSaferTestName());
+    String path = String.format(Locale.ROOT, "/%s/%s", getClass().getName(), SolrTestUtil.getTestName());
     zkClient.makePath(path, false, true);
     return path;
   }

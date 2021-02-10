@@ -19,6 +19,7 @@ package org.apache.solr.analytics.legacy.expression;
 import java.time.Instant;
 import java.util.Date;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.analytics.legacy.LegacyAbstractAnalyticsTest;
 import org.apache.solr.util.DateMathParser;
 import org.junit.BeforeClass;
@@ -51,7 +52,7 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
       assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f,
           "double_dd", "" + d, "date_dtd", dt, "string_sd", s));
 
-      if (usually()) {
+      if (LuceneTestCase.usually()) {
         assertU(commit()); // to have several segments
       }
     }

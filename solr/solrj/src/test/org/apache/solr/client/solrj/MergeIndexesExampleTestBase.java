@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -51,7 +52,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static Path getSolrHome() {
-    return SolrTestCaseJ4.getFile("solrj/solr/multicore").toPath();
+    return SolrTestUtil.getFile("solrj/solr/multicore").toPath();
   }
 
   protected void setupCoreContainer() throws IOException {
@@ -65,11 +66,11 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
-    File dataDir1 = createTempDir().toFile();
+    File dataDir1 = SolrTestUtil.createTempDir().toFile();
     // setup datadirs
     System.setProperty( "solr.core0.data.dir", dataDir1.getCanonicalPath() );
 
-    dataDir2 = createTempDir().toFile();
+    dataDir2 = SolrTestUtil.createTempDir().toFile();
 
     System.setProperty( "solr.core1.data.dir", this.dataDir2.getCanonicalPath() );
 

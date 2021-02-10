@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import com.google.common.base.Throwables;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -44,7 +45,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   @BeforeClass
   public static void startZkServer() throws Exception {
     System.setProperty("zookeeper.skipACL", "false");
-    zkServer = new ZkTestServer(createTempDir("zkData"));
+    zkServer = new ZkTestServer(SolrTestUtil.createTempDir("zkData"));
     zkServer.run();
   }
 
@@ -74,7 +75,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
 
       byte[] testdata = "test data".getBytes(StandardCharsets.UTF_8);
 
-      Path tempConfig = createTempDir("config");
+      Path tempConfig = SolrTestUtil.createTempDir("config");
       Files.createFile(tempConfig.resolve("file1"));
       Files.write(tempConfig.resolve("file1"), testdata);
       Files.createFile(tempConfig.resolve("file2"));
@@ -92,7 +93,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       assertEquals("testconfig", configs.get(0));
 
       // check downloading
-      Path downloadPath = createTempDir("download");
+      Path downloadPath = SolrTestUtil.createTempDir("download");
       configManager.downloadConfigDir("testconfig", downloadPath);
       assertTrue(Files.exists(downloadPath.resolve("file1")));
       assertTrue(Files.exists(downloadPath.resolve("file2")));
@@ -110,7 +111,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       configManager.uploadConfigDir(tempConfig, "testconfig");
 
       assertEquals(1, configManager.listConfigs().size());
-      Path download2 = createTempDir("download2");
+      Path download2 = SolrTestUtil.createTempDir("download2");
       configManager.downloadConfigDir("testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
       assertArrayEquals(overwritten, checkdata2);
@@ -171,7 +172,7 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
       }
     };
 
-    Path configPath = createTempDir("acl-config");
+    Path configPath = SolrTestUtil.createTempDir("acl-config");
     Files.createFile(configPath.resolve("file1"));
 
     // Start with all-access client

@@ -38,6 +38,7 @@ import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -161,7 +162,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
       m = (Map) lst.get(i);
       SolrDocument d = new SolrDocument();
       d.putAll(m);
-      compareSolrDocument(l.get(i), d);
+      SolrTestUtil.compareSolrDocument(l.get(i), d);
     }
 
   }

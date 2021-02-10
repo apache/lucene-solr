@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -151,7 +152,7 @@ public class TestCaffeineCache extends SolrTestCase {
   }
 
   @Test
-  @Nightly // sleepy test
+  @LuceneTestCase.Nightly // sleepy test
   public void testMaxIdleTime() throws Exception {
     int IDLE_TIME_SEC = 1;
     CountDownLatch removed = new CountDownLatch(1);

@@ -27,6 +27,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -137,7 +138,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   public void testInvalidAdds() throws IOException {
     SolrInputDocument invalidDoc1 = doc(field("text", "the quick brown fox")); //no id
     // This doc should fail without being tolerant
-    Exception e = expectThrows(Exception.class, () -> add("not-tolerant", null, invalidDoc1));
+    Exception e = SolrTestCaseUtil.expectThrows(Exception.class, () -> add("not-tolerant", null, invalidDoc1));
     assertTrue(e.getMessage().contains("Document is missing mandatory uniqueKey field"));
 
     assertAddsSucceedWithErrors("tolerant-chain-max-errors-10", Arrays.asList(new SolrInputDocument[]{invalidDoc1}), null, "(unknown)");
@@ -146,8 +147,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     SolrInputDocument validDoc1 = doc(field("id", "1"), field("text", "the quick brown fox"));
 
     // This batch should fail without being tolerant
-    e = expectThrows(Exception.class, () -> add("not-tolerant", null,
-        Arrays.asList(new SolrInputDocument[]{invalidDoc1, validDoc1})));
+    e = SolrTestCaseUtil.expectThrows(Exception.class, () -> add("not-tolerant", null, Arrays.asList(new SolrInputDocument[] {invalidDoc1, validDoc1})));
     assertTrue(e.getMessage().contains("Document is missing mandatory uniqueKey field"));
     
     assertU(commit());
@@ -164,8 +164,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     SolrInputDocument validDoc2 = doc(field("id", "3"), field("weight", "3"));
 
     // This batch should fail without being tolerant
-    e = expectThrows(Exception.class, () -> add("not-tolerant", null,
-        Arrays.asList(new SolrInputDocument[]{invalidDoc2, validDoc2})));
+    e = SolrTestCaseUtil.expectThrows(Exception.class, () -> add("not-tolerant", null, Arrays.asList(new SolrInputDocument[] {invalidDoc2, validDoc2})));
     assertTrue(e.getMessage().contains("Error adding field"));
 
     assertU(commit());
@@ -204,8 +203,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     ModifiableSolrParams requestParams = new ModifiableSolrParams();
     requestParams.add("maxErrors", "5");
 
-    SolrException e = expectThrows(SolrException.class, () ->
-        assertAddsSucceedWithErrors("tolerant-chain-max-errors-not-set", docs, requestParams, badIds));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> assertAddsSucceedWithErrors("tolerant-chain-max-errors-not-set", docs, requestParams, badIds));
     assertTrue(e.getMessage(),
         e.getMessage().contains("ERROR: [doc=1] Error adding field 'weight'='b' msg=For input string: \"b\""));
     //the first good documents made it to the index
@@ -230,8 +228,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     ModifiableSolrParams requestParams = new ModifiableSolrParams();
     requestParams.add("maxErrors", "0");
 
-    SolrException e = expectThrows(SolrException.class, () ->
-        assertAddsSucceedWithErrors("tolerant-chain-max-errors-10", smallBatch, requestParams, "1"));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> assertAddsSucceedWithErrors("tolerant-chain-max-errors-10", smallBatch, requestParams, "1"));
     assertTrue(e.getMessage().contains("ERROR: [doc=1] Error adding field 'weight'='b' msg=For input string: \"b\""));
 
     //the first good documents made it to the index

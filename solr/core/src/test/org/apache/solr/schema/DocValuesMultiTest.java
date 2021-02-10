@@ -22,6 +22,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -267,7 +268,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
           "stringdv", "abc", "booldv", "true"));
     }
     for (int i = 0; i < 50; ++i) {
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         assertU(commit()); // to have several segments
       }
       switch (i % 3) {

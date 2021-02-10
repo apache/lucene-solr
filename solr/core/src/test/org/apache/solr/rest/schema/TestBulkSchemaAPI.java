@@ -34,6 +34,7 @@ import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -66,8 +67,8 @@ public class TestBulkSchemaAPI extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
@@ -747,7 +748,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertTrue("'bleh_s' copyField rule exists in the schema", l.isEmpty());
   }
 
-  @Nightly // TODO: sometimes this can be very slow it looks
+  @LuceneTestCase.Nightly // TODO: sometimes this can be very slow it looks
   public void testDeleteAndReplace() throws Exception {
     RestTestHarness harness = restTestHarness;
 

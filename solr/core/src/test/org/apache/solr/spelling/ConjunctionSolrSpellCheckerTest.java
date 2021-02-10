@@ -24,6 +24,7 @@ import org.apache.lucene.search.spell.LuceneLevenshteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.Assert;
@@ -60,7 +61,7 @@ public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
     
     cssc.addChecker(checker1);
     cssc.addChecker(checker2);
-    expectThrows(IllegalArgumentException.class, () -> cssc.addChecker(checker3));
+    SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> cssc.addChecker(checker3));
   }
 
   static class MockSolrSpellChecker extends SolrSpellChecker {

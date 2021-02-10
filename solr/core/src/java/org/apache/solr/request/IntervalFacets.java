@@ -182,21 +182,11 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             break;
           case FLOAT:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-                return NumericUtils.sortableFloatBits((int)super.longValue());
-              }
-            };
+            longs = new MyFilterNumericDocValues(ctx, fieldName);
             break;
           case DOUBLE:
             // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs = new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-              @Override
-              public long longValue() throws IOException {
-               return NumericUtils.sortableDoubleBits(super.longValue());
-              }
-            };
+            longs = new DoubleFilterNumericDocValues(ctx, fieldName);
             break;
           default:
             throw new AssertionError();
@@ -931,6 +921,28 @@ public class IntervalFacets implements Iterable<FacetInterval> {
         }
       }
       return startComparison;
+    }
+  }
+
+  private static class MyFilterNumericDocValues extends FilterNumericDocValues {
+    public MyFilterNumericDocValues(LeafReaderContext ctx, String fieldName) throws IOException {
+      super(DocValues.getNumeric(ctx.reader(), fieldName));
+    }
+
+    @Override
+    public long longValue() throws IOException {
+      return NumericUtils.sortableFloatBits((int)super.longValue());
+    }
+  }
+
+  private static class DoubleFilterNumericDocValues extends FilterNumericDocValues {
+    public DoubleFilterNumericDocValues(LeafReaderContext ctx, String fieldName) throws IOException {
+      super(DocValues.getNumeric(ctx.reader(), fieldName));
+    }
+
+    @Override
+    public long longValue() throws IOException {
+     return NumericUtils.sortableDoubleBits(super.longValue());
     }
   }
 }

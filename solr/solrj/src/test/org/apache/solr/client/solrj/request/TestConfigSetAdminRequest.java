@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -47,7 +48,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
   }
 
   private void verifyException(ConfigSetAdminRequest request, String errorContains) {
-    Exception e = expectThrows(Exception.class, request::getParams);
+    Exception e = LuceneTestCase.expectThrows(Exception.class, request::getParams);
     assertTrue("Expected exception message to contain: " + errorContains,
         e.getMessage().contains(errorContains));
   }

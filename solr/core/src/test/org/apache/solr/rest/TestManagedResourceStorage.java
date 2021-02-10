@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
@@ -71,7 +72,7 @@ public class TestManagedResourceStorage extends AbstractZkTestCase {
    */
   @Test
   public void testFileBasedJsonStorage() throws Exception {
-    File instanceDir = createTempDir("json-storage").toFile();
+    File instanceDir = SolrTestUtil.createTempDir("json-storage").toFile();
     SolrResourceLoader loader = new SolrResourceLoader(instanceDir.toPath());
     try {
       NamedList<String> initArgs = new NamedList<>();

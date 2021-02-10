@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.util.SolrCLI;
@@ -50,7 +51,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     useFactory(null);
     configureCluster(1)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .formatZk(true).configure();
     zkAddr = cluster.getZkServer().getZkAddress();
     zkClient = cluster.getZkClient();
@@ -68,14 +69,14 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   public void testUpconfig() throws Exception {
     // Use a full, explicit path for configset.
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig1");
 
     // Now just use a name in the configsets directory, do we find it?
-    configSet = TEST_PATH().resolve("configsets");
+    configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
 
     String[] args = new String[]{
         "-confname", "upconfig2",
@@ -109,11 +110,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @Test
   public void testDownconfig() throws Exception {
-    Path tmp = Paths.get(createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
+    Path tmp = Paths.get(SolrTestUtil.createTempDir("downConfigNewPlace").toAbsolutePath().toString(), "myconfset");
 
     // First we need a configset on ZK to bring down. 
     
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "downconfig1", zkAddr);
     // Now do we have that config up on ZK?
@@ -137,7 +138,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     // Now copy it up and back and insure it's still a file in the new place
     AbstractDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
-    Path tmp2 = createTempDir("downConfigNewPlace2");
+    Path tmp2 = SolrTestUtil.createTempDir("downConfigNewPlace2");
     downTool = new SolrCLI.ConfigSetDownloadTool();
     args = new String[]{
         "-confname", "downconfig2",
@@ -159,7 +160,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   public void testCp() throws Exception {
     // First get something up on ZK
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
@@ -180,7 +181,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
 
     // try with zk->local
-    Path tmp = createTempDir("tmpNewPlace2");
+    Path tmp = SolrTestUtil.createTempDir("tmpNewPlace2");
     args = new String[]{
         "-src", "zk:/configs/cp1",
         "-dst", "file:" + tmp.toAbsolutePath().toString(),
@@ -194,7 +195,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
 
     // try with zk->local  no file: prefix
-    tmp = createTempDir("tmpNewPlace3");
+    tmp = SolrTestUtil.createTempDir("tmpNewPlace3");
     args = new String[]{
         "-src", "zk:/configs/cp1",
         "-dst", tmp.toAbsolutePath().toString(),
@@ -348,7 +349,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(srcPathCheck, "/cp7/" + srcPathCheck.getFileName().toString());
 
     // Check for an intermediate ZNODE having content. You know cp7/stopwords is a parent node.
-    tmp = createTempDir("dirdata");
+    tmp = SolrTestUtil.createTempDir("dirdata");
     Path file = Paths.get(tmp.toAbsolutePath().toString(), "zknode.data");
     List<String> lines = new ArrayList<>();
     lines.add("{Some Arbitrary Data}");
@@ -371,7 +372,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    tmp = createTempDir("cp8");
+    tmp = SolrTestUtil.createTempDir("cp8");
     args = new String[]{
         "-src", "zk:/cp7",
         "-dst", "file:" + tmp.toAbsolutePath().toString(),
@@ -413,7 +414,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     res = cpTool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(cpTool.getOptions()), args));
     assertEquals("Copy should have succeeded.", 0, res);
 
-    Path tmp2 = createTempDir("cp9");
+    Path tmp2 = SolrTestUtil.createTempDir("cp9");
     Path emptyDest = Paths.get(tmp2.toAbsolutePath().toString(), "emptyfile");
     args = new String[]{
         "-src", "zk:/cp7/conf/stopwords/emptyfile",
@@ -439,7 +440,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     // Now copy it all back and make sure empty file is still a file when recursively copying.
-    tmp2 = createTempDir("cp10");
+    tmp2 = SolrTestUtil.createTempDir("cp10");
     args = new String[]{
         "-src", "zk:/cp10",
         "-dst", "file:" + tmp2.toAbsolutePath().toString(),
@@ -458,7 +459,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     // First get something up on ZK
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
@@ -536,7 +537,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   @Test
   public void testLs() throws Exception {
 
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
 
@@ -634,7 +635,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
   @Test
   public void testRm() throws Exception {
     
-    Path configSet = TEST_PATH().resolve("configsets");
+    Path configSet = SolrTestUtil.TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
     AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);

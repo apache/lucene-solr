@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.junit.Test;
@@ -32,7 +33,7 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
     JettyConfig.Builder jettyConfig = JettyConfig.builder();
     jettyConfig.waitForLoadingCoresToFinish(null);
     jettyConfig.withFilter(JettySolrRunner.DebugFilter.class, "*");
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(random().nextInt(3) + 1, createTempDir(), jettyConfig.build());
+    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(random().nextInt(3) + 1, SolrTestUtil.createTempDir(), jettyConfig.build());
     cluster.shutdown();
   }
 

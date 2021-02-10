@@ -100,13 +100,7 @@ public class ScriptTransformer extends Transformer {
     }
     try {
       try {
-        AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
-          @Override
-          public Void run() throws ScriptException  {
-            scriptEngine.eval(scriptText);
-            return null;
-          }
-        }, SCRIPT_SANDBOX);
+        AccessController.doPrivileged(new VoidPrivilegedExceptionAction(scriptEngine, scriptText), SCRIPT_SANDBOX);
       } catch (PrivilegedActionException e) {
         throw (ScriptException) e.getException();
       }
@@ -128,4 +122,19 @@ public class ScriptTransformer extends Transformer {
   private static final AccessControlContext SCRIPT_SANDBOX =
       new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, null) });
 
+  private static class VoidPrivilegedExceptionAction implements PrivilegedExceptionAction<Void> {
+    private final ScriptEngine scriptEngine;
+    private final String scriptText;
+
+    public VoidPrivilegedExceptionAction(ScriptEngine scriptEngine, String scriptText) {
+      this.scriptEngine = scriptEngine;
+      this.scriptText = scriptText;
+    }
+
+    @Override
+    public Void run() throws ScriptException {
+      scriptEngine.eval(scriptText);
+      return null;
+    }
+  }
 }

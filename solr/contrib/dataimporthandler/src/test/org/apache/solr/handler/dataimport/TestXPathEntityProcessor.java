@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.SolrTestUtil;
 import org.junit.Test;
 
 /**
@@ -44,7 +45,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   @Test
   @SuppressWarnings({"unchecked"})
   public void withFieldsAndXpath() throws Exception {
-    File tmpdir = createTempDir().toFile();
+    File tmpdir = SolrTestUtil.createTempDir().toFile();
     
     createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8), false);
     @SuppressWarnings({"rawtypes"})
@@ -346,7 +347,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   @Test
   @SuppressWarnings({"unchecked"})
   public void withDefaultSolrAndXsl() throws Exception {
-    File tmpdir = createTempDir().toFile();
+    File tmpdir = SolrTestUtil.createTempDir().toFile();
     AbstractDataImportHandlerTestCase.createFile(tmpdir, "x.xsl", xsl.getBytes(StandardCharsets.UTF_8),
             false);
 

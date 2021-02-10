@@ -17,8 +17,8 @@
 package org.apache.solr.client.solrj;
 
 import junit.framework.Assert;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -129,7 +129,7 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   }
   
   @Test
-  @Nightly // some silly waiting
+  @LuceneTestCase.Nightly // some silly waiting
   public void testCommitWithinOnDelete() throws Exception {
     // make sure it is empty...
     try (SolrClient client = getSolrClient(jetty)) {

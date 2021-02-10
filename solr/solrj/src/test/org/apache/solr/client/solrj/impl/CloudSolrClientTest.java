@@ -24,6 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -113,7 +114,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     System.setProperty("solr.httpclient.defaultSoTimeout", "3000");
 
     configureCluster(NODE_COUNT)
-        .addConfig(TEST_CONFIGSET_NAME, getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(TEST_CONFIGSET_NAME, SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
   }
 
@@ -504,7 +505,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
    * Tests if the 'shards.preference' parameter works with single-sharded collections.
    */
   @Test
-  @Nightly // it's too slow
+  @LuceneTestCase.Nightly // it's too slow
   public void singleShardedPreferenceRules() throws Exception {
     String collectionName = "singleShardPreferenceTestColl";
 
@@ -712,7 +713,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "Somehow this stops watching the collection when we are still concerned with it, I think - rare fail")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Somehow this stops watching the collection when we are still concerned with it, I think - rare fail")
   // also see CloudHttp2SolrClientTest
   public void stateVersionParamTest() throws Exception {
     String collection = "stateVersionParamTest";
@@ -786,7 +787,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(SolrTestCaseJ4.DEAD_HOST_1)) {
       client.setZkConnectTimeout(100);
-      SolrException ex = expectThrows(SolrException.class, client::connect);
+      SolrException ex = LuceneTestCase.expectThrows(SolrException.class, client::connect);
       assertTrue(ex.getCause() instanceof TimeoutException);
     }
   }
@@ -799,7 +800,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
       client.setZkClientTimeout(1000 * 60);
-      SolrException ex = expectThrows(SolrException.class, client::connect);
+      SolrException ex = LuceneTestCase.expectThrows(SolrException.class, client::connect);
       assertTrue(ex.getMessage().contains("cluster not found/not ready"));
     }
   }
@@ -880,7 +881,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testCollectionDoesntExist() throws Exception {
     CloudSolrClient client = getRandomClient();
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-    SolrException ex = expectThrows(SolrException.class, () -> client.add("boguscollectionname", doc));
+    SolrException ex = LuceneTestCase.expectThrows(SolrException.class, () -> client.add("boguscollectionname", doc));
     assertEquals("Collection not found: boguscollectionname", ex.getMessage());
   }
 

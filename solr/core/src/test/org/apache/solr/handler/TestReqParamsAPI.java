@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -62,7 +63,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
 
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-managed").resolve("conf"))
         .configure();
     CollectionAdminRequest.createCollection(COLL_NAME, "conf1", 1, 2).setMaxShardsPerNode(10)
         .process(cluster.getSolrClient());

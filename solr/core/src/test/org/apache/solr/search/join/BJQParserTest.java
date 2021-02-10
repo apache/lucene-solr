@@ -30,6 +30,7 @@ import javax.xml.xpath.XPathConstants;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -186,7 +187,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   public void testScoreNoneScoringForParent() throws Exception {
     assertQ("score=none yields 0.0 score",
         req("q", "{!parent which=\"parent_s:[* TO *]\" "+(
-            rarely()? "":(rarely()? "score=None":"score=none")
+            LuceneTestCase.rarely()? "":(LuceneTestCase.rarely()? "score=None":"score=none")
             )+"}child_s:l","fl","score"),
         "//*[@numFound='6']",
         "(//float[@name='score'])["+(random().nextInt(6)+1)+"]=0.0");
@@ -194,8 +195,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   public void testWrongScoreExceptionForParent() throws Exception {
     final String aMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)].name();
-    final String wrongMode = rarely()? "":(rarely()? " ":
-      rarely()? aMode.substring(1):aMode.toUpperCase(Locale.ROOT));
+    final String wrongMode = LuceneTestCase.rarely()? "":(LuceneTestCase.rarely()? " ":
+        LuceneTestCase.rarely()? aMode.substring(1):aMode.toUpperCase(Locale.ROOT));
     assertQEx("wrong score mode", 
         req("q", "{!parent which=\"parent_s:[* TO *]\" score="+wrongMode+"}child_s:l","fl","score")
         , SolrException.ErrorCode.BAD_REQUEST.code);

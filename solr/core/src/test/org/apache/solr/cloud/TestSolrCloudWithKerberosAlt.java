@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -54,12 +55,12 @@ public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     setupMiniKdc();
-    configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
+    configureCluster(nodeCount).addConfig(configName, SolrTestUtil.configset("cloud-minimal")).configure();
   }
 
   private void setupMiniKdc() throws Exception {
     System.setProperty("solr.jaas.debug", "true");
-    String kdcDir = createTempDir()+File.separator+"minikdc";
+    String kdcDir = SolrTestUtil.createTempDir() +File.separator+"minikdc";
     String solrClientPrincipal = "solr";
     File keytabFile = new File(kdcDir, "keytabs");
     kerberosTestServices = KerberosTestServices.builder()

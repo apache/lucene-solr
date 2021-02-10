@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.junit.Test;
@@ -105,7 +106,7 @@ public class OrderedExecutorTest extends SolrTestCase {
 
   @Test
   public void testRunInParallel() throws ExecutionException, InterruptedException {
-    final int parallelism = atLeast(3);
+    final int parallelism = SolrTestUtil.atLeast(3);
 
     OrderedExecutor orderedExecutor = new OrderedExecutor(parallelism,
         ParWork.getParExecutorService("replayUpdatesExecutor", parallelism, parallelism,

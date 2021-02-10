@@ -146,44 +146,57 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     log.info("Finished create command on all shards for collection: {}", collectionName);
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
-    response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
-      @Override
-      public AddReplicaCmd.Response call() {
-        try {
-          shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
-        } catch (KeeperException e) {
-          log.error("", e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        } catch (InterruptedException e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
-        //  nocommit - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
-
-        if (resp.asyncFinalRunner != null) {
-          try {
-            resp.asyncFinalRunner.call();
-          } catch (Exception e) {
-            log.error("Exception waiting for active replicas", e);
-          }
-        }
-
-        @SuppressWarnings({"rawtypes"}) boolean failure = results.get("failure") != null && ((SimpleOrderedMap) results.get("failure")).size() > 0;
-        if (failure) {
-
-        } else {
-
-        }
-
-        //ocmh.zkStateReader.waitForActiveCollection(collectionName, 10, TimeUnit.SECONDS, shardNames.size(), finalReplicaPositions.size());
-        AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-        return response;
-      }
-
-    };
+    response.asyncFinalRunner = new MyFinalize(shardRequestTracker, results, shardHandler, resp);
 
     response.clusterState = clusterState;
     return response;
   }
 
+  private static class MyFinalize implements OverseerCollectionMessageHandler.Finalize {
+    private final OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker;
+    private final NamedList results;
+    private final ShardHandler shardHandler;
+    private final AddReplicaCmd.Response resp;
+
+    public MyFinalize(OverseerCollectionMessageHandler.ShardRequestTracker shardRequestTracker, NamedList results, ShardHandler shardHandler, AddReplicaCmd.Response resp) {
+      this.shardRequestTracker = shardRequestTracker;
+      this.results = results;
+      this.shardHandler = shardHandler;
+      this.resp = resp;
+    }
+
+    @Override
+    public AddReplicaCmd.Response call() {
+      try {
+        shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
+      //  nocommit - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
+
+      if (resp.asyncFinalRunner != null) {
+        try {
+          resp.asyncFinalRunner.call();
+        } catch (Exception e) {
+          log.error("Exception waiting for active replicas", e);
+        }
+      }
+
+      @SuppressWarnings({"rawtypes"}) boolean failure = results.get("failure") != null && ((SimpleOrderedMap) results.get("failure")).size() > 0;
+      if (failure) {
+
+      } else {
+
+      }
+
+      //ocmh.zkStateReader.waitForActiveCollection(collectionName, 10, TimeUnit.SECONDS, shardNames.size(), finalReplicaPositions.size());
+      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+      return response;
+    }
+
+  }
 }

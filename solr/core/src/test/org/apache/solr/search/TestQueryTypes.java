@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.SolrTestCaseJ4;
@@ -406,11 +407,8 @@ public class TestQueryTypes extends SolrTestCaseJ4 {
 
     try {
       ignoreException("No\\ default\\, and no switch case");
-      RuntimeException exp = expectThrows(RuntimeException.class, "Should have gotten an error w/o default",
-          () -> assertQ("no match and no default",
-              req("q", "{!switch case.x=Dude case.z=Yonik}asdf")
-              , "//result[@numFound='BOGUS']")
-      );
+      RuntimeException exp = SolrTestCaseUtil.expectThrows(RuntimeException.class, "Should have gotten an error w/o default",
+          () -> assertQ("no match and no default", req("q", "{!switch case.x=Dude case.z=Yonik}asdf"), "//result[@numFound='BOGUS']"));
       assertTrue("exp cause is wrong",
           exp.getCause() instanceof SolrException);
       SolrException e = (SolrException) exp.getCause();

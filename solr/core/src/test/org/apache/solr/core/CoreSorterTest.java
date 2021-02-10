@@ -17,6 +17,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -185,7 +186,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
         CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
     );
-    return new CoreDescriptor(r.getName(), TEST_PATH(), props , null, mock(ZkController.class));
+    return new CoreDescriptor(r.getName(), SolrTestUtil.TEST_PATH(), props , null, mock(ZkController.class));
   }
 
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {

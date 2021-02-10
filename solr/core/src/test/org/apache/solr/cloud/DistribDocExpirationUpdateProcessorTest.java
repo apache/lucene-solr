@@ -31,6 +31,8 @@ import static java.util.Collections.singletonList;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -92,7 +94,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   public void setupCluster(boolean security) throws Exception {
     // we want at most one core per node to force lots of network traffic to try and tickle distributed bugs
     final Builder b = configureCluster(4)
-      .addConfig("conf", TEST_PATH().resolve("configsets").resolve("doc-expiry").resolve("conf"));
+      .addConfig("conf", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("doc-expiry").resolve("conf"));
 
     COLLECTION = "expiring";
     if (security) {
@@ -132,20 +134,15 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
 
     // sanity check that our cluster really does require authentication
     assertEquals("sanity check of non authenticated request",
-                 401,
-                 expectThrows(SolrException.class, () -> {
-                     final long ignored = cluster.getSolrClient().query
-                       (COLLECTION,
-                        params("q", "*:*",
-                               "rows", "0",
-                               "_trace", "no_auth_sanity_check")).getResults().getNumFound();
-                   }).code());
+                 401, SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+          final long ignored = cluster.getSolrClient().query(COLLECTION, params("q", "*:*", "rows", "0", "_trace", "no_auth_sanity_check")).getResults().getNumFound();
+        }).code());
     
     runTest();
   }
   
   private void runTest() throws Exception {
-    final int totalNumDocs = atLeast(50);
+    final int totalNumDocs = SolrTestUtil.atLeast(50);
     
     // Add a bunch of docs; some with extremely short expiration, some with no expiration
     // these should be randomly distributed to each shard

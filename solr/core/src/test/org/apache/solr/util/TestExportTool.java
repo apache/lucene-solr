@@ -28,8 +28,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -52,7 +54,7 @@ public class TestExportTool extends SolrCloudTestCase {
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
 
     try {
@@ -122,11 +124,11 @@ public class TestExportTool extends SolrCloudTestCase {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testVeryLargeCluster() throws Exception {
     String COLLECTION_NAME = "veryLargeColl";
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
 
     try {

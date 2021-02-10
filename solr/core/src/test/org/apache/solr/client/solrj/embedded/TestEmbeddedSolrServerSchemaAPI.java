@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
@@ -53,7 +55,7 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
     System.setProperty("managed.schema.mutable", ""+
       random().nextBoolean()
     );
-    Path tmpHome = createTempDir("tmp-home");
+    Path tmpHome = SolrTestUtil.createTempDir("tmp-home");
     Path coreDir = tmpHome.resolve(DEFAULT_TEST_CORENAME);
     copyMinConf(coreDir.toFile(), null, "solrconfig-managed-schema.xml");
     initCore("solrconfig.xml" /*it's renamed to to*/, "schema.xml", tmpHome.toAbsolutePath().toString());
@@ -71,13 +73,13 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @Before
   public void thereIsNoFieldYet() {
-    SolrException ex = expectThrows(SolrException.class, () -> new SchemaRequest.Field(fieldName).process(server));
+    SolrException ex = LuceneTestCase.expectThrows(SolrException.class, () -> new SchemaRequest.Field(fieldName).process(server));
     assertTrue(ex.getMessage().contains("No") && ex.getMessage().contains("VerificationTest"));
   }
   
   @Test
   public void testSchemaAddFieldAndVerifyExistence() throws Exception {
-    assumeTrue("it needs to ammend schema", Boolean.getBoolean("managed.schema.mutable"));
+    LuceneTestCase.assumeTrue("it needs to ammend schema", Boolean.getBoolean("managed.schema.mutable"));
     SchemaResponse.UpdateResponse addFieldResponse = new SchemaRequest.AddField(fieldAttributes).process(server);
 
     assertEquals(addFieldResponse.toString(), 0, addFieldResponse.getStatus());
@@ -93,15 +95,15 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @Test 
   public void  testSchemaAddFieldAndFailOnImmutable() {
-    assumeFalse("it needs a readonly schema", Boolean.getBoolean("managed.schema.mutable"));
+    LuceneTestCase.assumeFalse("it needs a readonly schema", Boolean.getBoolean("managed.schema.mutable"));
 
     SchemaRequest.AddField addFieldUpdateSchemaRequest = new SchemaRequest.AddField(fieldAttributes);
     assertFailedSchemaResponse(() -> addFieldUpdateSchemaRequest.process(server),
         "schema is not editable");
   }
 
-  private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
-    ApiBag.ExceptionWithErrObject e = expectThrows(ApiBag.ExceptionWithErrObject.class, runnable);
+  private static void assertFailedSchemaResponse(LuceneTestCase.ThrowingRunnable runnable, String expectedErrorMessage) {
+    ApiBag.ExceptionWithErrObject e = LuceneTestCase.expectThrows(ApiBag.ExceptionWithErrObject.class, runnable);
     String msg = e.getErrs().get(0).get("errorMessages").toString();
     assertTrue(msg.contains(expectedErrorMessage));
   }

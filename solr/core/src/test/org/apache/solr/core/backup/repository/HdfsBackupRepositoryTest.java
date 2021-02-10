@@ -32,7 +32,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test(expected = NullPointerException.class)
   public void testHdfsHomePropertyMissing() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository())  {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       hdfsBackupRepository.init(namedList);
@@ -41,7 +41,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test
   public void testHdfsHomePropertySet() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
@@ -51,7 +51,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test(expected = ClassCastException.class)
   public void testCopyBufferSizeNonNumeric() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       namedList.add("solr.hdfs.buffer.size", "xyz");
@@ -61,7 +61,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test(expected = ClassCastException.class)
   public void testCopyBufferSizeWrongType() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       namedList.add("solr.hdfs.buffer.size", "8192");
@@ -71,7 +71,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testCopyBufferSizeNegative() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       namedList.add("solr.hdfs.buffer.size", -1);
@@ -81,7 +81,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test(expected = IllegalArgumentException.class)
   public void testCopyBufferSizeZero() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       namedList.add("solr.hdfs.buffer.size", 0);
@@ -91,7 +91,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test
   public void testCopyBufferSet() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");
@@ -103,7 +103,7 @@ public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test
   public void testCopyBufferDefaultSize() throws IOException {
-    assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
     try (HdfsBackupRepository hdfsBackupRepository = new HdfsBackupRepository()) {
       NamedList<Object> namedList = new SimpleOrderedMap<>();
       namedList.add(HdfsDirectoryFactory.HDFS_HOME, "hdfs://localhost");

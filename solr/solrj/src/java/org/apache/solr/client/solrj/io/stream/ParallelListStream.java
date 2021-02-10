@@ -167,7 +167,7 @@ public class ParallelListStream extends TupleStream implements Expressible {
     }
   }
 
-  protected class StreamIndex {
+  protected static class StreamIndex {
     private TupleStream tupleStream;
     private int index;
 

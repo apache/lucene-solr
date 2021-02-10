@@ -23,7 +23,9 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.DefaultZkACLProvider;
 import org.apache.solr.common.cloud.SaslZkACLProvider;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
@@ -46,9 +48,9 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() {
-    assumeFalse("FIXME: This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8052)", Constants.JRE_IS_MINIMUM_JAVA9);
-    
-    assumeFalse("FIXME: SOLR-7040: This test fails under IBM J9",
+    LuceneTestCase.assumeFalse("FIXME: This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8052)", Constants.JRE_IS_MINIMUM_JAVA9);
+
+    LuceneTestCase.assumeFalse("FIXME: SOLR-7040: This test fails under IBM J9",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
     System.setProperty("hostName", "localhost");
@@ -64,13 +66,13 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
+      log.info("####SETUP_START {}", SolrTestUtil.getTestName());
     }
-    createTempDir();
+    SolrTestUtil.createTempDir();
 
-    Path zkDir = createTempDir().resolve("zookeeper/server1/data");
+    Path zkDir = SolrTestUtil.createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
-    zkServer = new SaslZkTestServer(zkDir, createTempDir().resolve("miniKdc"));
+    zkServer = new SaslZkTestServer(zkDir, SolrTestUtil.createTempDir().resolve("miniKdc"));
     zkServer.run();
 
     System.setProperty("zkHost", zkServer.getZkAddress());
@@ -81,7 +83,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
     setupZNodes();
 
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
+      log.info("####SETUP_END {}", SolrTestUtil.getTestName());
     }
   }
 
@@ -112,7 +114,7 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13075")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13075")
   public void testSaslZkACLProvider() throws Exception {
     // Test with Sasl enabled
     SolrZkClient zkClient = new SolrZkClientWithACLs(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT);

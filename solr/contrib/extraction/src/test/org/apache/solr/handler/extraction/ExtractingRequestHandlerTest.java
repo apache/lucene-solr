@@ -21,7 +21,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -50,10 +53,10 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {
       assertTrue("Is some other JVM affected?  Or bad regex? TzDisplayName: " + tzDisplayName,
           System.getProperty("java.version").startsWith("11"));
-      assumeTrue("SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.", false);
+      LuceneTestCase.assumeTrue("SOLR-12759 JDK 11 (1st release) and Tika 1.x can result in extracting dates in a bad format.", false);
     }
 
-    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr").getAbsolutePath());
+    initCore("solrconfig.xml", "schema.xml", SolrTestUtil.getFile("extraction/solr").getAbsolutePath());
   }
 
   @Override
@@ -237,11 +240,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     try {
       ignoreException("unknown field 'a'");
       ignoreException("unknown field 'meta'");  // TODO: should this exception be happening?
-      expectThrows(SolrException.class, () -> {
-        loadLocal("extraction/simple.html",
-            "literal.id", "simple2",
-            "lowernames", "true",
-            "captureAttr", "true",
+      SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+        loadLocal("extraction/simple.html", "literal.id", "simple2", "lowernames", "true", "captureAttr", "true",
             //"fmap.content_type", "abcxyz",
             "commit", "true"  // test immediate commit
         );
@@ -463,7 +463,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
 
     ExtractingDocumentLoader loader = (ExtractingDocumentLoader) handler.newLoader(req, p);
-    loader.load(req, rsp, new ContentStreamBase.FileStream(getFile("extraction/version_control.txt")),p);
+    loader.load(req, rsp, new ContentStreamBase.FileStream(SolrTestUtil.getFile("extraction/version_control.txt")),p);
 
     AddUpdateCommand add = p.addCommands.get(0);
     assertEquals(200, add.commitWithin);
@@ -570,7 +570,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     core.close();
     assertTrue("handler is null and it shouldn't be", handler != null);
 
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       loadLocal("extraction/password-is-solrcell.docx", "literal.id", "one");
     });
     assertU(commit());
@@ -601,20 +601,14 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     core.close();
     assertTrue("handler is null and it shouldn't be", handler != null);
 
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       // Load plain text specifying another mime type, should fail
-      loadLocal("extraction/version_control.txt",
-          "literal.id", "one",
-          ExtractingParams.STREAM_TYPE, "application/pdf"
-      );
+      loadLocal("extraction/version_control.txt", "literal.id", "one", ExtractingParams.STREAM_TYPE, "application/pdf");
     });
 
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       // Load plain text specifying non existing mimetype, should fail
-      loadLocal("extraction/version_control.txt",
-          "literal.id", "one",
-          ExtractingParams.STREAM_TYPE, "foo/bar"
-      );
+      loadLocal("extraction/version_control.txt", "literal.id", "one", ExtractingParams.STREAM_TYPE, "foo/bar");
     });
   }
 
@@ -779,7 +773,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
       // TODO: stop using locally defined streams once stream.file and
       // stream.body work everywhere
       List<ContentStream> cs = new ArrayList<>();
-      cs.add(new ContentStreamBase.FileStream(getFile(filename)));
+      cs.add(new ContentStreamBase.FileStream(SolrTestUtil.getFile(filename)));
       req.setContentStreams(cs);
       return h.queryAndResponse(handler, req);
     } finally {

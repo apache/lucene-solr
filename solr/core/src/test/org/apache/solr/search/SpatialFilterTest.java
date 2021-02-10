@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +58,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @AwaitsFix(bugUrl = "Can fail to find dynamic field ... strange  undefined field home_0___double")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Can fail to find dynamic field ... strange  undefined field home_0___double")
   public void testPoints() throws Exception {
     String fieldName = "home";
     setupDocs(fieldName);
@@ -87,7 +88,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "Can fail to find dynamic field ... strange")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Can fail to find dynamic field ... strange")
   public void testLatLonType() throws Exception {
     String fieldName = "home_ll";
     setupDocs(fieldName);

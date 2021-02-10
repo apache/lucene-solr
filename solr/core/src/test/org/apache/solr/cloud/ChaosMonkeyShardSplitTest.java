@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.cloud.api.collections.ShardSplitTest;
@@ -88,11 +89,11 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       indexThread = new Thread() {
         @Override
         public void run() {
-          int max = atLeast(401);
+          int max = SolrTestUtil.atLeast(401);
           for (int id = 101; id < max; id++) {
             try {
               indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id, documentIds);
-              Thread.sleep(atLeast(25));
+              Thread.sleep(SolrTestUtil.atLeast(25));
             } catch (Exception e) {
               log.error("Exception while adding doc", e);
             }

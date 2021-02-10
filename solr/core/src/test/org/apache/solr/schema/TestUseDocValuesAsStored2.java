@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.rest.schema.TestBulkSchemaAPI;
 import org.apache.solr.util.RestTestBase;
@@ -35,8 +36,8 @@ public class TestUseDocValuesAsStored2 extends RestTestBase {
 
   @Before
   public void setUp() throws Exception {
-    testSolrHome = createTempDir();
-    FileUtils.copyDirectory(new File(TEST_HOME()), testSolrHome.toFile());
+    testSolrHome = SolrTestUtil.createTempDir();
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), testSolrHome.toFile());
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");

@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -38,7 +39,7 @@ public class PreAnalyzedFieldManagedSchemaCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig(CONFIG, configset(CONFIG)).configure();
+    configureCluster(2).addConfig(CONFIG, SolrTestUtil.configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, 2, 1)
         .process(cluster.getSolrClient());
   }

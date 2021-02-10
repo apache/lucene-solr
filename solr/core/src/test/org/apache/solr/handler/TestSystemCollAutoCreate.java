@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.DocCollection;
-import org.junit.Ignore;
 
 public class TestSystemCollAutoCreate extends SolrCloudBridgeTestCase {
 

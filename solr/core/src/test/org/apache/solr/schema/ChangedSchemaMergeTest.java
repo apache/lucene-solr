@@ -24,6 +24,8 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -51,6 +53,8 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     useFactory(null);
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
+
     simfac1 = LMJelinekMercerSimilarityFactory.class;
     simfac2 = SchemaSimilarityFactory.class;
     
@@ -72,7 +76,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     initCore();
   }
 
-  private final File solrHomeDirectory = createTempDir().toFile();
+  private final File solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
   private File schemaFile = null;
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
@@ -106,7 +110,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
     SchemaSimilarityFactory broken = new SchemaSimilarityFactory();
     broken.init(new ModifiableSolrParams());
     // NO INFORM
-    IllegalStateException e = expectThrows(IllegalStateException.class, broken::getSimilarity);
+    IllegalStateException e = SolrTestCaseUtil.expectThrows(IllegalStateException.class, broken::getSimilarity);
     assertTrue("GOT: " + e.getMessage(),
         e.getMessage().contains("SolrCoreAware.inform"));
   }

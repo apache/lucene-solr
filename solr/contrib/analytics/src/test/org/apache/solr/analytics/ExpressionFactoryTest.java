@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.analytics.value.constant.ConstantValue;
@@ -72,7 +73,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void userDefinedVariableFunctionTest() {
     ExpressionFactory fact = getExpressionFactory();
 
@@ -176,7 +177,7 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void reductionManagerCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
 

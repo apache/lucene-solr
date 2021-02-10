@@ -22,6 +22,8 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -82,13 +84,13 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private final static int REPLICATION_TIMEOUT_SECS = 10;
 
   private String suggestedCollectionName() {
-    return (getTestClass().getSimpleName().replace("Test", "") + "_" + getSaferTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
+    return (SolrTestUtil.getTestName().replace("Test", "") + "_" + SolrTestUtil.getTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
   }
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2) // 2 + random().nextInt(3)
-        .addConfig("conf", configset("cloud-minimal-inplace-updates"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal-inplace-updates"))
         .configure();
   }
 
@@ -101,7 +103,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     collectionName = suggestedCollectionName();
-    expectThrows(SolrException.class, () -> getCollectionState(collectionName));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> getCollectionState(collectionName));
   }
 
   @Override
@@ -350,7 +352,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(rAdd.getCoreUrl(), httpClient)) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
-          assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
+          assertTrue(SolrTestUtil.compareSolrDocumentList(previousAllIdsResult, allIdsResult));
         } else {
           // set the first response here
           previousAllIdsResult = allIdsResult;

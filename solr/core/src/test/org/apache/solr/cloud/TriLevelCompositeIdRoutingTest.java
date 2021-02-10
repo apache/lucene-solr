@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.junit.BeforeClass;
@@ -54,12 +55,12 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
     schemaString = "schema15.xml";      // we need a string id
     
     sliceCount = TestUtil.nextInt(random(), 1, (TEST_NIGHTLY ? 5 : 3)); // this is the number of *SHARDS*
-    int replicationFactor = rarely() ? 2 : 1; // replication is not the focus of this test
+    int replicationFactor = LuceneTestCase.rarely() ? 2 : 1; // replication is not the focus of this test
     numJettys = replicationFactor * sliceCount;
-    MAX_APP_ID = atLeast(5);
-    MAX_USER_ID = atLeast(10);
-    MAX_DOC_ID = atLeast(20);
-    NUM_ADDS = atLeast(200);
+    MAX_APP_ID = SolrTestUtil.atLeast(5);
+    MAX_USER_ID = SolrTestUtil.atLeast(10);
+    MAX_DOC_ID = SolrTestUtil.atLeast(20);
+    NUM_ADDS = SolrTestUtil.atLeast(200);
   }
 
   @Test

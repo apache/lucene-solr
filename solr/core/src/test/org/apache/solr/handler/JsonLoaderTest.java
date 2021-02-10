@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -175,7 +177,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     String invalidJsonString = "}{";
 
     try (SolrQueryRequest req = req()) {
-      SolrException ex = expectThrows(SolrException.class, () -> {
+      SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         loader.load(req, rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
       });
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
@@ -411,7 +413,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     if (array) {
       b.append("[");
     }
-    final int passes = atLeast(2);
+    final int passes = SolrTestUtil.atLeast(2);
     for (int i=1;i<=passes;i++){
       b.append(json.replace("1",""+i));
       if (array) {
@@ -654,15 +656,15 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
 
     ignoreException("big_integer_t");
 
-    Exception ex = expectThrows(Exception.class, () -> {
-      updateJ(json( "[{'id':'1','big_integer_tl':12345678901234567890}]" ), null);
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      updateJ(json("[{'id':'1','big_integer_tl':12345678901234567890}]"), null);
     });
     assertTrue(ex.getMessage().contains("Error adding field "));
 
     // Adding a BigInteger to an integer field should fail
     // BigInteger.intValue() returns only the low-order 32 bits.
-    ex = expectThrows(Exception.class, () -> {
-      updateJ(json( "[{'id':'1','big_integer_ti':12345678901234567890}]" ), null);
+    ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      updateJ(json("[{'id':'1','big_integer_ti':12345678901234567890}]"), null);
     });
     assertTrue(ex.getMessage().contains("Error adding field "));
 

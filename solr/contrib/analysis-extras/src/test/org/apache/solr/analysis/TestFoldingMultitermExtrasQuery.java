@@ -20,6 +20,7 @@ import java.io.File;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,8 +33,8 @@ public class TestFoldingMultitermExtrasQuery extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
+    File testHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(SolrTestUtil.getFile("analysis-extras/solr"), testHome);
     initCore("solrconfig-icucollate.xml","schema-folding-extra.xml", testHome.getAbsolutePath());
 
     int idx = 1;

@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -826,8 +827,8 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(//doc)=1]", "*[count(//lst[@name='facet_fields']/lst[@name='test_i']/int)=2]");
 
     // SOLR-13970
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      h.query(req(params("q", "*:*", "fq", "{!collapse field="+group+hint+"}", "group", "true", "group.field", "id")));
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      h.query(req(params("q", "*:*", "fq", "{!collapse field=" + group + hint + "}", "group", "true", "group.field", "id")));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
@@ -876,8 +877,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // this is currently ok on fields that don't exist on any docs in the index
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
       for (String hint : Arrays.asList("", " hint=top_fc")) {
-        SolrException e = expectThrows(SolrException.class,
-            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f + hint +"}")));
+        SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req("q", "*:*", "fq", "{!collapse field=" + f + hint + "}")));
         assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue("unexpected Message: " + e.getMessage(),
             e.getMessage().contains("Collapsing field '" + f + "' " +
@@ -957,9 +957,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   public void testGroupHeadSelector() {
     GroupHeadSelector s;
 
-    expectThrows(SolrException.class, "no exception with multi criteria",
-        () -> GroupHeadSelector.build(params("sort", "foo_s asc", "min", "bar_s"))
-    );
+    SolrTestCaseUtil.expectThrows(SolrException.class, "no exception with multi criteria", () -> GroupHeadSelector.build(params("sort", "foo_s asc", "min", "bar_s")));
     
     s = GroupHeadSelector.build(params("min", "foo_s"));
     assertEquals(GroupHeadSelectorType.MIN, s.type);
@@ -1010,17 +1008,14 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     // this also tests docValues=false along with indexed=false or univertible=false
     for (String f : Arrays.asList("not_indexed_sS", "indexed_s_not_uninvert")) {
       {
-        SolrException e = expectThrows(SolrException.class,
-                                    () -> h.query(req(params("q", "*:*",
-                                                             "fq", "{!collapse field="+f+"}"))));
+        SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req(params("q", "*:*", "fq", "{!collapse field=" + f + "}"))));
         assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue("unexpected Message: " + e.getMessage(),
                    e.getMessage().contains("Collapsing field '" + f + "' " +
                        "should be either docValues enabled or indexed with uninvertible enabled"));
       }
       {
-        SolrException e = expectThrows(SolrException.class,
-            () -> h.query(req("q", "*:*", "fq", "{!collapse field="+f+" hint=top_fc}")));
+        SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req("q", "*:*", "fq", "{!collapse field=" + f + " hint=top_fc}")));
         assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
         assertTrue("unexpected Message: " + e.getMessage(),
             e.getMessage().contains("Collapsing field '" + f + "' " +

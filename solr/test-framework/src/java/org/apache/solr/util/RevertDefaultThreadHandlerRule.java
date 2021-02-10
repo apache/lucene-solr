@@ -31,24 +31,30 @@ public final class RevertDefaultThreadHandlerRule implements TestRule {
   
   @Override
   public Statement apply(Statement s, Description d) {
-    return new StatementAdapter(s) {
-      @Override
-      protected void before() throws Throwable {
-        if (!applied.getAndSet(true)) {
-          UncaughtExceptionHandler p = Thread.getDefaultUncaughtExceptionHandler();
-          try {
-            // Try to initialize a zookeeper class that reinitializes default exception handler.
-            Class<?> cl = NIOServerCnxnFactory.class;
-            // Make sure static initializers have been called.
-            Class.forName(cl.getName(), true, cl.getClassLoader());
-          } finally {
-            if (p == Thread.getDefaultUncaughtExceptionHandler()) {
-            //  throw new RuntimeException("Zookeeper no longer resets default thread handler.");
-            }
-            Thread.setDefaultUncaughtExceptionHandler(p);
+    return new MyStatementAdapter(s);
+  }
+
+  private static class MyStatementAdapter extends StatementAdapter {
+    public MyStatementAdapter(Statement s) {
+      super(s);
+    }
+
+    @Override
+    protected void before() throws Throwable {
+      if (!applied.getAndSet(true)) {
+        UncaughtExceptionHandler p = Thread.getDefaultUncaughtExceptionHandler();
+        try {
+          // Try to initialize a zookeeper class that reinitializes default exception handler.
+          Class<?> cl = NIOServerCnxnFactory.class;
+          // Make sure static initializers have been called.
+          Class.forName(cl.getName(), true, cl.getClassLoader());
+        } finally {
+          if (p == Thread.getDefaultUncaughtExceptionHandler()) {
+          //  throw new RuntimeException("Zookeeper no longer resets default thread handler.");
           }
+          Thread.setDefaultUncaughtExceptionHandler(p);
         }
       }
-    };
+    }
   }
 }

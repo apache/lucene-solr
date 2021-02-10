@@ -39,6 +39,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
@@ -49,12 +50,11 @@ import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.junit.After;
 import org.junit.Before;;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class TestSelectiveWeightCreation extends TestRerankBase {
   private IndexSearcher getSearcher(IndexReader r) {
-    final IndexSearcher searcher = newSearcher(r, false, false);
+    final IndexSearcher searcher = LuceneTestCase.newSearcher(r, false, false);
     return searcher;
   }
 
@@ -118,22 +118,22 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testScoringQueryWeightCreation() throws IOException, ModelException {
-    final Directory dir = newDirectory();
+    final Directory dir = LuceneTestCase.newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
-    doc.add(newStringField("id", "10", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz",
+    doc.add(LuceneTestCase.newStringField("id", "10", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard the the the the the oz",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 1.0f));
 
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "11", Field.Store.YES));
+    doc.add(LuceneTestCase.newStringField("id", "11", Field.Store.YES));
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the",
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz the the the the the the",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 2.0f));
     w.addDocument(doc);
@@ -204,7 +204,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
 
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testSelectiveWeightsRequestFeaturesFromDifferentStore() throws Exception {
 
 //    final String docs0fv_sparse = FeatureLoggerTestUtils.toFeatureVector(

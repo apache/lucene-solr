@@ -82,29 +82,7 @@ public class BoolField extends PrimitiveFieldType {
   protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
     @Override
     public TokenStreamComponents createComponents(String fieldName) {
-      Tokenizer tokenizer = new Tokenizer() {
-        final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-        boolean done = false;
-
-        @Override
-        public void reset() throws IOException {
-          super.reset();
-          done = false;
-        }
-
-        @Override
-        public boolean incrementToken() throws IOException {
-          clearAttributes();
-          if (done) return false;
-          done = true;
-          int ch = input.read();
-          if (ch==-1) return false;
-          termAtt.copyBuffer(
-                  ((ch=='t' || ch=='T' || ch=='1') ? TRUE_TOKEN : FALSE_TOKEN)
-                  ,0,1);
-          return true;
-        }
-      };
+      Tokenizer tokenizer = new MyTokenizer();
 
       return new TokenStreamComponents(tokenizer);
     }
@@ -248,48 +226,7 @@ public class BoolField extends PrimitiveFieldType {
 
       final int trueOrd = tord;
 
-      return new BoolDocValues(this) {
-
-        private int getOrdForDoc(int doc) throws IOException {
-          if (doc > sindex.docID()) {
-            sindex.advance(doc);
-          }
-          if (doc == sindex.docID()) {
-            return sindex.ordValue();
-          } else {
-            return -1;
-          }
-        }
-
-        @Override
-        public boolean boolVal(int doc) throws IOException {
-          return getOrdForDoc(doc) == trueOrd;
-        }
-
-        @Override
-        public boolean exists(int doc) throws IOException {
-          return getOrdForDoc(doc) != -1;
-        }
-
-        @Override
-        public ValueFiller getValueFiller() {
-          return new ValueFiller() {
-            private final MutableValueBool mval = new MutableValueBool();
-
-            @Override
-            public MutableValue getValue() {
-              return mval;
-            }
-
-            @Override
-            public void fillValue(int doc) throws IOException {
-              int ord = getOrdForDoc(doc);
-              mval.value = (ord == trueOrd);
-              mval.exists = (ord != -1);
-            }
-          };
-        }
-      };
+      return new MyBoolDocValues(sindex, trueOrd);
     }
 
     @Override
@@ -304,6 +241,81 @@ public class BoolField extends PrimitiveFieldType {
       return hcode + field.hashCode();
     }
 
+    private class MyBoolDocValues extends BoolDocValues {
+
+      private final SortedDocValues sindex;
+      private final int trueOrd;
+
+      public MyBoolDocValues(SortedDocValues sindex, int trueOrd) {
+        super(BoolFieldSource.this);
+        this.sindex = sindex;
+        this.trueOrd = trueOrd;
+      }
+
+      private int getOrdForDoc(int doc) throws IOException {
+        if (doc > sindex.docID()) {
+          sindex.advance(doc);
+        }
+        if (doc == sindex.docID()) {
+          return sindex.ordValue();
+        } else {
+          return -1;
+        }
+      }
+
+      @Override
+      public boolean boolVal(int doc) throws IOException {
+        return getOrdForDoc(doc) == trueOrd;
+      }
+
+      @Override
+      public boolean exists(int doc) throws IOException {
+        return getOrdForDoc(doc) != -1;
+      }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final MutableValueBool mval = new MutableValueBool();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) throws IOException {
+            int ord = getOrdForDoc(doc);
+            mval.value = (ord == trueOrd);
+            mval.exists = (ord != -1);
+          }
+        };
+      }
+    }
+  }
+
+  private static class MyTokenizer extends Tokenizer {
+    final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    boolean done = false;
+
+    @Override
+    public void reset() throws IOException {
+      super.reset();
+      done = false;
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      clearAttributes();
+      if (done) return false;
+      done = true;
+      int ch = input.read();
+      if (ch==-1) return false;
+      termAtt.copyBuffer(
+              ((ch=='t' || ch=='T' || ch=='1') ? TRUE_TOKEN : FALSE_TOKEN)
+              ,0,1);
+      return true;
+    }
   }
 }
 

@@ -281,7 +281,7 @@ public abstract class RoutedAlias {
 
   abstract CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd);
 
-  class CandidateCollection {
+  static class CandidateCollection {
     private final CreationType creationType;
     private final String destinationCollection;
     private final String creationCollection;

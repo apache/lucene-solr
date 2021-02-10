@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +65,7 @@ public class UtilsToolTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    dir = createTempDir("Utils Tool Test").toAbsolutePath();
+    dir = SolrTestUtil.createTempDir("Utils Tool Test").toAbsolutePath();
     files.forEach(f -> {
       try {
         Files.createFile(dir.resolve(f));

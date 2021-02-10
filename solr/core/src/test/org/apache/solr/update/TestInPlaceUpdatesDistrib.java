@@ -21,6 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -357,7 +358,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
 
   private void docValuesUpdateTest() throws Exception {
     // number of docs we're testing (0 <= id), index may contain additional random docs (id < 0)
-    int numDocs = atLeast(100);
+    int numDocs = SolrTestUtil.atLeast(100);
     if (onlyLeaderIndexes) numDocs = TestUtil.nextInt(random(), 10, 50);
     log.info("Trying num docs = {}", numDocs);
     final List<Integer> ids = new ArrayList<Integer>(numDocs);
@@ -415,7 +416,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
       // all incremements will use some value X such that 20 < abs(X)
       // thus ensuring that after all incrememnts are done, there should be
       // 0 test docs matching the query inplace_updatable_float:[-10 TO 10]
-      final float inc = (random().nextBoolean() ? -1.0F : 1.0F) * (random().nextFloat() + (float)atLeast(20));
+      final float inc = (random().nextBoolean() ? -1.0F : 1.0F) * (random().nextFloat() + (float) SolrTestUtil.atLeast(20));
       assert 20 < Math.abs(inc);
       final float value = (float)valuesList.get(id) + inc;
       assert value < -10 || 10 < value;
@@ -713,7 +714,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     float newinplace_updatable_float = 100;
     List<UpdateRequest> updates = new ArrayList<>();
     updates.add(simulatedUpdateRequest(null, "id", 0, "title_s", "title0_new", "inplace_updatable_float", newinplace_updatable_float, "_version_", version0 + 1)); // full update
-    for (int i=1; i<atLeast(3); i++) {
+    for (int i = 1; i< SolrTestUtil.atLeast(3); i++) {
       updates.add(simulatedUpdateRequest(version0 + i, "id", 0, "inplace_updatable_float", newinplace_updatable_float + i, "_version_", version0 + i + 1));
     }
 
@@ -728,7 +729,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     // Reordering needs to happen using parallel threads, since some of these updates will
     // be blocking calls, waiting for some previous updates to arrive on which it depends.
     ExecutorService threadpool =
-        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(getTestName()));
+        ExecutorUtil.newMDCAwareFixedThreadPool(updates.size() + 1, new SolrNamedThreadFactory(SolrTestUtil.getTestName()));
 
     // re-order the updates for NONLEADER 0
     List<UpdateRequest> reorderedUpdates = new ArrayList<>(updates);
@@ -1224,7 +1225,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
   protected List<Long> buildRandomIndex(Float initFloat, List<Integer> specialIds) throws Exception {
 
     int id = -1; // used for non special docs
-    final int numPreDocs = rarely() || onlyLeaderIndexes ? TestUtil.nextInt(random(),0,9) : atLeast(10);
+    final int numPreDocs = LuceneTestCase.rarely() || onlyLeaderIndexes ? TestUtil.nextInt(random(),0,9) : SolrTestUtil.atLeast(10);
     for (int i = 1; i <= numPreDocs; i++) {
       addDocAndGetVersion("id", id, "title_s", "title" + id, "id_i", id);
       id--;
@@ -1237,7 +1238,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
         versions.add(addDocAndGetVersion("id", special, "title_s", "title" + special, "id_i", special,
                                          "inplace_updatable_float", initFloat));
       }
-      final int numPostDocs = rarely() || onlyLeaderIndexes ? TestUtil.nextInt(random(),0,2) : atLeast(10);
+      final int numPostDocs = LuceneTestCase.rarely() || onlyLeaderIndexes ? TestUtil.nextInt(random(),0,2) : SolrTestUtil.atLeast(10);
       for (int i = 1; i <= numPostDocs; i++) {
         addDocAndGetVersion("id", id, "title_s", "title" + id, "id_i", id);
         id--;

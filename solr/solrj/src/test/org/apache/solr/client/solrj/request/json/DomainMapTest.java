@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.request.json;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
@@ -29,7 +30,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidFilters() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new DomainMap()
           .withFilter(null);
     });
@@ -58,7 +59,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidQueries() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new DomainMap()
           .withQuery(null);
     });
@@ -87,7 +88,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidTagsToExclude() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new DomainMap()
           .withTagsToExclude(null);
     });
@@ -116,7 +117,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidBlockParentQuery() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new DomainMap()
           .setBlockParentQuery(null);
     });
@@ -132,7 +133,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidBlockChildrenQuery() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new DomainMap()
           .setBlockChildQuery(null);
     });
@@ -148,7 +149,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidJoinFromParam() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new DomainMap()
           .setJoinTransformation(null, "valid-to-field");
     });
@@ -157,7 +158,7 @@ public class DomainMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidJoinToParam() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       new DomainMap()
           .setJoinTransformation("valid-from-field", null);
     });

@@ -24,7 +24,9 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 
 public class TestFieldCacheReopen extends SolrTestCase {
   
@@ -34,11 +36,11 @@ public class TestFieldCacheReopen extends SolrTestCase {
   // shared segments reuse the doc values arrays in
   // FieldCache
   public void testFieldCacheReuseAfterReopen() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = SolrTestUtil.newDirectory();
     IndexWriter writer = new IndexWriter(
         dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).
-            setMergePolicy(newLogMergePolicy(10))
+        LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random())).
+            setMergePolicy(LuceneTestCase.newLogMergePolicy(10))
     );
     Document doc = new Document();
     doc.add(new IntPoint("number", 17));
@@ -47,7 +49,7 @@ public class TestFieldCacheReopen extends SolrTestCase {
   
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
-    LeafReader r1 = getOnlyLeafReader(r);
+    LeafReader r1 = LuceneTestCase.getOnlyLeafReader(r);
     final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(r1, "number", FieldCache.INT_POINT_PARSER);
     assertEquals(0, ints.nextDoc());
     assertEquals(17, ints.longValue());

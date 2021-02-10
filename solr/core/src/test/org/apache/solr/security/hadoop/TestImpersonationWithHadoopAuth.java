@@ -23,7 +23,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -60,7 +62,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
     HdfsTestUtil.checkAssumptions();
 
     InetAddress loopback = InetAddress.getLoopbackAddress();
-    Path securityJsonPath = TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json");
+    Path securityJsonPath = SolrTestUtil.TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json");
     String securityJson = new String(Files.readAllBytes(securityJsonPath), Charset.defaultCharset());
 
     Map<String, Object> securityConfig = (Map<String, Object>)Utils.fromJSONString(securityJson);
@@ -88,7 +90,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
 
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(Utils.toJSONString(securityConfig))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
   }
 
@@ -106,7 +108,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @Test
   public void testProxyNoConfigGroups() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
-      BaseHttpSolrClient.RemoteSolrException ex = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+      BaseHttpSolrClient.RemoteSolrException ex = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
           () -> solrClient.request(getProxyRequest("noGroups","bar")));
       assertTrue(ex.getLocalizedMessage(), ex.getMessage().contains(getExpectedGroupExMsg("noGroups", "bar")));
     }
@@ -115,7 +117,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @Test
   public void testProxyWrongHost() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
-      BaseHttpSolrClient.RemoteSolrException ex = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+      BaseHttpSolrClient.RemoteSolrException ex = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
           () -> solrClient.request(getProxyRequest("wrongHost","bar")));
       assertTrue(ex.getMessage().contains(getExpectedHostExMsg("wrongHost")));
     }
@@ -124,7 +126,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @Test
   public void testProxyNoConfigHosts() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
-      BaseHttpSolrClient.RemoteSolrException ex = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+      BaseHttpSolrClient.RemoteSolrException ex = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
           () -> solrClient.request(getProxyRequest("noHosts","bar")));
       assertTrue(ex.getMessage().contains(getExpectedHostExMsg("noHosts")));
     }
@@ -142,7 +144,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   public void testProxyInvalidProxyUser() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
       // wrong direction, should fail
-      BaseHttpSolrClient.RemoteSolrException ex = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+      BaseHttpSolrClient.RemoteSolrException ex = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
           () -> solrClient.request(getProxyRequest("bar","anyHostAnyUser")));
       assertTrue(ex.getMessage().contains(getExpectedGroupExMsg("bar", "anyHostAnyUser")));
     }
@@ -167,7 +169,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @Test
   public void testProxyInvalidGroup() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
-      BaseHttpSolrClient.RemoteSolrException ex = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
+      BaseHttpSolrClient.RemoteSolrException ex = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
           () -> solrClient.request(getProxyRequest("bogusGroup","bar")));
       assertTrue(ex.getMessage().contains(getExpectedGroupExMsg("bogusGroup", "bar")));
     }
@@ -176,12 +178,12 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @Test
   public void testProxyNullProxyUser() throws Exception {
     try (SolrClient solrClient = newSolrClient()) {
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(getProxyRequest("","bar")));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> solrClient.request(getProxyRequest("","bar")));
     }
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-9893")
+  @LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/HADOOP-9893")
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
 

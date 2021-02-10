@@ -59,23 +59,7 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   public RequestWriter.ContentWriter getContentWriter(String expectedType) {
     if (contentStreams == null || contentStreams.isEmpty() || contentStreams.size() > 1) return null;
     ContentStream stream = contentStreams.get(0);
-    return new RequestWriter.ContentWriter() {
-      @Override
-      public void write(OutputStream os) throws IOException {
-        InputStream inStream = stream.getStream();
-        try {
-          IOUtils.copy(inStream, os);
-        } finally {
-          Utils.readFully(inStream);
-        }
-
-      }
-
-      @Override
-      public String getContentType() {
-        return stream.getContentType();
-      }
-    };
+    return new MyContentWriter(stream);
   }
 
   /**
@@ -99,5 +83,28 @@ public class ContentStreamUpdateRequest extends AbstractUpdateRequest {
   public void addContentStream(ContentStream contentStream){
     contentStreams.add(contentStream);
   }
-  
+
+  private static class MyContentWriter implements RequestWriter.ContentWriter {
+    private final ContentStream stream;
+
+    public MyContentWriter(ContentStream stream) {
+      this.stream = stream;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      InputStream inStream = stream.getStream();
+      try {
+        IOUtils.copy(inStream, os);
+      } finally {
+        Utils.readFully(inStream);
+      }
+
+    }
+
+    @Override
+    public String getContentType() {
+      return stream.getContentType();
+    }
+  }
 }

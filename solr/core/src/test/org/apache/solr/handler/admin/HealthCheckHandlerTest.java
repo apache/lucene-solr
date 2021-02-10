@@ -24,6 +24,7 @@ import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -58,7 +59,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1)
-        .addConfig("_default", configset("cloud-minimal"))
+        .addConfig("_default", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -103,7 +104,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealth state
-      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
+      BaseHttpSolrClient.RemoteSolrException e = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
       {
         req.process(httpSolrClient);
       });
@@ -126,7 +127,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().shutdown();
 
       // api shouldn't unreachable
-      SolrException thrown = expectThrows(SolrException.class, () -> {
+      SolrException thrown = LuceneTestCase.expectThrows(SolrException.class, () -> {
         req.process(httpSolrClient).getResponse().get(CommonParams.STATUS);
         fail("API shouldn't be available, and fail at above request");
       });
@@ -164,7 +165,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // slow way to do this
+  @LuceneTestCase.Nightly // slow way to do this
   public void testHealthCheckV2Api() throws Exception {
     V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());
     assertEquals(0, res.getStatus());
@@ -182,7 +183,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealth state
-      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
+      BaseHttpSolrClient.RemoteSolrException e = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () ->
       {
         new V2Request.Builder("/node/health").build().process(httpSolrClient);
       });

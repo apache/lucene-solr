@@ -337,7 +337,7 @@ public class FacetModule extends SearchComponent {
   // TODO: perhaps factor out some sort of root/parent facet object that doesn't depend
 // on stuff like ResponseBuilder, but contains request parameters,
 // root filter lists (for filter exclusions), etc?
-  class FacetComponentState {
+  static class FacetComponentState {
     ResponseBuilder rb;
     Map<String, Object> facetCommands;
     FacetRequest facetRequest;

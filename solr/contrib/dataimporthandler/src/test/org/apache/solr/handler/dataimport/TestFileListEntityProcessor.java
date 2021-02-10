@@ -29,6 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.Test;
 
@@ -45,7 +46,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testSimple() throws IOException {
-    File tmpdir = createTempDir().toFile();
+    File tmpdir = SolrTestUtil.createTempDir().toFile();
 
     createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), false);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), false);
@@ -71,7 +72,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings({"unchecked"})
   public void testBiggerSmallerFiles() throws IOException {
-    File tmpdir = createTempDir().toFile();
+    File tmpdir = SolrTestUtil.createTempDir().toFile();
 
     long minLength = Long.MAX_VALUE;
     String smallestFile = "";
@@ -142,7 +143,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings({"unchecked"})
   public void testNTOT() throws IOException {
-    File tmpdir = createTempDir().toFile();
+    File tmpdir = SolrTestUtil.createTempDir().toFile();
 
     createFile(tmpdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(StandardCharsets.UTF_8), true);
@@ -177,7 +178,7 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testRECURSION() throws IOException {
-    File tmpdir = createTempDir().toFile();
+    File tmpdir = SolrTestUtil.createTempDir().toFile();
     File childdir = new File(tmpdir + "/child" );
     childdir.mkdir();
     createFile(childdir, "a.xml", "a.xml".getBytes(StandardCharsets.UTF_8), true);

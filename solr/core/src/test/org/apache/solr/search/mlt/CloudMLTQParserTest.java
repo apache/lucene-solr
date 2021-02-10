@@ -22,6 +22,8 @@ import java.util.Arrays;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -41,7 +43,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(2)
-    .addConfig("conf", configset("cloud-dynamic"))
+    .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
     .configure();
     
     final CloudHttp2SolrClient client = cluster.getSolrClient();
@@ -271,7 +273,7 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
 
   public void testInvalidSourceDocument() throws IOException {
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999"));
     });
   }

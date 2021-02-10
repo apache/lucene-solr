@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
 import org.apache.solr.analytics.util.OrdinalCalculator;
@@ -45,7 +46,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCollection() throws Exception {
     configureCluster(4)
-        .addConfig("conf", configset("cloud-analytics"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-analytics"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());

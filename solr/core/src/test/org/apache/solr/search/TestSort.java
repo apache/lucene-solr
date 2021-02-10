@@ -53,6 +53,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.uninverting.UninvertingReader;
@@ -98,7 +99,7 @@ public class TestSort extends SolrTestCaseJ4 {
   public void testRandomFieldNameSorts() throws Exception {
     SolrQueryRequest req = lrf.makeRequest("q", "*:*");
 
-    final int iters = atLeast(5000);
+    final int iters = SolrTestUtil.atLeast(5000);
 
     // infinite loop abort when trying to generate a non-blank sort "name"
     final int nonBlankAttempts = 37;

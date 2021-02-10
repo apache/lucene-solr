@@ -33,13 +33,19 @@ public class PrefixQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() {
-        SchemaField sf = req.getSchema().getField(localParams.get(QueryParsing.F));
-        return sf.getType().getPrefixQuery(this, sf, localParams.get(QueryParsing.V));
-      }
-    };
+    return new MyQParser(qstr, localParams, params, req);
+  }
+
+  private static class MyQParser extends QParser {
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() {
+      SchemaField sf = req.getSchema().getField(localParams.get(QueryParsing.F));
+      return sf.getType().getPrefixQuery(this, sf, localParams.get(QueryParsing.V));
+    }
   }
 }
 

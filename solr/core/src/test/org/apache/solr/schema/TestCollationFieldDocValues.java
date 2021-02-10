@@ -25,6 +25,7 @@ import java.util.Locale;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.BeforeClass;
 
 /**
@@ -60,7 +61,7 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
    */
   public static String setupSolrHome() throws Exception {
     // make a solr home underneath the test's TEMP_DIR
-    File tmpFile = createTempDir("collation1").toFile();
+    File tmpFile = SolrTestUtil.createTempDir("collation1").toFile();
     
     // make data and conf dirs
     new File(tmpFile, "data").mkdir();
@@ -68,9 +69,9 @@ public class TestCollationFieldDocValues extends SolrTestCaseJ4 {
     confDir.mkdirs();
     
     // copy over configuration files
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml"), new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
-    FileUtils.copyFile(getFile("solr/collection1/conf/schema-collate-dv.xml"), new File(confDir, "schema.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/solrconfig-basic.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/solrconfig.snippet.randomindexconfig.xml"), new File(confDir, "solrconfig.snippet.randomindexconfig.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/schema-collate-dv.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator = (RuleBasedCollator) Collator.getInstance(new Locale("de", "DE"));

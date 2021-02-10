@@ -16,7 +16,9 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -34,8 +36,8 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
     System.setProperty("shareSchema", "true");  // see testSharedSchema
 
     configureCluster(1) // some tests here assume 1 node
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .addConfig("cShare", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("cShare", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .formatZk(true).configure();
   }
   @After
@@ -56,13 +58,13 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
     // TODO - check exception response!
     ConfigSetAdminRequest.Delete deleteConfigRequest = new ConfigSetAdminRequest.Delete();
     deleteConfigRequest.setConfigSetName("conf1");
-    expectThrows(SolrException.class, () -> {
+    LuceneTestCase.expectThrows(SolrException.class, () -> {
       deleteConfigRequest.process(cluster.getSolrClient());
     });
   }
 
   @Test
-  @Nightly // TODO speedup
+  @LuceneTestCase.Nightly // TODO speedup
   public void testSharedSchema() throws Exception {
     CollectionAdminRequest.createCollection("col1", "cShare", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);

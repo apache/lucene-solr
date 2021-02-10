@@ -22,6 +22,7 @@ import static org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -535,7 +536,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   
   public void testWhitespace() {
     Random r = random();
-    final int iters = atLeast(30);
+    final int iters = SolrTestUtil.atLeast(30);
 
     for (int i = 0; i < iters; i++) {
       final boolean aliasId = r.nextBoolean();

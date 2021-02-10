@@ -433,6 +433,57 @@ public class JavaBinCodec implements PushWriter {
     return false;
   }
 
+  private static class MyEntry implements Entry<Object,Object> {
+
+    private final Object key;
+    private final Object value;
+
+    public MyEntry(Object key, Object value) {
+      this.key = key;
+      this.value = value;
+    }
+
+    @Override
+    public Object getKey() {
+      return key;
+    }
+
+    @Override
+    public Object getValue() {
+      return value;
+    }
+
+    @Override
+    public String toString() {
+      return "MapEntry[" + key + ":" + value + "]";
+    }
+
+    @Override
+    public Object setValue(Object value) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int hashCode() {
+      int result = 31;
+      result *=31 + getKey().hashCode();
+      result *=31 + getValue().hashCode();
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if(this == obj) {
+        return true;
+      }
+      if (obj instanceof Map.Entry<?, ?>) {
+        Entry<?, ?> entry = (Entry<?, ?>) obj;
+        return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
+      }
+      return false;
+    }
+  }
+
   public class BinEntryWriter implements MapWriter.EntryWriter {
     @Override
     public MapWriter.EntryWriter put(CharSequence k, Object v) throws IOException {
@@ -839,48 +890,7 @@ public class JavaBinCodec implements PushWriter {
   public Map.Entry<Object,Object> readMapEntry(DataInputInputStream dis) throws IOException {
     final Object key = readVal(dis);
     final Object value = readVal(dis);
-    return new Map.Entry<Object,Object>() {
-
-      @Override
-      public Object getKey() {
-        return key;
-      }
-
-      @Override
-      public Object getValue() {
-        return value;
-      }
-
-      @Override
-      public String toString() {
-        return "MapEntry[" + key + ":" + value + "]";
-      }
-
-      @Override
-      public Object setValue(Object value) {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int hashCode() {
-        int result = 31;
-        result *=31 + getKey().hashCode();
-        result *=31 + getValue().hashCode();
-        return result;
-      }
-
-      @Override
-      public boolean equals(Object obj) {
-        if(this == obj) {
-          return true;
-        }
-        if (obj instanceof Map.Entry<?, ?>) {
-          Entry<?, ?> entry = (Entry<?, ?>) obj;
-          return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
-        }
-        return false;
-      }
-    };
+    return new MyEntry(key, value);
   }
 
   /**

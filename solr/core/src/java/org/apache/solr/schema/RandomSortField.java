@@ -108,53 +108,7 @@ public class RandomSortField extends FieldType {
   private static FieldComparatorSource randomComparatorSource = new FieldComparatorSource() {
     @Override
     public FieldComparator<Integer> newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) {
-      return new SimpleFieldComparator<Integer>() {
-        int seed;
-        private final int[] values = new int[numHits];
-        int bottomVal;
-        int topVal;
-
-        @Override
-        public int compare(int slot1, int slot2) {
-          return values[slot1] - values[slot2];  // values will be positive... no overflow possible.
-        }
-
-        @Override
-        public void setBottom(int slot) {
-          bottomVal = values[slot];
-        }
-
-        @Override
-        public void setTopValue(Integer value) {
-          topVal = value.intValue();
-        }
-
-        @Override
-        public int compareBottom(int doc) {
-          return bottomVal - hash(doc+seed);
-        }
-
-        @Override
-        public void copy(int slot, int doc) {
-          values[slot] = hash(doc+seed);
-        }
-
-        @Override
-        protected void doSetNextReader(LeafReaderContext context) {
-          seed = getSeed(fieldname, context);
-        }
-
-        @Override
-        public Integer value(int slot) {
-          return values[slot];
-        }
-
-        @Override
-        public int compareTop(int doc) {
-          // values will be positive... no overflow possible.
-          return topVal - hash(doc+seed);
-        }
-      };
+      return new IntegerSimpleFieldComparator(numHits, fieldname);
     }
   };
 
@@ -194,6 +148,62 @@ public class RandomSortField extends FieldType {
     public int hashCode() {
       return field.hashCode();
     };
+  }
+
+  private static class IntegerSimpleFieldComparator extends SimpleFieldComparator<Integer> {
+    private final int numHits;
+    private final String fieldname;
+    int seed;
+    private final int[] values;
+    int bottomVal;
+    int topVal;
+
+    public IntegerSimpleFieldComparator(int numHits, String fieldname) {
+      this.numHits = numHits;
+      this.fieldname = fieldname;
+      values = new int[numHits];
+    }
+
+    @Override
+    public int compare(int slot1, int slot2) {
+      return values[slot1] - values[slot2];  // values will be positive... no overflow possible.
+    }
+
+    @Override
+    public void setBottom(int slot) {
+      bottomVal = values[slot];
+    }
+
+    @Override
+    public void setTopValue(Integer value) {
+      topVal = value.intValue();
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      return bottomVal - hash(doc+seed);
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      values[slot] = hash(doc+seed);
+    }
+
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) {
+      seed = getSeed(fieldname, context);
+    }
+
+    @Override
+    public Integer value(int slot) {
+      return values[slot];
+    }
+
+    @Override
+    public int compareTop(int doc) {
+      // values will be positive... no overflow possible.
+      return topVal - hash(doc+seed);
+    }
   }
 }
 

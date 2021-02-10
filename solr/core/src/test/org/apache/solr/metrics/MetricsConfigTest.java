@@ -22,6 +22,7 @@ import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.SlidingTimeWindowReservoir;
 import com.codahale.metrics.UniformReservoir;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.AfterClass;
@@ -43,7 +44,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupLoader() throws Exception {
     System.setProperty("solr.enableMetrics", "true");
-    solrHome = createTempDir().toFile();
+    solrHome = SolrTestUtil.createTempDir().toFile();
   }
 
   @AfterClass
@@ -113,6 +114,6 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
 
   private NodeConfig loadNodeConfig() throws Exception {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/solr-metricsconfig.xml");
-    return new SolrXmlConfig().fromInputStream(TEST_PATH(), is, new Properties()); //TODO pass in props
+    return new SolrXmlConfig().fromInputStream(SolrTestUtil.TEST_PATH(), is, new Properties()); //TODO pass in props
   }
 }

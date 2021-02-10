@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Before;
@@ -30,7 +31,7 @@ public class TestSerializedLuceneMatchVersion extends RestTestBase {
   public void init() throws Exception {
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
 
-    jetty = createJettyAndHarness(TEST_HOME(), "solrconfig-minimal.xml", "schema-rest-lucene-match-version.xml",
+    jetty = createJettyAndHarness(SolrTestUtil.TEST_HOME(), "solrconfig-minimal.xml", "schema-rest-lucene-match-version.xml",
                           "/solr", true, extraServlets);
   }
 

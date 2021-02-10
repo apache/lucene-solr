@@ -119,50 +119,7 @@ public class TermsQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() throws SyntaxError {
-        String fname = localParams.get(QueryParsing.F);
-        FieldType ft = req.getSchema().getFieldType(fname);
-        String separator = localParams.get(SEPARATOR, ",");
-        String qstr = localParams.get(QueryParsing.V);//never null
-        Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
-        //TODO pick the default method based on various heuristics from benchmarks
-        //TODO pick the default using FieldType.getSetQuery
-
-        //if space then split on all whitespace & trim, otherwise strictly interpret
-        final boolean sepIsSpace = separator.equals(" ");
-        if (sepIsSpace)
-          qstr = qstr.trim();
-        if (qstr.length() == 0)
-          return new MatchNoDocsQuery();
-        final String[] splitVals = sepIsSpace ? qstr.split("\\s+") : qstr.split(Pattern.quote(separator), -1);
-        assert splitVals.length > 0;
-        
-        if (ft.isPointField()) {
-          if (localParams.get(METHOD) != null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                String.format(Locale.ROOT, "Method '%s' not supported in TermsQParser when using PointFields", localParams.get(METHOD)));
-          }
-          return ((PointField)ft).getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
-        }
-
-        BytesRef[] bytesRefs = new BytesRef[splitVals.length];
-        BytesRefBuilder term = new BytesRefBuilder();
-        for (int i = 0; i < splitVals.length; i++) {
-          String stringVal = splitVals[i];
-          //logic same as TermQParserPlugin
-          if (ft != null) {
-            ft.readableToIndexed(stringVal, term);
-          } else {
-            term.copyChars(stringVal);
-          }
-          bytesRefs[i] = term.toBytesRef();
-        }
-
-        return method.makeFilter(fname, bytesRefs);
-      }
-    };
+    return new MyQParser(qstr, localParams, params, req);
   }
 
   private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery {
@@ -258,6 +215,55 @@ public class TermsQParserPlugin extends QParserPlugin {
       }
 
       return -(low + 1);  // key not found.
+    }
+  }
+
+  private static class MyQParser extends QParser {
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() throws SyntaxError {
+      String fname = localParams.get(QueryParsing.F);
+      FieldType ft = req.getSchema().getFieldType(fname);
+      String separator = localParams.get(SEPARATOR, ",");
+      String qstr = localParams.get(QueryParsing.V);//never null
+      Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
+      //TODO pick the default method based on various heuristics from benchmarks
+      //TODO pick the default using FieldType.getSetQuery
+
+      //if space then split on all whitespace & trim, otherwise strictly interpret
+      final boolean sepIsSpace = separator.equals(" ");
+      if (sepIsSpace)
+        qstr = qstr.trim();
+      if (qstr.length() == 0)
+        return new MatchNoDocsQuery();
+      final String[] splitVals = sepIsSpace ? qstr.split("\\s+") : qstr.split(Pattern.quote(separator), -1);
+      assert splitVals.length > 0;
+
+      if (ft.isPointField()) {
+        if (localParams.get(METHOD) != null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              String.format(Locale.ROOT, "Method '%s' not supported in TermsQParser when using PointFields", localParams.get(METHOD)));
+        }
+        return ((PointField)ft).getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+      }
+
+      BytesRef[] bytesRefs = new BytesRef[splitVals.length];
+      BytesRefBuilder term = new BytesRefBuilder();
+      for (int i = 0; i < splitVals.length; i++) {
+        String stringVal = splitVals[i];
+        //logic same as TermQParserPlugin
+        if (ft != null) {
+          ft.readableToIndexed(stringVal, term);
+        } else {
+          term.copyChars(stringVal);
+        }
+        bytesRefs[i] = term.toBytesRef();
+      }
+
+      return method.makeFilter(fname, bytesRefs);
     }
   }
 }

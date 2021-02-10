@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
@@ -44,7 +45,7 @@ public class TestTextField extends SolrTestCaseJ4 {
 
     // Two terms provided by the WhitespaceTokenizer for the multi-term part.
     // This is not allowed. Expect an exception.
-    SolrException exception = expectThrows(SolrException.class, () -> TextField.analyzeMultiTerm("field", "term1 term2", new WhitespaceAnalyzer()));
+    SolrException exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> TextField.analyzeMultiTerm("field", "term1 term2", new WhitespaceAnalyzer()));
     assertEquals("Unexpected error code", SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
   }
 }

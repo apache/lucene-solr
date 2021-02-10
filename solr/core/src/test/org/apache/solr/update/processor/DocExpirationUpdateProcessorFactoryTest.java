@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update.processor;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrInputDocument;
 
 import org.apache.solr.update.UpdateCommand;
@@ -156,7 +157,7 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
 
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testAutomaticDeletes() throws Exception {
 
     // get a handle on our recorder
@@ -180,7 +181,7 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
       recorder.startRecording();
       
       // more then one iter to verify it's recurring
-      final int numItersToCheck = 1 + RANDOM_MULTIPLIER;
+      final int numItersToCheck = 1 + LuceneTestCase.RANDOM_MULTIPLIER;
       
       for (int i = 0; i < numItersToCheck; i++) { 
         UpdateCommand tmp;

@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -69,7 +70,7 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
         "<metrics>\n" + SOLR_XML_HISTORY_CONFIG);
     // Spin up a cluster with a protected /admin/metrics handler, and a 2 seconds metrics collectPeriod
     configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .withSecurityJson(SECURITY_JSON)
         .withSolrXml(solrXml)
         .configure();

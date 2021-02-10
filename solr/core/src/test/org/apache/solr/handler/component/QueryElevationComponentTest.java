@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.QueryElevationParams;
@@ -81,7 +82,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
   private void init(String config, String schema) throws Exception {
     //write out elevate-data.xml to the Data dir first by copying it from conf, which we know exists, this way we can test both conf and data configurations
-    File parent = new File(TEST_HOME() + "/collection1", "conf");
+    File parent = new File(SolrTestUtil.TEST_HOME() + "/collection1", "conf");
     File elevateFile = new File(parent, "elevate.xml");
     File elevateDataFile = new File(initAndGetDataDir(), "elevate-data.xml");
     FileUtils.copyFile(elevateFile, elevateDataFile);

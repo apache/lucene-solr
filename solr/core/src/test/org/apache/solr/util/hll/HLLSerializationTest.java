@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util.hll;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -42,8 +43,8 @@ public class HLLSerializationTest extends SolrTestCase {
    * under most possible init parameters.
    */
   @Test
-  @Slow
-  @Nightly
+  @LuceneTestCase.Slow
+  @LuceneTestCase.Nightly
   public void serializationSmokeTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
@@ -69,8 +70,8 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #manyValuesHLLSerializationTest
    */
   @Test
-  @Slow
-  @Monster("needs roughly -Dtests.heapsize=8g because of the (multiple) massive data structs")
+  @LuceneTestCase.Slow
+  @LuceneTestCase.Monster("needs roughly -Dtests.heapsize=8g because of the (multiple) massive data structs")
   public void monsterHLLSerializationTest() throws Exception {
     final Random random = new Random(randomLong());
     final int randomCount = 250;
@@ -95,8 +96,8 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #monsterHLLSerializationTest
    */
   @Test
-  @Slow
-  @Monster("may require as much as -Dtests.heapsize=4g depending on random values picked")
+  @LuceneTestCase.Slow
+  @LuceneTestCase.Monster("may require as much as -Dtests.heapsize=4g depending on random values picked")
   public void manyValuesHLLSerializationTest() throws Exception {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);
@@ -140,8 +141,8 @@ public class HLLSerializationTest extends SolrTestCase {
    * @see #monsterHLLSerializationTest
    */
   @Test
-  @Slow
-  @Monster("can require as much as -Dtests.heapsize=4g because of the massive data structs")
+  @LuceneTestCase.Slow
+  @LuceneTestCase.Monster("can require as much as -Dtests.heapsize=4g because of the massive data structs")
   public void manyValuesMonsterHLLSerializationTest() throws Exception {
 
     final HLLType[] ALL_TYPES = EnumSet.allOf(HLLType.class).toArray(new HLLType[0]);

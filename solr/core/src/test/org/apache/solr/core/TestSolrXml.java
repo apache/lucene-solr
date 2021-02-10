@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.junit.After;
@@ -51,7 +52,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   @Before
   public void doBefore() throws Exception {
 
-    solrHome = createTempDir();
+    solrHome = SolrTestUtil.createTempDir();
     initCore("solrconfig.xml", "schema.xml");
     solrXmlConfig = new SolrXmlConfig();
   }
@@ -63,7 +64,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   @Ignore
   public void testAllInfoPresent() throws IOException {
-    Path testSrcRoot = TEST_PATH();
+    Path testSrcRoot = SolrTestUtil.TEST_PATH();
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
     NodeConfig cfg = new SolrXmlConfig().fromSolrHome(solrHome, new Properties());
@@ -119,7 +120,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     System.setProperty("socketTimeout", "220");
     System.setProperty("connTimeout", "200");
 
-    Path testSrcRoot = TEST_PATH();
+    Path testSrcRoot = SolrTestUtil.TEST_PATH();
     Files.copy(testSrcRoot.resolve("solr-50-all.xml"), solrHome.resolve("solr.xml"));
 
     NodeConfig cfg = solrXmlConfig.fromSolrHome(solrHome, new Properties());

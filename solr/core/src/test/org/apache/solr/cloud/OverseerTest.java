@@ -20,6 +20,7 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -269,7 +270,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     System.setProperty("solr.zkclienttimeout", "30000");
 
-    Path zkDir = createTempDir("zkData");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
 
     server = new ZkTestServer(zkDir);
     server.run();
@@ -813,7 +814,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       // Create collection znode before repeatedly trying to enqueue the Cluster state change message
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION, false, true);
 
-      for (int i = 0; i < atLeast(4); i++) {
+      for (int i = 0; i < SolrTestUtil.atLeast(4); i++) {
         killCounter.incrementAndGet(); // for each round allow 1 kill
 
         mockController = new MockZKController(server.getZkAddress(), "node1", overseers);

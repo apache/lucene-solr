@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 
 import static org.apache.solr.common.util.Utils.makeMap;
@@ -40,7 +41,7 @@ public class TestValidatingJsonMap extends SolrTestCaseJ4 {
     assertEquals(Boolean.FALSE, m.getBool("b", Boolean.TRUE));
     assertEquals(Integer.valueOf(10), m.getInt("i",0));
 
-    expectThrows(RuntimeException.class, () -> m.getList("l", ENUM_OF, ImmutableSet.of("X", "Z")));
+    LuceneTestCase.expectThrows(RuntimeException.class, () -> m.getList("l", ENUM_OF, ImmutableSet.of("X", "Z")));
 
     List l = m.getList("l", ENUM_OF, ImmutableSet.of("X", "Y", "Z"));
     assertEquals(2,l.size());

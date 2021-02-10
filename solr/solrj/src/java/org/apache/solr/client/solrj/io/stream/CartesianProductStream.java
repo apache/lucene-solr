@@ -290,7 +290,7 @@ public class CartesianProductStream extends TupleStream implements Expressible {
     return 0;
   }
   
-  class NamedEvaluator{
+  static class NamedEvaluator{
     private String name;
     private StreamEvaluator evaluator;
     

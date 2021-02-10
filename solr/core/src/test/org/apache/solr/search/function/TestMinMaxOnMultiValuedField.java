@@ -267,7 +267,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   }
   
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
   public void testIntFieldCache() {
     testSimpleInt("val_tis");
     testExpectedSortOrderingInt("val_tis", true);
@@ -289,7 +289,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     testExpectedSortOrderingInt("val_tis_ni_dv", true);
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
   public void testLongFieldCache() {
     testSimpleLong("val_tls");
     testExpectedSortOrderingLong("val_tls", true);
@@ -312,7 +312,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
   }
 
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
   public void testFloatFieldCache() {
     testSimpleFloat("val_tfs");
     testExpectedSortOrderingFloat("val_tfs", true);
@@ -334,7 +334,7 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
     testExpectedSortOrderingFloat("val_fs_ni_p", false);
   }
   
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6709")
   public void testDoubleFieldCache() {
     testSimpleDouble("val_tds");
     

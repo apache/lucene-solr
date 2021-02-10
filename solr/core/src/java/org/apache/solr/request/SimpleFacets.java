@@ -358,12 +358,7 @@ public class SimpleFacets {
 
     final Set<String> excludeTerms = new HashSet<>(StrUtils.splitSmart(exclude, ",", true));
 
-    return new Predicate<BytesRef>() {
-      @Override
-      public boolean test(BytesRef bytesRef) {
-        return !excludeTerms.contains(bytesRef.utf8ToString());
-      }
-    };
+    return new BytesRefPredicate(excludeTerms);
   }
 
   /**
@@ -765,13 +760,7 @@ public class SimpleFacets {
     if (sf != null && !sf.hasDocValues() && !sf.multiValued() && sf.getType().getNumberType() != null) {
       // it's a single-valued numeric field: we must currently create insanity :(
       // there isn't a GroupedFacetCollector that works on numerics right now...
-      return new FilterCollector(collector) {
-        @Override
-        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-          LeafReader insane = Insanity.wrapInsanity(context.reader(), field);
-          return in.getLeafCollector(insane.getContext());
-        }
-      };
+      return new MyFilterCollector(collector, field);
     } else {
       return collector;
     }
@@ -1234,5 +1223,33 @@ public class SimpleFacets {
 
   public ResponseBuilder getResponseBuilder() {
     return rb;
+  }
+
+  private static class BytesRefPredicate implements Predicate<BytesRef> {
+    private final Set<String> excludeTerms;
+
+    public BytesRefPredicate(Set<String> excludeTerms) {
+      this.excludeTerms = excludeTerms;
+    }
+
+    @Override
+    public boolean test(BytesRef bytesRef) {
+      return !excludeTerms.contains(bytesRef.utf8ToString());
+    }
+  }
+
+  private static class MyFilterCollector extends FilterCollector {
+    private final String field;
+
+    public MyFilterCollector(Collector collector, String field) {
+      super(collector);
+      this.field = field;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      LeafReader insane = Insanity.wrapInsanity(context.reader(), field);
+      return in.getLeafCollector(insane.getContext());
+    }
   }
 }

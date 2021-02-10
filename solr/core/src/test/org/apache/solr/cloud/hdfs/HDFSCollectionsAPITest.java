@@ -19,6 +19,7 @@ package org.apache.solr.cloud.hdfs;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -41,10 +42,10 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
     useFactory(null);
     configureCluster(2).configure();
 
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(SolrTestUtil.createTempDir().toFile().getAbsolutePath());
 
     ZkConfigManager configManager = new ZkConfigManager(zkClient());
-    configManager.uploadConfigDir(configset("cloud-hdfs"), "_default");
+    configManager.uploadConfigDir(SolrTestUtil.configset("cloud-hdfs"), "_default");
   }
 
 

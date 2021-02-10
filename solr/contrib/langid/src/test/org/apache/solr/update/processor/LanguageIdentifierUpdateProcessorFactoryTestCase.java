@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -37,7 +38,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-languageidentifier.xml", "schema.xml", getFile("langid/solr").getAbsolutePath());
+    initCore("solrconfig-languageidentifier.xml", "schema.xml", SolrTestUtil.getFile("langid/solr").getAbsolutePath());
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id_tika");
     assertNotNull(chained);

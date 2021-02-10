@@ -17,23 +17,34 @@
 
 package org.apache.solr;
 
-import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
+import com.carrotsearch.randomizedtesting.MixWithSuiteName;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.annotations.Listeners;
+import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
+import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.FailureMarker;
+import org.apache.lucene.util.LuceneJUnit3MethodProvider;
+import org.apache.lucene.util.LuceneTestCase;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86Codec;
-import org.apache.lucene.util.Constants;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
+import org.apache.lucene.util.RunListenerPrintReproduceInfo;
+import org.apache.lucene.util.TestRuleMarkFailure;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecutor;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -54,6 +65,7 @@ import org.apache.solr.util.TestInjection;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -62,6 +74,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,10 +88,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -98,6 +110,21 @@ import java.util.concurrent.TimeUnit;
  * SolrTestCaseJ4.
  */
 //0p-@TimeoutSuite(millis = 130 * TimeUnits.SECOND)
+
+@RunWith(RandomizedRunner.class)
+@TestMethodProviders({
+    LuceneJUnit3MethodProvider.class,
+    JUnit4MethodProvider.class
+})
+@Listeners({
+    RunListenerPrintReproduceInfo.class,
+    FailureMarker.class
+})
+@ThreadLeakScope(ThreadLeakScope.Scope.SUITE)
+@ThreadLeakGroup(ThreadLeakGroup.Group.MAIN)
+@ThreadLeakAction({ThreadLeakAction.Action.WARN, ThreadLeakAction.Action.INTERRUPT})
+@SeedDecorators({MixWithSuiteName.class}) // See LUCENE-3995 for rationale.
+
 @ThreadLeakFilters(defaultFilters = true, filters = {
         SolrIgnoredThreadsFilter.class,
         QuickPatchThreadsFilter.class
@@ -106,8 +133,9 @@ import java.util.concurrent.TimeUnit;
 @LuceneTestCase.SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
 @RandomizeSSL()
 @ThreadLeakLingering(linger = 0)
-public class SolrTestCase extends LuceneTestCase {
+public class SolrTestCase extends Assert {
 
+  protected static final boolean VERBOSE = false;
   /**
    * <b>DO NOT REMOVE THIS LOGGER</b>
    * <p>
@@ -119,17 +147,31 @@ public class SolrTestCase extends LuceneTestCase {
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
    * @see #afterSolrTestCase()
    */
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
+  public static final boolean TEST_NIGHTLY = LuceneTestCase.TEST_NIGHTLY;
+
+  public static TestRuleThreadAndTestName threadAndTestNameRule = new TestRuleThreadAndTestName();
+
+  private static TestRuleSetupTeardownChained parentChainCallRule = new TestRuleSetupTeardownChained();
+
+  protected static TestRuleMarkFailure suiteFailureMarker;
+
+  public static TestRuleTemporaryFilesCleanup tempFilesCleanupRule;
+
+  private static TestRuleSetupAndRestoreClassEnv classEnvRule;
   @ClassRule
   public static TestRule solrClassRules =
       RuleChain.outerRule(new SystemPropertiesRestoreRule())
-          .around(new RevertDefaultThreadHandlerRule());
+          .around(suiteFailureMarker = new TestRuleMarkFailure())
+          .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker))
+          .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv()).around(new RevertDefaultThreadHandlerRule());
+  private final SolrTestUtil solrTestUtil = new SolrTestUtil();
 
   @Rule
   public TestRule solrTestRules = RuleChain.outerRule(new SystemPropertiesRestoreRule())
-      .around(new RevertDefaultThreadHandlerRule());
+      .around(new RevertDefaultThreadHandlerRule()).around(threadAndTestNameRule).around(parentChainCallRule);
 
   private static volatile Random random;
 
@@ -247,7 +289,7 @@ public class SolrTestCase extends LuceneTestCase {
 
     interruptThreadsOnTearDown(false,"-SendThread"); // zookeeper send thread that can pause in ClientCnxnSocketNIO#cleanup
 
-    sslConfig = buildSSLConfig();
+    sslConfig = SolrTestUtil.buildSSLConfig();
     if (sslConfig != null && sslConfig.isSSLMode()) {
       HttpClientUtil.setSocketFactoryRegistryProvider(sslConfig.buildClientSocketFactoryRegistryProvider());
       Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
@@ -260,6 +302,8 @@ public class SolrTestCase extends LuceneTestCase {
       System.setProperty("urlScheme", "http");
     }
 
+    System.setProperty("useCompoundFile", "false");
+
     System.setProperty("solr.enablePublicKeyHandler", "true");
     System.setProperty("solr.zkclienttimeout", "30000");
     System.setProperty("solr.v2RealPath", "true");
@@ -271,7 +315,7 @@ public class SolrTestCase extends LuceneTestCase {
     System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(32 * 1024 * 2));
     //enableReuseOfCryptoKeys();
 
-    if (!TEST_NIGHTLY) {
+    if (!LuceneTestCase.TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
       Lucene86Codec codec = new Lucene86Codec(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
       //Codec.setDefault(codec);
@@ -440,47 +484,6 @@ public class SolrTestCase extends LuceneTestCase {
 //    assumeFalse(PROP + " == true",
 //                systemPropertyAsBoolean(PROP, false));
 //  }
-  
-  /** 
-   * Special hook for sanity checking if any tests trigger failures when an
-   * Assumption failure occures in a {@link Before} method
-   * @lucene.internal
-   */
-//  @Before
-//  public void checkSyspropForceBeforeAssumptionFailure() {
-//    // ant test -Dargs="-Dtests.force.assumption.failure.before=true"
-//    final String PROP = "tests.force.assumption.failure.before";
-//    assumeFalse(PROP + " == true",
-//                systemPropertyAsBoolean(PROP, false));
-//  }
-
-  public static String TEST_HOME() {
-    return getFile("solr/collection1").getParent();
-  }
-
-  public static Path TEST_PATH() { return getFile("solr/collection1").getParentFile().toPath(); }
-
-  /** Gets a resource from the context classloader as {@link File}. This method should only be used,
-   * if a real file is needed. To get a stream, code should prefer
-   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
-   */
-  public static File getFile(String name) {
-    final URL url = SolrTestCaseJ4.class.getClassLoader().getResource(name.replace(File.separatorChar, '/'));
-    if (url != null) {
-      try {
-        return new File(url.toURI());
-      } catch (Exception e) {
-        ParWork.propagateInterrupt(e);
-        throw new RuntimeException("Resource was found on classpath, but cannot be resolved to a " +
-            "normal file (maybe it is part of a JAR file): " + name);
-      }
-    }
-    final File file = new File(name);
-    if (file.exists()) {
-      return file;
-    }
-    throw new RuntimeException("Cannot find resource in classpath or in file-system (relative to CWD): " + name);
-  }
 
   @After
   public void afterSolrTestCase() throws Exception {
@@ -547,7 +550,7 @@ public class SolrTestCase extends LuceneTestCase {
       sslConfig = null;
 
       long testTime = TimeUnit.SECONDS.convert(System.nanoTime() - testStartTime, TimeUnit.NANOSECONDS);
-      if (!TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
+      if (!LuceneTestCase.TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
         log.error("This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: {}"
                , testTime);
 //          fail(
@@ -580,7 +583,7 @@ public class SolrTestCase extends LuceneTestCase {
 
       if (clazz != null) {
         // nocommit - leave this on
-        if (!TEST_NIGHTLY) fail("A " + clazz.getName() + " took too long to close: " + tooLongTime + "\n" + times);
+        if (!LuceneTestCase.TEST_NIGHTLY) fail("A " + clazz.getName() + " took too long to close: " + tooLongTime + "\n" + times);
       }
     }
     log.info("@AfterClass end ------------------------------------------------------");
@@ -592,32 +595,6 @@ public class SolrTestCase extends LuceneTestCase {
     interuptThreadWithNameContains.clear();
   }
 
-  private static SSLTestConfig buildSSLConfig() {
-    Class<?> targetClass = RandomizedContext.current().getTargetClass();
-    final SolrTestCase.AlwaysUseSSL alwaysUseSSL = (SolrTestCase.AlwaysUseSSL) targetClass.getAnnotation(
-        SolrTestCase.AlwaysUseSSL.class);
-    if (!TEST_NIGHTLY && alwaysUseSSL == null) {
-      return new SSLTestConfig();
-    }
-
-    RandomizeSSL.SSLRandomizer sslRandomizer =
-            RandomizeSSL.SSLRandomizer.getSSLRandomizerForClass(targetClass);
-
-    if (Constants.MAC_OS_X) {
-      // see SOLR-9039
-      // If a solution is found to remove this, please make sure to also update
-      // TestMiniSolrCloudClusterSSL.testSslAndClientAuth as well.
-      sslRandomizer = new RandomizeSSL.SSLRandomizer(sslRandomizer.ssl, 0.0D, (sslRandomizer.debug + " w/ MAC_OS_X supressed clientAuth"));
-    }
-
-    SSLTestConfig result = sslRandomizer.createSSLTestConfig();
-    if (log.isInfoEnabled()) {
-      log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
-              result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
-    }
-    return result;
-  }
-
   private static void checkForInterruptRequest() {
     try {
       interruptThreadsOnTearDown(true, interuptThreadWithNameContains.toArray(EMPTY_STRING_ARRAY));
@@ -627,6 +604,21 @@ public class SolrTestCase extends LuceneTestCase {
     }
   }
 
+  /**
+   * For subclasses to override. Overrides must call {@code super.setUp()}.
+   */
+  @Before
+  public void setUp() throws Exception {
+    parentChainCallRule.setupCalled = true;
+  }
+
+  /**
+   * For subclasses to override. Overrides must call {@code super.tearDown()}.
+   */
+  @After
+  public void tearDown() throws Exception {
+    parentChainCallRule.teardownCalled = true;
+  }
 
   // expert - for special cases
   public static void interruptThreadsOnTearDown(boolean now, String... nameContains) {
@@ -668,15 +660,10 @@ public class SolrTestCase extends LuceneTestCase {
       }
     }
     for (Thread thread : waitThreads) {
-      wait(thread);
+      SolrTestUtil.wait(thread);
     }
 
     waitThreads.clear();
-  }
-
-
-  public static Path configset(String name) {
-    return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
   }
 
   private static boolean interrupt(Thread thread, String... nameContains) {
@@ -695,25 +682,6 @@ public class SolrTestCase extends LuceneTestCase {
     }
     return false;
   }
-
-  private static void wait(Thread thread) {
-    if (thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) {
-      log.info("Dont wait on ForkJoinPool. or Log4j2-");
-      return;
-    }
-
-    do {
-      log.warn("waiting on {} {}", thread.getName(), thread.getState());
-      try {
-        thread.join(50);
-      } catch (InterruptedException e) {
-
-      }
-      thread.interrupt();
-    } while (thread.isAlive());
-
-  }
-
 
   private static boolean interruptThreadListContains(String[] nameContains, String name) {
     for (String interruptThread : nameContains) {
@@ -761,12 +729,7 @@ public class SolrTestCase extends LuceneTestCase {
   public String getSaferTestName() {
     // test names can hold additional info, like the test seed
     // only take to first space
-    String testName = getTestName();
-    int index = testName.indexOf(' ');
-    if (index > 0) {
-      testName = testName.substring(0, index);
-    }
-    return testName;
+    return solrTestUtil.getSaferTestName();
   }
 
   /**
@@ -786,91 +749,14 @@ public class SolrTestCase extends LuceneTestCase {
     return msp;
   }
 
-  protected static <T> T pickRandom(T... options) {
-    return options[random().nextInt(options.length)];
-  }
-
   public boolean compareSolrDocumentList(Object expected, Object actual) {
-    if (!(expected instanceof SolrDocumentList)  || !(actual instanceof SolrDocumentList)) {
-      return false;
-    }
 
-    if (expected == actual) {
-      return true;
-    }
-
-    SolrDocumentList list1 = (SolrDocumentList) expected;
-    SolrDocumentList list2 = (SolrDocumentList) actual;
-
-    if (list1.getMaxScore() == null) {
-      if (list2.getMaxScore() != null) {
-        return false;
-      }
-    } else if (list2.getMaxScore() == null) {
-      return false;
-    } else {
-      if (Float.compare(list1.getMaxScore(), list2.getMaxScore()) != 0 || list1.getNumFound() != list2.getNumFound() ||
-          list1.getStart() != list2.getStart()) {
-        return false;
-      }
-    }
-    for(int i=0; i<list1.getNumFound(); i++) {
-      if(!compareSolrDocument(list1.get(i), list2.get(i))) {
-        return false;
-      }
-    }
-    return true;
+    return solrTestUtil.compareSolrDocumentList(expected, actual);
   }
 
   public boolean compareSolrDocument(Object expected, Object actual) {
 
-    if (!(expected instanceof SolrDocument)  || !(actual instanceof SolrDocument)) {
-      return false;
-    }
-
-    if (expected == actual) {
-      return true;
-    }
-
-    SolrDocument solrDocument1 = (SolrDocument) expected;
-    SolrDocument solrDocument2 = (SolrDocument) actual;
-
-    if(solrDocument1.getFieldNames().size() != solrDocument2.getFieldNames().size()) {
-      return false;
-    }
-
-    Iterator<String> iter1 = solrDocument1.getFieldNames().iterator();
-    Iterator<String> iter2 = solrDocument2.getFieldNames().iterator();
-
-    if(iter1.hasNext()) {
-      String key1 = iter1.next();
-      String key2 = iter2.next();
-
-      Object val1 = solrDocument1.getFieldValues(key1);
-      Object val2 = solrDocument2.getFieldValues(key2);
-
-      if(!key1.equals(key2) || !val1.equals(val2)) {
-        return false;
-      }
-    }
-
-    if(solrDocument1.getChildDocuments() == null && solrDocument2.getChildDocuments() == null) {
-      return true;
-    }
-    if(solrDocument1.getChildDocuments() == null || solrDocument2.getChildDocuments() == null) {
-      return false;
-    } else if(solrDocument1.getChildDocuments().size() != solrDocument2.getChildDocuments().size()) {
-      return false;
-    } else {
-      Iterator<SolrDocument> childDocsIter1 = solrDocument1.getChildDocuments().iterator();
-      Iterator<SolrDocument> childDocsIter2 = solrDocument2.getChildDocuments().iterator();
-      while(childDocsIter1.hasNext()) {
-        if(!compareSolrDocument(childDocsIter1.next(), childDocsIter2.next())) {
-          return false;
-        }
-      }
-      return true;
-    }
+    return solrTestUtil.compareSolrDocument(expected, actual);
   }
 
   public static ExecutorService getTestExecutor() {
@@ -894,6 +780,96 @@ public class SolrTestCase extends LuceneTestCase {
 
     @Override
     protected void succeeded(Description description) {
+    }
+  }
+
+  /**
+   * Saves the executing thread and method name of the test case.
+   */
+  final static class TestRuleThreadAndTestName implements TestRule {
+
+    public volatile Thread testCaseThread;
+
+    /**
+     * Test method name.
+     */
+    public volatile String testMethodName = "<unknown>";
+
+    @Override
+    public Statement apply(final Statement base, final Description description) {
+      return new TestStatement(base, description);
+    }
+
+    private class TestStatement extends Statement {
+      private final Statement base;
+      private final Description description;
+
+      public TestStatement(Statement base, Description description) {
+        this.base = base;
+        this.description = description;
+      }
+
+      @Override
+      public void evaluate() throws Throwable {
+        try {
+          Thread current = Thread.currentThread();
+          testCaseThread = current;
+          testMethodName = description.getMethodName();
+
+          base.evaluate();
+        } finally {
+          testCaseThread = null;
+          testMethodName = null;
+        }
+      }
+    }
+  }
+
+  private IndexableField newTextField(String value, String foo_bar_bar_bar_bar, Field.Store no) {
+    return solrTestUtil.newTextField(value, foo_bar_bar_bar_bar, no);
+  }
+
+  protected IndexableField newStringField(String value, String bar, Field.Store yes) {
+    return solrTestUtil.newStringField(value, bar, yes);
+  }
+
+  /**
+   * Make sure {@link LuceneTestCase#setUp()} and {@link LuceneTestCase#tearDown()} were invoked even if they
+   * have been overriden. We assume nobody will call these out of non-overriden
+   * methods (they have to be public by contract, unfortunately). The top-level
+   * methods just set a flag that is checked upon successful execution of each test
+   * case.
+   */
+  static class TestRuleSetupTeardownChained implements TestRule {
+    /**
+     * see org.apache.lucene.util.TestRuleSetupTeardownChained
+     */
+    public boolean setupCalled;
+
+    /**
+     * see org.apache.lucene.util.TestRuleSetupTeardownChained
+     */
+    public boolean teardownCalled;
+
+    @Override
+    public Statement apply(final Statement base, Description description) {
+      return new Statement() {
+        @Override
+        public void evaluate() throws Throwable {
+          setupCalled = false;
+          teardownCalled = false;
+          base.evaluate();
+
+          // I assume we don't want to check teardown chaining if something happens in the
+          // test because this would obscure the original exception?
+          if (!setupCalled) {
+            Assert.fail("One of the overrides of setUp does not propagate the call.");
+          }
+          if (!teardownCalled) {
+            Assert.fail("One of the overrides of tearDown does not propagate the call.");
+          }
+        }
+      };
     }
   }
 }

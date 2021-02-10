@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -72,7 +73,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     assertEquals("X2", x[1]);
     assertEquals("Y", m.get("y"));
 
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       CollectionsHandler.copy(params.required(), null, "z");
     });
     assertEquals(e.code(), SolrException.ErrorCode.BAD_REQUEST.code);
@@ -203,7 +204,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   
   static void assertErrorContains(final ApiBag apiBag, final String path, final SolrRequest.METHOD method,
       final String payload, final CoreContainer cc, String expectedErrorMsg) throws Exception {
-    RuntimeException e = expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
+    RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
     assertTrue("Expected exception with error message '" + expectedErrorMsg + "' but got: " + e.getMessage(),
         e.getMessage().contains(expectedErrorMsg));
   }

@@ -16,9 +16,11 @@
  */
 package org.apache.solr.search.facet;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -116,14 +118,14 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(SolrTestCaseJ4.NUMERIC_POINTS_SYSPROP)) System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP,"true");
     
-    // multi replicas should not matter...
-    final int repFactor = usually() ? 1 : 2;
+    // multi replicas shouLuceneTestCase.ld not matter...
+    final int repFactor = LuceneTestCase.usually() ? 1 : 2;
     // ... but we definitely want to test multiple shards
-    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
+    final int numShards = TestUtil.nextInt(random(), 1, (LuceneTestCase.usually() ? 2 :3));
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -142,14 +144,14 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
           .getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    final int numDocs = atLeast(100);
+    final int numDocs = LuceneTestCase.atLeast(100);
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", ""+id);
 
       // NOTE: for each fieldNum, there are actaully 4 fields: multi(str+int) + solo(str+int)
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
         // NOTE: Some docs may not have any value in some fields
-        final int numValsThisDoc = TestUtil.nextInt(random(), 0, (usually() ? 5 : 10));
+        final int numValsThisDoc = TestUtil.nextInt(random(), 0, (LuceneTestCase.usually() ? 5 : 10));
         for (int v = 0; v < numValsThisDoc; v++) {
           final String fieldValue = randFieldValue(fieldNum);
           
@@ -377,7 +379,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl = "This can fail: Mismatch: .count:45!=53 using method_val=dv")
+  @LuceneTestCase.AwaitsFix(bugUrl = "This can fail: Mismatch: .count:45!=53 using method_val=dv")
   public void testBespokePrefix() throws Exception {
     { // trivial single level facet w/ prefix 
       Map<String,TermFacet> facets = new LinkedHashMap<>();
@@ -395,7 +397,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
    * This is more complex then {@link #testBespoke} but should still be easier to trace/debug then 
    * a pure random monstrosity.
    */
-  @Nightly // this can hit pretty long cases
+  @LuceneTestCase.Nightly // this can hit pretty long cases
   public void testBespokeStructures() throws Exception {
     // we don't need to test every field, just make sure we test enough fields to hit every suffix..
     final int maxFacetFieldNum;
@@ -463,7 +465,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
   
   public void testRandom() throws Exception {
 
-    final int numIters = atLeast(TEST_NIGHTLY ? 10 : 2);
+    final int numIters = LuceneTestCase.atLeast(TEST_NIGHTLY ? 10 : 2);
     for (int iter = 0; iter < numIters; iter++) {
       assertFacetSKGsAreConsistent(TermFacet.buildRandomFacets(),
                                    buildRandomQuery(), buildRandomQuery(), buildRandomQuery());
@@ -732,7 +734,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
       // and let's us enforce a hard limit on the total number of facets in a request
       AtomicInteger keyCounter = new AtomicInteger(0);
       
-      final int maxDepth = TestUtil.nextInt(random(), 0, (usually() ? 2 : 3));
+      final int maxDepth = TestUtil.nextInt(random(), 0, (LuceneTestCase.usually() ? 2 : 3));
       return buildRandomFacets(keyCounter, maxDepth);
     }
     

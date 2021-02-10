@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.junit.After;
 import org.junit.Before;
@@ -41,7 +42,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void ltrModelIdMissingTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -56,7 +57,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void ltrModelIdDoesNotExistTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -71,7 +72,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void ltrBadRerankDocsTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -86,7 +87,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void ltrMoreResultsThanReRankedTest() throws Exception {
     final String solrQuery = "_query_:{!edismax qf='title' mm=100% v='bloomberg' tie=0.1}";
     final SolrQuery query = new SolrQuery();
@@ -120,7 +121,7 @@ public class TestLTRQParserPlugin extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void ltrNoResultsTest() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("title:bloomberg23");

@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -35,10 +36,10 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    final String tmpSolrHomePath = createTempDir().toFile().getAbsolutePath();
+    final String tmpSolrHomePath = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     tmpSolrHome = new File(tmpSolrHomePath).getAbsoluteFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    File testHomeConfDir = new File(SolrTestUtil.TEST_HOME(), confDir);
     final String configFileName = "solrconfig-managed-schema.xml";
     final String schemaFileName = "schema-id-and-version-fields-only.xml";
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, configFileName), tmpConfDir);

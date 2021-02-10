@@ -21,6 +21,7 @@ import java.util.Collections;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -50,11 +51,11 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
    */
   @BeforeClass
   private static void setupTempDirAndCoreWithManagedSchema() throws Exception {
-    solrHome = createTempDir().toFile();
+    solrHome = SolrTestUtil.createTempDir().toFile();
     solrHome = solrHome.getAbsoluteFile();
 
     File confDir = new File(solrHome, confPath);
-    File testHomeConfDir = new File(TEST_HOME(), confPath);
+    File testHomeConfDir = new File(SolrTestUtil.TEST_HOME(), confPath);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "schema-id-and-version-fields-only.xml"), confDir);
@@ -82,7 +83,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
   public void test() throws Exception {
 
     // seed some docs & segments
-    int numDocs = atLeast(1);
+    int numDocs = SolrTestUtil.atLeast(1);
     for (int i = 1; i <= numDocs; i++) {
       // NOTE: starting at "1", we'll use id=0 later
       assertU(adoc("id", ""+i));

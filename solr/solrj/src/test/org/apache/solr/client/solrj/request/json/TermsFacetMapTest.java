@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.request.json;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 import static org.hamcrest.core.StringContains.containsString;
@@ -39,7 +40,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsNegativeBucketOffset() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
         .setBucketOffset(-1);
     });
@@ -63,7 +64,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidSortString() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
           .setSort(null);
     });
@@ -79,7 +80,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectInvalidOverRequestBuckets() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
           .setOverRequest(-2);
     });
@@ -102,7 +103,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectInvalidOverRefineBuckets() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
           .setOverRefine(-2);
     });
@@ -118,7 +119,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectInvalidMinCount() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
           .setMinCount(-1);
     });
@@ -150,7 +151,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectInvalidTermPrefix() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
           .setTermPrefix(null);
     });
@@ -166,7 +167,7 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidMethod() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
           .setFacetMethod(null);
     });

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.request;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -80,7 +81,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   public void testConfigSet() throws Exception {
 
     SolrClient client = getSolrAdmin();
-    File testDir = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
+    File testDir = SolrTestUtil.createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
 
     File newCoreInstanceDir = new File(testDir, "newcore");
 
@@ -103,9 +104,9 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     
     try (SolrClient client = getSolrAdmin()) {
 
-      File dataDir = createTempDir("data").toFile();
+      File dataDir = SolrTestUtil.createTempDir("data").toFile();
 
-      File newCoreInstanceDir = createTempDir("instance").toFile();
+      File newCoreInstanceDir = SolrTestUtil.createTempDir("instance").toFile();
 
       File instanceDir = new File(cores.getSolrHome());
       FileUtils.copyDirectory(instanceDir, new File(newCoreInstanceDir,
@@ -153,13 +154,13 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     params.set("name", collectionName);
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
-    expectThrows(SolrException.class, () -> getSolrAdmin().request(request));
+    LuceneTestCase.expectThrows(SolrException.class, () -> getSolrAdmin().request(request));
   }
   
   @Test
   public void testInvalidCoreNamesAreRejectedWhenCreatingCore() {
     final Create createRequest = new Create();
-    SolrException e = expectThrows(SolrException.class, () -> createRequest.setCoreName("invalid$core@name"));
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> createRequest.setCoreName("invalid$core@name"));
     final String exceptionMessage = e.getMessage();
     assertTrue(exceptionMessage.contains("Invalid core"));
     assertTrue(exceptionMessage.contains("invalid$core@name"));
@@ -168,7 +169,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   
   @Test
   public void testInvalidCoreNamesAreRejectedWhenRenamingExistingCore() throws Exception {
-    SolrException e = expectThrows(SolrException.class,
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class,
         () -> CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null));
     final String exceptionMessage = e.getMessage();
     assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
@@ -267,7 +268,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   public void testInvalidRequestRecovery() throws SolrServerException, IOException {
       RequestRecovery recoverRequestCmd = new RequestRecovery();
       recoverRequestCmd.setCoreName("non_existing_core");
-      expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
+    LuceneTestCase.expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));
   }
   
   @Test
@@ -281,7 +282,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
 
       String ddir = CoreAdminRequest.getCoreStatus("core0", getSolrCore0()).getDataDirectory();
       Path data = Paths.get(ddir, "index");
-      assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
+      LuceneTestCase.assumeTrue("test can't handle relative data directory paths (yet?)", data.isAbsolute());
 
       getSolrCore0().add(new SolrInputDocument("id", "core0-1"));
       getSolrCore0().commit();
@@ -293,10 +294,10 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       cores = CoreContainer.createAndLoad(SOLR_HOME, getSolrXml());
 
       // Need to run a query to confirm that the core couldn't load
-      expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
+      LuceneTestCase.expectThrows(SolrException.class, () -> getSolrCore0().query(new SolrQuery("*:*")));
 
       // We didn't fix anything, so should still throw
-      expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
+      LuceneTestCase.expectThrows(SolrException.class, () -> CoreAdminRequest.reloadCore("core0", getSolrCore0()));
 
       Files.move(data.resolve("backup"), data.resolve("_0.si"));
       CoreAdminRequest.reloadCore("core0", getSolrCore0());

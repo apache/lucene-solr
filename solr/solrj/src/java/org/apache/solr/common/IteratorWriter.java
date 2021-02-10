@@ -77,18 +77,26 @@ public interface IteratorWriter {
   @SuppressWarnings({"unchecked", "rawtypes"})
   default List toList( List l)  {
     try {
-      writeIter(new ItemWriter() {
-        @Override
-        public ItemWriter add(Object o) throws IOException {
-          if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
-          if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
-          l.add(o);
-          return this;
-        }
-      });
+      writeIter(new MyItemWriter(l));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
     return l;
+  }
+
+  class MyItemWriter implements ItemWriter {
+    private final List l;
+
+    public MyItemWriter(List l) {
+      this.l = l;
+    }
+
+    @Override
+    public ItemWriter add(Object o) throws IOException {
+      if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+      if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
+      l.add(o);
+      return this;
+    }
   }
 }

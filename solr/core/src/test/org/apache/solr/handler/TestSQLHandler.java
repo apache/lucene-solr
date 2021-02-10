@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -52,7 +53,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(4)
-        .addConfig("conf", configset("sql"))
+        .addConfig("conf", SolrTestUtil.configset("sql"))
         .configure();
 
     String collection;
@@ -1735,7 +1736,7 @@ public class TestSQLHandler extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testParallelTimeSeriesGrouping() throws Exception {
 
     new UpdateRequest()

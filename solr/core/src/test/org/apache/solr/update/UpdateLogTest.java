@@ -21,6 +21,7 @@ import java.util.List;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -161,11 +162,10 @@ public class UpdateLogTest extends SolrTestCaseJ4 {
     assertFalse(partialDoc.containsKey("title_s"));
 
     // If an in-place update depends on a non-add (i.e. DBI), assert that an exception is thrown.
-    SolrException ex = expectThrows(SolrException.class, () -> {
-        long returnVal = ulog.applyPartialUpdates(DOC_1_INDEXED_ID, prevPointer, prevVersion, null, partialDoc);
-        fail("502 depends on 501, 501 depends on 500, but 500 is a"
-             + " DELETE. This should've generated an exception. returnVal is: "+returnVal);
-      });
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      long returnVal = ulog.applyPartialUpdates(DOC_1_INDEXED_ID, prevPointer, prevVersion, null, partialDoc);
+      fail("502 depends on 501, 501 depends on 500, but 500 is a" + " DELETE. This should've generated an exception. returnVal is: " + returnVal);
+    });
     assertEquals(ex.toString(), SolrException.ErrorCode.INVALID_STATE.code, ex.code());
     assertThat(ex.getMessage(), containsString("should've been either ADD or UPDATE_INPLACE"));
     assertThat(ex.getMessage(), containsString("looking for id=1"));

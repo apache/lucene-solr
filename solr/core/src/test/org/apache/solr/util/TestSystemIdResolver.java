@@ -23,6 +23,8 @@ import java.util.Arrays;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrResourceLoader;
 import org.xml.sax.InputSource;
 
@@ -43,7 +45,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   }
   
   public void testResolving() throws Exception {
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final Path testHome = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
     final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
@@ -70,12 +72,12 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
       SystemIdResolver.createSystemIdFromResourceName(testHome+"/collection1/conf/solrconfig.xml"), "schema.xml");
     
     // if somebody uses an absolute uri (e.g., file://) we should fail resolving:
-    IOException ioe = expectThrows(IOException.class, () -> {
+    IOException ioe = SolrTestCaseUtil.expectThrows(IOException.class, () -> {
       resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", fileUri);
     });
     assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
     
-    ioe = expectThrows(IOException.class, () -> {
+    ioe = SolrTestCaseUtil.expectThrows(IOException.class, () -> {
       resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", "http://lucene.apache.org/test.xml");
     });
     assertTrue(ioe.getMessage().startsWith("Cannot resolve absolute"));
@@ -95,7 +97,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   public void testUnsafeResolving() throws Exception {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
     
-    final Path testHome = SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath();
+    final Path testHome = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
     final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     

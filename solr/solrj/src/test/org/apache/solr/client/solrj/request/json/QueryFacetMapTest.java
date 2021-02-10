@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.request.json;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ public class QueryFacetMapTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRejectsInvalidQueryString() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
+    final Throwable thrown = LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> {
       final QueryFacetMap queryFacet = new QueryFacetMap(null);
     });
     assertThat(thrown.getMessage(), containsString("must be non-null"));

@@ -20,6 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 import java.util.TimeZone;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -216,7 +217,7 @@ public class TestTrie extends SolrTestCaseJ4 {
   @Test
   public void testTrieFacet_PrecisionStep() throws Exception {
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-      assumeTrue("Skipping test: Points+facets require docValues, but randomizer: points=true && DV=false",
+      LuceneTestCase.assumeTrue("Skipping test: Points+facets require docValues, but randomizer: points=true && DV=false",
                  Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP));
     }
     

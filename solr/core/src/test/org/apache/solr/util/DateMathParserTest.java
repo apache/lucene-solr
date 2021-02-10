@@ -26,7 +26,9 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 
 import static org.apache.solr.util.DateMathParser.UTC;
 
@@ -254,10 +256,10 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
 
     final String PLUS_TZS = "America/Los_Angeles";
     final String NEG_TZS = "Europe/Paris";
-    
-    assumeTrue("Test requires JVM to know about about TZ: " + PLUS_TZS,
-               TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(PLUS_TZS)); 
-    assumeTrue("Test requires JVM to know about about TZ: " + NEG_TZS,
+
+    LuceneTestCase.assumeTrue("Test requires JVM to know about about TZ: " + PLUS_TZS,
+               TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(PLUS_TZS));
+    LuceneTestCase.assumeTrue("Test requires JVM to know about about TZ: " + NEG_TZS,
                TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(NEG_TZS)); 
 
     // US, Positive Offset with DST
@@ -319,7 +321,7 @@ public class DateMathParserTest extends SolrTestCaseJ4 {
     badCommands.put("?SECONDS", 0);
 
     for (String command : badCommands.keySet()) {
-      ParseException e = expectThrows(ParseException.class, () -> p.parseMath(command));
+      ParseException e = SolrTestCaseUtil.expectThrows(ParseException.class, () -> p.parseMath(command));
       assertEquals("Wrong pos for: " + command + " => " + e.getMessage(),
           badCommands.get(command).intValue(), e.getErrorOffset());
     }

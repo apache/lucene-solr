@@ -26,8 +26,11 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -125,7 +128,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   }
 
   public void testSslAndClientAuth() throws Exception {
-    assumeFalse("SOLR-9039: SSL w/clientAuth does not work on MAC_OS_X", Constants.MAC_OS_X);
+    LuceneTestCase.assumeFalse("SOLR-9039: SSL w/clientAuth does not work on MAC_OS_X", Constants.MAC_OS_X);
     
     final SSLTestConfig sslConfig = new SSLTestConfig(true, true);
 
@@ -157,7 +160,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   private void checkClusterWithNodeReplacement(SSLTestConfig sslConfig) throws Exception {
     
     final JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), config);
+    final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, SolrTestUtil.createTempDir(), config);
     try {
       checkClusterWithCollectionCreations(cluster, sslConfig);
 
@@ -187,7 +190,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     final JettyConfig config = JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, createTempDir(), config);
+    final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(NUM_SERVERS, SolrTestUtil.createTempDir(), config);
     try {
       checkClusterWithCollectionCreations(cluster, sslConfig);
       
@@ -202,13 +205,13 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       for (JettySolrRunner jetty : jettys) {
         final String baseURL = jetty.getBaseUrl().toString();
         // verify new solr clients validate peer name and can't talk to this server
-        Exception ex = expectThrows(SolrServerException.class, () -> {
-            try (Http2SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
-              CoreAdminRequest req = new CoreAdminRequest();
-              req.setAction( CoreAdminAction.STATUS );
-              client.request(req);
-            }
-          });
+        Exception ex = SolrTestCaseUtil.expectThrows(SolrServerException.class, () -> {
+          try (Http2SolrClient client = getRandomizedHttpSolrClient(baseURL)) {
+            CoreAdminRequest req = new CoreAdminRequest();
+            req.setAction(CoreAdminAction.STATUS);
+            client.request(req);
+          }
+        });
         assertTrue("Expected an root cause SSL Exception, got: " + ex.toString(),
                    ex.getCause() instanceof SSLException);
       }
@@ -236,7 +239,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   public static void checkClusterWithCollectionCreations(final MiniSolrCloudCluster cluster,
                                                          final SSLTestConfig sslConfig) throws Exception {
 
-    cluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf"), CONF_NAME);
+    cluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1").resolve("conf"), CONF_NAME);
     
     checkCreateCollection(cluster, "first_collection");
     
@@ -311,22 +314,22 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
                                                        (ssl ? "http://" : "https://"));
           
       // verify solr client using wrong protocol can't talk to server
-      expectThrows(SolrServerException.class, () -> {
-          try (Http2SolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
-            CoreAdminRequest req = new CoreAdminRequest();
-            req.setAction( CoreAdminAction.STATUS );
-            client.request(req);
-          }
-        });
+      SolrTestCaseUtil.expectThrows(SolrServerException.class, () -> {
+        try (Http2SolrClient client = getRandomizedHttpSolrClient(wrongBaseURL)) {
+          CoreAdminRequest req = new CoreAdminRequest();
+          req.setAction(CoreAdminAction.STATUS);
+          client.request(req);
+        }
+      });
       
       if (! sslConfig.isClientAuthMode()) {
         // verify simple HTTP(S) client can't do HEAD request for URL with wrong protocol
         try (CloseableHttpClient client = getSslAwareClientWithNoClientCerts()) {
           final String wrongUrl = wrongBaseURL + "/admin/cores";
           // vastly diff exception details between plain http vs https, not worried about details here
-          expectThrows(IOException.class, () -> {
-              doHeadRequest(client, wrongUrl);
-            });
+          SolrTestCaseUtil.expectThrows(IOException.class, () -> {
+            doHeadRequest(client, wrongUrl);
+          });
         }
       }
       
@@ -337,9 +340,9 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
           if (sslConfig.isClientAuthMode()) {
             // w/o a valid client cert, SSL connection should fail
 
-            expectThrows(IOException.class, () -> {
-                doHeadRequest(client, url);
-              });
+            SolrTestCaseUtil.expectThrows(IOException.class, () -> {
+              doHeadRequest(client, url);
+            });
           } else {
             assertEquals("Wrong status for head request ("+url+") when clientAuth="
                          + sslConfig.isClientAuthMode(),

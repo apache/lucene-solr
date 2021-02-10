@@ -26,6 +26,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.pool.PoolStats;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,9 +37,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
 
@@ -112,7 +111,7 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
     
     PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
     final HttpSolrClient client1 ;
-    int threadCount = atLeast(2);
+    int threadCount = LuceneTestCase.atLeast(2);
     final ExecutorService threads = ExecutorUtil.newMDCAwareFixedThreadPool(threadCount,
         new SolrNamedThreadFactory(getClass().getSimpleName()+"TestScheduler"));
     CloseableHttpClient httpClient = HttpClientUtil.createClient(new ModifiableSolrParams(), pool);

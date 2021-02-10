@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 
 import java.util.List;
@@ -66,9 +67,9 @@ public class TestPivotHelperCode extends SolrTestCaseJ4{
    */
   public void testRefinementStringEncodingBlockBoxRoundTrip() {
     // random data: we should be able to round trip any set of random strings
-    final int numIters = atLeast(100);
+    final int numIters = SolrTestUtil.atLeast(100);
     for (int i = 0; i < numIters; i++) {
-      final int numStrs = atLeast(1);
+      final int numStrs = SolrTestUtil.atLeast(1);
       List<String> data = new ArrayList<String>(numStrs);
       for (int j = 0; j < numStrs; j++) {
         // :TODO: mix in nulls

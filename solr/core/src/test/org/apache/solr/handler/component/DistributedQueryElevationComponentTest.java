@@ -20,7 +20,9 @@ import java.io.File;
 
 import org.apache.lucene.util.Constants;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -40,7 +42,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
 
   @BeforeClass
   public static void betterNotBeJ9() {
-    assumeFalse("FIXME: SOLR-5791: This test fails under IBM J9",
+    LuceneTestCase.assumeFalse("FIXME: SOLR-5791: This test fails under IBM J9",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
   }
 
@@ -55,7 +57,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("elevate.data.file", "elevate.xml");
-    File parent = new File(TEST_HOME(), "conf");
+    File parent = new File(SolrTestUtil.TEST_HOME(), "conf");
   }
 
   @AfterClass

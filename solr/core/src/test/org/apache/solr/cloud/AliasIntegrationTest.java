@@ -32,6 +32,8 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -72,7 +74,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -207,7 +209,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testModifyPropertiesV2() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     //TODO fix Solr test infra so that this /____v2/ becomes /api/
@@ -229,7 +231,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testModifyPropertiesV1() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
     final String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     HttpGet get = new HttpGet(baseUrl + "/admin/collections?action=ALIASPROP" +
@@ -244,7 +246,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testModifyPropertiesCAR() throws Exception {
     // note we don't use TZ in this test, thus it's UTC
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
     CollectionAdminRequest.SetAliasProperty setAliasProperty = CollectionAdminRequest.setAliasProperty(aliasName);
     setAliasProperty.addProperty("foo","baz");
@@ -270,7 +272,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testClusterStateProviderAPI() throws Exception {
-    final String aliasName = getSaferTestName();
+    final String aliasName = SolrTestUtil.getTestName();
     
     // pick an arbitrary node, and use it's cloudManager to assert that (an instance of)
     // the ClusterStateProvider API reflects alias changes made by remote clients
@@ -327,10 +329,10 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     stateProvider = cloudManager.getClusterStateProvider();
     assertTrue("should be a routed alias", stateProvider.isRoutedAlias(aliasName));
 
-    expectThrows(SolrException.class, () -> {
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       String resolved = cloudManager.getClusterStateProvider().resolveSimpleAlias(aliasName);
       fail("this is not a simple alias but it resolved to " + resolved);
-      });
+    });
   }
 
   /** 
@@ -702,7 +704,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       lastVersion = waitForAliasesUpdate(lastVersion, zkStateReader);
     }
 
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrQuery q = new SolrQuery("*:*");
       q.set("collection", "testalias1");
       cluster.getSolrClient().query(q);
@@ -764,19 +766,16 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     SolrTestCaseJ4.ignoreException(".");
 
     // Invalid Alias name
-    SolrException e = expectThrows(SolrException.class, () ->
-        CollectionAdminRequest.createAlias("test:alias", "testErrorChecks-collection").process(cluster.getSolrClient()));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> CollectionAdminRequest.createAlias("test:alias", "testErrorChecks-collection").process(cluster.getSolrClient()));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
 
     // Target collection doesn't exists
-    e = expectThrows(SolrException.class, () ->
-        CollectionAdminRequest.createAlias("testalias", "doesnotexist").process(cluster.getSolrClient()));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> CollectionAdminRequest.createAlias("testalias", "doesnotexist").process(cluster.getSolrClient()));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
     assertTrue(e.getMessage().contains("Can't create collection alias for collections='doesnotexist', 'doesnotexist' is not an existing collection or alias"));
 
     // One of the target collections doesn't exist
-    e = expectThrows(SolrException.class, () ->
-        CollectionAdminRequest.createAlias("testalias", "testErrorChecks-collection,doesnotexist").process(cluster.getSolrClient()));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> CollectionAdminRequest.createAlias("testalias", "testErrorChecks-collection,doesnotexist").process(cluster.getSolrClient()));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
     assertTrue(e.getMessage().contains("Can't create collection alias for collections='testErrorChecks-collection,doesnotexist', 'doesnotexist' is not an existing collection or alias"));
 
@@ -786,8 +785,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.createAlias("testalias2", "testalias").process(cluster.getSolrClient());
 
     // Alias + invalid
-    e = expectThrows(SolrException.class, () ->
-        CollectionAdminRequest.createAlias("testalias3", "testalias2,doesnotexist").process(cluster.getSolrClient()));
+    e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> CollectionAdminRequest.createAlias("testalias3", "testalias2,doesnotexist").process(cluster.getSolrClient()));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST, SolrException.ErrorCode.getErrorCode(e.code()));
     SolrTestCaseJ4.unIgnoreException(".");
 

@@ -32,6 +32,8 @@ import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -46,7 +48,6 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -89,7 +90,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
 
   private CoreContainer init() throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
     
     copyXmlToHome(solrHomeDirectory.getAbsoluteFile(), "solr.xml");
     for (int idx = 1; idx < 10; ++idx) {
@@ -310,14 +311,10 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   private void tryCreateFail(CoreAdminHandler admin, String name, String dataDir, String... errs) throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
+    SolrException thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrQueryResponse resp = new SolrQueryResponse();
 
-      SolrQueryRequest request = req(CoreAdminParams.ACTION,
-          CoreAdminParams.CoreAdminAction.CREATE.toString(),
-          CoreAdminParams.DATA_DIR, dataDir,
-          CoreAdminParams.NAME, name,
-          "schema", "schema.xml",
+      SolrQueryRequest request = req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString(), CoreAdminParams.DATA_DIR, dataDir, CoreAdminParams.NAME, name, "schema", "schema.xml",
           "config", "solrconfig.xml");
 
       admin.handleRequestBody(request, resp);
@@ -587,7 +584,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer initGoodAndBad(List<String> goodCores,
                                        List<String> badSchemaCores,
                                        List<String> badConfigCores) throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
     
     // Don't pollute the log with exception traces when they're expected.
     ignoreException(Pattern.quote("SAXParseException"));
@@ -600,7 +597,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
 
     // Collect the files that we'll write to the config directories.
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     String min_schema = FileUtils.readFileToString(new File(top, "schema-tiny.xml"),
         StandardCharsets.UTF_8);
     String min_config = FileUtils.readFileToString(new File(top, "solrconfig-minimal.xml"),
@@ -632,7 +629,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private void copyGoodConf(String coreName, String srcName, String dstName) throws IOException {
     File coreRoot = new File(solrHomeDirectory, coreName);
     File subHome = new File(coreRoot, "conf");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, srcName), new File(subHome, dstName));
 
   }
@@ -745,7 +742,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testMidUseUnload() throws Exception {
     final int maximumSleepMillis = random().nextInt(9999) + 1; // sleep for up to 10 s Must add 1 because using
                                                                // this as a seed will rea few lines down will

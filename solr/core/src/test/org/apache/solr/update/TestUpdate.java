@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -84,13 +85,11 @@ public class TestUpdate extends SolrTestCaseJ4 {
 
 
     long version2;
-    SolrException se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-100), "_version_",2), null));
+    SolrException se = SolrTestCaseUtil.expectThrows(SolrException.class, () -> addAndGetVersion(sdoc("id", "1", "val_is", map("add", -100), "_version_", 2), null));
     assertEquals(409, se.code());
 
     // try bad version added as a request param
-    se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-100)), params("_version_","2")));
+    se = SolrTestCaseUtil.expectThrows(SolrException.class, () -> addAndGetVersion(sdoc("id", "1", "val_is", map("add", -100)), params("_version_", "2")));
     assertEquals(409, se.code());
 
     // try good version added as a field in the doc
@@ -126,8 +125,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
     afterUpdate.call();
 
     // test that updating a non-existing doc fails if we set _version_=1
-    se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(sdoc("id","1", "val_is",map("add",-101), "_version_","1"), null));
+    se = SolrTestCaseUtil.expectThrows(SolrException.class, () -> addAndGetVersion(sdoc("id", "1", "val_is", map("add", -101), "_version_", "1"), null));
     assertEquals(409, se.code());
 
     // test that by default we can update a non-existing doc
@@ -199,10 +197,7 @@ public class TestUpdate extends SolrTestCaseJ4 {
 
     // test that updating a unique id results in failure.
     ignoreException("Invalid update of id field");
-    se = expectThrows(SolrException.class,
-        () -> addAndGetVersion(
-            sdoc("id", map("set","1"), "val_is", map("inc","2000000000")), null)
-    );
+    se = SolrTestCaseUtil.expectThrows(SolrException.class, () -> addAndGetVersion(sdoc("id", map("set", "1"), "val_is", map("inc", "2000000000")), null));
     resetExceptionIgnores();
     assertEquals(400, se.code());
     assertTrue(se.getMessage().contains("Updating unique key, version or route field is not allowed"));

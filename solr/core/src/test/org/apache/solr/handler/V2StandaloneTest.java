@@ -22,6 +22,7 @@ import java.io.File;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -33,9 +34,9 @@ public class V2StandaloneTest extends SolrTestCaseJ4{
 
   @Test
   public void testWelcomeMessage() throws Exception {
-    File solrHomeTmp = createTempDir().toFile().getAbsoluteFile();
-    FileUtils.copyDirectory(new File(TEST_HOME(), "configsets/minimal/conf"), new File(solrHomeTmp,"/conf"));
-    FileUtils.copyFile(new File(TEST_HOME(), "solr.xml"), new File(solrHomeTmp, "solr.xml"));
+    File solrHomeTmp = SolrTestUtil.createTempDir().toFile().getAbsoluteFile();
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME(), "configsets/minimal/conf"), new File(solrHomeTmp,"/conf"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr.xml"), new File(solrHomeTmp, "solr.xml"));
 
     JettySolrRunner jetty = new JettySolrRunner(solrHomeTmp.getAbsolutePath(), buildJettyConfig("/solr"));
     jetty.start();

@@ -22,6 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
@@ -63,7 +65,7 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMergeIndexesCoreAdminHandler() throws Exception {
-    final File workDir = createTempDir().toFile();
+    final File workDir = SolrTestUtil.createTempDir().toFile();
 
     final CoreContainer cores = h.getCoreContainer();
 
@@ -78,10 +80,8 @@ public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
           CoreAdminParams.INDEX_DIR, workDir.getAbsolutePath())) {
         dirFactory.fail = true;
         ignoreException(WRAPPED_FAILING_MSG);
-        SolrException e = expectThrows(SolrException.class, () -> {
-          admin.handleRequestBody
-              (req,
-                  new SolrQueryResponse());
+        SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+          admin.handleRequestBody(req, new SolrQueryResponse());
         });
         assertEquals(FailingDirectoryFactory.FailingDirectoryFactoryException.class, e.getCause().getClass());
       } finally {

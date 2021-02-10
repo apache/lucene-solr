@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -156,7 +157,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
   @Test
   public void testRandomFaceting() throws Exception {
     Random rand = random();
-    int iter = atLeast(TEST_NIGHTLY ? 100 : 10);
+    int iter = SolrTestUtil.atLeast(TEST_NIGHTLY ? 100 : 10);
     init();
     addMoreDocs(0);
     
@@ -211,7 +212,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       }
 
       if (rand.nextInt(100) < 20) {
-        if(rarely()) {
+        if(LuceneTestCase.rarely()) {
           params.add("facet.limit", "-1");
         } else {
           int limit = TEST_NIGHTLY ? 100 : 10;

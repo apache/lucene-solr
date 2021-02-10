@@ -26,6 +26,8 @@ import java.util.Date;
 import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -49,9 +51,9 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    File testHomeConfDir = new File(SolrTestUtil.TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, SOLRCONFIG_XML), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, SCHEMA_XML), tmpConfDir);
 
@@ -72,9 +74,9 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     doc.addField(fieldName, null);
 
     SolrInputDocument finalDoc = doc;
-    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", finalDoc));
+    SolrTestCaseUtil.expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", finalDoc));
 
-    expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", new SolrInputDocument(null , null)));
+    SolrTestCaseUtil.expectThrows(AssertionError.class, () -> processAdd("add-fields-no-run-processor", new SolrInputDocument(null, null)));
   }
 
   public void testSingleField() throws Exception {

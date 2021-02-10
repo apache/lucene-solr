@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -130,7 +131,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testXMLDiffWithExternalEntity() throws Exception {
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = SolrTestUtil.getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
         "<!DOCTYPE foo [<!ENTITY bar SYSTEM \""+file+"\">]>\n" +
         "<response>\n" +

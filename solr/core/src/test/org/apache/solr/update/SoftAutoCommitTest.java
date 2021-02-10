@@ -73,7 +73,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     
   @Before
   public void createMonitor() throws Exception {
-    assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
+    LuceneTestCase.assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
       Constants.WINDOWS);
   
     SolrCore core = h.getCore();

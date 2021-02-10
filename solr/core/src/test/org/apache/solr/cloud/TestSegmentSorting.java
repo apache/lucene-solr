@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
@@ -51,7 +52,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(TEST_NIGHTLY ? NUM_SERVERS : 2)
-      .addConfig(configName, Paths.get(TEST_HOME(), "collection1", "conf"))
+      .addConfig(configName, Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf"))
       .configure();
   }
   
@@ -132,7 +133,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     assertEquals(false, schemaOpts.get("stored"));
     
     // add some documents
-    final int numDocs = atLeast(TEST_NIGHTLY ? 1000 : 15);
+    final int numDocs = SolrTestUtil.atLeast(TEST_NIGHTLY ? 1000 : 15);
     for (int id = 1; id <= numDocs; id++) {
       cloudSolrClient.add(SolrTestCaseJ4.sdoc("id", id, updateField, random().nextInt(60) + 60));
                                
@@ -142,7 +143,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     // do some random iterations of replacing docs, atomic updates against segment sort field, and commits
     // (at this point we're just sanity checking no serious failures)
     for (int iter = 0; iter < (TEST_NIGHTLY ? 30 : 3); iter++) {
-      final int iterSize = atLeast((TEST_NIGHTLY ? 20 : 6));
+      final int iterSize = SolrTestUtil.atLeast((TEST_NIGHTLY ? 20 : 6));
       for (int i = 0; i < iterSize; i++) {
         // replace
         cloudSolrClient.add(

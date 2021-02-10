@@ -104,19 +104,7 @@ public class ReverseOrdFieldSource extends ValueSource {
     final SortedDocValues sindex = SortedSetSelector.wrap(DocValues.getSortedSet(r, field), SortedSetSelector.Type.MIN);
     final int end = sindex.getValueCount();
 
-    return new IntDocValues(this) {
-      @Override
-      public int intVal(int doc) throws IOException {
-        if (doc+off > sindex.docID()) {
-          sindex.advance(doc+off);
-        }
-        if (doc+off == sindex.docID()) {
-          return (end - sindex.ordValue() - 1);
-        } else {
-          return end;
-        }
-      }
-    };
+    return new MyIntDocValues(off, sindex, end);
   }
 
   @Override
@@ -132,4 +120,28 @@ public class ReverseOrdFieldSource extends ValueSource {
     return hcode + field.hashCode();
   }
 
+  private class MyIntDocValues extends IntDocValues {
+    private final int off;
+    private final SortedDocValues sindex;
+    private final int end;
+
+    public MyIntDocValues(int off, SortedDocValues sindex, int end) {
+      super(ReverseOrdFieldSource.this);
+      this.off = off;
+      this.sindex = sindex;
+      this.end = end;
+    }
+
+    @Override
+    public int intVal(int doc) throws IOException {
+      if (doc+ off > sindex.docID()) {
+        sindex.advance(doc+ off);
+      }
+      if (doc+ off == sindex.docID()) {
+        return (end - sindex.ordValue() - 1);
+      } else {
+        return end;
+      }
+    }
+  }
 }

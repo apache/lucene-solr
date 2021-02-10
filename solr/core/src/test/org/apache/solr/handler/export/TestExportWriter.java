@@ -29,8 +29,10 @@ import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -614,7 +616,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         }
       }
     }
-    for (int i = 0; i < atLeast(100); i++) {
+    for (int i = 0; i < LuceneTestCase.atLeast(100); i++) {
       if (random().nextInt(20) == 0) {
         //have some empty docs
         assertU(adoc("id", String.valueOf(i)));
@@ -667,7 +669,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testMultipleSorts() throws Exception {
     assertU(delQ("*:*"));
     assertU(commit());
@@ -735,7 +737,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "flakey, can return 99 instead of 100 results, missing 95 in results")
+  @LuceneTestCase.AwaitsFix(bugUrl = "flakey, can return 99 instead of 100 results, missing 95 in results")
   public void testExpr() throws Exception {
     assertU(delQ("*:*"));
     assertU(commit());
@@ -874,7 +876,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   private void doTestQuery(String query, List<String> trieFields, List<String> pointFields) throws Exception {
     String trieFieldsFl = String.join(",", trieFields);
     String pointFieldsFl = String.join(",", pointFields);
-    String sort = pickRandom((String)pickRandom(trieFields.toArray()), (String)pickRandom(pointFields.toArray())).replace("s_", "_") + pickRandom(" asc", " desc");
+    String sort = SolrTestCaseUtil.pickRandom((String) SolrTestCaseUtil.pickRandom(trieFields.toArray()), (String) SolrTestCaseUtil.pickRandom(pointFields.toArray()))
+        .replace("s_", "_") + SolrTestCaseUtil.pickRandom(" asc", " desc");
     String resultPoints =  query(req("q", query, "qt", "/export", "fl", pointFieldsFl, "sort", sort));
     String resultTries =  query(req("q", query, "qt", "/export", "fl", trieFieldsFl, "sort", sort));
     assertJsonEquals(resultPoints.replaceAll("_p", ""), resultTries.replaceAll("_t", ""));

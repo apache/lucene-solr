@@ -21,6 +21,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -74,7 +76,7 @@ public class TestPullReplica extends SolrCloudTestCase {
   private final static int REPLICATION_TIMEOUT_SECS = 30;
 
   private String suggestedCollectionName() {
-    return (getTestClass().getSimpleName().replace("Test", "") + "_" + getSaferTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
+    return (SolrTestUtil.getTestName().replace("Test", "") + "_" + SolrTestUtil.getTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
   }
 
   @BeforeClass
@@ -84,7 +86,7 @@ public class TestPullReplica extends SolrCloudTestCase {
    System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "1000");
 
    configureCluster(2) // 2 + random().nextInt(3)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -100,7 +102,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     super.setUp();
 
     collectionName = suggestedCollectionName();
-    expectThrows(SolrException.class, () -> getCollectionState(collectionName));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> getCollectionState(collectionName));
   }
 
   @Override
@@ -137,8 +139,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             "conf", 2,    // numShards
             3,    // pullReplicas
             100); // maxShardsPerNode
-        url = url + pickRandom("", "&nrtReplicas=1",
-            "&replicationFactor=1"); // These options should all mean the same
+        url = url + SolrTestCaseUtil.pickRandom("", "&nrtReplicas=1", "&replicationFactor=1"); // These options should all mean the same
         Http2SolrClient.GET(url, cluster.getSolrClient().getHttpClient());
         break;
       case 2:
@@ -150,8 +151,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             collectionName, "conf", 2,    // numShards
             3,    // pullReplicas
             100, // maxShardsPerNode
-            pickRandom("", ", nrtReplicas:1",
-                ", replicationFactor:1")); // These options should all mean the same
+            SolrTestCaseUtil.pickRandom("", ", nrtReplicas:1", ", replicationFactor:1")); // These options should all mean the same
         Http2SolrClient.SimpleResponse response = Http2SolrClient
             .POST(url, cluster.getSolrClient().getHttpClient(),
                 requestBody.getBytes("UTF-8"), "application/json");
@@ -375,7 +375,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(rAdd.getCoreUrl(), cluster.getSolrClient().getHttpClient())) {
         SolrDocumentList allIdsResult = client.getById(ids);
         if (previousAllIdsResult != null) {
-          assertTrue(compareSolrDocumentList(previousAllIdsResult, allIdsResult));
+          assertTrue(SolrTestUtil.compareSolrDocumentList(previousAllIdsResult, allIdsResult));
         } else {
           // set the first response here
           previousAllIdsResult = allIdsResult;
@@ -438,9 +438,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       highestTerm = zkShardTerms.getHighestTerm();
     }
     // add document, this should fail since there is no leader. Pull replica should not accept the update
-    expectThrows(SolrException.class, () ->
-      cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
-    );
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
     if (removeReplica) {
       try(ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
         assertEquals(highestTerm, zkShardTerms.getHighestTerm());
@@ -449,9 +447,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
     // Also fails if I send the update to the pull replica explicitly
     try (Http2SolrClient pullReplicaClient = SolrTestCaseJ4.getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
-      expectThrows(SolrException.class, () ->
-        cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"))
-      );
+      SolrTestCaseUtil.expectThrows(SolrException.class, () -> cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo")));
     }
     if (removeReplica) {
       try(ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {

@@ -117,27 +117,7 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
     : AnalyzingInfixSuggester.DEFAULT_HIGHLIGHT;
 
     try {
-      return new AnalyzingInfixSuggester(FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer,
-                                         queryAnalyzer, minPrefixChars, true, 
-                                         allTermsRequired, highlight) {
-        @Override
-        public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
-          List<LookupResult> res = super.lookup(key, contexts, num, allTermsRequired, doHighlight);
-          if (doHighlight) {
-            List<LookupResult> res2 = new ArrayList<>();
-            for(LookupResult hit : res) {
-              res2.add(new LookupResult(hit.highlightKey.toString(),
-                                        hit.highlightKey,
-                                        hit.value,
-                                        hit.payload,
-                                        hit.contexts));
-            }
-            res = res2;
-          }
-
-          return res;
-        }
-        };
+      return new MyAnalyzingInfixSuggester(indexPath, indexAnalyzer, queryAnalyzer, minPrefixChars, allTermsRequired, highlight);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -146,5 +126,29 @@ public class AnalyzingInfixLookupFactory extends LookupFactory {
   @Override
   public String storeFileName() {
     return FILENAME;
+  }
+
+  private static class MyAnalyzingInfixSuggester extends AnalyzingInfixSuggester {
+    public MyAnalyzingInfixSuggester(String indexPath, Analyzer indexAnalyzer, Analyzer queryAnalyzer, int minPrefixChars, boolean allTermsRequired, boolean highlight) throws IOException {
+      super(FSDirectory.open(new File(indexPath).toPath()), indexAnalyzer, queryAnalyzer, minPrefixChars, true, allTermsRequired, highlight);
+    }
+
+    @Override
+    public List<LookupResult> lookup(CharSequence key, Set<BytesRef> contexts, int num, boolean allTermsRequired, boolean doHighlight) throws IOException {
+      List<LookupResult> res = super.lookup(key, contexts, num, allTermsRequired, doHighlight);
+      if (doHighlight) {
+        List<LookupResult> res2 = new ArrayList<>();
+        for(LookupResult hit : res) {
+          res2.add(new LookupResult(hit.highlightKey.toString(),
+                                    hit.highlightKey,
+                                    hit.value,
+                                    hit.payload,
+                                    hit.contexts));
+        }
+        res = res2;
+      }
+
+      return res;
+    }
   }
 }

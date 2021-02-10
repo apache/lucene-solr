@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -72,7 +73,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
    * Tests that FORCELEADER can get an active leader even only replicas with term lower than leader's term are live
    */
   @Test
-  @Slow
+  @LuceneTestCase.Slow
   public void testReplicasInLowerTerms() throws Exception {
     handle.put("maxScore", SKIPVAL);
     handle.put("timestamp", SKIPVAL);
@@ -248,7 +249,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   private void assertSendDocFails(int docId) throws Exception {
     // sending a doc in this state fails
-    expectThrows(SolrException.class,
+    LuceneTestCase.expectThrows(SolrException.class,
         "Should've failed indexing during a down state.",
         () -> sendDoc(docId));
   }

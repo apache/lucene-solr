@@ -26,6 +26,7 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.TreeMap;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -357,7 +358,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       }
     }
 
-    if (rarely()) { // Try with createNodeSet configuration
+    if (LuceneTestCase.rarely()) { // Try with createNodeSet configuration
       //Always 1 as cluster.getJettySolrRunners().size()=NUM_SHARDS=2
       restore.setCreateNodeSet(cluster.getJettySolrRunners().get(0).getNodeName());
       // we need to double maxShardsPerNode value since we reduced number of available nodes by half.

@@ -20,7 +20,7 @@ import org.apache.http.cookie.CookieAttributeHandler;
 import org.apache.http.cookie.CookieOrigin;
 import org.apache.http.cookie.MalformedCookieException;
 import org.apache.http.impl.cookie.BasicClientCookie;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain("somehost:1234");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () -> h.validate(cookie, origin));
+    LuceneTestCase.expectThrows(MalformedCookieException.class, () -> h.validate(cookie, origin));
   }
 
   @Test
@@ -47,7 +47,7 @@ public class SolrPortAwareCookieSpecTest {
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
 
     cookie.setDomain("myhost");
-    SolrTestCaseJ4.expectThrows(IllegalArgumentException.class, () -> h.match(cookie, null));
+    LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> h.match(cookie, null));
 
     cookie.setDomain(null);
     Assert.assertFalse(h.match(cookie, origin));
@@ -75,7 +75,7 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain("otherhost");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    LuceneTestCase.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
   }
 
   @Test
@@ -88,10 +88,10 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain(".otherdomain.com");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    LuceneTestCase.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
 
     cookie.setDomain("www.otherdomain.com");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    LuceneTestCase.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
   }
 
   @Test
@@ -104,7 +104,7 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain(".com");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    LuceneTestCase.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
   }
 
   @Test
@@ -117,7 +117,7 @@ public class SolrPortAwareCookieSpecTest {
     h.validate(cookie, origin);
 
     cookie.setDomain(".b.c");
-    SolrTestCaseJ4.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
+    LuceneTestCase.expectThrows(MalformedCookieException.class, () ->  h.validate(cookie, origin));
   }
 
   @Test
@@ -146,8 +146,8 @@ public class SolrPortAwareCookieSpecTest {
   @Test
   public void testDomainInvalidInput() throws Exception {
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
-    SolrTestCaseJ4.expectThrows(IllegalArgumentException.class, () -> h.match(null, null));
-    SolrTestCaseJ4.expectThrows(IllegalArgumentException.class,
+    LuceneTestCase.expectThrows(IllegalArgumentException.class, () -> h.match(null, null));
+    LuceneTestCase.expectThrows(IllegalArgumentException.class,
         () -> h.match(new BasicClientCookie("name", "value"), null));
   }
 

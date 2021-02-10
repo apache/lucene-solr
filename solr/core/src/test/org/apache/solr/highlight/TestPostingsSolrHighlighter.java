@@ -17,6 +17,7 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.schema.IndexSchema;
@@ -117,8 +118,7 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
 
   public void testMisconfiguredField() {
     ignoreException("was indexed without offsets");
-    expectThrows(Exception.class, () ->
-        query(req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2")));
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> query(req("q", "text2:document", "sort", "id asc", "hl", "true", "hl.fl", "text2")));
     resetExceptionIgnores();
   }
   

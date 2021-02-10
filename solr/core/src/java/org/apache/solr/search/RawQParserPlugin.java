@@ -37,11 +37,17 @@ public class RawQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() {
-        return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
-      }
-    };
+    return new MyQParser(qstr, localParams, params, req);
+  }
+
+  private static class MyQParser extends QParser {
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
+
+    @Override
+    public Query parse() {
+      return new TermQuery(new Term(localParams.get(QueryParsing.F), localParams.get(QueryParsing.V)));
+    }
   }
 }

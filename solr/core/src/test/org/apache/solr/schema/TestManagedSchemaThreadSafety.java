@@ -28,7 +28,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.cloud.ZkTestServer;
@@ -93,9 +95,9 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startZkServer() throws Exception {
-    zkServer = new ZkTestServer(createTempDir());
+    zkServer = new ZkTestServer(SolrTestUtil.createTempDir());
     zkServer.run();
-    loaderPath = createTempDir();
+    loaderPath = SolrTestUtil.createTempDir();
   }
 
   @AfterClass
@@ -115,7 +117,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
 
     SolrZkClient client = zkServer.getZkClient();
     // we can pick any to load configs, I suppose, but here we check
-    client.upConfig(configset("cloud-managed-upgrade"), configsetName);
+    client.upConfig(SolrTestUtil.configset("cloud-managed-upgrade"), configsetName);
 
 
     ExecutorService executor = getTestExecutor();
@@ -161,7 +163,7 @@ public class TestManagedSchemaThreadSafety extends SolrTestCaseJ4 {
       }
 
       private void perhapsExpired() throws SessionExpiredException {
-        if (!sessionExpired && rarely()) {
+        if (!sessionExpired && LuceneTestCase.rarely()) {
           sessionExpired = true;
           throw new KeeperException.SessionExpiredException();
         }

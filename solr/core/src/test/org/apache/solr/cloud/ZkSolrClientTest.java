@@ -19,7 +19,9 @@ package org.apache.solr.cloud;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -45,7 +47,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
 
     ZkConnection(boolean makeRoot) throws Exception {
-      Path zkDir = createTempDir("zkData");
+      Path zkDir = SolrTestUtil.createTempDir("zkData");
       server = new ZkTestServer(zkDir);
       server.run(true);
 
@@ -101,9 +103,9 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testReconnect() throws Exception {
-    Path zkDir = createTempDir("zkData");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
     ZkTestServer server = null;
     server = new ZkTestServer(zkDir);
     server.run();
@@ -186,7 +188,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
   }
   
   public void testZkCmdExectutor() throws Exception {
-    Path zkDir = createTempDir("zkData");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
     ZkTestServer server = null;
 
     try {
@@ -201,7 +203,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       
       ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(server.getZkClient(), 3000);
       final long start = System.nanoTime();
-      expectThrows(KeeperException.SessionExpiredException.class, () -> {
+      LuceneTestCase.expectThrows(KeeperException.SessionExpiredException.class, () -> {
         ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> {
           if (System.nanoTime() - start > TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
             throw new KeeperException.SessionExpiredException();

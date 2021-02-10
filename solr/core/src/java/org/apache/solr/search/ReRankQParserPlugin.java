@@ -92,7 +92,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
   }
 
-  private final class ReRankQuery extends AbstractReRankQuery {
+  private static final class ReRankQuery extends AbstractReRankQuery {
     final private Query reRankQuery;
     final private double reRankWeight;
 

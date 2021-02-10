@@ -63,7 +63,7 @@ public abstract class DocValuesAcc extends SlotAcc {
   /**
    * Accumulator for {@link NumericDocValues}
    */
-  abstract class NumericDVAcc extends DocValuesAcc {
+  abstract static class NumericDVAcc extends DocValuesAcc {
     NumericDocValues values;
 
     public NumericDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {
@@ -255,7 +255,7 @@ public abstract class DocValuesAcc extends SlotAcc {
   /**
    * Accumulator for {@link SortedDocValues}
    */
-  abstract class SortedDVAcc extends DocValuesAcc {
+  abstract static class SortedDVAcc extends DocValuesAcc {
     SortedDocValues values;
 
     public SortedDVAcc(FacetContext fcontext, SchemaField sf) throws IOException {

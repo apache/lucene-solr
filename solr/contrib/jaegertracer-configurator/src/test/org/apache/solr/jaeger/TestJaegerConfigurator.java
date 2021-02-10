@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,9 +49,9 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
 
   @Test
   public void testInjected() throws Exception{
-    MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(2, createTempDir())
-        .addConfig("config", TEST_PATH().resolve("collection1").resolve("conf"))
-        .withSolrXml(getFile("solr/solr.xml").toPath())
+    MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(2, SolrTestUtil.createTempDir())
+        .addConfig("config", SolrTestUtil.TEST_PATH().resolve("collection1").resolve("conf"))
+        .withSolrXml(SolrTestUtil.getFile("solr/solr.xml").toPath())
         .build();
     CollectionAdminRequest.setClusterProperty(ZkStateReader.SAMPLE_PERCENTAGE, "100.0")
         .process(cluster.getSolrClient());
@@ -74,11 +76,11 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
   public void testRequiredParameters() throws IOException {
     JaegerTracerConfigurator configurator = new JaegerTracerConfigurator();
     NamedList initArgs = new NamedList();
-    IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    IllegalArgumentException exc = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(AGENT_HOST) || exc.getMessage().contains(AGENT_PORT));
     initArgs.add(AGENT_HOST, "localhost");
 
-    exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    exc = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(AGENT_PORT));
     initArgs.add(AGENT_PORT, 5775);
 
@@ -100,34 +102,34 @@ public class TestJaegerConfigurator extends SolrTestCaseJ4 {
     initArgs.add(AGENT_HOST, 100);
     initArgs.add(AGENT_PORT, 5775);
 
-    IllegalArgumentException exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    IllegalArgumentException exc = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(AGENT_HOST));
 
     initArgs.clear();
     initArgs.add(AGENT_HOST, "localhost");
     initArgs.add(AGENT_PORT, "5775");
-    exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    exc = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(AGENT_PORT));
 
     initArgs.clear();
     initArgs.add(AGENT_HOST, "localhost");
     initArgs.add(AGENT_PORT, 5775);
     initArgs.add(LOG_SPANS, 10);
-    SolrException solrExc = expectThrows(SolrException.class, () -> configurator.init(initArgs));
+    SolrException solrExc = SolrTestCaseUtil.expectThrows(SolrException.class, () -> configurator.init(initArgs));
     assertTrue(solrExc.getMessage().contains(LOG_SPANS));
 
     initArgs.clear();
     initArgs.add(AGENT_HOST, "localhost");
     initArgs.add(AGENT_PORT, 5775);
     initArgs.add(FLUSH_INTERVAL, "10");
-    exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    exc = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(FLUSH_INTERVAL));
 
     initArgs.clear();
     initArgs.add(AGENT_HOST, "localhost");
     initArgs.add(AGENT_PORT, 5775);
     initArgs.add(MAX_QUEUE_SIZE, "10");
-    exc = expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
+    exc = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> configurator.init(initArgs));
     assertTrue(exc.getMessage().contains(MAX_QUEUE_SIZE));
 
   }

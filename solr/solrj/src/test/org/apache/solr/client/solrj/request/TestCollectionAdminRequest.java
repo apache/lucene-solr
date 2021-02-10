@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateShard;
@@ -30,7 +31,7 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidCollectionNameRejectedWhenCreatingCollection() {
-    final SolrException e = expectThrows(SolrException.class, () -> {
+    final SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
         CollectionAdminRequest.createCollection("invalid$collection@name", null, 1, 1);
       });
     final String exceptionMessage = e.getMessage();
@@ -42,7 +43,7 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidShardNamesRejectedWhenCreatingImplicitCollection() {
-    final SolrException e = expectThrows(SolrException.class, () -> {
+    final SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
         CollectionAdminRequest.createCollectionWithImplicitRouter("fine", "fine", "invalid$shard@name",1,0,0);
       });
     final String exceptionMessage = e.getMessage();
@@ -55,7 +56,7 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidShardNamesRejectedWhenCallingSetShards() {
     CollectionAdminRequest.Create request = CollectionAdminRequest.createCollectionWithImplicitRouter("fine",null,"fine",1);
-    final SolrException e = expectThrows(SolrException.class, () -> {
+    final SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
         request.setShards("invalid$shard@name");
       });
     final String exceptionMessage = e.getMessage();
@@ -67,7 +68,7 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidAliasNameRejectedWhenCreatingAlias() {
-    final SolrException e = expectThrows(SolrException.class, () -> {
+    final SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
         CreateAlias createAliasRequest = CollectionAdminRequest.createAlias("invalid$alias@name","ignored");
       });
     final String exceptionMessage = e.getMessage();
@@ -79,7 +80,7 @@ public class TestCollectionAdminRequest extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testInvalidShardNameRejectedWhenCreatingShard() {
-    final SolrException e = expectThrows(SolrException.class, () -> {
+    final SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
         CreateShard createShardRequest = CollectionAdminRequest.createShard("ignored","invalid$shard@name");
       });
     final String exceptionMessage = e.getMessage();

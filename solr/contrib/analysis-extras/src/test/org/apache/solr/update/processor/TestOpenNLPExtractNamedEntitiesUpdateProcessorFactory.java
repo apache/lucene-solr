@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.Arrays;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -29,8 +30,8 @@ public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends Updat
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File testHome = createTempDir().toFile();
-    FileUtils.copyDirectory(getFile("analysis-extras/solr"), testHome);
+    File testHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(SolrTestUtil.getFile("analysis-extras/solr"), testHome);
     initCore("solrconfig-opennlp-extract.xml", "schema-opennlp-extract.xml", testHome.getAbsolutePath());
   }
 

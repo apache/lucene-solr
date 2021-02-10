@@ -16,12 +16,12 @@
  */
 package org.apache.solr.search.facet;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
@@ -69,7 +69,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "author_s", "dan",
             "comment_t", "This book was too long."));
     client.add(book1, null);
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       client.commit();
     }
     SolrInputDocument book2 = sdoc(

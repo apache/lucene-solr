@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,7 +47,7 @@ public class TestV2Request extends SolrCloudTestCase {
   public void setupCluster() throws Exception {
     configureCluster(4)
         .withJettyConfig(jettyCfg -> jettyCfg.enableV2(true))
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+        .addConfig("config", SolrTestUtil.getFile("solrj/solr/collection1/conf").toPath())
         .configure();
   }
 

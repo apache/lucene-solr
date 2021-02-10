@@ -349,7 +349,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
    * mappings from the managed JSON in this class during SynonymMap
    * building.
    */
-  private class ManagedSynonymParser extends SynonymMap.Parser {
+  private static class ManagedSynonymParser extends SynonymMap.Parser {
 
     SynonymManager synonymManager;
     
@@ -426,8 +426,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
           (ResourceLoader loader, String cname, boolean dedup, Analyzer analyzer)
           throws IOException, ParseException {
 
-        ManagedSynonymParser parser =
-            new ManagedSynonymParser((SynonymManager)res, dedup, analyzer);
+        ManagedSynonymParser parser = new ManagedSynonymParser((SynonymManager) res, dedup, analyzer);
         // null is safe here because there's no actual parsing done against a input Reader
         parser.parse(null);
         return parser.build(); 

@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
@@ -176,8 +177,8 @@ public class CursorMarkTest extends SolrTestCaseJ4 {
     final Collection<String> allFieldNames = getAllFieldNames();
     final SolrQueryRequest req = req();
     final IndexSchema schema = req.getSchema();
-    final int numRandomSorts = atLeast(50);
-    final int numRandomValIters = atLeast(10);
+    final int numRandomSorts = SolrTestUtil.atLeast(50);
+    final int numRandomValIters = SolrTestUtil.atLeast(10);
     for (int i = 0; i < numRandomSorts; i++) {
       final SortSpec ss = SortSpecParsing.parseSortSpec
         (CursorPagingTest.buildRandomSort(allFieldNames), req);

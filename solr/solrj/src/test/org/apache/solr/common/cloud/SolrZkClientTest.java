@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -71,7 +72,7 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     final String SCHEME = "digest";
     final String AUTH = "user:pass";
 
-    Path zkDir = createTempDir();
+    Path zkDir = SolrTestUtil.createTempDir();
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -173,28 +174,28 @@ public class SolrZkClientTest extends SolrCloudTestCase {
     assertFalse(wrapped1A.equals(wrappedB));
     assertEquals(wrapped1A.hashCode(), wrapped2A.hashCode());
 
-    CollectionAdminRequest.createCollection(getSaferTestName(), "_default", 1, 1)
+    CollectionAdminRequest.createCollection(SolrTestUtil.getTestName(), "_default", 1, 1)
         .setMaxShardsPerNode(2)
         .process(solrClient);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"foo", "bar")
+    CollectionAdminRequest.setCollectionProperty(SolrTestUtil.getTestName(),"foo", "bar")
         .process(solrClient);
 
     //Thread.sleep(600000);
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped2A, null);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrapped1A, null);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrapped2A, null);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bam")
+    CollectionAdminRequest.setCollectionProperty(SolrTestUtil.getTestName(),"baz", "bam")
         .process(solrClient);
 
     Thread.sleep(1000); // make sure zk client watch has time to be notified.
     assertEquals(1, calls.get()); // same wrapped watch set twice, only invoked once
 
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrapped1A, null);
-    solrClient.getZkStateReader().getZkClient().getData("/collections/" + getSaferTestName() + "/collectionprops.json",wrappedB, null);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrapped1A, null);
+    solrClient.getZkStateReader().getZkClient().getData("/collections/" + SolrTestUtil.getTestName() + "/collectionprops.json",wrappedB, null);
 
-    CollectionAdminRequest.setCollectionProperty(getSaferTestName(),"baz", "bang")
+    CollectionAdminRequest.setCollectionProperty(SolrTestUtil.getTestName(),"baz", "bang")
         .process(solrClient);
 
     Thread.sleep(1000); // make sure zk client watch has time to be notified.

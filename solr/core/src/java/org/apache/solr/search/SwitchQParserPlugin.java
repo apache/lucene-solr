@@ -153,42 +153,48 @@ public class SwitchQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      QParser subParser;
+    return new MyQParser(qstr, localParams, params, req);
+  }
 
-      @Override
-      public Query parse() throws SyntaxError {
-        String val = localParams.get(QueryParsing.V);
+  private static class MyQParser extends QParser {
+    QParser subParser;
 
-        // we don't want to wrapDefaults arround params, because then 
-        // clients could add their own switch options 
-        String subQ = localParams.get(SWITCH_DEFAULT);
-        subQ = StringUtils.isBlank(val)
-          ? localParams.get(SWITCH_CASE, subQ)
-          : localParams.get(SWITCH_CASE + "." + val.trim(), subQ);
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
 
-        if (null == subQ) {
-          throw new SyntaxError("No "+SWITCH_DEFAULT+", and no switch case matching specified query string: \"" + val + "\"");
-        }
+    @Override
+    public Query parse() throws SyntaxError {
+      String val = localParams.get(QueryParsing.V);
 
-        subParser = subQuery(subQ, null);
-        return subParser.getQuery();
+      // we don't want to wrapDefaults arround params, because then
+      // clients could add their own switch options
+      String subQ = localParams.get(SWITCH_DEFAULT);
+      subQ = StringUtils.isBlank(val)
+        ? localParams.get(SWITCH_CASE, subQ)
+        : localParams.get(SWITCH_CASE + "." + val.trim(), subQ);
+
+      if (null == subQ) {
+        throw new SyntaxError("No "+SWITCH_DEFAULT+", and no switch case matching specified query string: \"" + val + "\"");
       }
 
-      @Override
-      public String[] getDefaultHighlightFields() {
-        return subParser.getDefaultHighlightFields();
-      }
-                                           
-      @Override
-      public Query getHighlightQuery() throws SyntaxError {
-        return subParser.getHighlightQuery();
-      }
+      subParser = subQuery(subQ, null);
+      return subParser.getQuery();
+    }
 
-      @Override
-      public void addDebugInfo(NamedList<Object> debugInfo) {
-        subParser.addDebugInfo(debugInfo);
-      }
-    };
+    @Override
+    public String[] getDefaultHighlightFields() {
+      return subParser.getDefaultHighlightFields();
+    }
+
+    @Override
+    public Query getHighlightQuery() throws SyntaxError {
+      return subParser.getHighlightQuery();
+    }
+
+    @Override
+    public void addDebugInfo(NamedList<Object> debugInfo) {
+      subParser.addDebugInfo(debugInfo);
+    }
   }
 }

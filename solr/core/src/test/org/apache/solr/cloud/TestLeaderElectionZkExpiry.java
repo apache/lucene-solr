@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -39,8 +40,8 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
 
   @Test
   public void testLeaderElectionWithZkExpiry() throws Exception {
-    Path zkDir = createTempDir("zkData");
-    Path ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
+    Path ccDir = SolrTestUtil.createTempDir("testLeaderElectionWithZkExpiry-solr");
     CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
     final ZkTestServer server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);

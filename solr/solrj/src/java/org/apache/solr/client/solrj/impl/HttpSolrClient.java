@@ -75,7 +75,6 @@ import org.apache.solr.client.solrj.V2RequestSupport;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.PerThreadExecService;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -429,17 +428,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
             new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
         postOrPut.addHeader("Content-Type",
             contentWriter.getContentType());
-        postOrPut.setEntity(new BasicHttpEntity(){
-          @Override
-          public boolean isStreaming() {
-            return true;
-          }
-
-          @Override
-          public void writeTo(OutputStream outstream) throws IOException {
-            contentWriter.write(outstream);
-          }
-        });
+        postOrPut.setEntity(new MyBasicHttpEntity(contentWriter));
         return postOrPut;
 
       } else if (streams == null || isMultipart) {
@@ -474,17 +463,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       break;
     }
     Long size = contentStream[0].getSize();
-    postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
-      @Override
-      public Header getContentType() {
-        return new BasicHeader("Content-Type", contentStream[0].getContentType());
-      }
-
-      @Override
-      public boolean isRepeatable() {
-        return false;
-      }
-    });
+    postOrPut.setEntity(new MyInputStreamEntity(contentStream, size));
 
   }
 
@@ -971,6 +950,43 @@ s   * @deprecated since 7.0  Use {@link Builder} methods instead.
     @Override
     public Builder getThis() {
       return this;
+    }
+  }
+
+  private static class MyBasicHttpEntity extends BasicHttpEntity {
+    private final RequestWriter.ContentWriter contentWriter;
+
+    public MyBasicHttpEntity(RequestWriter.ContentWriter contentWriter) {
+      this.contentWriter = contentWriter;
+    }
+
+    @Override
+    public boolean isStreaming() {
+      return true;
+    }
+
+    @Override
+    public void writeTo(OutputStream outstream) throws IOException {
+      contentWriter.write(outstream);
+    }
+  }
+
+  private static class MyInputStreamEntity extends InputStreamEntity {
+    private final ContentStream[] contentStream;
+
+    public MyInputStreamEntity(ContentStream[] contentStream, Long size) throws IOException {
+      super(contentStream[0].getStream(), size == null ? -1 : size);
+      this.contentStream = contentStream;
+    }
+
+    @Override
+    public Header getContentType() {
+      return new BasicHeader("Content-Type", contentStream[0].getContentType());
+    }
+
+    @Override
+    public boolean isRepeatable() {
+      return false;
     }
   }
 }

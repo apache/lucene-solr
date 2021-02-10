@@ -27,6 +27,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.PhrasesIdentificationComponent.Phrase;
 import org.apache.solr.common.SolrException;
@@ -339,18 +340,18 @@ public class PhrasesIdentificationComponentTest extends SolrTestCaseJ4 {
         final Phrase bfld = phrases.get(3);
         assertEquals("BROWN fox lAzY  dog", bfld.getSubSequence());
 
-        expectThrows(SolrException.class, () -> {
+        SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
           bfld.getTTF("multigrams_title");
         });
-        expectThrows(SolrException.class, () -> {
+        SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
           bfld.getDocFreq("multigrams_title");
         });
         assertEquals(mult * 0, bfld.getConjunctionDocCount("multigrams_title"));
 
-        expectThrows(SolrException.class, () -> {
+        SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
           bfld.getTTF("multigrams_body");
         });
-        expectThrows(SolrException.class, () -> {
+        SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
           bfld.getDocFreq("multigrams_body");
         });
         assertEquals(mult * 1, bfld.getConjunctionDocCount("multigrams_body"));

@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.lucene.index.AlcoholicMergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
@@ -28,6 +29,8 @@ import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
@@ -60,7 +63,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     initCore(solrConfigFileName,schemaFileName);
   }
   
-  private final Path instanceDir = TEST_PATH().resolve("collection1");
+  private final Path instanceDir = SolrTestUtil.TEST_PATH().resolve("collection1");
 
   @Test
   public void testFailingSolrIndexConfigCreation() throws Exception {
@@ -74,7 +77,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
       // this should fail as mergePolicy doesn't have any public constructor
       try (SolrCore core = h.getCore()) {
-        SolrException ex = expectThrows(SolrException.class, () -> solrIndexConfig.toIndexWriterConfig(core));
+        SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> solrIndexConfig.toIndexWriterConfig(core));
         assertTrue(ex.getMessage().contains("Error instantiating class: 'org.apache.solr.index.DummyMergePolicyFactory'"));
       }
     }
@@ -168,6 +171,10 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       try (SolrCore core = h.getCore()) {
         core.setLatestSchema(indexSchema);
         IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(core);
+
+        if (iwc.getMergePolicy() instanceof AlcoholicMergePolicy) { // TODO: Alcoholic hitting GregorianCal NPE
+          iwc.setMergePolicy(new TieredMergePolicy());
+        }
         assertEquals(SimpleMergedSegmentWarmer.class, iwc.getMergedSegmentWarmer().getClass());
       }
     }

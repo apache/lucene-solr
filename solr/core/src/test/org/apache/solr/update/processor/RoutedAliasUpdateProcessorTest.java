@@ -32,6 +32,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -107,7 +108,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
   /** @see TrackingUpdateProcessorFactory */
   String getTrackUpdatesGroupName() {
-    return getSaferTestName();
+    return SolrTestUtil.getTestName();
   }
 
   void createConfigSet(String configName) throws SolrServerException, IOException, InterruptedException {

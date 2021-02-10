@@ -166,20 +166,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
     OverseerCollectionMessageHandler.Finalize finalizer = resp.asyncFinalRunner;
-    response.asyncFinalRunner = new OverseerCollectionMessageHandler.Finalize() {
-      @Override
-      public AddReplicaCmd.Response call() {
-        if (finalizer != null) {
-          try {
-            finalizer.call();
-          } catch (Exception e) {
-            log.error("Exception during MoveReplica", e);
-          }
-        }
-        AddReplicaCmd.Response response = new AddReplicaCmd.Response();
-        return response;
-      }
-    };
+    response.asyncFinalRunner = new MyFinalize(finalizer);
 
     response.clusterState = null;
 
@@ -342,5 +329,26 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     };
     
     return finalResponse;
+  }
+
+  private static class MyFinalize implements OverseerCollectionMessageHandler.Finalize {
+    private final OverseerCollectionMessageHandler.Finalize finalizer;
+
+    public MyFinalize(OverseerCollectionMessageHandler.Finalize finalizer) {
+      this.finalizer = finalizer;
+    }
+
+    @Override
+    public AddReplicaCmd.Response call() {
+      if (finalizer != null) {
+        try {
+          finalizer.call();
+        } catch (Exception e) {
+          log.error("Exception during MoveReplica", e);
+        }
+      }
+      AddReplicaCmd.Response response = new AddReplicaCmd.Response();
+      return response;
+    }
   }
 }

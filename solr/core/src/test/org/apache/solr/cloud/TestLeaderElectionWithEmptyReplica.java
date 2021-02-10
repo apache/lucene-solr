@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -50,7 +51,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
 
     useFactory(null);
     configureCluster(2)
-        .addConfig("config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 1, 1)

@@ -21,6 +21,8 @@ import javax.script.ScriptEngineManager;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -216,20 +218,14 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
 
   public void testPropogatedException() throws Exception  {
     final String chain = "error-on-add";
-    SolrException e = expectThrows(SolrException.class, () ->
-        processAdd(chain, doc(f("id", "5"), f("name", " foo "),
-            f("subject", "bar")))
-    );
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> processAdd(chain, doc(f("id", "5"), f("name", " foo "), f("subject", "bar"))));
     assertTrue("Exception doesn't contain script error string: " + e.getMessage(),
         0 < e.getMessage().indexOf("no-soup-fo-you"));
   }
 
   public void testMissingFunctions() throws Exception  {
     final String chain = "missing-functions";
-    SolrException e = expectThrows(SolrException.class, () ->
-        processAdd(chain, doc(f("id", "5"),
-            f("name", " foo "), f("subject", "bar")))
-    );
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> processAdd(chain, doc(f("id", "5"), f("name", " foo "), f("subject", "bar"))));
     assertTrue("Exception doesn't contain expected error: " + e.getMessage(),
         0 < e.getMessage().indexOf("processAdd"));
   }
@@ -246,12 +242,9 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
   }
 
   public void testScriptSandbox() throws Exception  {
-    assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
-    expectThrows(SecurityException.class, () -> {
-      processAdd("evil",
-        doc(f("id", "5"),
-            f("name", " foo "),
-            f("subject", "BAR")));
+    LuceneTestCase.assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
+    SolrTestCaseUtil.expectThrows(SecurityException.class, () -> {
+      processAdd("evil", doc(f("id", "5"), f("name", " foo "), f("subject", "BAR")));
     });
   }
 

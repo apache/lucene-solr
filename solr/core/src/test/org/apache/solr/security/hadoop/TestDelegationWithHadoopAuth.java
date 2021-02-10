@@ -24,6 +24,8 @@ import java.util.Set;
 import org.apache.hadoop.security.authentication.client.PseudoAuthenticator;
 import org.apache.hadoop.util.Time;
 import org.apache.http.HttpStatus;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -60,7 +62,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
     HdfsTestUtil.checkAssumptions();
 
     configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
+        .withSecurityJson(SolrTestUtil.TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
         .configure();
 
     JettySolrRunner runnerPrimary = cluster.getJettySolrRunners().get(0);
@@ -393,7 +395,7 @@ public class TestDelegationWithHadoopAuth extends SolrCloudTestCase {
       // test with param -- should throw an exception
       ModifiableSolrParams tokenParam = new ModifiableSolrParams();
       tokenParam.set("delegation", "invalidToken");
-      expectThrows(IllegalArgumentException.class, () -> doSolrRequest(client, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
+      SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> doSolrRequest(client, getAdminRequest(tokenParam), ErrorCode.FORBIDDEN.code));
     }
   }
 }

@@ -22,12 +22,11 @@ import java.nio.file.Path;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.core.CoreContainer;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 
 public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 {
 
@@ -42,8 +41,8 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   public void setUp() throws Exception {
     super.setUp();
 
-    CONFIG_HOME = getFile("solrj/solr/shared").toPath().toAbsolutePath();
-    SOLR_HOME = createTempDir("solrHome");
+    CONFIG_HOME = SolrTestUtil.getFile("solrj/solr/shared").toPath().toAbsolutePath();
+    SOLR_HOME = SolrTestUtil.createTempDir("solrHome");
     FileUtils.copyDirectory(CONFIG_HOME.toFile(), SOLR_HOME.toFile());
 
     System.setProperty("solr.solr.home", SOLR_HOME.toString());
@@ -51,7 +50,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     System.out.println("Solr home: " + SOLR_HOME.toString());
 
     //The index is always stored within a temporary directory
-    tempDir = createTempDir().toFile();
+    tempDir = SolrTestUtil.createTempDir().toFile();
     
     File dataDir = new File(tempDir,"data1");
     File dataDir2 = new File(tempDir,"data2");

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.legacy.BBoxStrategy;
@@ -85,9 +86,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
         "fq", "{!field f=" + fieldName + "}Intersectssss"), 400);
 
     ignoreException("NonexistentShape");
-    SolrException e = expectThrows(SolrException.class, "should throw exception on non existent shape",
-        () -> assertU(adoc("id", "-1", fieldName, "NonexistentShape"))
-    );
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, "should throw exception on non existent shape", () -> assertU(adoc("id", "-1", fieldName, "NonexistentShape")));
     assertEquals(400, e.code());
     unIgnoreException("NonexistentShape");
   }
@@ -258,7 +257,7 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   @Test
   public void testSort() throws Exception {
-    assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
+    LuceneTestCase.assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
     assertU(adoc("id", "100", fieldName, "1,2"));
     assertU(adoc("id", "101", fieldName, "4,-1"));
     if (random().nextBoolean()) {
@@ -393,8 +392,8 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   @Test
   public void testSortMultiVal() throws Exception {
-    assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
-    assumeFalse("Multivalue not supported for this field",
+    LuceneTestCase.assumeTrue("dist sorting not supported on field " + fieldName, canCalcDistance);
+    LuceneTestCase.assumeFalse("Multivalue not supported for this field",
         fieldName.equals("pointvector") || isBBoxField(fieldName));
 
     assertU(adoc("id", "100", fieldName, "1,2"));//1 point

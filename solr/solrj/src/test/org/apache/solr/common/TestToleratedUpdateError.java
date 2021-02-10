@@ -18,6 +18,7 @@ package org.apache.solr.common;
 
 import java.util.EnumSet;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.ToleratedUpdateError.CmdType;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -54,16 +55,16 @@ public class TestToleratedUpdateError extends SolrTestCase {
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testParseMapErrorChecking() {
     SimpleOrderedMap<String> bogus = new SimpleOrderedMap<>();
-    SolrException e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
     assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError"));
 
     bogus.add("id", "some id");
     bogus.add("message", "some message");
-    e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    e = LuceneTestCase.expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
     assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError"));
     
     bogus.add("type", "not a real type");
-    e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    e = LuceneTestCase.expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
     assertTrue(e.toString(), e.getMessage().contains("Invalid type"));
   }
   
@@ -79,7 +80,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
     compare(in, METADATA_COPPIER);
 
     // randomized
-    int numIters = atLeast(5000);
+    int numIters = LuceneTestCase.atLeast(5000);
     for (int i = 0; i < numIters; i++) {
       valid = new SimpleOrderedMap<String>();
       valid.add("type", ALL_TYPES[TestUtil.nextInt(random(), 0, ALL_TYPES.length-1)].toString());
@@ -105,7 +106,7 @@ public class TestToleratedUpdateError extends SolrTestCase {
     }
 
     // randomized testing of non trivial keys/values
-    int numIters = atLeast(5000);
+    int numIters = LuceneTestCase.atLeast(5000);
     for (int i = 0; i < numIters; i++) {
       ToleratedUpdateError in = new ToleratedUpdateError
         (ALL_TYPES[TestUtil.nextInt(random(), 0, ALL_TYPES.length-1)],

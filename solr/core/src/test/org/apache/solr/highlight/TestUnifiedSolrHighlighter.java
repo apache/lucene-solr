@@ -17,6 +17,7 @@
 package org.apache.solr.highlight;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -74,9 +75,8 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   }
 
   public void testImpossibleOffsetSource() {
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
-      query(req("q", "text2:document", "hl.offsetSource", "postings",
-          "hl.fl", "text2", "sort", "id asc", "hl", "true"));
+    IllegalArgumentException e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+      query(req("q", "text2:document", "hl.offsetSource", "postings", "hl.fl", "text2", "sort", "id asc", "hl", "true"));
     });
     assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
 

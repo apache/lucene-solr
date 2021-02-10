@@ -27,6 +27,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -62,7 +63,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     assertQ(req("q", "id:2"), "//result[@numFound='0']");
 
     //call backup
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
 
     final CoreContainer cores = h.getCoreContainer();
@@ -100,7 +101,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
 
-    final File backupDir = createTempDir().toFile();
+    final File backupDir = SolrTestUtil.createTempDir().toFile();
     
     { // first a backup before we've ever done *anything*...
       SolrQueryResponse resp = new SolrQueryResponse();
@@ -201,7 +202,7 @@ public class TestCoreBackup extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     final CoreAdminHandler admin = new CoreAdminHandler(cores);
     
-    final File backupDir = createTempDir().toFile();
+    final File backupDir = SolrTestUtil.createTempDir().toFile();
     
     
     { // take an initial 'backup1a' containing our 1 document

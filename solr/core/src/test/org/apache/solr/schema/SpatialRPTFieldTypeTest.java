@@ -22,6 +22,8 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;
@@ -39,9 +41,9 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    File testHomeConfDir = new File(SolrTestUtil.TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-basic.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
@@ -112,7 +114,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   }
   
   public void testJunkValuesForDistanceUnits() throws Exception {
-    Exception ex = expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> setupRPTField("rose", "true"));
     assertTrue(ex.getMessage().startsWith("Must specify distanceUnits as one of"));
   }
 
@@ -214,7 +216,7 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     assertEquals(wkt, out);
 
     //assert fails GeoJSON
-    expectThrows(SolrException.class, () -> ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}"));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> ftype.parseShape("{\"type\":\"Point\",\"coordinates\":[1,2]}"));
 
   }
 

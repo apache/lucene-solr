@@ -30,6 +30,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -66,7 +68,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   private String collectionName = null;
   
   private String suggestedCollectionName() {
-    return (getTestClass().getSimpleName().replace("Test", "") + "_" + getSaferTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
+    return (SolrTestUtil.getTestName().replace("Test", "") + "_" + SolrTestUtil.getTestName().split(" ")[0]).replaceAll("(.)(\\p{Upper})", "$1_$2").toLowerCase(Locale.ROOT);
   }
 
   @BeforeClass
@@ -74,7 +76,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     System.setProperty("solr.zkclienttimeout", "20000");
 
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
     // Add proxies
     proxies = new HashMap<>(cluster.getJettySolrRunners().size());
@@ -110,7 +112,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     collectionName = suggestedCollectionName();
-    expectThrows(SolrException.class, () -> getCollectionState(collectionName));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> getCollectionState(collectionName));
     cluster.getSolrClient().setDefaultCollection(collectionName);
   }
 
@@ -143,8 +145,8 @@ public void testCantConnectToPullReplica() throws Exception {
         }
       }
 
-      SolrServerException e = expectThrows(SolrServerException.class, () -> {
-        try(Http2SolrClient pullReplicaClient = SolrTestCaseJ4.getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
+      SolrServerException e = SolrTestCaseUtil.expectThrows(SolrServerException.class, () -> {
+        try (Http2SolrClient pullReplicaClient = SolrTestCaseJ4.getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
           pullReplicaClient.query(new SolrQuery("*:*")).getResults().getNumFound();
         }
       });
@@ -182,7 +184,7 @@ public void testCantConnectToPullReplica() throws Exception {
         assertNumDocs(10, pullReplicaClient);
       }
       proxy.close();
-      expectThrows(SolrException.class, ()->addDocs(1));
+      SolrTestCaseUtil.expectThrows(SolrException.class, () -> addDocs(1));
       try (Http2SolrClient pullReplicaClient = SolrTestCaseJ4.getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {
         assertNumDocs(10, pullReplicaClient);
       }

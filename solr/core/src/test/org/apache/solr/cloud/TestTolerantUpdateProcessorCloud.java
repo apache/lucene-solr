@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -106,7 +107,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   public static void createMiniSolrCloudCluster() throws Exception {
     useFactory(null);
     final String configName = "solrCloudCollectionConfig";
-    final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+    final File configDir = new File(SolrTestUtil.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
 
     configureCluster(NUM_SERVERS)
       .addConfig(configName, configDir.toPath())
@@ -245,7 +246,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       assertQueryDocIds(c, false, "id_not_exists");
 
       // verify adding 2 broken docs causes a clint exception
-      SolrException e = expectThrows(SolrException.class,
+      SolrException e = LuceneTestCase.expectThrows(SolrException.class,
           "did not get a top level exception when more then 10 docs failed " + cnt, () ->
               update(params(),
                   doc(f("id", S_ONE_PRE + "X"), f("foo_i", "bogus_val_X")),
@@ -256,7 +257,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
           400, e.code());
         
       // verify malformed deleteByQuerys fail
-      e = expectThrows(SolrException.class,
+      e = LuceneTestCase.expectThrows(SolrException.class,
           "sanity check for malformed DBQ didn't fail",
           () -> update(params()).deleteByQuery("foo_i:not_a_num").process(c));
       assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
@@ -266,7 +267,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
           update(params("commit", "true")).deleteById(S_ONE_PRE + "1", -1L),
           update(params("commit", "true")).deleteById(S_TWO_PRE + "2", -1L),
           update(params("commit", "true")).deleteById("id_not_exists",  1L)    }) {
-        e = expectThrows(SolrException.class, "sanity check for opportunistic concurrency delete didn't fail",
+        e = LuceneTestCase.expectThrows(SolrException.class, "sanity check for opportunistic concurrency delete didn't fail",
             () -> r.process(c)
         );
         assertEquals("not the expected opportunistic concurrency failure code: "
@@ -550,7 +551,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     assertEquals(0, client.deleteByQuery("*:*").getStatus());
     
     // many docs from diff shards, more then 10 (total) should fail
-    SolrException e = expectThrows(SolrException.class,
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class,
         "did not get a top level exception when more then 10 docs failed",
         () -> update(params("update.chain", "tolerant-chain-max-errors-10", "commit", "true"),
             doc(f("id", S_ONE_PRE + "11")),
@@ -635,7 +636,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     // many docs from diff shards, more then 10 from a single shard (two) should fail
 
-    e = expectThrows(SolrException.class, "did not get a top level exception when more then 10 docs failed",
+    e = LuceneTestCase.expectThrows(SolrException.class, "did not get a top level exception when more then 10 docs failed",
         () -> {
       ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
       docs.add(doc(f("id", S_ONE_PRE + "z")));
@@ -717,7 +718,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     // many docs from diff shards, more then 10 don't have any uniqueKey specified
 
-    e = expectThrows(SolrException.class,
+    e = LuceneTestCase.expectThrows(SolrException.class,
         "did not get a top level exception when more then 10 docs mising uniqueKey",
         () -> {
       ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>(30);
@@ -879,7 +880,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     
     // attempt a request containing 4 errors of various types (add, delI, delQ) .. 1 too many
     cluster.getSolrClient().getZkStateReader().waitForActiveCollection(COLLECTION_NAME, 10, TimeUnit.SECONDS, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
-    SolrException e = expectThrows(SolrException.class,
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class,
         "did not get a top level exception when more then 4 updates failed",
         () -> update(params("update.chain", "tolerant-chain-max-errors-10",
             "maxErrors", "3",

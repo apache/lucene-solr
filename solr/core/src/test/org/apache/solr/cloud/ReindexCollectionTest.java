@@ -28,6 +28,7 @@ import java.util.function.Function;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -66,11 +67,11 @@ public class ReindexCollectionTest extends SolrCloudTestCase {
 
     configureCluster(2)
         // only *_s
-        .addConfig("conf1", configset("cloud-minimal"))
+        .addConfig("conf1", SolrTestUtil.configset("cloud-minimal"))
         // every combination of field flags
-        .addConfig("conf2", configset("cloud-dynamic"))
+        .addConfig("conf2", SolrTestUtil.configset("cloud-dynamic"))
         // catch-all * field, indexed+stored
-        .addConfig("conf3", configset("cloud-minimal-inplace-updates"))
+        .addConfig("conf3", SolrTestUtil.configset("cloud-minimal-inplace-updates"))
         .configure();
   }
 

@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -163,49 +164,32 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    * Simple sanity checks that authentication is working the way the test expects 
    */
   public void testSanityCheckAuth() throws Exception {
-    
-    assertEquals("sanity check of non authenticated query request",
-                 401,
-                 expectThrows(SolrException.class, () -> {
-                     final long ignored = 
-                       (new QueryRequest(params("q", "*:*",
-                                                "rows", "0",
-                                                "_trace", "no_auth_sanity_check")))
-                       .process(cluster.getSolrClient(), COLLECTION_X).getResults().getNumFound();
-                   }).code());
-    
-    assertEquals("sanity check of update to X from write_X user",
-                 0,
-                 (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER)
-                  .add(SolrTestCaseJ4.sdoc("id", "1_from_write_X_user"))
-                  .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
 
-    assertEquals("sanity check of update to X from read only user",
-                 500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222 
-                 expectThrows(SolrException.class, () -> {
-                     final int ignored = (setBasicAuthCredentials(new UpdateRequest(), READ_ONLY_USER)
-                                          .add(SolrTestCaseJ4.sdoc("id", "2_from_read_only_user"))
-                                          .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus();
-                   }).code());
-    
-    assertEquals("sanity check of update to X from write_Y user",
-                 500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222 
-                 expectThrows(SolrException.class, () -> {
-                     final int ignored = (setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER)
-                                          .add(SolrTestCaseJ4.sdoc("id", "3_from_write_Y_user"))
-                                          .commit(cluster.getSolrClient(), COLLECTION_X)).getStatus();
-                   }).code());
-    
-    assertEquals("sanity check of update to Y from write_Y user",
-                 0,
-                 (setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER)
-                  .add(SolrTestCaseJ4.sdoc("id", "1_from_write_Y_user"))
-                  .commit(cluster.getSolrClient(), COLLECTION_Y)).getStatus());
-    
+    assertEquals("sanity check of non authenticated query request", 401, LuceneTestCase.expectThrows(SolrException.class, () -> {
+      final long ignored = (new QueryRequest(params("q", "*:*", "rows", "0", "_trace", "no_auth_sanity_check"))).process(cluster.getSolrClient(), COLLECTION_X).getResults().getNumFound();
+    }).code());
+
+    assertEquals("sanity check of update to X from write_X user", 0,
+        (setBasicAuthCredentials(new UpdateRequest(), WRITE_X_USER).add(SolrTestCaseJ4.sdoc("id", "1_from_write_X_user")).commit(cluster.getSolrClient(), COLLECTION_X)).getStatus());
+
+    assertEquals("sanity check of update to X from read only user", 500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222
+        LuceneTestCase.expectThrows(SolrException.class, () -> {
+          final int ignored = (setBasicAuthCredentials(new UpdateRequest(), READ_ONLY_USER).add(SolrTestCaseJ4.sdoc("id", "2_from_read_only_user")).commit(cluster.getSolrClient(), COLLECTION_X))
+              .getStatus();
+        }).code());
+
+    assertEquals("sanity check of update to X from write_Y user", 500, // should be 403, but CloudSolrClient lies on updates for now: SOLR-14222
+        LuceneTestCase.expectThrows(SolrException.class, () -> {
+          final int ignored = (setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER).add(SolrTestCaseJ4.sdoc("id", "3_from_write_Y_user")).commit(cluster.getSolrClient(), COLLECTION_X))
+              .getStatus();
+        }).code());
+
+    assertEquals("sanity check of update to Y from write_Y user", 0,
+        (setBasicAuthCredentials(new UpdateRequest(), WRITE_Y_USER).add(SolrTestCaseJ4.sdoc("id", "1_from_write_Y_user")).commit(cluster.getSolrClient(), COLLECTION_Y)).getStatus());
+
     for (String user : Arrays.asList(READ_ONLY_USER, WRITE_Y_USER, WRITE_X_USER)) {
       for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
-        assertEquals("sanity check: query "+collection+" from user: "+user,
-                     1, countDocsInCollection(collection, user));
+        assertEquals("sanity check: query " + collection + " from user: " + user, 1, countDocsInCollection(collection, user));
       }
     }
   }
@@ -227,7 +211,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     // NOTE: no credentials
     
     // NOTE: Can't make any assertions about Exception: SOLR-14226
-    expectThrows(Exception.class, () -> {
+    LuceneTestCase.expectThrows(Exception.class, () -> {
         final List<Tuple> ignored = getTuples(solrStream);
       });
   }
@@ -239,7 +223,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     solrStream.setCredentials(READ_ONLY_USER, "BOGUS_PASSWORD");
     
     // NOTE: Can't make any assertions about Exception: SOLR-14226
-    expectThrows(Exception.class, () -> {
+    LuceneTestCase.expectThrows(Exception.class, () -> {
         final List<Tuple> ignored = getTuples(solrStream);
       });
   }
@@ -266,7 +250,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     solrStream.setCredentials(WRITE_X_USER, "BOGUS_PASSWORD");
     
     // NOTE: Can't make any assertions about Exception: SOLR-14226
-    expectThrows(Exception.class, () -> {
+    LuceneTestCase.expectThrows(Exception.class, () -> {
         final List<Tuple> ignored = getTuples(solrStream);
       });
     
@@ -285,7 +269,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       solrStream.setCredentials(user, user);
     
       // NOTE: Can't make any assertions about Exception: SOLR-14226
-      expectThrows(Exception.class, () -> {
+      LuceneTestCase.expectThrows(Exception.class, () -> {
           final List<Tuple> ignored = getTuples(solrStream);
         });
     }
@@ -376,7 +360,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       solrStream.setCredentials(WRITE_Y_USER, WRITE_Y_USER);
     
       // NOTE: Can't make any assertions about Exception: SOLR-14226
-      expectThrows(Exception.class, () -> {
+      LuceneTestCase.expectThrows(Exception.class, () -> {
           final List<Tuple> ignored = getTuples(solrStream);
         });
     }
@@ -631,7 +615,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
     solrStream.setCredentials(WRITE_X_USER, "BOGUS_PASSWORD");
     
     // NOTE: Can't make any assertions about Exception: SOLR-14226
-    expectThrows(Exception.class, () -> {
+    LuceneTestCase.expectThrows(Exception.class, () -> {
         final List<Tuple> ignored = getTuples(solrStream);
       });
     
@@ -657,7 +641,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       solrStream.setCredentials(user, user);
     
       // NOTE: Can't make any assertions about Exception: SOLR-14226
-      expectThrows(Exception.class, () -> {
+      LuceneTestCase.expectThrows(Exception.class, () -> {
           final List<Tuple> ignored = getTuples(solrStream);
         });
     }
@@ -770,7 +754,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       solrStream.setCredentials(WRITE_Y_USER, WRITE_Y_USER);
     
       // NOTE: Can't make any assertions about Exception: SOLR-14226
-      expectThrows(Exception.class, () -> {
+      LuceneTestCase.expectThrows(Exception.class, () -> {
           final List<Tuple> ignored = getTuples(solrStream);
         });
     }

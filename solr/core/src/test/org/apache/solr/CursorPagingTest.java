@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.mutable.MutableValueInt;
@@ -504,7 +505,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * test that our assumptions about how caches are affected hold true
    */
-  @Nightly // can randomly hit:
+  @LuceneTestCase.Nightly // can randomly hit:
 //  java.lang.UnsupportedOperationException
 //  at __randomizedtesting.SeedInfo.seed([4ECEFFACB197503C:3CC812D4842EB732]:0)
 //  at org.apache.lucene.queries.function.FunctionValues.longVal(FunctionValues.java:49)
@@ -563,12 +564,12 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** randomized testing of a non-trivial number of docs using assertFullWalkNoDups 
    */
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testRandomSortsOnLargeIndex() throws Exception {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final int initialDocs = TestUtil.nextInt(random(), 100, TEST_NIGHTLY ? 200 : 102);
-    final int totalDocs = TEST_NIGHTLY ? atLeast(500) : 105;
+    final int totalDocs = TEST_NIGHTLY ? LuceneTestCase.atLeast(500) : 105;
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...
@@ -599,7 +600,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    final int numRandomSorts = atLeast(TEST_NIGHTLY ? 3 : 1);
+    final int numRandomSorts = LuceneTestCase.atLeast(TEST_NIGHTLY ? 3 : 1);
     for (int i = 0; i < numRandomSorts; i++) {
       final String sort = buildRandomSort(allFieldNames);
       final String rows = "" + TestUtil.nextInt(random(), 63, TEST_NIGHTLY ? 113 : 73);
@@ -707,7 +708,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
   /**
    * test faceting with deep paging
    */
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testFacetingWithRandomSorts() throws Exception {
     final int numDocs = TestUtil.nextInt(random(), 1000, 3000);
     String[] fieldsToFacetOn = { "int", "long", "str" };
@@ -852,7 +853,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     throws Exception {
 
     try {
-      SolrException e = expectThrows(SolrException.class, () -> {
+      SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         ignoreException(expSubstr);
         assertJQ(req(p));
       });

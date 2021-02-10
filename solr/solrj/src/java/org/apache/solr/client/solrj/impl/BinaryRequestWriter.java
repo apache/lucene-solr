@@ -43,17 +43,7 @@ public class BinaryRequestWriter extends RequestWriter {
     if (req instanceof UpdateRequest) {
       UpdateRequest updateRequest = (UpdateRequest) req;
       if (isEmpty(updateRequest)) return null;
-      return new ContentWriter() {
-        @Override
-        public void write(OutputStream os) throws IOException {
-          new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
-        }
-
-        @Override
-        public String getContentType() {
-          return JAVABIN_MIME;
-        }
-      };
+      return new MyContentWriter(updateRequest);
     } else {
       return req.getContentWriter(JAVABIN_MIME);
     }
@@ -90,6 +80,24 @@ public class BinaryRequestWriter extends RequestWriter {
   public static class BAOS extends ByteArrayOutputStream {
     public byte[] getbuf() {
       return super.buf;
+    }
+  }
+
+  private static class MyContentWriter implements ContentWriter {
+    private final UpdateRequest updateRequest;
+
+    public MyContentWriter(UpdateRequest updateRequest) {
+      this.updateRequest = updateRequest;
+    }
+
+    @Override
+    public void write(OutputStream os) throws IOException {
+      new JavaBinUpdateRequestCodec().marshal(updateRequest, os);
+    }
+
+    @Override
+    public String getContentType() {
+      return JAVABIN_MIME;
     }
   }
 }

@@ -33,6 +33,7 @@ import org.apache.commons.math3.primes.Primes;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -106,7 +107,7 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
     final int softCommitPercent = 30 + random().nextInt(75); // what percent of the commits are soft
     final int deletePercent = 4 + random().nextInt(25);
     final int deleteByQueryPercent = random().nextInt(8);
-    final int ndocs = atLeast(5);
+    final int ndocs = SolrTestUtil.atLeast(5);
     int nWriteThreads = TEST_NIGHTLY ? (5 + random().nextInt(12)) : 1 + random().nextInt(3);
     int fullUpdatePercent = 5 + random().nextInt(50);
 

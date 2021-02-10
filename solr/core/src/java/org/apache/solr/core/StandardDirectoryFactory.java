@@ -29,7 +29,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.Locale;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;

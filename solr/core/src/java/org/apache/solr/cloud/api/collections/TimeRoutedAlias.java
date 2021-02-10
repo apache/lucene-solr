@@ -518,8 +518,7 @@ public class TimeRoutedAlias extends RoutedAlias {
               String destinationCollection = candidate.getDestinationCollection(); // dest doesn't change
               String creationCollection = calcNextCollection(mostRecentCol);
               return new CandidateCollection(ASYNC_PREEMPTIVE, // add next collection
-                  destinationCollection,
-                  creationCollection);
+                  destinationCollection, creationCollection);
             }
           }
           return candidate;

@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
@@ -156,7 +157,7 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
 
 
     public void setUp() throws Exception {
-      homeDir = createTempDir("inst").toFile();
+      homeDir = SolrTestUtil.createTempDir("inst").toFile();
       dataDir = new File(homeDir + "/collection1", "data");
       confDir = new File(homeDir + "/collection1", "conf");
 
@@ -164,14 +165,14 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
       dataDir.mkdirs();
       confDir.mkdirs();
 
-      FileUtils.copyFile(getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
+      FileUtils.copyFile(SolrTestUtil.getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
       File f = new File(confDir, "solrconfig.xml");
-      FileUtils.copyFile(getFile(getSolrConfigFile()), f);
+      FileUtils.copyFile(SolrTestUtil.getFile(getSolrConfigFile()), f);
       f = new File(confDir, "schema.xml");
 
-      FileUtils.copyFile(getFile(getSchemaFile()), f);
+      FileUtils.copyFile(SolrTestUtil.getFile(getSchemaFile()), f);
       f = new File(confDir, "data-config.xml");
-      FileUtils.copyFile(getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
+      FileUtils.copyFile(SolrTestUtil.getFile(CONF_DIR + "dataconfig-contentstream.xml"), f);
 
       Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
     }

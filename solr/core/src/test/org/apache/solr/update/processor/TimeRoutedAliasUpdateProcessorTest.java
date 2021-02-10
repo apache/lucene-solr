@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -103,12 +104,12 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     shutdownCluster();
   }
 
-  @Slow
+  @LuceneTestCase.Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TimeRoutedAlias=DEBUG;org.apache.solr.cloud=DEBUG")
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
   public void test() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     // Start with one collection manually created (and use higher numShards & replicas than we'll use for others)
@@ -229,11 +230,11 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
    *
    * @throws Exception when it blows up unexpectedly :)
    */
-  @Slow
+  @LuceneTestCase.Slow
   @Test
   @LogLevel("org.apache.solr.update.processor.TrackingUpdateProcessorFactory=DEBUG")
   public void testSliceRouting() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     // each collection has 4 shards with 3 replicas for 12 possible destinations
@@ -280,9 +281,9 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   }
 
   @Test
-  @Slow
+  @LuceneTestCase.Slow
   public void testPreemptiveCreation() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     final int numShards = 1 ;
@@ -371,21 +372,21 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     //
     // Start and stop some cores that have TRA's... 2x2 used to ensure every jetty gets at least one
 
-    CollectionAdminRequest.createTimeRoutedAlias(getSaferTestName() + "foo", "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
+    CollectionAdminRequest.createTimeRoutedAlias(SolrTestUtil.getTestName() + "foo", "2017-10-23T00:00:00Z", "+1DAY", getTimeField(),
         CollectionAdminRequest.createCollection("_unused_", configName, 2, 2)
             .setMaxShardsPerNode(numReplicas)).setPreemptiveCreateWindow("3HOUR")
         .process(solrClient);
 
-    waitColAndAlias(getSaferTestName() + "foo", TRA, "2017-10-23",2);
-    waitCoreCount(getSaferTestName() + "foo" + TRA + "2017-10-23", 4); // prove this works, for confidence in deletion checking below.
-    assertUpdateResponse(solrClient.add(getSaferTestName() + "foo",
+    waitColAndAlias(SolrTestUtil.getTestName() + "foo", TRA, "2017-10-23",2);
+    waitCoreCount(SolrTestUtil.getTestName() + "foo" + TRA + "2017-10-23", 4); // prove this works, for confidence in deletion checking below.
+    assertUpdateResponse(solrClient.add(SolrTestUtil.getTestName() + "foo",
         SolrTestCaseJ4.sdoc("id","1","timestamp_dt", "2017-10-23T00:00:00Z") // no extra collections should be created
     ));
-    assertUpdateResponse(solrClient.commit(getSaferTestName() + "foo"));
+    assertUpdateResponse(solrClient.commit(SolrTestUtil.getTestName() + "foo"));
 
-    List<String> foo = solrClient.getClusterStateProvider().resolveAlias(getSaferTestName() + "foo");
+    List<String> foo = solrClient.getClusterStateProvider().resolveAlias(SolrTestUtil.getTestName() + "foo");
 
-    CollectionAdminRequest.deleteAlias(getSaferTestName() + "foo").process(solrClient);
+    CollectionAdminRequest.deleteAlias(SolrTestUtil.getTestName() + "foo").process(solrClient);
 
     for (String colName : foo) {
       CollectionAdminRequest.deleteCollection(colName).process(solrClient);
@@ -712,7 +713,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02"));
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13943")
+  @LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13943")
   @Test
   public void testDateMathInStart() throws Exception {
     ClusterStateProvider clusterStateProvider = solrClient.getClusterStateProvider();
@@ -721,7 +722,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
 
     // This test prevents recurrence of SOLR-13760
 
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
     CountDownLatch aliasUpdate = new CountDownLatch(1);
     monitorAlias(aliasUpdate);
@@ -916,7 +917,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
   // work with both old and new formats.
   private void manuallyConstructLegacyTRA() throws Exception {
     // first create a "modern" alias
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     final int numShards = 1 ;

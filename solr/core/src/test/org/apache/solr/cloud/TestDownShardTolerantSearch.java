@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -42,7 +44,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(2).addConfig("conf", SolrTestUtil.configset("cloud-minimal")).configure();
   }
 
   @Test
@@ -69,7 +71,7 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
       assertThat(response.getStatus(), is(0));
       assertTrue(response.getResults().getNumFound() > 0);
 
-      Exception e = expectThrows(Exception.class, "Request should have failed because we killed shard1 jetty",
+      Exception e = SolrTestCaseUtil.expectThrows(Exception.class, "Request should have failed because we killed shard1 jetty",
           () -> cluster.getSolrClient().query("tolerant", new SolrQuery("*:*").setRows(1).setParam(ShardParams.SHARDS_TOLERANT, false)));
 
       assertNotNull(e);

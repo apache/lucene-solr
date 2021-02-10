@@ -17,13 +17,13 @@
 package org.apache.solr.analytics.legacy.expression;
 
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.analytics.legacy.LegacyAbstractAnalyticsTest;
 import org.apache.solr.analytics.legacy.facet.LegacyAbstractAnalyticsFacetTest;
-import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
   static String fileName = "functions.txt";
 
@@ -73,7 +73,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
             "concat_first_sd", concat_first, "concat_second_sd", concat_second, "miss_dd", ""+d0 )));
 
 
-      if (usually()) {
+      if (LuceneTestCase.usually()) {
         assertU(commit()); // to have several segments
       }
     }

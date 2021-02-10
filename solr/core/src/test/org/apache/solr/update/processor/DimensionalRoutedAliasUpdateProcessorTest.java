@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -92,7 +93,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
   }
   @Test
   public void testTimeCat() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     CreateTimeRoutedAlias TRA_Dim = createTimeRoutedAlias(getAlias(), "2019-07-01T00:00:00Z", "+1DAY",
@@ -353,7 +354,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
   @Test
   public void testCatTime() throws Exception {
-    String configName = getSaferTestName();
+    String configName = SolrTestUtil.getTestName();
     createConfigSet(configName);
 
     CreateTimeRoutedAlias TRA_Dim = createTimeRoutedAlias(getAlias(), "2019-07-01T00:00:00Z", "+1DAY",
@@ -629,7 +630,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     final int expectNumFound = lastDocId - numDocsDeletedOrFailed; //lastDocId is effectively # generated docs
     int totalNumFound = 0;
 
-    final List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(getSaferTestName());
+    final List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(SolrTestUtil.getTestName());
     assert !cols.isEmpty();
 
     for (String category : categories) {
@@ -720,7 +721,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
   @Override
   public String getAlias() {
-    return getSaferTestName();
+    return SolrTestUtil.getTestName();
   }
 
   @Override

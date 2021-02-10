@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.TestCloudPseudoReturnFields;
 import org.apache.solr.core.SolrCore;
@@ -685,7 +686,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     final List<String> fl = Arrays.asList
       ("id","[docid]","[explain]","score","val_*","subj*");
     
-    final int iters = atLeast(random, 10);
+    final int iters = LuceneTestCase.atLeast(random, 10);
     for (int i = 0; i< iters; i++) {
       
       Collections.shuffle(fl, random);
@@ -719,7 +720,7 @@ public class TestPseudoReturnFields extends SolrTestCaseJ4 {
     final List<String> fl = Arrays.asList
       ("id","[explain]","score","val_*","subj*","abs(val_i)","[docid]");
     
-    final int iters = atLeast(random, 10);
+    final int iters = LuceneTestCase.atLeast(random, 10);
     for (int i = 0; i< iters; i++) {
       
       Collections.shuffle(fl, random);

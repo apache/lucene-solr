@@ -425,7 +425,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
     
     // reload the core and wait for for the listeners to finish
     reloadCore(createNewCores);
-    if (System.getProperty(SYSPROP_NIGHTLY) != null) {
+    if (System.getProperty(LuceneTestCase.SYSPROP_NIGHTLY) != null) {
       // wait some time here in nightly to make sure there are no race conditions in suggester build
       Thread.sleep(1000);
     }

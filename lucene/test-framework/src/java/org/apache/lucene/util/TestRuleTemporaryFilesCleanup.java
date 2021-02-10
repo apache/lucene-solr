@@ -108,10 +108,6 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   @Override
   protected void before() throws Throwable {
     super.before();
-
-    assert tempDirBase == null;
-    fileSystem = initializeFileSystem();
-    javaTempDir = initializeJavaTempDir();
   }
   
   // os/config-independent limit for too many open files
@@ -224,7 +220,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
         }
         throw e;
       }
-      if (fileSystem != FileSystems.getDefault()) {
+      if (fileSystem != FileSystems.getDefault() && fileSystem != null) {
         fileSystem.close();
       }
     } else {
@@ -236,6 +232,14 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
   
   Path getPerTestClassTempDir() {
     if (tempDirBase == null) {
+
+      fileSystem = initializeFileSystem();
+      try {
+        javaTempDir = initializeJavaTempDir();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
       RandomizedContext ctx = RandomizedContext.current();
       Class<?> clazz = ctx.getTargetClass();
       String prefix = clazz.getName();
@@ -260,6 +264,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       } while (!success);
 
       tempDirBase = f;
+
       registerToRemoveAfterSuite(tempDirBase);
     }
     return tempDirBase;

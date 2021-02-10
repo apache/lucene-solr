@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.spelling.suggest.SuggesterParams;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -80,10 +81,8 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildThrowsIllegalArgumentExceptionWhenContextIsConfiguredButNotImplemented() throws Exception {
-    IllegalArgumentException ex = expectThrows(IllegalArgumentException.class, () -> {
-        query(req("qt", rh, SuggesterParams.SUGGEST_BUILD, "true",
-          SuggesterParams.SUGGEST_DICT, "suggest_context_filtering_not_implemented",
-          SuggesterParams.SUGGEST_Q, "examp"));
+    IllegalArgumentException ex = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+      query(req("qt", rh, SuggesterParams.SUGGEST_BUILD, "true", SuggesterParams.SUGGEST_DICT, "suggest_context_filtering_not_implemented", SuggesterParams.SUGGEST_Q, "examp"));
     });
     assertThat(ex.getMessage(), is("this suggester doesn't support contexts"));
 

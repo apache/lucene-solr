@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
@@ -89,12 +90,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
 
-   expectThrows(Exception.class, () -> {
-     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-         SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6")
-         ,"/spellcheck/suggestions/[1]/numFound==1"
-     );
-   });
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      assertJQ(req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q", "lowerfilt:(this OR brwn)", SpellingParams.SPELLCHECK_COUNT, "5",
+          SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, "6"), "/spellcheck/suggestions/[1]/numFound==1");
+    });
 
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
         "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
@@ -103,12 +102,12 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
 
-    expectThrows(Exception.class, () -> {
-      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq", "lowerfilt:th*", /* returns 8, most selective */
-          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80")
-          ,"/spellcheck/suggestions/[1]/numFound==1"
-      );
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      assertJQ(
+          req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q", "lowerfilt:(this OR brwn)", "fq", "id:[0 TO 9]", /*returns 10, less selective */ "fq",
+              "lowerfilt:th*", /* returns 8, most selective */
+              SpellingParams.SPELLCHECK_COUNT, "5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".80"),
+          "/spellcheck/suggestions/[1]/numFound==1");
     });
     
     assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
@@ -118,12 +117,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
         ,"/spellcheck/suggestions/[1]/numFound==1"
      );
 
-    expectThrows(Exception.class, () -> {
-      assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q","lowerfilt:(this OR brwn)",
-          "fq", "id:[0 TO 9]", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*",
-          SpellingParams.SPELLCHECK_COUNT,"5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS,"false", SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64")
-          ,"/spellcheck/suggestions/[1]/numFound==1"
-      );
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      assertJQ(req("qt", rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_BUILD, "true", "q", "lowerfilt:(this OR brwn)", "fq", "id:[0 TO 9]",
+          SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST_FQ, "lowerfilt:th*", SpellingParams.SPELLCHECK_COUNT, "5", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "false",
+          SpellingParams.SPELLCHECK_MAX_RESULTS_FOR_SUGGEST, ".64"), "/spellcheck/suggestions/[1]/numFound==1");
     });
   } 
   

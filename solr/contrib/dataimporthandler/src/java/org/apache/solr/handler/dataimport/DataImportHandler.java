@@ -262,17 +262,7 @@ public class DataImportHandler extends RequestHandlerBase implements
             "Unable to load Writer implementation:" + writerClassStr, e);
       }
     } else {
-      return new SolrWriter(processor, req) {
-        @Override
-        public boolean upload(SolrInputDocument document) {
-          try {
-            return super.upload(document);
-          } catch (RuntimeException e) {
-            log.error("Exception while adding: {}", document, e);
-            return false;
-          }
-        }
-      };
+      return new MySolrWriter(processor, req);
     }
   }
 
@@ -312,4 +302,20 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   public static final String ENABLE_DEBUG = "enableDebug";
+
+  private static class MySolrWriter extends SolrWriter {
+    public MySolrWriter(UpdateRequestProcessor processor, SolrQueryRequest req) {
+      super(processor, req);
+    }
+
+    @Override
+    public boolean upload(SolrInputDocument document) {
+      try {
+        return super.upload(document);
+      } catch (RuntimeException e) {
+        log.error("Exception while adding: {}", document, e);
+        return false;
+      }
+    }
+  }
 }

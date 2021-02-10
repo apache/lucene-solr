@@ -32,8 +32,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -65,7 +67,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   private SolrZkClient zkClient;
 
-  protected static final String SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
+  protected static final String SOLR_HOME = SolrTestUtil.TEST_HOME();
 
   @BeforeClass
   public static void beforeClass() {
@@ -81,12 +83,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
+      log.info("####SETUP_START {}", SolrTestUtil.getTestName());
     }
 
     String exampleHome = SolrJettyTestBase.legacyExampleCollection1SolrHome();
 
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     solrHome = exampleHome;
 
     zkDir = tmpDir.resolve("zookeeper/server1/data");
@@ -103,7 +105,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         AbstractZkTestCase.TIMEOUT);
     zkClient.start();
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
+      log.info("####SETUP_END {}", SolrTestUtil.getTestName());
     }
   }
 
@@ -116,7 +118,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testBootstrapWithChroot() throws Exception {
     String chroot = "/foo/bar";
     assertFalse(zkClient.exists(chroot));
@@ -185,7 +187,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // test put file
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "putfile", "/solr.xml", SOLR_HOME + File.separator + "not-there.xml"};
-    FileNotFoundException e = expectThrows(FileNotFoundException.class, () -> ZkCLI.main(args));
+    FileNotFoundException e = LuceneTestCase.expectThrows(FileNotFoundException.class, () -> ZkCLI.main(args));
     assertTrue("Didn't find expected error message containing 'not-there.xml' in " + e.getMessage(),
         e.getMessage().indexOf("not-there.xml") != -1);
   }
@@ -226,7 +228,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testUpConfigLinkConfigClearZk() throws Exception {
-    File tmpDir = createTempDir().toFile();
+    File tmpDir = SolrTestUtil.createTempDir().toFile();
 
     // test upconfig
     String confsetname = "confsetone";
@@ -311,7 +313,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFile() throws Exception {
-    File tmpDir = createTempDir().toFile();
+    File tmpDir = SolrTestUtil.createTempDir().toFile();
 
     String getNode = "/getFileNode";
     byte [] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
@@ -331,16 +333,16 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   public void testGetFileNotExists() throws Exception {
     String getNode = "/getFileNotExistsNode";
 
-    File file = createTempFile("newfile", null).toFile();
+    File file = SolrTestUtil.createTempFile("newfile", null).toFile();
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
-    KeeperException e = expectThrows(KeeperException.class, () -> ZkCLI.main(args));
+    KeeperException e = LuceneTestCase.expectThrows(KeeperException.class, () -> ZkCLI.main(args));
     assertEquals(e.code(), KeeperException.Code.NONODE);
   }
 
   @Test
   public void testInvalidZKAddress() throws SolrException {
-    SolrException ex = expectThrows(SolrException.class, () -> {
+    SolrException ex = LuceneTestCase.expectThrows(SolrException.class, () -> {
       new SolrZkClient("----------:33332", 10).start().close();
     });
   }

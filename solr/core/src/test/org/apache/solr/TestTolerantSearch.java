@@ -47,20 +47,20 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static File solrHome;
   
   private File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
+    File workDir = SolrTestUtil.createTempDir().toFile();
     setupJettyTestHome(workDir, "collection1");
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"), new File(workDir, "collection1/conf/solrconfig.xml"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig.snippet.randomindexconfig.xml"), new File(workDir, "configsets/collection1/conf/solrconfig.snippet.randomindexconfig.xml"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/schema.xml"), new File(workDir, "collection1/conf/schema.xml"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/enumsConfig.xml"), new File(workDir, "collection1/conf/enumsConfig.xml"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/currency.xml"), new File(workDir, "collection1/conf/currency.xml"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/open-exchange-rates.json"), new File(workDir, "collection1/conf/open-exchange-rates.json"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/old_synonyms.txt"), new File(workDir, "collection1/conf/old_synonyms.txt"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/mapping-ISOLatin1Accent.txt"), new File(workDir, "configsets/collection1/conf/mapping-ISOLatin1Accent.txt"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/protwords.txt"), new File(workDir, "collection1/conf/protwords.txt"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/synonyms.txt"), new File(workDir, "collection1/conf/synonyms.txt"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/stopwords.txt"), new File(workDir, "collection1/conf/stopwords.txt"));
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/old_synonyms.txt"), new File(workDir, "collection1/conf/old_synonyms.txt"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"), new File(workDir, "collection1/conf/solrconfig.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/solrconfig.snippet.randomindexconfig.xml"), new File(workDir, "configsets/collection1/conf/solrconfig.snippet.randomindexconfig.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/schema.xml"), new File(workDir, "collection1/conf/schema.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/enumsConfig.xml"), new File(workDir, "collection1/conf/enumsConfig.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/currency.xml"), new File(workDir, "collection1/conf/currency.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/open-exchange-rates.json"), new File(workDir, "collection1/conf/open-exchange-rates.json"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/old_synonyms.txt"), new File(workDir, "collection1/conf/old_synonyms.txt"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/mapping-ISOLatin1Accent.txt"), new File(workDir, "configsets/collection1/conf/mapping-ISOLatin1Accent.txt"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/protwords.txt"), new File(workDir, "collection1/conf/protwords.txt"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/synonyms.txt"), new File(workDir, "collection1/conf/synonyms.txt"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/stopwords.txt"), new File(workDir, "collection1/conf/stopwords.txt"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME() + "/collection1/conf/old_synonyms.txt"), new File(workDir, "collection1/conf/old_synonyms.txt"));
 
     FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
     return workDir;
@@ -150,7 +150,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     
     //ignoreException("Dummy exception in BadResponseWriter");
 
-    expectThrows(SolrException.class, () -> collection1.query(query));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> collection1.query(query));
 
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);
@@ -195,7 +195,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
     
     ignoreException("Dummy exception in BadResponseWriter");
 
-    expectThrows(Exception.class, () -> collection1.query(query));
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> collection1.query(query));
 
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);

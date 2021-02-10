@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -112,7 +113,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
 
   @Test
   public void testCommitAge() throws InterruptedException {
-    assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
+    LuceneTestCase.assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
       Constants.WINDOWS);
     try (SolrCore core = h.getCore()) {
       IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();

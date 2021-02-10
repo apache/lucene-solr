@@ -21,6 +21,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -533,8 +535,8 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   }
 
   private void testTokenizedGrouping() throws Exception {
-    SolrException ex = expectThrows(SolrException.class, () -> {
-      query(false, new String[]{"q", "*:*", "group", "true", "group.field", t1});
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(false, new String[] {"q", "*:*", "group", "true", "group.field", t1});
     });
     assertTrue("Expected error from server that SortableTextFields are required", ex.getMessage().contains("Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode"));
   }
@@ -830,7 +832,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     final ModifiableSolrParams updateParams = new ModifiableSolrParams();
     updateParams.add(UpdateParams.UPDATE_CHAIN, chain);
     
-    final int numLoops = atLeast(50);
+    final int numLoops = SolrTestUtil.atLeast(50);
     
     for (int i = 1; i < numLoops; i++) {
       // add doc to random client
@@ -872,7 +874,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     ignoreException("version conflict");
     for (SolrClient client : clients) {
-      SolrException e = expectThrows(SolrException.class, () -> client.add(sd));
+      SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> client.add(sd));
       assertEquals(409, e.code());
     }
     unIgnoreException("version conflict");
@@ -906,8 +908,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
 
     NamedList<Object> result = clients.get(0).request(
-        new StreamingUpdateRequest("/update",
-            getFile("books_numeric_ids.csv"), "application/csv")
+        new StreamingUpdateRequest("/update", SolrTestUtil.getFile("books_numeric_ids.csv"), "application/csv")
             .setCommitWithin(900000)
             .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     
@@ -1159,7 +1160,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
         if (shardId == null) {
           createCmd.setNumShards(2);
         }
-        createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
+        createCmd.setDataDir(getDataDir(SolrTestUtil.createTempDir(collection).toFile().getAbsolutePath()));
         if (shardId != null) {
           createCmd.setShardId(shardId);
         }

@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.TestUtil;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieIntField;
@@ -109,7 +110,7 @@ public class TestTrieFacet extends SolrTestCaseJ4 {
           }
         }
         if (useField()) {
-          int numMulti = atLeast(1);
+          int numMulti = SolrTestUtil.atLeast(1);
           while (0 < numMulti--) {
             int val = TestUtil.nextInt(random(), MIN_VALUE, MAX_VALUE);
             for (String f : M_VALUED) {

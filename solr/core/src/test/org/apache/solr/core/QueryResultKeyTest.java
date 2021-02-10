@@ -29,6 +29,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.search.QueryResultKey;
 import org.junit.Test;
 
@@ -110,7 +111,7 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   public void testRandomQueryKeyEquality() {
 
 
-    final int minIters = atLeast(100 * (TEST_NIGHTLY ? 1000 : 1));
+    final int minIters = SolrTestUtil.atLeast(100 * (TEST_NIGHTLY ? 1000 : 1));
     final Query base = new FlatHashTermQuery("base");
     
     // ensure we cover both code paths at least once

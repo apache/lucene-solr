@@ -20,8 +20,10 @@ import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -34,9 +36,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +77,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     initCore();
 
     for (int i = 0; i < solr.length; i++) {
-      solr[i] = new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i).toFile(), 0);
+      solr[i] = new SolrInstance("solr/collection1" + i, SolrTestUtil.createTempDir("instance-" + i).toFile(), 0);
       solr[i].setUp();
       solr[i].startJetty();
       addDocs(solr[i]);
@@ -122,7 +122,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testSimple() throws Exception {
     String[] s = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
@@ -175,7 +175,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly // very slow ~ not sure if this is by design ...
+  @LuceneTestCase.Nightly // very slow ~ not sure if this is by design ...
   public void testTwoServers() throws Exception {
     try (LBHttp2SolrClient client = getLBHttpSolrClient(solr[0].getUrl(), solr[1].getUrl())) {
       client.setAliveCheckInterval(50);
@@ -200,7 +200,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testReliability() throws Exception {
     String[] s = new String[solr.length];
     for (int i = 0; i < solr.length; i++) {
@@ -300,12 +300,12 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       dataDir.mkdirs();
       confDir.mkdirs();
 
-      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
+      FileUtils.copyFile(SolrTestUtil.getFile(getSolrXmlFile()), new File(homeDir, "solr.xml"));
 
       File f = new File(confDir, "solrconfig.xml");
-      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);
+      FileUtils.copyFile(SolrTestUtil.getFile(getSolrConfigFile()), f);
       f = new File(confDir, "schema.xml");
-      FileUtils.copyFile(SolrTestCaseJ4.getFile(getSchemaFile()), f);
+      FileUtils.copyFile(SolrTestUtil.getFile(getSchemaFile()), f);
       Files.createFile(homeDir.toPath().resolve("collection1/core.properties"));
     }
 

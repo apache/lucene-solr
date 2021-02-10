@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseUtil;
 import org.junit.Test;
 
 /**
@@ -361,11 +362,11 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testUnsupportedXPaths() {
-    RuntimeException ex = expectThrows(RuntimeException.class, () -> new XPathRecordReader("//b"));
+    RuntimeException ex = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> new XPathRecordReader("//b"));
     assertEquals("forEach cannot start with '//': //b", ex.getMessage());
 
     XPathRecordReader rr = new XPathRecordReader("/anyd/contenido");
-    ex = expectThrows(RuntimeException.class, () -> rr.addField("bold", "b", false));
+    ex = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> rr.addField("bold", "b", false));
     assertEquals("xpath must start with '/' : b", ex.getMessage());
   }
 
@@ -585,7 +586,7 @@ public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
     XPathRecordReader rr = new XPathRecordReader("/root/node");
     rr.addField("id", "/root/node/id", true);
     rr.addField("desc", "/root/node/desc", true);
-    RuntimeException e = expectThrows(RuntimeException.class, () -> rr.getAllRecords(new StringReader(malformedXml)));
+    RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> rr.getAllRecords(new StringReader(malformedXml)));
     assertTrue(e.getMessage().contains("Unexpected close tag </id>"));
  }
 }

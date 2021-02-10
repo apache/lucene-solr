@@ -19,6 +19,7 @@ package org.apache.solr.filestore;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -74,7 +75,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
     try {
 

@@ -30,6 +30,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.CollectionProperties;
@@ -38,7 +39,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,13 +47,14 @@ import org.slf4j.LoggerFactory;
 @SolrTestCaseJ4.SuppressSSL
 //@LuceneTestCase.Nightly // too flakey atm, and ugly sleeps as well
 public class CollectionPropsTest extends SolrCloudTestCase {
+
   private String collectionName;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupClass() throws Exception {
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal")).formatZk(true)
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal")).formatZk(true)
         .configure();
   }
 
@@ -162,7 +163,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // ugly retry - properties should be implemented better than this ...
+  @LuceneTestCase.Nightly // ugly retry - properties should be implemented better than this ...
   public void testWatcher() throws KeeperException, InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
@@ -201,7 +202,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testMultipleWatchers() throws InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());

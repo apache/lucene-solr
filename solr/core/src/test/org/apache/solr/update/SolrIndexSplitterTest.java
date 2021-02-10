@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.cloud.CompositeIdRouter;
@@ -66,9 +67,9 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     super.setUp();
     clearIndex();
     assertU(commit());
-    indexDir1 = createTempDir("_testSplit1").toFile();
-    indexDir2 = createTempDir("_testSplit2").toFile();
-    indexDir3 = createTempDir("_testSplit3").toFile();
+    indexDir1 = SolrTestUtil.createTempDir("_testSplit1").toFile();
+    indexDir2 = SolrTestUtil.createTempDir("_testSplit2").toFile();
+    indexDir3 = SolrTestUtil.createTempDir("_testSplit3").toFile();
   }
 
   @Test
@@ -311,7 +312,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
   }
 
   private void doTestSplitByRouteKey(SolrIndexSplitter.SplitMethod splitMethod) throws Exception  {
-    File indexDir = createTempDir().toFile();
+    File indexDir = SolrTestUtil.createTempDir().toFile();
 
     CompositeIdRouter r1 = new CompositeIdRouter();
     String splitKey = "sea-line!";

@@ -32,7 +32,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -139,10 +139,10 @@ public class TestRerankBase extends RestTestBase {
   protected static SortedMap<ServletHolder,String>  setupTestInit(
       String solrconfig, String schema,
       boolean isPersistent) throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, CONF_DIR);
     tmpConfDir.deleteOnExit();
-    FileUtils.copyDirectory(new File(TEST_HOME()),
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()),
         tmpSolrHome.getAbsoluteFile());
 
     final File fstore = new File(tmpConfDir, FEATURE_FILE_NAME);

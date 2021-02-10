@@ -32,6 +32,7 @@ import java.util.Set;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -89,7 +90,7 @@ public class RandomizedTaggerTest extends TaggerTestCase {
     buildNames(names.toArray(new String[names.size()]));
 
     // QUERY LOOP
-    for (int tTries = 0; tTries < 10 * RANDOM_MULTIPLIER; tTries++) {
+    for (int tTries = 0; tTries < 10 * LuceneTestCase.RANDOM_MULTIPLIER; tTries++) {
       // Build up random input, similar to multi-word random names above
       StringBuilder input = new StringBuilder();
       final int INPUT_WORD_LEN = 20;

@@ -359,9 +359,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     // test that malformed numerics cause client error not server error
     for (String field : FIELDS) {
-      SolrException e1 = expectThrows(SolrException.class,
-          "Didn't encounter an error trying to add a bad date: " + field,
-          () -> h.update(add( doc("id","100", field, BAD_VALUE))));
+      SolrException e1 = SolrTestCaseUtil.expectThrows(SolrException.class, "Didn't encounter an error trying to add a bad date: " + field, () -> h.update(add(doc("id", "100", field, BAD_VALUE))));
       String msg1 = e1.getMessage();
       // nocommit
 //      assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
@@ -376,20 +374,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
       if (!sf.hasDocValues() && !sf.indexed()) {
         continue;
       }
-      SolrException e2 = expectThrows(SolrException.class,
-          "Didn't encounter an error trying to add a bad date: " + field,
-          () -> query(req("q",field + ":" + BAD_VALUE))
-      );
+      SolrException e2 = SolrTestCaseUtil.expectThrows(SolrException.class, "Didn't encounter an error trying to add a bad date: " + field, () -> query(req("q", field + ":" + BAD_VALUE)));
       String msg2 = e2.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg2,
           400 <= e2.code() && e2.code() < 500);
       assertTrue("(search) client error does not mention bad value: " + msg2,
           msg2.contains(BAD_VALUE));
 
-      SolrException e3 = expectThrows(SolrException.class,
-          "Didn't encounter an error trying to add a bad date: " + field,
-          () -> query(req("q",field + ":[NOW TO " + BAD_VALUE + "]"))
-      );
+      SolrException e3 = SolrTestCaseUtil
+          .expectThrows(SolrException.class, "Didn't encounter an error trying to add a bad date: " + field, () -> query(req("q", field + ":[NOW TO " + BAD_VALUE + "]")));
       String msg3 = e3.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg3,
           400 <= e3.code() && e3.code() < 500);
@@ -417,9 +410,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     // test that malformed numerics cause client error not server error
     for (String field : FIELDS) {
-      SolrException e1 = expectThrows(SolrException.class,
-          "Didn't encounter an error trying to add a non-number: " + field,
-          () -> h.update(add( doc("id","100", field, BAD_VALUE))));
+      SolrException e1 = SolrTestCaseUtil.expectThrows(SolrException.class, "Didn't encounter an error trying to add a non-number: " + field, () -> h.update(add(doc("id", "100", field, BAD_VALUE))));
       String msg1 = e1.toString();
       // nocommit
 //      assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
@@ -435,20 +426,15 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
         continue;
       }
 
-      SolrException e2 = expectThrows(SolrException.class,
-          "Didn't encounter an error trying to add a non-number: " + field,
-          () -> query(req("q",field + ":" + BAD_VALUE))
-      );
+      SolrException e2 = SolrTestCaseUtil.expectThrows(SolrException.class, "Didn't encounter an error trying to add a non-number: " + field, () -> query(req("q", field + ":" + BAD_VALUE)));
       String msg2 = e2.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg2,
           400 <= e2.code() && e2.code() < 500);
       assertTrue("(search) client error does not mention bad value: " + msg2,
           msg2.contains(BAD_VALUE));
 
-      SolrException e3 = expectThrows(SolrException.class,
-          "Didn't encounter an error trying to add a non-number: " + field,
-          () -> query(req("q",field + ":[10 TO " + BAD_VALUE + "]"))
-      );
+      SolrException e3 = SolrTestCaseUtil
+          .expectThrows(SolrException.class, "Didn't encounter an error trying to add a non-number: " + field, () -> query(req("q", field + ":[10 TO " + BAD_VALUE + "]")));
       String msg3 = e3.toString();
       assertTrue("not a (search) client error on field: " + field +" : "+ msg3,
           400 <= e3.code() && e3.code() < 500);
@@ -891,9 +877,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     // a ridiculoulsy long date math expression that's still equivalent to july4
     final StringBuilder july4Long = new StringBuilder(july4);
-    final int iters = atLeast(10);
+    final int iters = SolrTestUtil.atLeast(10);
     for (int i = 0; i < iters; i++) {
-      final String val = String.valueOf(atLeast(1));
+      final String val = String.valueOf(SolrTestUtil.atLeast(1));
       july4Long.append("+" + val + "SECONDS-" + val + "SECONDS");
     }
 
@@ -1009,13 +995,10 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     for (String f : Arrays.asList("sortabuse_not_uninvertible", "sortabuse_t")) {
-      RuntimeException outerEx = expectThrows(RuntimeException.class, () -> {
-          ignoreException("sortabuse");
-          assertQ("sort on something that shouldn't work",
-                  req("q", "*:*",
-                      "sort", f+ " asc"),
-                  "*[count(//doc)=2]");
-        });
+      RuntimeException outerEx = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
+        ignoreException("sortabuse");
+        assertQ("sort on something that shouldn't work", req("q", "*:*", "sort", f + " asc"), "*[count(//doc)=2]");
+      });
       Throwable root = getRootCause(outerEx);
       assertEquals("sort exception root cause",
                    SolrException.class, root.getClass());

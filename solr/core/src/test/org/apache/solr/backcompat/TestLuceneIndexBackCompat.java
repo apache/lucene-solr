@@ -33,6 +33,7 @@ import org.apache.lucene.index.TestBackwardsCompatibility;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
@@ -70,7 +71,7 @@ public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
     if (h != null) {
       h.close();
     }
-    Path solrHome = createTempDir(coreName).toAbsolutePath();
+    Path solrHome = SolrTestUtil.createTempDir(coreName).toAbsolutePath();
     Files.createDirectories(solrHome);
     Path coreDir = solrHome.resolve(coreName);
     Path confDir = coreDir.resolve("conf");
@@ -79,8 +80,8 @@ public class TestLuceneIndexBackCompat extends SolrTestCaseJ4 {
     Path indexDir = dataDir.resolve("index");
     Files.createDirectories(indexDir);
 
-    Files.copy(getFile("solr/solr.xml").toPath(), solrHome.resolve("solr.xml"));
-    FileUtils.copyDirectory(configset("backcompat").toFile(), confDir.toFile());
+    Files.copy(SolrTestUtil.getFile("solr/solr.xml").toPath(), solrHome.resolve("solr.xml"));
+    FileUtils.copyDirectory(SolrTestUtil.configset("backcompat").toFile(), confDir.toFile());
 
     try (Writer writer = new OutputStreamWriter(Files.newOutputStream(coreDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
       Properties coreProps = new Properties();

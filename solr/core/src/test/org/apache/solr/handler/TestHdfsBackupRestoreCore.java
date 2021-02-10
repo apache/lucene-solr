@@ -35,6 +35,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -97,7 +98,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(SolrTestUtil.createTempDir().toFile().getAbsolutePath());
     hdfsUri = HdfsTestUtil.getURI(dfsCluster);
     try {
       URI uri = new URI(hdfsUri);
@@ -127,7 +128,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     useFactory("solr.StandardDirectoryFactory");
 
     configureCluster(1)// nodes
-    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
     .withSolrXml(HDFS_REPO_SOLR_XML)
     .configure();
     
@@ -212,7 +213,7 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
             masterClient.add(collectionName, doc);
           }
           //Purposely not calling commit once in a while. There can be some docs which are not committed
-          if (usually()) {
+          if (LuceneTestCase.usually()) {
             masterClient.commit(collectionName);
           }
         }

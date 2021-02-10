@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -91,7 +92,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             ZkController.generateNodeName("foo-bar", "77", "/solr/sub_dir/"));
 
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    Path zkDir = createTempDir("zkData");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
@@ -170,7 +171,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReadConfigName() throws Exception {
-    Path zkDir = createTempDir("zkData");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
 
     ZkTestServer server = new ZkTestServer(zkDir);
     CoreContainer cc = new MockCoreContainer();
@@ -210,7 +211,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   public void testGetHostName() throws Exception {
-    Path zkDir = createTempDir("zkData");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
 
     ZkTestServer server = new ZkTestServer(zkDir);
     CoreContainer cc = new MockCoreContainer();
@@ -252,7 +253,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     assumeWorkingMockito();
     final String collectionName = "testPublishAndWaitForDownStates";
-    Path zkDir = createTempDir(collectionName);
+    Path zkDir = SolrTestUtil.createTempDir(collectionName);
     CoreContainer cc = null;
 
     String nodeName = "127.0.0.1:8983_solr";
@@ -265,7 +266,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       cc = new MockCoreContainer()  {
         @Override
         public List<CoreDescriptor> getCoreDescriptors() {
-          CoreDescriptor descriptor = new CoreDescriptor(collectionName, TEST_PATH(), Collections.emptyMap(), new Properties(), zkControllerRef.get());
+          CoreDescriptor descriptor = new CoreDescriptor(collectionName, SolrTestUtil.TEST_PATH(), Collections.emptyMap(), new Properties(), zkControllerRef.get());
           // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates to wait indefinitely
           // when using coreNodeName but usage of core name alone will return immediately
           // nocommit
@@ -330,7 +331,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     HttpShardHandlerFactory shardHandlerFactory;
     UpdateShardHandler updateShardHandler;
     public MockCoreContainer() {
-      super(new SolrXmlConfig().fromString(TEST_PATH(), "<solr/>"));
+      super(new SolrXmlConfig().fromString(SolrTestUtil.TEST_PATH(), "<solr/>"));
       HttpShardHandlerFactory httpShardHandlerFactory = new HttpShardHandlerFactory();
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       shardHandlerFactory = httpShardHandlerFactory;

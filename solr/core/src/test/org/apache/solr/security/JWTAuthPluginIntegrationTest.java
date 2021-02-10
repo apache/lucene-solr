@@ -39,6 +39,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.util.Base64;
@@ -92,8 +93,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     super.setUp();
     
     configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSecurityJson(SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security.json"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
     baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
@@ -160,8 +161,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     // Re-configure cluster with other security.json, see https://issues.apache.org/jira/browse/SOLR-14196
     shutdownCluster();
     configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security_blockUnknownFalse.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSecurityJson(SolrTestUtil.TEST_PATH().resolve("security").resolve("jwt_plugin_jwk_security_blockUnknownFalse.json"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
     baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -87,11 +88,11 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
 
     super.setUp();
-    cluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    cluster = new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
 
     url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + CHECKPOINT_COLL;
 
-    cluster.uploadConfigSet(configset("cloud-minimal"), CONF_NAME);
+    cluster.uploadConfigSet(SolrTestUtil.configset("cloud-minimal"), CONF_NAME);
     // create a single shard, single replica collection. This is necessary until SOLR-13245 since the commands
     // don't look in all replicas.
     CollectionAdminRequest.createCollection(SOURCE_COLL, CONF_NAME, 1, 1)

@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
@@ -28,7 +29,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -63,7 +63,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
       params.set("indent", "true");
 
       // requires 'q' or a single content stream
-      SolrException ex = expectThrows(SolrException.class, () -> {
+      SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         try (MoreLikeThisHandler mlt = new MoreLikeThisHandler(); SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {
         }) {
           mlt.handleRequestBody(req, new SolrQueryResponse());
@@ -73,7 +73,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
       assertEquals(ex.code(), SolrException.ErrorCode.BAD_REQUEST.code);
 
       // requires a single content stream (more than one is not supported).
-      ex = expectThrows(SolrException.class, () -> {
+      ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         try (MoreLikeThisHandler mlt = new MoreLikeThisHandler(); SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {
         }) {
           ArrayList<ContentStream> streams = new ArrayList<>(2);

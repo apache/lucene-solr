@@ -30,7 +30,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
@@ -83,7 +85,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     
     // these tests need to be isolated, so we dont share the minicluster
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
   
@@ -181,7 +183,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.deleteReplicasFromShard(collectionName, "s1", 2).process(cluster.getSolrClient());
 
-    SolrException e = expectThrows(SolrException.class,
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class,
         "Can't delete the last replica by count",
         () -> CollectionAdminRequest.deleteReplicasFromShard(collectionName, "s1", 1).process(cluster.getSolrClient())
     );
@@ -194,7 +196,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  @Nightly
+  @LuceneTestCase.Nightly
   public void deleteReplicaByCountForAllShards() throws Exception {
     final String collectionName = "deleteByCountNew";
     Create req = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
@@ -203,7 +205,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "Currently disabled due to negative behavior of UnloadCoreOnDeletedWatcher and it's semi disable")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Currently disabled due to negative behavior of UnloadCoreOnDeletedWatcher and it's semi disable")
   public void deleteReplicaFromClusterState() throws Exception {
     final String collectionName = "deleteFromClusterStateCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
@@ -256,9 +258,9 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Slow
+  @LuceneTestCase.Slow
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  @Nightly // TODO look at performance of this - need lower connection timeouts for test?
+  @LuceneTestCase.Nightly // TODO look at performance of this - need lower connection timeouts for test?
   public void raceConditionOnDeleteAndRegisterReplica() throws Exception {
     final String collectionName = "raceDeleteReplicaCollection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2)

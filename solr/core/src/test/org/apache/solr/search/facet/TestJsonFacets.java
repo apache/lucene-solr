@@ -305,7 +305,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
         //
         // Which means that unlike most other facet method:xxx options, it fails hard if you try to use it
         // on a field where no docs have been indexed (yet).
-        expectThrows(SolrException.class, () ->{
+        LuceneTestCase.expectThrows(SolrException.class, () ->{
             assertJQ(request);
           });
         
@@ -407,7 +407,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
       ignoreException("'query' domain can not be null");
       ignoreException("'query' domain must not evaluate to an empty list");
       for (String raw : Arrays.asList("null", "[ ]", "{param:bogus}")) {
-        expectThrows(SolrException.class, () -> {
+        LuceneTestCase.expectThrows(SolrException.class, () -> {
             assertJQ(req("rows", "0", "q", "num_i:[0 TO *]", "json.facet",
                          "{w: {type:terms, field:'where_s', " + 
                          "     facet: { c: { type:terms, field:'cat_s', domain: { query: "+raw+" }}}}}"));
@@ -1058,13 +1058,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testStats() throws Exception {
     doStats(Client.localClient, params("debugQuery", Boolean.toString(random().nextBoolean()) ));
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testStatsDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -2537,22 +2537,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNode() throws Exception {
     doTestPrelimSortingSingleNode(false, false);
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNodeExtraStat() throws Exception {
     doTestPrelimSortingSingleNode(true, false);
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNodeExtraFacet() throws Exception {
     doTestPrelimSortingSingleNode(false, true);
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPrelimSortingSingleNodeExtraStatAndFacet() throws Exception {
     doTestPrelimSortingSingleNode(true, true);
   }
@@ -2571,7 +2571,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPrelimSortingDistrib() throws Exception {
     doTestPrelimSortingDistrib(false, false);
   }
@@ -2580,12 +2580,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
     doTestPrelimSortingDistrib(true, false);
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPrelimSortingDistribExtraFacet() throws Exception {
     doTestPrelimSortingDistrib(false, true);
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPrelimSortingDistribExtraStatAndFacet() throws Exception {
     doTestPrelimSortingDistrib(true, true);
   }
@@ -2928,7 +2928,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testOverrequest() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -2974,7 +2974,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testBigger() throws Exception {
     ModifiableSolrParams p = params("rows", "0", "cat_s", "cat_ss", "where_s", "where_ss");
     //    doBigger(Client.localClient, p);
@@ -3074,7 +3074,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testTolerant() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
@@ -3438,7 +3438,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testFacetValueTypesDistrib() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());

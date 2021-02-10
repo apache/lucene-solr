@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -55,7 +56,7 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
     // make sure there's an MBeanServer
     mBeanServer = ManagementFactory.getPlatformMBeanServer();
     configureCluster(1)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .setMaxShardsPerNode(2)

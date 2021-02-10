@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -45,7 +46,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -296,7 +296,7 @@ public class SolrCloudTestCase extends SolrTestCase {
    * @param nodeCount the number of nodes
    */
   protected static Builder configureCluster(int nodeCount) {
-    return new Builder(nodeCount, createTempDir());
+    return new Builder(nodeCount, SolrTestUtil.createTempDir());
   }
 
   @AfterClass

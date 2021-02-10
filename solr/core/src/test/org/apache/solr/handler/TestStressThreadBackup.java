@@ -39,6 +39,7 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -73,14 +74,14 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private String coreName;
   @Before
   public void beforeTest() throws Exception {
-    backupDir = createTempDir(getTestClass().getSimpleName() + "_backups").toFile();
+    backupDir = SolrTestUtil.createTempDir(SolrTestUtil.getTestName() + "_backups").toFile();
 
     // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
     // bring myself to deal with the nonsense that is SolrJettyTestBase.
     
     // We do however explicitly want a fresh "cluster" every time a test is run
     configureCluster(1)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     assertEquals(0, (CollectionAdminRequest.createCollection(SolrTestCaseJ4.DEFAULT_TEST_COLLECTION_NAME, "conf1", 1, 1)
@@ -253,7 +254,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     }
 
     { // Validate some backups at random...
-      final int numBackupsToCheck = atLeast(1);
+      final int numBackupsToCheck = SolrTestUtil.atLeast(1);
       log.info("Validating {} random backups to ensure they are un-affected by deleting all docs...",
                numBackupsToCheck);
       final List<File> allBackups = Arrays.asList(backupDir.listFiles());

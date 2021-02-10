@@ -30,6 +30,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
@@ -75,7 +76,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
 
   @Before
   public void beforeTest() throws Exception {
-    Path home = Paths.get(TEST_HOME());
+    Path home = Paths.get(SolrTestUtil.TEST_HOME());
     // define these properties, they are used in solrconfig.xml
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");

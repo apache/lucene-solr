@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.SolrTestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -62,7 +63,7 @@ public class TestReload extends TestRTGBase {
 
 
     Random rand = random();
-    int iter = atLeast(5);
+    int iter = SolrTestUtil.atLeast(5);
 
     for (int i=0; i<iter; i++) {
       if (rand.nextBoolean()) {

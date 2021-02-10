@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
@@ -546,7 +547,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
 
     // values between 0 and the num docs in the index should not error, and should 
     // produce an estimate no more then the total number of docs
-    final int iters = atLeast(10);
+    final int iters = SolrTestUtil.atLeast(10);
     for (int iter = 0; iter < iters; iter++) {
       final int val = TestUtil.nextInt(random(), 1, 17);
       assertQ(req(reusedParams,

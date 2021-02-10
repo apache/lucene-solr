@@ -17,6 +17,7 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -41,7 +42,7 @@ import java.util.HashMap;
 @Ignore // nocommit
 public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
-  public static final Path TEST_PATH = getFile("solr/configsets").toPath();
+  public static final Path TEST_PATH = SolrTestUtil.getFile("solr/configsets").toPath();
 
   @BeforeClass
   public static void setupCluster() throws Exception {

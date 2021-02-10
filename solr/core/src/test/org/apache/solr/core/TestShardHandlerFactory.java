@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.junit.BeforeClass;
@@ -35,7 +36,7 @@ public class TestShardHandlerFactory extends SolrTestCaseJ4 {
   }
 
   public void testXML() throws Exception {
-    Path home = Paths.get(TEST_HOME());
+    Path home = Paths.get(SolrTestUtil.TEST_HOME());
     CoreContainer cc = CoreContainer.createAndLoad(home, home.resolve("solr-shardhandler.xml"));
     ShardHandlerFactory factory = cc.getShardHandlerFactory();
     assertTrue(factory instanceof MockShardHandlerFactory);

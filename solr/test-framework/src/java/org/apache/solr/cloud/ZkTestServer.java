@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -62,7 +62,7 @@ public class ZkTestServer implements Closeable {
   public static File SOLRHOME;
   static {
     try {
-      SOLRHOME = new File(SolrTestCaseJ4.TEST_HOME());
+      SOLRHOME = new File(SolrTestUtil.TEST_HOME());
     } catch (RuntimeException e) {
       log.warn("TEST_HOME() does not exist - solrj test?");
       // solrj tests not working with TEST_HOME()

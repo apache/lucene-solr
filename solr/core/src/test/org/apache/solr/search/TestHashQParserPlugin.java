@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -78,7 +79,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("partitionKeys", "a_i,a_s,a_i,a_s,a_i");
     params.add("wt", "xml");
     ModifiableSolrParams finalParams = params;
-    expectThrows(SolrException.class, () -> query(req(finalParams)));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> query(req(finalParams)));
   }
 
   @Test
@@ -89,7 +90,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params.add("partitionKeys", "a_i");
     params.add("wt", "xml");
     ModifiableSolrParams finalParams = params;
-    expectThrows(SolrException.class, () -> query(req(finalParams)));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> query(req(finalParams)));
   }
 
   @Test

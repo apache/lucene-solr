@@ -17,13 +17,13 @@
 package org.apache.solr.request;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -56,7 +56,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     System.setProperty("solr.test.sys.prop2", "1");
 
     //this one has handleSelect=true which a test here needs
-    File solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toFile();
+    File solrHomeDirectory = SolrTestUtil.createTempDir(SolrTestUtil.getTestName()).toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     jetty = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
     super.setUp();
@@ -111,7 +111,7 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     query.setQuery("*:*");//for anything
     query.add("stream.url", makeDeleteAllUrl());
     SolrClient client = getSolrClient(jetty);
-    SolrException se = expectThrows(SolrException.class, () -> client.query(query));
+    SolrException se = SolrTestCaseUtil.expectThrows(SolrException.class, () -> client.query(query));
     assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
   }
   

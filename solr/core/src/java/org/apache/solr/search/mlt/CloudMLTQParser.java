@@ -186,8 +186,7 @@ public class CloudMLTQParser extends QParser {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(ID, id);
 
-    SolrQueryRequestBase request = new SolrQueryRequestBase(core, params) {
-    };
+    SolrQueryRequestBase request = new MySolrQueryRequestBase(core, params);
 
     core.getRequestHandler("/get").handleRequest(request, rsp);
     @SuppressWarnings({"rawtypes"})
@@ -209,4 +208,9 @@ public class CloudMLTQParser extends QParser {
     return new Term(field, bytesRefBuilder.toBytesRef());
   }
 
+  private static class MySolrQueryRequestBase extends SolrQueryRequestBase {
+    public MySolrQueryRequestBase(SolrCore core, ModifiableSolrParams params) {
+      super(core, params);
+    }
+  }
 }

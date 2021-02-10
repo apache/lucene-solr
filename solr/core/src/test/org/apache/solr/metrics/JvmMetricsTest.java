@@ -25,14 +25,11 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import javax.xml.xpath.XPath;
 
 /**
  * Test {@link OperatingSystemMetricSet} and proper JVM metrics registration.
@@ -117,7 +114,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
 
   @Test
   public void testHiddenSysProps() throws Exception {
-    Path home = Paths.get(TEST_HOME());
+    Path home = Paths.get(SolrTestUtil.TEST_HOME());
     // default config
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr.xml").toFile(), "UTF-8");
     NodeConfig config = new SolrXmlConfig().fromString(home, solrXml);

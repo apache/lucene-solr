@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -34,7 +36,7 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .formatZk(true).configure();
   }
 
@@ -48,7 +50,7 @@ public class RemoteQueryErrorTest extends SolrCloudTestCase {
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       try (SolrClient client = jetty.newClient()) {
-        SolrException e = expectThrows(SolrException.class, () -> {
+        SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
           client.add("collection", new SolrInputDocument());
         });
         assertThat(e.getMessage(), containsString("Document is missing mandatory uniqueKey field: id"));

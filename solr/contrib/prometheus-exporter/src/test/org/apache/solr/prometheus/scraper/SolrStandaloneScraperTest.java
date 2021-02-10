@@ -20,6 +20,7 @@ package org.apache.solr.prometheus.scraper;
 import io.prometheus.client.Collector;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.common.ParWork;
@@ -51,9 +52,9 @@ public class SolrStandaloneScraperTest extends RestTestBase {
 
   @Before
   public void setUp() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
+    File tmpSolrHome = SolrTestUtil.createTempDir().toFile();
 
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     createJettyAndHarness(
         tmpSolrHome.getAbsolutePath(),
@@ -64,7 +65,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
         null);
 
     executor = ParWork.getMyPerThreadExecutor();
-    configuration = Helpers.loadConfiguration(TEST_PATH().resolve("..").resolve("conf").resolve("prometheus-solr-exporter-scraper-test-config.xml").toString());
+    configuration = Helpers.loadConfiguration(SolrTestUtil.TEST_PATH().resolve("..").resolve("conf").resolve("prometheus-solr-exporter-scraper-test-config.xml").toString());
 
     solrClient = getHttpSolrClient(restTestHarness.getAdminURL());
     solrScraper = new SolrStandaloneScraper(solrClient, executor);

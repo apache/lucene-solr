@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.api.collections.SplitByPrefixTest;
 import org.apache.solr.cloud.api.collections.SplitByPrefixTest.Prefix;
@@ -227,7 +228,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testHistogramBuilding() throws Exception {
     List<Prefix> prefixes = SplitByPrefixTest.findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = SplitByPrefixTest.removeDups(prefixes);

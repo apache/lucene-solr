@@ -37,6 +37,7 @@ import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -56,7 +57,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void setupClass() throws Exception {
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath(), false);
+    dfsCluster = HdfsTestUtil.setupClass(SolrTestUtil.createTempDir().toFile().getAbsolutePath(), false);
   }
   
   @AfterClass
@@ -103,7 +104,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
       System.clearProperty(HdfsDirectoryFactory.HDFS_HOME);
 
       // set conf dir by sys prop
-      Path confDir = createTempDir();
+      Path confDir = SolrTestUtil.createTempDir();
 
       System.setProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY, confDir.toString());
 

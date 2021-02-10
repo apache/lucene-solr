@@ -32,6 +32,8 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
@@ -57,7 +59,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     oldSolrHome = System.getProperty(SOLR_HOME_PROP);
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", SolrTestUtil.getFile("solr/configsets").getAbsolutePath());
     initCore("solrconfig.xml","schema.xml");
 
   }
@@ -72,7 +74,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init(SolrResourceLoader loader, String xml) throws Exception {
-    Path solrHomeDirectory = createTempDir();
+    Path solrHomeDirectory = SolrTestUtil.createTempDir();
     return init(loader, solrHomeDirectory, xml);
   }
 
@@ -174,13 +176,13 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
         assertEquals("There should not be cores", 0, cores.getCores().size());
 
         // try and remove a core that does not exist
-        SolrException thrown = expectThrows(SolrException.class, () -> {
+        SolrException thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
           cores.unload("non_existent_core");
         });
         assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [non_existent_core]"));
 
         // try and remove a null core
-        thrown = expectThrows(SolrException.class, () -> {
+        thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
           cores.unload(null);
         });
         assertThat(thrown.getMessage(), containsString("Cannot unload non-existent core [null]"));
@@ -209,8 +211,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     MockCoresLocator cl = new MockCoresLocator();
 
-    Path solrHome = createTempDir();
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    Path solrHome = SolrTestUtil.createTempDir();
+    System.setProperty("configsets", SolrTestUtil.getFile("solr/configsets").getAbsolutePath());
 
     final CoreContainer cc = new CoreContainer(new SolrXmlConfig().fromString(solrHome, CONFIGSETS_SOLR_XML), cl, false);
     Path corePath = solrHome.resolve("badcore");
@@ -258,7 +260,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
   @Test
   public void testSharedLib() throws Exception {
-    Path tmpRoot = createTempDir("testSharedLib");
+    Path tmpRoot = SolrTestUtil.createTempDir("testSharedLib");
 
     File lib = new File(tmpRoot.toFile(), "lib");
     lib.mkdirs();
@@ -442,7 +444,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       // -----
       // try to add a collection with a configset that doesn't exist
       ignoreException(Pattern.quote("bogus_path"));
-      SolrException thrown = expectThrows(SolrException.class, () -> {
+      SolrException thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
       });
       Throwable rootCause = Throwables.getRootCause(thrown);
@@ -464,7 +466,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       // check that we get null accessing a non-existent core
       assertNull(cc.getCore("does_not_exist"));
       // check that we get a 500 accessing the core with an init failure
-      thrown = expectThrows(SolrException.class, () -> {
+      thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         SolrCore c = cc.getCore("bogus");
       });
       assertEquals(500, thrown.code());
@@ -487,9 +489,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // init the  CoreContainer with the mix of ok/bad cores
     MockCoresLocator cl = new MockCoresLocator();
 
-    Path solrHome = createTempDir();
+    Path solrHome = SolrTestUtil.createTempDir();
 
-    System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
+    System.setProperty("configsets", SolrTestUtil.getFile("solr/configsets").getAbsolutePath());
 
     final CoreContainer cc = new CoreContainer(new SolrXmlConfig().fromString(solrHome, CONFIGSETS_SOLR_XML), cl);
     cl.add(new CoreDescriptor("col_ok", solrHome.resolve("col_ok"), cc,
@@ -516,7 +518,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    SolrException thrown = expectThrows(SolrException.class, () -> {
+    SolrException thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrCore c = cc.getCore("col_bad");
       org.apache.solr.common.util.IOUtils.closeQuietly(c);
     });
@@ -526,9 +528,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // -----
     // "fix" the bad collection
-    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),
+    FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/solrconfig-defaults.xml"),
         FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "solrconfig.xml"));
-    FileUtils.copyFile(getFile("solr/collection1/conf/schema-minimal.xml"),
+    FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/schema-minimal.xml"),
         FileUtils.getFile(cc.getSolrHome(), "col_bad", "conf", "schema.xml"));
     cc.create("col_bad", ImmutableMap.of());
 
@@ -548,7 +550,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // -----
     // try to add a collection with a path that doesn't exist
     ignoreException(Pattern.quote("bogus_path"));
-    thrown = expectThrows(SolrException.class, () -> {
+    thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       cc.create("bogus", ImmutableMap.of("configSet", "bogus_path"));
     });
     assertTrue("init exception doesn't mention bogus dir: " + thrown.getCause().getCause().getMessage(),
@@ -573,7 +575,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
-    thrown = expectThrows(SolrException.class, () -> {
+    thrown = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrCore c = cc.getCore("bogus");
       org.apache.solr.common.util.IOUtils.closeQuietly(c);
     });
@@ -593,9 +595,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
             IOUtils.UTF_8);
 
     ignoreException(Pattern.quote("SAX"));
-    thrown = expectThrows(SolrException.class,
-        "corrupt solrconfig.xml failed to trigger exception from reload",
-        () -> { cc.reload("col_bad"); });
+    thrown = SolrTestCaseUtil.expectThrows(SolrException.class, "corrupt solrconfig.xml failed to trigger exception from reload", () -> {
+      cc.reload("col_bad");
+    });
     Throwable rootException = getWrappedException(thrown);
     assertTrue("We're supposed to have a wrapped SAXParserException here, but we don't",
         rootException instanceof SAXParseException);

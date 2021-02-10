@@ -37,6 +37,8 @@ import java.util.Vector;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -155,7 +157,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @Test
   public void testStreamFile() throws Exception
   {
-    File file = getFile("README");
+    File file = SolrTestUtil.getFile("README");
     
     byte[] bytes = FileUtils.readFileToByteArray(file);
 
@@ -215,7 +217,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       "=hallo"         // missing key
     };
     for (String s : invalid) {
-      expectThrows(SolrException.class, () -> SolrRequestParsers.parseQueryString(s));
+      SolrTestCaseUtil.expectThrows(SolrException.class, () -> SolrRequestParsers.parseQueryString(s));
     }
   }
   
@@ -330,7 +332,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     when(request.getInputStream()).thenReturn(new ByteServletInputStream(large.toString().getBytes(StandardCharsets.US_ASCII)));
 
     FormDataRequestParser formdata = new FormDataRequestParser( limitKBytes );
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       formdata.parseParamsAndFillStreams(request, new ArrayList<>());
     });
     assertTrue(e.getMessage().contains("upload limit"));
@@ -363,7 +365,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     });
 
     FormDataRequestParser formdata = new FormDataRequestParser( 2048 );
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       formdata.parseParamsAndFillStreams(request, new ArrayList<>());
     });
     assertTrue(e.getMessage().startsWith("Solr requires that request parameters"));
@@ -380,7 +382,7 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     when(request.getInputStream()).thenThrow(new IllegalStateException());
 
     FormDataRequestParser formdata = new FormDataRequestParser( 2048 );
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       formdata.parseParamsAndFillStreams(request, new ArrayList<>());
     });
     assertTrue(e.getMessage().startsWith("Solr requires that request parameters"));

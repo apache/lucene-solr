@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +87,7 @@ public class TestSafeXMLParsing extends SolrTestCase {
       
     };
     
-    IOException ioe = expectThrows(IOException.class, () -> {
+    IOException ioe = SolrTestCaseUtil.expectThrows(IOException.class, () -> {
       SafeXMLParsing.parseConfigXML(log, loader, "source1.xml");
     });
     assertTrue(ioe.getMessage(), ioe.getMessage().contains("Cannot resolve absolute systemIDs"));

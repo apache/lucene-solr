@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase.ShardsFixed;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -98,7 +99,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void test() throws Exception {
 
     incompleteOrOverlappingCustomRangeTest();
@@ -112,13 +113,13 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   Add a replica. Ensure count matches in leader and replica.
    */
   @Test
-  @Nightly // TODO: look at speeding this up
+  @LuceneTestCase.Nightly // TODO: look at speeding this up
   public void testSplitStaticIndexReplication() throws Exception {
     doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod.REWRITE);
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testSplitStaticIndexReplicationLink() throws Exception {
     doSplitStaticIndexReplication(SolrIndexSplitter.SplitMethod.LINK);
   }
@@ -270,7 +271,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   @Test
   //05-Jul-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testSplitAfterFailedSplit() throws Exception {
 
     TestInjection.splitFailureBeforeReplicaCreation = "true:100"; // we definitely want split to fail
@@ -317,7 +318,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testSplitAfterFailedSplit2() throws Exception {
 
     TestInjection.splitFailureAfterReplicaCreation = "true:100"; // we definitely want split to fail
@@ -330,15 +331,15 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
-  @Slow
-  @Nightly // TODO speed up
+  @LuceneTestCase.Slow
+  @LuceneTestCase.Nightly // TODO speed up
   public void testSplitMixedReplicaTypes() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.REWRITE);
   }
 
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 14-Oct-2018
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testSplitMixedReplicaTypesLink() throws Exception {
     doSplitMixedReplicaTypes(SolrIndexSplitter.SplitMethod.LINK);
   }
@@ -389,7 +390,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testSplitWithChaosMonkey() throws Exception {
 
     List<StoppableIndexingThread> indexers = new ArrayList<>();
@@ -537,7 +538,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Nightly // TODO speed up
+  @LuceneTestCase.Nightly // TODO speed up
   public void testSplitLocking() throws Exception {
     String collectionName = "testSplitLocking";
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "_default", 1, 2);
@@ -604,7 +605,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   @Ignore // nocommit - need to fix state updates for rules
   public void testSplitShardWithRuleLink() throws Exception {
     doSplitShardWithRule(SolrIndexSplitter.SplitMethod.LINK);
@@ -678,7 +679,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
     DocRouter.Range shard1Range = shard1.getRange() != null ? shard1.getRange() : router.fullRange();
     List<DocRouter.Range> subRanges = new ArrayList<>();
-    if (usually())  {
+    if (LuceneTestCase.usually())  {
       List<DocRouter.Range> ranges = router.partitionRange(4, shard1Range);
       // 75% of range goes to shard1_0 and the rest to shard1_1
       subRanges.add(new DocRouter.Range(ranges.get(0).min, ranges.get(2).max));
@@ -702,15 +703,15 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
     Thread indexThread = new Thread(() -> {
       Random random = random();
-      int max = atLeast(random, 401);
-      int sleep = atLeast(random, 25);
+      int max = LuceneTestCase.atLeast(random, 401);
+      int sleep = LuceneTestCase.atLeast(random, 25);
       log.info("SHARDSPLITTEST: Going to add " + max + " number of docs at 1 doc per " + sleep + "ms");
       Set<String> deleted = new HashSet<>();
       for (int id = 101; id < max; id++) {
         try {
           indexAndUpdateCount(router, ranges, docCounts, String.valueOf(id), id, documentIds);
           Thread.sleep(sleep);
-          if (usually(random))  {
+          if (LuceneTestCase.usually(random))  {
             String delId = String.valueOf(random.nextInt(id - 101 + 1) + 101);
             if (deleted.contains(delId))  continue;
             try {

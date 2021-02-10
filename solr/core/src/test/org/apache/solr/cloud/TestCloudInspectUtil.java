@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.junit.After;
@@ -106,9 +107,8 @@ public class TestCloudInspectUtil extends SolrTestCaseJ4 {
     final SolrDocumentList aExpectEx = getDocList("2", "3", "4");
     final SolrDocumentList bExpectEx = getDocList("2", "3", "4");
 
-    expectThrows(IllegalArgumentException.class, "Expected exception because lists have no diff",
-        () -> CloudInspectUtil.checkIfDiffIsLegal(aExpectEx, bExpectEx,
-            "control", "cloud", addFailsExpectEx, deleteFailsExpectEx));
+    SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, "Expected exception because lists have no diff",
+        () -> CloudInspectUtil.checkIfDiffIsLegal(aExpectEx, bExpectEx, "control", "cloud", addFailsExpectEx, deleteFailsExpectEx));
   }
 
   private SolrDocumentList getDocList(String ... ids) {

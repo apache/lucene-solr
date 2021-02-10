@@ -200,9 +200,6 @@ public class TransactionLog implements Closeable {
           return;
         }
 
-        if (start > 0) {
-          raf.setLength(0);
-        }
         addGlobalStrings(globalStrings);
       }
 
@@ -934,7 +931,7 @@ public class TransactionLog implements Closeable {
 
   }
 
-  class ChannelFastInputStream extends FastInputStream {
+  static class ChannelFastInputStream extends FastInputStream {
     private FileChannel ch;
 
     public ChannelFastInputStream(FileChannel ch, long chPosition) {

@@ -502,7 +502,7 @@ public class ReplicationFactorTest extends AbstractFullDistribZkTestBase {
 
   private boolean maybeAddMinRfExplicitly(int minRf, UpdateRequest up) {
     boolean minRfExplicit = false;
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       // test back compat behavior. Remove in Solr 9
       up.setParam(UpdateRequest.MIN_REPFACT, String.valueOf(minRf));
       minRfExplicit = true;

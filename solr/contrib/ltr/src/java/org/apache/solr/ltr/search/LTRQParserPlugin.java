@@ -193,7 +193,7 @@ public class LTRQParserPlugin extends QParserPlugin implements ResourceLoaderAwa
    * A learning to rank Query, will incapsulate a learning to rank model, and delegate to it the rescoring
    * of the documents.
    **/
-  public class LTRQuery extends AbstractReRankQuery {
+  public static class LTRQuery extends AbstractReRankQuery {
     private final LTRScoringQuery scoringQuery;
 
     public LTRQuery(LTRScoringQuery scoringQuery, int reRankDocs) {

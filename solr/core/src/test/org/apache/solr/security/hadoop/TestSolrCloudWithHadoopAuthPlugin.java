@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -50,8 +51,8 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     setupMiniKdc();
 
     configureCluster(NUM_SERVERS)// nodes
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_kerberos_config.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSecurityJson(SolrTestUtil.TEST_PATH().resolve("security").resolve("hadoop_kerberos_config.json"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
   }
@@ -71,7 +72,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
   private static void setupMiniKdc() throws Exception {
     System.setProperty("solr.jaas.debug", "true");
-    String kdcDir = createTempDir()+File.separator+"minikdc";
+    String kdcDir = SolrTestUtil.createTempDir() +File.separator+"minikdc";
     String solrClientPrincipal = "solr";
     File keytabFile = new File(kdcDir, "keytabs");
     kerberosTestServices = KerberosTestServices.builder()

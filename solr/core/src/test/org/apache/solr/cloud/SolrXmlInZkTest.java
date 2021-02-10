@@ -25,6 +25,8 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -50,11 +52,11 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   private NodeConfig cfg;
 
   private void setUpZkAndDiskXml(boolean toZk, boolean leaveOnLocal) throws Exception {
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     Path solrHome = tmpDir.resolve("home");
     copyMinConf(new File(solrHome.toFile(), "myCollect"));
     if (leaveOnLocal) {
-      FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr-stress-new.xml"), new File(solrHome.toFile(), "solr.xml"));
+      FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr-stress-new.xml"), new File(solrHome.toFile(), "solr.xml"));
     }
 
     ignoreException("No UpdateLog found - cannot sync");
@@ -75,7 +77,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
     }
 
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_START {}", getTestName());
+      log.info("####SETUP_START {}", SolrTestUtil.getTestName());
     }
 
     // set some system properties for use by tests
@@ -85,7 +87,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
 
     cfg = SolrDispatchFilter.loadNodeConfig(zkClient, solrHome, props);
     if (log.isInfoEnabled()) {
-      log.info("####SETUP_END {}", getTestName());
+      log.info("####SETUP_END {}", SolrTestUtil.getTestName());
     }
   }
 
@@ -136,7 +138,7 @@ public class SolrXmlInZkTest extends SolrTestCaseJ4 {
   @Test
   public void testNotInZkOrOnDisk() throws Exception {
     try {
-      SolrException e = expectThrows(SolrException.class, () -> {
+      SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
         System.setProperty("hostPort", "8787");
         setUpZkAndDiskXml(false, false); // solr.xml not on disk either
       });

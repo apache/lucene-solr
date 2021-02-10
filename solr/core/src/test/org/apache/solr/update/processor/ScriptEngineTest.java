@@ -24,6 +24,7 @@ import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import java.io.StringReader;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.junit.Assume;
 import org.junit.BeforeClass;
@@ -38,7 +39,7 @@ public class ScriptEngineTest extends SolrTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeFalse("https://twitter.com/UweSays/status/260487231880433664 / SOLR-4233: OS X bogusly starts AWT!",
+    LuceneTestCase.assumeFalse("https://twitter.com/UweSays/status/260487231880433664 / SOLR-4233: OS X bogusly starts AWT!",
         Constants.MAC_OS_X);
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));

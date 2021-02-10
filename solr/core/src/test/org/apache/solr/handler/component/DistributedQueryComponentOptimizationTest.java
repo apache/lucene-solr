@@ -16,8 +16,10 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -56,8 +58,8 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
-        .withSolrXml(TEST_PATH().resolve("solr-trackingshardhandler.xml"))
-        .addConfig("conf", configset("cloud-dynamic"))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr-trackingshardhandler.xml"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
@@ -87,7 +89,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
   private static final String id = "id";
 
   @Test
-  @AwaitsFix(bugUrl = "Can fail with Number of documents (2) is different from number of expected values (14")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Can fail with Number of documents (2) is different from number of expected values (14")
   public void testBasics() throws Exception {
 
     QueryResponse rsp;
@@ -101,7 +103,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
   }
 
   @Test
-  @AwaitsFix(bugUrl = "Can fail with Number of documents (2) is different from number of expected values (14")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Can fail with Number of documents (2) is different from number of expected values (14")
   public void testFieldList() throws Exception {
 
     // works with just fl=id as well

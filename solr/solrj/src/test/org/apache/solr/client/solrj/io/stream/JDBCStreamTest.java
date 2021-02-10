@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,6 +28,7 @@ import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -81,7 +81,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     statement.executeUpdate("insert into DUAL values(1)");
 
     configureCluster(4)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
     // nocommit - need alias work
     boolean useAlias = false;
@@ -211,7 +211,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "this appears to be test method order dependent")
+  @LuceneTestCase.AwaitsFix(bugUrl = "this appears to be test method order dependent")
   public void testJDBCSolrMerge() throws Exception {
     
     // Load Database Data

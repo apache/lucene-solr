@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -79,9 +80,8 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
           @Override
           public MiniSolrCloudCluster apply(String clusterId) {
             try {
-              final MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(nodesPerCluster(clusterId),
-                  createTempDir())
-                      .addConfig("conf", configset("cloud-dynamic"))
+              final MiniSolrCloudCluster cluster = new SolrCloudTestCase.Builder(nodesPerCluster(clusterId), SolrTestUtil.createTempDir())
+                      .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
                       .withSolrXml(MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace(
                           MiniSolrCloudCluster.SOLR_TESTS_SHARDS_WHITELIST, EXPLICIT_WHITELIST_PROPERTY + clusterId))
                       .build();

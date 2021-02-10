@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -55,7 +56,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1)
-        .addConfig("_default", configset("cloud-minimal"))
+        .addConfig("_default", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 

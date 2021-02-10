@@ -27,6 +27,9 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
@@ -59,8 +62,8 @@ public class SchemaTest extends RestTestBase {
     assertNull("Response contained errors: " + schemaResponse.toString(), schemaResponse.getResponse().get("errors"));
   }
   
-  private static void assertFailedSchemaResponse(ThrowingRunnable runnable, String expectedErrorMessage) {
-    BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, runnable);
+  private static void assertFailedSchemaResponse(LuceneTestCase.ThrowingRunnable runnable, String expectedErrorMessage) {
+    BaseHttpSolrClient.RemoteSolrException e = LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, runnable);
     assertTrue(e.getMessage(), e.getMessage().contains(expectedErrorMessage));
   }
 
@@ -95,8 +98,10 @@ public class SchemaTest extends RestTestBase {
 
   @BeforeClass
   public static void beforeSolrExampleTestsBase() throws Exception {
-    File tmpSolrHome = createTempDir().toFile();
-    FileUtils.copyDirectory(new File(getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
+
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
+    File tmpSolrHome = SolrTestUtil.createTempDir().toFile();
+    FileUtils.copyDirectory(new File(SolrTestUtil.getFile("solrj/solr/collection1").getParent()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
@@ -370,7 +375,7 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse deleteDynamicFieldResponse = deleteFieldRequest.process(getSolrClient(jetty));
     assertValidSchemaResponse(deleteDynamicFieldResponse);
 
-    expectThrows(SolrException.class, () -> dynamicFieldSchemaRequest.process(getSolrClient(jetty)));
+    LuceneTestCase.expectThrows(SolrException.class, () -> dynamicFieldSchemaRequest.process(getSolrClient(jetty)));
   }
 
   @Test

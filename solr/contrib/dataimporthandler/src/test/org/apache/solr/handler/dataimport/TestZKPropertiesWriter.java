@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -56,7 +57,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
   public static void dihZk_beforeClass() throws Exception {
-    zkDir = createTempDir("zkData");
+    zkDir = SolrTestUtil.createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
@@ -70,7 +71,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
 //        "dataimport-solrconfig.xml", "dataimport-schema.xml");
 
     //initCore("solrconfig.xml", "schema.xml", getFile("dih/solr").getAbsolutePath());
-    cc = createDefaultCoreContainer(getFile("dih/solr").toPath());
+    cc = createDefaultCoreContainer(SolrTestUtil.getFile("dih/solr").toPath());
   }
 
   @Before

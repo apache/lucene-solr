@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
@@ -71,8 +72,8 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
 
     configureCluster(NUM_SERVERS)// nodes
         .withSolrXml(MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML)
-        .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withSecurityJson(SolrTestUtil.TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
   }
 

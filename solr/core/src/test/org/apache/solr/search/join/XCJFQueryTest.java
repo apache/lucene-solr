@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -48,8 +49,8 @@ public class XCJFQueryTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(NUM_NODES)
-        .addConfig("xcjf", configset("xcjf"))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .addConfig("xcjf", SolrTestUtil.configset("xcjf"))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
 
 
@@ -146,7 +147,7 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudHttp2SolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
+      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(SolrTestUtil.configset("xcjf"), "xcjf");
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
@@ -225,7 +226,7 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudHttp2SolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
+      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(SolrTestUtil.configset("xcjf"), "xcjf");
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);

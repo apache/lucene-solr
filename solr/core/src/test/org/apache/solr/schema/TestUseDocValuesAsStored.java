@@ -20,7 +20,9 @@ import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.util.DOMUtil;
 import org.junit.After;
@@ -90,9 +92,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Before
   private void initManagedSchemaCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
-    File testHomeConfDir = new File(TEST_HOME(), confDir);
+    File testHomeConfDir = new File(SolrTestUtil.TEST_HOME(), confDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig-managed-schema.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "solrconfig.snippet.randomindexconfig.xml"), tmpConfDir);
     FileUtils.copyFileToDirectory(new File(testHomeConfDir, "enumsConfig.xml"), tmpConfDir);
@@ -175,7 +177,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testRandomSingleAndMultiValued() throws Exception {
-    for (int c = 0 ; c < (TEST_NIGHTLY ? 10 : 2) * RANDOM_MULTIPLIER ; ++c) {
+    for (int c = 0; c < (TEST_NIGHTLY ? 10 : 2) * LuceneTestCase.RANDOM_MULTIPLIER ; ++c) {
       clearIndex();
       int[] arity = new int[TEST_NIGHTLY ? 9 : 4];
       for (int a = 0 ; a < arity.length ; ++a) {

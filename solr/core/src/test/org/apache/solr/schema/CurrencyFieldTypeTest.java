@@ -27,6 +27,8 @@ import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
@@ -117,7 +119,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencyFieldType() throws Exception {
-    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
 
     SolrCore core = h.getCore();
@@ -151,7 +153,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMockExchangeRateProvider() throws Exception {
-    assumeTrue("This test is only applicable to the mock exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the mock exchange rate provider",
         expectedProviderClass.equals(MockExchangeRateProvider.class));
     
     SolrCore core = h.getCore();
@@ -168,12 +170,12 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencyRangeSearch() throws Exception {
-    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
     
     clearIndex();
-    final int emptyDocs = atLeast(50); // times 2
-    final int negDocs = atLeast(5);
+    final int emptyDocs = SolrTestUtil.atLeast(50); // times 2
+    final int negDocs = SolrTestUtil.atLeast(5);
     
     assertU(adoc("id", "0", fieldName, "0,USD")); // 0
     // lots of docs w/o values
@@ -267,7 +269,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencyPointQuery() throws Exception {
-    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
 
     clearIndex();
@@ -329,7 +331,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCurrencySort() throws Exception {
-    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
 
     clearIndex();
@@ -355,7 +357,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     }
   
   public void testFunctionUsage() throws Exception {
-    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
 
     clearIndex();
@@ -476,12 +478,12 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
     assertEquals("3.14,GBP", new CurrencyValue(314, "GBP").strValue());
 
     CurrencyValue currencyValue = new CurrencyValue(314, "XYZ");
-    expectThrows(SolrException.class,  currencyValue::strValue);
+    SolrTestCaseUtil.expectThrows(SolrException.class, currencyValue::strValue);
   }
 
   @Test
   public void testRangeFacet() throws Exception {
-    assumeTrue("This test is only applicable to the XML file based exchange rate provider " +
+    LuceneTestCase.assumeTrue("This test is only applicable to the XML file based exchange rate provider " +
                "because it excercies the asymetric exchange rates option it supports",
                expectedProviderClass.equals(FileExchangeRateProvider.class));
     
@@ -697,7 +699,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMockFieldType() throws Exception {
-    assumeTrue("This test is only applicable to the mock exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the mock exchange rate provider",
         expectedProviderClass.equals(MockExchangeRateProvider.class));
 
     clearIndex();
@@ -715,7 +717,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   @Test
   public void testAsymmetricPointQuery() throws Exception {
-    assumeTrue("This test is only applicable to the XML file based exchange rate provider",
+    LuceneTestCase.assumeTrue("This test is only applicable to the XML file based exchange rate provider",
         expectedProviderClass.equals(FileExchangeRateProvider.class));
 
     clearIndex();

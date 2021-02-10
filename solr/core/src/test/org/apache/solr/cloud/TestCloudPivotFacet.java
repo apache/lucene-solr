@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.PivotField;
@@ -134,7 +135,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
     final Set<String> fieldNameSet = new HashSet<>();
     
     // build up a randomized index
-    final int numDocs = atLeast(TEST_NIGHTLY ? 500 : 50);
+    final int numDocs = SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 50);
     log.info("numDocs: {}", numDocs);
 
     for (int i = 1; i <= numDocs; i++) {
@@ -563,7 +564,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
                                         
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, SolrTestCaseJ4.skewed(TestUtil.nextInt(random(), 20, 50),
                                       random().nextInt()));
@@ -576,7 +577,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
                                         random().nextLong()));
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, SolrTestCaseJ4.skewed(TestUtil.nextInt(random(), 5000, 5100),
                                       random().nextLong()));
@@ -589,7 +590,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
                                         random().nextFloat() * random().nextInt()));
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, SolrTestCaseJ4.skewed(1.0F / random().nextInt(13),
                                       random().nextFloat() * random().nextInt()));
@@ -602,7 +603,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
                                         random().nextDouble() * random().nextInt()));
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, SolrTestCaseJ4.skewed(1.0D / random().nextInt(19),
                                       random().nextDouble() * random().nextInt()));
@@ -615,7 +616,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
                                         
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, SolrTestCaseJ4.skewed(SolrTestCaseJ4.randomSkewedDate(), SolrTestCaseJ4.randomDate()));
                                       
@@ -628,7 +629,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
         doc.addField(prefix+"1", random().nextBoolean() ? "t" : "f");
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, random().nextBoolean() ? "t" : "f");
         }
@@ -640,7 +641,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
             SolrTestCaseJ4.randomXmlUsableUnicodeString()));
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, SolrTestCaseJ4.skewed(TestUtil.randomSimpleString(random(), 1, 1),
               SolrTestCaseJ4.randomXmlUsableUnicodeString()));
@@ -657,7 +658,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
         doc.addField(prefix+"1", TestUtil.randomSimpleString(random(), 1, 1));
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, TestUtil.randomSimpleString(random(), 1, 1));
         }
@@ -668,7 +669,7 @@ public class TestCloudPivotFacet extends SolrCloudBridgeTestCase {
         doc.addField(prefix+"1", TestUtil.nextInt(random(), 20, 50));
       }
       if (useField()) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           doc.addField(prefix, TestUtil.nextInt(random(), 20, 50));
         }

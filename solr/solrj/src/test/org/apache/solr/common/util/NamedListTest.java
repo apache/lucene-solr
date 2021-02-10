@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.junit.Test;
@@ -99,7 +100,7 @@ public class NamedListTest extends SolrTestCase {
     assertEquals(6, values.size());
     assertEquals(7, nl.size());
 
-    expectThrows(SolrException.class, () -> nl.removeConfigArgs("key2"));
+    LuceneTestCase.expectThrows(SolrException.class, () -> nl.removeConfigArgs("key2"));
     // nl should be unmodified when removeArgs throws an exception.
     assertEquals(7, nl.size());
   }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
@@ -154,13 +155,13 @@ public class TestJoin extends SolrTestCaseJ4 {
     ModifiableSolrParams p = params("sort","id asc");
 
     // "from" field missing docValues
-    expectThrows(SolrException.class, () -> {
-      query(req(p, "q", "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*", "fl","id"));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(req(p, "q", "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*", "fl", "id"));
     });
 
     // "to" field missing docValues
-    expectThrows(SolrException.class, () -> {
-      query(req(p, "q", "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*", "fl","id"));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      query(req(p, "q", "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*", "fl", "id"));
     });
   }
 
@@ -185,8 +186,8 @@ public class TestJoin extends SolrTestCaseJ4 {
 
   @Test
   public void testRandomJoin() throws Exception {
-    int indexIter= TEST_NIGHTLY ? 50 : 5 * RANDOM_MULTIPLIER;
-    int queryIter= TEST_NIGHTLY ? 50 : 5 * RANDOM_MULTIPLIER;
+    int indexIter= TEST_NIGHTLY ? 50 : 5 * LuceneTestCase.RANDOM_MULTIPLIER;
+    int queryIter= TEST_NIGHTLY ? 50 : 5 * LuceneTestCase.RANDOM_MULTIPLIER;
 
     // groups of fields that have any chance of matching... used to
     // increase test effectiveness by avoiding 0 resultsets much of the time.
@@ -197,7 +198,7 @@ public class TestJoin extends SolrTestCaseJ4 {
 
 
     while (--indexIter >= 0) {
-      int indexSize = random().nextInt(20 * RANDOM_MULTIPLIER);
+      int indexSize = random().nextInt(20 * LuceneTestCase.RANDOM_MULTIPLIER);
 
       List<FldType> types = new ArrayList<>();
       types.add(new FldType("id",ONE_ONE, new SVal('A','Z',4,4)));

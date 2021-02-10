@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -99,7 +100,7 @@ public class XsltUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   public void testEntities() throws Exception
   {
     // use a binary file, so when it's loaded fail with XML eror:
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = SolrTestUtil.getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml = 
       "<?xml version=\"1.0\"?>" +
       "<!DOCTYPE foo [" + 

@@ -196,12 +196,7 @@ public class UninvertingReader extends FilterLeafReader {
     final Function<String, Type> mapper;
     
     public UninvertingDirectoryReader(DirectoryReader in, final Function<String, Type> mapper) throws IOException {
-      super(in, new FilterDirectoryReader.SubReaderWrapper() {
-        @Override
-        public LeafReader wrap(LeafReader reader) {
-          return UninvertingReader.wrap(reader, mapper);
-        }
-      });
+      super(in, new MySubReaderWrapper(mapper));
       this.mapper = mapper;
     }
 
@@ -217,6 +212,19 @@ public class UninvertingReader extends FilterLeafReader {
     @Override
     public CacheHelper getReaderCacheHelper() {
       return in.getReaderCacheHelper();
+    }
+
+    private static class MySubReaderWrapper extends SubReaderWrapper {
+      private final Function<String,Type> mapper;
+
+      public MySubReaderWrapper(Function<String,Type> mapper) {
+        this.mapper = mapper;
+      }
+
+      @Override
+      public LeafReader wrap(LeafReader reader) {
+        return UninvertingReader.wrap(reader, mapper);
+      }
     }
   }
 

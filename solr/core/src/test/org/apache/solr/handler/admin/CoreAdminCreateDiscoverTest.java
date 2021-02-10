@@ -26,6 +26,7 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CorePropertiesLocator;
@@ -49,7 +50,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     useFactory(null); // I require FS-based indexes for this test.
-    Path solrHomePath = createTempDir();
+    Path solrHomePath = SolrTestUtil.createTempDir();
     solrHomeDirectory = solrHomePath.toFile();
     try (SolrResourceLoader resourceLoader = new SolrResourceLoader(solrHomePath)) {
       setupNoCoreTest(resourceLoader, solrHomePath, null);
@@ -72,7 +73,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     assertTrue("Failed to make subdirectory ", subHome.mkdirs());
 
     // Be sure we pick up sysvars when we create this
-    String srcDir = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String srcDir = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(srcDir, "schema-tiny.xml"), new File(subHome, "schema_ren.xml"));
     FileUtils.copyFile(new File(srcDir, "solrconfig-minimal.xml"), new File(subHome, "solrconfig_ren.xml"));
 

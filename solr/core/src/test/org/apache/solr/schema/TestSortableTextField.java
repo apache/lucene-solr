@@ -32,6 +32,8 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.TestUtil;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -433,7 +435,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
             // if useDocValuesAsStored==true and maxCharsForDocValues=N then longer values should fail
 
             final String doc = adoc("id", docid, name, "apple pear orange");
-            SolrException ex = expectThrows(SolrException.class, () -> {
+            SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
               assertU(doc);
             });
             for (String expect : Arrays.asList("field " + name, "length=17", "useDocValuesAsStored=true", "maxCharsForDocValues=6")) {
@@ -481,7 +483,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     try (SolrCore core = h.getCore()) {
       @SuppressWarnings("resource") final SolrClient client = new EmbeddedSolrServer(core);
 
-      final int numDocs = atLeast(100);
+      final int numDocs = SolrTestUtil.atLeast(100);
       final int magicIdx = TestUtil.nextInt(random(), 1, numDocs);
       String magic = null;
       for (int i = 1; i <= numDocs; i++) {
@@ -511,7 +513,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
       }
 
       // do some random id range queries using all 3 fields for sorting.  results should be identical
-      final int numQ = atLeast(10);
+      final int numQ = SolrTestUtil.atLeast(10);
       for (int i = 0; i < numQ; i++) {
         final int hi = TestUtil.nextInt(random(), 1, numDocs - 1);
         final int lo = TestUtil.nextInt(random(), 1, hi);

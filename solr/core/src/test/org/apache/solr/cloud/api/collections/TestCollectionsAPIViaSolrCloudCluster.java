@@ -17,6 +17,7 @@
 package org.apache.solr.cloud.api.collections;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -63,7 +64,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     System.setProperty("solr.skipCommitOnClose", "false");
-    configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
+    configureCluster(nodeCount).addConfig(configName, SolrTestUtil.configset("cloud-minimal")).configure();
     super.setUp();
   }
   
@@ -112,7 +113,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testCollectionCreateSearchDelete() throws Exception {
 
     final CloudHttp2SolrClient client = cluster.getSolrClient();
@@ -220,7 +221,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testStopAllStartAll() throws Exception {
 
     final String collectionName = "testStopAllStartAllCollection";

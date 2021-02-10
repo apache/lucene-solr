@@ -20,6 +20,8 @@ package org.apache.solr.cloud;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -62,7 +64,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     System.setProperty("solr.skipCommitOnClose", "false");
 
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
     // Add proxies
     proxies = new HashMap<>(cluster.getJettySolrRunners().size());
@@ -183,19 +185,17 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
     // the meat of the test -- wait to see if a different replica become a leader
     // the correct behavior is that this should time out, if it succeeds we have a problem...
-    expectThrows(TimeoutException.class,
-                 "Did not time out waiting for new leader, out of sync replica became leader",
-                 () -> {
-                   cluster.getSolrClient().waitForState(collection, 3, TimeUnit.SECONDS, (l, state) -> {
-            Replica newLeader = state.getSlice("shard1").getLeader();
-            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-              // this is is the bad case, our "bad" state was found before timeout
-              log.error("WTF: New Leader={} original Leader={}", newLeader, leader);
-              return true;
-            }
-            return false; // still no bad state, wait for timeout
-          });
+    SolrTestCaseUtil.expectThrows(TimeoutException.class, "Did not time out waiting for new leader, out of sync replica became leader", () -> {
+      cluster.getSolrClient().waitForState(collection, 3, TimeUnit.SECONDS, (l, state) -> {
+        Replica newLeader = state.getSlice("shard1").getLeader();
+        if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+          // this is is the bad case, our "bad" state was found before timeout
+          log.error("WTF: New Leader={} original Leader={}", newLeader, leader);
+          return true;
+        }
+        return false; // still no bad state, wait for timeout
       });
+    });
 
     waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
       Replica newLeader = collectionState.getLeader("shard1");
@@ -234,19 +234,17 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
     // the meat of the test -- wait to see if a different replica become a leader
     // the correct behavior is that this should time out, if it succeeds we have a problem...
-    expectThrows(TimeoutException.class,
-                 "Did not time out waiting for new leader, out of sync replica became leader",
-                 () -> {
-                   cluster.getSolrClient().waitForState(collection, 3, TimeUnit.SECONDS, (l, state) -> {
-            Replica newLeader = state.getSlice("shard1").getLeader();
-            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-              // this is is the bad case, our "bad" state was found before timeout
-              log.error("WTF: New Leader={} Old Leader={}", newLeader, leader);
-              return true;
-            }
-            return false; // still no bad state, wait for timeout
-          });
+    SolrTestCaseUtil.expectThrows(TimeoutException.class, "Did not time out waiting for new leader, out of sync replica became leader", () -> {
+      cluster.getSolrClient().waitForState(collection, 3, TimeUnit.SECONDS, (l, state) -> {
+        Replica newLeader = state.getSlice("shard1").getLeader();
+        if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+          // this is is the bad case, our "bad" state was found before timeout
+          log.error("WTF: New Leader={} Old Leader={}", newLeader, leader);
+          return true;
+        }
+        return false; // still no bad state, wait for timeout
       });
+    });
 
     j1.start();
 

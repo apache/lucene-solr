@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.UpdateHandler;
@@ -70,7 +71,7 @@ public class TestStressRecovery extends TestRTGBase {
   // 12-Jun-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testStressRecovery() throws Exception {
-    assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
+    LuceneTestCase.assumeFalse("FIXME: This test is horribly slow sometimes on Windows!", Constants.WINDOWS);
 
     final int commitPercent = 5 + random().nextInt(10);
     final int softCommitPercent = 30+random().nextInt(75); // what percent of the commits are soft
@@ -84,7 +85,7 @@ public class TestStressRecovery extends TestRTGBase {
     // query variables
     final int percentRealtimeQuery = 75;
     final int percentGetLatestVersions = random().nextInt(4);
-    final AtomicLong operations = new AtomicLong(atLeast(35));  // number of recovery loops to perform
+    final AtomicLong operations = new AtomicLong(SolrTestUtil.atLeast(35));  // number of recovery loops to perform
     int nReadThreads = 2 + random().nextInt(10);  // fewer read threads to give writers more of a chance
 
     initModel(ndocs);

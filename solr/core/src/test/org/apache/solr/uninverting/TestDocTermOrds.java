@@ -46,9 +46,11 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.legacy.LegacyIntField;
 import org.apache.solr.legacy.LegacyLongField;
@@ -63,8 +65,8 @@ import org.apache.solr.legacy.LegacyNumericUtils;
 public class TestDocTermOrds extends SolrTestCase {
 
   public void testEmptyIndex() throws IOException {
-    final Directory dir = newDirectory();
-    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    final Directory dir = SolrTestUtil.newDirectory();
+    final IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random())));
     iw.close();
     
     final DirectoryReader ir = DirectoryReader.open(dir);
@@ -93,10 +95,10 @@ public class TestDocTermOrds extends SolrTestCase {
   }
 
   public void testSimple() throws Exception {
-    Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    Directory dir = SolrTestUtil.newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir, LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(LuceneTestCase.newLogMergePolicy()));
     Document doc = new Document();
-    Field field = newTextField("field", "", Field.Store.NO);
+    Field field = LuceneTestCase.newTextField("field", "", Field.Store.NO);
     doc.add(field);
     field.setStringValue("a b c");
     w.addDocument(doc);
@@ -137,9 +139,9 @@ public class TestDocTermOrds extends SolrTestCase {
   }
 
   public void testRandom() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = SolrTestUtil.newDirectory();
 
-    final int NUM_TERMS = atLeast(20);
+    final int NUM_TERMS = SolrTestUtil.atLeast(20);
     final Set<BytesRef> terms = new HashSet<>();
     while(terms.size() < NUM_TERMS) {
       final String s = TestUtil.randomRealisticUnicodeString(random());
@@ -151,9 +153,9 @@ public class TestDocTermOrds extends SolrTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = atLeast(100);
+    final int NUM_DOCS = SolrTestUtil.atLeast(100);
 
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig conf = LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()));
 
     // Sometimes swap in codec that impls ord():
     if (random().nextInt(10) == 7) {
@@ -172,7 +174,7 @@ public class TestDocTermOrds extends SolrTestCase {
 
       doc.add(new LegacyIntField("id", id, Field.Store.YES));
       
-      final int termCount = TestUtil.nextInt(random(), 0, 20 * RANDOM_MULTIPLIER);
+      final int termCount = TestUtil.nextInt(random(), 0, 20 * LuceneTestCase.RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
         ordsForDocSet.add(random().nextInt(termsArray.length));
       }
@@ -183,7 +185,7 @@ public class TestDocTermOrds extends SolrTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
+        Field field = LuceneTestCase.newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -225,7 +227,7 @@ public class TestDocTermOrds extends SolrTestCase {
   }
 
   public void testRandomWithPrefix() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = SolrTestUtil.newDirectory();
 
     final Set<String> prefixes = new HashSet<>();
     final int numPrefix = TestUtil.nextInt(random(), 2, 7);
@@ -238,7 +240,7 @@ public class TestDocTermOrds extends SolrTestCase {
     }
     final String[] prefixesArray = prefixes.toArray(new String[prefixes.size()]);
 
-    final int NUM_TERMS = atLeast(20);
+    final int NUM_TERMS = SolrTestUtil.atLeast(20);
     final Set<BytesRef> terms = new HashSet<>();
     while(terms.size() < NUM_TERMS) {
       final String s = prefixesArray[random().nextInt(prefixesArray.length)] + TestUtil.randomRealisticUnicodeString(random());
@@ -250,9 +252,9 @@ public class TestDocTermOrds extends SolrTestCase {
     final BytesRef[] termsArray = terms.toArray(new BytesRef[terms.size()]);
     Arrays.sort(termsArray);
     
-    final int NUM_DOCS = atLeast(100);
+    final int NUM_DOCS = SolrTestUtil.atLeast(100);
 
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig conf = LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()));
 
     // Sometimes swap in codec that impls ord():
     if (random().nextInt(10) == 7) {
@@ -270,7 +272,7 @@ public class TestDocTermOrds extends SolrTestCase {
 
       doc.add(new LegacyIntField("id", id, Field.Store.YES));
       
-      final int termCount = TestUtil.nextInt(random(), 0, 20 * RANDOM_MULTIPLIER);
+      final int termCount = TestUtil.nextInt(random(), 0, 20 * LuceneTestCase.RANDOM_MULTIPLIER);
       while(ordsForDocSet.size() < termCount) {
         ordsForDocSet.add(random().nextInt(termsArray.length));
       }
@@ -281,7 +283,7 @@ public class TestDocTermOrds extends SolrTestCase {
       }
       for(int ord : ordsForDocSet) {
         ordsForDoc[upto++] = ord;
-        Field field = newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
+        Field field = LuceneTestCase.newStringField("field", termsArray[ord].utf8ToString(), Field.Store.NO);
         if (VERBOSE) {
           System.out.println("  f=" + termsArray[ord].utf8ToString());
         }
@@ -434,17 +436,17 @@ public class TestDocTermOrds extends SolrTestCase {
   }
   
   public void testBackToTheFuture() throws Exception {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     Document doc = new Document();
-    doc.add(newStringField("foo", "bar", Field.Store.NO));
+    doc.add(SolrTestUtil.newStringField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
     
     doc = new Document();
-    doc.add(newStringField("foo", "baz", Field.Store.NO));
+    doc.add(SolrTestUtil.newStringField("foo", "baz", Field.Store.NO));
     // we need a second value for a doc, or we don't actually test DocTermOrds!
-    doc.add(newStringField("foo", "car", Field.Store.NO));
+    doc.add(SolrTestUtil.newStringField("foo", "car", Field.Store.NO));
     iw.addDocument(doc);
     
     DirectoryReader r1 = DirectoryReader.open(iw);
@@ -452,9 +454,9 @@ public class TestDocTermOrds extends SolrTestCase {
     iw.deleteDocuments(new Term("foo", "baz"));
     DirectoryReader r2 = DirectoryReader.open(iw);
     
-    FieldCache.DEFAULT.getDocTermOrds(getOnlyLeafReader(r2), "foo", null);
+    FieldCache.DEFAULT.getDocTermOrds(LuceneTestCase.getOnlyLeafReader(r2), "foo", null);
     
-    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlyLeafReader(r1), "foo", null);
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(LuceneTestCase.getOnlyLeafReader(r1), "foo", null);
     assertEquals(3, v.getValueCount());
     assertEquals(1, v.advance(1));
     assertEquals(1, v.nextOrd());
@@ -466,8 +468,8 @@ public class TestDocTermOrds extends SolrTestCase {
   }
   
   public void testNumericEncoded32() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
@@ -482,7 +484,7 @@ public class TestDocTermOrds extends SolrTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    LeafReader ar = getOnlyLeafReader(ir);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT32_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
@@ -507,8 +509,8 @@ public class TestDocTermOrds extends SolrTestCase {
   }
   
   public void testNumericEncoded64() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
@@ -523,7 +525,7 @@ public class TestDocTermOrds extends SolrTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    LeafReader ar = getOnlyLeafReader(ir);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT64_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
@@ -548,10 +550,10 @@ public class TestDocTermOrds extends SolrTestCase {
   }
   
   public void testSortedTermsEnum() throws IOException {
-    Directory directory = newDirectory();
+    Directory directory = SolrTestUtil.newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriterConfig iwconfig = newIndexWriterConfig(analyzer);
-    iwconfig.setMergePolicy(newLogMergePolicy());
+    IndexWriterConfig iwconfig = LuceneTestCase.newIndexWriterConfig(analyzer);
+    iwconfig.setMergePolicy(LuceneTestCase.newLogMergePolicy());
     RandomIndexWriter iwriter = new RandomIndexWriter(random(), directory, iwconfig);
     
     Document doc = new Document();
@@ -572,7 +574,7 @@ public class TestDocTermOrds extends SolrTestCase {
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    LeafReader ar = getOnlyLeafReader(ireader);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ireader);
     SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field", null);
     assertEquals(3, dv.getValueCount());
     
@@ -632,9 +634,9 @@ public class TestDocTermOrds extends SolrTestCase {
   }
   
   public void testActuallySingleValued() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwconfig =  newIndexWriterConfig(null);
-    iwconfig.setMergePolicy(newLogMergePolicy());
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriterConfig iwconfig =  LuceneTestCase.newIndexWriterConfig(null);
+    iwconfig.setMergePolicy(LuceneTestCase.newLogMergePolicy());
     IndexWriter iw = new IndexWriter(dir, iwconfig);
     
     Document doc = new Document();
@@ -657,7 +659,7 @@ public class TestDocTermOrds extends SolrTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    LeafReader ar = getOnlyLeafReader(ir);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", null);
     assertNotNull(DocValues.unwrapSingleton(v)); // actually a single-valued field

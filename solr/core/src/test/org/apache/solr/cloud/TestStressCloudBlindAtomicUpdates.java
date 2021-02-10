@@ -28,10 +28,12 @@ import java.util.Random;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -108,7 +110,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     // no need to redundently factor them in here as well
     DOC_ID_INCR = TestUtil.nextInt(random(), 1, 7);
     
-    NUM_THREADS = atLeast(3);
+    NUM_THREADS = LuceneTestCase.atLeast(3);
     EXEC_SERVICE = ParWork.getRootSharedExecutor();
     
     // at least 2, but don't go crazy on nightly/test.multiplier with "atLeast()"
@@ -117,7 +119,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
     final int numNodes = numShards * repFactor;
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
 
     SolrTestCaseJ4.randomizeNumericTypesProperties();
 
@@ -170,8 +172,8 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
   
   @Before
   public void clearCloudCollection() throws Exception {
-    final int injectionPercentage = (int)Math.ceil(atLeast(1) / 2);
-    testInjection = usually() ? "false:0" : ("true:" + injectionPercentage);
+    final int injectionPercentage = (int)Math.ceil(LuceneTestCase.atLeast(1) / 2);
+    testInjection = LuceneTestCase.usually() ? "false:0" : ("true:" + injectionPercentage);
   }
 
   @After
@@ -202,7 +204,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
 
   @Test
-  @Nightly // why so slow?
+  @LuceneTestCase.Nightly // why so slow?
   public void test_dv() throws Exception {
     String field = "long_dv";
     checkExpectedSchemaField(SolrTestCaseJ4.map("name", field,
@@ -262,7 +264,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
     final CountDownLatch abortLatch = new CountDownLatch(1);
 
-    final int numDocsToCheck = atLeast(TEST_NIGHTLY ? 37 : 7);
+    final int numDocsToCheck = LuceneTestCase.atLeast(TEST_NIGHTLY ? 37 : 7);
     final int numDocsInIndex = (numDocsToCheck * DOC_ID_INCR);
     final AtomicLong[] expected = new AtomicLong[numDocsToCheck];
 
@@ -378,7 +380,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       this.abortLatch = abortLatch;
       this.rand = rand;
       this.updateField = updateField;
-      this.numDocsToUpdate = atLeast(rand, 25);
+      this.numDocsToUpdate = LuceneTestCase.atLeast(rand, 25);
     }
     public boolean getFinishedOk() {
       return ok;
@@ -415,7 +417,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
           // no matter how random the doc selection may be per thread, ensure
           // every doc that is selected by *a* thread gets at least a couple rapid fire updates
-          final int itersPerDoc = atLeast(rand, 2);
+          final int itersPerDoc = LuceneTestCase.atLeast(rand, 2);
           
           for (int updateIter = 0; updateIter < itersPerDoc; updateIter++) {
             if (0 == abortLatch.getCount()) {

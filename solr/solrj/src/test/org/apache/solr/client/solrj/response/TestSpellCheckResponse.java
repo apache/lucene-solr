@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.response;
 
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -106,7 +107,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
   }
 
   @Test
-  @Nightly // TODO: look at perf
+  @LuceneTestCase.Nightly // TODO: look at perf
   public void testSpellCheckCollationResponse() throws Exception {
     getSolrClient();
     client.deleteByQuery("*:*");

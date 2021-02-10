@@ -17,6 +17,7 @@
 
 package org.apache.solr.update.processor;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -43,7 +44,7 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(TEST_NIGHTLY ? 5 : 2)
-        .addConfig("conf1", configset("cloud-minimal"))
+        .addConfig("conf1", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 

@@ -27,7 +27,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.ParWork;
@@ -48,11 +50,11 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
   }
 
-  @Nightly // can be slow (at least on low end hardware)
+  @LuceneTestCase.Nightly // can be slow (at least on low end hardware)
   public void testWaitForStateAfterShutDown() throws Exception {
     final String col_name = "test_col";
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
-      (1, createTempDir(), buildJettyConfig("/solr"));
+      (1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());
@@ -72,7 +74,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     final String col_name = "test_col";
     final ExecutorService executor = ParWork.getRootSharedExecutor();
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
-      (1, createTempDir(), buildJettyConfig("/solr"));
+      (1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
     try {
       log.info("Create our collection");
       CollectionAdminRequest.createCollection(col_name, "_default", 1, 1).process(cluster.getSolrClient());

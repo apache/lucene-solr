@@ -108,7 +108,7 @@ public class DistributedIntervalFacetingTest extends
     // Fields to use for interval faceting
     String[] fields = new String[]{"test_s_dv", "test_i_dv", "test_l_dv", "test_f_dv", "test_d_dv",
         "test_ss_dv", "test_is_dv", "test_fs_dv", "test_ls_dv", "test_ds_dv"};
-    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 500 : 50); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 50); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         indexr("id", String.valueOf(i));
@@ -157,7 +157,7 @@ public class DistributedIntervalFacetingTest extends
     handle.put("maxScore", SKIPVAL);
 
 
-    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 100 : 15); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(TEST_NIGHTLY ? 100 : 15); i++) {
       doTestQuery(cardinality, fields);
     }
 

@@ -26,6 +26,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -1226,8 +1227,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("gte(foo_i,2)", "gte(foo_i,2)");
     assertFuncEquals("eq(foo_i,2)", "eq(foo_i,2)");
 
-    expectThrows(AssertionError.class, "expected error, functions are not equal",
-        () -> assertFuncEquals("eq(foo_i,2)", "lt(foo_i,2)"));
+    SolrTestCaseUtil.expectThrows(AssertionError.class, "expected error, functions are not equal", () -> assertFuncEquals("eq(foo_i,2)", "lt(foo_i,2)"));
   }
 
   public void testChildField() throws Exception {
@@ -1243,23 +1243,13 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testPayloadScoreQuery() throws Exception {
     // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal with different includeSpanScore settings
 
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
-        () -> assertQueryEquals
-            ("payload_score"
-                , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=false}"
-                , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"
-            )
-    );
+    SolrTestCaseUtil.expectThrows(AssertionFailedError.class, "queries should not have been equal",
+        () -> assertQueryEquals("payload_score", "{!payload_score f=foo_dpf v=query func=min includeSpanScore=false}", "{!payload_score f=foo_dpf v=query func=min includeSpanScore=true}"));
   }
 
   public void testPayloadCheckQuery() throws Exception {
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
-        () -> assertQueryEquals
-            ("payload_check"
-                , "{!payload_check f=foo_dpf payloads=2}one"
-                , "{!payload_check f=foo_dpf payloads=2}two"
-            )
-    );
+    SolrTestCaseUtil.expectThrows(AssertionFailedError.class, "queries should not have been equal",
+        () -> assertQueryEquals("payload_check", "{!payload_check f=foo_dpf payloads=2}one", "{!payload_check f=foo_dpf payloads=2}two"));
   }
 
   public void testPayloadFunction() throws Exception {
@@ -1284,13 +1274,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!bool must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' " +
             "must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' filter='{!lucene}foo_s:e'}");
 
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
-        () -> assertQueryEquals
-            ("bool"
-                , "{!bool must='{!lucene}foo_s:a'}"
-                , "{!bool should='{!lucene}foo_s:a'}"
-            )
-    );
+    SolrTestCaseUtil
+        .expectThrows(AssertionFailedError.class, "queries should not have been equal", () -> assertQueryEquals("bool", "{!bool must='{!lucene}foo_s:a'}", "{!bool should='{!lucene}foo_s:a'}"));
   }
 
   public void testXCJFQuery() throws Exception {

@@ -33,6 +33,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.BeforeClass;
@@ -374,7 +375,7 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
    * @throws Exception If there is a low-level I/O error
    */
   private void prepareTrainedIndexMonoClass() throws Exception {
-    directory = newDirectory();
+    directory = SolrTestUtil.newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
 
     //class1
@@ -443,11 +444,11 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     reader = writer.getReader();
     writer.close();
-    searcher = newSearcher(reader);
+    searcher = SolrTestUtil.newSearcher(reader);
   }
 
   private void prepareTrainedIndexMultiClass() throws Exception {
-    directory = newDirectory();
+    directory = SolrTestUtil.newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory);
 
     //class1
@@ -511,13 +512,13 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
     reader = writer.getReader();
     writer.close();
-    searcher = newSearcher(reader);
+    searcher = SolrTestUtil.newSearcher(reader);
   }
 
   public static Document buildLuceneDocument(Object... fieldsAndValues) {
     Document luceneDoc = new Document();
     for (int i=0; i<fieldsAndValues.length; i+=2) {
-      luceneDoc.add(newTextField((String)fieldsAndValues[i], (String)fieldsAndValues[i+1], Field.Store.YES));
+      luceneDoc.add(LuceneTestCase.newTextField((String)fieldsAndValues[i], (String)fieldsAndValues[i+1], Field.Store.YES));
     }
     return luceneDoc;
   }

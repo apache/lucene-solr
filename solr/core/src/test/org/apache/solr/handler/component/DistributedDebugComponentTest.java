@@ -29,6 +29,8 @@ import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,7 +57,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   private static File createSolrHome() throws Exception {
     System.setProperty("solr.test.sys.prop1", "1");
     System.setProperty("solr.test.sys.prop2", "2");
-    File workDir = createTempDir().toFile();
+    File workDir = SolrTestUtil.createTempDir().toFile();
     setupJettyTestHome(workDir, "collection1");
     FileUtils.copyDirectory(new File(workDir, "collection1"), new File(workDir, "collection2"));
     return workDir;
@@ -167,7 +169,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   @Test
   @SuppressWarnings("resource") // Cannot close client in this loop!
   public void testRandom() throws Exception {
-    final int NUM_ITERS = atLeast(50);
+    final int NUM_ITERS = SolrTestUtil.atLeast(50);
 
     for (int i = 0; i < NUM_ITERS; i++) {
       final SolrClient client = random().nextBoolean() ? collection1 : collection2;
@@ -403,7 +405,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
     // verify that the request would fail if shards.tolerant=false
     ignoreException("Server refused connection");
-    expectThrows(SolrException.class, () -> collection1.query(query));
+    SolrTestCaseUtil.expectThrows(SolrException.class, () -> collection1.query(query));
 
     query.set(ShardParams.SHARDS_TOLERANT, "true");
     QueryResponse response = collection1.query(query);

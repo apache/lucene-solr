@@ -35,6 +35,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -113,7 +114,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   
   @Test
   public void testIntPointFieldReturn() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     String[] ints = toStringArray(getRandomInts(numValues, false));
     doTestPointFieldReturn("number_p_i", "int", ints);
     doTestPointFieldReturn("number_p_i_dv_ns", "int", ints);
@@ -131,7 +132,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testIntPointFieldNonSearchableRangeQuery() throws Exception {
     doTestPointFieldNonSearchableRangeQuery("number_p_i_ni", toStringArray(getRandomInts(1, false)));
     doTestPointFieldNonSearchableRangeQuery("number_p_i_ni_ns", toStringArray(getRandomInts(1, false)));
-    int numValues = 2 * RANDOM_MULTIPLIER;
+    int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
     doTestPointFieldNonSearchableRangeQuery("number_p_i_ni_ns_mv", toStringArray(getRandomInts(numValues, false)));
   }
   
@@ -175,7 +176,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
       doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
-      int numValues = 2 * RANDOM_MULTIPLIER;
+      int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
       doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(numValues, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(numValues, false)));
@@ -196,7 +197,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, randomInts);
 
       // value source (w/o field(...,min|max)) usuage should still error...
-      int numValues = 2 * RANDOM_MULTIPLIER;
+      int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(numValues, false)));
     }
@@ -205,7 +206,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testIntPointFieldFacetField() throws Exception {
     doTestPointFieldFacetField("number_p_i", "number_p_i_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
@@ -214,11 +215,11 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testIntPointFieldRangeFacet() throws Exception {
     String docValuesField = "number_p_i_dv";
     String nonDocValuesField = "number_p_i";
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Integer> values;
     List<Integer> sortedValues;
@@ -280,7 +281,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
 
   @Test
   public void testIntPointStats() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     // don't produce numbers with exponents, since XPath comparison operators can't handle them
     List<Integer> values  = getRandomInts(numValues, false, 9999999);
     // System.err.println(Arrays.toString(values.toArray(new Integer[values.size()])));
@@ -316,7 +317,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testIntPointFieldMultiValuedRangeQuery() throws Exception {
     String[] ints = toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList()));
     doTestPointFieldMultiValuedRangeQuery("number_p_i_mv", "int", ints);
@@ -340,11 +341,11 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testIntPointFieldMultiValuedRangeFacet() throws Exception {
     String docValuesField = "number_p_i_mv_dv";
     String nonDocValuesField = "number_p_i_mv";
-    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numValues = 20 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Integer> values;
     List<PosVal<Integer>> sortedValues;
@@ -446,7 +447,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
     return list.stream().map(String::valueOf).collect(Collectors.toList()).toArray(new String[list.size()]);
   }
 
-  private class PosVal <T extends Comparable<T>> {
+  private static class PosVal <T extends Comparable<T>> {
     int pos;
     T val;
 
@@ -521,7 +522,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   // DoublePointField
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testDoublePointFieldExactQuery() throws Exception {
     doTestFloatPointFieldExactQuery("number_p_d", true);
     doTestFloatPointFieldExactQuery("number_p_d_mv", true);
@@ -535,7 +536,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
  
   @Test
   public void testDoublePointFieldReturn() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     String[] doubles = toStringArray(getRandomDoubles(numValues, false));
     doTestPointFieldReturn("number_p_d", "double", doubles);
     doTestPointFieldReturn("number_p_d_dv_ns", "double", doubles);
@@ -552,7 +553,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testDoubleFieldNonSearchableRangeQuery() throws Exception {
     doTestPointFieldNonSearchableRangeQuery("number_p_d_ni", toStringArray(getRandomDoubles(1, false)));
     doTestPointFieldNonSearchableRangeQuery("number_p_d_ni_ns", toStringArray(getRandomDoubles(1, false)));
-    int numValues = 2 * RANDOM_MULTIPLIER;
+    int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
     doTestPointFieldNonSearchableRangeQuery("number_p_d_ni_ns_mv", toStringArray(getRandomDoubles(numValues, false)));
   }
   
@@ -633,7 +634,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testDoublePointFieldRangeFacet() throws Exception {
     String docValuesField = "number_p_d_dv";
     String nonDocValuesField = "number_p_d";
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Double> values, sortedValues;
     double min, max, gap, buffer;
@@ -699,7 +700,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
 
   @Test
   public void testDoublePointStats() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     // don't produce numbers with exponents, since XPath comparison operators can't handle them: 7 digits of precision
     List<Float> values  = getRandomInts(numValues, false, 9999999).stream()
         .map(v -> (float)((double)v * Math.pow(10D, -1 * random().nextInt(8)))).collect(Collectors.toList());
@@ -763,7 +764,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
     assertFalse(nonDvSchemaField.hasDocValues());
     assertTrue(nonDvSchemaField.getType() instanceof PointField);
 
-    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numValues = 20 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Double> values;
     List<PosVal<Double>> sortedValues;
@@ -929,7 +930,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   // Float
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testFloatPointFieldExactQuery() throws Exception {
     doTestFloatPointFieldExactQuery("number_p_f", false);
     doTestFloatPointFieldExactQuery("number_p_f_mv", false);
@@ -942,7 +943,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testFloatPointFieldNonSearchableExactQuery() throws Exception {
     doTestFloatPointFieldExactQuery("number_p_f_ni", false, false);
     doTestFloatPointFieldExactQuery("number_p_f_ni_ns", false, false);
@@ -950,7 +951,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   
   @Test
   public void testFloatPointFieldReturn() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     String[] floats = toStringArray(getRandomFloats(numValues, false));
     doTestPointFieldReturn("number_p_f", "float", floats);
     doTestPointFieldReturn("number_p_f_dv_ns", "float", floats);
@@ -967,12 +968,12 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testFloatPointFieldNonSearchableRangeQuery() throws Exception {
     doTestPointFieldNonSearchableRangeQuery("number_p_f_ni", toStringArray(getRandomFloats(1, false)));
     doTestPointFieldNonSearchableRangeQuery("number_p_f_ni_ns", toStringArray(getRandomFloats(1, false)));
-    int numValues = 2 * RANDOM_MULTIPLIER;
+    int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
     doTestPointFieldNonSearchableRangeQuery("number_p_f_ni_ns_mv", toStringArray(getRandomFloats(numValues, false)));
   }
   
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testFloatPointFieldSortAndFunction() throws Exception {
     final SortedSet<String> regexToTest = dynFieldRegexesForType(FloatPointField.class);
     final List<String> sequential = Arrays.asList("0.0", "1.0", "2.0", "3.0", "4.0", "5.0", "6.0", "7.0", "8.0", "9.0");
@@ -1049,7 +1050,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testFloatPointFieldRangeFacet() throws Exception {
     String docValuesField = "number_p_f_dv";
     String nonDocValuesField = "number_p_f";
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Float> values, sortedValues;
     float min, max, gap, buffer;
@@ -1117,7 +1118,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatPointStats() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     // don't produce numbers with exponents, since XPath comparison operators can't handle them: 7 digits of precision
     List<Float> values  = getRandomInts(numValues, false, 9999999).stream()
         .map(v -> (float)((double)v * Math.pow(10D, -1 * random().nextInt(8)))).collect(Collectors.toList());
@@ -1175,7 +1176,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
     assertFalse(nonDvSchemaField.hasDocValues());
     assertTrue(nonDvSchemaField.getType() instanceof PointField);
  
-    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numValues = 20 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Float> values;
     List<PosVal<Float>> sortedValues;
@@ -1321,14 +1322,14 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   
   @Test
   public void testLongPointFieldReturn() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     String[] longs = toStringArray(getRandomLongs(numValues, false));
     doTestPointFieldReturn("number_p_l", "long", longs);
     doTestPointFieldReturn("number_p_l_dv_ns", "long", longs);
   }
   
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testLongPointFieldRangeQuery() throws Exception {
     doTestIntPointFieldRangeQuery("number_p_l", "long", true);
     doTestIntPointFieldRangeQuery("number_p_l_ni_ns_dv", "long", true);
@@ -1339,12 +1340,12 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testLongPointFieldNonSearchableRangeQuery() throws Exception {
     doTestPointFieldNonSearchableRangeQuery("number_p_l_ni", toStringArray(getRandomLongs(1, false)));
     doTestPointFieldNonSearchableRangeQuery("number_p_l_ni_ns", toStringArray(getRandomLongs(1, false)));
-    int numValues = 2 * RANDOM_MULTIPLIER;
+    int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
     doTestPointFieldNonSearchableRangeQuery("number_p_l_ni_ns_mv", toStringArray(getRandomLongs(numValues, false)));
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testLongPointFieldSortAndFunction() throws Exception {
     final SortedSet<String> regexToTest = dynFieldRegexesForType(LongPointField.class);
     final List<Long> vals = Arrays.asList((long)Integer.MIN_VALUE, 
@@ -1386,7 +1387,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
       doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(1, false)));
-      int numValues = 2 * RANDOM_MULTIPLIER;
+      int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
       doTestPointFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(numValues, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
@@ -1406,7 +1407,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
       doTestPointFieldSort(field, randomLongs);
 
       // value source (w/o field(...,min|max)) usuage should still error...
-      int numValues = 2 * RANDOM_MULTIPLIER;
+      int numValues = 2 * LuceneTestCase.RANDOM_MULTIPLIER;
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
       doTestPointFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
     }
@@ -1425,7 +1426,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testLongPointFieldRangeFacet() throws Exception {
     String docValuesField = "number_p_l_dv";
     String nonDocValuesField = "number_p_l";
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Long> values;
     List<Long> sortedValues;
@@ -1493,7 +1494,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   
   @Test
   public void testLongPointStats() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     // don't produce numbers with exponents, since XPath comparison operators can't handle them
     List<Long> values  = getRandomLongs(numValues, false, 9999999L);
     List<Long> sortedValues = values.stream().sorted().collect(Collectors.toList());
@@ -1545,7 +1546,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testLongPointFieldMultiValuedRangeFacet() throws Exception {
     String docValuesField = "number_p_l_mv_dv";
     String nonDocValuesField = "number_p_l_mv";
-    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numValues = 20 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Long> values;
     List<PosVal<Long>> sortedValues;
@@ -1645,7 +1646,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
 
   @Test
   public void testDatePointFieldReturn() throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     String[] dates = toStringArray(getRandomInstants(numValues, false));
     doTestPointFieldReturn("number_p_dt", "date", dates);
     doTestPointFieldReturn("number_p_dt_dv_ns", "date", dates);
@@ -1777,7 +1778,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   public void testDatePointFieldRangeFacet() throws Exception {
     String docValuesField = "number_p_dt_dv";
     String nonDocValuesField = "number_p_dt";
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Long> values, sortedValues;
     long min, max;
@@ -1912,7 +1913,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
     assertFalse(nonDvSchemaField.hasDocValues());
     assertTrue(nonDvSchemaField.getType() instanceof PointField);
 
-    int numValues = 20 * RANDOM_MULTIPLIER;
+    int numValues = 20 * LuceneTestCase.RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
     List<Long> values;
     List<PosVal<Long>> sortedValues;
@@ -2048,7 +2049,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
     for (int i = 0 ; i < length ; ++i) {
       T val = null; 
       // Sometimes leave val as null when we're producing missing values
-      if (missingVals == false || usually()) {
+      if (missingVals == false || LuceneTestCase.usually()) {
         val = randomVal.get();
       }
       list.add(val);
@@ -2157,7 +2158,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
    * @param searchable set to true if searches against "field" should succeed, false if field is only stored and searches should always get numFound=0
    */
   private void doTestIntPointFieldExactQuery(final String field, final boolean testLong, final boolean searchable) throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     Map<String,Integer> randCount = new HashMap<>(numValues);
     String[] rand = testLong ? toStringArray(getRandomLongs(numValues, false))
                              : toStringArray(getRandomInts(numValues, false));
@@ -2376,7 +2377,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
   
   private void doTestIntPointFunctionQuery(String field) throws Exception {
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
-    int numVals = 10 * RANDOM_MULTIPLIER;
+    int numVals = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     List<Integer> values = getRandomInts(numVals, false);
     String assertNumFound = "//*[@numFound='" + numVals + "']"; 
     String[] idAscXpathChecks = new String[numVals + 1];
@@ -2414,7 +2415,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
 
   private void doTestLongPointFunctionQuery(String field) throws Exception {
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
-    int numVals = 10 * RANDOM_MULTIPLIER;
+    int numVals = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     List<Long> values = getRandomLongs(numVals, false);
     String assertNumFound = "//*[@numFound='" + numVals + "']";
     String[] idAscXpathChecks = new String[numVals + 1];
@@ -2459,7 +2460,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
    * @param values one or more values to put into the doc(s) in the index - may be more then one for multivalued fields
    */
   private void doTestPointFieldFunctionQueryError(String field, String errSubStr, String...values) throws Exception {
-    final int numDocs = atLeast(random(), 10);
+    final int numDocs = LuceneTestCase.atLeast(random(), 10);
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = sdoc("id", String.valueOf(i));
       for (String v: values) {
@@ -2687,7 +2688,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), dvFieldName, numbers[i], dvFieldName, numbers[i + 10], 
           nonDocValuesField, numbers[i], nonDocValuesField, numbers[i + 10]));
-     if (rarely()) {
+     if (LuceneTestCase.rarely()) {
        assertU(commit());
      }
     }
@@ -2951,7 +2952,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
    */
   private void doTestFloatPointFieldExactQuery(final String field, final boolean searchable, final boolean testDouble) 
       throws Exception {
-    int numValues = 10 * RANDOM_MULTIPLIER;
+    int numValues = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     Map<String,Integer> randCount = new HashMap<>(numValues);
     String[] rand = testDouble ? toStringArray(getRandomDoubles(numValues, false)) 
                                : toStringArray(getRandomFloats(numValues, false));
@@ -3044,7 +3045,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
    */
   private void doTestPointFieldSortError(String field, String errSubStr, String... values) throws Exception {
 
-    final int numDocs = atLeast(random(), 10);
+    final int numDocs = LuceneTestCase.atLeast(random(), 10);
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = sdoc("id", String.valueOf(i));
       for (String v: values) {
@@ -3238,7 +3239,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
 
   private void doTestFloatPointFunctionQuery(String field) throws Exception {
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
-    int numVals = 10 * RANDOM_MULTIPLIER;
+    int numVals = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     List<Float> values = getRandomFloats(numVals, false);
     String assertNumFound = "//*[@numFound='" + numVals + "']";
     String[] idAscXpathChecks = new String[numVals + 1];
@@ -3276,7 +3277,7 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
 
   private void doTestDoublePointFunctionQuery(String field) throws Exception {
     assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
-    int numVals = 10 * RANDOM_MULTIPLIER;
+    int numVals = 10 * LuceneTestCase.RANDOM_MULTIPLIER;
     // Restrict values to float range; otherwise conversion to float will cause truncation -> undefined results
     List<Double> values = getRandomList(numVals, false, () -> {
       Float f = Float.NaN;
@@ -3539,11 +3540,11 @@ public class TestPointFields2 extends SolrTestCaseJ4 {
                 DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc() == DocIdSetIterator.NO_MORE_DOCS);
           }
         } else {
-          expectThrows(IllegalStateException.class, ()->DocValues.getSortedNumeric(leafReaderForCheckingDVs, field));
-          expectThrows(IllegalStateException.class, ()->DocValues.getNumeric(leafReaderForCheckingDVs, field));
+          SolrTestCaseUtil.expectThrows(IllegalStateException.class, () -> DocValues.getSortedNumeric(leafReaderForCheckingDVs, field));
+          SolrTestCaseUtil.expectThrows(IllegalStateException.class, () -> DocValues.getNumeric(leafReaderForCheckingDVs, field));
         }
-        expectThrows(IllegalStateException.class, ()->DocValues.getSorted(leafReaderForCheckingDVs, field));
-        expectThrows(IllegalStateException.class, ()->DocValues.getBinary(leafReaderForCheckingDVs, field));
+        SolrTestCaseUtil.expectThrows(IllegalStateException.class, () -> DocValues.getSorted(leafReaderForCheckingDVs, field));
+        SolrTestCaseUtil.expectThrows(IllegalStateException.class, () -> DocValues.getBinary(leafReaderForCheckingDVs, field));
       }
       for (LeafReaderContext leave:ir.leaves()) {
         LeafReader reader = leave.reader();

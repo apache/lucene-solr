@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -131,13 +132,13 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     if (Boolean.getBoolean(SolrTestCaseJ4.NUMERIC_POINTS_SYSPROP)) System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP,"true");
     
     // multi replicas should not matter...
-    final int repFactor = usually() ? 1 : 2;
+    final int repFactor = LuceneTestCase.usually() ? 1 : 2;
     // ... but we definitely want to test multiple shards
-    final int numShards = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, (usually() ? 2 :3)) : 2;
+    final int numShards = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, (LuceneTestCase.usually() ? 2 :3)) : 2;
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -156,7 +157,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
           .getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
     }
 
-    final int numDocs = atLeast(TEST_NIGHTLY ? 97 : 7) + 3;
+    final int numDocs = LuceneTestCase.atLeast(TEST_NIGHTLY ? 97 : 7) + 3;
     for (int id = 0; id < numDocs; id++) {
       SolrInputDocument doc = SolrTestCaseJ4.sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
@@ -172,7 +173,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         // in normal operation, this is an edge case that isn't a big deal because the ratios &
         // relatedness scores are statistically approximate, but for the purpose of this test where
         // we verify correctness via exactness we need all shards to contribute to the SKG statistics
-        final int numValsThisDoc = TestUtil.nextInt(random(), 1, (usually() ? 5 : 10));
+        final int numValsThisDoc = TestUtil.nextInt(random(), 1, (LuceneTestCase.usually() ? 5 : 10));
         for (int v = 0; v < numValsThisDoc; v++) {
           final String fieldValue = randFieldValue(fieldNum);
           
@@ -262,9 +263,9 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
    */
   public void testBespoke() throws Exception {
     { // trivial single level facet
-      assumeFalse("TODO: Bad Seed", "E5A14A8ED3385FF9".equals(System.getProperty("tests.seed"))); // TODO bad seed
-      assumeFalse("TODO: Bad Seed", "226E21DD909C0468".equals(System.getProperty("tests.seed"))); // TODO bad seed
-      assumeFalse("TODO: Bad Seed", "7437716F4AD8DD12".equals(System.getProperty("tests.seed"))); // TODO bad seed
+      LuceneTestCase.assumeFalse("TODO: Bad Seed", "E5A14A8ED3385FF9".equals(System.getProperty("tests.seed"))); // TODO bad seed
+      LuceneTestCase.assumeFalse("TODO: Bad Seed", "226E21DD909C0468".equals(System.getProperty("tests.seed"))); // TODO bad seed
+      LuceneTestCase.assumeFalse("TODO: Bad Seed", "7437716F4AD8DD12".equals(System.getProperty("tests.seed"))); // TODO bad seed
 
 
       Map<String,TermFacet> facets = new LinkedHashMap<>();
@@ -312,7 +313,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testRandom() throws Exception {
 
     // since the "cost" of verifying the stats for each bucket is so high (see TODO in verifySKGResults())
@@ -322,10 +323,10 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     // we get a really big one early on, we can test as much as possible, skip other iterations.
     //
     // (deeply nested facets may contain more buckets then the max, but we won't *check* all of them)
-    final int maxBucketsAllowed = atLeast(TEST_NIGHTLY ? 2000 : 200);
+    final int maxBucketsAllowed = LuceneTestCase.atLeast(TEST_NIGHTLY ? 2000 : 200);
     final AtomicInteger maxBucketsToCheck = new AtomicInteger(maxBucketsAllowed);
     
-    final int numIters = atLeast(TEST_NIGHTLY ? 9 : 4) + 1;
+    final int numIters = LuceneTestCase.atLeast(TEST_NIGHTLY ? 9 : 4) + 1;
     for (int iter = 0; iter < numIters && 0 < maxBucketsToCheck.get(); iter++) {
       assertFacetSKGsAreCorrect(maxBucketsToCheck, TermFacet.buildRandomFacets(),
                                 buildRandomQuery(), buildRandomQuery(), buildRandomQuery());
@@ -612,7 +613,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       // and le's us enforce a hard limit on the total number of facets in a request
       AtomicInteger keyCounter = new AtomicInteger(0);
       
-      final int maxDepth = TestUtil.nextInt(random(), 0, (usually() ? 2 : 3));
+      final int maxDepth = TestUtil.nextInt(random(), 0, (LuceneTestCase.usually() ? 2 : 3));
       return buildRandomFacets(keyCounter, maxDepth);
     }
     

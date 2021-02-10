@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
 import org.apache.xerces.jaxp.DocumentBuilderFactoryImpl;
 import org.junit.Test;
@@ -50,8 +52,8 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.init(context);
       sep.applyTransformer(map);
       assertEquals("Hello Scott", map.get("name").toString());
-    } catch (DataImportHandlerException e) {    
-      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
+    } catch (DataImportHandlerException e) {
+      LuceneTestCase.assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
@@ -59,7 +61,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testEvil() {
-    assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
+    LuceneTestCase.assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     String script = "function f1(row) {"
             + "var os = Packages.java.lang.System.getProperty('os.name');"
             + "row.put('name', os);"
@@ -71,10 +73,10 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
     map.put("name", "Scott");
     EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null, null);
     sep.init(context);
-    DataImportHandlerException expected = expectThrows(DataImportHandlerException.class, () -> {
+    DataImportHandlerException expected = SolrTestCaseUtil.expectThrows(DataImportHandlerException.class, () -> {
       sep.applyTransformer(map);
     });
-    assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.",
+    LuceneTestCase.assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.",
         expected.getMessage().startsWith("Cannot load Script Engine for language"));
     assertTrue(expected.getCause().toString(), SecurityException.class.isAssignableFrom(expected.getCause().getClass()));
   }
@@ -105,8 +107,8 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       sep.init(context);
       sep.applyTransformer(map);
       assertEquals("Hello Scott", map.get("name").toString());
-    } catch (DataImportHandlerException e) {   
-      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
+    } catch (DataImportHandlerException e) {
+      LuceneTestCase.assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
@@ -121,8 +123,8 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       DataImporter di = new DataImporter();
       DIHConfiguration dc = di.readFromXml(document);
       assertTrue(dc.getScript().getText().indexOf("checkNextToken") > -1);
-    } catch (DataImportHandlerException e) {    
-      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
+    } catch (DataImportHandlerException e) {
+      LuceneTestCase.assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }
@@ -150,8 +152,8 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
       map.put("nextToken", "");
       sep.applyTransformer(map);
       assertNull(map.get("$hasMore"));
-    } catch (DataImportHandlerException e) {    
-      assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
+    } catch (DataImportHandlerException e) {
+      LuceneTestCase.assumeFalse("This JVM does not have JavaScript installed.  Test Skipped.", e
           .getMessage().startsWith("Cannot load Script Engine for language"));
       throw e;
     }

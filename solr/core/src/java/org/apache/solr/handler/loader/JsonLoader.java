@@ -426,23 +426,7 @@ public class JsonLoader extends ContentStreamLoader {
       final Map<String, Object> map = (Map) ObjectBuilder.getVal(parser);
 
       // SolrParams currently expects string values...
-      SolrParams p = new SolrParams() {
-        @Override
-        public String get(String param) {
-          Object o = map.get(param);
-          return o == null ? null : o.toString();
-        }
-
-        @Override
-        public String[] getParams(String param) {
-          return new String[]{get(param)};
-        }
-
-        @Override
-        public Iterator<String> getParameterNamesIterator() {
-          return map.keySet().iterator();
-        }
-      };
+      SolrParams p = new MySolrParams(map);
 
       RequestHandlerUtils.validateCommitParams(p);
       p = SolrParams.wrapDefaults(p, req.getParams());   // default to the normal request params for commit options
@@ -639,6 +623,30 @@ public class JsonLoader extends ContentStreamLoader {
         return  listVal.get(0) instanceof Map;
       }
       return val instanceof Map;
+    }
+
+    private static class MySolrParams extends SolrParams {
+      private final Map<String,Object> map;
+
+      public MySolrParams(Map<String,Object> map) {
+        this.map = map;
+      }
+
+      @Override
+      public String get(String param) {
+        Object o = map.get(param);
+        return o == null ? null : o.toString();
+      }
+
+      @Override
+      public String[] getParams(String param) {
+        return new String[]{get(param)};
+      }
+
+      @Override
+      public Iterator<String> getParameterNamesIterator() {
+        return map.keySet().iterator();
+      }
     }
   }
 

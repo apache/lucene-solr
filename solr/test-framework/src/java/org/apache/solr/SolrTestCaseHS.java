@@ -545,7 +545,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
     private static void copyConfFile(File dstRoot, String destCollection, String file) throws Exception {
       File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+      String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
       FileUtils.copyFile(new File(top, file), new File(subHome, file));
     }
 
@@ -555,7 +555,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
 
       File subHome = new File(dstRoot, destCollection + File.separator + "conf");
-      String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+      String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
       FileUtils.copyFile(new File(top, file), new File(subHome, file));
     }
 
@@ -578,7 +578,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     public SolrInstances(int numServers, String solrconfig, String schema) throws Exception {
       slist = new ArrayList<>(numServers);
       for (int i=0; i<numServers; i++) {
-        SolrInstance instance = new SolrInstance(createTempDir("s"+ i).toFile(), solrconfig, schema);
+        SolrInstance instance = new SolrInstance(SolrTestUtil.createTempDir("s" + i).toFile(), solrconfig, schema);
         slist.add(instance);
         instance.start();
       }

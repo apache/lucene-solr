@@ -45,8 +45,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
 import static org.apache.lucene.index.SortedSetDocValues.NO_MORE_ORDS;
@@ -57,40 +59,40 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeFalse("test unsupported on J9 temporarily, see https://issues.apache.org/jira/browse/LUCENE-6522",
+    LuceneTestCase.assumeFalse("test unsupported on J9 temporarily, see https://issues.apache.org/jira/browse/LUCENE-6522",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
   }
   
   public void testByteMissingVsFieldCache() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestMissingVsFieldCache(Byte.MIN_VALUE, Byte.MAX_VALUE);
     }
   }
   
   public void testShortMissingVsFieldCache() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestMissingVsFieldCache(Short.MIN_VALUE, Short.MAX_VALUE);
     }
   }
   
   public void testIntMissingVsFieldCache() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestMissingVsFieldCache(Integer.MIN_VALUE, Integer.MAX_VALUE);
     }
   }
   
   public void testLongMissingVsFieldCache() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestMissingVsFieldCache(Long.MIN_VALUE, Long.MAX_VALUE);
     }
   }
   
   public void testSortedFixedLengthVsFieldCache() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
       doTestSortedVsFieldCache(fixedLength, fixedLength);
@@ -98,14 +100,14 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   }
   
   public void testSortedVariableLengthVsFieldCache() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedVsFieldCache(1, 10);
     }
   }
   
   public void testSortedSetFixedLengthVsUninvertedField() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       int fixedLength = TestUtil.nextInt(random(), 1, 10);
       doTestSortedSetVsUninvertedField(fixedLength, fixedLength);
@@ -113,7 +115,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   }
   
   public void testSortedSetVariableLengthVsUninvertedField() throws Exception {
-    int numIterations = atLeast(1);
+    int numIterations = SolrTestUtil.atLeast(1);
     for (int i = 0; i < numIterations; i++) {
       doTestSortedSetVsUninvertedField(1, 10);
     }
@@ -124,7 +126,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     // FSDirectory because SimpleText will consume gobbs of
     // space when storing big binary values:
-    try (Directory d = newFSDirectory(createTempDir("hugeBinaryValues"))) {
+    try (Directory d = LuceneTestCase.newFSDirectory(SolrTestUtil.createTempDir("hugeBinaryValues"))) {
       boolean doFixed = random().nextBoolean();
       int numDocs;
       int fixedLength = 0;
@@ -136,7 +138,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       } else {
         numDocs = TestUtil.nextInt(random(), 100, 200);
       }
-      try (IndexWriter w = new IndexWriter(d, newIndexWriterConfig(analyzer))) {
+      try (IndexWriter w = new IndexWriter(d, LuceneTestCase.newIndexWriterConfig(analyzer))) {
         List<byte[]> docBytes = new ArrayList<>();
         long totalBytes = 0;
         for (int docID = 0; docID < numDocs; docID++) {
@@ -189,8 +191,8 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   }
 
   private void doTestSortedVsFieldCache(int minLength, int maxLength) throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriterConfig conf = LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Document doc = new Document();
     Field idField = new StringField("id", "", Field.Store.NO);
@@ -201,7 +203,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     doc.add(dvField);
     
     // index some docs
-    int numDocs = atLeast(300);
+    int numDocs = SolrTestUtil.atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       idField.setStringValue(Integer.toString(i));
       final int length;
@@ -240,12 +242,12 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   }
   
   private void doTestSortedSetVsUninvertedField(int minLength, int maxLength) throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = SolrTestUtil.newDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     
     // index some docs
-    int numDocs = atLeast(300);
+    int numDocs = SolrTestUtil.atLeast(300);
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       Field idField = new StringField("id", Integer.toString(i), Field.Store.NO);
@@ -262,7 +264,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
       ArrayList<String> unordered = new ArrayList<>(values);
       Collections.shuffle(unordered, random());
       for (String v : values) {
-        doc.add(newStringField("indexed", v, Field.Store.NO));
+        doc.add(SolrTestUtil.newStringField("indexed", v, Field.Store.NO));
       }
 
       // add in any order to the dv field
@@ -299,7 +301,7 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
     
     // now compare again after the merge
     ir = writer.getReader();
-    LeafReader ar = getOnlyLeafReader(ir);
+    LeafReader ar = LuceneTestCase.getOnlyLeafReader(ir);
     SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(ar, "indexed", null);
     SortedSetDocValues actual = ar.getSortedSetDocValues("dv");
     assertEquals(ir.maxDoc(), expected, actual);
@@ -310,16 +312,16 @@ public class TestFieldCacheVsDocValues extends SolrTestCase {
   }
   
   private void doTestMissingVsFieldCache(LongProducer longs) throws Exception {
-    Directory dir = newDirectory();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriterConfig conf = LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
     Field idField = new StringField("id", "", Field.Store.NO);
-    Field indexedField = newStringField("indexed", "", Field.Store.NO);
+    Field indexedField = LuceneTestCase.newStringField("indexed", "", Field.Store.NO);
     Field dvField = new NumericDocValuesField("dv", 0);
 
     
     // index some docs
-    int numDocs = atLeast(300);
+    int numDocs = SolrTestUtil.atLeast(300);
     // numDocs should be always > 256 so that in case of a codec that optimizes
     // for numbers of values <= 256, all storage layouts are tested
     assert numDocs > 256;

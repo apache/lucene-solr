@@ -19,6 +19,8 @@ package org.apache.solr.cloud;
 import org.apache.lucene.mockfile.FilterPath;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -107,7 +109,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       long docId = testUpdateAndDelete();
       
       // index a bad doc...
-      expectThrows(SolrException.class, () -> indexr(t1, "a doc with no id"));
+      SolrTestCaseUtil.expectThrows(SolrException.class, () -> indexr(t1, "a doc with no id"));
       
       // TODO: bring this to its own method?
       // try indexing to a leader that has no replicas up
@@ -255,10 +257,8 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     CloudJettyRunner deadShard = chaosMonkey.stopShard(SHARD1, 0);
 
     // ensure shard is dead
-    expectThrows(SolrServerException.class,
-        "This server should be down and this update should have failed",
-        () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!")
-    );
+    SolrTestCaseUtil.expectThrows(SolrServerException.class, "This server should be down and this update should have failed",
+        () -> index_specific(deadShard.client.solrClient, id, 999, i1, 107, t1, "specific doc!"));
     
     commit();
     
@@ -382,7 +382,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       params.set("qt", ReplicationHandler.PATH);
       params.set("command", "backup");
       params.set("name", backupName);
-      Path location = createTempDir();
+      Path location = SolrTestUtil.createTempDir();
       location = FilterPath.unwrap(location).toRealPath();
       params.set("location", location.toString());
 

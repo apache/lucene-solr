@@ -25,6 +25,7 @@ import java.util.Random;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCase;
 
@@ -82,7 +83,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
 
       // test if decoding values as int fails correctly
       final int index = i;
-      expectThrows(NumberFormatException.class, () -> {
+      LuceneTestCase.expectThrows(NumberFormatException.class, () -> {
         LegacyNumericUtils.prefixCodedToInt(prefixVals[index].get());
       });
     }
@@ -120,7 +121,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
       
       // test if decoding values as long fails correctly
       final int index = i;
-      expectThrows(NumberFormatException.class, () -> {
+      LuceneTestCase.expectThrows(NumberFormatException.class, () -> {
         LegacyNumericUtils.prefixCodedToLong(prefixVals[index].get());
       });
     }
@@ -346,9 +347,9 @@ public class TestLegacyNumericUtils extends SolrTestCase {
     ));
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testRandomSplit() throws Exception {
-    long num = (long) atLeast(10);
+    long num = (long) LuceneTestCase.atLeast(10);
     for (long i=0; i < num; i++) {
       executeOneRandomSplit(random());
     }

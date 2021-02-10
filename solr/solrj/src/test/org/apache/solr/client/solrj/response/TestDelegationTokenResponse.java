@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
@@ -68,7 +69,7 @@ public class TestDelegationTokenResponse extends SolrTestCase {
     DelegationTokenResponse.Get getResponse = new DelegationTokenResponse.Get();
 
     // not a map
-    expectThrows(SolrException.class, () -> {
+    LuceneTestCase.expectThrows(SolrException.class, () -> {
       delegationTokenResponse(getRequest, getResponse, "");
       getResponse.getDelegationToken();
     });
@@ -80,7 +81,7 @@ public class TestDelegationTokenResponse extends SolrTestCase {
 
     // Token is not a map
     delegationTokenResponse(getRequest, getResponse, getMapJson("Token", someToken));
-    expectThrows(SolrException.class, getResponse::getDelegationToken);
+    LuceneTestCase.expectThrows(SolrException.class, getResponse::getDelegationToken);
 
     // doesn't have urlString
     delegationTokenResponse(getRequest, getResponse, getNestedMapJson("Token", "notUrlString", someToken));
@@ -98,7 +99,7 @@ public class TestDelegationTokenResponse extends SolrTestCase {
     DelegationTokenResponse.Renew renewResponse = new DelegationTokenResponse.Renew();
 
     // not a map
-    expectThrows(SolrException.class, () -> {
+    LuceneTestCase.expectThrows(SolrException.class, () -> {
       delegationTokenResponse(renewRequest, renewResponse, "");
       renewResponse.getExpirationTime();
     });
@@ -109,7 +110,7 @@ public class TestDelegationTokenResponse extends SolrTestCase {
 
     // long isn't valid
     delegationTokenResponse(renewRequest, renewResponse, getMapJson("long", "aaa"));
-    expectThrows(SolrException.class, renewResponse::getExpirationTime);
+    LuceneTestCase.expectThrows(SolrException.class, renewResponse::getExpirationTime);
 
     // valid
     Long expirationTime = Long.MAX_VALUE;

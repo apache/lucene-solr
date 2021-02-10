@@ -22,6 +22,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -90,7 +91,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     );
 
     // invalid value
-    SolrException ex = expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
 
     // this is to verify other json params are not affected

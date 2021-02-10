@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -102,54 +103,54 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     // invalid defType
     SolrException exception;
     try (SolrQueryRequest req = req("q", "ad", "defType", "bleh")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'bleh' for query 'ad'", exception.getMessage());
     }
 
     // invalid qparser override in the local params
     try (SolrQueryRequest req = req("q", "{!bleh}")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'bleh' for query '{!bleh}'", exception.getMessage());
     }
 
     // invalid qParser with fq params
     try (SolrQueryRequest req = req("q", "*:*", "fq", "{!some}")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'some' for query '{!some}'", exception.getMessage());
     }
 
     // invalid qparser with function queries
     try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "{!hmm}")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'hmm' for query '{!hmm}'", exception.getMessage());
     }
 
     try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "query({!bleh v=ak})")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'bleh' for query '{!bleh v=ak}'", exception.getMessage());
     }
 
     try (SolrQueryRequest req = req("q", "*:*", "defType", "edismax", "boost", "query($qq)", "qq", "{!bleh v=a}")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'bleh' for query '{!bleh v=a}'", exception.getMessage());
     }
 
     // ranking doesn't use defType
     try (SolrQueryRequest req = req("q", "*:*", "rq", "{!bleh}")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'bleh' for query '{!bleh}'", exception.getMessage());
     }
 
     // with stats.field
     try (SolrQueryRequest req = req("q", "*:*", "stats", "true", "stats.field", "{!bleh}")) {
-      exception = expectThrows(SolrException.class, () -> h.query(req));
+      exception = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
       assertEquals("invalid query parser 'bleh' for query '{!bleh}'", exception.getMessage());
     }

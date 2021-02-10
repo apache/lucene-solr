@@ -17,6 +17,7 @@
 package org.apache.solr.update;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,9 +38,7 @@ public class AnalysisErrorHandlingTest extends SolrTestCaseJ4 {
   @Test
   public void testMultipleUpdatesPerAdd() {
     clearIndex();
-    SolrException se = expectThrows(SolrException.class,
-        () -> h.update("<add><doc><field name=\"id\">1</field><field name=\"text\">Alas Poor Yorik</field></doc></add>")
-    );
+    SolrException se = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.update("<add><doc><field name=\"id\">1</field><field name=\"text\">Alas Poor Yorik</field></doc></add>"));
     assertTrue(se.getMessage().contains("Exception writing document id 1 to the index"));
   }
 }

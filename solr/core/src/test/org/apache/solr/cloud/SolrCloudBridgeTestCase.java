@@ -42,6 +42,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -140,7 +141,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   final Pattern filenameExclusions = Pattern.compile(".*solrconfig(?:-|_).*?\\.xml|.*schema(?:-|_).*?\\.xml");
   
-  public static Path TEST_PATH() { return SolrTestCaseJ4.getFile("solr/collection1").getParentFile().toPath(); }
+  public static Path TEST_PATH() { return SolrTestUtil.getFile("solr/collection1").getParentFile().toPath(); }
   
   @Before
   public void beforeSolrCloudBridgeTestCase() throws Exception {
@@ -156,7 +157,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
 
     if (!zkClient.exists("/configs/_default")) {
-      zkClient.uploadToZK(Paths.get(TEST_HOME()).resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
+      zkClient.uploadToZK(Paths.get(SolrTestUtil.TEST_HOME()).resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
     }
     
     if (schemaString != null) {

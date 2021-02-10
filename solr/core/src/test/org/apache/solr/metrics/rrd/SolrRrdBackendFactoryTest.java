@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -83,7 +84,7 @@ public class SolrRrdBackendFactoryTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "much too flakey impl")
+  @LuceneTestCase.AwaitsFix(bugUrl = "much too flakey impl")
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 28-June-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testBasic() throws Exception {

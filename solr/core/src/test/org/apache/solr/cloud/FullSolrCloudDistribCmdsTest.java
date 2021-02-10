@@ -163,7 +163,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testThatCantForwardToLeaderFails() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = "test_collection_" + NAME_COUNTER.getAndIncrement();
@@ -227,7 +227,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
           log.info("Closing leaderToPartition's proxy: {}", proxy);
           proxy.close(); // NOTE: can't use halfClose, won't ensure a garunteed failure
           
-          final SolrException e = expectThrows(SolrException.class, () -> {
+          final SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
               // start at 50 so that we have some "updates" to previous docs and some "adds"...
               for (int i = 50; i < 250; i++) {
                 // Pure random odds of all of these docs belonging to the live shard are 1 in 2**200...
@@ -309,7 +309,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     
     // index
     long docId = 42;
-    int topDocsNum = atLeast(TEST_NIGHTLY ? 5 : 2);
+    int topDocsNum = LuceneTestCase.atLeast(TEST_NIGHTLY ? 5 : 2);
     int childsNum = (TEST_NIGHTLY ? 5 : 2)+random().nextInt(TEST_NIGHTLY ? 5 : 2);
     for (int i = 0; i < topDocsNum; ++i) {
       UpdateRequest uReq = new UpdateRequest();
@@ -386,7 +386,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
     
-    final int numDocs = atLeast(TEST_NIGHTLY ? 50 : 15);
+    final int numDocs = LuceneTestCase.atLeast(TEST_NIGHTLY ? 50 : 15);
     for (int i = 0; i < numDocs; i++) {
       UpdateRequest uReq;
       uReq = new UpdateRequest();
@@ -404,8 +404,8 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
 
-    final int numDocsPerBatch = atLeast(5);
-    final int numBatchesPerThread = atLeast(5);
+    final int numDocsPerBatch = LuceneTestCase.atLeast(5);
+    final int numBatchesPerThread = LuceneTestCase.atLeast(5);
     AtomicInteger expectedDocCount = new AtomicInteger();
       
     final CountDownLatch abort = new CountDownLatch(1);

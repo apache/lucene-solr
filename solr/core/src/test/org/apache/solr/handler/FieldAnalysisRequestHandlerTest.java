@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttributeImpl;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.common.SolrException;
@@ -158,7 +159,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     params.remove(AnalysisParams.QUERY);
     params.remove(AnalysisParams.FIELD_VALUE);
     try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), params, true)) {
-      SolrException ex = expectThrows(SolrException.class, () -> handler.resolveAnalysisRequest(solrQueryRequest));
+      SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> handler.resolveAnalysisRequest(solrQueryRequest));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
     }
   }

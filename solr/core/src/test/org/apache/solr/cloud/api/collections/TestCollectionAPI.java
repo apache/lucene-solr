@@ -18,6 +18,8 @@ package org.apache.solr.cloud.api.collections;
 
 import com.google.common.collect.Lists;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -241,7 +243,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     final String collection = "deleted_collection";
     try (CloudHttp2SolrClient client = createCloudClient(null)) {
-      copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getZkHost());
+      copyConfigUp(SolrTestUtil.TEST_PATH().resolve("configsets"), "cloud-minimal", configSet, client.getZkHost());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
@@ -1034,9 +1036,8 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     try (CloudHttp2SolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
-      BaseHttpSolrClient.RemoteSolrException rse = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
-          CollectionAdminResponse rsp = CollectionAdminRequest.createCollection
-              ("testcollection", "badconf", 1, 2).process(client);
+      BaseHttpSolrClient.RemoteSolrException rse = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+        CollectionAdminResponse rsp = CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2).process(client);
       });
       assertNotNull(rse.getMessage());
       assertNotSame(0, rse.code());

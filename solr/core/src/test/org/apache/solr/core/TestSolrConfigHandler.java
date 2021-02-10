@@ -32,6 +32,7 @@ import java.util.zip.ZipOutputStream;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -81,7 +82,7 @@ public class TestSolrConfigHandler extends RestTestBase {
    */
   public static ByteBuffer getFileContent(String f, boolean loadFromClassPath) throws IOException {
     ByteBuffer jar;
-    File file = loadFromClassPath ? getFile(f): new File(f);
+    File file = loadFromClassPath ? SolrTestUtil.getFile(f) : new File(f);
     try (FileInputStream fis = new FileInputStream(file)) {
       byte[] buf = new byte[fis.available()];
       fis.read(buf);
@@ -119,9 +120,9 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   @Before
   public void before() throws Exception {
-    tmpSolrHome = createTempDir().toFile();
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
-    FileUtils.copyDirectory(new File(TEST_HOME()), tmpSolrHome.getAbsoluteFile());
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 

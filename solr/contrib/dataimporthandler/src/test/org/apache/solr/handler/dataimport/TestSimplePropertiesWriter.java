@@ -27,6 +27,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +47,7 @@ public class TestSimplePropertiesWriter extends AbstractDIHJdbcTestCase {
   
   @Before
   public void spwBefore() throws Exception {
-    fileLocation = createTempDir().toFile().getAbsolutePath();
+    fileLocation = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     fileName = "the.properties";
   }
 

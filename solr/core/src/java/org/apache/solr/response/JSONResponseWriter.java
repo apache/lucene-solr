@@ -55,8 +55,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
 
     final JSONWriter w;
     if (namedListStyle.equals(JsonTextWriter.JSON_NL_ARROFNTV)) {
-      w = new ArrayOfNameTypeValueJSONWriter(
-          writer, req, rsp, wrapperFunction, namedListStyle, true);
+      w = new ArrayOfNameTypeValueJSONWriter(writer, req, rsp, wrapperFunction, namedListStyle, true);
     } else {
       w = new JSONWriter(
           writer, req, rsp, wrapperFunction, namedListStyle);
@@ -92,7 +91,7 @@ public class JSONResponseWriter implements QueryResponseWriter {
  *      {"name":"bar","type":"str","value":"foo"},
  *      {"name":null,"type":"float","value":3.4}]
  */
-class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
+static class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
   protected boolean writeTypeAndValueKey = false;
   private final boolean writeNullName;
 

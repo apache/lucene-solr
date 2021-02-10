@@ -19,6 +19,7 @@ package org.apache.solr.ltr.feature;
 import java.util.LinkedHashMap;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
@@ -53,7 +54,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testValueFeatureWithEmptyValue() throws Exception {
     final RuntimeException expectedException =
         new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
-    RuntimeException e = expectThrows(RuntimeException.class, () -> {
+    RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\"\"}");
     });
     assertEquals(expectedException.toString(), e.toString());
@@ -63,7 +64,7 @@ public class TestValueFeature extends TestRerankBase {
   public void testValueFeatureWithWhitespaceValue() throws Exception {
     final RuntimeException expectedException =
         new RuntimeException("mismatch: '0'!='500' @ responseHeader/status");
-    RuntimeException e = expectThrows(RuntimeException.class, () -> {
+    RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       loadFeature("c2", ValueFeature.class.getName(), "{\"value\":\" \"}");
     });
     assertEquals(expectedException.toString(), e.toString());

@@ -55,8 +55,10 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /** random sorting tests with uninversion */
@@ -73,8 +75,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
   private void testRandomStringSort(SortField.Type type) throws Exception {
     Random random = new Random(random().nextLong());
 
-    final int NUM_DOCS = atLeast(100);
-    final Directory dir = newDirectory();
+    final int NUM_DOCS = SolrTestUtil.atLeast(100);
+    final Directory dir = SolrTestUtil.newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     final boolean allowDups = random.nextBoolean();
     final Set<String> seen = new HashSet<>();
@@ -141,8 +143,8 @@ public class TestFieldCacheSortRandom extends SolrTestCase {
       System.out.println("  reader=" + r);
     }
     
-    final IndexSearcher s = newSearcher(r, false);
-    final int ITERS = atLeast(100);
+    final IndexSearcher s = LuceneTestCase.newSearcher(r, false);
+    final int ITERS = SolrTestUtil.atLeast(100);
     for(int iter=0;iter<ITERS;iter++) {
       final boolean reverse = random.nextBoolean();
 

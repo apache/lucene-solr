@@ -27,6 +27,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -79,7 +80,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
 
       // This user is blacklisted in the mock. The request should return a 403.
       params.add("uname", "user1");
-      expectThrows(Exception.class, () -> cloudClient.query(params));
+      SolrTestCaseUtil.expectThrows(Exception.class, () -> cloudClient.query(params));
       log.info("Ending test");
     } finally {
       MockAuthorizationPlugin.denyUsers.clear();

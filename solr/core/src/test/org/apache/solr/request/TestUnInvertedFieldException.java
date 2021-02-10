@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -34,8 +35,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
@@ -85,7 +84,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
 
     try {
       TestInjection.uifOutOfMemoryError = true;
-      if (assertsAreEnabled) { // if they aren't, we check that injection is disabled in live
+      if (LuceneTestCase.assertsAreEnabled) { // if they aren't, we check that injection is disabled in live
         List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c))
             .collect(Collectors.toList());
         for (Future<UnInvertedField> uifuture : futures) {

@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -56,7 +57,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
     QueryRequest request = new QueryRequest(params("file",
             "does-not-exist-404.txt"));
     request.setPath("/admin/file");
-    SolrException e = expectThrows(SolrException.class, () -> request.process(client));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> request.process(client));
     assertEquals(e.toString(), 404, e.code());
   }
 

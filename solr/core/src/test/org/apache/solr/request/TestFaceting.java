@@ -26,6 +26,7 @@ import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
@@ -140,7 +141,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testTermEnum() throws Exception {
     doTermEnum(0);
     doTermEnum(1);
@@ -276,7 +277,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testTrieFields() {
-    assumeFalse("Test is only relevant when randomizing Trie fields",
+    LuceneTestCase.assumeFalse("Test is only relevant when randomizing Trie fields",
                 Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
            
     // make sure that terms are correctly filtered even for trie fields that index several
@@ -340,7 +341,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
   @Test
   public void testFacetSortWithMinCount0() {
-    assumeFalse("facet.mincount=0 doesn't work with point fields (SOLR-11174) or single valued DV",
+    LuceneTestCase.assumeFalse("facet.mincount=0 doesn't work with point fields (SOLR-11174) or single valued DV",
                 Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) || Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP));
     
     assertU(adoc("id", "1", "f_td", "-420.126"));

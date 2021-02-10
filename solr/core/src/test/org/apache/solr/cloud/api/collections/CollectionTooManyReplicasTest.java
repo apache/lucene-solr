@@ -18,6 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -39,7 +40,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 
@@ -61,7 +62,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // Now fail to add the third as it should exceed maxShardsPerNode
-    Exception e = expectThrows(Exception.class, () -> {
+    Exception e = LuceneTestCase.expectThrows(Exception.class, () -> {
       CollectionAdminRequest.createShard(collectionName, "shard3")
           .process(cluster.getSolrClient());
     });
@@ -76,7 +77,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     // And just for yucks, insure we fail the "regular" one again.
-    Exception e2 = expectThrows(Exception.class, () -> {
+    Exception e2 = LuceneTestCase.expectThrows(Exception.class, () -> {
       CollectionAdminRequest.createShard(collectionName, "shard5")
           .process(cluster.getSolrClient());
     });
@@ -100,7 +101,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // TODO: investigate why this can be 15s +
+  @LuceneTestCase.Nightly // TODO: investigate why this can be 15s +
   public void testDownedShards() throws Exception {
     String collectionName = "TooManyReplicasWhenAddingDownedNode";
     CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardstart", 1)
@@ -115,7 +116,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     try {
 
       // Adding a replica on a dead node should fail
-      Exception e1 = expectThrows(Exception.class, () -> {
+      Exception e1 = LuceneTestCase.expectThrows(Exception.class, () -> {
         CollectionAdminRequest.addReplicaToShard(collectionName, "shardstart")
             .setNode(deadNode)
             .process(cluster.getSolrClient());
@@ -124,7 +125,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
           e1.toString().contains("At least one of the node(s) specified [" + deadNode + "] are not currently active in"));
 
       // Should also die if we just add a shard
-      Exception e2 = expectThrows(Exception.class, () -> {
+      Exception e2 = LuceneTestCase.expectThrows(Exception.class, () -> {
         CollectionAdminRequest.createShard(collectionName, "shard1")
             .setNodeSet(deadNode)
             .process(cluster.getSolrClient());

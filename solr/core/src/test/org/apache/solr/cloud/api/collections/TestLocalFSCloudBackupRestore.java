@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -62,17 +63,17 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
         + "</backup>"+ "</solr>");
     
     configureCluster(NUM_SHARDS)// nodes
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .addConfig("confFaulty", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("confFaulty", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(solrXml)
         .configure();
     cluster.getZkClient().delete(ZkConfigManager.CONFIGS_ZKNODE + Path.SEPARATOR + "confFaulty" + Path.SEPARATOR + "solrconfig.xml", -1);
 
     boolean whitespacesInPath = random().nextBoolean();
     if (whitespacesInPath) {
-      backupLocation = createTempDir("my backup").toAbsolutePath().toString();
+      backupLocation = SolrTestUtil.createTempDir("my backup").toAbsolutePath().toString();
     } else {
-      backupLocation = createTempDir("mybackup").toAbsolutePath().toString();
+      backupLocation = SolrTestUtil.createTempDir("mybackup").toAbsolutePath().toString();
     }
   }
 

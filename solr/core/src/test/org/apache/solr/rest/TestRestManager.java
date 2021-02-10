@@ -20,6 +20,7 @@ import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -104,7 +105,7 @@ public class TestRestManager extends SolrRestletTestBase {
   @Test
   public void testReloadFromPersistentStorage() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
-    File unitTestStorageDir = createTempDir("testRestManager").toFile();
+    File unitTestStorageDir = SolrTestUtil.createTempDir("testRestManager").toFile();
     assertTrue(unitTestStorageDir.getAbsolutePath()+" is not a directory!", 
         unitTestStorageDir.isDirectory());    
     assertTrue(unitTestStorageDir.canRead());

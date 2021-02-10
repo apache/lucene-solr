@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
@@ -207,9 +208,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
   public void badActivationTest() throws Exception {
     final ModelException expectedException =
             new ModelException("Invalid activation function (\"sig\") in layer 0 of model \"neuralnetworkmodel_bad_activation\".");
-    Exception ex = expectThrows(Exception.class, () -> {
-      createModelFromFiles("neuralnetworkmodel_bad_activation.json",
-          "neuralnetworkmodel_features.json");
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      createModelFromFiles("neuralnetworkmodel_bad_activation.json", "neuralnetworkmodel_features.json");
     });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
@@ -220,9 +220,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final ModelException expectedException =
             new ModelException("Dimension mismatch in model \"neuralnetworkmodel_mismatch_bias\". " +
                                "Layer 0 has 2 bias weights but 3 weight matrix rows.");
-    Exception ex = expectThrows(Exception.class, () -> {
-      createModelFromFiles("neuralnetworkmodel_mismatch_bias.json",
-          "neuralnetworkmodel_features.json");
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      createModelFromFiles("neuralnetworkmodel_mismatch_bias.json", "neuralnetworkmodel_features.json");
     });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
@@ -233,9 +232,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final ModelException expectedException =
         new ModelException("Dimension mismatch in model \"neuralnetworkmodel_mismatch_input\". The input has " +
                            "4 features, but the weight matrix for layer 0 has 3 columns.");
-    Exception ex = expectThrows(Exception.class,  () -> {
-      createModelFromFiles("neuralnetworkmodel_mismatch_input.json",
-          "neuralnetworkmodel_features.json");
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      createModelFromFiles("neuralnetworkmodel_mismatch_input.json", "neuralnetworkmodel_features.json");
     });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
@@ -246,9 +244,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final ModelException expectedException =
         new ModelException("Dimension mismatch in model \"neuralnetworkmodel_mismatch_layers\". The weight matrix " +
                            "for layer 0 has 2 rows, but the weight matrix for layer 1 has 3 columns.");
-    Exception ex = expectThrows(Exception.class, () -> {
-      createModelFromFiles("neuralnetworkmodel_mismatch_layers.json",
-          "neuralnetworkmodel_features.json");
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      createModelFromFiles("neuralnetworkmodel_mismatch_layers.json", "neuralnetworkmodel_features.json");
     });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());
@@ -259,9 +256,8 @@ public class TestNeuralNetworkModel extends TestRerankBase {
     final ModelException expectedException =
         new ModelException("Dimension mismatch in model \"neuralnetworkmodel_too_many_rows\". " +
                            "Layer 1 has 1 bias weights but 2 weight matrix rows.");
-    Exception ex = expectThrows(Exception.class, () -> {
-      createModelFromFiles("neuralnetworkmodel_too_many_rows.json",
-          "neuralnetworkmodel_features.json");
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      createModelFromFiles("neuralnetworkmodel_too_many_rows.json", "neuralnetworkmodel_features.json");
     });
     Throwable rootError = getRootCause(ex);
     assertEquals(expectedException.toString(), rootError.toString());

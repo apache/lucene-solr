@@ -37,9 +37,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -102,7 +104,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     useFactory(null);
     configureCluster(NODE_COUNT)
-        .addConfig(TEST_CONFIGSET_NAME, getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig(TEST_CONFIGSET_NAME, SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
     zkBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty()).build();
     zkBasedCloudSolrClient.connect();
@@ -154,7 +156,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // slow test
+  @LuceneTestCase.Nightly // slow test
   public void testOverwriteOption() throws Exception {
     createTestCollection("overwrite", 1,1);
 
@@ -224,7 +226,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testRouting() throws Exception {
     createTestCollection("routing_collection", 2, 1);
 
@@ -374,7 +376,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    */
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  @Nightly
+  @LuceneTestCase.Nightly
   public void preferLocalShardsTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
@@ -461,7 +463,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    * Tests if the 'shards.preference' parameter works with single-sharded collections.
    */
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void singleShardedPreferenceRules() throws Exception {
     String collectionName = "singleShardPreferenceTestColl";
 
@@ -624,7 +626,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "flakey test")
+  @LuceneTestCase.AwaitsFix(bugUrl = "flakey test")
   public void checkCollectionParameters() throws Exception {
 
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
@@ -673,7 +675,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "Somehow this stops watching the collection when we are still concerned with it, I think - rare fail")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Somehow this stops watching the collection when we are still concerned with it, I think - rare fail")
   // also see CloudSolrClientTest
   public void stateVersionParamTest() throws Exception {
     String collection = "stateVersionParamTest";
@@ -745,7 +747,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testShutdown() throws IOException {
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(SolrTestCaseJ4.DEAD_HOST_1)) {
       client.setZkConnectTimeout(100);
@@ -943,7 +945,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
    */
   @Test
   // commented 15-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  @Nightly
+  @LuceneTestCase.Nightly
   public void preferReplicaTypesTest() throws Exception {
 
     String collectionName = "replicaTypesTestColl";

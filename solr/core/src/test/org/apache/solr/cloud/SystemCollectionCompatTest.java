@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -73,7 +74,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
 
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
-        .addConfig("conf1", configset("cloud-managed"))
+        .addConfig("conf1", SolrTestUtil.configset("cloud-managed"))
         .configure();
     if (! log.isWarnEnabled()) {
       fail("Test requires that log-level is at-least WARN, but WARN is disabled");

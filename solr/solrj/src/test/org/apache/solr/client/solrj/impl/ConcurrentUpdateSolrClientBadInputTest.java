@@ -89,7 +89,7 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrJettyTestBase {
   }
 
   private void assertExceptionThrownWithMessageContaining(Class<? extends Exception> expectedType, List<String> expectedStrings, LuceneTestCase.ThrowingRunnable runnable) {
-    Throwable thrown = expectThrows(expectedType, runnable);
+    Throwable thrown = LuceneTestCase.expectThrows(expectedType, runnable);
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {

@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.OriginalScoreFeature;
@@ -142,7 +143,7 @@ public class TestManagedFeatureStore extends SolrTestCaseJ4 {
     final String nonExistingClassName = "org.apache.solr.ltr.feature.LOLFeature";
     final ClassNotFoundException expectedException =
         new ClassNotFoundException(nonExistingClassName);
-    Exception ex = expectThrows(Exception.class, () -> {
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       fstore.addFeature(createMap("test", nonExistingClassName, null), "testFstore2");
     });
     Throwable rootError = getRootCause(ex);

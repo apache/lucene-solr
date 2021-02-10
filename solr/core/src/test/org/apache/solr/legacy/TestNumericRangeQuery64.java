@@ -33,9 +33,11 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,13 +56,13 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    noDocs = TEST_NIGHTLY ? atLeast(4096) : 406;
+    noDocs = TEST_NIGHTLY ? SolrTestUtil.atLeast(4096) : 406;
     distance = (1L << 60) / noDocs;
-    directory = newDirectory();
+    directory = SolrTestUtil.newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random()))
+        LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TEST_NIGHTLY ? TestUtil.nextInt(random(), 100, 1000) : 1000)
-        .setMergePolicy(newLogMergePolicy()));
+        .setMergePolicy(LuceneTestCase.newLogMergePolicy()));
 
     final LegacyFieldType storedLong = new LegacyFieldType(LegacyLongField.TYPE_NOT_STORED);
     storedLong.setStored(true);
@@ -129,7 +131,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher=newSearcher(reader);
+    searcher= SolrTestUtil.newSearcher(reader);
     writer.close();
   }
   
@@ -314,9 +316,9 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   
   @Test
   public void testInfiniteValues() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = SolrTestUtil.newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir,
-      newIndexWriterConfig(new MockAnalyzer(random())));
+        LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(new LegacyDoubleField("double", Double.NEGATIVE_INFINITY, Field.Store.NO));
     doc.add(new LegacyLongField("long", Long.MIN_VALUE, Field.Store.NO));
@@ -341,7 +343,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     writer.close();
     
     IndexReader r = DirectoryReader.open(dir);
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = SolrTestUtil.newSearcher(r);
     
     Query q= LegacyNumericRangeQuery.newLongRange("long", null, null, true, true);
     TopDocs topDocs = s.search(q, 10);

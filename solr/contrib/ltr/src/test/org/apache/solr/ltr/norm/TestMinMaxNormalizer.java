@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -102,7 +102,7 @@ public class TestMinMaxNormalizer extends SolrTestCase {
     final NormalizerException expectedException =
         new NormalizerException("MinMax Normalizer delta must not be zero "
             + "| min = 10.0,max = 10.0,delta = 0.0");
-    NormalizerException ex = SolrTestCaseJ4.expectThrows(NormalizerException.class,
+    NormalizerException ex = SolrTestCaseUtil.expectThrows(NormalizerException.class,
         () -> implTestMinMax(params, 10.0f, 10.0f)
     );
     assertEquals(expectedException.toString(), ex.toString());

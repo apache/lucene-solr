@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import javax.script.ScriptEngineManager;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assume;
 import org.junit.Ignore;
 
@@ -73,7 +74,7 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
                   "schema.xml","a-file-name-that-does-not-exist.js");
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testInvalidScriptFile() throws Exception {
     // sanity check
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("javascript"));

@@ -17,9 +17,9 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -263,7 +262,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testHttpURLConnection() throws Exception {
 
    String bodyString = getJsonDocs(200000);  // sometimes succeeds with this size, but larger can cause OOM from command line
@@ -319,7 +318,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";

@@ -32,6 +32,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
@@ -227,7 +228,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
       assertU(adoc("id", "" + i));
     }
     for (int i = 0; i < 50; ++i) {
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         assertU(commit()); // to have several segments
       }
       switch (i % 3) {
@@ -297,7 +298,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
   public void testDocValuesStats() {
     for (int i = 0; i < 50; ++i) {
       assertU(adoc("id", "1000" + i, "floatdv", "" + i%2, "intdv", "" + i%3, "doubledv", "" + i%4, "longdv", "" + i%5, "datedv", (1900+i%6) + "-12-31T23:59:59.999Z", "stringdv", "abc" + i%7));
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         assertU(commit()); // to have several segments
       }
     }

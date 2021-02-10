@@ -28,6 +28,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.index.LogByteSizeMergePolicyFactory;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactory;
@@ -161,7 +162,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       CommitUpdateCommand cmtCmd = new CommitUpdateCommand(req, true);
       req.close();
       cmtCmd.maxOptimizeSegments = -1;
-      expectThrows(IllegalArgumentException.class, () -> {
+      SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
         updater.commit(cmtCmd);
       });
     }

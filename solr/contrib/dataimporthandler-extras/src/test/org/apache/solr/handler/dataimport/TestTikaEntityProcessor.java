@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   "<dataConfig>" +
   "  <dataSource type=\"BinFileDataSource\"/>" +
   "  <document>" +
-  "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
+  "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + SolrTestUtil.getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
   "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
   "      <field column=\"title\" meta=\"true\" name=\"title\"/>" +
   "      <field column=\"text\"/>" +
@@ -44,10 +45,10 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
       "<dataConfig>" +
           "  <dataSource type=\"BinFileDataSource\"/>" +
           "  <document>" +
-          "    <entity name=\"Tika\" onError=\"skip\"  processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/bad.doc").getAbsolutePath() + "\" >" +
+          "    <entity name=\"Tika\" onError=\"skip\"  processor=\"TikaEntityProcessor\" url=\"" + SolrTestUtil.getFile("dihextras/bad.doc").getAbsolutePath() + "\" >" +
           "<field column=\"content\" name=\"text\"/>" +
           " </entity>" +
-          " <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
+          " <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + SolrTestUtil.getFile("dihextras/solr-word.pdf").getAbsolutePath() + "\" >" +
           "      <field column=\"text\"/>" +
           "</entity>" +
           "  </document>" +
@@ -57,8 +58,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
       "<dataConfig>" +
           "  <dataSource type=\"BinFileDataSource\"/>" +
           "  <document>" +
-          "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" +
-          getFile("dihextras/test_jpeg.jpg").getAbsolutePath() + "\" spatialMetadataField=\"home\">" +
+          "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + SolrTestUtil.getFile("dihextras/test_jpeg.jpg").getAbsolutePath() + "\" spatialMetadataField=\"home\">" +
           "      <field column=\"text\"/>" +
           "     </entity>" +
           "  </document>" +
@@ -68,7 +68,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
       "<dataConfig>" +
           "  <dataSource type=\"BinFileDataSource\"/>" +
           "  <document>" +
-          "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + getFile("dihextras/test_vsdx.vsdx").getAbsolutePath() + "\" >" +
+          "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + SolrTestUtil.getFile("dihextras/test_vsdx.vsdx").getAbsolutePath() + "\" >" +
           "      <field column=\"text\"/>" +
           "     </entity>" +
           "  </document>" +
@@ -118,9 +118,9 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
+    LuceneTestCase.assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
-    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", getFile("dihextras/solr").getAbsolutePath());
+    initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", SolrTestUtil.getFile("dihextras/solr").getAbsolutePath());
   }
 
   @Test
@@ -177,7 +177,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
             "  <dataSource type='BinFileDataSource'/>" +
             "  <document>" +
             "    <entity name='Tika' format='xml' processor='TikaEntityProcessor' " +
-            "       url='" + getFile("dihextras/structured.html").getAbsolutePath() + "' " +
+            "       url='" + SolrTestUtil.getFile("dihextras/structured.html").getAbsolutePath() + "' " +
             ((htmlMapper == null) ? "" : (" htmlMapper='" + htmlMapper + "'")) + ">" +
             "      <field column='text'/>" +
             "     </entity>" +
@@ -210,8 +210,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
         "<dataConfig>" +
             "  <dataSource type=\"BinFileDataSource\"/>" +
             "  <document>" +
-            "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" +
-                    getFile("dihextras/test_recursive_embedded.docx").getAbsolutePath() + "\" " +
+            "    <entity name=\"Tika\" processor=\"TikaEntityProcessor\" url=\"" + SolrTestUtil.getFile("dihextras/test_recursive_embedded.docx").getAbsolutePath() + "\" " +
             "       extractEmbedded=\""+extractEmbedded+"\">" +
             "      <field column=\"Author\" meta=\"true\" name=\"author\"/>" +
             "      <field column=\"title\" meta=\"true\" name=\"title\"/>" +

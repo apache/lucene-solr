@@ -33,6 +33,7 @@ import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
@@ -99,7 +100,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "id", "1"));
     assertU(commit());
 
-    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+    IllegalArgumentException e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
       query(req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
     });
     assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));

@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -49,7 +50,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   @Before
   public void prepareCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
-      .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+      .addConfig("config", SolrTestUtil.getFile("solrj/solr/collection1/conf").toPath())
       .configure();
   }
   
@@ -140,7 +141,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
   @Test
   public void testPredicateFailureTimesOut() throws Exception {
     CloudHttp2SolrClient client = cluster.getSolrClient();
-    expectThrows(TimeoutException.class, () -> {
+    LuceneTestCase.expectThrows(TimeoutException.class, () -> {
       client.waitForState("nosuchcollection", 1, TimeUnit.SECONDS,
                           ((liveNodes, collectionState) -> false));
     });
@@ -206,7 +207,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     assertTrue("There should be no watchers for a non-existent collection!",
                client.getZkStateReader().getStateWatchers("no-such-collection").isEmpty());
 
-    expectThrows(TimeoutException.class, () -> {
+    LuceneTestCase.expectThrows(TimeoutException.class, () -> {
       client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS,
                           (l, c) -> (false));
     });

@@ -31,8 +31,10 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 
 public class TestMultiValuedNumericRangeQuery extends SolrTestCase {
 
@@ -42,19 +44,19 @@ public class TestMultiValuedNumericRangeQuery extends SolrTestCase {
    * do not interfere with multiple numeric values.
    */
   public void testMultiValuedNRQ() throws Exception {
-    Directory directory = newDirectory();
+    Directory directory = SolrTestUtil.newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random()))
+        LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 50, 1000)));
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.ROOT));
     
-    int num = atLeast(500);
+    int num = SolrTestUtil.atLeast(500);
     for (int l = 0; l < num; l++) {
       Document doc = new Document();
       for (int m=0, c=random().nextInt(10); m<=c; m++) {
         int value = random().nextInt(Integer.MAX_VALUE);
-        doc.add(newStringField("asc", format.format(value), Field.Store.NO));
+        doc.add(SolrTestUtil.newStringField("asc", format.format(value), Field.Store.NO));
         doc.add(new LegacyIntField("trie", value, Field.Store.NO));
       }
       writer.addDocument(doc);
@@ -62,8 +64,8 @@ public class TestMultiValuedNumericRangeQuery extends SolrTestCase {
     IndexReader reader = writer.getReader();
     writer.close();
     
-    IndexSearcher searcher=newSearcher(reader);
-    num = atLeast(50);
+    IndexSearcher searcher= SolrTestUtil.newSearcher(reader);
+    num = SolrTestUtil.atLeast(50);
     for (int i = 0; i < num; i++) {
       int lower=random().nextInt(Integer.MAX_VALUE);
       int upper=random().nextInt(Integer.MAX_VALUE);

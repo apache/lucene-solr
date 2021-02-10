@@ -34,6 +34,7 @@ import java.util.stream.IntStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
@@ -79,8 +80,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(4)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
-        .addConfig("ml", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
+        .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig("ml", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
 
     String collection;
@@ -300,7 +301,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testSqlStream() throws Exception {
 
     new UpdateRequest()
@@ -553,7 +554,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
   
   @Test
-  @Nightly // randomly slow
+  @LuceneTestCase.Nightly // randomly slow
   public void testRandomStream() throws Exception {
 
     UpdateRequest update = new UpdateRequest();
@@ -1137,7 +1138,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  @Nightly // slowish
+  @LuceneTestCase.Nightly // slowish
   public void testFacetStream() throws Exception {
 
     new UpdateRequest()
@@ -2179,7 +2180,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testTopicStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3136,7 +3137,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
   @Test
-  @Nightly // this test creates a lot of data and is slow
+  @LuceneTestCase.Nightly // this test creates a lot of data and is slow
   public void testSignificantTermsStream() throws Exception {
 
     UpdateRequest updateRequest = new UpdateRequest();

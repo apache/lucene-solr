@@ -23,6 +23,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.CursorPagingTest;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -538,7 +539,7 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
     final int numInitialDocs = TestUtil.nextInt(random(), 100, 200);
-    final int totalDocs = atLeast(500);
+    final int totalDocs = SolrTestUtil.atLeast(500);
 
     // start with a smallish number of documents, and test that we can do a full walk using a 
     // sort on *every* field in the schema...
@@ -595,7 +596,7 @@ public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
     }
     commit();
 
-    final int numRandomSorts = atLeast(3);
+    final int numRandomSorts = SolrTestUtil.atLeast(3);
     for (int i = 0; i < numRandomSorts; i++) {
       final String sort = CursorPagingTest.buildRandomSort(allFieldNames);
       final String rows = "" + TestUtil.nextInt(random(), 63, 113);

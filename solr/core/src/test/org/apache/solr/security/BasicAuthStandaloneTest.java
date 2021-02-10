@@ -32,6 +32,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -56,7 +57,7 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private Path ROOT_DIR = Paths.get(TEST_HOME());
+  private Path ROOT_DIR = Paths.get(SolrTestUtil.TEST_HOME());
   private Path CONF_DIR = ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 
   volatile SecurityConfHandlerLocalForTesting securityConfHandler;
@@ -220,7 +221,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
 
     public void setUp() throws Exception {
-      homeDir = createTempDir(name).toAbsolutePath();
+      homeDir = SolrTestUtil.createTempDir(name).toAbsolutePath();
       dataDir = homeDir.resolve("collection1").resolve("data");
       confDir = homeDir.resolve("collection1").resolve("conf");
 

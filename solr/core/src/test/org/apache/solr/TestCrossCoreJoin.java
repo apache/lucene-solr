@@ -48,7 +48,7 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
     // File testHome = createTempDir().toFile();
     // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
-    initCore("solrconfig.xml", "schema12.xml", TEST_HOME(), "collection1");
+    initCore("solrconfig.xml", "schema12.xml", SolrTestUtil.TEST_HOME(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
 
     fromCore = coreContainer.create("fromCore", ImmutableMap.of("configSet", "minimal"));

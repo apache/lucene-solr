@@ -22,6 +22,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -65,7 +66,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     useAdminToSetProps = random().nextBoolean();
 
     configureCluster(numNodes)
-        .addConfig(COLLECTION_NAME, configset("cloud-minimal"))
+        .addConfig(COLLECTION_NAME, SolrTestUtil.configset("cloud-minimal"))
         .configure();
 
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(COLLECTION_NAME, COLLECTION_NAME,

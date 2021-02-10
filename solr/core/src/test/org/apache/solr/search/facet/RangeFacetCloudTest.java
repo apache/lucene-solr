@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -91,7 +92,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     final int nodeCount = numShards * numReplicas;
 
     configureCluster(nodeCount)
-      .addConfig(CONF, Paths.get(TEST_HOME(), "collection1", "conf"))
+      .addConfig(CONF, Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf"))
       .configure();
 
     assertEquals(0, (CollectionAdminRequest.createCollection(COLLECTION, CONF, numShards, numReplicas)
@@ -101,8 +102,8 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     
     cluster.getSolrClient().setDefaultCollection(COLLECTION);
 
-    final int numDocs = atLeast(TEST_NIGHTLY ? 1000 : 100);
-    final int maxTermId = atLeast(TEST_NIGHTLY ? TERM_VALUES_RANDOMIZER : 10);
+    final int numDocs = LuceneTestCase.atLeast(TEST_NIGHTLY ? 1000 : 100);
+    final int maxTermId = LuceneTestCase.atLeast(TEST_NIGHTLY ? TERM_VALUES_RANDOMIZER : 10);
 
     // clear the RANGE_MODEL
     Arrays.fill(RANGE_MODEL, 0);
@@ -388,7 +389,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     }
   }
 
-  @AwaitsFix(bugUrl = "This test can fail: java.lang.AssertionError: count expected:<32> but was:<13>")
+  @LuceneTestCase.AwaitsFix(bugUrl = "This test can fail: java.lang.AssertionError: count expected:<32> but was:<13>")
   public void testInclude_EdgeLowerUpper() throws Exception {
     for (boolean doSubFacet : Arrays.asList(false, true)) {
       final Integer subFacetLimit = pickSubFacetLimit(doSubFacet);
@@ -843,7 +844,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   /** randomized helper */
   private static final Integer pickSubFacetLimit(final boolean doSubFacet) {
     if (! doSubFacet) { return null; }
-    int result = TestUtil.nextInt(random(), -10, atLeast(TERM_VALUES_RANDOMIZER));
+    int result = TestUtil.nextInt(random(), -10, LuceneTestCase.atLeast(TERM_VALUES_RANDOMIZER));
     return (result <= 0) ? -1 : result;
   }
   /** randomized helper */

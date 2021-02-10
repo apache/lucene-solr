@@ -23,6 +23,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -117,7 +118,7 @@ public class TestDistributedStatsComponentCardinality extends BaseDistributedSea
       assertEquals(MAX_LONG, Math.round((double) rsp.getFieldStatsInfo().get("long_l").getMax()));
     }
 
-    final int NUM_QUERIES = atLeast((TEST_NIGHTLY ? 100 : 10));
+    final int NUM_QUERIES = SolrTestUtil.atLeast((TEST_NIGHTLY ? 100 : 10));
 
     // Some Randomized queries with randomized log2m and max regwidth
     for (int i = 0; i < NUM_QUERIES; i++) {

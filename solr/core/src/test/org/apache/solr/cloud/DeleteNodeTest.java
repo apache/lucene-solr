@@ -17,7 +17,8 @@
 
 package org.apache.solr.cloud;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -41,7 +42,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     useFactory(null);
     configureCluster(TEST_NIGHTLY ? 6 : 3)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .formatZk(true).configure();
   }
 
@@ -59,7 +60,7 @@ public class DeleteNodeTest extends SolrCloudTestCase {
     ArrayList<String> l = new ArrayList<>(liveNodes);
     Collections.shuffle(l, random());
     // NOTE: must be more than a single nrt replica or it will not let you delete a node
-    CollectionAdminRequest.Create create = SolrTestCaseJ4.pickRandom(
+    CollectionAdminRequest.Create create = SolrTestCaseUtil.pickRandom(
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 1, 0),
         CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 1, 1),

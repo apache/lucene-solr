@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
@@ -56,8 +57,8 @@ public abstract class AbstractDataImportHandlerTestCase extends
 
   // note, a little twisted that we shadow this static method
   public static void initCore(String config, String schema) throws Exception {
-    File testHome = createTempDir("core-home").toFile();
-    FileUtils.copyDirectory(getFile("dih/solr"), testHome);
+    File testHome = SolrTestUtil.createTempDir("core-home").toFile();
+    FileUtils.copyDirectory(SolrTestUtil.getFile("dih/solr"), testHome);
     initCore(config, schema, testHome.getAbsolutePath());
   }
 
@@ -96,7 +97,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    */
   protected File redirectTempProperties(DataImporter di) {
     try {
-      File tempFile = createTempFile().toFile();
+      File tempFile = SolrTestUtil.createTempFile().toFile();
       di.getConfig().getPropertyWriter().getParameters()
         .put(SimplePropertiesWriter.FILENAME, tempFile.getAbsolutePath());
       return tempFile;

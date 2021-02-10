@@ -16,6 +16,7 @@
  */
 package org.apache.solr.ltr.feature;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
@@ -52,7 +53,7 @@ public class TestExternalFeatures extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testEfiInTransformerShouldNotChangeOrderOfRerankedResults() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -88,7 +89,7 @@ public class TestExternalFeatures extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testFeaturesUseStopwordQueryReturnEmptyFeatureVector() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -110,7 +111,7 @@ public class TestExternalFeatures extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testEfiFeatureExtraction() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -136,7 +137,7 @@ public class TestExternalFeatures extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void featureExtraction_valueFeatureImplicitlyNotRequired_shouldNotScoreFeature() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -157,7 +158,7 @@ public class TestExternalFeatures extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void featureExtraction_valueFeatureExplicitlyNotRequired_shouldNotScoreFeature() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -178,7 +179,7 @@ public class TestExternalFeatures extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void featureExtraction_valueFeatureRequired_shouldThrowException() throws Exception {
     final SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -191,7 +192,7 @@ public class TestExternalFeatures extends TestRerankBase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void featureExtraction_valueFeatureRequiredInFq_shouldThrowException() throws Exception {
     final String userTitlePhrase1 = "userTitlePhrase1";
     final String userTitlePhrase2 = "userTitlePhrase2";

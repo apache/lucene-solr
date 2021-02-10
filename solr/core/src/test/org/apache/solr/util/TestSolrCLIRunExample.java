@@ -39,6 +39,7 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -67,7 +68,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws IOException {
-    assumeFalse("FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
+    LuceneTestCase.assumeFalse("FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
         Paths.get(".").toAbsolutePath().toString().contains(" "));
     // to be true
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
@@ -123,12 +124,12 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
               JettyConfig.builder().setContext("/solr").setPort(port).build();
           try {
             if (solrCloudCluster == null) {
-              Path logDir = createTempDir("solr_logs");
+              Path logDir = SolrTestUtil.createTempDir("solr_logs");
               System.setProperty("solr.log.dir", logDir.toString());
               System.setProperty("host", "localhost");
               System.setProperty("jetty.port", String.valueOf(port));
               solrCloudCluster =
-                  new MiniSolrCloudCluster(1, createTempDir(), solrxml, jettyConfig);
+                  new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), solrxml, jettyConfig);
             } else {
               // another member of this cluster -- not supported yet, due to how MiniSolrCloudCluster works
               throw new IllegalArgumentException("Only launching one SolrCloud node is supported by this test!");
@@ -222,7 +223,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       System.setProperty("host", "localhost");
       System.setProperty("jetty.port", String.valueOf(port));
-      System.setProperty("solr.log.dir", createTempDir("solr_logs").toString());
+      System.setProperty("solr.log.dir", SolrTestUtil.createTempDir("solr_logs").toString());
 
       standaloneSolr = new JettySolrRunner(solrHomeDir.getAbsolutePath(), "/solr", port);
       Thread bg = new Thread() {
@@ -317,7 +318,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     if (!solrHomeDir.isDirectory())
       fail(solrHomeDir.getAbsolutePath()+" not found and is required to run this test!");
 
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     File solrExampleDir = tmpDir.toFile();
     File solrServerDir = solrHomeDir.getParentFile();
 
@@ -413,7 +414,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     if (!solrHomeDir.isDirectory())
       fail(solrHomeDir.getAbsolutePath()+" not found and is required to run this test!");
 
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     File solrExampleDir = tmpDir.toFile();
 
     File solrServerDir = solrHomeDir.getParentFile();
@@ -518,7 +519,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     if (!solrHomeDir.isDirectory())
       fail(solrHomeDir.getAbsolutePath()+" not found and is required to run this test!");
    
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     File solrExampleDir = tmpDir.toFile();
     File solrServerDir = solrHomeDir.getParentFile();
 

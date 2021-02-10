@@ -19,6 +19,7 @@ package org.apache.solr.update;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -286,7 +287,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     add(client0, seenLeader, sdoc("id", "6000", "val_i_dvo", 6, "title", "mytitle", "_version_", 6000)); // full update
     delQ(client0, params(DISTRIB_UPDATE_PARAM,FROM_LEADER,"_version_","6004"),  "val_i_dvo:6"); // current val is 6000, this will delete id=6000
     assertSync(client1, numVersions, true, client0.getBaseURL());
-    SolrException ex = expectThrows(SolrException.class, () -> {
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       inPlaceParams.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, "6000");
       add(client0, inPlaceParams, sdoc("id", 6000, "val_i_dvo", 6003, "_version_", 5007));
     });

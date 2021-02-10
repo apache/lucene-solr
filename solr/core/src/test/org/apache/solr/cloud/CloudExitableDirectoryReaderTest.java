@@ -22,6 +22,7 @@ import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -83,7 +84,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
     // create one more node then shard, so that we also test the case of proxied requests.
     Builder clusterBuilder = configureCluster(3)
-        .addConfig("conf", TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
+        .addConfig("conf", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
     clusterBuilder.withMetrics(true);
     clusterBuilder
         .configure();
@@ -267,7 +268,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
         throw ae;
       }
     }
-    int numBites = atLeast(100);
+    int numBites = SolrTestUtil.atLeast(100);
     for(int bite=0; bite<numBites; bite++) {
       int boundary = random().nextInt(creep);
       boolean omitHeader = random().nextBoolean();

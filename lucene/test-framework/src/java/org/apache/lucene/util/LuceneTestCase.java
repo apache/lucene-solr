@@ -87,6 +87,7 @@ import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryCachingPolicy;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -686,12 +687,12 @@ public abstract class LuceneTestCase extends Assert {
 
   private static final Map<String,FieldType> fieldToType = new HashMap<String,FieldType>();
 
-  enum LiveIWCFlushMode {BY_RAM, BY_DOCS, EITHER};
+  public enum LiveIWCFlushMode {BY_RAM, BY_DOCS, EITHER}; // MRM TODO:
 
   /** Set by TestRuleSetupAndRestoreClassEnv */
   static LiveIWCFlushMode liveIWCFlushMode;
 
-  static void setLiveIWCFlushMode(LiveIWCFlushMode flushMode) {
+  public static void setLiveIWCFlushMode(LiveIWCFlushMode flushMode) {
     liveIWCFlushMode = flushMode;
   }
 
@@ -935,7 +936,9 @@ public abstract class LuceneTestCase extends Assert {
   /** create a new index writer config with random defaults using the specified random */
   public static IndexWriterConfig newIndexWriterConfig(Random r, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(a);
-    c.setSimilarity(classEnvRule.similarity);
+    if (classEnvRule.similarity != null) {
+      c.setSimilarity(classEnvRule.similarity); // TODO: get sim from our classEnvRule instead of LuceneTestCase's
+    }
     if (VERBOSE) {
       // Even though TestRuleSetupAndRestoreClassEnv calls
       // InfoStream.setDefault, we do it again here so that
@@ -1062,9 +1065,11 @@ public abstract class LuceneTestCase extends Assert {
       return new MockRandomMergePolicy(r);
     } else if (r.nextBoolean()) {
       return newTieredMergePolicy(r);
-    } else if (rarely(r) ) { 
-      return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
     }
+    // MRM TODO: need time stuff setup correctly with our SolrTestCase.classEnvRule, not LuceneTestCase
+//    else if (rarely(r) ) {
+//      return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
+//    }
     return newLogMergePolicy(r);
   }
 
@@ -1927,7 +1932,11 @@ public abstract class LuceneTestCase extends Assert {
       } else {
         ret = random.nextBoolean() ? new IndexSearcher(r) : new IndexSearcher(r.getContext());
       }
-      ret.setSimilarity(classEnvRule.similarity);
+      if (classEnvRule.similarity != null) {
+        ret.setSimilarity(classEnvRule.similarity);
+      } else {
+        ret.setSimilarity(new BM25Similarity());
+      }
       return ret;
     } else {
       int threads = 0;
@@ -1967,7 +1976,12 @@ public abstract class LuceneTestCase extends Assert {
             ? new IndexSearcher(r, ex)
             : new IndexSearcher(r.getContext(), ex);
       }
-      ret.setSimilarity(classEnvRule.similarity);
+
+      if (classEnvRule.similarity != null) {
+        ret.setSimilarity(classEnvRule.similarity);
+      } else {
+        ret.setSimilarity(new BM25Similarity());
+      }
       ret.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
       return ret;
     }

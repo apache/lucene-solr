@@ -23,7 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -44,7 +44,7 @@ public class Helpers {
   }
 
   public static void indexAllDocs(SolrClient client) throws IOException, SolrServerException {
-    File exampleDocsDir = new File(SolrTestCaseJ4.getFile("exampledocs").getAbsolutePath());
+    File exampleDocsDir = new File(SolrTestUtil.getFile("exampledocs").getAbsolutePath());
     File[] xmlFiles = Objects.requireNonNull(exampleDocsDir.listFiles((dir, name) -> name.endsWith(".xml")));
     for (File xml : xmlFiles) {
       ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");

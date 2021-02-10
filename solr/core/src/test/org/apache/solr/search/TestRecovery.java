@@ -484,7 +484,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     );
   }
 
-  private void testLogReplayWithReorderedDBQWrapper(ThrowingRunnable act, ThrowingRunnable assrt) throws Exception {
+  private void testLogReplayWithReorderedDBQWrapper(LuceneTestCase.ThrowingRunnable act, LuceneTestCase.ThrowingRunnable assrt) throws Exception {
 
     try {
 

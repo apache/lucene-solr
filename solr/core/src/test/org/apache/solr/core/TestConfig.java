@@ -22,6 +22,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -113,7 +115,7 @@ public class TestConfig extends SolrTestCaseJ4 {
  @Test
  public void testCacheEnablingDisabling() throws Exception {
    // ensure if cache is not defined in the config then cache is disabled 
-   try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+   try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
      SolrConfig sc = new SolrConfig(loader, "solrconfig-defaults.xml");
      assertNull(sc.filterCacheConfig);
      assertNull(sc.queryResultCacheConfig);
@@ -130,7 +132,7 @@ public class TestConfig extends SolrTestCaseJ4 {
    System.setProperty("user_definied_cache_XXX.enabled","true");
    // user_definied_cache_ZZZ.enabled defaults to false in config
    SolrConfig sc;
-   try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+   try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
      sc = new SolrConfig(loader, "solrconfig-cache-enable-disable.xml");
    }
    assertNotNull(sc.filterCacheConfig);
@@ -148,7 +150,7 @@ public class TestConfig extends SolrTestCaseJ4 {
    System.setProperty("user_definied_cache_XXX.enabled","true");
    System.setProperty("user_definied_cache_ZZZ.enabled","true");
 
-   try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+   try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
      sc = new SolrConfig(loader, "solrconfig-cache-enable-disable.xml");
    }
    assertNull(sc.filterCacheConfig);
@@ -175,7 +177,7 @@ public class TestConfig extends SolrTestCaseJ4 {
     int numDefaultsTested = 0;
     int numNullDefaults = 0;
     SolrConfig sc;
-    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
        sc = new SolrConfig(loader, "solrconfig-defaults.xml");
     }
     SolrIndexConfig sic = sc.indexConfig;
@@ -231,12 +233,12 @@ public class TestConfig extends SolrTestCaseJ4 {
     Assert.assertEquals(-1, SolrConfig.convertHeapOptionStyleConfigStringToBytes(""));
 
     // Invalid values
-    RuntimeException thrown = expectThrows(RuntimeException.class, () -> {
+    RuntimeException thrown = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       SolrConfig.convertHeapOptionStyleConfigStringToBytes("3jbk32k"); // valid suffix but non-numeric prefix
     });
     assertTrue(thrown.getMessage().contains("Invalid"));
 
-    thrown = expectThrows(RuntimeException.class, () -> {
+    thrown = SolrTestCaseUtil.expectThrows(RuntimeException.class, () -> {
       SolrConfig.convertHeapOptionStyleConfigStringToBytes("300x"); // valid prefix but invalid suffix
     });
     assertTrue(thrown.getMessage().contains("Invalid"));
@@ -244,7 +246,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testMaxSizeSettingWithoutAutoCommit() throws Exception {
-    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
       SolrConfig solrConfig = new SolrConfig(loader, "bad-solrconfig-no-autocommit-tag.xml");
       Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommitMaxSizeBytes);
       Assert.assertEquals(-1, solrConfig.getUpdateHandlerInfo().autoCommmitMaxDocs);
@@ -255,7 +257,7 @@ public class TestConfig extends SolrTestCaseJ4 {
   // sanity check that sys properties are working as expected
   public void testSanityCheckTestSysPropsAreUsed() throws Exception {
     System.setProperty("solr.tests.ramBufferSizeMB", "100");
-    try (SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
       SolrConfig sc = new SolrConfig(loader, "solrconfig-basic.xml");
       SolrIndexConfig sic = sc.indexConfig;
 

@@ -18,6 +18,8 @@
 package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -51,7 +53,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     useFactory(null);
     configureCluster(6)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
         .configure();
   }
 
@@ -77,15 +79,14 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     // have to worry about null checking when comparing the Create command with the final Slices
     
     // TODO: tlog replicas do not work correctly in tests due to fault TestInjection#waitForInSyncWithLeader
-    create = pickRandom(
-                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 2,0,0),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,1,0),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,1),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,1),
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,2,0),
-                        // check also replicationFactor 1
-                        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,0)
-                        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
+    create = SolrTestCaseUtil.pickRandom(CollectionAdminRequest.createCollection(coll, "conf1", 5, 2, 0, 0),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,1,0),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,1),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 1,0,1),
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,2,0),
+        // check also replicationFactor 1
+        CollectionAdminRequest.createCollection(coll, "conf1", 5, 1, 0, 0)
+        //CollectionAdminRequest.createCollection(coll, "conf1", 5, 0,1,0)
     );
     create.setCreateNodeSet(StrUtils.join(l, ',')).setMaxShardsPerNode(100);
     create.processAndWait(cloudClient, 2000);

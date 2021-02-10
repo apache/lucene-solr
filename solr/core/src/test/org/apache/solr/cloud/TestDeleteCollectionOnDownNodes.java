@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.junit.After;
@@ -28,7 +29,7 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
   @Before
   public void beforeTestDeleteCollectionOnDownNodes() throws Exception {
     configureCluster(4)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
 
     CollectionAdminRequest.createCollection("DeleteCollectionOnDownNodes", "conf", 4, 3)

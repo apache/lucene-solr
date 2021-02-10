@@ -27,6 +27,8 @@ import java.util.Map;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
@@ -397,7 +399,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleGroupedFacets() throws Exception {
-    assumeFalse("SOLR-10844: group.facet doesn't play nice with points *OR* DocValues",
+    LuceneTestCase.assumeFalse("SOLR-10844: group.facet doesn't play nice with points *OR* DocValues",
                 Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP) || Boolean.getBoolean(NUMERIC_POINTS_SYSPROP));
                 
     
@@ -492,17 +494,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "//lst[@name='airport_s1']/int[@name='ams'][.='2']"
     );
 
-    SolrException e = expectThrows(SolrException.class, () -> {
-      h.query(
-          req(
-              "q", "*:*",
-              "fq", "id_i1:[2000 TO 2004]",
-              "group.facet", "true",
-              "facet", "true",
-              "facet.field", "airport_s1",
-              "facet.prefix", "a"
-          )
-      );
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "fq", "id_i1:[2000 TO 2004]", "group.facet", "true", "facet", "true", "facet.field", "airport_s1", "facet.prefix", "a"));
     });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
   }
@@ -1574,7 +1567,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     final String meta = pre + "/../";
 
     final String TZ = "America/Los_Angeles";
-    assumeTrue("Test requires JVM to know about about TZ: " + TZ,
+    LuceneTestCase.assumeTrue("Test requires JVM to know about about TZ: " + TZ,
                TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(TZ)); 
 
     assertQ("checking facet counts for fixed now, using TZ: " + TZ,
@@ -3389,30 +3382,26 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         "facet", "true", "group.facet", "true");
 
     // with facet.field
-    SolrException ex = expectThrows(SolrException.class, () -> {
+    SolrException ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       h.query(req(params, "facet.field", "myfield_s"));
     });
     assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
 
     // with facet.query
-    ex = expectThrows(SolrException.class, () -> {
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       h.query(req(params, "facet.query", "myfield_s:*"));
     });
     assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
 
     // with facet.range
-    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.range", "range_facet_l",
-        "facet.range.start", "43", "facet.range.end", "450", "facet.range.gap", "10"))
-    );
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req(params, "facet.range", "range_facet_l", "facet.range.start", "43", "facet.range.end", "450", "facet.range.gap", "10")));
     assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Specify the group.field as parameter or local parameter"));
 
     // with facet.interval
-    ex = expectThrows(SolrException.class, () -> h.query(req(params, "facet.interval", "range_facet_l",
-        "f.range_facet_l.facet.interval.set", "(43,60]"))
-    );
+    ex = SolrTestCaseUtil.expectThrows(SolrException.class, () -> h.query(req(params, "facet.interval", "range_facet_l", "f.range_facet_l.facet.interval.set", "(43,60]")));
     assertEquals(ErrorCode.BAD_REQUEST.code, ex.code());
     assertTrue(ex.getMessage().contains("Interval Faceting can't be used with group.facet"));
   }
@@ -3541,7 +3530,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   
   @SuppressWarnings("unchecked")
   public void testRangeFacetFilterVsDocValuesRandom() throws Exception {
-    for (int i = 0; i < atLeast(100); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(100); i++) {
       ModifiableSolrParams params = null;
       int fieldType = i%3;
       switch (fieldType) {
@@ -3603,7 +3592,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   private String getRandomQuery() {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       return "*:*";
     }
     Integer[] values = new Integer[2];

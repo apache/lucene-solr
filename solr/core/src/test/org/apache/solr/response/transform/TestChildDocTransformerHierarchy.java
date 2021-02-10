@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
@@ -294,15 +295,9 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   @Test
   public void testExceptionThrownWParentFilter() throws Exception {
-    expectThrows(SolrException.class,
-        "Exception was not thrown when parentFilter param was passed to ChildDocTransformer using a nested schema",
-        () -> assertJQ(req("q", "test_s:testing",
-            "sort", "id asc",
-            "fl", "*,[child childFilter='lonely/lonelyGrandChild/test2_s:secondTest' parentFilter='_nest_path_:\"lonely/\"']",
-            "fq", fqToExcludeNonTestedDocs),
-            "/response/docs/[0]/test_s==testing",
-            "/response/docs/[0]/lonelyGrandChild/test2_s==secondTest")
-    );
+    SolrTestCaseUtil.expectThrows(SolrException.class, "Exception was not thrown when parentFilter param was passed to ChildDocTransformer using a nested schema", () -> assertJQ(
+        req("q", "test_s:testing", "sort", "id asc", "fl", "*,[child childFilter='lonely/lonelyGrandChild/test2_s:secondTest' parentFilter='_nest_path_:\"lonely/\"']", "fq", fqToExcludeNonTestedDocs),
+        "/response/docs/[0]/test_s==testing", "/response/docs/[0]/lonelyGrandChild/test2_s==secondTest"));
   }
 
   @Test

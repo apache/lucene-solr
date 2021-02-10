@@ -16,9 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -79,7 +81,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   public static void createMiniSolrCloudCluster() throws Exception {
     useFactory(null);
     final String configName = "solrCloudCollectionConfig";
-    final File configDir = new File(TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
+    final File configDir = new File(SolrTestUtil.TEST_HOME() + File.separator + "collection1" + File.separator + "conf");
 
     final int numShards = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
     final int repFactor = TestUtil.nextInt(random(), 2, TEST_NIGHTLY ? 5 : 3);
@@ -142,10 +144,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   @Ignore // MRM-TEST TODO: flakey, errors or something are off
   public void testRandomUpdates() throws Exception {
-    final int maxDocId = atLeast(TEST_NIGHTLY ? 10000 : 30);
+    final int maxDocId = LuceneTestCase.atLeast(TEST_NIGHTLY ? 10000 : 30);
     final BitSet expectedDocIds = new BitSet(maxDocId+1);
     
-    final int numIters = TEST_NIGHTLY ? atLeast(50) : 5;
+    final int numIters = TEST_NIGHTLY ? LuceneTestCase.atLeast(50) : 5;
     for (int i = 0; i < numIters; i++) {
 
       log.info("BEGIN ITER #{}", i);
@@ -300,9 +302,9 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   /** sanity check that randomUnsetBit works as expected 
    * @see #randomUnsetBit
    */
-  @AwaitsFix(bugUrl = "this sanity check is flakey...")
+  @LuceneTestCase.AwaitsFix(bugUrl = "this sanity check is flakey...")
   public void testSanityRandomUnsetBit() {
-    final int max = atLeast(100);
+    final int max = LuceneTestCase.atLeast(100);
     BitSet bits = new BitSet(max+1);
     for (int i = 0; i <= max; i++) {
       assertFalse("how is bitset already full? iter="+i+" card="+bits.cardinality()+"/max="+max,

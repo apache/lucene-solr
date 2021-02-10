@@ -19,6 +19,7 @@ package org.apache.solr.util.hll;
 import java.util.Arrays;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.junit.Test;
 
 /**
@@ -31,26 +32,27 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
     @Test
     public void constructorErrorTest() {
         // word length too small
-        IllegalArgumentException e = expectThrows(IllegalArgumentException.class,  () -> {
-            new BigEndianAscendingWordSerializer(0/*wordLength, below minimum of 1*/, 1/*wordCount, arbitrary*/, 0/*bytePadding, arbitrary*/);;
+        IllegalArgumentException e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+          new BigEndianAscendingWordSerializer(0/*wordLength, below minimum of 1*/, 1/*wordCount, arbitrary*/, 0/*bytePadding, arbitrary*/);
+          ;
         });
         assertTrue(e.getMessage().contains("Word length must be"));
 
         // word length too large
-        e = expectThrows(IllegalArgumentException.class,  () -> {
-            new BigEndianAscendingWordSerializer(65/*wordLength, above max of 64*/, 1/*wordCount, arbitrary*/, 0/*bytePadding, arbitrary*/);
+        e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+          new BigEndianAscendingWordSerializer(65/*wordLength, above max of 64*/, 1/*wordCount, arbitrary*/, 0/*bytePadding, arbitrary*/);
         });
         assertTrue(e.getMessage().contains("Word length must be"));
 
         // word count negative
-        e = expectThrows(IllegalArgumentException.class,  () -> {
-            new BigEndianAscendingWordSerializer(5/*wordLength, arbitrary*/, -1/*wordCount, too small*/, 0/*bytePadding, arbitrary*/);
+        e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+          new BigEndianAscendingWordSerializer(5/*wordLength, arbitrary*/, -1/*wordCount, too small*/, 0/*bytePadding, arbitrary*/);
         });
         assertTrue(e.getMessage().contains("Word count must be"));
 
         // byte padding negative
-        e = expectThrows(IllegalArgumentException.class,  () -> {
-            new BigEndianAscendingWordSerializer(5/*wordLength, arbitrary*/, 1/*wordCount, arbitrary*/, -1/*bytePadding, too small*/);
+        e = SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
+          new BigEndianAscendingWordSerializer(5/*wordLength, arbitrary*/, 1/*wordCount, arbitrary*/, -1/*bytePadding, too small*/);
         });
         assertTrue(e.getMessage().contains("Byte padding must be"));
     }
@@ -66,7 +68,7 @@ public class BigEndianAscendingWordSerializerTest extends SolrTestCase {
                                                  0/*bytePadding, arbitrary*/);
 
         // getBytes without enough writeWord should throw
-        RuntimeException e = expectThrows(RuntimeException.class, serializer::getBytes);
+        RuntimeException e = SolrTestCaseUtil.expectThrows(RuntimeException.class, serializer::getBytes);
         assertTrue(e.getMessage().contains("Not all words"));
     }
 

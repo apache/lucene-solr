@@ -16,12 +16,13 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.lucene.util.TestUtil;
 
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.After;
 
 import java.util.Set;
@@ -46,7 +47,7 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
   public void testGroupsOnMissingValues() throws Exception {
 
 
-    final int numDocs = atLeast(500);
+    final int numDocs = SolrTestUtil.atLeast(500);
 
     // setup some key values for some random docs in our index
     // every other doc will have no values for these fields
@@ -79,7 +80,7 @@ public class TestMissingGroups extends SolrTestCaseJ4 {
         d.addField("filter_b", random().nextBoolean());
       }
       assertU(adoc(d));
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         assertU(commit()); // mess with the segment counts
       }
     }

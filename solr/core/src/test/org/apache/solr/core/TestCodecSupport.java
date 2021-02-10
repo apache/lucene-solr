@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
@@ -189,7 +190,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   }
   
   public void testBadCompressionMode() throws Exception {
-    SolrException thrown = expectThrows(SolrException.class, () -> {
+    SolrException thrown = LuceneTestCase.expectThrows(SolrException.class, () -> {
       doTestCompressionMode("something_that_doesnt_exist", "something_that_doesnt_exist");
     });
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
@@ -199,7 +200,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     final SchemaCodecFactory factory1 = new SchemaCodecFactory();
     final NamedList<String> nl = new NamedList<>();
     nl.add(SchemaCodecFactory.COMPRESSION_MODE, "something_that_doesnt_exist");
-    thrown = expectThrows(SolrException.class, () -> {
+    thrown = LuceneTestCase.expectThrows(SolrException.class, () -> {
       factory1.init(nl);
     });
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
@@ -209,7 +210,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     final SchemaCodecFactory factory2 = new SchemaCodecFactory();
     final NamedList<String> nl2 = new NamedList<>();
     nl2.add(SchemaCodecFactory.COMPRESSION_MODE, "");
-    thrown = expectThrows(SolrException.class, () -> {
+    thrown = LuceneTestCase.expectThrows(SolrException.class, () -> {
       factory2.init(nl2);
     });
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, thrown.code());
@@ -217,7 +218,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
         thrown.getMessage().contains("Invalid compressionMode: ''"));
   }
 
-  @Nightly // non nightly changes this
+  @LuceneTestCase.Nightly // non nightly changes this
   public void testCompressionModeDefault()
       throws IOException, XPathExpressionException {
     assertEquals("Default Solr compression mode changed. Is this expected?", 

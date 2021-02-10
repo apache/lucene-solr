@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,8 +37,8 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
     @Test
     public void testPathIsAddedToContext() throws IOException, SolrServerException {
 
-        final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", TEST_PATH())
-                .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
+        final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", SolrTestUtil.TEST_PATH())
+                .setConfigSetBaseDirectory(SolrTestUtil.TEST_PATH().resolve("configsets").toString())
                 .build();
 
         try (final EmbeddedSolrServer server = new EmbeddedSolrServer(config, "collection1")) {

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.RecordingJSONParser;
 import org.slf4j.Logger;
@@ -365,7 +366,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     }
   }
 
-  @Nightly // calls System.gc
+  @LuceneTestCase.Nightly // calls System.gc
   public void testArrayOfRootObjects() throws Exception {
     String json = "[{'fieldA':'A1'}, {'fieldB':'B2'}]";
     JsonRecordReader streamer;

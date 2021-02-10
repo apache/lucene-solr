@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.util.FilesystemResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.StringMockResourceLoader;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.BeforeClass;
 
 import com.ibm.icu.text.Collator;
@@ -63,15 +64,15 @@ public class TestICUCollationField extends SolrTestCaseJ4 {
    * So it's preferable to create this file on-the-fly.
    */
   public static String setupSolrHome() throws Exception {
-    String tmpFile = createTempDir().toFile().getAbsolutePath();
+    String tmpFile = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     // make data and conf dirs
     new File(tmpFile  + "/collection1", "data").mkdirs();
     File confDir = new File(tmpFile + "/collection1", "conf");
     confDir.mkdirs();
     
     // copy over configuration files
-    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
-    FileUtils.copyFile(getFile("analysis-extras/solr/collection1/conf/schema-icucollate.xml"), new File(confDir, "schema.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"), new File(confDir, "solrconfig.xml"));
+    FileUtils.copyFile(SolrTestUtil.getFile("analysis-extras/solr/collection1/conf/schema-icucollate.xml"), new File(confDir, "schema.xml"));
     
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
     RuleBasedCollator baseCollator = (RuleBasedCollator) Collator.getInstance(new ULocale("de", "DE"));

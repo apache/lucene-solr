@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -76,7 +77,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    Path zkDir = createTempDir("zkData");
+    Path zkDir = SolrTestUtil.createTempDir("zkData");
 
     server = new ZkTestServer(zkDir);
     server.setTheTickTime(1000);
@@ -460,7 +461,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     Thread scheduleThread = new Thread() {
       @Override
       public void run() {
-        int count = atLeast(5);
+        int count = SolrTestUtil.atLeast(5);
         for (int i = 1; i < count; i++) {
           int launchIn = random().nextInt(500);
           ClientThread thread = null;

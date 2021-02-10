@@ -81,8 +81,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String t1="a_t";
-  String i1 = pickRandom("a_i1", "a_i_p", "a_i_ni_p");
-  String nint = pickRandom("n_i", "n_is_p", "n_is_ni_p");
+  String i1 = SolrTestCaseUtil.pickRandom("a_i1", "a_i_p", "a_i_ni_p");
+  String nint = SolrTestCaseUtil.pickRandom("n_i", "n_is_p", "n_is_ni_p");
   String tint = "n_ti";
   String tlong = "other_tl1";
   String tdate_a = "a_n_tdt";
@@ -406,7 +406,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q", "toyata", "fl", "id,lowerfilt", "spellcheck", true, "spellcheck.q", "toyata", "qt", "/spellCheckCompRH_Direct", "shards.qt", "/spellCheckCompRH_Direct");
 
     stress=0;  // turn off stress... we want to tex max combos in min time
-    for (int i=0; i<(TEST_NIGHTLY ? 25 : 5)*RANDOM_MULTIPLIER; i++) {
+    for (int i=0; i<(TEST_NIGHTLY ? 25 : 5)*LuceneTestCase.RANDOM_MULTIPLIER; i++) {
       String f = fieldNames[random().nextInt(fieldNames.length)];
       if (random().nextBoolean()) f = t1;  // the text field is a really interesting one to facet on (and it's multi-valued too)
 
@@ -1285,28 +1285,28 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   private void validateCommonQueryParameters() throws Exception {
     ignoreException("parameter cannot be negative");
 
-    SolrException e1 = expectThrows(SolrException.class, () -> {
+    SolrException e1 = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setParam("start", "non_numeric_value").setQuery("*");
       QueryResponse resp = query(query);
     });
     assertEquals(ErrorCode.BAD_REQUEST.code, e1.code());
 
-    SolrException e2 = expectThrows(SolrException.class, () -> {
+    SolrException e2 = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setStart(-1).setQuery("*");
       QueryResponse resp = query(query);
     });
     assertEquals(ErrorCode.BAD_REQUEST.code, e2.code());
 
-    SolrException e3 = expectThrows(SolrException.class, () -> {
+    SolrException e3 = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setRows(-1).setStart(0).setQuery("*");
       QueryResponse resp = query(query);
     });
     assertEquals(ErrorCode.BAD_REQUEST.code, e3.code());
 
-    SolrException e4 = expectThrows(SolrException.class, () -> {
+    SolrException e4 = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       SolrQuery query = new SolrQuery();
       query.setParam("rows", "non_numeric_value").setQuery("*");
       QueryResponse resp = query(query);

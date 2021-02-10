@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -49,7 +50,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
   }
   
   @Override
@@ -68,7 +69,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[10];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
-      uploadConfig(configset("configset-2"), collectionName);
+      uploadConfig(SolrTestUtil.configset("configset-2"), collectionName);
       final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
       final SolrClient solrClient = getHttpSolrClient(baseUrl);
       threads[i] = new CreateDeleteSearchCollectionThread("create-delete-search-" + i, collectionName, collectionName, 
@@ -83,7 +84,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   
   public void testConcurrentCreateAndDeleteOverTheSameConfig() {
     final String configName = "testconfig";
-    uploadConfig(configset("configset-2"), configName); // upload config once, to be used by all collections
+    uploadConfig(SolrTestUtil.configset("configset-2"), configName); // upload config once, to be used by all collections
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final AtomicReference<Exception> failure = new AtomicReference<>();
     final int timeToRunSec = 30;

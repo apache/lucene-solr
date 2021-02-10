@@ -43,37 +43,7 @@ public interface MapWriter extends MapSerializable , NavigableObject {
   @SuppressWarnings({"unchecked", "rawtypes"})
   default Map toMap(Map<String, Object> map) {
     try {
-      writeMap(new EntryWriter() {
-        @Override
-        public EntryWriter put(CharSequence k, Object v) {
-          if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
-          if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
-          if (v instanceof Iterable) {
-            List lst = new ArrayList();
-            for (Object vv : (Iterable)v) {
-              if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
-              if (vv instanceof IteratorWriter) vv = ((IteratorWriter) vv).toList(new ArrayList<>());
-              lst.add(vv);
-            }
-            v = lst;
-          }
-          if (v instanceof Map) {
-            Map map = new LinkedHashMap();
-            for (Map.Entry<?, ?> entry : ((Map<?, ?>)v).entrySet()) {
-              Object vv = entry.getValue();
-              if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
-              if (vv instanceof IteratorWriter) vv = ((IteratorWriter) vv).toList(new ArrayList<>());
-              map.put(entry.getKey(), vv);
-            }
-            v = map;
-          }
-          map.put(k==null? null : k.toString(), v);
-          // note: It'd be nice to assert that there is no previous value at 'k' but it's possible the passed in
-          // map is already populated and the intention is to overwrite.
-          return this;
-        }
-
-      });
+      writeMap(new MyEntryWriter(map));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -160,5 +130,43 @@ public interface MapWriter extends MapSerializable , NavigableObject {
     default BiConsumer<CharSequence, Object> getBiConsumer(){
       return (k, v) -> putNoEx(k,v);
     }
+  }
+
+  class MyEntryWriter implements EntryWriter {
+    private final Map<String,Object> map;
+
+    public MyEntryWriter(Map<String,Object> map) {
+      this.map = map;
+    }
+
+    @Override
+    public EntryWriter put(CharSequence k, Object v) {
+      if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+      if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
+      if (v instanceof Iterable) {
+        List lst = new ArrayList();
+        for (Object vv : (Iterable)v) {
+          if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+          if (vv instanceof IteratorWriter) vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+          lst.add(vv);
+        }
+        v = lst;
+      }
+      if (v instanceof Map) {
+        Map map = new LinkedHashMap();
+        for (Map.Entry<?, ?> entry : ((Map<?, ?>)v).entrySet()) {
+          Object vv = entry.getValue();
+          if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+          if (vv instanceof IteratorWriter) vv = ((IteratorWriter) vv).toList(new ArrayList<>());
+          map.put(entry.getKey(), vv);
+        }
+        v = map;
+      }
+      map.put(k==null? null : k.toString(), v);
+      // note: It'd be nice to assert that there is no previous value at 'k' but it's possible the passed in
+      // map is already populated and the intention is to overwrite.
+      return this;
+    }
+
   }
 }

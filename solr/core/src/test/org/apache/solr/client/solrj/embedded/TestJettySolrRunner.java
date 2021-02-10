@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -41,10 +42,10 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     // We set a non-standard coreRootDirectory, create a core, and check that it has been
     // built in the correct place
 
-    Path solrHome = createTempDir();
-    Path coresDir = createTempDir("crazy_path_to_cores");
+    Path solrHome = SolrTestUtil.createTempDir();
+    Path coresDir = SolrTestUtil.createTempDir("crazy_path_to_cores");
 
-    Path configsets = Paths.get(TEST_HOME()).resolve("configsets");
+    Path configsets = Paths.get(SolrTestUtil.TEST_HOME()).resolve("configsets");
 
     String solrxml
         = "<solr><str name=\"configSetBaseDir\">CONFIGSETS</str><str name=\"coreRootDirectory\">COREROOT</str></solr>"
@@ -77,7 +78,7 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
   @SuppressWarnings("ThrowableNotThrown")
   @Test
   public void testLookForBindException() throws IOException {
-    Path solrHome = createTempDir();
+    Path solrHome = SolrTestUtil.createTempDir();
     Files.write(solrHome.resolve("solr.xml"), MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.getBytes(Charset.defaultCharset()));
 
     JettyConfig config = JettyConfig.builder().build();

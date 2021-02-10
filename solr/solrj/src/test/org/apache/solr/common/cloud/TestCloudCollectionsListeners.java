@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -54,7 +55,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   @Before
   public void prepareCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
-    .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+    .addConfig("config", SolrTestUtil.getFile("solrj/solr/collection1/conf").toPath())
     .configure();
   }
   

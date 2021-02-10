@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -89,7 +90,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     control = new EmbeddedSolrServer(SolrTestCaseJ4.h.getCore());
     // create cluster
     configureCluster(numNodes) // 2 + random().nextInt(3)
-        .addConfig("conf", configset(configset))
+        .addConfig("conf", SolrTestUtil.configset(configset))
         .configure();
     solrClient = cluster.getSolrClient();
     createTestCollection();

@@ -20,6 +20,7 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MapSolrParams;
@@ -60,7 +61,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () -> CoreAdminOperation.STATUS_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.STATUS_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -69,7 +70,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () -> CoreAdminOperation.UNLOAD_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.UNLOAD_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -77,7 +78,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testUnloadMissingCoreNameResultsIn400SolrException() throws Exception {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () -> CoreAdminOperation.UNLOAD_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.UNLOAD_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -86,7 +87,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () -> CoreAdminOperation.RELOAD_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RELOAD_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -94,7 +95,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testReloadMissingCoreNameResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () -> CoreAdminOperation.RELOAD_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RELOAD_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -103,7 +104,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.CREATE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.CREATE_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -111,7 +112,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testCreateMissingCoreNameResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.CREATE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.CREATE_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -120,7 +121,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.SWAP_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.SWAP_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -130,7 +131,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("other", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.SWAP_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.SWAP_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -140,7 +141,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("core", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.SWAP_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.SWAP_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -149,7 +150,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.RENAME_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RENAME_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -159,7 +160,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("other", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.RENAME_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RENAME_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -169,7 +170,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("core", "some-core-name");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.RENAME_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RENAME_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -178,7 +179,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.MERGEINDEXES_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.MERGEINDEXES_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -188,7 +189,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("indexDir", "some/index/dir");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.MERGEINDEXES_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.MERGEINDEXES_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -197,7 +198,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.SPLIT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.SPLIT_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -205,7 +206,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testSplitMissingCoreParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.SPLIT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.SPLIT_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -214,7 +215,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.PREPRECOVERY_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.PREPRECOVERY_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -223,7 +224,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -231,7 +232,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testRequestRecoveryMissingCoreParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTRECOVERY_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -240,7 +241,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTSYNCSHARD_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTSYNCSHARD_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -248,7 +249,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testRequestSyncMissingCoreParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTSYNCSHARD_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTSYNCSHARD_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -257,7 +258,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTBUFFERUPDATES_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTBUFFERUPDATES_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -265,7 +266,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testRequestBufferUpdatesMissingCoreParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTBUFFERUPDATES_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTBUFFERUPDATES_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -274,7 +275,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTAPPLYUPDATES_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTAPPLYUPDATES_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -282,7 +283,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testRequestApplyUpdatesMissingCoreParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTAPPLYUPDATES_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTAPPLYUPDATES_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
 
@@ -291,7 +292,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.OVERSEEROP_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.OVERSEEROP_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.SERVER_ERROR.code);
   }
   
@@ -300,7 +301,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTSTATUS_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTSTATUS_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -308,7 +309,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testRequestStatusMissingRequestIdParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REQUESTSTATUS_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REQUESTSTATUS_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
 
@@ -317,7 +318,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.REJOINLEADERELECTION_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.REJOINLEADERELECTION_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.SERVER_ERROR.code);
   }
  
@@ -327,7 +328,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.INVOKE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -335,7 +336,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testInvokeMissingClassParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.INVOKE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.INVOKE_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -344,7 +345,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.BACKUPCORE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.BACKUPCORE_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -354,7 +355,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("name", "any-name-param");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.BACKUPCORE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.BACKUPCORE_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -364,7 +365,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.BACKUPCORE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.BACKUPCORE_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -373,7 +374,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.RESTORECORE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RESTORECORE_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -383,7 +384,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("name", "any-name-param");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.RESTORECORE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RESTORECORE_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -393,7 +394,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.RESTORECORE_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.RESTORECORE_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -402,7 +403,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.CREATESNAPSHOT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.CREATESNAPSHOT_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -412,7 +413,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("commitName", "anyCommitName");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.CREATESNAPSHOT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.CREATESNAPSHOT_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -422,7 +423,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.CREATESNAPSHOT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.CREATESNAPSHOT_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -431,7 +432,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.DELETESNAPSHOT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.DELETESNAPSHOT_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -441,7 +442,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("commitName", "anyCommitName");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.DELETESNAPSHOT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.DELETESNAPSHOT_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -451,7 +452,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     params.put("core", "any-core-param");
     whenCoreAdminOpHasParams(params);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.DELETESNAPSHOT_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.DELETESNAPSHOT_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   
@@ -460,7 +461,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
     final Throwable cause = new NullPointerException();
     whenUnexpectedErrorOccursDuringCoreAdminOp(cause);
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.LISTSNAPSHOTS_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.LISTSNAPSHOTS_OP.execute(callInfo));
     assertSolrExceptionWithCodeAndCause(ex, ErrorCode.SERVER_ERROR.code, cause);
   }
   
@@ -468,7 +469,7 @@ public class CoreAdminOperationTest extends SolrTestCaseJ4 {
   public void testListSnapshotMissingCoreParamResultsIn400SolrException() {
     whenCoreAdminOpHasParams(Maps.newHashMap());
 
-    Exception ex = expectThrows(Exception.class, () ->  CoreAdminOperation.LISTSNAPSHOTS_OP.execute(callInfo));
+    Exception ex = SolrTestCaseUtil.expectThrows(Exception.class, () -> CoreAdminOperation.LISTSNAPSHOTS_OP.execute(callInfo));
     assertSolrExceptionWithCode(ex, ErrorCode.BAD_REQUEST.code);
   }
   

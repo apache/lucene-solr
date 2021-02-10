@@ -47,46 +47,52 @@ public class PayloadScoreQParserPlugin extends QParserPlugin {
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
-    return new QParser(qstr, localParams, params, req) {
-      @Override
-      public Query parse() throws SyntaxError {
-        String field = localParams.get(QueryParsing.F);
-        String value = localParams.get(QueryParsing.V);
-        String func = localParams.get("func");
-        String operator = localParams.get("operator", DEFAULT_OPERATOR);
-        if (!(operator.equalsIgnoreCase(DEFAULT_OPERATOR) || operator.equalsIgnoreCase("or"))) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Supported operators are : or , phrase");
-        }
-        boolean includeSpanScore = localParams.getBool("includeSpanScore", false);
+    return new MyQParser(qstr, localParams, params, req);
+  }
 
-        if (field == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
-        }
+  private static class MyQParser extends QParser {
+    public MyQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+      super(qstr, localParams, params, req);
+    }
 
-        if (value == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "query string missing");
-        }
-
-        FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
-        Analyzer analyzer = ft.getQueryAnalyzer();
-        SpanQuery query;
-        try {
-          query = PayloadUtils.createSpanQuery(field, value, analyzer, operator);
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,e);
-        }
-
-        if (query == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SpanQuery is null");
-        }
-
-        // note: this query(/parser) does not support func=first; 'first' is a payload() value source feature only
-        PayloadFunction payloadFunction = PayloadUtils.getPayloadFunction(func);
-        if (payloadFunction == null) throw new SyntaxError("Unknown payload function: " + func);
-
-        PayloadDecoder payloadDecoder = req.getCore().getLatestSchema().getPayloadDecoder(field);
-        return new PayloadScoreQuery(query, payloadFunction, payloadDecoder, includeSpanScore);
+    @Override
+    public Query parse() throws SyntaxError {
+      String field = localParams.get(QueryParsing.F);
+      String value = localParams.get(QueryParsing.V);
+      String func = localParams.get("func");
+      String operator = localParams.get("operator", DEFAULT_OPERATOR);
+      if (!(operator.equalsIgnoreCase(DEFAULT_OPERATOR) || operator.equalsIgnoreCase("or"))) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Supported operators are : or , phrase");
       }
-    };
+      boolean includeSpanScore = localParams.getBool("includeSpanScore", false);
+
+      if (field == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
+      }
+
+      if (value == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "query string missing");
+      }
+
+      FieldType ft = req.getCore().getLatestSchema().getFieldType(field);
+      Analyzer analyzer = ft.getQueryAnalyzer();
+      SpanQuery query;
+      try {
+        query = PayloadUtils.createSpanQuery(field, value, analyzer, operator);
+      } catch (IOException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,e);
+      }
+
+      if (query == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "SpanQuery is null");
+      }
+
+      // note: this query(/parser) does not support func=first; 'first' is a payload() value source feature only
+      PayloadFunction payloadFunction = PayloadUtils.getPayloadFunction(func);
+      if (payloadFunction == null) throw new SyntaxError("Unknown payload function: " + func);
+
+      PayloadDecoder payloadDecoder = req.getCore().getLatestSchema().getPayloadDecoder(field);
+      return new PayloadScoreQuery(query, payloadFunction, payloadDecoder, includeSpanScore);
+    }
   }
 }

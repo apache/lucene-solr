@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -39,7 +40,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     oldResponseEntries = OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE;
     OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE = random().nextBoolean();
     configureCluster(2)
-        .addConfig("conf", TEST_PATH().resolve(configset("cloud-minimal")))
+        .addConfig("conf", SolrTestUtil.TEST_PATH().resolve(SolrTestUtil.configset("cloud-minimal")))
         .configure();
   }
   

@@ -37,6 +37,7 @@ import org.apache.commons.math3.util.Combinations;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -83,7 +84,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testStats() throws Exception {
     for (String f : new String[] {
             "stats_i","stats_l","stats_f","stats_d",
@@ -1328,7 +1329,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testIndividualStatLocalParams() throws Exception {
     final String kpre = ExpectedStat.KPRE;
     
@@ -1621,7 +1622,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   /** @see #testHllOptions */
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testCardinality() throws Exception {
     SolrCore core = h.getCore();
     // insure we have the same hasher a_l would use
@@ -1687,7 +1688,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
    * @see #testCardinality 
    * @see #testHllOptionsErrors
    */
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testHllOptions() throws Exception {
     SolrCore core = h.getCore();
 
@@ -1813,7 +1814,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("hllPreHashed");
     for (SchemaField field : new SchemaField[] { foo_s, foo_i }) {
       // whitebox - field
-      SolrException ex = expectThrows(SolrException.class, () -> {
+      SolrException ex = LuceneTestCase.expectThrows(SolrException.class, () -> {
         HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "true"), field);
       });
       assertTrue("MSG: " + ex.getMessage(),
@@ -1826,7 +1827,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     }
 
     // whitebox - function
-    SolrException ex = expectThrows(SolrException.class, () -> {
+    SolrException ex = LuceneTestCase.expectThrows(SolrException.class, () -> {
       HllOptions.parseHllOptions(params("cardinality","true", "hllPreHashed", "true"), null);
     });
     assertTrue("MSG: " + ex.getMessage(),
@@ -1842,7 +1843,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("accuracy");
     for (String invalid : new String[] { "-1", "1.1", "100" }) {
       // whitebox
-      ex = expectThrows(SolrException.class, () -> {
+      ex = LuceneTestCase.expectThrows(SolrException.class, () -> {
         HllOptions.parseHllOptions(params("cardinality",invalid), foo_s);
       });
       assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("number between 0 and 1"));
@@ -1856,7 +1857,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("hllLog2m must be");
     for (int invalid : new int[] { HLL.MINIMUM_LOG2M_PARAM-1, HLL.MAXIMUM_LOG2M_PARAM+11 }) {
       // whitebox
-      ex = expectThrows(SolrException.class, () -> {
+      ex = LuceneTestCase.expectThrows(SolrException.class, () -> {
         HllOptions.parseHllOptions(params("cardinality","true", "hllLog2m", ""+invalid), foo_s);
       });
       assertTrue("MSG: " + ex.getMessage(), ex.getMessage().contains("hllLog2m must be"));
@@ -1871,7 +1872,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     ignoreException("hllRegwidth must be");
     for (int invalid : new int[] { HLL.MINIMUM_REGWIDTH_PARAM-1, HLL.MAXIMUM_REGWIDTH_PARAM+1 }) {
       // whitebox
-      ex = expectThrows(SolrException.class, () -> {
+      ex = LuceneTestCase.expectThrows(SolrException.class, () -> {
         HllOptions.parseHllOptions(params("cardinality","true",
             "hllRegwidth", ""+invalid), foo_s);
       });
@@ -1887,7 +1888,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
   }
 
   // simple percentiles test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPercentiles() throws Exception {
     
     // NOTE: deliberately not in numeric order

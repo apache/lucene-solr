@@ -26,7 +26,10 @@ import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -252,8 +255,8 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Slow
-  @Nightly
+  @LuceneTestCase.Slow
+  @LuceneTestCase.Nightly
   public void testRandom() throws Exception {
     // All field values will be a number between 0 and cardinality
     int cardinality = TEST_NIGHTLY ? 10000 : 100;
@@ -264,7 +267,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         "test_l", "test_f", "test_d", "test_dt", "test_ss", "test_is", "test_fs", "test_ls", "test_ds", "test_dts",
         "test_i_p", "test_is_p", "test_l_p", "test_ls_p", "test_f_p", "test_fs_p", "test_d_p", "test_ds_p", "test_dts_p"
         };
-    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 500 : 10); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 10); i++) {
       if (random().nextInt(50) == 0) {
         //have some empty docs
         assertU(adoc("id", String.valueOf(i)));
@@ -311,7 +314,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    for (int i = 0; i < atLeast(TEST_NIGHTLY ? 10000 : 100); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(TEST_NIGHTLY ? 10000 : 100); i++) {
       doTestQuery(cardinality, fields);
     }
 
@@ -322,7 +325,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   double raondomDouble(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(4);
       if (num == 0) return Double.NEGATIVE_INFINITY;
       if (num == 1) return Double.POSITIVE_INFINITY;
@@ -337,7 +340,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   float randomFloat(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(4);
       if (num == 0) return Float.NEGATIVE_INFINITY;
       if (num == 1) return Float.POSITIVE_INFINITY;
@@ -352,7 +355,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
 
   int randomInt(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(2);
       if (num == 0) return Integer.MAX_VALUE;
       if (num == 1) return Integer.MIN_VALUE;
@@ -361,7 +364,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   }
   
   long randomLong(int cardinality) {
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       int num = random().nextInt(2);
       if (num == 0) return Long.MAX_VALUE;
       if (num == 1) return Long.MIN_VALUE;
@@ -378,7 +381,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     String[] startOptions = new String[]{"(", "["};
     String[] endOptions = new String[]{")", "]"};
     ModifiableSolrParams params = new ModifiableSolrParams();
-    if (rarely()) {
+    if (LuceneTestCase.rarely()) {
       params.set("q", "*:*");
     } else {
       // the query should match some documents in most cases
@@ -386,13 +389,13 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
       params.set("q", "id:[" + qRange[0] + " TO " + qRange[1] + "]");
     }
     params.set("facet", "true");
-    String field = pickRandom(fields); //choose from any of the fields
+    String field = SolrTestCaseUtil.pickRandom(fields); //choose from any of the fields
     params.set("facet.interval", field);
     // number of intervals
     for (int i = 0; i < 1 + random().nextInt(20); i++) {
       String[] interval = getRandomRange(cardinality, field);
-      String open = pickRandom(startOptions);
-      String close = pickRandom(endOptions);
+      String open = SolrTestCaseUtil.pickRandom(startOptions);
+      String close = SolrTestCaseUtil.pickRandom(endOptions);
       params.add("f." + field + ".facet.interval.set", open + interval[0] + "," + interval[1] + close);
       params.add("facet.query", field + ":" + open.replace('(', '{') + interval[0] + " TO " + interval[1] + close.replace(')', '}'));
     }
@@ -471,7 +474,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
         Arrays.sort(values);
       }
       String[] stringValues = new String[2];
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         stringValues[0] = "*";
       } else {
         if (ft.getNumberType() == NumberType.DATE) {
@@ -480,7 +483,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
           stringValues[0] = String.valueOf(values[0]);
         }
       }
-      if (rarely()) {
+      if (LuceneTestCase.rarely()) {
         stringValues[1] = "*";
       } else {
         if (ft.getNumberType() == NumberType.DATE) {
@@ -695,7 +698,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private void assertBadInterval(String fieldName, String intervalStr, String errorMsg) {
     try (SolrCore core = h.getCore()) {
       SchemaField f = core.getLatestSchema().getField(fieldName);
-      SyntaxError e = expectThrows(SyntaxError.class, () -> new FacetInterval(f, intervalStr, new ModifiableSolrParams()));
+      SyntaxError e = SolrTestCaseUtil.expectThrows(SyntaxError.class, () -> new FacetInterval(f, intervalStr, new ModifiableSolrParams()));
       assertTrue("Unexpected error message for interval String: " + intervalStr + ": " + e.getMessage(), e.getMessage().contains(errorMsg));
     }
   }

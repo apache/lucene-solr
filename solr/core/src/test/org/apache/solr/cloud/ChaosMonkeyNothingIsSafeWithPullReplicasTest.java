@@ -65,7 +65,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
   @BeforeClass
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
-    if (usually()) {
+    if (LuceneTestCase.usually()) {
       System.setProperty("solr.autoCommit.maxTime", "15000");
     }
     System.clearProperty("solr.httpclient.retries");
@@ -189,7 +189,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
         searchThread.start();
       }
       
-      if (usually()) {
+      if (LuceneTestCase.usually()) {
         StoppableCommitThread commitThread = new StoppableCommitThread(cloudClient, 1000, false);
         threads.add(commitThread);
         commitThread.start();

@@ -23,6 +23,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.LegacyLongField;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
@@ -55,13 +57,13 @@ public class TestNumericTerms64 extends SolrTestCase {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    noDocs = atLeast(TEST_NIGHTLY ? 4096 : 256);
+    noDocs = SolrTestUtil.atLeast(TEST_NIGHTLY ? 4096 : 256);
     distance = (1L << 60) / noDocs;
-    directory = newDirectory();
+    directory = SolrTestUtil.newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random()))
+        LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), TEST_NIGHTLY ? 100 : 990, 1000))
-        .setMergePolicy(newLogMergePolicy()));
+        .setMergePolicy(LuceneTestCase.newLogMergePolicy()));
 
     final LegacyFieldType storedLong = new LegacyFieldType(LegacyLongField.TYPE_NOT_STORED);
     storedLong.setStored(true);
@@ -106,7 +108,7 @@ public class TestNumericTerms64 extends SolrTestCase {
     map.put("field6", Type.LEGACY_LONG);
     map.put("field8", Type.LEGACY_LONG);
     reader = UninvertingReader.wrap(writer.getReader(), map);
-    searcher=newSearcher(reader);
+    searcher= SolrTestUtil.newSearcher(reader);
     writer.close();
   }
   

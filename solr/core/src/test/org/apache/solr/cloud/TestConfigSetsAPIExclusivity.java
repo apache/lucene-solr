@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -50,7 +52,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
   }
 
   @Override
@@ -64,7 +66,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl = "overseer does not currently limit")
+  @LuceneTestCase.AwaitsFix(bugUrl = "overseer does not currently limit")
   public void testAPIExclusivity() throws Exception {
     int trials = 20;
     setupBaseConfigSet(GRANDBASE_CONFIGSET_NAME);
@@ -92,7 +94,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   }
 
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
-    solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
+    solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), baseConfigSetName);
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {

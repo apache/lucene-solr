@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -56,7 +57,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
 
     // Solr Cloud
     configureCluster(4)
-        .addConfig("conf", configset("cloud-analytics"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-analytics"))
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());

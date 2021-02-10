@@ -185,7 +185,7 @@ public class DimensionalRoutedAlias extends RoutedAlias {
         max = subCol.getCreationType();
       }
     }
-    return new CandidateCollection(max,destCol.toString(),col2Create.toString());
+    return new CandidateCollection(max, destCol.toString(), col2Create.toString());
   }
 
   @Override

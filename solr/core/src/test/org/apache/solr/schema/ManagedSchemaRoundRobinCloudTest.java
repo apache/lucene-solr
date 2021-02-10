@@ -18,6 +18,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -26,7 +27,6 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -44,7 +44,7 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
-    configureCluster(NUM_SHARDS).addConfig(CONFIG, configset(CONFIG)).configure();
+    configureCluster(NUM_SHARDS).addConfig(CONFIG, SolrTestUtil.configset(CONFIG)).configure();
     CollectionAdminRequest.createCollection(COLLECTION, CONFIG, NUM_SHARDS, 1)
         .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());

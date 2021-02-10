@@ -36,7 +36,9 @@ import org.apache.lucene.analysis.ngram.NGramFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
@@ -56,7 +58,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   public void testEscapeInstanceDir() throws Exception {
 
-    Path temp = createTempDir("testEscapeInstanceDir");
+    Path temp = SolrTestUtil.createTempDir("testEscapeInstanceDir");
     Files.write(temp.resolve("dummy.txt"), new byte[]{});
     Path instanceDir = temp.resolve("instance");
     Files.createDirectories(instanceDir.resolve("conf"));
@@ -86,7 +88,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
         new JSONResponseWriter()
     };
     for( Object obj : invalid ) {
-      expectThrows(SolrException.class, () -> assertAwareCompatibility(clazz1, obj));
+      LuceneTestCase.expectThrows(SolrException.class, () -> assertAwareCompatibility(clazz1, obj));
     }
     
 
@@ -104,13 +106,13 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
         new KeywordTokenizerFactory(new HashMap<>())
     };
     for( Object obj : invalid ) {
-      expectThrows(SolrException.class, () -> assertAwareCompatibility(clazz2, obj));
+      LuceneTestCase.expectThrows(SolrException.class, () -> assertAwareCompatibility(clazz2, obj));
     }
   }
   
   public void testBOMMarkers() throws Exception {
     final String fileWithBom = "stopwithbom.txt";
-    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"));
 
     // preliminary sanity check
     InputStream bomStream = loader.openResource(fileWithBom);
@@ -138,15 +140,15 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   
   public void testWrongEncoding() throws Exception {
     String wrongEncoding = "stopwordsWrongEncoding.txt";
-    try(SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+    try(SolrResourceLoader loader = new SolrResourceLoader(SolrTestUtil.TEST_PATH().resolve("collection1"))) {
       // ensure we get our exception
-      SolrException thrown = expectThrows(SolrException.class, () -> loader.getLines(wrongEncoding));
+      SolrException thrown = LuceneTestCase.expectThrows(SolrException.class, () -> loader.getLines(wrongEncoding));
       assertTrue(thrown.getCause() instanceof CharacterCodingException);
     }
   }
 
   public void testClassLoaderLibs() throws Exception {
-    Path tmpRoot = createTempDir("testClassLoaderLibs");
+    Path tmpRoot = SolrTestUtil.createTempDir("testClassLoaderLibs");
 
     Path lib = tmpRoot.resolve("lib");
     Files.createDirectories(lib);

@@ -22,6 +22,7 @@ import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FacetField;
@@ -151,7 +152,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.set("f."+FLD+".facet.mincount",  ""+(2+random().nextInt(100)) );
     }
 
-    SolrException e = expectThrows(SolrException.class, () -> {
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> {
       if (random().nextBoolean()) {
         setDistributedParams(params);
         queryServer(params);

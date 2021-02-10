@@ -40,6 +40,8 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.ParWork;
 import org.junit.Test;
 
@@ -103,9 +105,9 @@ public class TestStressLucene extends TestRTGBase {
     // RAMDirectory dir = new RAMDirectory();
     // final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(new WhitespaceAnalyzer()));
 
-    Directory dir = newDirectory();
+    Directory dir = SolrTestUtil.newDirectory();
 
-    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random())));
     writer.setDoRandomForceMergeAssert(false);
 
     // writer.commit();

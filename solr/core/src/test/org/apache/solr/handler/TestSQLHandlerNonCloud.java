@@ -23,6 +23,8 @@ import java.util.List;
 
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -38,7 +40,7 @@ import org.junit.Test;
 public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
 
   private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
+    File workDir = SolrTestUtil.createTempDir().toFile();
     setupJettyTestHome(workDir, DEFAULT_TEST_COLLECTION_NAME);
     return workDir;
   }
@@ -66,7 +68,7 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
     String url = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
-    IOException ex = expectThrows(IOException.class,  () -> getTuples(solrStream));
+    IOException ex = SolrTestCaseUtil.expectThrows(IOException.class, () -> getTuples(solrStream));
     assertTrue(ex.getMessage(), ex.getMessage().contains(SQLHandler.sqlNonCloudErrorMsg));
   }
 

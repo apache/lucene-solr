@@ -19,7 +19,7 @@ package org.apache.solr.servlet;
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -42,9 +42,9 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrHomeDirectory = createTempDir().toFile();
+    solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
     setupJettyTestHome(solrHomeDirectory, "collection1");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "solrconfig-headers.xml"), new File(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"));
     jetty = createAndStartJetty(solrHomeDirectory.getAbsolutePath());
   }

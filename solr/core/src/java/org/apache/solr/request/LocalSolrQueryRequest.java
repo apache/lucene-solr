@@ -120,7 +120,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   public void setUserPrincipalName(String s) {
     this.userPrincipalName = s;
   }
-  private final class LocalPrincipal implements Principal {
+  private static final class LocalPrincipal implements Principal {
     private final String user;
     public LocalPrincipal(String user) {
       this.user = user;

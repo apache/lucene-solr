@@ -41,6 +41,7 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
@@ -63,7 +64,7 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
     final boolean wrapWithAssertions = false;
      // 'no' to asserting wrap because lucene AssertingWeight
      // cannot be cast to solr LTRScoringQuery$ModelWeight
-    final IndexSearcher searcher = newSearcher(r, maybeWrap, wrapWithAssertions);
+    final IndexSearcher searcher = LuceneTestCase.newSearcher(r, maybeWrap, wrapWithAssertions);
 
     return searcher;
   }
@@ -107,22 +108,22 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   @Test
   public void testRescorer() throws IOException {
-    final Directory dir = newDirectory();
+    final Directory dir = LuceneTestCase.newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard the the the the the oz",
+    doc.add(LuceneTestCase.newStringField("id", "0", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard the the the the the oz",
         Field.Store.NO));
-    doc.add(newStringField("final-score", "F", Field.Store.YES)); // TODO: change to numeric field
+    doc.add(LuceneTestCase.newStringField("final-score", "F", Field.Store.YES)); // TODO: change to numeric field
 
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
+    doc.add(LuceneTestCase.newStringField("id", "1", Field.Store.YES));
     // 1 extra token, but wizard and oz are close;
-    doc.add(newTextField("field", "wizard oz the the the the the the",
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz the the the the the the",
         Field.Store.NO));
-    doc.add(newStringField("final-score", "T", Field.Store.YES)); // TODO: change to numeric field
+    doc.add(LuceneTestCase.newStringField("final-score", "T", Field.Store.YES)); // TODO: change to numeric field
     w.addDocument(doc);
 
     final IndexReader r = w.getReader();
@@ -161,37 +162,37 @@ public class TestLTRReRankingPipeline extends SolrTestCase {
 
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
+  @LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-11134")
   @Test
   public void testDifferentTopN() throws IOException {
-    final Directory dir = newDirectory();
+    final Directory dir = LuceneTestCase.newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
     Document doc = new Document();
-    doc.add(newStringField("id", "0", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz oz oz oz", Field.Store.NO));
+    doc.add(LuceneTestCase.newStringField("id", "0", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz oz oz oz", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 1.0f));
     w.addDocument(doc);
 
     doc = new Document();
-    doc.add(newStringField("id", "1", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz oz oz the", Field.Store.NO));
+    doc.add(LuceneTestCase.newStringField("id", "1", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz oz oz the", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 2.0f));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "2", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz oz the the ", Field.Store.NO));
+    doc.add(LuceneTestCase.newStringField("id", "2", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz oz the the ", Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 3.0f));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "3", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz oz the the the the ",
+    doc.add(LuceneTestCase.newStringField("id", "3", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz oz the the the the ",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 4.0f));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(newStringField("id", "4", Field.Store.YES));
-    doc.add(newTextField("field", "wizard oz the the the the the the",
+    doc.add(LuceneTestCase.newStringField("id", "4", Field.Store.YES));
+    doc.add(LuceneTestCase.newTextField("field", "wizard oz the the the the the the",
         Field.Store.NO));
     doc.add(new FloatDocValuesField("final-score", 5.0f));
     w.addDocument(doc);

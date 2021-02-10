@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.spelling.suggest.RandomTestDictionaryFactory;
@@ -104,7 +105,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
     ExecutorService executor = getTestExecutor();
     // Build the suggester in the background with a long dictionary
     Future job = executor.submit(() ->
-            expectThrows(RuntimeException.class, SolrCoreState.CoreIsClosedException.class,
+        LuceneTestCase.expectThrows(RuntimeException.class, SolrCoreState.CoreIsClosedException.class,
                     () -> assertQ(req("qt", rh_analyzing_long,
                             SuggesterParams.SUGGEST_BUILD_ALL, "true"),
                             "//str[@name='command'][.='buildAll']")));
@@ -125,7 +126,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
           (SolrCoreState.CoreIsClosedException.class, SolrException.class, IllegalStateException.class, NullPointerException.class));
       final Throwable[] outerException = new Throwable[1];
       // Build the suggester in the background with a long dictionary
-      Future job = executor.submit(() -> outerException[0] = expectThrowsAnyOf(expected,
+      Future job = executor.submit(() -> outerException[0] = LuceneTestCase.expectThrowsAnyOf(expected,
           () -> assertQ(req("qt", rh_analyzing_long, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
               "//str[@name='command'][.='buildAll']")));
     //  Thread.sleep(100); // TODO: is there a better way to ensure that the build has begun?

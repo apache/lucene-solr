@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -64,7 +65,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   public static void setupClass() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
     configureCluster(NUM_NODES)// nodes
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
     docsSeed = random().nextLong();
@@ -88,7 +89,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     BackupRestoreUtils.verifyDocs(nDocs, solrClient, collectionName);
 
     // Set a collection property
-    final boolean collectionPropertySet = usually();
+    final boolean collectionPropertySet = LuceneTestCase.usually();
     if (collectionPropertySet) {
       CollectionAdminRequest.CollectionProp setProperty = CollectionAdminRequest.setCollectionProperty(collectionName, "test.property", "test.value");
       setProperty.process(solrClient);
@@ -97,7 +98,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
 
     // Verify if snapshot creation works with replica failures.
-    boolean replicaFailures = usually();
+    boolean replicaFailures = LuceneTestCase.usually();
     Optional<String> stoppedCoreName = Optional.empty();
     if (replicaFailures) {
       // Here the assumption is that Solr will spread the replicas uniformly across nodes.
@@ -165,7 +166,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       BackupRestoreUtils.verifyDocs(0, solrClient, collectionName);
     }
 
-    String backupLocation = createTempDir().toFile().getAbsolutePath();
+    String backupLocation = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     String backupName = "mytestbackup";
     String restoreCollectionName = collectionName + "_restored";
 
@@ -208,7 +209,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
     // Verify if the snapshot deletion works correctly when one or more replicas containing the snapshot are
     // deleted
-    boolean replicaDeletion = rarely();
+    boolean replicaDeletion = LuceneTestCase.rarely();
     if (replicaDeletion) {
       CoreSnapshotMetaData replicaToDelete = null;
       for (String shardId : meta.getShards()) {

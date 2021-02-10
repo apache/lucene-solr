@@ -19,6 +19,7 @@ package org.apache.solr.cloud.api.collections;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -31,7 +32,7 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   @BeforeClass
   public static void setupClass() throws Exception {
     configSet = getConfigSet();
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(SolrTestUtil.createTempDir().toFile().getAbsolutePath());
   }
 
   @AfterClass

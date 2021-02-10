@@ -21,6 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -51,7 +53,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(3)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .withSecurityJson(STD_CONF)
         .configure();
   }
@@ -95,7 +97,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
       // Without the SOLR-13793 fix, this causes requests to "down collection" to pile up (until the nodes run out
       // of serviceable threads and they crash, even for other collections hosted on the nodes).
-      SolrException error = expectThrows(SolrException.class, "Request should fail after trying all replica nodes once", () -> client.request(req, COLLECTION_NAME));
+      SolrException error = SolrTestCaseUtil.expectThrows(SolrException.class, "Request should fail after trying all replica nodes once", () -> client.request(req, COLLECTION_NAME));
 
       assertEquals(404, error.code());
     }
@@ -104,7 +106,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     try (Http2SolrClient v2Client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl())
         .build()) {
       SolrRequest req = new QueryRequest(new SolrQuery("*:*").setRows(0)).setBasicAuthCredentials(USERNAME, PASSWORD);
-      SolrException error = expectThrows(SolrException.class, "Request should fail after trying all replica nodes once", () -> v2Client.request(req, COLLECTION_NAME));
+      SolrException error = SolrTestCaseUtil.expectThrows(SolrException.class, "Request should fail after trying all replica nodes once", () -> v2Client.request(req, COLLECTION_NAME));
 
       assertEquals(404, error.code());
     }

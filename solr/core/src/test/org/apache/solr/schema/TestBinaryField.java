@@ -19,11 +19,10 @@ package org.apache.solr.schema;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -44,7 +43,7 @@ public class TestBinaryField extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    File homeDir = createTempDir().toFile();
+    File homeDir = SolrTestUtil.createTempDir().toFile();
 
     File collDir = new File(homeDir, "collection1");
     File dataDir = new File(collDir, "data");
@@ -55,9 +54,9 @@ public class TestBinaryField extends SolrJettyTestBase {
     dataDir.mkdirs();
     confDir.mkdirs();
 
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr.xml"), new File(homeDir, "solr.xml"));
 
-    String src_dir = TEST_HOME() + "/collection1/conf";
+    String src_dir = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(src_dir, "schema-binaryfield.xml"), 
                        new File(confDir, "schema.xml"));
     FileUtils.copyFile(new File(src_dir, "solrconfig-basic.xml"), 

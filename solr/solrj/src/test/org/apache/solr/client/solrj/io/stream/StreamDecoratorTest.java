@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -91,8 +92,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.http2solrclient.default.idletimeout", "30000");
     configureCluster(TEST_NIGHTLY ? 4 : 2)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
-        .addConfig("ml", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
+        .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig("ml", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
 
     String collection;
@@ -947,7 +948,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // too slow for non-Nightly
+  @LuceneTestCase.Nightly // too slow for non-Nightly
   public void testDaemonStream() throws Exception {
 
     new UpdateRequest()
@@ -2774,7 +2775,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3320,7 +3321,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testParallelDaemonCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
@@ -3529,7 +3530,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // slow
+  @LuceneTestCase.Nightly // slow
   public void testClassifyStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -3761,7 +3762,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1).processAndWait( cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -3829,7 +3830,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testParallelExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     CollectionAdminRequest.createCollection("mainCorpus1", "conf", 2, 1).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -4172,7 +4173,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     // stream.close();
   }
 
-  @Nightly // slower
+  @LuceneTestCase.Nightly // slower
   public void testDeleteStream() throws Exception {
     final String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
     final SolrClient client = cluster.getSolrClient();

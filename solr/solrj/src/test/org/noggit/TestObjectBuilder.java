@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 import org.noggit.JSONParser.ParseException;
@@ -115,14 +116,14 @@ public class TestObjectBuilder extends SolrTestCaseJ4 {
     
     assertEquals("old method ignores tails", "foo",
         ObjectBuilder.fromJSON("\"foo\" \"baar\" "));
-    expectThrows(ParseException.class,
+    LuceneTestCase.expectThrows(ParseException.class,
         () -> ObjectBuilder.fromJSONStrict("\"foo\" \"bar\""));
-    
-    expectThrows(ParseException.class,
+
+    LuceneTestCase.expectThrows(ParseException.class,
          () -> ObjectBuilder.fromJSONStrict("{\"foo\":\"bar\"} \"ban\":\"buzz\"}"));
-    expectThrows(ParseException.class,
+    LuceneTestCase.expectThrows(ParseException.class,
         () -> ObjectBuilder.getValStrict(new JSONParser("{\"foo\":\"bar\"} \"ban\":\"buzz\"}")));
-    expectThrows(ParseException.class,
+    LuceneTestCase.expectThrows(ParseException.class,
         () -> new ObjectBuilder(new JSONParser("{\"foo\":\"bar\"} \"ban\":\"buzz\"}")).getValStrict());
 
 

@@ -21,7 +21,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -121,9 +123,9 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   }
   
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testZkConnected() throws Exception{
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
 
     final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -138,7 +140,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       // create collection
       String collectionName = "testSolrCloudCollection";
       String configName = "solrCloudCollectionConfig";
-      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
+      miniCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
           .process(miniCluster.getSolrClient());
@@ -165,9 +167,9 @@ public class SearchHandlerTest extends SolrTestCaseJ4
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testRequireZkConnected() throws Exception{
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, createTempDir(), buildJettyConfig("/solr"));
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(5, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
 
     final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -182,7 +184,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       // create collection
       String collectionName = "testRequireZkConnectedCollection";
       String configName = collectionName + "Config";
-      miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
+      miniCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
           .process(miniCluster.getSolrClient());
@@ -215,7 +217,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
 
   @Test
   public void testRequireZkConnectedDistrib() throws Exception{
-    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig("/solr"));
+    MiniSolrCloudCluster miniCluster = new MiniSolrCloudCluster(2, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
 
     final CloudHttp2SolrClient cloudSolrClient = miniCluster.getSolrClient();
 
@@ -230,7 +232,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       // create collection
       String collectionName = "testRequireZkConnectedDistribCollection";
       String configName = collectionName + "Config";
-      miniCluster.uploadConfigSet(TEST_PATH().resolve("collection1").resolve("conf"), configName);
+      miniCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1").resolve("conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 1)
           .process(miniCluster.getSolrClient());

@@ -33,6 +33,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -74,7 +75,7 @@ public class IndexSizeEstimatorTest extends SolrCloudTestCase {
     System.setProperty("solr.tests.numeric.points", "true");
     System.setProperty("solr.tests.numeric.points.dv", "true");
     configureCluster(2)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
     solrClient = cluster.getSolrClient();
     CollectionAdminRequest.createCollection(collection, "conf", 2, 2).process(solrClient);

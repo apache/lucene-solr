@@ -24,6 +24,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -48,7 +49,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     useFactory(null);
     super.setUp();
     configureCluster(6)
-        .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 

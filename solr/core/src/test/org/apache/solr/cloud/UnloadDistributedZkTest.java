@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -99,7 +100,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testUnloadShardAndCollection() throws Exception{
     final int numShards = 2;
 
@@ -160,7 +161,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
    * @throws Exception on any problem
    */
   @Test
-  @AwaitsFix(bugUrl = "unload is not correct here, we should delete the replica")
+  @LuceneTestCase.AwaitsFix(bugUrl = "unload is not correct here, we should delete the replica")
   public void testCoreUnloadAndLeaders() throws Exception {
     JettySolrRunner jetty1 = cluster.getJettySolrRunner(0);
 
@@ -312,11 +313,11 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testUnloadLotsOfCores() throws Exception {
     JettySolrRunner jetty = cluster.getJettySolrRunner(1);
     try (final Http2SolrClient adminClient = (Http2SolrClient) jetty.newClient(15000, 60000)) {
-      int numReplicas = atLeast(3);
+      int numReplicas = LuceneTestCase.atLeast(3);
 
 
       // create the cores

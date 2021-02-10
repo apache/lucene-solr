@@ -34,6 +34,7 @@ import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -68,7 +69,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
   public static void setupClass() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
     configureCluster(1)// nodes
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     docsSeed = random().nextLong();
   }
@@ -86,7 +87,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1).setMaxShardsPerNode(10);
     create.process(solrClient);
 
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     int nDocs = BackupRestoreUtils.indexDocs(cluster.getSolrClient(), collectionName, docsSeed);
 
     DocCollection collectionState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);

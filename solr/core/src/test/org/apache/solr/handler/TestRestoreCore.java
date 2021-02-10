@@ -34,6 +34,8 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -58,7 +60,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static long docsSeed; // see indexDocs()
 
   private static JettySolrRunner createAndStartJetty(TestReplicationHandler.SolrInstance instance) throws Exception {
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr.xml"), new File(instance.getHomeDir(), "solr.xml"));
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setContext("/solr").setPort(0).build();
@@ -87,7 +89,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     super.setUp();
     String configFile = "solrconfig-master.xml";
 
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
+    master = new TestReplicationHandler.SolrInstance(SolrTestUtil.createTempDir("solr-instance").toFile(), "master", null);
     master.setUp();
     master.copyConfigFile(CONF_DIR + configFile, "solrconfig.xml");
 
@@ -126,7 +128,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     //Use the default backup location or an externally provided location.
     if (random().nextBoolean()) {
-      location = createTempDir().toFile().getAbsolutePath();
+      location = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
       params += "&location=" + URLEncoder.encode(location, "UTF-8");
     }
 
@@ -191,7 +193,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   public void testFailedRestore() throws Exception {
     int nDocs = BackupRestoreUtils.indexDocs(masterClient, "collection1", docsSeed);
 
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
     String params = "&name=" + snapshotName + "&location=" + URLEncoder.encode(location, "UTF-8");
     String baseUrl = masterJetty.getBaseUrl().toString();
@@ -213,14 +215,14 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
 
-    expectThrows(AssertionError.class, () -> {
-        for (int i = 0; i < 20; i++) {
-          // this will throw an assertion once we get what we expect
-          fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME);
-          Thread.sleep(50);
-        }
-        // if we never got an assertion let expectThrows complain
-      });
+    SolrTestCaseUtil.expectThrows(AssertionError.class, () -> {
+      for (int i = 0; i < 20; i++) {
+        // this will throw an assertion once we get what we expect
+        fetchRestoreStatus(baseUrl, DEFAULT_TEST_CORENAME);
+        Thread.sleep(50);
+      }
+      // if we never got an assertion let expectThrows complain
+    });
 
     BackupRestoreUtils.verifyDocs(nDocs, masterClient, DEFAULT_TEST_CORENAME);
 

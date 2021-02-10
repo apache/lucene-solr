@@ -100,12 +100,18 @@ public class UUIDUpdateProcessorFactory extends UpdateRequestProcessorFactory {
       fieldName = schemaField.getName();
     }
 
-    return new AbstractDefaultValueUpdateProcessorFactory.DefaultValueUpdateProcessor(fieldName, next) {
-      @Override
-      public Object getDefaultValue() {
-        return UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
-      }
-    };
+    return new MyDefaultValueUpdateProcessor(fieldName, next);
+  }
+
+  private static class MyDefaultValueUpdateProcessor extends AbstractDefaultValueUpdateProcessorFactory.DefaultValueUpdateProcessor {
+    public MyDefaultValueUpdateProcessor(String fieldName, UpdateRequestProcessor next) {
+      super(fieldName, next);
+    }
+
+    @Override
+    public Object getDefaultValue() {
+      return UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
+    }
   }
 }
 

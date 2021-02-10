@@ -24,6 +24,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.CursorPagingTest;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -51,7 +52,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   public static void buildIndexAndClient() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-sorts.xml");
     
-    final int totalDocs = atLeast(TEST_NIGHTLY ? 500 : 50);
+    final int totalDocs = SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 50);
     for (int i = 1; i <= totalDocs; i++) {
       SolrInputDocument doc = CursorPagingTest.buildRandomDocument(i);
       // every doc will be in the same group for this (string) field
@@ -129,7 +130,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   
   public void testRandomCollpaseWithSort() throws Exception {
     
-    final int numMainQueriesPerCollapseField = atLeast(TEST_NIGHTLY ? 5 : 2);
+    final int numMainQueriesPerCollapseField = SolrTestUtil.atLeast(TEST_NIGHTLY ? 5 : 2);
     
     for (String collapseField : ALL_COLLAPSE_FIELD_NAMES) {
       for (int i = 0; i < numMainQueriesPerCollapseField; i++) {

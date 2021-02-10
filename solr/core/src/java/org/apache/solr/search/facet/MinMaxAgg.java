@@ -349,7 +349,7 @@ public class MinMaxAgg extends SimpleAggValueSource {
   }
 
 
-  abstract class OrdAcc extends SlotAcc {
+  abstract static class OrdAcc extends SlotAcc {
     final static int MISSING = -1;
     SchemaField field;
     int[] slotOrd;

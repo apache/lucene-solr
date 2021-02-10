@@ -30,6 +30,7 @@ import java.util.Random;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -66,14 +67,14 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
     // multi replicas should matter...
-    final int repFactor = usually() ? 1 : 2;;
+    final int repFactor = LuceneTestCase.usually() ? 1 : 2;;
     // ... but we definitely want to ensure forwarded requests to other shards work ...
     final int numShards = 2;
     // ... including some forwarded requests from nodes not hosting a shard
     final int numNodes = 1 + (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -727,7 +728,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     final List<String> fl = Arrays.asList
       ("id","[docid]","[explain]","score","val_*","subj*");
     
-    final int iters = atLeast(random, 10);
+    final int iters = LuceneTestCase.atLeast(random, 10);
     for (int i = 0; i< iters; i++) {
       
       Collections.shuffle(fl, random);
@@ -762,7 +763,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     final List<String> fl = Arrays.asList
       ("id","[docid]","[explain]","score","val_*","subj*");
     
-    final int iters = atLeast(random, 10);
+    final int iters = LuceneTestCase.atLeast(random, 10);
     for (int i = 0; i< iters; i++) {
       
       Collections.shuffle(fl, random);

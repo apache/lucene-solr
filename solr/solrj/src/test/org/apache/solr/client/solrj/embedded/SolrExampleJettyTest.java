@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -58,7 +59,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   public void testBadSetup() {
     // setup the server...
     String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";
-    expectThrows(Exception.class, () -> getHttpSolrClient(url));
+    LuceneTestCase.expectThrows(Exception.class, () -> getHttpSolrClient(url));
   }
 
   @Test
@@ -114,7 +115,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
   }
 
-  @Nightly
+  @LuceneTestCase.Nightly
   @Test
   public void testUtf8QueryPerf() throws Exception {
     Http2SolrClient client = (Http2SolrClient)getSolrClient(jetty);
@@ -137,17 +138,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     assertEquals(10, rsp.getResults().getNumFound());
 
 
-    client.setParser(new BinaryResponseParser() {
-      @Override
-      public NamedList<Object> processResponse(InputStream body, String encoding) {
-        try {
-          IOUtils.skip(body, 1024 * 1000);
-        } catch (IOException e) {
-          log.error("", e);
-        }
-        return rsp.getResponse();
-      }
-    });
+    client.setParser(new MyBinaryResponseParser(rsp));
 
 
     runQueries(client, 1000, true);
@@ -169,4 +160,21 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
   }
 
+  private static class MyBinaryResponseParser extends BinaryResponseParser {
+    private final QueryResponse rsp;
+
+    public MyBinaryResponseParser(QueryResponse rsp) {
+      this.rsp = rsp;
+    }
+
+    @Override
+    public NamedList<Object> processResponse(InputStream body, String encoding) {
+      try {
+        IOUtils.skip(body, 1024 * 1000);
+      } catch (IOException e) {
+        log.error("", e);
+      }
+      return rsp.getResponse();
+    }
+  }
 }

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -102,7 +103,7 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     // are for nought.  (see LogUpdateProcessorFactory.getInstance)
     //
     // TODO: maybe create a new mock Processor w/ @RunAlways annot if folks feel requiring INFO is evil.
-    assumeTrue("Tests must be run with INFO level logging "+
+    LuceneTestCase.assumeTrue("Tests must be run with INFO level logging "+
                "otherwise LogUpdateProcessor isn't used and can't be tested.", log.isInfoEnabled());
     
     final int EXPECTED_CHAIN_LENGTH = 5;

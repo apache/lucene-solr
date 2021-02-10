@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.loader.XMLLoader;
@@ -113,7 +114,7 @@ public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testExternalEntities() throws Exception
   {
-    String file = getFile("mailing_lists.pdf").toURI().toASCIIString();
+    String file = SolrTestUtil.getFile("mailing_lists.pdf").toURI().toASCIIString();
     String xml = 
       "<?xml version=\"1.0\"?>" +
       // check that external entities are not resolved!

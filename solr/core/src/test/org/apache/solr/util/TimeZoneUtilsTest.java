@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 
@@ -94,7 +95,7 @@ public class TimeZoneUtilsTest extends SolrTestCase {
   public void testInvalidInput() throws Exception {
 
     final String giberish = "giberish";
-    assumeFalse("This test assumes that " + giberish + " is not a valid tz id",
+    LuceneTestCase.assumeFalse("This test assumes that " + giberish + " is not a valid tz id",
                 TimeZoneUtils.KNOWN_TIMEZONE_IDS.contains(giberish));
     assertNull(giberish, TimeZoneUtils.getTimeZone(giberish));
 
@@ -114,7 +115,7 @@ public class TimeZoneUtilsTest extends SolrTestCase {
     final String TWO_DIGIT = "%02d";
 
     final Random r = random();
-    final int iters = atLeast(r, 50);
+    final int iters = LuceneTestCase.atLeast(r, 50);
     for (int i = 0; i <= iters; i++) {
       int hour = TestUtil.nextInt(r, 0, 23);
       int min = TestUtil.nextInt(r, 0, 59);

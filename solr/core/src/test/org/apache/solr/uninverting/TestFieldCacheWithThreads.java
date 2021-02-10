@@ -51,9 +51,9 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
 
   public void test() throws Exception {
     Directory dir = new ByteBuffersDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(LuceneTestCase.newLogMergePolicy()));
 
-    final int numDocs = TEST_NIGHTLY ? atLeast(100) : 20;
+    final int numDocs = TEST_NIGHTLY ? LuceneTestCase.atLeast(100) : 20;
     final List<Long> numbers = new ArrayList<>(numDocs);
     final List<BytesRef> binary = new ArrayList<>(numDocs);
     final List<BytesRef> sorted = new ArrayList<>(numDocs);
@@ -89,7 +89,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
           public void run() {
             try {
               startingGun.await();
-              int iters = atLeast(TEST_NIGHTLY ? 1000 : 100);
+              int iters = LuceneTestCase.atLeast(TEST_NIGHTLY ? 1000 : 100);
               for(int iter=0;iter<iters;iter++) {
                 int docID = threadRandom.nextInt(numDocs);
                 switch(threadRandom.nextInt(4)) {
@@ -148,10 +148,10 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     dir.close();
   }
 
-  @Nightly // can generate a lot of garbage
+  @LuceneTestCase.Nightly // can generate a lot of garbage
   public void test2() throws Exception {
     Random random = random();
-    final int NUM_DOCS = TEST_NIGHTLY ? atLeast(100) : 20;
+    final int NUM_DOCS = TEST_NIGHTLY ? LuceneTestCase.atLeast(100) : 20;
     final Directory dir = new ByteBuffersDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     final boolean allowDups = random.nextBoolean();
@@ -200,7 +200,7 @@ public class TestFieldCacheWithThreads extends SolrTestCase {
     final DirectoryReader r = writer.getReader();
     writer.close();
     
-    final LeafReader sr = getOnlyLeafReader(r);
+    final LeafReader sr = LuceneTestCase.getOnlyLeafReader(r);
 
     final long END_TIME = System.nanoTime() + TimeUnit.NANOSECONDS.convert((TEST_NIGHTLY ? 30 : 1), TimeUnit.SECONDS);
 

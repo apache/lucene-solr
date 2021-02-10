@@ -16,23 +16,11 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.IOException;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Supplier;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.io.Lang;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -40,8 +28,6 @@ import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
-import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -65,6 +51,17 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 /**
 *  All base tests will be done with CloudSolrStream. Under the covers CloudSolrStream uses SolrStream so
@@ -102,7 +99,7 @@ public static void configureCluster() throws Exception {
   numShards = random().nextInt(2) + 2;  //1 - 3
   numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
   configureCluster(numShards)
-      .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+      .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
       .configure();
 
   String collection;
@@ -1304,7 +1301,7 @@ public void testParallelRankStream() throws Exception {
   };
 
   @Test
-  @Slow
+  @LuceneTestCase.Slow
   public void testMissingFields() throws Exception {
 
     new UpdateRequest()
@@ -1747,7 +1744,7 @@ public void testParallelRankStream() throws Exception {
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testDaemonTopicStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 
@@ -1772,7 +1769,7 @@ public void testParallelRankStream() throws Exception {
       CheckDaemonStream(context, daemonStream);
 
       // We should get an error if we try to open an already-open stream.
-      final IOException ex = expectThrows(IOException.class, () -> {
+      final IOException ex = LuceneTestCase.expectThrows(IOException.class, () -> {
         daemonStream.open();
       });
       assertEquals("Should have an intelligible exception message", ex.getMessage(), "There is already an open daemon named 'daemon1', no action taken.");

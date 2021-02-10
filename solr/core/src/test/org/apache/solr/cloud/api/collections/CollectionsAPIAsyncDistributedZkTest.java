@@ -19,6 +19,7 @@ package org.apache.solr.cloud.api.collections;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -66,7 +67,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     // we recreate per test - they need to be isolated to be solid
     useFactory(null);
     configureCluster(2)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
   }
   
@@ -96,7 +97,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Nightly // slow, processAndWait still polls ...
+  @LuceneTestCase.Nightly // slow, processAndWait still polls ...
   public void testAsyncRequests() throws Exception {
     final String collection = "testAsyncOperations";
     final CloudHttp2SolrClient client = cluster.getSolrClient();

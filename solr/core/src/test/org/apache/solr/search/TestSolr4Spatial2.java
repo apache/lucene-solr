@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.geo.GeoTestUtil;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -251,7 +252,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         doc.addField(combo.fieldName, indexValue);
       }
       assertU(adoc(doc));
-      if (TestUtils.rarely()) { // induce segments to potentially change internal behavior
+      if (LuceneTestCase.rarely()) { // induce segments to potentially change internal behavior
         assertU(commit());
       }
     }

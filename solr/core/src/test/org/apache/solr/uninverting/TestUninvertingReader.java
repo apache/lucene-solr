@@ -41,6 +41,8 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.LegacyIntField;
 import org.apache.solr.legacy.LegacyLongField;
@@ -55,8 +57,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
 public class TestUninvertingReader extends SolrTestCase {
   
   public void testSortedSetInteger() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
@@ -96,8 +98,8 @@ public class TestUninvertingReader extends SolrTestCase {
   }
   
   public void testSortedSetFloat() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
@@ -138,8 +140,8 @@ public class TestUninvertingReader extends SolrTestCase {
   }
   
   public void testSortedSetLong() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
@@ -179,8 +181,8 @@ public class TestUninvertingReader extends SolrTestCase {
   }
   
   public void testSortedSetDouble() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
@@ -222,8 +224,8 @@ public class TestUninvertingReader extends SolrTestCase {
 
   /** Tests {@link Type#SORTED_SET_INTEGER} using Integer based fields, with and w/o precision steps */
   public void testSortedSetIntegerManyValues() throws IOException {
-    final Directory dir = newDirectory();
-    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    final Directory dir = SolrTestUtil.newDirectory();
+    final IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     
     final LegacyFieldType NO_TRIE_TYPE = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
     NO_TRIE_TYPE.setNumericPrecisionStep(Integer.MAX_VALUE);
@@ -261,7 +263,7 @@ public class TestUninvertingReader extends SolrTestCase {
         doc.add(new LegacyIntField("notrie_single", val, NO_TRIE_TYPE));
       }
       if (0 != TestUtil.nextInt(random(), 0, 9)) {
-        int numMulti = atLeast(1);
+        int numMulti = SolrTestUtil.atLeast(1);
         while (0 < numMulti--) {
           int val = TestUtil.nextInt(random(), MIN, MAX);
           doc.add(new LegacyIntField("trie_multi", val, Field.Store.NO));
@@ -312,8 +314,8 @@ public class TestUninvertingReader extends SolrTestCase {
   }
   
   public void testSortedSetEmptyIndex() throws IOException {
-    final Directory dir = newDirectory();
-    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    final Directory dir = SolrTestUtil.newDirectory();
+    final IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
     iw.close();
     
     final Map<String,Type> UNINVERT_MAP = new LinkedHashMap<String,Type>();
@@ -348,8 +350,8 @@ public class TestUninvertingReader extends SolrTestCase {
   }
 
   public void testFieldInfos() throws IOException {
-    Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    Directory dir = SolrTestUtil.newDirectory();
+    IndexWriter iw = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(null));
 
     Document doc = new Document();
     BytesRef idBytes = new BytesRef("id");

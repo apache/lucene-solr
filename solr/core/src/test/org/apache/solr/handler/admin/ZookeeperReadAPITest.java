@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
@@ -41,7 +42,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
   public static void setupCluster() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1)
-        .addConfig("_default", configset("cloud-minimal"))
+        .addConfig("_default", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
 

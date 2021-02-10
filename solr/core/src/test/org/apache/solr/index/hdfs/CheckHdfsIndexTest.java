@@ -23,6 +23,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.index.BaseTestCheckIndex;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
@@ -58,7 +59,7 @@ public class CheckHdfsIndexTest extends SolrCloudBridgeTestCase {
   public static void setupClass() throws Exception {
     System.setProperty("solr.spellcheck.enabled", "false");
 
-    dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+    dfsCluster = HdfsTestUtil.setupClass(SolrTestUtil.createTempDir().toFile().getAbsolutePath());
     path = new Path(HdfsTestUtil.getURI(dfsCluster) + "/solr/");
   }
 

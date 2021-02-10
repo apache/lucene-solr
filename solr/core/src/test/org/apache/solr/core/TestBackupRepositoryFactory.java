@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.IOUtils;
@@ -36,8 +37,6 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
 
@@ -50,7 +49,7 @@ public class TestBackupRepositoryFactory extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupLoader() throws Exception {
-    solrHome = createTempDir().toFile();
+    solrHome = SolrTestUtil.createTempDir().toFile();
     loader = new SolrResourceLoader(solrHome.toPath());
   }
 

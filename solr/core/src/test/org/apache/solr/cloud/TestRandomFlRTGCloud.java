@@ -33,8 +33,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -128,14 +130,14 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     final boolean singleCoreMode = random().nextBoolean();
 
     // (asuming multi core multi replicas shouldn't matter (assuming multi node) ...
-    final int repFactor = singleCoreMode ? 1 : (usually() ? 1 : 2);
+    final int repFactor = singleCoreMode ? 1 : (LuceneTestCase.usually() ? 1 : 2);
     // ... but we definitely want to ensure forwarded requests to other shards work ...
     final int numShards = singleCoreMode ? 1 : 2;
     // ... including some forwarded requests from nodes not hosting a shard
     final int numNodes = 1 + (singleCoreMode ? 0 : (numShards * repFactor));
 
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
 
     configureCluster(numNodes).addConfig(configName, configDir).configure();
 
@@ -205,12 +207,12 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
                  0, implicit.size());
   }
 
-  @AwaitsFix(bugUrl = "Flakey test - expected:<1> but was:<0> TestRandomFlRTGCloud.java:226 TestRandomFlRTGCloud.java:269 TestRandomFlRTGCloud.java:406")
+  @LuceneTestCase.AwaitsFix(bugUrl = "Flakey test - expected:<1> but was:<0> TestRandomFlRTGCloud.java:226 TestRandomFlRTGCloud.java:269 TestRandomFlRTGCloud.java:406")
   public void testRandomizedUpdatesAndRTGs() throws Exception {
 
-    final int maxNumDocs = atLeast( TEST_NIGHTLY ? 100 : 35);
+    final int maxNumDocs = LuceneTestCase.atLeast( TEST_NIGHTLY ? 100 : 35);
     final int numSeedDocs = random().nextInt(maxNumDocs / 10); // at most ~10% of the max possible docs
-    final int numIters = atLeast(maxNumDocs * (TEST_NIGHTLY ? 10 : 3));
+    final int numIters = LuceneTestCase.atLeast(maxNumDocs * (TEST_NIGHTLY ? 10 : 3));
     final SolrInputDocument[] knownDocs = new SolrInputDocument[maxNumDocs];
 
     log.info("Starting {} iters by seeding {} of {} max docs",
@@ -247,7 +249,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   private void assertOneIter(final SolrInputDocument[] knownDocs) throws IOException, SolrServerException {
     // we want to occasionally test more then one doc per RTG
-    final int numDocsThisIter = TestUtil.nextInt(random(), 1, atLeast(2));
+    final int numDocsThisIter = TestUtil.nextInt(random(), 1, LuceneTestCase.atLeast(2));
     int numDocsThisIterThatExist = 0;
 
     // pick some random docIds for this iteration and ...
@@ -349,7 +351,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     final ModifiableSolrParams params = params("qt","/get");
 
     // random fq -- nothing fancy, secondary concern for our test
-    final Integer FQ_MAX = usually() ? null : random().nextInt();
+    final Integer FQ_MAX = LuceneTestCase.usually() ? null : random().nextInt();
     if (null != FQ_MAX) {
       params.add("fq", "aaa_i:[* TO " + FQ_MAX + "]");
     }

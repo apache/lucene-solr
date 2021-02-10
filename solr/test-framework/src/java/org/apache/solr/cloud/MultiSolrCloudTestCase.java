@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.junit.After;
 import org.junit.Before;
@@ -53,8 +54,8 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
     public MiniSolrCloudCluster apply(String clusterId) {
       try {
         final MiniSolrCloudCluster cluster = new SolrCloudTestCase
-            .Builder(nodesPerCluster(clusterId), createTempDir())
-            .addConfig("conf", configset("cloud-dynamic"))
+            .Builder(nodesPerCluster(clusterId), SolrTestUtil.createTempDir())
+            .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
             .formatZk(true).build();
         return cluster;
       } catch (Exception e) {

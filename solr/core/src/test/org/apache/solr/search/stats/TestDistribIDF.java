@@ -16,8 +16,10 @@
  */
 package org.apache.solr.search.stats;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -55,13 +57,13 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     }
     System.setProperty("enable.update.log", "true");
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(3, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
     // set some system properties for use by tests
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     solrCluster.getZkClient().mkdirs("/solr/configs");
-    solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1").resolve("conf"), "conf1");
-    solrCluster.uploadConfigSet(configset("configset-2"), "conf2");
+    solrCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1").resolve("conf"), "conf1");
+    solrCluster.uploadConfigSet(SolrTestUtil.configset("configset-2"), "conf2");
   }
 
   @Override
@@ -103,7 +105,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       String cat = TestUtil.randomSimpleString(random());
       if (!cat.equals("football")) { //Making sure no other document has the query term in it.
         doc.setField("cat", cat);
-        if (rarely()) { //Put most documents in shard b so that 'football' becomes 'rare' in shard b
+        if (LuceneTestCase.rarely()) { //Put most documents in shard b so that 'football' becomes 'rare' in shard b
           doc.addField(ShardParams._ROUTE_, "a");
         } else {
           doc.addField(ShardParams._ROUTE_, "b");
@@ -242,7 +244,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
       String cat = TestUtil.randomSimpleString(random());
       if (!cat.equals("football")) { //Making sure no other document has the query term in it.
         doc.setField("cat", cat);
-        if (rarely()) { //Put most documents in collection2* so that 'football' becomes 'rare' in collection2*
+        if (LuceneTestCase.rarely()) { //Put most documents in collection2* so that 'football' becomes 'rare' in collection2*
           solrCluster.getSolrClient().add("collection1", doc);
           solrCluster.getSolrClient().add("collection1_local", doc);
           collection1Count++;

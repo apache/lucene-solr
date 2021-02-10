@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -41,7 +43,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml");
 
     XmlDoc docs = new XmlDoc();
-    for (int i = 0; i < atLeast(10); i++) {
+    for (int i = 0; i < SolrTestUtil.atLeast(10); i++) {
       docs.xml += doc("id", "" + i,
           "name_s", "" + i);
     }
@@ -54,7 +56,7 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
 
     Random random = random();
     
-    for (int i = 0; i < atLeast(random, 2); i++) {
+    for (int i = 0; i < LuceneTestCase.atLeast(random, 2); i++) {
 
       int asyncId = taskNum.incrementAndGet();
 

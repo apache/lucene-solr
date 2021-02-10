@@ -36,13 +36,15 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 
 public class TestSlowCompositeReaderWrapper extends SolrTestCase {
 
   public void testCoreListenerOnSlowCompositeReaderWrapper() throws IOException {
-    RandomIndexWriter w = new RandomIndexWriter(random(), newDirectory());
+    RandomIndexWriter w = new RandomIndexWriter(random(), SolrTestUtil.newDirectory());
     final int numDocs = TestUtil.nextInt(random(), 1, 5);
     for (int i = 0; i < numDocs; ++i) {
       w.addDocument(new Document());
@@ -98,8 +100,8 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
   }
 
   public void testOrdMapsAreCached() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Directory dir = SolrTestUtil.newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, LuceneTestCase.newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(new SortedDocValuesField("sorted", new BytesRef("a")));
     doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef("b")));
@@ -125,8 +127,8 @@ public class TestSlowCompositeReaderWrapper extends SolrTestCase {
   }
 
   public void testTermsAreCached() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Directory dir = SolrTestUtil.newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, LuceneTestCase.newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(new TextField("text", "hello world", Field.Store.NO));
     w.addDocument(doc);

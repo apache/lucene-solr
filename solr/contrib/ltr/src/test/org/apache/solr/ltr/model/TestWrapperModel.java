@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
@@ -68,13 +69,13 @@ public class TestWrapperModel extends TestRerankBase {
     // wrapper model with features
     WrapperModel wrapperModelWithFeatures = new StubWrapperModel("testModel",
         Collections.singletonList(new ValueFeature("val", Collections.emptyMap())), Collections.emptyList());
-    ModelException e = expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
+    ModelException e = SolrTestCaseUtil.expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
     assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
 
     // wrapper model with norms
     WrapperModel wrapperModelWithNorms = new StubWrapperModel("testModel",
         Collections.emptyList(), Collections.singletonList(IdentityNormalizer.INSTANCE));
-    e = expectThrows(ModelException.class, wrapperModelWithNorms::validate);
+    e = SolrTestCaseUtil.expectThrows(ModelException.class, wrapperModelWithNorms::validate);
     assertEquals("norms must be empty for the wrapper model testModel", e.getMessage());
 
     assumeWorkingMockito();
@@ -104,7 +105,7 @@ public class TestWrapperModel extends TestRerankBase {
                   IdentityNormalizer.INSTANCE,
                   IdentityNormalizer.INSTANCE)
               );
-      e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
+      e = SolrTestCaseUtil.expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("wrapper feature store name (_DEFAULT_) must match the wrapped feature store name (wrappedFeatureStore)", e.getMessage());
     }
 
@@ -117,7 +118,7 @@ public class TestWrapperModel extends TestRerankBase {
                   IdentityNormalizer.INSTANCE,
                   IdentityNormalizer.INSTANCE)
               );
-      e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
+      e = SolrTestCaseUtil.expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("no features declared for model testModel", e.getMessage());
     }
 
@@ -130,7 +131,7 @@ public class TestWrapperModel extends TestRerankBase {
                   new ValueFeature("v2", Collections.emptyMap())),
               Collections.emptyList()
               );
-      e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
+      e = SolrTestCaseUtil.expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("counted 2 features and 0 norms in model testModel", e.getMessage());
     }
   }

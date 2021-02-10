@@ -21,12 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.collect.Lists;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -48,8 +47,8 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
     super.setUp();
   }
 
-  private void assertExceptionThrownWithMessageContaining(Class expectedType, List<String> expectedStrings, ThrowingRunnable runnable) {
-    Throwable thrown = expectThrows(expectedType, runnable);
+  private void assertExceptionThrownWithMessageContaining(Class expectedType, List<String> expectedStrings, LuceneTestCase.ThrowingRunnable runnable) {
+    Throwable thrown = LuceneTestCase.expectThrows(expectedType, runnable);
 
     if (expectedStrings != null) {
       for (String expectedString : expectedStrings) {

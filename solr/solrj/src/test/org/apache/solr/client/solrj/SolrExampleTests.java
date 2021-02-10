@@ -35,8 +35,10 @@ import java.util.Map;
 import java.util.Random;
 
 import com.google.common.collect.Maps;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
@@ -111,7 +113,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   @Test
-  @Monster("Only useful to verify the performance of serialization+ deserialization")
+  @LuceneTestCase.Monster("Only useful to verify the performance of serialization+ deserialization")
   // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
   public void testQueryPerf() throws Exception {
     ArrayList<SolrInputDocument> docs = new ArrayList<>();
@@ -436,7 +438,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   
   public void testUnicode() throws Exception {
     Random random = random();
-    int numIterations = atLeast(3);
+    int numIterations = LuceneTestCase.atLeast(3);
     
     SolrClient client = getSolrClient(jetty);
     
@@ -458,7 +460,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
           }
         }
 
-        int numDocs = TestUtil.nextInt(random(), 1, 10 * RANDOM_MULTIPLIER);
+        int numDocs = TestUtil.nextInt(random(), 1, 10 * LuceneTestCase.RANDOM_MULTIPLIER);
         
         // Empty the database...
         client.deleteByQuery("*:*");// delete everything!
@@ -504,13 +506,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.set(CommonParams.QT, "/analysis/field");
     query.set(AnalysisParams.FIELD_TYPE, "pint");
     query.set(AnalysisParams.FIELD_VALUE, "ignore_exception");
-    SolrException ex = expectThrows(SolrException.class, () -> client.query(query));
+    SolrException ex = LuceneTestCase.expectThrows(SolrException.class, () -> client.query(query));
     assertEquals(400, ex.code());
     assertThat(ex.getMessage(), containsString("Invalid Number: ignore_exception"));
 
     //the df=text here is a kluge for the test to supply a default field in case there is none in schema.xml
     // alternatively, the resulting assertion could be modified to assert that no default field is specified.
-    Exception ex2 = expectThrows(Exception.class, () -> client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ));
+    Exception ex2 = LuceneTestCase.expectThrows(Exception.class, () -> client.deleteByQuery( "{!df=text} ??::?? ignore_exception" ));
     assertTrue(ex2.getMessage().indexOf("??::?? ignore_exception")>0);  // The reason should get passed through
     assertEquals(400, ex.code());
 
@@ -520,7 +522,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     doc.addField("name", "hello");
 
     if (client instanceof HttpSolrClient) {
-      ex = expectThrows(SolrException.class, () -> client.add(doc));
+      ex = LuceneTestCase.expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
     } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient) {
@@ -705,7 +707,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrClient client = getSolrClient(jetty);
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    File file = getFile("solrj/books.csv");
+    File file = SolrTestUtil.getFile("solrj/books.csv");
     final int opened[] =  new int[] {0};
     final int closed[] =  new int[] {0};
 
@@ -747,8 +749,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient(jetty);
-    NamedList<Object> result = client.request(new StreamingUpdateRequest("/update",
-        getFile("solrj/books.csv"), "application/csv")
+    NamedList<Object> result = client.request(new StreamingUpdateRequest("/update", SolrTestUtil.getFile("solrj/books.csv"), "application/csv")
         .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
     assertNotNull("Couldn't upload books.csv", result);
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
@@ -777,7 +778,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   private ByteBuffer getFileContent(NamedList nl, String name) throws IOException {
-    try (InputStream is = new FileInputStream(getFile(name))) {
+    try (InputStream is = new FileInputStream(SolrTestUtil.getFile(name))) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
   }
@@ -788,8 +789,8 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     SolrClient client = getSolrClient(jetty);
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    up.addFile(getFile("solrj/docs1.xml"),"application/xml"); // 2
-    up.addFile(getFile("solrj/docs2.xml"),"application/xml"); // 3
+    up.addFile(SolrTestUtil.getFile("solrj/docs1.xml"),"application/xml"); // 2
+    up.addFile(SolrTestUtil.getFile("solrj/docs2.xml"),"application/xml"); // 3
     up.setParam("a", "\u1234");
     up.setParam(CommonParams.HEADER_ECHO_PARAMS, CommonParams.EchoParamStyle.ALL.toString());
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
@@ -802,7 +803,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
   
  @Test
- @Nightly
+ @LuceneTestCase.Nightly
  // TODO - look into slowness on this
  public void testLukeHandler() throws Exception
   {    
@@ -1151,7 +1152,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query.addFacetPivotField("{!stats=s1}features,manu");
     query.addGetFieldStatistics("{!key=inStock_val tag=s1}inStock");
 
-    SolrException e = expectThrows(SolrException.class, () -> client.query(query));
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> client.query(query));
     assertEquals("Pivot facet on boolean is not currently supported, bad request returned", 400, e.code());
     assertTrue(e.getMessage().contains("is not currently supported"));
     assertTrue(e.getMessage().contains("boolean"));
@@ -1163,7 +1164,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query2.setFacetMinCount(0);
     query2.setRows(0);
 
-    e = expectThrows(SolrException.class, () -> client.query(query2));
+    e = LuceneTestCase.expectThrows(SolrException.class, () -> client.query(query2));
     assertEquals(400, e.code());
     assertTrue(e.getMessage().contains("stats"));
     assertTrue(e.getMessage().contains("comma"));
@@ -1175,7 +1176,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     query3.addGetFieldStatistics("{!tag=s1}features");
     query3.setFacetMinCount(0);
     query3.setRows(0);
-    e = expectThrows(SolrException.class, () -> client.query(query3));
+    e = LuceneTestCase.expectThrows(SolrException.class, () -> client.query(query3));
     assertEquals("Pivot facet on string is not currently supported, bad request returned", 400, e.code());
     assertTrue(e.getMessage().contains("is not currently supported"));
     assertTrue(e.getMessage().contains("text_general"));

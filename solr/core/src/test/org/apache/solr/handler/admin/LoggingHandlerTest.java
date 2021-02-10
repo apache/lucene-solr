@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -95,7 +96,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
   @Test
   public void testLogLevelHandlerOutput() throws Exception {
 
-    assumeTrue("Only run this the first time in a JVM", firstInit);
+    LuceneTestCase.assumeTrue("Only run this the first time in a JVM", firstInit);
 
     // sanity check our setup...
     assertNotNull(this.getClass().getAnnotation(LogLevel.class));

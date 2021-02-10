@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -61,7 +62,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     String configSetName = random().nextBoolean() ? "cloud-minimal" : "cloud-managed";
 
     configureCluster(1)
-        .addConfig("conf", configset(configSetName))  // cloud-managed has the id copyfield to id_prefix
+        .addConfig("conf", SolrTestUtil.configset(configSetName))  // cloud-managed has the id copyfield to id_prefix
         .configure();
   }
 

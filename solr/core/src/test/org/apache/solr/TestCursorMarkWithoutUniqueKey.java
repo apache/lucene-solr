@@ -56,10 +56,8 @@ public class TestCursorMarkWithoutUniqueKey extends SolrTestCaseJ4 {
 
     try {
       ignoreException("Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
-      expectThrows(RuntimeException.class,
-          "No exception when querying with a cursorMark with no uniqueKey defined.",
-          () -> assertQ(req("q", "*:*", "sort", "fld desc", "cursorMark", CURSOR_MARK_START))
-      );
+      SolrTestCaseUtil.expectThrows(RuntimeException.class, "No exception when querying with a cursorMark with no uniqueKey defined.",
+          () -> assertQ(req("q", "*:*", "sort", "fld desc", "cursorMark", CURSOR_MARK_START)));
     } finally {
       unIgnoreException("Cursor functionality is not available unless the IndexSchema defines a uniqueKey field");
     }

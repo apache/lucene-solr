@@ -24,6 +24,8 @@ import java.util.Map;
 
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -61,7 +63,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   public void setUp() throws Exception {
     System.setProperty("solr.enablePublicKeyHandler", "true");
     setupAuthenticationPlugin();
-    configureCluster(nodeCount).addConfig(configName, configset("cloud-minimal")).configure();
+    configureCluster(nodeCount).addConfig(configName, SolrTestUtil.configset("cloud-minimal")).configure();
     super.setUp();
   }
   
@@ -80,8 +82,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
     // Should fail with 401
     try {
-      BaseHttpSolrClient.RemoteSolrException e = expectThrows(BaseHttpSolrClient.RemoteSolrException.class,
-          this::collectionCreateSearchDeleteTwice);
+      BaseHttpSolrClient.RemoteSolrException e = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, this::collectionCreateSearchDeleteTwice);
       assertEquals("Should've returned a 401 error: " +  e.getMessage(), 401, e.code());
     } finally {
       MockAuthenticationPlugin.expectedUsername = null;

@@ -34,6 +34,7 @@ import com.github.tomakehurst.wiremock.http.QueryParameter;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.stubbing.ServeEvent;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -74,14 +75,14 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
   }
 
   @Test
-  @Nightly // works but is slow due to timeout
+  @LuceneTestCase.Nightly // works but is slow due to timeout
   public void testTimeout() throws Exception {
     stubFor(get(urlPathEqualTo("/slow/foo/select"))
         .willReturn(aResponse().withFixedDelay(1050).withStatus(200)));
 
     SolrQuery q = new SolrQuery("*:*");
     try (Http2SolrClient client = getHttp2SolrClient(mockSolr.baseUrl() + "/slow/foo", DEFAULT_CONNECTION_TIMEOUT, 1000)) {
-      SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q, SolrRequest.METHOD.GET));
+      SolrServerException e = LuceneTestCase.expectThrows(SolrServerException.class, () -> client.query(q, SolrRequest.METHOD.GET));
       assertTrue(e.getMessage().contains("Timeout"));
     }
   }
@@ -116,7 +117,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
 
     try (Http2SolrClient client = getHttpSolrClient(mockSolr.baseUrl() + "/debug/foo")) {
       SolrQuery q = new SolrQuery("foo");
-      SolrException e = expectThrows(SolrException.class, () -> client.query(q, SolrRequest.METHOD.GET));
+      SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> client.query(q, SolrRequest.METHOD.GET));
       assertEquals("Unexpected exception status code", status, e.code());
     }
   }
@@ -132,29 +133,29 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
       q.setParam("a", "\u1234");
 
       // GET
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.GET));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.GET));
       assertQueryRequest(1, GET, null, client.getParser().getVersion(), "javabin");
 
       //POST
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.POST));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.POST));
       assertQueryRequest(2, POST, "application/x-www-form-urlencoded; charset=UTF-8", client.getParser().getVersion(), "javabin");
 
       //PUT
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.PUT));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.PUT));
       assertQueryRequest(3, PUT, "application/x-www-form-urlencoded; charset=UTF-8", client.getParser().getVersion(), "javabin");
 
       //XML/GET
       client.setParser(new XMLResponseParser());
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.GET));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.GET));
       assertQueryRequest(4, GET, null, client.getParser().getVersion(), "xml");
 
       //XML/POST
       client.setParser(new XMLResponseParser());
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.POST));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.POST));
       assertQueryRequest(5, POST, "application/x-www-form-urlencoded; charset=UTF-8", client.getParser().getVersion(), "xml");
 
       client.setParser(new XMLResponseParser());
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.PUT));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.query(q, SolrRequest.METHOD.PUT));
       assertQueryRequest(6, PUT, "application/x-www-form-urlencoded; charset=UTF-8", client.getParser().getVersion(), "xml");
     }
   }
@@ -164,14 +165,14 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
     stubFor(post(urlPathEqualTo("/debug/foo/update")).willReturn(aResponse().withStatus(500)));
 
     try (Http2SolrClient client = getHttpSolrClient(mockSolr.baseUrl() + "/debug/foo")) {
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.deleteById("id"));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.deleteById("id"));
       LoggedRequest req = assertRequest(1, POST, "application/javabin");
       assertRequestParam(req, CommonParams.WT, "javabin");
       assertRequestParam(req, CommonParams.VERSION, client.getParser().getVersion());
 
       //XML
       client.setParser(new XMLResponseParser());
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.deleteByQuery("*:*"));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.deleteByQuery("*:*"));
       req = assertRequest(2, POST, "application/javabin");
       assertRequestParam(req, CommonParams.WT, "xml");
       assertRequestParam(req, CommonParams.VERSION, client.getParser().getVersion());
@@ -184,10 +185,10 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
     stubFor(post(urlPathEqualTo("/debug/foo/select")).willReturn(aResponse().withStatus(500)));
     try (Http2SolrClient client = getHttpSolrClient(mockSolr.baseUrl() + "/debug/foo")) {
       Collection<String> ids = Collections.singletonList("a");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("a"));
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById(ids, null));
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("foo", "a"));
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("foo", ids, null));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("a"));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById(ids, null));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("foo", "a"));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.getById("foo", ids, null));
     }
   }
 
@@ -199,7 +200,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
       UpdateRequest ureq = new UpdateRequest();
       ureq.add(new SolrInputDocument());
       ureq.setParam("a", "\u1234");
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(ureq));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(ureq));
 
       LoggedRequest req = assertRequest(1, POST, "application/javabin");
       assertRequestParam(req, CommonParams.WT, "javabin");
@@ -209,7 +210,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
       //XML response and writer
       client.setParser(new XMLResponseParser());
       client.setRequestWriter(new RequestWriter());
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(ureq));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(ureq));
       req = assertRequest(2, POST, "application/xml; charset=UTF-8");
       assertRequestParam(req, CommonParams.WT, "xml");
       assertRequestParam(req, CommonParams.VERSION, client.getParser().getVersion());
@@ -218,7 +219,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
       //javabin request
       client.setParser(new BinaryResponseParser());
       client.setRequestWriter(new BinaryRequestWriter());
-      expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(ureq));
+      LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> client.request(ureq));
       req = assertRequest(3, POST, "application/javabin");
       assertRequestParam(req, CommonParams.WT, "javabin");
       assertRequestParam(req, CommonParams.VERSION, client.getParser().getVersion());
@@ -240,7 +241,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
     try (Http2SolrClient client = getHttpSolrClient(clientUrl)) {
       SolrQuery q = new SolrQuery("*:*");
       // default = false
-      SolrException e = expectThrows(SolrException.class, () -> client.query(q));
+      SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
 
       client.setFollowRedirects(true);
@@ -248,7 +249,7 @@ public class Http2SolrClientTest extends BaseSolrClientWireMockTest {
 
       //And back again:
       client.setFollowRedirects(false);
-      e = expectThrows(SolrException.class, () -> client.query(q));
+      e = LuceneTestCase.expectThrows(SolrException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
     }
 

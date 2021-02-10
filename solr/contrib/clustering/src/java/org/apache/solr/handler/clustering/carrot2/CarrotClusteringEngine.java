@@ -332,12 +332,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
         args.put(HighlightParams.SIMPLE_POST, "");
         args.put(HighlightParams.FRAGSIZE, solrParams.getInt(CarrotParams.SUMMARY_FRAGSIZE, solrParams.getInt(HighlightParams.FRAGSIZE, 100)));
         args.put(HighlightParams.SNIPPETS, solrParams.getInt(CarrotParams.SUMMARY_SNIPPETS, solrParams.getInt(HighlightParams.SNIPPETS, 1)));
-        req = new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
-          @Override
-          public SolrIndexSearcher getSearcher() {
-            return sreq.getSearcher();
-          }
-        };
+        req = new MyLocalSolrQueryRequest(core, query, args, sreq);
       } else {
         log.warn("No highlighter configured, cannot produce summary");
         produceSummary = false;
@@ -562,4 +557,17 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
     }
   }
 
+  private static class MyLocalSolrQueryRequest extends LocalSolrQueryRequest {
+    private final SolrQueryRequest sreq;
+
+    public MyLocalSolrQueryRequest(SolrCore core, Query query, Map<String,Object> args, SolrQueryRequest sreq) {
+      super(core, query.toString(), "", 0, 1, args);
+      this.sreq = sreq;
+    }
+
+    @Override
+    public SolrIndexSearcher getSearcher() {
+      return sreq.getSearcher();
+    }
+  }
 }

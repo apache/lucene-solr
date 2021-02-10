@@ -26,16 +26,17 @@ import java.util.Properties;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.junit.Test;
 
 public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
-  private final File solrHomeDirectory = createTempDir().toFile();
+  private final File solrHomeDirectory = SolrTestUtil.createTempDir().toFile();
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    FileUtils.copyDirectory(new File(TEST_HOME()), solrHomeDirectory);
+    FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), solrHomeDirectory);
     Properties props = new Properties();
     props.setProperty("test", "Before reload");
     writeProperties(props);

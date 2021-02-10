@@ -50,7 +50,7 @@ public class HelloWorldSolrCloudTestCase extends SolrCloudTestCase {
 
     // create and configure cluster
     configureCluster(3)
-        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
 
     // create an empty collection

@@ -17,6 +17,8 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
@@ -52,10 +54,10 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     // TODO: where did this go?
     // assertNotNull(rsp.getValues().get("watcher"));
 
-    SolrException e = expectThrows(SolrException.class, () -> handleRequest(infoHandler, "info"));
-    assertEquals(404, e.code());
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> handleRequest(infoHandler, "info"));
+    LuceneTestCase.assertEquals(404, e.code());
 
-    e = expectThrows(SolrException.class, () -> handleRequest(infoHandler, ""));
+    e = LuceneTestCase.expectThrows(SolrException.class, () -> handleRequest(infoHandler, ""));
     assertEquals(404, e.code());
   }
 

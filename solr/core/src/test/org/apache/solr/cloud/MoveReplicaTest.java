@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -54,7 +55,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // used by MoveReplicaHDFSTest
-  protected boolean inPlaceMove = true;
+  protected boolean inPlaceMove = false;
 
   protected String getConfigSet() {
     return "cloud-dynamic";
@@ -67,12 +68,12 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   @Before
   public void beforeTest() throws Exception {
-    inPlaceMove = true;
+    inPlaceMove = false;
 
     configureCluster(4)
-        .addConfig("conf1", configset(getConfigSet()))
-        .addConfig("conf2", configset(getConfigSet()))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .addConfig("conf1", SolrTestUtil.configset(getConfigSet()))
+        .addConfig("conf2", SolrTestUtil.configset(getConfigSet()))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
 
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
@@ -101,7 +102,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   @Test
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void test() throws Exception {
-    String coll = getTestClass().getSimpleName() + "_coll_" + inPlaceMove;
+    String coll = SolrTestUtil.getTestName() + "_coll_" + inPlaceMove;
     if (log.isInfoEnabled()) {
       log.info("total_jettys: {}", cluster.getJettySolrRunners().size());
     }
@@ -181,9 +182,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018 This JIRA is fixed, but this test still fails
   //17-Aug-2018 commented  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
-  @Nightly // may be flakey as well ...
+  @LuceneTestCase.Nightly // may be flakey as well ...
   public void testFailedMove() throws Exception {
-    String coll = getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
+    String coll = LuceneTestCase.getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
 
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();

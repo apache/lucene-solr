@@ -21,6 +21,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -41,8 +42,8 @@ public class TestRequestForwarding extends SolrTestCaseJ4 {
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    solrCluster = new MiniSolrCloudCluster(3, createTempDir(), buildJettyConfig("/solr"));
-    solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1", "/solr");
+    solrCluster = new MiniSolrCloudCluster(3, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
+    solrCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1/conf"), "conf1", "/solr");
   }
 
   @Override

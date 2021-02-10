@@ -21,11 +21,10 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,7 +41,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   public File SOLRHOME;
   {
     try {
-      SOLRHOME = new File(SolrTestCaseJ4.TEST_HOME());
+      SOLRHOME = new File(SolrTestUtil.TEST_HOME());
     } catch (RuntimeException e) {
       log.warn("TEST_HOME() does not exist - solrj test?");
       // solrj tests not working with TEST_HOME()
@@ -57,7 +56,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   @Before
   public void azt_before() throws Exception {
-    zkDir = createTempDir("zkData");
+    zkDir = SolrTestUtil.createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     try {
       zkServer.run();

@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
@@ -43,11 +45,13 @@ abstract public class SolrRestletTestBase extends RestTestBase {
   @Before
   public void setUp() throws Exception {
 
-    Path tempDir = createTempDir();
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
+
+    Path tempDir = SolrTestUtil.createTempDir();
     Path coresDir = tempDir.resolve("cores");
 
     System.setProperty("coreRootDirectory", coresDir.toString());
-    System.setProperty("configSetBaseDir", TEST_HOME());
+    System.setProperty("configSetBaseDir", SolrTestUtil.TEST_HOME());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
 
@@ -58,7 +62,7 @@ abstract public class SolrRestletTestBase extends RestTestBase {
     props.setProperty("configSet", "collection1");
 
     writeCoreProperties(coresDir.resolve("core"), props, "SolrRestletTestBase");
-    jetty = createJettyAndHarness(TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
+    jetty = createJettyAndHarness(SolrTestUtil.TEST_HOME(), "solrconfig.xml", "schema-rest.xml", "/solr", true, extraServlets);
 
     super.setUp();
   }

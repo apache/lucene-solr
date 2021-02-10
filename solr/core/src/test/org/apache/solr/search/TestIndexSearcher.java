@@ -35,6 +35,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -312,7 +313,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
       };
       t.start();
       
-      if (System.getProperty(SYSPROP_NIGHTLY) != null) {
+      if (System.getProperty(LuceneTestCase.SYSPROP_NIGHTLY) != null) {
         // even if we wait here, the SearcherListener should not finish
         Thread.sleep(500);
       }

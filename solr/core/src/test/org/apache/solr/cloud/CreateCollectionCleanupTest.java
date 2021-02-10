@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -68,7 +70,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   public static void createCluster() throws Exception {
     useFactory(null);
     configureCluster(1)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .formatZk(true).withSolrXml(CLOUD_SOLR_XML_WITH_10S_CREATE_COLL_WAIT)
         .configure();
   }
@@ -82,12 +84,12 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1);
 
     Properties properties = new Properties();
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     tmpDir = tmpDir.resolve("foo");
     Files.createFile(tmpDir);
     properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
-    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+    LuceneTestCase.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       create.process(cloudClient);
     });
 
@@ -105,7 +107,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
   
   @Test
   // TODO: this won't fail as async as that won't wait for the point this data dir issue is hit
-  @Nightly // TODO why does this take 10+ seconds?
+  @LuceneTestCase.Nightly // TODO why does this take 10+ seconds?
   public void testAsyncCreateCollectionCleanup() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     String collectionName = "foo2";
@@ -115,7 +117,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1);
 
     Properties properties = new Properties();
-    Path tmpDir = createTempDir();
+    Path tmpDir = SolrTestUtil.createTempDir();
     tmpDir = tmpDir.resolve("foo2");
     Files.createFile(tmpDir);
     properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());

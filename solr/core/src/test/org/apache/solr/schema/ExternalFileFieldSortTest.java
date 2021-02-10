@@ -18,6 +18,8 @@ package org.apache.solr.schema;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
 import org.junit.Ignore;
@@ -30,7 +32,7 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
 
   static void updateExternalFile() throws IOException {
 
-    final String testHome = SolrTestCaseJ4.getFile("solr/collection1").getParent();
+    final String testHome = SolrTestUtil.getFile("solr/collection1").getParent();
     String filename = "external_eff";
     try (SolrCore core = h.getCore()) {
       FileUtils.copyFile(new File(testHome + "/" + filename), new File(core.getDataDir() + "/" + filename));
@@ -63,8 +65,7 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   public void testPointKeyFieldType() throws Exception {
     System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
     // This one should fail though, no "node" parameter specified
-    SolrException e = expectThrows(SolrException.class, 
-        () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
+    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> initCore("solrconfig-basic.xml", "bad-schema-eff.xml"));
     assertTrue(e.getMessage(), e.getMessage().contains("Error loading schema resource"));
   }
 }

@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud.api.collections;
 
+import org.apache.solr.SolrTestCaseUtil;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -66,9 +68,9 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     }
 
     configureCluster(TEST_NIGHTLY ? 4 : 2)
-        .addConfig("conf", configset(getConfigSet()))
-        .addConfig("conf2", configset(getConfigSet()))
-        .withSolrXml(TEST_PATH().resolve("solr.xml"))
+        .addConfig("conf", SolrTestUtil.configset(getConfigSet()))
+        .addConfig("conf2", SolrTestUtil.configset(getConfigSet()))
+        .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
   }
   
@@ -89,16 +91,15 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     final QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);
     });
   }
 
   @Test
   public void testNoConfigSetExist() throws Exception {
-    expectThrows(Exception.class, () -> {
-      CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1)
-              .process(cluster.getSolrClient());
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.createCollection("noconfig", "conf123", 1, 1).process(cluster.getSolrClient());
     });
 
     // in both cases, the collection should have default to the core name
@@ -115,7 +116,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);
     });
   }
@@ -132,7 +133,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
 
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);
     });
   }
@@ -149,7 +150,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       cluster.getSolrClient().request(request);
     });
   }
@@ -290,7 +291,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   @Ignore
   public void testDeleteNonExistentCollection() throws Exception {
 
-    expectThrows(Exception.class, () -> {
+    SolrTestCaseUtil.expectThrows(Exception.class, () -> {
       CollectionAdminRequest.deleteCollection("unknown_collection").process(cluster.getSolrClient());
     });
 

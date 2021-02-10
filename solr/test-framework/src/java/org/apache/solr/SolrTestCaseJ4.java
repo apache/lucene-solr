@@ -68,6 +68,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -175,7 +176,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     props.setProperty("config", "${solrconfig:solrconfig.xml}");
     props.setProperty("schema", "${schema:schema.xml}");
 
-    writeCoreProperties(coreDirectory, props, this.getSaferTestName());
+    writeCoreProperties(coreDirectory, props, SolrTestUtil.getTestName());
   }
 
   public static void writeCoreProperties(Path coreDirectory, Properties properties, String testname) throws IOException {
@@ -221,7 +222,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     startTrackingSearchers();
     ignoreException("ignore_exception");
-    newRandomConfig();
+    if (LuceneTestCase.TEST_NIGHTLY) {
+      newRandomConfig();
+    }
   }
 
   @AfterClass
@@ -360,11 +363,11 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Sets system properties to allow generation of random configurations of
    * solrconfig.xml and schema.xml. 
    * Sets properties used on  
-   * {@link #newIndexWriterConfig(org.apache.lucene.analysis.Analyzer)}
+   * LuceneTestCase#newIndexWriterConfig(org.apache.lucene.analysis.Analyzer)
    *  and base schema.xml (Point Fields)
    */
   public static void newRandomConfig() {
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig iwc = LuceneTestCase.newIndexWriterConfig(new MockAnalyzer(random()));
 
     System.setProperty("useCompoundFile", String.valueOf(iwc.getUseCompoundFile()));
 
@@ -388,22 +391,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return e;
   }
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    if (log.isInfoEnabled()) {
-      log.info("###Starting {}", getTestName());  // returns <unknown>???
-    }
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    if (log.isInfoEnabled()) {
-      log.info("###Ending {}", getTestName());
-    }
-    super.tearDown();
-  }
-
   /**
    * Subclasses may call this method to access the "dataDir" that will be used by 
    * {@link #initCore} (either prior to or after the core is created).
@@ -411,12 +398,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * If the dataDir has not yet been initialized when this method is called, this method will do so.
    * Calling {@link #deleteCore} will "reset" the value, such that subsequent calls will 
    * re-initialize a new value.  All directories returned by any calls to this method will 
-   * automatically be cleaned up per {@link #createTempDir}
+   * automatically be cleaned up per createTempDir
    * </p>
    * <p>
    * NOTE: calling this method is not requried, it will be implicitly called as needed when
    * initializing cores.  Callers that don't care about using {@link #initCore} and just want
-   * a temporary directory to put data in sould instead be using {@link #createTempDir} directly.
+   * a temporary directory to put data in sould instead be using createTempDir directly.
    * </p>
    *
    * @see #initCoreDataDir
@@ -425,7 +412,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     File dataDir = initCoreDataDir;
     if (null == dataDir) {
       final int id = dataDirCount.incrementAndGet();
-      dataDir = initCoreDataDir = createTempDir("data-dir-"+ id).toFile();
+      dataDir = initCoreDataDir = SolrTestUtil.createTempDir("data-dir-" + id).toFile();
       assertNotNull(dataDir);
       if (log.isInfoEnabled()) {
         log.info("Created dataDir: {}", dataDir.getAbsolutePath());
@@ -434,7 +421,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return dataDir;
   }
   /** 
-   * Counter for ensuring we don't ask {@link #createTempDir} to try and 
+   * Counter for ensuring we don't ask createTempDir to try and
    * re-create the same dir prefix over and over.
    * <p>
    * (createTempDir has it's own counter for uniqueness, but it tries all numbers in a loop 
@@ -447,7 +434,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema) throws Exception {
-    initCore(config, schema, TEST_HOME());
+    initCore(config, schema, SolrTestUtil.TEST_HOME());
   }
 
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
@@ -501,12 +488,14 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     SolrException.ignorePatterns = new CopyOnWriteArraySet<>(Collections.singleton("ignore_exception"));
   }
 
+  // MRM TODO: rename
   public static String getClassName() {
-    return getTestClass().getName();
+    return SolrTestUtil.getTestName();
   }
 
+  // MRM TODO: rename
   protected static String getSimpleClassName() {
-    return getTestClass().getSimpleName();
+    return SolrTestUtil.getTestName();
   }
 
   public static volatile String configString;
@@ -558,7 +547,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Will be set to null by {@link #deleteCore} and re-initialized as needed by {@link #createCore}.  
    * In the event of a test failure, the contents will be left on disk.
    * </p>
-   * @see #createTempDir(String)
+   * see #createTempDir(String)
    * @see #initAndGetDataDir()
    * @deprecated use initAndGetDataDir instead of directly accessing this variable
    */
@@ -628,7 +617,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static CoreContainer createCoreContainer(String dataDir, String solrConfig, String schema) {
-    NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(TEST_PATH());
+    NodeConfig nodeConfig = TestHarness.buildTestNodeConfig(SolrTestUtil.TEST_PATH());
     CoresLocator locator = new TestHarness.TestCoresLocator(coreName, dataDir, solrConfig, schema);
     CoreContainer cc = createCoreContainer(nodeConfig, locator);
     return cc;
@@ -662,7 +651,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public void postSetUp() {
     if (log.isInfoEnabled()) {
-      log.info("####POSTSETUP {}", getTestName());
+      log.info("####POSTSETUP {}", SolrTestUtil.getTestName());
     }
   }
 
@@ -674,7 +663,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   public void preTearDown() {
     if (log.isInfoEnabled()) {
-      log.info("####PRETEARDOWN {}", getTestName());
+      log.info("####PRETEARDOWN {}", SolrTestUtil.getTestName());
     }
   }
 
@@ -1951,7 +1940,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (propertiesContent != null) {
       FileUtils.writeStringToFile(new File(dstRoot, "core.properties"), propertiesContent, StandardCharsets.UTF_8);
     }
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "schema-tiny.xml"), new File(subHome, "schema.xml"));
     FileUtils.copyFile(new File(top, solrconfigXmlName), new File(subHome, "solrconfig.xml"));
     FileUtils.copyFile(new File(top, "solrconfig.snippet.randomindexconfig.xml"), new File(subHome, "solrconfig.snippet.randomindexconfig.xml"));
@@ -1962,7 +1951,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (! dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     }
-    File xmlF = new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml");
+    File xmlF = new File(SolrTestUtil.TEST_HOME(), "solr.xml");
     FileUtils.copyFile(xmlF, new File(dstRoot, "solr.xml"));
     copyMinConf(dstRoot);
   }
@@ -1972,7 +1961,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (! dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     }
-    File xmlF = new File(SolrTestCaseJ4.TEST_HOME(), fromFile);
+    File xmlF = new File(SolrTestUtil.TEST_HOME(), fromFile);
     FileUtils.copyFile(xmlF, new File(dstRoot, "solr.xml"));
     
   }
@@ -1983,10 +1972,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (!dstRoot.exists()) {
       assertTrue("Failed to make subdirectory ", dstRoot.mkdirs());
     }
-    FileUtils.copyFile(new File(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
+    FileUtils.copyFile(new File(SolrTestUtil.TEST_HOME(), "solr.xml"), new File(dstRoot, "solr.xml"));
 
     File subHome = new File(dstRoot, collection + File.separator + "conf");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    String top = SolrTestUtil.TEST_HOME() + "/collection1/conf";
     FileUtils.copyFile(new File(top, "currency.xml"), new File(subHome, "currency.xml"));
     FileUtils.copyFile(new File(top, "mapping-ISOLatin1Accent.txt"), new File(subHome, "mapping-ISOLatin1Accent.txt"));
     FileUtils.copyFile(new File(top, "old_synonyms.txt"), new File(subHome, "old_synonyms.txt"));
@@ -2692,6 +2681,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                          entry.getValue());
 
     }
+  }
+
+  public static boolean usually() {
+    return LuceneTestCase.usually();
   }
 
   public static DistributedUpdateProcessor createDistributedUpdateProcessor(SolrQueryRequest req, SolrQueryResponse rsp,

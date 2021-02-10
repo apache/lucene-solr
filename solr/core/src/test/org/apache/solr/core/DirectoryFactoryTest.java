@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.util.NamedList;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -37,7 +38,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
 
   @BeforeClass
   public static void setupLoader() throws Exception {
-    solrHome = Paths.get(createTempDir().toAbsolutePath().toString());
+    solrHome = Paths.get(SolrTestUtil.createTempDir().toAbsolutePath().toString());
     loader = new SolrResourceLoader(solrHome);
   }
 

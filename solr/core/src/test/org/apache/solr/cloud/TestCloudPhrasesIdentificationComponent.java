@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -41,8 +43,6 @@ import org.apache.solr.common.util.NamedList;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
-
 /** 
  * A very simple sanity check that Phrase Identification works across a cloud cluster
  * using distributed term stat collection.
@@ -64,13 +64,13 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
   public static void createMiniSolrCloudCluster() throws Exception {
     
     // multi replicas should not matter...
-    final int repFactor = usually() ? 1 : 2;
-    // ... but we definitely want to test multiple shards
-    final int numShards = TestUtil.nextInt(random(), 1, (usually() ? 2 :3));
+    final int repFactor = LuceneTestCase.usually() ? 1 : 2;
+    // ... but we definitely want to test multiple shardsLuceneTestCase.
+    final int numShards = TestUtil.nextInt(random(), 1, (LuceneTestCase.usually() ? 2 :3));
     final int numNodes = (numShards * repFactor);
    
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     

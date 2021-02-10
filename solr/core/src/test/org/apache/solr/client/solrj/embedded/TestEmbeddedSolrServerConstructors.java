@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -30,21 +32,21 @@ import org.junit.Test;
 public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testPathConstructor() throws IOException {
-    Path path = Paths.get(TEST_HOME());
+    Path path = Paths.get(SolrTestUtil.TEST_HOME());
     try (EmbeddedSolrServer server = new EmbeddedSolrServer(path, "collection1")) {
 
     }
   }
 
   @Test
-  @Nightly
+  @LuceneTestCase.Nightly
   public void testNodeConfigConstructor() throws Exception {
-    Path path = createTempDir();
+    Path path = SolrTestUtil.createTempDir();
 
     NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", path)
-        .setConfigSetBaseDirectory(Paths.get(TEST_HOME()).resolve("configsets").toString())
+        .setConfigSetBaseDirectory(Paths.get(SolrTestUtil.TEST_HOME()).resolve("configsets").toString())
         .build();
 
     try (EmbeddedSolrServer server = new EmbeddedSolrServer(config, "newcore")) {

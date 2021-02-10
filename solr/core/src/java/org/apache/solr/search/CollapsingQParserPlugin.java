@@ -1320,19 +1320,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           @SuppressWarnings("resource")
           final LeafReader uninvertingReader = getTopFieldCacheReader(searcher, collapseField);
 
-          docValuesProducer = new EmptyDocValuesProducer() {
-              @Override
-              public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                return uninvertingReader.getSortedDocValues(collapseField);
-              }
-            };
+          docValuesProducer = new MyEmptyDocValuesProducer(uninvertingReader, collapseField);
         } else {
-          docValuesProducer = new EmptyDocValuesProducer() {
-              @Override
-              public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                return DocValues.getSorted(searcher.getSlowAtomicReader(), collapseField);
-              }
-            };
+          docValuesProducer = new NoHintEmptyDocValuesProducer(searcher, collapseField);
         }
       } else {
         if(HINT_TOP_FC.equals(hint)) {
@@ -1443,6 +1433,36 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               "Collapsing field should be of either String, Int or Float type");
         }
 
+      }
+    }
+
+    private static class MyEmptyDocValuesProducer extends EmptyDocValuesProducer {
+      private final LeafReader uninvertingReader;
+      private final String collapseField;
+
+      public MyEmptyDocValuesProducer(LeafReader uninvertingReader, String collapseField) {
+        this.uninvertingReader = uninvertingReader;
+        this.collapseField = collapseField;
+      }
+
+      @Override
+      public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
+        return uninvertingReader.getSortedDocValues(collapseField);
+      }
+    }
+
+    private static class NoHintEmptyDocValuesProducer extends EmptyDocValuesProducer {
+      private final SolrIndexSearcher searcher;
+      private final String collapseField;
+
+      public NoHintEmptyDocValuesProducer(SolrIndexSearcher searcher, String collapseField) {
+        this.searcher = searcher;
+        this.collapseField = collapseField;
+      }
+
+      @Override
+      public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
+        return DocValues.getSorted(searcher.getSlowAtomicReader(), collapseField);
       }
     }
   }

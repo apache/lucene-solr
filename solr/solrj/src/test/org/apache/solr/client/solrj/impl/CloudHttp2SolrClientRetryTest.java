@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.util.Collections;
 import java.util.Optional;
 
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -41,7 +43,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(NODE_COUNT)
-        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
   }
 
@@ -68,7 +70,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
       TestInjection.failUpdateRequests = "true:100";
       try {
-        expectThrows(BaseCloudSolrClient.RouteException.class,
+        LuceneTestCase.expectThrows(BaseCloudSolrClient.RouteException.class,
             "Expected an exception on the client when failure is injected during updates", () -> {
               UpdateRequest req = new UpdateRequest();
               req.add(new SolrInputDocument("id", "2"));

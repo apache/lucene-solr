@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import junit.framework.Assert;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Constants;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -112,7 +113,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    */
   @BeforeClass
   public static void initHostContext() {
-    assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
+    LuceneTestCase.assumeFalse("SOLR-4147: ibm 64bit has jvm bugs!", Constants.JRE_IS_64BIT && Constants.JAVA_VENDOR.startsWith("IBM"));
     fieldNames = new String[]{"n_ti1", "n_f1", "n_tf1", "n_d1", "n_td1", "n_l1", "n_tl1", "n_dt1", "n_tdt1"};
     randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
     r = new Random(random().nextLong());
@@ -236,7 +237,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   // to stress with higher thread counts and requests, make sure the junit
   // xml formatter is not being used (all output will be buffered before
   // transformation to xml and cause an OOM exception).
-  protected volatile int stress = TEST_NIGHTLY ? 2 : 0;
+  protected volatile int stress = LuceneTestCase.TEST_NIGHTLY ? 2 : 0;
   protected volatile boolean verifyStress = true;
   protected volatile int nThreads = 3;
 
@@ -304,7 +305,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    * (default is in test-files)
    */
   public String getSolrHome() {
-    return SolrTestCaseJ4.TEST_HOME();
+    return SolrTestUtil.TEST_HOME();
   }
 
   private boolean distribSetUpCalled = false;
@@ -313,7 +314,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     SolrTestCaseJ4.resetExceptionIgnores();  // ignore anything with ignore_exception in it
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    testDir = createTempDir().toFile();
+    testDir = SolrTestUtil.createTempDir().toFile();
   }
 
   private volatile boolean distribTearDownCalled = false;

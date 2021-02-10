@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -55,8 +57,8 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
 
   @BeforeClass
   public static void createTempSolrHomeAndCore() throws Exception {
-    tmpSolrHome = createTempDir().toFile().getAbsolutePath();
-    FileUtils.copyDirectory(getFile("dih/solr"), new File(tmpSolrHome).getAbsoluteFile());
+    tmpSolrHome = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
+    FileUtils.copyDirectory(SolrTestUtil.getFile("dih/solr"), new File(tmpSolrHome).getAbsoluteFile());
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml", 
              new File(tmpSolrHome).getAbsolutePath());
     
@@ -70,9 +72,9 @@ public class TestNonWritablePersistFile extends AbstractDataImportHandlerTestCas
     filePath += "dataimport.properties";
     f = new File(filePath);
     // execute the test only if we are able to set file to read only mode
-    assumeTrue("No dataimport.properties file", f.exists() || f.createNewFile());
-    assumeTrue("dataimport.properties can't be set read only", f.setReadOnly());
-    assumeFalse("dataimport.properties is still writable even though " + 
+    LuceneTestCase.assumeTrue("No dataimport.properties file", f.exists() || f.createNewFile());
+    LuceneTestCase.assumeTrue("dataimport.properties can't be set read only", f.setReadOnly());
+    LuceneTestCase.assumeFalse("dataimport.properties is still writable even though " +
                 "marked readonly - test running as superuser?", f.canWrite());
   }
   
