@@ -168,9 +168,7 @@ public final class Lucene90FieldInfosFormat extends FieldInfosFormat {
           int pointNumBytes;
           int pointIndexDimensionCount = pointDataDimensionCount;
           if (pointDataDimensionCount != 0) {
-            if (version >= Lucene90FieldInfosFormat.FORMAT_SELECTIVE_INDEXING) {
-              pointIndexDimensionCount = input.readVInt();
-            }
+            pointIndexDimensionCount = input.readVInt();
             pointNumBytes = input.readVInt();
           } else {
             pointNumBytes = 0;
@@ -363,9 +361,7 @@ public final class Lucene90FieldInfosFormat extends FieldInfosFormat {
   // Codec header
   static final String CODEC_NAME = "Lucene90FieldInfos";
   static final int FORMAT_START = 0;
-  static final int FORMAT_SOFT_DELETES = 1;
-  static final int FORMAT_SELECTIVE_INDEXING = 2;
-  static final int FORMAT_CURRENT = FORMAT_SELECTIVE_INDEXING;
+  static final int FORMAT_CURRENT = FORMAT_START;
 
   // Field flags
   static final byte STORE_TERMVECTOR = 0x1;
