@@ -305,9 +305,9 @@ public class HttpSolrCall {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
             if (log.isDebugEnabled()) log.debug("check remote path extraction {} {}", collectionName, origCorename);
-            if (origCorename != null) {
-              extractRemotePath(null, origCorename);
-            }
+//            if (origCorename != null) {
+//              extractRemotePath(null, origCorename);
+//            }
             if (origCorename == null || collectionName.equals(origCorename)) {
               extractRemotePath(collectionName, null);
             }
@@ -401,13 +401,13 @@ public class HttpSolrCall {
       if (rsp.getValues().get("success") == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Could not auto-create " + SYSTEM_COLL + " collection: "+ Utils.toJSONString(rsp.getValues()));
       }
-      TimeOut timeOut = new TimeOut(3, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeOut = new TimeOut(1, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       for (; ; ) {
         if (cores.getZkController().getClusterState().getCollectionOrNull(SYSTEM_COLL) != null) {
           break;
         } else {
           if (timeOut.hasTimedOut()) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
+            throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find " + SYSTEM_COLL + " collection even after 1 second");
           }
           timeOut.sleep(50);
         }
@@ -493,8 +493,8 @@ public class HttpSolrCall {
     } else {
       if (!retry) {
         // we couldn't find a core to work with, try reloading aliases & this collection
-        cores.getZkController().getZkStateReader().aliasesManager.update();
-        action = RETRY;
+//        cores.getZkController().getZkStateReader().aliasesManager.update();
+//        action = RETRY;
       }
     }
   }
@@ -1062,6 +1062,7 @@ public class HttpSolrCall {
 
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection collection = clusterState.getCollectionOrNull(collectionName);
+
     if (collection == null) {
       return null;
     }

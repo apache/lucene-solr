@@ -2023,15 +2023,6 @@ public class CoreContainer implements Closeable {
 
       if (isZooKeeperAware()) {
         getZkController().stopReplicationFromLeader(name);
-
-        try {
-          zkSys.getZkController().unregister(name, cd.getCollectionName(), cd.getCloudDescriptor().getShardId());
-        } catch (AlreadyClosedException e) {
-
-        } catch (Exception e) {
-          log.error("Error unregistering core [" + name + "] from cloud state", e);
-          exception = new SolrException(ErrorCode.SERVER_ERROR, "Error unregistering core [" + name + "] from cloud state", e);
-        }
       }
 
 

@@ -101,7 +101,8 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
 
     LeaderElector leaderElector = it.handler.coreContainer.getZkController().getLeaderElector(leaderName);
     if (leaderElector == null || !leaderElector.isLeader()) {
-      throw new IllegalStateException("Not the valid leader " + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) + " coll=" + it.handler.getCoreContainer().getZkController().getClusterState().getCollectionOrNull(collection));
+      throw new IllegalStateException("Not the valid leader (replica=" + leaderName + ")" + (leaderElector == null ? "No leader elector" : "Elector state=" + leaderElector.getState()) +
+          " coll=" + it.handler.getCoreContainer().getZkController().getClusterState().getCollectionOrNull(collection));
     }
   }
 }

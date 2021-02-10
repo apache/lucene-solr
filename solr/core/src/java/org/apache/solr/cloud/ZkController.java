@@ -2109,7 +2109,9 @@ public class ZkController implements Closeable, Runnable {
       zkClient.getSolrZooKeeper().removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception removing watch for " + path, ex);
+          if (!(ex instanceof KeeperException.NoWatcherException)) {
+            log.error("Exception removing watch for " + path, ex);
+          }
         }
       }, "confWatcher");
       confDirectoryListeners.remove(confDir);

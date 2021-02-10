@@ -1430,14 +1430,18 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       zkClient.getSolrZooKeeper().removeWatches(collectionCSNPath, this, WatcherType.Any, true, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception removing watch for " + path, ex);
+          if (!(ex instanceof KeeperException.NoWatcherException)) {
+            log.error("Exception removing watch for " + path, ex);
+          }
         }
       }, "collectionStateWatcher:" + coll);
 
       zkClient.getSolrZooKeeper().removeWatches(stateUpdateWatcher.stateUpdatesPath, stateUpdateWatcher, WatcherType.Any, true, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception removing watch for " + path, ex);
+          if (!(ex instanceof KeeperException.NoWatcherException)) {
+            log.error("Exception removing watch for " + path, ex);
+          }
         }
       }, "collectionStateUpdatesWatcher:" + coll);
     }
@@ -1827,7 +1831,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       zkClient.getSolrZooKeeper().removeWatches(COLLECTIONS_ZKNODE, this, WatcherType.Any, true, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception removing watch for " + path, ex);
+          if (!(ex instanceof KeeperException.NoWatcherException)) {
+            log.error("Exception removing watch for " + path, ex);
+          }
         }
       }, "collectionsChildWatcher");
     }
@@ -1885,7 +1891,9 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       zkClient.getSolrZooKeeper().removeWatches(LIVE_NODES_ZKNODE, this, WatcherType.Any, true, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception removing watch for " + path, ex);
+          if (!(ex instanceof KeeperException.NoWatcherException)) {
+            log.error("Exception removing watch for " + path, ex);
+          }
         }
       }, "liveNodesWatcher");
     }
