@@ -435,7 +435,7 @@ public class SpellChecker {
 
     Set<String> result = new LinkedHashSet<>();
     for (String candidate : suggestions) {
-      result.add(adjustSuggestionCase(candidate, wordCase));
+      result.add(adjustSuggestionCase(candidate, wordCase, word));
       if (wordCase == WordCase.UPPER && dictionary.checkSharpS && candidate.contains("ß")) {
         result.add(candidate);
       }
@@ -443,16 +443,18 @@ public class SpellChecker {
     return result.stream().map(this::cleanOutput).collect(Collectors.toList());
   }
 
-  private String adjustSuggestionCase(String candidate, WordCase original) {
-    if (original == WordCase.UPPER) {
+  private String adjustSuggestionCase(String candidate, WordCase originalCase, String original) {
+    if (originalCase == WordCase.UPPER) {
       String upper = candidate.toUpperCase(Locale.ROOT);
       if (upper.contains(" ") || spell(upper)) {
         return upper;
       }
     }
-    if (original == WordCase.UPPER || original == WordCase.TITLE) {
-      String title = dictionary.toTitleCase(candidate);
-      return spell(title) ? title : candidate;
+    if (Character.isUpperCase(original.charAt(0))) {
+      String title = Character.toUpperCase(candidate.charAt(0)) + candidate.substring(1);
+      if (title.contains(" ") || spell(title)) {
+        return title;
+      }
     }
     return candidate;
   }

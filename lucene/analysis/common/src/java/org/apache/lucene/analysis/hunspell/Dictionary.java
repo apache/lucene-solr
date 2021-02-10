@@ -70,7 +70,7 @@ import org.apache.lucene.util.fst.Util;
 
 /** In-memory structure for the dictionary (.dic) and affix (.aff) data of a hunspell dictionary. */
 public class Dictionary {
-  // Derived from woorm/ openoffice dictionaries.
+  // Derived from woorm/LibreOffice dictionaries.
   // See TestAllDictionaries.testMaxPrologueNeeded.
   static final int MAX_PROLOGUE_SCAN_WINDOW = 30 * 1024;
 
