@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 
+import javax.print.Doc;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -80,6 +81,7 @@ import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
@@ -335,11 +337,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName);
       } else {
         log.debug("Finished create command on all shards for collection: {}", collectionName);
-        if (isPrs) {
-          // Since we created this collection without some of the sub-operations going through the overseer queues,
-          // we need to make sure that the cluster state in the overseer can see this collection upon refreshing itself
-          ((Overseer.ClusterStateUpdater) ocmh.overseer.getUpdaterThread().getThread()).refreshClusterState(collectionName);
-        }
+
         // Emit a warning about production use of data driven functionality
         boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null ||
             message.getStr(COLL_CONF).equals(DEFAULT_CONFIGSET_NAME);
