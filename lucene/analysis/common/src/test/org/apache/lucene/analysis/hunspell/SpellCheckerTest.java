@@ -132,6 +132,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("checkcompoundrep");
   }
 
+  public void testDisallowCompoundsWhenDictionaryContainsSeparatedWordPair() throws Exception {
+    doTest("wordpair");
+  }
+
   public void testCompoundrule() throws Exception {
     doTest("compoundrule");
   }
@@ -168,8 +172,24 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("onlyincompound2");
   }
 
+  public void testForbiddenWord() throws Exception {
+    doTest("forbiddenword");
+  }
+
+  public void testForbiddenWord1() throws Exception {
+    doTest("opentaal_forbiddenword1");
+  }
+
+  public void testForbiddenWord2() throws Exception {
+    doTest("opentaal_forbiddenword2");
+  }
+
   public void testGermanCompounding() throws Exception {
     doTest("germancompounding");
+  }
+
+  public void testApplyOconvToSuggestions() throws Exception {
+    doTest("oconv");
   }
 
   public void testModifyingSuggestions() throws Exception {
@@ -180,8 +200,16 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("sug2");
   }
 
+  public void testMixedCaseSuggestionHeuristics() throws Exception {
+    doTest("i58202");
+  }
+
   public void testMapSuggestions() throws Exception {
     doTest("map");
+  }
+
+  public void testNoSuggest() throws Exception {
+    doTest("nosuggest");
   }
 
   protected void doTest(String name) throws Exception {

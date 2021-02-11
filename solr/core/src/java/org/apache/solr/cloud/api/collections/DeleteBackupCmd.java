@@ -23,14 +23,14 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.AggregateBackupStats;
+import org.apache.solr.core.backup.BackupFilePaths;
+import org.apache.solr.core.backup.BackupId;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
-import org.apache.solr.core.backup.BackupFilePaths;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,10 +139,10 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         deleteBackupIds(backupPath, repository, new HashSet<>(backupIdDeletes), results);
     }
 
-    void deleteBackupIds(URI backupPath, BackupRepository repository,
+    void deleteBackupIds(URI backupUri, BackupRepository repository,
                          Set<BackupId> backupIdsDeletes,
                          @SuppressWarnings({"rawtypes"}) NamedList results) throws IOException {
-        BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPath);
+        BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupUri);
         URI shardBackupMetadataDir = incBackupFiles.getShardBackupMetadataDir();
 
         Set<String> referencedIndexFiles = new HashSet<>();
@@ -189,15 +189,15 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
         repository.delete(incBackupFiles.getIndexDir(), unusedFiles, true);
         try {
             for (BackupId backupId : backupIdsDeletes) {
-                repository.deleteDirectory(repository.resolve(backupPath, BackupFilePaths.getZkStateDir(backupId)));
+                repository.deleteDirectory(repository.resolve(backupUri, BackupFilePaths.getZkStateDir(backupId)));
             }
         } catch (FileNotFoundException e) {
             //ignore this
         }
 
         //add details to result before deleting backupPropFiles
-        addResult(backupPath, repository, backupIdsDeletes, backupIdToCollectionBackupPoint, results);
-        repository.delete(backupPath, backupIdsDeletes.stream().map(id -> BackupFilePaths.getBackupPropsName(id)).collect(Collectors.toList()), true);
+        addResult(backupUri, repository, backupIdsDeletes, backupIdToCollectionBackupPoint, results);
+        repository.delete(backupUri, backupIdsDeletes.stream().map(id -> BackupFilePaths.getBackupPropsName(id)).collect(Collectors.toList()), true);
     }
 
     @SuppressWarnings("unchecked")

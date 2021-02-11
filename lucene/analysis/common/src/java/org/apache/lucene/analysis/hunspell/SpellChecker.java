@@ -22,10 +22,14 @@ import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -64,11 +68,12 @@ public class SpellChecker {
     }
 
     char[] wordChars = word.toCharArray();
-    if (dictionary.isForbiddenWord(wordChars, wordChars.length)) {
-      return false;
+    Boolean simpleResult = checkSimpleWord(wordChars, wordChars.length, null);
+    if (simpleResult != null) {
+      return simpleResult;
     }
 
-    if (checkWord(wordChars, wordChars.length, null)) {
+    if (checkCompounds(wordChars, wordChars.length, null)) {
       return true;
     }
 
@@ -101,12 +106,9 @@ public class SpellChecker {
   }
 
   Boolean checkSimpleWord(char[] wordChars, int length, WordCase originalCase) {
-    if (dictionary.isForbiddenWord(wordChars, length)) {
-      return false;
-    }
-
-    if (findStem(wordChars, 0, length, originalCase, SIMPLE_WORD) != null) {
-      return true;
+    Root<CharsRef> entry = findStem(wordChars, 0, length, originalCase, SIMPLE_WORD);
+    if (entry != null) {
+      return !dictionary.hasFlag(entry.entryId, dictionary.forbiddenword);
     }
 
     return null;
@@ -118,6 +120,10 @@ public class SpellChecker {
       return simpleResult;
     }
 
+    return checkCompounds(wordChars, length, originalCase);
+  }
+
+  private boolean checkCompounds(char[] wordChars, int length, WordCase originalCase) {
     if (dictionary.compoundRules != null
         && checkCompoundRules(wordChars, 0, length, new ArrayList<>())) {
       return true;
@@ -130,20 +136,27 @@ public class SpellChecker {
     return false;
   }
 
-  private CharsRef findStem(
+  private Root<CharsRef> findStem(
       char[] wordChars, int offset, int length, WordCase originalCase, WordContext context) {
-    CharsRef[] result = {null};
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    Root<CharsRef>[] result = new Root[1];
     stemmer.doStem(
         wordChars,
         offset,
         length,
         originalCase,
         context,
-        (stem, forms, formID) -> {
-          result[0] = stem;
+        (stem, formID, stemException) -> {
+          if (acceptsStem(formID)) {
+            result[0] = new Root<>(stem, formID);
+          }
           return false;
         });
     return result[0];
+  }
+
+  boolean acceptsStem(int formID) {
+    return true;
   }
 
   private boolean checkCompounds(CharsRef word, WordCase originalCase, CompoundPart prev) {
@@ -154,13 +167,15 @@ public class SpellChecker {
       WordContext context = prev == null ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
       int breakOffset = word.offset + breakPos;
       if (mayBreakIntoCompounds(word.chars, word.offset, word.length, breakOffset)) {
-        CharsRef stem = findStem(word.chars, word.offset, breakPos, originalCase, context);
+        Root<CharsRef> stem = findStem(word.chars, word.offset, breakPos, originalCase, context);
         if (stem == null
             && dictionary.simplifiedTriple
             && word.chars[breakOffset - 1] == word.chars[breakOffset]) {
           stem = findStem(word.chars, word.offset, breakPos + 1, originalCase, context);
         }
-        if (stem != null && (prev == null || prev.mayCompound(stem, breakPos, originalCase))) {
+        if (stem != null
+            && !dictionary.hasFlag(stem.entryId, dictionary.forbiddenword)
+            && (prev == null || prev.mayCompound(stem, breakPos, originalCase))) {
           CompoundPart part = new CompoundPart(prev, word, breakPos, stem, null);
           if (checkCompoundsAfter(originalCase, part)) {
             return true;
@@ -183,7 +198,8 @@ public class SpellChecker {
       if (expanded != null) {
         WordContext context = prev == null ? COMPOUND_BEGIN : COMPOUND_MIDDLE;
         int breakPos = pos + pattern.endLength();
-        CharsRef stem = findStem(expanded.chars, expanded.offset, breakPos, originalCase, context);
+        Root<CharsRef> stem =
+            findStem(expanded.chars, expanded.offset, breakPos, originalCase, context);
         if (stem != null) {
           CompoundPart part = new CompoundPart(prev, expanded, breakPos, stem, pattern);
           if (checkCompoundsAfter(originalCase, part)) {
@@ -200,10 +216,11 @@ public class SpellChecker {
     int breakPos = prev.length;
     int remainingLength = word.length - breakPos;
     int breakOffset = word.offset + breakPos;
-    CharsRef tailStem =
+    Root<CharsRef> tailStem =
         findStem(word.chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
     if (tailStem != null
-        && !(dictionary.checkCompoundDup && equalsIgnoreCase(prev.stem, tailStem))
+        && !dictionary.hasFlag(tailStem.entryId, dictionary.forbiddenword)
+        && !(dictionary.checkCompoundDup && equalsIgnoreCase(prev.stem, tailStem.word))
         && !hasForceUCaseProblem(word.chars, breakOffset, remainingLength, originalCase)
         && prev.mayCompound(tailStem, remainingLength, originalCase)) {
       return true;
@@ -222,7 +239,7 @@ public class SpellChecker {
     return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase);
   }
 
-  private boolean equalsIgnoreCase(CharsRef cr1, CharsRef cr2) {
+  private boolean equalsIgnoreCase(CharSequence cr1, CharSequence cr2) {
     return cr1.toString().equalsIgnoreCase(cr2.toString());
   }
 
@@ -233,11 +250,15 @@ public class SpellChecker {
     final CheckCompoundPattern enablingPattern;
 
     CompoundPart(
-        CompoundPart prev, CharsRef tail, int length, CharsRef stem, CheckCompoundPattern enabler) {
+        CompoundPart prev,
+        CharsRef tail,
+        int length,
+        Root<CharsRef> stem,
+        CheckCompoundPattern enabler) {
       this.prev = prev;
       this.tail = tail;
       this.length = length;
-      this.stem = stem;
+      this.stem = stem.word;
       index = prev == null ? 1 : prev.index + 1;
       enablingPattern = enabler;
     }
@@ -247,22 +268,26 @@ public class SpellChecker {
       return (prev == null ? "" : prev + "+") + tail.subSequence(0, length);
     }
 
-    boolean mayCompound(CharsRef nextStem, int nextPartLength, WordCase originalCase) {
+    boolean mayCompound(Root<CharsRef> nextStem, int nextPartLength, WordCase originalCase) {
       boolean patternsOk =
           enablingPattern != null
-              ? enablingPattern.prohibitsCompounding(tail, length, stem, nextStem)
+              ? enablingPattern.prohibitsCompounding(tail, length, stem, nextStem.word)
               : dictionary.checkCompoundPatterns.stream()
-                  .noneMatch(p -> p.prohibitsCompounding(tail, length, stem, nextStem));
+                  .noneMatch(p -> p.prohibitsCompounding(tail, length, stem, nextStem.word));
       if (!patternsOk) {
         return false;
       }
 
-      //noinspection RedundantIfStatement
       if (dictionary.checkCompoundRep
           && isMisspelledSimpleWord(length + nextPartLength, originalCase)) {
         return false;
       }
-      return true;
+
+      String spaceSeparated =
+          new String(tail.chars, tail.offset, length)
+              + " "
+              + new String(tail.chars, tail.offset + length, nextPartLength);
+      return !checkWord(spaceSeparated);
     }
 
     private boolean isMisspelledSimpleWord(int length, WordCase originalCase) {
@@ -415,14 +440,59 @@ public class SpellChecker {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
-    ModifyingSuggester modifier = new ModifyingSuggester(this);
-    Set<String> result = modifier.suggest(word);
-
-    if (word.contains("-") && result.stream().noneMatch(s -> s.contains("-"))) {
-      result.addAll(modifyChunksBetweenDashes(word));
+    WordCase wordCase = WordCase.caseOf(word);
+    if (dictionary.forceUCase != FLAG_UNSET && wordCase == WordCase.LOWER) {
+      String title = dictionary.toTitleCase(word);
+      if (spell(title)) {
+        return Collections.singletonList(title);
+      }
     }
 
-    return new ArrayList<>(result);
+    SpellChecker suggestionSpeller =
+        new SpellChecker(dictionary) {
+          @Override
+          boolean acceptsStem(int formID) {
+            return !dictionary.hasFlag(formID, dictionary.noSuggest)
+                && !dictionary.hasFlag(formID, dictionary.subStandard);
+          }
+        };
+    ModifyingSuggester modifier = new ModifyingSuggester(suggestionSpeller);
+    Set<String> suggestions = modifier.suggest(word, wordCase);
+
+    if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
+      suggestions.addAll(
+          new GeneratingSuggester(suggestionSpeller)
+              .suggest(dictionary.toLowerCase(word), wordCase, suggestions));
+    }
+
+    if (word.contains("-") && suggestions.stream().noneMatch(s -> s.contains("-"))) {
+      suggestions.addAll(modifyChunksBetweenDashes(word));
+    }
+
+    Set<String> result = new LinkedHashSet<>();
+    for (String candidate : suggestions) {
+      result.add(adjustSuggestionCase(candidate, wordCase, word));
+      if (wordCase == WordCase.UPPER && dictionary.checkSharpS && candidate.contains("ß")) {
+        result.add(candidate);
+      }
+    }
+    return result.stream().map(this::cleanOutput).collect(Collectors.toList());
+  }
+
+  private String adjustSuggestionCase(String candidate, WordCase originalCase, String original) {
+    if (originalCase == WordCase.UPPER) {
+      String upper = candidate.toUpperCase(Locale.ROOT);
+      if (upper.contains(" ") || spell(upper)) {
+        return upper;
+      }
+    }
+    if (Character.isUpperCase(original.charAt(0))) {
+      String title = Character.toUpperCase(candidate.charAt(0)) + candidate.substring(1);
+      if (title.contains(" ") || spell(title)) {
+        return title;
+      }
+    }
+    return candidate;
   }
 
   private List<String> modifyChunksBetweenDashes(String word) {
@@ -439,7 +509,7 @@ public class SpellChecker {
         if (!spell(chunk)) {
           for (String chunkSug : suggest(chunk)) {
             String replaced = word.substring(0, chunkStart) + chunkSug + word.substring(chunkEnd);
-            if (!dictionary.isForbiddenWord(replaced.toCharArray(), replaced.length())) {
+            if (spell(replaced)) {
               result.add(replaced);
             }
           }
@@ -449,5 +519,17 @@ public class SpellChecker {
       chunkStart = chunkEnd + 1;
     }
     return result;
+  }
+
+  private String cleanOutput(String s) {
+    if (!dictionary.needsOutputCleaning) return s;
+
+    try {
+      StringBuilder sb = new StringBuilder(s);
+      Dictionary.applyMappings(dictionary.oconv, sb);
+      return sb.toString();
+    } catch (IOException bogus) {
+      throw new RuntimeException(bogus);
+    }
   }
 }

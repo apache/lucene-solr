@@ -238,6 +238,9 @@ Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
 
+* SOLR-15114: Fix bug that caused WAND optimization to be disabled in cases where the max score is requested (such as
+  multi-shard requests in SolrCloud) (Naoto Minami via Tomás Fernández Löbbe)
+
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)

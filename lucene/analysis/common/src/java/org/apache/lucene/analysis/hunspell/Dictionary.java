@@ -18,11 +18,11 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -70,6 +70,9 @@ import org.apache.lucene.util.fst.Util;
 
 /** In-memory structure for the dictionary (.dic) and affix (.aff) data of a hunspell dictionary. */
 public class Dictionary {
+  // Derived from woorm/LibreOffice dictionaries.
+  // See TestAllDictionaries.testMaxPrologueNeeded.
+  static final int MAX_PROLOGUE_SCAN_WINDOW = 30 * 1024;
 
   static final char[] NOFLAGS = new char[0];
 
@@ -119,7 +122,7 @@ public class Dictionary {
   // offsets in affixData
   static final int AFFIX_FLAG = 0;
   static final int AFFIX_STRIP_ORD = 1;
-  static final int AFFIX_CONDITION = 2;
+  private static final int AFFIX_CONDITION = 2;
   static final int AFFIX_APPEND = 3;
 
   // Default flag parsing strategy
@@ -169,6 +172,10 @@ public class Dictionary {
   boolean enableSplitSuggestions = true;
   List<RepEntry> repTable = new ArrayList<>();
   List<List<String>> mapTable = new ArrayList<>();
+  int maxDiff = 5;
+  int maxNGramSuggestions = Integer.MAX_VALUE;
+  boolean onlyMaxDiff;
+  char noSuggest, subStandard;
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
@@ -224,26 +231,37 @@ public class Dictionary {
     this.needsInputCleaning = ignoreCase;
     this.needsOutputCleaning = false; // set if we have an OCONV
 
-    Path tempPath = getDefaultTempDir(); // TODO: make this configurable?
-    Path aff = Files.createTempFile(tempPath, "affix", "aff");
-
-    BufferedInputStream aff1 = null;
-    InputStream aff2 = null;
-    boolean success = false;
-    try {
-      // Copy contents of the affix stream to a temp file.
-      try (OutputStream os = Files.newOutputStream(aff)) {
-        affix.transferTo(os);
+    try (BufferedInputStream affixStream =
+        new BufferedInputStream(affix, MAX_PROLOGUE_SCAN_WINDOW) {
+          @Override
+          public void close() {
+            // TODO: maybe we should consume and close it? Why does it need to stay open?
+            // Don't close the affix stream as per javadoc.
+          }
+        }) {
+      // I assume we don't support other BOMs (utf16, etc.)? We trivially could,
+      // by adding maybeConsume() with a proper bom... but I don't see hunspell repo to have
+      // any such exotic examples.
+      Charset streamCharset;
+      if (maybeConsume(affixStream, BOM_UTF8)) {
+        streamCharset = StandardCharsets.UTF_8;
+      } else {
+        streamCharset = DEFAULT_CHARSET;
       }
 
-      // pass 1: get encoding & flag
-      aff1 = new BufferedInputStream(Files.newInputStream(aff));
-      readConfig(aff1);
+      /*
+       * pass 1: look for encoding & flag. This is simple but works. We just prefetch
+       * a large enough chunk of the input and scan through it. The buffered data will
+       * be subsequently reused anyway so nothing is wasted.
+       */
+      affixStream.mark(MAX_PROLOGUE_SCAN_WINDOW);
+      byte[] prologue = affixStream.readNBytes(MAX_PROLOGUE_SCAN_WINDOW - 1);
+      affixStream.reset();
+      readConfig(new ByteArrayInputStream(prologue), streamCharset);
 
       // pass 2: parse affixes
-      aff2 = new BufferedInputStream(Files.newInputStream(aff));
       FlagEnumerator flagEnumerator = new FlagEnumerator();
-      readAffixFile(aff2, decoder, flagEnumerator);
+      readAffixFile(affixStream, decoder, flagEnumerator);
 
       // read dictionary entries
       IndexOutput unsorted = mergeDictionaries(tempDir, tempFileNamePrefix, dictionaries, decoder);
@@ -252,14 +270,6 @@ public class Dictionary {
       flagLookup = flagEnumerator.finish();
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
-      success = true;
-    } finally {
-      IOUtils.closeWhileHandlingException(aff1, aff2);
-      if (success) {
-        Files.delete(aff);
-      } else {
-        IOUtils.deleteFilesIgnoringExceptions(aff);
-      }
     }
   }
 
@@ -346,6 +356,7 @@ public class Dictionary {
       if (line.isEmpty()) continue;
 
       String firstWord = line.split("\\s")[0];
+      // TODO: convert to a switch?
       if ("AF".equals(firstWord)) {
         parseAlias(line);
       } else if ("AM".equals(firstWord)) {
@@ -409,8 +420,22 @@ public class Dictionary {
         neighborKeyGroups = singleArgument(reader, line).split("\\|");
       } else if ("NOSPLITSUGS".equals(firstWord)) {
         enableSplitSuggestions = false;
+      } else if ("MAXNGRAMSUGS".equals(firstWord)) {
+        maxNGramSuggestions = Integer.parseInt(singleArgument(reader, line));
+      } else if ("MAXDIFF".equals(firstWord)) {
+        int i = Integer.parseInt(singleArgument(reader, line));
+        if (i < 0 || i > 10) {
+          throw new ParseException("MAXDIFF should be between 0 and 10", reader.getLineNumber());
+        }
+        maxDiff = i;
+      } else if ("ONLYMAXDIFF".equals(firstWord)) {
+        onlyMaxDiff = true;
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("NOSUGGEST".equals(firstWord)) {
+        noSuggest = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("SUBSTANDARD".equals(firstWord)) {
+        subStandard = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
         compoundMin = Math.max(1, parseNum(reader, line));
       } else if ("COMPOUNDWORDMAX".equals(firstWord)) {
@@ -445,6 +470,13 @@ public class Dictionary {
           checkCompoundPatterns.add(
               new CheckCompoundPattern(reader.readLine(), flagParsingStrategy, this));
         }
+      } else if ("SET".equals(firstWord)) {
+        checkCriticalDirectiveSame(
+            "SET", reader, decoder.charset(), getDecoder(singleArgument(reader, line)).charset());
+      } else if ("FLAG".equals(firstWord)) {
+        FlagParsingStrategy strategy = getFlagParsingStrategy(line, decoder.charset());
+        checkCriticalDirectiveSame(
+            "FLAG", reader, flagParsingStrategy.getClass(), strategy.getClass());
       }
     }
 
@@ -468,6 +500,19 @@ public class Dictionary {
     stripOffsets[currentIndex] = currentOffset;
   }
 
+  private void checkCriticalDirectiveSame(
+      String directive, LineNumberReader reader, Object expected, Object actual)
+      throws ParseException {
+    if (!expected.equals(actual)) {
+      throw new ParseException(
+          directive
+              + " directive should occur at most once, and in the first "
+              + MAX_PROLOGUE_SCAN_WINDOW
+              + " bytes of the *.aff file",
+          reader.getLineNumber());
+    }
+  }
+
   private List<String> parseMapEntry(LineNumberReader reader, String line) throws ParseException {
     String unparsed = firstArgument(reader, line);
     List<String> mapEntry = new ArrayList<>();
@@ -487,7 +532,7 @@ public class Dictionary {
     return mapEntry;
   }
 
-  private boolean hasLanguage(String... langCodes) {
+  boolean hasLanguage(String... langCodes) {
     if (language == null) return false;
     String langCode = extractLanguageCode(language);
     for (String code : langCodes) {
@@ -753,6 +798,14 @@ public class Dictionary {
     return affixData[affixIndex * 4 + offset];
   }
 
+  boolean isCrossProduct(int affix) {
+    return (affixData(affix, AFFIX_CONDITION) & 1) == 1;
+  }
+
+  int getAffixCondition(int affix) {
+    return affixData(affix, AFFIX_CONDITION) >>> 1;
+  }
+
   private FST<CharsRef> parseConversions(LineNumberReader reader, int num)
       throws IOException, ParseException {
     Map<String, String> mappings = new TreeMap<>();
@@ -778,31 +831,36 @@ public class Dictionary {
   private static final byte[] BOM_UTF8 = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
 
   /** Parses the encoding and flag format specified in the provided InputStream */
-  private void readConfig(BufferedInputStream stream) throws IOException, ParseException {
-    // I assume we don't support other BOMs (utf16, etc.)? We trivially could,
-    // by adding maybeConsume() with a proper bom... but I don't see hunspell repo to have
-    // any such exotic examples.
-    Charset streamCharset;
-    if (maybeConsume(stream, BOM_UTF8)) {
-      streamCharset = StandardCharsets.UTF_8;
-    } else {
-      streamCharset = DEFAULT_CHARSET;
-    }
-
-    // TODO: can these flags change throughout the file? If not then we can abort sooner. And
-    // then we wouldn't even need to create a temp file for the affix stream - a large enough
-    // leading buffer (BufferedInputStream) would be sufficient?
+  private void readConfig(InputStream stream, Charset streamCharset)
+      throws IOException, ParseException {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, streamCharset));
     String line;
+    String flagLine = null;
+    boolean charsetFound = false;
+    boolean flagFound = false;
     while ((line = reader.readLine()) != null) {
       if (line.isBlank()) continue;
 
       String firstWord = line.split("\\s")[0];
       if ("SET".equals(firstWord)) {
         decoder = getDecoder(singleArgument(reader, line));
+        charsetFound = true;
       } else if ("FLAG".equals(firstWord)) {
-        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
+        // Preserve the flag line for parsing later since we need the decoder's charset
+        // and just in case they come out of order.
+        flagLine = line;
+        flagFound = true;
+      } else {
+        continue;
       }
+
+      if (charsetFound && flagFound) {
+        break;
+      }
+    }
+
+    if (flagFound) {
+      flagParsingStrategy = getFlagParsingStrategy(flagLine, decoder.charset());
     }
   }
 
@@ -1347,14 +1405,6 @@ public class Dictionary {
         .map(String::trim)
         .filter(s -> !s.isBlank())
         .collect(Collectors.toList());
-  }
-
-  boolean isForbiddenWord(char[] word, int length) {
-    if (forbiddenword != FLAG_UNSET) {
-      IntsRef forms = lookupWord(word, 0, length);
-      return forms != null && hasFlag(forms, forbiddenword);
-    }
-    return false;
   }
 
   boolean hasFlag(IntsRef forms, char flag) {
