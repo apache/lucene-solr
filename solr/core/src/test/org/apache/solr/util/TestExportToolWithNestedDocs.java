@@ -288,6 +288,17 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     long lines = Files.lines(new File(info.out).toPath()).count();
     assertEquals(2, lines);
     
+    // check first line for JSON completeness
+    jsonOutput = Files.readString(new File(info.out).toPath()).split("\\r?\\n")[0];
+    SolrTestCaseHS.matchJSON(jsonOutput, 
+        "//id=='P11!prod'", 
+        "//name_s=='Swingline Stapler'",
+        "//id=='P11!prod'/skus/[1]/id=='P11!S21'",
+        "//id=='P11!prod'/skus/[1]/manuals/[1]/id=='P11!D41'",
+        "//id=='P11!prod'/skus/[2]/id=='P11!S31'",
+        "//id=='P11!prod'/manuals/[1]/id=='P11!D51'"        
+        );
+    
     
   }  
   
