@@ -1,0 +1,58 @@
+[{
+    "id": "P11!prod",
+    "name_s": "Swingline Stapler",
+    "description_t": "The Cadillac of office staplers.",
+    "skus": [{
+      "id": "P11!S21",
+      "color_s": "RED",
+      "price_i": 42,
+      "manuals": {
+        "id": "P11!D41",
+        "name_s": "Red Swingline Brochure",
+        "pages_i": 1,
+        "content_t": "It's a lovely stapler.",
+      }
+    }, {
+      "id": "P11!S31",
+      "color_s": "BLACK",
+      "price_i": 3,
+    }],
+    "manuals": [{
+      "id": "P11!D51",
+      "name_s": "Quick Reference Guide",
+      "pages_i": 1,
+      "content_t": "How to use your stapler: Hit it with your fist!",
+    }, {
+      "id": "P11!D61",
+      "name_s": "Warranty Details",
+      "pages_i": 42,
+      "content_t": "You get a lifetime guarantee.",
+    }]
+  },
+  {
+    "id": "P22!prod",
+    "name_s": "Mont Blanc Fountain Pen",
+    "description_t": "The Cadillac of Writing Instruments.",
+    "skus": [{
+      "id": "P22!S22",
+      "color_s": "RED",
+      "price_i": 89,
+      "manuals": {
+        "id": "P22!D42",
+        "name_s": "Red Mont Blanc Brochure",
+        "pages_i": 1,
+        "content_t": "Get the best pen ever!"
+      }
+    }, {
+      "id": "P22!S32",
+      "color_s": "BLACK",
+      "price_i": 67
+    }],
+    "manuals": {
+      "id": "P22!D52",
+      "name_s": "How To Use A Pen",
+      "pages_i": 42,
+      "content_t": "Start by removing the cap.  Then write."
+    }
+  },
+]

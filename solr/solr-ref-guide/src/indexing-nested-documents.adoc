@@ -128,6 +128,12 @@ Even though the child documents in these examples are provided syntactically as 
 =====
 The <<uploading-data-with-index-handlers#json-update-convenience-paths,`/update/json/docs` convenience path>> will automatically flatten complex JSON documents by default -- so to index nested JSON documents make sure to use `/update`.
 =====
+
+[source,bash]
+----
+curl -X POST -d @example/exampledocs/office_products.json 'http://localhost:8983/solr/techproducts/update/json?commit=true'
+curl -X GET 'http://localhost:8983/solr/techproducts/select?q=id:P11!prod&fl=*,[child]'
+----
 ====
 
 [example.tab-pane#xml]
