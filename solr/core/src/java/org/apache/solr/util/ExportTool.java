@@ -284,7 +284,96 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
+      if(info.out.endsWith(".json.gz")) {
+        fos = new GZIPOutputStream(fos);
+      }    
+      if (info.bufferSize > 0) {
+        fos = new BufferedOutputStream(fos, info.bufferSize);
+      }
+      writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+      writer.append('[');
+
+    }
+
+    @Override
+    public void end() throws IOException {
+      writer.append(']');
+      writer.flush();
+      fos.flush();
+      fos.close();
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public synchronized void accept(SolrDocument doc) throws IOException {
+      charArr.reset();
+      int mapSize = doc._size();
+      if(doc.hasChildDocuments()) {
+        mapSize ++;
+      }
+      Map m = new LinkedHashMap(mapSize);
+      doc.forEach((s, field) -> {
+        if (s.equals("_version_") || s.equals("_roor_")) return;
+        if (field instanceof List) {
+          if (((List) field).size() == 1) {
+            field = ((List) field).get(0);
+          }
+        }
+        field = constructDateStr(field);
+        if (field instanceof List) {
+          List list = (List) field;
+          if (hasdate(list)) {
+            ArrayList<Object> listCopy = new ArrayList<>(list.size());
+            for (Object o : list) listCopy.add(constructDateStr(o));
+            field = listCopy;
+          }
+        }
+        m.put(s, field);
+      });
+      if (doc.hasChildDocuments()) {
+        m.put("_childDocuments_", doc.getChildDocuments());
+      }
+      jsonWriter.write(m);
+      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
+      writer.append(',');
+      writer.append('\n');
+      super.accept(doc);
+    }
+
+    private boolean hasdate(@SuppressWarnings({"rawtypes"})List list) {
+      boolean hasDate = false;
+      for (Object o : list) {
+        if(o instanceof Date){
+          hasDate = true;
+          break;
+        }
+      }
+      return hasDate;
+    }
+
+    private Object constructDateStr(Object field) {
+      if (field instanceof Date) {
+        field = DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
+      }
+      return field;
+    }
+  }
+  
+  static class JsonlSink extends DocsSink {
+    private CharArr charArr = new CharArr(1024 * 2);
+    JSONWriter jsonWriter = new JSONWriter(charArr, -1);
+    private Writer writer;
+
+    public JsonlSink(Info info) {
+      this.info = info;
+    }
+
+    @Override
+    public void start() throws IOException {
+      fos = new FileOutputStream(info.out);
+      if(info.out.endsWith(".jsonl.gz")) {
+        fos = new GZIPOutputStream(fos);
+      }
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
@@ -308,7 +397,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         mapSize ++;
       }
       Map m = new LinkedHashMap(mapSize);
-      System.out.println("Child Docs:" + doc.hasChildDocuments());
+      
       doc.forEach((s, field) -> {
         if (s.equals("_version_") || s.equals("_roor_")) return;
         if (field instanceof List) {
@@ -353,87 +442,6 @@ public class ExportTool extends SolrCLI.ToolBase {
       }
       return field;
     }
-  }
-  
-  static class JsonlSink extends DocsSink {
-    private CharArr charArr = new CharArr(1024 * 2);
-    JSONWriter jsonWriter = new JSONWriter(charArr, -1);
-    private Writer writer;
-
-    public JsonlSink(Info info) {
-      this.info = info;
-    }
-
-    @Override
-    public void start() throws IOException {
-      fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".jsonl.gz") || info.out.endsWith(".jsonl.")) fos = new GZIPOutputStream(fos);
-      if (info.bufferSize > 0) {
-        fos = new BufferedOutputStream(fos, info.bufferSize);
-      }
-      writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
-
-    }
-
-    @Override
-    public void end() throws IOException {
-      writer.flush();
-      fos.flush();
-      fos.close();
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public synchronized void accept(SolrDocument doc) throws IOException {
-      charArr.reset();
-      Map m = new LinkedHashMap(doc.size());
-      System.out.println(doc.hasChildDocuments());
-      
-      doc.forEach((s, field) -> {
-        if (s.equals("_version_") || s.equals("_roor_")) return;
-        if (field instanceof List) {
-          if (((List) field).size() == 1) {
-            field = ((List) field).get(0);
-          }
-        }
-        field = constructDateStr(field);
-        if (field instanceof List) {
-          List list = (List) field;
-          if (hasdate(list)) {
-            ArrayList<Object> listCopy = new ArrayList<>(list.size());
-            for (Object o : list) listCopy.add(constructDateStr(o));
-            field = listCopy;
-          }
-        }
-        m.put(s, field);
-      });
-      if (doc.hasChildDocuments())
-      {
-        m.put("boo", doc.getChildDocuments());
-      }
-      jsonWriter.write(m);
-      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
-      writer.append('\n');
-      super.accept(doc);
-    }
-
-    private boolean hasdate(@SuppressWarnings({"rawtypes"})List list) {
-      boolean hasDate = false;
-      for (Object o : list) {
-        if(o instanceof Date){
-          hasDate = true;
-          break;
-        }
-      }
-      return hasDate;
-    }
-
-    private Object constructDateStr(Object field) {
-      if (field instanceof Date) {
-        field = DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
-      }
-      return field;
-    }
   }  
 
   static class JavabinSink extends DocsSink {
@@ -446,7 +454,9 @@ public class ExportTool extends SolrCLI.ToolBase {
     @Override
     public void start() throws IOException {
       fos = new FileOutputStream(info.out);
-      if(info.out.endsWith(".json.gz") || info.out.endsWith(".json.")) fos = new GZIPOutputStream(fos);
+      if(info.out.endsWith(".javabin.gz")) {
+        fos = new GZIPOutputStream(fos);
+      }
       if (info.bufferSize > 0) {
         fos = new BufferedOutputStream(fos, info.bufferSize);
       }
