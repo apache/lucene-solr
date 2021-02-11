@@ -259,6 +259,11 @@ public abstract class CodecReader extends LeafReader implements Accountable {
       ramBytesUsed += getPointsReader().ramBytesUsed();
     }
 
+    // vectors
+    if (getVectorReader() != null) {
+      ramBytesUsed += getVectorReader().ramBytesUsed();
+    }
+
     return ramBytesUsed;
   }
 
@@ -295,6 +300,11 @@ public abstract class CodecReader extends LeafReader implements Accountable {
       resources.add(Accountables.namedAccountable("points", getPointsReader()));
     }
 
+    // vectors
+    if (getVectorReader() != null) {
+      resources.add(Accountables.namedAccountable("points", getVectorReader()));
+    }
+
     return Collections.unmodifiableList(resources);
   }
 
@@ -328,6 +338,11 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     // points
     if (getPointsReader() != null) {
       getPointsReader().checkIntegrity();
+    }
+
+    // vectors
+    if (getVectorReader() != null) {
+      getVectorReader().checkIntegrity();
     }
   }
 }
