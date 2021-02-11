@@ -41,9 +41,12 @@ import org.apache.solr.client.solrj.cloud.autoscaling.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.RefreshCollectionMessage;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
+import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -51,6 +54,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -114,6 +118,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
+    final boolean isPrs = message.getBool(DocCollection.PER_REPLICA_STATE, false);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
@@ -148,6 +153,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     // fail fast if parameters are wrong or incomplete
     List<String> shardNames = populateShardNames(message, router);
     checkReplicaTypes(message);
+    DocCollection newColl = null;
+    final String collectionPath = ZkStateReader.getCollectionPath(collectionName);
 
     AtomicReference<PolicyHelper.SessionWrapper> sessionWrapper = new AtomicReference<>();
 
@@ -170,27 +177,38 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       createCollectionZkNode(stateManager, collectionName, collectionParams);
-      
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
 
-      // wait for a while until we see the collection
-      TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, timeSource);
-      boolean created = false;
-      while (! waitUntil.hasTimedOut()) {
-        waitUntil.sleep(100);
-        created = ocmh.cloudManager.getClusterStateProvider().getClusterState().hasCollection(collectionName);
-        if (created) break;
-      }
-      if (!created) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
+      if(isPrs) {
+        ZkWriteCommand command = new ClusterStateMutator(ocmh.cloudManager).createCollection(clusterState, message);
+        byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+        ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
+        clusterState = clusterState.copyWith(collectionName, command.collection);
+        newColl = command.collection;
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
+
+        // wait for a while until we see the collection
+        TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, timeSource);
+        boolean created = false;
+        while (!waitUntil.hasTimedOut()) {
+          waitUntil.sleep(100);
+          created = ocmh.cloudManager.getClusterStateProvider().getClusterState().hasCollection(collectionName);
+          if (created) break;
+        }
+        if (!created) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not fully create collection: " + collectionName);
+        }
+
+        // refresh cluster state
+        clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
+        newColl = clusterState.getCollection(collectionName);
+
       }
 
-      // refresh cluster state
-      clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
 
       List<ReplicaPosition> replicaPositions = null;
       try {
-        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames, sessionWrapper);
+        replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, newColl, message, shardNames, sessionWrapper);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
@@ -250,7 +268,16 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               ZkStateReader.NODE_NAME_PROP, nodeName,
               ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
               CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
-          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+          if(isPrs) {
+            ZkWriteCommand command = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, props);
+            byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
+//        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
+            ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
+            clusterState = clusterState.copyWith(collectionName, command.collection);
+            newColl = command.collection;
+          } else {
+            ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+          }
         }
 
         // Need to create new params for each request
@@ -300,6 +327,23 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
       @SuppressWarnings({"rawtypes"})
       boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
+      if(isPrs) {
+        TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
+        PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
+        while (!timeout.hasTimedOut()) {
+          if(prs.allActive()) break;
+          Thread.sleep(100);
+          prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
+        }
+        if (prs.allActive()) {
+          // we have successfully found all replicas to be ACTIVE
+          // Now ask Overseer to fetch the latest state of collection
+          // from ZK
+          ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
+        } else {
+          failure = true;
+        }
+      }
       if (failure) {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
