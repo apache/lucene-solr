@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.RefreshCollectionMessage;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -287,7 +288,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           Thread.sleep(100);
           prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
         }
-        if (!prs.allActive()) {
+        if (prs.allActive()) {
+          // we have successfully found all replicas to be ACTIVE
+          // Now ask Overseer to fetch the latest state of collection
+          // from ZK
+          ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
+        } else {
           failure = true;
         }
       }

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 
 import org.apache.lucene.util.Version;
@@ -145,6 +146,7 @@ public class Overseer implements SolrCloseable {
 
   public static final int NUM_RESPONSES_TO_STORE = 10000;
   public static final String OVERSEER_ELECT = "/overseer_elect";
+  private final CopyOnWriteArrayList<Message> unprocessedMessages = new CopyOnWriteArrayList<>();
 
   private SolrMetricsContext solrMetricsContext;
   private volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
@@ -256,6 +258,13 @@ public class Overseer implements SolrCloseable {
                 }
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
+                while (unprocessedMessages.size() > 0) {
+                  zkStateWriter.writePendingUpdates();
+                  Message m = unprocessedMessages.remove(0);
+                  if (m instanceof RefreshCollectionMessage) {
+                    clusterState = ((RefreshCollectionMessage) m).run(clusterState, Overseer.this);
+                  }
+                }
                 try {
                   clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
                 } catch (Exception e) {
@@ -1062,6 +1071,21 @@ public class Overseer implements SolrCloseable {
       throw new AlreadyClosedException();
     }
     getStateUpdateQueue().offer(data);
+  }
+
+  /**Submit an intra-process message
+   * This will be picked up and executed when clusterstate updater thread runs
+   */
+  public void submit(Message message) {
+    unprocessedMessages.add(message);
+  }
+
+  public interface Message {
+    Operation getOperation();
+
+    enum Operation {
+      REFRESH_COLL;
+    }
   }
 
 }
