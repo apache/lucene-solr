@@ -196,6 +196,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("map");
   }
 
+  public void testNoSuggest() throws Exception {
+    doTest("nosuggest");
+  }
+
   protected void doTest(String name) throws Exception {
     checkSpellCheckerExpectations(
         Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name));

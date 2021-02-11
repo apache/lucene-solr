@@ -111,6 +111,7 @@ class GeneratingSuggester {
     for (int i = 0; i < forms.length; i += dictionary.formStep()) {
       int entryId = forms.ints[forms.offset + i];
       if (dictionary.hasFlag(entryId, dictionary.forbiddenword)
+          || dictionary.hasFlag(entryId, dictionary.noSuggest)
           || dictionary.hasFlag(entryId, Dictionary.HIDDEN_FLAG)
           || dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
         continue;
