@@ -14,11 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.blocktree;
+package org.apache.lucene.codecs.lucene90.blocktree;
 
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
@@ -33,6 +30,10 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.OffHeapFSTStore;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * BlockTree's implementation of {@link Terms}.

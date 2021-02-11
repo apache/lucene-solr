@@ -17,6 +17,7 @@
 package org.apache.lucene.backward_codecs.lucene50;
 
 import java.io.IOException;
+import org.apache.lucene.backward_codecs.lucene40.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -24,8 +25,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -93,7 +92,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *   <dd><b>Term Dictionary</b>
  *       <p>The .tim file contains the list of terms in each field along with per-term statistics
  *       (such as docfreq) and pointers to the frequencies, positions, payload and skip data in the
- *       .doc, .pos, and .pay files. See {@link BlockTreeTermsWriter} for more details on the
+ *       .doc, .pos, and .pay files. See {@code BlockTreeTermsWriter} for more details on the
  *       format.
  *       <p>NOTE: The term dictionary can plug into different postings implementations: the postings
  *       writer/reader are actually responsible for encoding and decoding the PostingsHeader and
@@ -148,7 +147,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <dl>
  *   <dd><b>Term Index</b>
  *       <p>The .tip file contains an index into the term dictionary, so that it can be accessed
- *       randomly. See {@link BlockTreeTermsWriter} for more details on the format.
+ *       randomly. See {@code BlockTreeTermsWriter} for more details on the format.
  * </dl>
  *
  * <a id="Frequencies"></a>

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.blocktree;
+package org.apache.lucene.backward_codecs.lucene40.blocktree;
 
 import java.io.IOException;
 import org.apache.lucene.index.BaseTermsEnum;

@@ -17,9 +17,9 @@
 package org.apache.lucene.backward_codecs.lucene84;
 
 import java.io.IOException;
+import org.apache.lucene.backward_codecs.lucene40.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 

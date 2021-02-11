@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.lucene90;
 
-import java.io.IOException;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -25,8 +24,8 @@ import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.lucene90.blocktree.BlockTreeTermsReader;
+import org.apache.lucene.codecs.lucene90.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
@@ -34,6 +33,8 @@ import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
+
+import java.io.IOException;
 
 /**
  * Lucene 5.0 postings format, which encodes postings in packed integer blocks for fast decode.

@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.blocktree;
+package org.apache.lucene.codecs.lucene90.blocktree;
 
-import java.io.IOException;
-import java.util.Arrays;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
@@ -26,6 +24,9 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.FST;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 // TODO: can we share this with the frame in STE?
 final class IntersectTermsEnumFrame {

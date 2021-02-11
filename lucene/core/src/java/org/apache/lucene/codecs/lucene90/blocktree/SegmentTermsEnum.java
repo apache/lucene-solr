@@ -14,10 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.blocktree;
+package org.apache.lucene.codecs.lucene90.blocktree;
 
-import java.io.IOException;
-import java.io.PrintStream;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
@@ -31,6 +29,9 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
+
+import java.io.IOException;
+import java.io.PrintStream;
 
 /** Iterates through terms in this field. */
 final class SegmentTermsEnum extends BaseTermsEnum {
