@@ -41,7 +41,10 @@ public class TestHunspellRepositoryTestCases {
       Set.of(
           "hu", // Hungarian is hard: a lot of its rules are hardcoded in Hunspell code, not aff/dic
           "morph", // we don't do morphological analysis yet
+          "opentaal_keepcase", // Hunspell bug: https://github.com/hunspell/hunspell/issues/712
+          "forbiddenword", // needs https://github.com/hunspell/hunspell/pull/713 PR to be merged
           "nepali", // not supported yet
+          "utf8_nonbmp", // code points not supported yet
           "phone" // not supported yet, used only for suggestions in en_ZA
           );
   private final String testName;
