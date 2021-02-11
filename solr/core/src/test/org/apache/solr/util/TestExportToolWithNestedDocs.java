@@ -213,7 +213,7 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     final SolrInputDocument p2 = new SolrInputDocument();
     p2.setField("id", "P22!prod");
     p2.setField("name_s", "Mont Blanc Fountain Pen");
-    p2.setField("description_t", "A Premium Writing Instrument ...");
+    p2.setField("description_t", "The Cadillac of Writing Instruments ...");
     {
       final SolrInputDocument s1 = new SolrInputDocument();
       s1.setField("id", "P22!S22");
@@ -248,11 +248,8 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     
     client.add(Arrays.asList(p1, p2));
    
-    
     client.commit();
 
-
-    
     
     String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
     
@@ -262,14 +259,12 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
     String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
     info.setOutFormat(absolutePath, "json");
-    info.setLimit("200");
+    info.setLimit("-1");
     info.query = "description_t:Cadillac";
     info.fields = "*,[child]";
     info.exportDocs();
     
-    assertEquals(1, info.docsWritten.get());
-    
-    assertJsonDocsCount(info, 1, record -> "P11!prod".equals(record.get("id")));
+    assertEquals(2, info.docsWritten.get());
     
     String jsonOutput = Files.readString(new File(info.out).toPath());
 
@@ -281,6 +276,18 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
         "//id=='P11!prod'/skus/[2]/id=='P11!S31'",
         "//id=='P11!prod'/manuals/[1]/id=='P11!D51'"        
         );
+    
+    info = new ExportTool.MultiThreadedRunner(url);
+    absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+    info.setOutFormat(absolutePath, "jsonl");
+    info.setLimit("2");
+    info.query = "description_t:Cadillac";
+    info.fields = "*,[child]";
+    info.exportDocs();   
+    
+    long lines = Files.lines(new File(info.out).toPath()).count();
+    assertEquals(2, lines);
+    
     
   }  
   
