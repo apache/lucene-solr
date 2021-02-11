@@ -236,7 +236,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
                                 int bid, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
         BackupId backupId = new BackupId(bid);
         if (!repository.exists(repository.resolve(backupPath, BackupFilePaths.getBackupPropsName(backupId)))) {
-            return;
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Backup ID [" + bid + "] not found; cannot be deleted");
         }
 
         deleteBackupIds(backupPath, repository, Collections.singleton(backupId), results);

@@ -1192,7 +1192,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         String backupName = req.getParams().get(NAME);
         final URI locationURI = repository.createURI(location);
         URI backupLocation = BackupFilePaths.buildExistingBackupLocationURI(repository, locationURI, backupName);
-        log.info("JEGERLOW: LIST code has produced backupPath: {}", backupLocation);
         if (repository.exists(repository.resolve(backupLocation, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup name [" + backupName + "] at " +
                   "location [" + location + "] holds a non-incremental (legacy) backup, but " +

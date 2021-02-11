@@ -21,7 +21,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
 
 public class DeleteBackupPayload implements ReflectMapWriter {
 
-  @JsonProperty
+  @JsonProperty(required = true)
   public String name;
 
   @JsonProperty

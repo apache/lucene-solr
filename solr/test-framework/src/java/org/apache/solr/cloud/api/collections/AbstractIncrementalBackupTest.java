@@ -216,28 +216,35 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
             // test list backups
             CollectionAdminResponse resp =
-                    new CollectionAdminRequest.ListBackup(BACKUP_REPO_NAME, backupLocation, backupName).process(cluster.getSolrClient());
+                    CollectionAdminRequest.listBackup(backupName)
+                            .setBackupLocation(backupLocation)
+                            .setBackupRepository(BACKUP_REPO_NAME)
+                            .process(cluster.getSolrClient());
             ArrayList backups = (ArrayList) resp.getResponse().get("backups");
             assertEquals(3, backups.size());
 
             // test delete backups
-            resp = new CollectionAdminRequest.DeleteBackup(BACKUP_REPO_NAME, backupLocation, backupName)
-                    .keepLastNumberOfBackups(4)
+            resp = CollectionAdminRequest.deleteBackupByRecency(backupName, 4)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
                     .process(cluster.getSolrClient());
             assertEquals(null, resp.getResponse().get("deleted"));
 
-            resp = new CollectionAdminRequest.DeleteBackup(BACKUP_REPO_NAME, backupLocation, backupName)
-                    .keepLastNumberOfBackups(3)
+            resp =  CollectionAdminRequest.deleteBackupByRecency(backupName, 3)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
                     .process(cluster.getSolrClient());
             assertEquals(null, resp.getResponse().get("deleted"));
 
-            resp = new CollectionAdminRequest.DeleteBackup(BACKUP_REPO_NAME, backupLocation, backupName)
-                    .keepLastNumberOfBackups(2)
+            resp = CollectionAdminRequest.deleteBackupByRecency(backupName, 2)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
                     .process(cluster.getSolrClient());
             assertEquals(1, resp.getResponse()._get("deleted[0]/backupId", null));
 
-            resp = new CollectionAdminRequest.DeleteBackup(BACKUP_REPO_NAME, backupLocation, backupName)
-                    .deleteBackupId(3)
+            resp = CollectionAdminRequest.deleteBackupById(backupName, 3)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
                     .process(cluster.getSolrClient());
             assertEquals(3, resp.getResponse()._get("deleted[0]/backupId", null));
 
@@ -246,14 +253,16 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
             // test purge backups
             // purging first since there may corrupted files were uploaded
-            resp = new CollectionAdminRequest.DeleteBackup(BACKUP_REPO_NAME, backupLocation, backupName)
-                    .purgeBackups(true)
+            resp = CollectionAdminRequest.deleteBackupPurgeUnusedFiles(backupName)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
                     .process(cluster.getSolrClient());
 
             addDummyFileToIndex(repository, backupPaths.getIndexDir(), "dummy-files-1");
             addDummyFileToIndex(repository, backupPaths.getIndexDir(), "dummy-files-2");
-            resp = new CollectionAdminRequest.DeleteBackup(BACKUP_REPO_NAME, backupLocation, backupName)
-                    .purgeBackups(true)
+            resp = CollectionAdminRequest.deleteBackupPurgeUnusedFiles(backupName)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
                     .process(cluster.getSolrClient());
             assertEquals(2, ((NamedList)resp.getResponse().get("deleted")).get("numIndexFiles"));
 
