@@ -187,17 +187,9 @@ public class Overseer implements SolrCloseable {
           }
 
           //TODO consider removing 'refreshClusterState' and simply check if clusterState is null
-          if (refreshClusterState || refreshCollections.size() != 0) {
+          if (refreshClusterState) {
             try {
-              if (refreshClusterState) {
-                reader.forciblyRefreshAllClusterStateSlow();
-              } else {
-                Set<String> collectionsToRefresh = new HashSet<>(refreshCollections);
-                for (String c: collectionsToRefresh) {
-                  reader.forceUpdateCollection(c);
-                  refreshCollections.remove(c);
-                }
-              }
+              reader.forciblyRefreshAllClusterStateSlow();
               clusterState = reader.getClusterState();
               zkStateWriter = new ZkStateWriter(reader, stats);
               refreshClusterState = false;
@@ -215,6 +207,9 @@ public class Overseer implements SolrCloseable {
                 // are removed from workQueue but fail to be written to ZK
                 WaitTime.start("processQueueItem");
                 try {
+                  if(OverseerAction.REFRESH_STATE.toString().equals(message.getStr(QUEUE_OPERATION))) {
+                    clusterState = zkStateWriter.writePendingUpdates();
+                  }
                   clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
                   log.info("processQueueItem : {}", WaitTime.timeElapsed());
                 } catch (Exception e) {
@@ -278,6 +273,9 @@ public class Overseer implements SolrCloseable {
                 processedNodes.add(head.first());
                 fallbackQueueSize = processedNodes.size();
                 // The callback always be called on this thread
+                if(OverseerAction.REFRESH_STATE.toString().equals(message.getStr(QUEUE_OPERATION))) {
+                  clusterState = zkStateWriter.writePendingUpdates();
+                }
                 clusterState = processQueueItem(message, clusterState, zkStateWriter, true, () -> {
                   stateUpdateQueue.remove(processedNodes);
                   processedNodes.clear();
