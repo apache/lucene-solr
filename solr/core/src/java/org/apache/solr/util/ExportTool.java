@@ -313,7 +313,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       }
       Map m = new LinkedHashMap(mapSize);
       doc.forEach((s, field) -> {
-        if (s.equals("_version_") || s.equals("_roor_")) return;
+        if (s.equals("_version_") || s.equals("_root_")) return;
         if (field instanceof List) {
           if (((List) field).size() == 1) {
             field = ((List) field).get(0);
@@ -399,7 +399,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       Map m = new LinkedHashMap(mapSize);
       
       doc.forEach((s, field) -> {
-        if (s.equals("_version_") || s.equals("_roor_")) return;
+        if (s.equals("_version_") || s.equals("_root_")) return;
         if (field instanceof List) {
           if (((List) field).size() == 1) {
             field = ((List) field).get(0);
