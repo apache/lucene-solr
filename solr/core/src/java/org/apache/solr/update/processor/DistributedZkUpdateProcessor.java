@@ -191,7 +191,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT), true);
 
         try {
-          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId(), 3000, true);
+          leaderReplica = clusterState.getCollection(collection).getSlice(cloudDesc.getShardId()).getLeader();
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           throw new SolrException(ErrorCode.SERVER_ERROR,

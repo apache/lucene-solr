@@ -82,7 +82,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -131,8 +130,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     // NON_ROUTABLE_PARAMS.add(UpdateParams.ROLLBACK);
 
   }
-  private volatile List<Object> locks = objectList(3);
-
 
   static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
     final AtomicLong puts = new AtomicLong();
@@ -1249,11 +1246,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return directUpdatesToLeadersOnly;
   }
 
-  /**If caches are expired they are refreshed after acquiring a lock.
-   * use this to set the number of locks
-   */
-  public void setParallelCacheRefreshes(int n){ locks = objectList(n); }
-
   protected static ArrayList<Object> objectList(int n) {
     ArrayList<Object> l =  new ArrayList<>(n);
     for(int i=0;i<n;i++) l.add(new Object());
@@ -1267,8 +1259,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     ExpiringCachedDocCollection cacheEntry = collectionStateCache.get(collection);
     DocCollection col = cacheEntry == null ? null : cacheEntry.cached;
     if (col != null) {
-      if (expectedVersion <= col.getZNodeVersion()
-          && !cacheEntry.shouldRetry()) return col;
+      if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
     }
 
     ClusterState.CollectionRef ref = getCollectionRef(collection);
@@ -1280,29 +1271,25 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       //it is readily available just return it
       return ref.get();
     }
-    List locks = this.locks;
-    final Object lock = locks.get(Math.abs(Hash.murmurhash3_x86_32(collection, 0, collection.length(), 0) % locks.size()));
+
     DocCollection fetchedCol = null;
-    synchronized (lock) {
-      /*we have waited for sometime just check once again*/
-      cacheEntry = collectionStateCache.get(collection);
-      col = cacheEntry == null ? null : cacheEntry.cached;
-      if (col != null) {
-        if (expectedVersion <= col.getZNodeVersion()
-            && !cacheEntry.shouldRetry()) return col;
-      }
-      // We are going to fetch a new version
-      // we MUST try to get a new version
-      fetchedCol = ref.get();//this is a call to ZK
-      if (fetchedCol == null) return null;// this collection no more exists
-      if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
-        cacheEntry.setRetriedAt();//we retried and found that it is the same version
-        cacheEntry.maybeStale = false;
-      } else {
-        collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol, retryExpiryTime));
-      }
-      return fetchedCol;
+    /*we have waited for sometime just check once again*/
+    cacheEntry = collectionStateCache.get(collection);
+    col = cacheEntry == null ? null : cacheEntry.cached;
+    if (col != null) {
+      if (expectedVersion <= col.getZNodeVersion() && !cacheEntry.shouldRetry()) return col;
     }
+    // We are going to fetch a new version
+    // we MUST try to get a new version
+    fetchedCol = ref.get();//this is a call to ZK
+    if (fetchedCol == null) return null;// this collection no more exists
+    if (col != null && fetchedCol.getZNodeVersion() == col.getZNodeVersion()) {
+      cacheEntry.setRetriedAt();//we retried and found that it is the same version
+      cacheEntry.maybeStale = false;
+    } else {
+      collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol, retryExpiryTime));
+    }
+    return fetchedCol;
   }
 
   ClusterState.CollectionRef getCollectionRef(String collection) {
