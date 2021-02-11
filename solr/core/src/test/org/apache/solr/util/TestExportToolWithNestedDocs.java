@@ -18,15 +18,8 @@
 package org.apache.solr.util;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.SolrTestCaseJ4;
@@ -34,7 +27,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.JsonRecordReader;
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -306,25 +298,5 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     
     
   }  
-  
-  private void assertJsonLinesDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
-    assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
-    JsonRecordReader jsonReader;
-    Reader rdr;
-    jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-    rdr = new InputStreamReader(new FileInputStream(info.out), StandardCharsets.UTF_8);
-    try {
-      int[] count = new int[]{0};
-      jsonReader.streamRecords(rdr, (record, path) -> {
-        if(predicate != null){
-          assertTrue(predicate.test(record));
-        }
-        count[0]++;
-      });
-      assertTrue(count[0] >= expected);
-    } finally {
-      rdr.close();
-    }
-  }
 }

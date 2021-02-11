@@ -108,7 +108,7 @@ public class TestExportTool extends SolrCloudTestCase {
       info.fields = "id,desc_s,a_dt";
       info.exportDocs();
 
-      assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
+      assertJsonLinesDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
       info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
@@ -117,7 +117,7 @@ public class TestExportTool extends SolrCloudTestCase {
       info.fields = "id,desc_s";
       info.exportDocs();
 
-      assertJsonDocsCount(info, 1000,null);
+      assertJsonLinesDocsCount(info, 1000,null);
 
       info = new ExportTool.MultiThreadedRunner(url);
       absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".javabin";
@@ -142,7 +142,7 @@ public class TestExportTool extends SolrCloudTestCase {
       info.setLimit("-1");
       info.fields = "id,desc_s";
       info.exportDocs();
-      assertJsonDocsCount(info, 1000, null);      
+      assertJsonDocsCount(info, 1000);      
 
     } finally {
       cluster.shutdown();
@@ -219,7 +219,7 @@ public class TestExportTool extends SolrCloudTestCase {
       info.exportDocs();
       long actual = ((ExportTool.JsonSink) info.sink).info.docsWritten.get();
       assertTrue("docs written :" + actual + "docs produced : " + info.docsWritten.get(), actual >= docCount);
-      assertJsonDocsCount(info, docCount,null);
+      assertJsonLinesDocsCount(info, docCount,null);
     } finally {
       cluster.shutdown();
 
@@ -244,7 +244,7 @@ public class TestExportTool extends SolrCloudTestCase {
     }
   }
 
-    private void assertJsonDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
+  private void assertJsonLinesDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
     assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
@@ -264,4 +264,8 @@ public class TestExportTool extends SolrCloudTestCase {
       rdr.close();
     }
   }
+  
+  private void assertJsonDocsCount(ExportTool.Info info, int expected) throws IOException {
+    assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+  }  
 }
