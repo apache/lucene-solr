@@ -12,6 +12,9 @@ Bug Fixes
 * SOLR-15145: System property to control whether base_url is stored in state.json to enable back-compat with older SolrJ versions.
   (Timothy Potter)
 
+* SOLR-15114: Fix bug that caused WAND optimization to be disabled in cases where the max score is requested (such as
+  multi-shard requests in SolrCloud) (Naoto Minami via Tomás Fernández Löbbe)
+
 ==================  8.8.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
