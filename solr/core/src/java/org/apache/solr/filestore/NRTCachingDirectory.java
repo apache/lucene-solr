@@ -14,8 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.store;
+package org.apache.solr.filestore;
 
+import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.IOUtils;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -27,9 +37,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.IOUtils;
 
 // TODO
 //   - let subclass dictate policy...?
@@ -174,7 +181,9 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     for(String fileName : fileNames) {
       unCache(fileName);
     }
-    in.sync(fileNames);
+    //if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit
+      in.sync(fileNames);
+    //}
   }
 
   @Override
@@ -210,16 +219,15 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     // it for defensive reasons... or in case the app is
     // doing something custom (creating outputs directly w/o
     // using IndexWriter):
-    IOUtils.close(
-        () -> {
-          if (!closed.getAndSet(true)) {
-            for(String fileName : cacheDirectory.listAll()) {
-              unCache(fileName);
-            }
+    if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit - we rollback instead of close on IW, and this behavior is unwanted
+      IOUtils.close(() -> {
+        if (!closed.getAndSet(true)) {
+          for (String fileName : cacheDirectory.listAll()) {
+            unCache(fileName);
           }
-        },
-        cacheDirectory,
-        in);
+        }
+      }, cacheDirectory, in);
+    }
   }
 
   /** Subclass can override this to customize logic; return

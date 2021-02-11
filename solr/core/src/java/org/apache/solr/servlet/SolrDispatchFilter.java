@@ -159,7 +159,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
   public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
 
-  public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdir";
+  public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdirsolr.default.confdir";
 
   public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
 

@@ -151,7 +151,7 @@ public class Stellar {
         public static final Pattern QUOTED_PATTERN = Pattern.compile("^([\'\"])(.*)(\\1)$");
 
         public MyCommandOptions() {
-            options.put("server", "localhost:2181");
+            options.put("server", "127.0.0.1:2181");
             options.put("timeout", "30000");
         }
 

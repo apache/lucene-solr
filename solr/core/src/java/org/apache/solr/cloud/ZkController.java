@@ -927,11 +927,13 @@ public class ZkController implements Closeable, Runnable {
         "configsets" + File.separator + "_default" +
         File.separator + "conf";
     String subPath = File.separator + "server" + File.separator + serverSubPath;
-    if (System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE) != null && new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).exists()) {
-      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE)).getAbsolutePath();
-    } else if (System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) != null &&
-        new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).exists()) {
-      configDirPath = new File(System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE) + subPath).getAbsolutePath();
+    String defaultConfigSet = System.getProperty(SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE);
+    log.info("{} set to {}", SolrDispatchFilter.SOLR_DEFAULT_CONFDIR_ATTRIBUTE, defaultConfigSet);
+    if (defaultConfigSet != null) {
+      configDirPath = new File(defaultConfigSet).getAbsolutePath();
+    } else if (defaultConfigSet != null &&
+        new File(System.getProperty(defaultConfigSet + subPath)).exists()) {
+      configDirPath = new File(defaultConfigSet + subPath).getAbsolutePath();
     }
     return configDirPath;
   }

@@ -383,7 +383,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
           if (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
             try {
-              zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (l, c) -> {
+              zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
                 if (c == null) {
                   return false;
                 }

@@ -522,20 +522,10 @@ public class Overseer implements SolrCloseable {
 
       if (taskExecutor != null) {
         taskExecutor.shutdown();
-        try {
-          taskExecutor.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-
-        }
       }
 
       if (zkWriterExecutor != null) {
         zkWriterExecutor.shutdown();
-        try {
-          zkWriterExecutor.awaitTermination(10, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-
-        }
       }
 
       if (overseerOnlyClient != null) {
@@ -559,6 +549,14 @@ public class Overseer implements SolrCloseable {
 
     if (collectionQueueWatcher != null) {
       collectionQueueWatcher.close();
+    }
+
+    if (taskExecutor != null) {
+      try {
+        taskExecutor.awaitTermination(15, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e, true);
+      }
     }
 
     if (log.isDebugEnabled()) {

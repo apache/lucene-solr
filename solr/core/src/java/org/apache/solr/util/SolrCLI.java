@@ -39,6 +39,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -705,7 +706,8 @@ public class SolrCLI implements CLIO {
   public static Map<String,Object> getJson(Http2SolrClient httpClient, String getUrl) throws Exception {
     try {
       // ensure we're requesting JSON back from Solr
-      Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(getUrl + "?" + CommonParams.WT + "=" + CommonParams.JSON, httpClient);
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.GET(new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build().toString(),
+          httpClient);
 
       // make the request and get back a parsed JSON object
       Map<String, Object> json = (Map<String,Object>) Utils.fromJSON(resp.bytes);

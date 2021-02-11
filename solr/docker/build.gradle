@@ -15,9 +15,6 @@
  * limitations under the License.
  */
 
-import com.google.common.base.Preconditions
-import com.google.common.base.Strings
-
 description = 'Solr Docker image'
 
 apply plugin: 'base'

@@ -22,10 +22,10 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.filestore.NRTCachingDirectory;
 
 /**
  * Opens a directory with {@link LuceneTestCase#newDirectory()}

@@ -22,12 +22,12 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.filestore.NRTCachingDirectory;
 
 /**
- * Factory to instantiate {@link org.apache.lucene.store.NRTCachingDirectory}
+ * Factory to instantiate {@link org.apache.solr.filestore.NRTCachingDirectory}
  */
 public class NRTCachingDirectoryFactory extends StandardDirectoryFactory {
   public static final int DEFAULT_MAX_MERGE_SIZE_MB = 4;
