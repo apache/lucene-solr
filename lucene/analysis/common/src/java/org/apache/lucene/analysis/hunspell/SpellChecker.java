@@ -430,6 +430,13 @@ public class SpellChecker {
     }
 
     WordCase wordCase = WordCase.caseOf(word);
+    if (dictionary.forceUCase != FLAG_UNSET && wordCase == WordCase.LOWER) {
+      String title = dictionary.toTitleCase(word);
+      if (spell(title)) {
+        return Collections.singletonList(title);
+      }
+    }
+
     SpellChecker suggestionSpeller =
         new SpellChecker(dictionary) {
           @Override
