@@ -171,6 +171,8 @@ to better align the stored state in Zookeeper with future versions of Solr; as o
 persisted in stored state. However, if you are not able to upgrade SolrJ to 8.8.x for all client applications, then you should
 set `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url` in Zookeeper. For background, see: SOLR-12182 and SOLR-15145.
 
+Support for the `solr.storeBaseUrl` system property will be removed in Solr 10.x and `base_url` will no longer be stored.
+
 === Schema Changes in 9
 
 === Authentication & Security Changes in Solr 9
