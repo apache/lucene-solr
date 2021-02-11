@@ -302,7 +302,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
 
     // vectors
     if (getVectorReader() != null) {
-      resources.add(Accountables.namedAccountable("points", getVectorReader()));
+      resources.add(Accountables.namedAccountable("vectors", getVectorReader()));
     }
 
     return Collections.unmodifiableList(resources);
