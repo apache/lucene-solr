@@ -32,7 +32,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 
@@ -72,7 +71,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
 
   public void testWaitForStateBeforeShutDown() throws Exception {
     final String col_name = "test_col";
-    final ExecutorService executor = ParWork.getRootSharedExecutor();
+    final ExecutorService executor = getTestExecutor();
     final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster
       (1, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
     try {
@@ -82,7 +81,7 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
       final Future<?> backgroundWaitForState = executor.submit
         (() -> {
           try {
-            cluster.getSolrClient().waitForState(col_name, 180, TimeUnit.SECONDS, clusterShape(1, 1));
+            cluster.getSolrClient().waitForState(col_name, 10, TimeUnit.SECONDS, clusterShape(1, 0));
           } catch (Exception e) {
             log.error("background thread got exception", e);
             throw new RuntimeException(e);

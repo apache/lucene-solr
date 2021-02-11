@@ -56,8 +56,6 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
       Assert.assertTrue(response.contains("\"BEEF_CUTS_mult_s\":[\"ROUND\",\"SIRLOIN\"]"));
     } catch(Exception e) {
       throw e;
-    } finally {
-      req.close();
     }
   } 
   
