@@ -47,6 +47,28 @@ import org.apache.solr.common.util.JsonRecordReader;
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
 
+  
+  public void testOutputFormatToFileNameMapping() throws Exception {
+    String url = "http://example:8983/solr/mycollection";
+    ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
+    info.setOutFormat(null, "json");
+    assertEquals("mycollection.json", info.out);
+    System.out.println(info.out);
+    
+    info.setOutFormat(null, "jsonl");
+    assertEquals("mycollection.jsonl", info.out);
+    
+    info.setOutFormat(null, "javabin");
+    assertEquals("mycollection.javabin", info.out);    
+    
+    info.setOutFormat("/tmp/myoutput.json", "json");
+    assertEquals("/tmp/myoutput.json", info.out);  
+    
+    info.setOutFormat("/tmp/myoutput.json.gz", "json");
+    assertEquals("/tmp/myoutput.json.gz", info.out);  
+    
+  }
+  
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4)
@@ -80,7 +102,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
 
       ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
-      String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("200");
       info.fields = "id,desc_s,a_dt";
@@ -89,7 +111,7 @@ public class TestExportTool extends SolrCloudTestCase {
       assertJsonDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
       info = new ExportTool.MultiThreadedRunner(url);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("-1");
       info.fields = "id,desc_s";
@@ -113,6 +135,14 @@ public class TestExportTool extends SolrCloudTestCase {
       info.fields = "id,desc_s";
       info.exportDocs();
       assertJavabinDocsCount(info, 1000);
+      
+      info = new ExportTool.MultiThreadedRunner(url);
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      info.setOutFormat(absolutePath, "json");
+      info.setLimit("-1");
+      info.fields = "id,desc_s";
+      info.exportDocs();
+      assertJsonDocsCount(info, 1000, null);      
 
     } finally {
       cluster.shutdown();
