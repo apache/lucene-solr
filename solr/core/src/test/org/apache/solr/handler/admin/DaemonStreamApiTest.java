@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -56,7 +58,7 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
   final int numDaemons = random().nextInt(3) + 2;
   String daemonOfInterest;
 
-  List<String> daemonNames = Collections.synchronizedList(new ArrayList<>());
+  Set<String> daemonNames = ConcurrentHashMap.newKeySet();
 
   private String url;
 
@@ -111,7 +113,8 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
       String name = DAEMON_ROOT + idx;
       daemonNames.add(name);
     }
-    daemonOfInterest = daemonNames.get(random().nextInt(numDaemons));
+    List<String> daemonList = new ArrayList<>(daemonNames);
+    daemonOfInterest = daemonList.get(random().nextInt(numDaemons));
   }
 
   @Override
@@ -137,16 +140,18 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     List<Tuple> tuples = getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "list"));
     assertEquals("Should have all daemons listed", numDaemons, tuples.size());
 
+    List<String> ids = new ArrayList<>(numDaemons);
     for (int idx = 0; idx < numDaemons; ++idx) {
-      assertEquals("Daemon should be running ", tuples.get(idx).getString("id"), daemonNames.get(idx));
+      ids.add(tuples.get(idx).getString("id"));
     }
 
+    daemonNames.forEach(s ->  assertTrue("Daemon should be running ", ids.contains(s)));
+
     // Are all the daemons in a good state?
-    synchronized (daemonNames) {
-      for (String daemon : daemonNames) {
-        checkAlive(daemon);
-      }
+    for (String daemon : daemonNames) {
+      checkAlive(daemon);
     }
+
 
     // We shouldn't be able to open a daemon twice without closing., leads to thread leeks.
     Tuple tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonOfInterest)
@@ -162,13 +167,13 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     checkStopped();
 
     // Are all the daemons alive? NOTE: a stopped daemon is still there, but in a TERMINATED state
-    synchronized (daemonNames) {
-      for (String daemon : daemonNames) {
-        if (daemon.equals(daemonOfInterest) == false) {
-          checkAlive(daemon);
-        }
+
+    for (String daemon : daemonNames) {
+      if (daemon.equals(daemonOfInterest) == false) {
+        checkAlive(daemon);
       }
     }
+
 
     // Try starting and check return.
     tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "start", "id", daemonOfInterest),
@@ -177,11 +182,11 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
         tupleOfInterest.getString(DAEMON_OP).contains(daemonOfInterest + " started"));
 
     // Are all the daemons alive?
-    synchronized (daemonNames) {
-      for (String daemon : daemonNames) {
-        checkAlive(daemon);
-      }
+
+    for (String daemon : daemonNames) {
+      checkAlive(daemon);
     }
+
 
     // Try killing a daemon, it should be removed from lists.
     tupleOfInterest = getTupleOfInterest(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemonOfInterest),
@@ -217,12 +222,12 @@ public class DaemonStreamApiTest extends SolrTestCaseJ4 {
     checkAlive(daemonOfInterest);
 
     // Now kill them all so the threads disappear.
-    synchronized (daemonNames) {
-      for (String daemon : daemonNames) {
-        getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemon));
-        checkDaemonKilled(daemon);
-      }
+
+    for (String daemon : daemonNames) {
+      getTuples(TestSQLHandler.mapParams("qt", "/stream", "action", "kill", "id", daemon));
+      checkDaemonKilled(daemon);
     }
+
   }
 
   // There can be some delay while threads stabilize, so we need to loop;

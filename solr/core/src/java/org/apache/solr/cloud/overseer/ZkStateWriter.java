@@ -469,7 +469,8 @@ public class ZkStateWriter {
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
                   updates.getProperties().clear();
-                  writeStateUpdates(lastVersion, collection, updates);
+                  // MRM TODO: look at making this work
+                  // writeStateUpdates(lastVersion, collection, updates);
                 }
               }
 
