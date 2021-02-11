@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,7 +28,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -40,12 +38,12 @@ import org.junit.BeforeClass;
  */
 public class IndexingNestedDocuments extends SolrCloudTestCase {
   public static final String ANON_KIDS_CONFIG = "anon_kids_configset";
+  public static final String NESTED_KIDS_CONFIG = "nested_kids_configset";
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-      // when indexing 'anonymous' kids, we need a schema that doesn't use _nest_path_ so
-      // that we can use [child] transformer with a parentFilter...
-      .addConfig(ANON_KIDS_CONFIG, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
+      .addConfig(ANON_KIDS_CONFIG, configset("nested/anonymous"))
+      .addConfig(NESTED_KIDS_CONFIG, configset("nested/regular"))
       .configure();
   }
 
@@ -155,7 +153,9 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
    */
   public void testIndexingUsingNestPath() throws Exception {
     final String collection = "test_anon";
-    CollectionAdminRequest.createCollection(collection, 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collection, NESTED_KIDS_CONFIG, 1, 1)
+    .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+    .process(cluster.getSolrClient());
     cluster.getSolrClient().setDefaultCollection(collection);
     
     //
