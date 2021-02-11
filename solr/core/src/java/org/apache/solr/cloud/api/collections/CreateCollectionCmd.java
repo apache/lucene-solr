@@ -27,6 +27,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -384,6 +385,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           if (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
             try {
               zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
+                if (ocmh.isClosed()) {
+                  throw new AlreadyClosedException();
+                }
+
                 if (c == null) {
                   return false;
                 }

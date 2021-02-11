@@ -228,7 +228,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   private Set<CloudCollectionsListener> cloudCollectionsListeners = ConcurrentHashMap.newKeySet();
 
-  private final ExecutorService notifications = ParWork.getExecutorService(Integer.MAX_VALUE, true, false);
+  private final ExecutorService notifications = ParWork.getExecutorService(Integer.MAX_VALUE, false, false);
 
   private final Set<LiveNodesListener> liveNodesListeners = ConcurrentHashMap.newKeySet();
 

@@ -474,8 +474,8 @@ public class ParWork implements Closeable {
     return new PerThreadExecService(getRootSharedExecutor(), maximumPoolSize);
   }
 
-  public static ExecutorService getExecutorService(int maximumPoolSize, boolean noCallerRunsAllowed, boolean noCallerRunsAvailableLimit) {
-    return new PerThreadExecService(getRootSharedExecutor(), maximumPoolSize, noCallerRunsAllowed, noCallerRunsAvailableLimit);
+  public static ExecutorService getExecutorService(int maximumPoolSize, boolean callerThreadAllowed, boolean noCallerRunsAvailableLimit) {
+    return new PerThreadExecService(getRootSharedExecutor(), maximumPoolSize, callerThreadAllowed, noCallerRunsAvailableLimit);
   }
 
   private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, ParObject ob) {

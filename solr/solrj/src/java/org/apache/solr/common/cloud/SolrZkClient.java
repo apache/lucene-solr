@@ -24,6 +24,8 @@ import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -100,9 +102,9 @@ public class SolrZkClient implements Closeable {
 
   private ZkCmdExecutor zkCmdExecutor;
 
-  protected final ExecutorService zkCallbackExecutor = ParWork.getExecutorService(Integer.MAX_VALUE, true, false);
+  protected final ExecutorService zkCallbackExecutor = ParWork.getExecutorService(Integer.MAX_VALUE, false, false);
      // ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkCallback"));
-  protected final ExecutorService zkConnManagerCallbackExecutor = ParWork.getExecutorService(Integer.MAX_VALUE, true, false);
+  protected final ExecutorService zkConnManagerCallbackExecutor = ParWork.getExecutorService(Integer.MAX_VALUE, false, false);
      // ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("zkConnectionManagerCallback"));
 
   private volatile boolean isClosed = false;
@@ -789,38 +791,45 @@ public class SolrZkClient implements Closeable {
     for (String path : paths) {
       if (log.isDebugEnabled()) log.debug("process path={} connManager={}", path, connManager);
       ZooKeeper keeper = connManager.getKeeper();
-      if (log.isDebugEnabled()) log.debug("keeper={}", keeper);
 
       CountDownLatch finalLatch = latch;
       keeper.delete(path, -1, (rc, path1, ctx) -> {
-        if (log.isDebugEnabled()) log.debug("async delete resp rc={}, path1={}, ctx={}", rc, path1, ctx);
-        if (rc != 0) {
-          log.error("got zk error {}", rc);
-          final KeeperException.Code keCode = KeeperException.Code.get(rc);
+        try {
+          // MRM TODO:
+          if (log.isDebugEnabled()) log.debug("async delete resp rc={}, path1={}, ctx={}", rc, path1, ctx);
+          if (rc != 0) {
+            log.error("got zk error deleting paths {}", rc);
+            final KeeperException.Code keCode = KeeperException.Code.get(rc);
 
-          if (keCode == KeeperException.Code.NONODE) {
-            if (log.isDebugEnabled()) log.debug("Problem removing zk node {}", path1);
+            if (keCode == KeeperException.Code.NONODE) {
+              if (log.isDebugEnabled()) log.debug("Problem removing zk node {}", path1);
+            }
+          }
+        } finally {
+          if (wait) {
+            finalLatch.countDown();
           }
         }
-        if (log.isDebugEnabled()) log.debug("done with latch countdown wait={}", wait);
-        if (wait) {
-          if (log.isDebugEnabled()) log.debug("latch countdown");
-          finalLatch.countDown();
-        }
-        if (log.isDebugEnabled()) log.debug("after wait &&  latch countdown");
       }, null);
+
     }
 
     if (log.isDebugEnabled()) log.debug("done with all paths, see if wait ... wait={}", wait);
     if (wait) {
-      boolean success;
-      try {
-        success = latch.await(15, TimeUnit.SECONDS);
-        if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
-      } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        log.error("", e);
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      boolean success = false;
+      while (!timeout.hasTimedOut() && !isClosed) {
+        try {
+          success = latch.await(3, TimeUnit.SECONDS);
+          if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
+          if (success) {
+            break;
+          }
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          log.error("", e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       }
 
       if (!success) {

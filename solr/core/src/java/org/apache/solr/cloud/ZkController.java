@@ -1365,15 +1365,14 @@ public class ZkController implements Closeable, Runnable {
           leader = replica;
           break;
         }
-
         try {
-          //          if (getCoreContainer().isShutDown() || isDcCalled() || isClosed()) {
-          //            throw new AlreadyClosedException();
-          //          }
-
           leader = zkStateReader.getLeaderRetry(collection, shardId, 3000, true);
 
         } catch (TimeoutException timeoutException) {
+          if (isClosed() || isDcCalled() || cc.isShutDown()) {
+            throw new AlreadyClosedException();
+          }
+
           log.info("Timeout waiting to see leader, retry");
         }
       }

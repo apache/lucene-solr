@@ -55,8 +55,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
 
   @AfterClass
   public static void afterClass() throws InterruptedException, IOException {
-    System.clearProperty("solrcloud.skip.autorecovery");
-    System.clearProperty("genericCoreNodeNames");
+
   }
   
   @Test
@@ -84,7 +83,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
           && slices.get("s1").getReplicasMap().size() > 0) {
         break;
       }
-      Thread.sleep(500);
+      Thread.sleep(200);
     }
 
     assertNotNull(slices);
