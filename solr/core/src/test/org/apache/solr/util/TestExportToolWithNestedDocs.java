@@ -133,8 +133,8 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
         File.separator).getPath();
     
     ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
-    String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
-    info.setOutFormat(absolutePath, "json");
+    String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+    info.setOutFormat(absolutePath, "jsonl");
     info.setLimit("200");
     info.query = "description_t:Cadillac";
     info.fields = "*,[child parentFilter='type_s:PRODUCT']";
@@ -142,17 +142,16 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     
     assertEquals(1, info.docsWritten.get());
     
-    assertJsonDocsCount(info, 1, record -> "P11!prod".equals(record.get("id")));
-    
     String jsonOutput = Files.readString(new File(info.out).toPath());
     
-    
+
     SolrTestCaseHS.matchJSON(jsonOutput, 
         "//id=='P11!prod'", 
         "//type_s==PRODUCT", 
         "//name_s=='Swingline Stapler'",
         "//id=='P11!prod'/_childDocuments_/[1]/id=='P11!D41'"
         );
+        
 
   }
 
@@ -267,7 +266,13 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     assertEquals(2, info.docsWritten.get());
     
     String jsonOutput = Files.readString(new File(info.out).toPath());
-
+    
+    assertTrue("Confirm we have an array of Solr docs", jsonOutput.startsWith("["));
+    assertTrue("Confirm we have an array of Solr docs", jsonOutput.endsWith("]"));
+    
+    // Remove the JSON array brackets to feed into matchJSON method below.
+    jsonOutput = jsonOutput.substring(1);
+    jsonOutput = jsonOutput.substring(0, jsonOutput.length());
     SolrTestCaseHS.matchJSON(jsonOutput, 
         "//id=='P11!prod'", 
         "//name_s=='Swingline Stapler'",
@@ -302,7 +307,7 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     
   }  
   
-  private void assertJsonDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
+  private void assertJsonLinesDocsCount(ExportTool.Info info, int expected, Predicate<Map<String,Object>> predicate) throws IOException {
     assertTrue("" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
