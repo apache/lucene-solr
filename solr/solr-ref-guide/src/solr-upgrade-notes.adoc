@@ -85,6 +85,13 @@ The default Prometheus Exporter configuration includes metrics like queries-per-
 Plugin developers using `SolrPaths.locateSolrHome()` or 'new `SolrResourceLoader`' should check deprecation warnings as existing some existing functionality will be removed in 9.0.
 https://issues.apache.org/jira/browse/SOLR-14934[SOLR-14934] has more technical details about this change for those concerned.
 
+*Removing base_url from Stored State*
+
+If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` to
+better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be
+persisted in stored state. However, if you are not able to upgrade SolrJ to 8.8.x for all client applications, then you should
+leave `solr.storeBaseUrl=true` (the default) so that Solr will continue to store the `base_url` in Zookeeper.
+
 === Solr 8.7
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote87[8.7 Release Notes^]
