@@ -27,8 +27,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.util.AsyncListener;
+import org.apache.solr.client.solrj.util.Cancellable;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -122,6 +125,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
       NamedList<Throwable> exceptions, NamedList<NamedList> shardResponses) {
     Map<String,Throwable> tsExceptions = new ConcurrentHashMap<>();
     Map<String,NamedList> tsResponses = new ConcurrentHashMap<>();
+    Set<Cancellable> cancels = ConcurrentHashMap.newKeySet();
     final CountDownLatch latch = new CountDownLatch(routes.size());
     for (final Map.Entry<String, ? extends LBSolrClient.Req> entry : routes.entrySet()) {
       final String url = entry.getKey();
@@ -129,7 +133,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
       lbRequest.request.setBasePath(url);
       try {
         MDC.put("CloudSolrClient.url", url);
-        myClient.asyncRequest(lbRequest.request, null, new UpdateOnComplete(latch, tsResponses, url, tsExceptions));
+        cancels.add(myClient.asyncRequest(lbRequest.request, null, new UpdateOnComplete(latch, tsResponses, url, tsExceptions)));
       } finally {
         MDC.remove("CloudSolrClient.url");
       }
@@ -138,7 +142,11 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
     // wait until the async requests we fired off above are done
     // we cannot use Http2SolrClient#waitForOutstanding as the client may be shared
     try {
-      latch.await(); // eventually the requests will timeout after the socket read timeout is reached.
+      boolean success = latch.await(getHttpClient().getIdleTimeout(), TimeUnit.MILLISECONDS); // eventually the requests will timeout after the socket read timeout is reached.
+      if (!success) {
+        cancels.forEach(cancellable -> cancellable.cancel());
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, new TimeoutException("Timeout waiting for responses"));
+      }
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
