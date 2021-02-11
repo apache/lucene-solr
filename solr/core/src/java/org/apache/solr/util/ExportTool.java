@@ -276,6 +276,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     private CharArr charArr = new CharArr(1024 * 2);
     JSONWriter jsonWriter = new JSONWriter(charArr, -1);
     private Writer writer;
+    private boolean firstDoc = true;
 
     public JsonSink(Info info) {
       this.info = info;
@@ -333,10 +334,18 @@ public class ExportTool extends SolrCLI.ToolBase {
       if (doc.hasChildDocuments()) {
         m.put("_childDocuments_", doc.getChildDocuments());
       }
+
+     
+      if (firstDoc) {
+        firstDoc = false;
+      }
+      else {
+        writer.append(',');
+      }
       jsonWriter.write(m);
-      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
-      writer.append(',');
+      writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());   
       writer.append('\n');
+
       super.accept(doc);
     }
 
@@ -535,7 +544,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         addConsumer(consumerlatch);
         addProducers(m);
         if (output != null) {
-          output.println("NO: of shards : " + corehandlers.size());
+          output.println("Number of shards: " + corehandlers.size());
         }
         CountDownLatch producerLatch = new CountDownLatch(corehandlers.size());
         corehandlers.forEach((s, coreHandler) -> producerThreadpool.submit(() -> {
@@ -563,8 +572,8 @@ public class ExportTool extends SolrCLI.ToolBase {
             //ignore
           }
         }
-        System.out.println("\nTotal Docs exported: "+ (docsWritten.get() -1)+
-            ". Time taken: "+( (System.currentTimeMillis() - startTime)/1000) + "secs");
+        System.out.println("\nTotal Docs exported: "+ docsWritten.get() +
+            ". Time elapsed: "+( (System.currentTimeMillis() - startTime)/1000) + " seconds");
       }
     }
 
@@ -573,7 +582,7 @@ public class ExportTool extends SolrCLI.ToolBase {
         Slice slice = entry.getValue();
         Replica replica = slice.getLeader();
         if (replica == null) replica = slice.getReplicas().iterator().next();// get a random replica
-        CoreHandler coreHandler = new CoreHandler(replica);
+        CoreHandler coreHandler = new CoreHandler(replica );
         corehandlers.put(replica.getCoreName(), coreHandler);
       }
     }
@@ -616,7 +625,7 @@ public class ExportTool extends SolrCLI.ToolBase {
           throws IOException, SolrServerException {
         HttpSolrClient client = new HttpSolrClient.Builder(baseurl).build();
         try {
-          expectedDocs = getDocCount(replica.getCoreName(), client);
+          expectedDocs = getDocCount(replica.getCoreName(), client, query);
           GenericSolrRequest request;
           ModifiableSolrParams params = new ModifiableSolrParams();
           params.add(Q, query);
@@ -647,11 +656,11 @@ public class ExportTool extends SolrCLI.ToolBase {
               String nextCursorMark = (String) rsp.get(CursorMarkParams.CURSOR_MARK_NEXT);
               if (nextCursorMark == null || Objects.equals(cursorMark, nextCursorMark)) {
                 if (output != null)
-                  output.println(StrUtils.formatString("\nExport complete for : {0}, docs : {1}", replica.getCoreName(), receivedDocs.get()));
+                  output.println(StrUtils.formatString("\nExport complete from shard {0}, core {1}, docs received: {2}", replica.getShard(),replica.getCoreName(), receivedDocs.get()));
                 if (expectedDocs != receivedDocs.get()) {
                   if (output != null) {
-                    output.println(StrUtils.formatString("Could not download all docs for core {0} , expected: {1} , actual",
-                        replica.getCoreName(), expectedDocs, receivedDocs));
+                    output.println(StrUtils.formatString("Could not download all docs from core {0}, docs expected: {1}, received: {2}",
+                        replica.getCoreName(), expectedDocs, receivedDocs.get()));
                     return false;
                   }
                 }
@@ -673,8 +682,9 @@ public class ExportTool extends SolrCLI.ToolBase {
   }
 
 
-  static long getDocCount(String coreName, HttpSolrClient client) throws SolrServerException, IOException {
-    SolrQuery q = new SolrQuery("*:*");
+  static long getDocCount(String coreName, HttpSolrClient client, String query) throws SolrServerException, IOException {
+    //SolrQuery q = new SolrQuery("*:*");
+    SolrQuery q = new SolrQuery(query);
     q.setRows(0);
     q.add("distrib", "false");
     GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET,

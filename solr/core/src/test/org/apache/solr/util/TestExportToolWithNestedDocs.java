@@ -34,12 +34,12 @@ import org.junit.BeforeClass;
 public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
   
   public static final String ANON_KIDS_CONFIG = "anon_kids_configset";
+  public static final String NESTED_KIDS_CONFIG = "nested_kids_configset";
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)
-      // when indexing 'anonymous' kids, we need a schema that doesn't use _nest_path_ so
-      // that we can use [child] transformer with a parentFilter...
-      .addConfig(ANON_KIDS_CONFIG, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
+      .addConfig(ANON_KIDS_CONFIG, configset("nested/anonymous"))
+      .addConfig(NESTED_KIDS_CONFIG, configset("nested/regular"))
       .configure();
   }
 
@@ -48,12 +48,6 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     cluster.deleteAllCollections();
   }
 
-  /**
-   * Syntactic sugar so code snippet doesn't refer to test-framework specific method name 
-   */
-  public static SolrClient getSolrClient() {
-    return cluster.getSolrClient();
-  }
 
   /**
    * This test is inspired by the IndexingNestedDocuments.java unit test that 
@@ -61,13 +55,13 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
    * export format.
    */
   public void testIndexingAnonKids() throws Exception {
-    final String COLLECTION_NAME = "test_anon";
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, ANON_KIDS_CONFIG, 1, 1)
+    final String collection = "test_anon";
+    CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1)
         .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().setDefaultCollection(COLLECTION_NAME);
+    cluster.getSolrClient().setDefaultCollection(collection);
     
-    final SolrClient client = getSolrClient();
+    final SolrClient client = cluster.getSolrClient();
 
     final SolrInputDocument p1 = new SolrInputDocument();
     p1.setField("id", "P11!prod");
@@ -115,19 +109,18 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     }
     
     client.add(p1);
-    
+ 
     client.commit();
 
-    
-    String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
+    String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + collection;
     
     String tmpFileLoc = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
         File.separator).getPath();
     
     ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
-    String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+    String absolutePath = tmpFileLoc + collection + random().nextInt(100000) + ".jsonl";
     info.setOutFormat(absolutePath, "jsonl");
-    info.setLimit("200");
+    info.setLimit("-1");
     info.query = "description_t:Cadillac";
     info.fields = "*,[child parentFilter='type_s:PRODUCT']";
     info.exportDocs();
@@ -135,8 +128,6 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     assertEquals(1, info.docsWritten.get());
     
     String jsonOutput = Files.readString(new File(info.out).toPath());
-    
-
     SolrTestCaseHS.matchJSON(jsonOutput, 
         "//id=='P11!prod'", 
         "//type_s==PRODUCT", 
@@ -153,11 +144,13 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
    * and then confirms the export format.
    */
   public void testIndexingUsingNestPath() throws Exception {
-    final String COLLECTION_NAME = "test_anon";
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, 1, 1).process(cluster.getSolrClient());
-    cluster.getSolrClient().setDefaultCollection(COLLECTION_NAME);
+    final String collection = "test_anon";
+    CollectionAdminRequest.createCollection(collection, NESTED_KIDS_CONFIG, 1, 1)
+    .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+    .process(cluster.getSolrClient());
+    cluster.getSolrClient().setDefaultCollection(collection);
    
-    final SolrClient client = getSolrClient();
+    final SolrClient client = cluster.getSolrClient();
 
     final SolrInputDocument p1 = new SolrInputDocument();
     p1.setField("id", "P11!prod");
@@ -242,13 +235,13 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     client.commit();
 
     
-    String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
+    String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + collection;
     
     String tmpFileLoc = new File(cluster.getBaseDir().toFile().getAbsolutePath() +
         File.separator).getPath();
     
     ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
-    String absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+    String absolutePath = tmpFileLoc + collection + random().nextInt(100000) + ".json";
     info.setOutFormat(absolutePath, "json");
     info.setLimit("-1");
     info.query = "description_t:Cadillac";
@@ -259,8 +252,10 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     
     String jsonOutput = Files.readString(new File(info.out).toPath());
     
-    assertTrue("Confirm we have an array of Solr docs", jsonOutput.startsWith("["));
-    assertTrue("Confirm we have an array of Solr docs", jsonOutput.endsWith("]"));
+    System.out.println(jsonOutput);
+    
+    assertTrue("Confirm we have an array of Solr docs", jsonOutput.startsWith("[{"));
+    assertTrue("Confirm we have an array of Solr docs", jsonOutput.endsWith("}\n]"));
     
     // Remove the JSON array brackets to feed into matchJSON method below.
     jsonOutput = jsonOutput.substring(1);
@@ -275,7 +270,7 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
         );
     
     info = new ExportTool.MultiThreadedRunner(url);
-    absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+    absolutePath = tmpFileLoc + collection + random().nextInt(100000) + ".jsonl";
     info.setOutFormat(absolutePath, "jsonl");
     info.setLimit("2");
     info.query = "description_t:Cadillac";
