@@ -16,16 +16,38 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import org.junit.BeforeClass;
+import java.util.Objects;
 
-public class TestDutchIJ extends StemmerTestBase {
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    init("IJ.aff", "IJ.dic");
+class Root<T extends CharSequence> implements Comparable<Root<T>> {
+  final T word;
+  final int entryId;
+
+  Root(T word, int entryId) {
+    this.word = word;
+    this.entryId = entryId;
   }
 
-  public void testStemming() {
-    assertStemsTo("ijs", "ijs");
-    assertStemsTo("IJs", "ijs");
+  @Override
+  public String toString() {
+    return word.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof Root)) return false;
+    @SuppressWarnings("unchecked")
+    Root<T> root = (Root<T>) o;
+    return entryId == root.entryId && word.equals(root.word);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(word, entryId);
+  }
+
+  @Override
+  public int compareTo(Root<T> o) {
+    return CharSequence.compare(word, o.word);
   }
 }

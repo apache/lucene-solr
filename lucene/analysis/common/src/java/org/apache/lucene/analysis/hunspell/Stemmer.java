@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -92,10 +91,6 @@ final class Stemmer {
       length = segment.length();
       segment.getChars(0, length, scratchBuffer, 0);
       word = scratchBuffer;
-    }
-
-    if (dictionary.isForbiddenWord(word, length)) {
-      return Collections.emptyList();
     }
 
     List<CharsRef> list = new ArrayList<>();
