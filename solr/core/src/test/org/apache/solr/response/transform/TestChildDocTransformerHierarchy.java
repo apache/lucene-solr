@@ -25,7 +25,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
