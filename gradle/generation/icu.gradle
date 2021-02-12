@@ -15,6 +15,24 @@
  * limitations under the License.
  */
 
+/* NOTE: when regenerating, you need icu4c binaries in PATH.
+ * The icu4c version must match exactly the icu4j version in version.props:
+ * The one on your system is probably different.
+ *
+ * You can download the C sources to a standalone folder with these steps:
+ * (example for icu 62.2)
+ *
+ * # download version matching icu4j version in version.props
+ * curl -fLO https://github.com/unicode-org/icu/releases/download/release-62-2/icu4c-62_2-src.tgz
+ * # extract
+ * tar -zxvf icu4c-62_2-src.tgz
+ * # compile
+ * (cd icu/source && ./configure --prefix=$(pwd) --enable-rpath && make -j4)
+ * # test binaries work
+ * icu/source/bin/derb -V
+ * # put in PATH
+ * export PATH=$(pwd)/icu/source/bin:$PATH
+ */
 configure(project(":lucene:analysis:icu")) {
   def utr30DataDir = file("src/data/utr30")
 
@@ -34,7 +52,7 @@ configure(project(":lucene:analysis:icu")) {
         workingDir utr30DataDir
       }
 
-      def gennorm = 'c:/_tmp/icu/bin64/gennorm2.exe'
+      def gennorm = 'gennorm2'
       project.exec {
         executable gennorm
         ignoreExitValue = false
