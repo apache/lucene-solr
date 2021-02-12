@@ -200,15 +200,6 @@ public class Overseer implements SolrCloseable {
                 if (log.isDebugEnabled()) {
                   log.debug("processMessage: fallbackQueueSize: {}, message = {}", fallbackQueue.getZkStats().getQueueLength(), message);
                 }
-                // force flush to ZK after each message because there is no fallback if workQueue items
-                // are removed from workQueue but fail to be written to ZK
-                while (unprocessedMessages.size() > 0) {
-                  clusterState = zkStateWriter.writePendingUpdates();
-                  Message m = unprocessedMessages.remove(0);
-                  if (m instanceof RefreshCollectionMessage) {
-                    clusterState = ((RefreshCollectionMessage) m).run(clusterState, Overseer.this);
-                  }
-                }
                 try {
                   clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
                 } catch (Exception e) {
@@ -269,6 +260,15 @@ public class Overseer implements SolrCloseable {
 
                 processedNodes.add(head.first());
                 fallbackQueueSize = processedNodes.size();
+                // force flush to ZK after each message because there is no fallback if workQueue items
+                // are removed from workQueue but fail to be written to ZK
+                while (unprocessedMessages.size() > 0) {
+                  clusterState = zkStateWriter.writePendingUpdates();
+                  Message m = unprocessedMessages.remove(0);
+                  if (m instanceof RefreshCollectionMessage) {
+                    clusterState = ((RefreshCollectionMessage) m).run(clusterState, Overseer.this);
+                  }
+                }
                 // The callback always be called on this thread
                 clusterState = processQueueItem(message, clusterState, zkStateWriter, true, () -> {
                   stateUpdateQueue.remove(processedNodes);
