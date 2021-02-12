@@ -20,12 +20,20 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Collection;
 import java.util.Optional;
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.core.DirectoryFactory;
+import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
@@ -63,7 +71,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * @param path The path specified by the user.
    * @return the URI representation of the user supplied value
    */
-   URI createURI(String path);
+  URI createURI(String path);
 
   /**
    * This method resolves a URI using the specified path components (as method arguments).
@@ -136,6 +144,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
 
   /**
    * This method creates a directory at the specified path.
+   * If the directory already exist, this will be a no-op.
    *
    * @param path
    *          The path where the directory needs to be created.
@@ -166,7 +175,9 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * @throws IOException
    *           in case of errors
    */
-  void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException;
+  default void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
+    copyIndexFileFrom(sourceDir, fileName, dest, fileName);
+  }
 
   /**
    * Copy a file from specified <code>sourceRepo</code> to the destination directory (i.e. restore).
@@ -180,5 +191,89 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * @throws IOException
    *           in case of errors.
    */
-  void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException;
+  default void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
+    copyIndexFileTo(sourceRepo, fileName, dest, fileName);
+  }
+
+  /**
+   * List all files or directories directly under {@code path}.
+   * @return an empty array in case of IOException
+   */
+  default String[] listAllOrEmpty(URI path) {
+    try {
+      return this.listAll(path);
+    } catch (IOException e) {
+      return new String[0];
+    }
+  }
+
+  default void copyIndexFileFrom(Directory sourceDir, String sourceFileName, Directory destDir, String destFileName) throws IOException {
+    boolean success = false;
+    try (ChecksumIndexInput is = sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+         IndexOutput os = destDir.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+      os.copyBytes(is, is.length() - CodecUtil.footerLength());
+
+      // ensure that index file is not corrupted
+      CodecUtil.checkFooter(is);
+      CodecUtil.writeFooter(os);
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(destDir, destFileName);
+      }
+    }
+  }
+
+  /**
+   * Delete {@code files} at {@code path}
+   * @since 8.3.0
+   */
+  default void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Get checksum of {@code fileName} at {@code dir}.
+   * This method only be called on Lucene index files
+   * @since 8.3.0
+   */
+  default Checksum checksum(Directory dir, String fileName) throws IOException {
+    try (IndexInput in = dir.openChecksumInput(fileName, IOContext.READONCE)) {
+      return new Checksum(CodecUtil.retrieveChecksum(in), in.length());
+    }
+  }
+
+  /**
+   * Copy an index file from specified <code>sourceDir</code> to the destination repository (i.e. backup).
+   *
+   * @param sourceDir
+   *          The source directory hosting the file to be copied.
+   * @param sourceFileName
+   *          The name of the file to by copied
+   * @param destDir
+   *          The destination backup location.
+   * @throws IOException
+   *          in case of errors
+   * @throws CorruptIndexException
+   *          in case checksum of the file does not match with precomputed checksum stored at the end of the file
+   * @since 8.3.0
+   */
+  default void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI destDir, String destFileName) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Copy an index file from specified <code>sourceRepo</code> to the destination directory (i.e. restore).
+   *
+   * @param sourceRepo
+   *          The source URI hosting the file to be copied.
+   * @param dest
+   *          The destination where the file should be copied.
+   * @throws IOException
+   *           in case of errors.
+   * @since 8.3.0
+   */
+  default void copyIndexFileTo(URI sourceRepo, String sourceFileName, Directory dest, String destFileName) throws IOException {
+    throw new UnsupportedOperationException();
+  }
 }
