@@ -18,14 +18,16 @@ package org.apache.lucene.analysis.icu;
 
 import com.ibm.icu.text.RuleBasedBreakIterator;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Command-line utility to converts RuleBasedBreakIterator (.rbbi) files into binary compiled form
@@ -33,9 +35,9 @@ import java.nio.charset.StandardCharsets;
  */
 public class RBBIRuleCompiler {
 
-  static String getRules(File ruleFile) throws IOException {
+  static String getRules(Path ruleFile) throws IOException {
     StringBuilder rules = new StringBuilder();
-    InputStream in = new FileInputStream(ruleFile);
+    InputStream in = Files.newInputStream(ruleFile);
     BufferedReader cin = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
     String line = null;
     while ((line = cin.readLine()) != null) {
@@ -49,20 +51,18 @@ public class RBBIRuleCompiler {
     return rules.toString();
   }
 
-  static void compile(File srcDir, File destDir) throws Exception {
-    File files[] =
-        srcDir.listFiles(
-            new FilenameFilter() {
-              public boolean accept(File dir, String name) {
-                return name.endsWith("rbbi");
-              }
-            });
-    if (files == null) throw new IOException("Path does not exist: " + srcDir);
-    for (int i = 0; i < files.length; i++) {
-      File file = files[i];
-      File outputFile = new File(destDir, file.getName().replaceAll("rbbi$", "brk"));
+  static void compile(Path srcDir, Path destDir) throws Exception {
+    List<Path> files;
+    try (var stream = Files.list(srcDir)) {
+      files = stream.filter(name ->
+          name.getFileName().toString().endsWith("rbbi")).collect(Collectors.toList());
+    }
+
+    if (files.isEmpty()) throw new IOException("No input files matching *.rbbi at: " + srcDir);
+    for (Path file : files) {
+      Path outputFile = destDir.resolve(file.getFileName().toString().replaceAll("rbbi$", "brk"));
       String rules = getRules(file);
-      System.err.print("Compiling " + file.getName() + " to " + outputFile.getName() + ": ");
+      System.err.print("Compiling " + file.getFileName() + " to " + outputFile.getFileName() + ": ");
       /*
        * if there is a syntax error, compileRules() may succeed. the way to
        * check is to try to instantiate from the string. additionally if the
@@ -78,10 +78,10 @@ public class RBBIRuleCompiler {
         System.err.println(e.getMessage());
         System.exit(1);
       }
-      FileOutputStream os = new FileOutputStream(outputFile);
-      RuleBasedBreakIterator.compileRules(rules, os);
-      os.close();
-      System.err.println(outputFile.length() + " bytes.");
+      try (OutputStream os = Files.newOutputStream(outputFile)) {
+        RuleBasedBreakIterator.compileRules(rules, os);
+      }
+      System.err.println(Files.size(outputFile) + " bytes.");
     }
   }
 
@@ -90,7 +90,7 @@ public class RBBIRuleCompiler {
       System.err.println("Usage: RBBIRuleComputer <sourcedir> <destdir>");
       System.exit(1);
     }
-    compile(new File(args[0]), new File(args[1]));
+    compile(Paths.get(args[0]), Paths.get(args[1]));
     System.exit(0);
   }
 }
