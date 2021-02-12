@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
 
-public class SpellCheckerTest extends StemmerTestBase {
+public class TestSpellChecking extends StemmerTestBase {
 
   public void testBase() throws Exception {
     doTest("base");
@@ -132,6 +132,10 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("checkcompoundrep");
   }
 
+  public void testDisallowCompoundsWhenDictionaryContainsSeparatedWordPair() throws Exception {
+    doTest("wordpair");
+  }
+
   public void testCompoundrule() throws Exception {
     doTest("compoundrule");
   }
@@ -168,8 +172,24 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("onlyincompound2");
   }
 
+  public void testForbiddenWord() throws Exception {
+    doTest("forbiddenword");
+  }
+
+  public void testForbiddenWord1() throws Exception {
+    doTest("opentaal_forbiddenword1");
+  }
+
+  public void testForbiddenWord2() throws Exception {
+    doTest("opentaal_forbiddenword2");
+  }
+
   public void testGermanCompounding() throws Exception {
     doTest("germancompounding");
+  }
+
+  public void testApplyOconvToSuggestions() throws Exception {
+    doTest("oconv");
   }
 
   public void testModifyingSuggestions() throws Exception {
@@ -180,21 +200,32 @@ public class SpellCheckerTest extends StemmerTestBase {
     doTest("sug2");
   }
 
-  protected void doTest(String name) throws Exception {
-    checkSpellCheckerExpectations(
-        Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name), true);
+  public void testMixedCaseSuggestionHeuristics() throws Exception {
+    doTest("i58202");
   }
 
-  static void checkSpellCheckerExpectations(Path basePath, boolean checkSuggestions)
-      throws IOException, ParseException {
+  public void testMapSuggestions() throws Exception {
+    doTest("map");
+  }
+
+  public void testNoSuggest() throws Exception {
+    doTest("nosuggest");
+  }
+
+  protected void doTest(String name) throws Exception {
+    checkSpellCheckerExpectations(
+        Path.of(getClass().getResource(name + ".aff").toURI()).getParent().resolve(name));
+  }
+
+  static void checkSpellCheckerExpectations(Path basePath) throws IOException, ParseException {
     InputStream affixStream = Files.newInputStream(Path.of(basePath.toString() + ".aff"));
     InputStream dictStream = Files.newInputStream(Path.of(basePath.toString() + ".dic"));
 
-    SpellChecker speller;
+    Hunspell speller;
     try {
       Dictionary dictionary =
           new Dictionary(new ByteBuffersDirectory(), "dictionary", affixStream, dictStream);
-      speller = new SpellChecker(dictionary);
+      speller = new Hunspell(dictionary);
     } finally {
       IOUtils.closeWhileHandlingException(affixStream);
       IOUtils.closeWhileHandlingException(dictStream);
@@ -214,7 +245,7 @@ public class SpellCheckerTest extends StemmerTestBase {
       for (String word : wrongWords) {
         assertFalse("Unexpectedly considered correct: " + word, speller.spell(word.trim()));
       }
-      if (Files.exists(sug) && checkSuggestions) {
+      if (Files.exists(sug)) {
         String suggestions =
             wrongWords.stream()
                 .map(s -> String.join(", ", speller.suggest(s)))

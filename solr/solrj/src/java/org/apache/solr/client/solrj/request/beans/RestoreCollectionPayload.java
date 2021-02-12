@@ -16,17 +16,38 @@
  */
 package org.apache.solr.client.solrj.request.beans;
 
-import java.util.Map;
-
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-public class CreateConfigInfo implements ReflectMapWriter {
-  @JsonProperty(required = true)
-  public String name;
-  @JsonProperty
-  public String baseConfigSet;
-  @JsonProperty
-  public Map<String,Object> properties;
+import java.util.Map;
 
+import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_COLLECTION_KEY;
+
+/**
+ * V2 API POJO for the /v2/collections 'restore-collection' command.
+ *
+ * Analogous to the request parameters for v1 /admin/collections?action=RESTORE API.
+ */
+public class RestoreCollectionPayload implements ReflectMapWriter {
+
+    @JsonProperty(required = true)
+    public String collection;
+
+    @JsonProperty(required = true)
+    public String name;
+
+    @JsonProperty
+    public String location;
+
+    @JsonProperty
+    public String repository;
+
+    @JsonProperty
+    public Integer backupId;
+
+    @JsonProperty(CREATE_COLLECTION_KEY)
+    public Map<String, Object> createCollectionParams;
+
+    @JsonProperty
+    public String async;
 }

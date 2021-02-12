@@ -100,6 +100,16 @@ The default Prometheus Exporter configuration includes metrics like queries-per-
 Plugin developers using `SolrPaths.locateSolrHome()` or 'new `SolrResourceLoader`' should check deprecation warnings as existing some existing functionality will be removed in 9.0.
 https://issues.apache.org/jira/browse/SOLR-14934[SOLR-14934] has more technical details about this change for those concerned.
 
+*base_url removed from stored state*
+
+As of Solr 8.8.0, the `base_url` property was removed from the stored state for replicas (SOLR-12182). If you're able to upgrade SolrJ to 8.8.x
+for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1) to better align the stored state
+in Zookeeper with future versions of Solr. However, if you are not able to upgrade SolrJ to 8.8.x for all client applications,
+then leave the default `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url` in Zookeeper.
+
+You may also see some NPE in collection state updates during a rolling upgrade to 8.8.0 from a previous version of Solr. After upgrading all nodes in your cluster
+to 8.8.0, collections should fully recover. Trigger another rolling restart if there are any replicas that do not recover after the upgrade to re-elect leaders.
+
 === Solr 8.7
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote87[8.7 Release Notes^]

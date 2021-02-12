@@ -23,3 +23,18 @@ dependencies {
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')
 }
+
+// Pass all hunspell-tests-specific project properties to tests as system properties.
+tasks.withType(Test) {
+  [
+      "hunspell.dictionaries",
+      "hunspell.corpora",
+      "hunspell.repo.path"
+  ].each {
+    def val = propertyOrDefault(it, null)
+    if (val != null) {
+      logger.lifecycle("Passing property: ${it}=${val}")
+      systemProperty it, val
+    }
+  }
+}
