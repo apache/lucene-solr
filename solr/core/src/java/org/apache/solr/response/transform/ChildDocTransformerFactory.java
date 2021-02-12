@@ -160,8 +160,9 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     int indexOfLastPathSepChar = queryString.lastIndexOf(PATH_SEP_CHAR, indexOfFirstColon);
     if (indexOfLastPathSepChar < 0) {
       // regular filter, not hierarchy based.
-      return ClientUtils.escapeQueryChars(queryString.substring(0, indexOfFirstColon))
-          + ":" + ClientUtils.escapeQueryChars(queryString.substring(indexOfFirstColon + 1));
+      return queryString;  // DEP Need to check if this is needed.  Logic breaks if you have level_i:4 OR level_i:5 due to multiple colons.
+      //return ClientUtils.escapeQueryChars(queryString.substring(0, indexOfFirstColon))
+       //   + ":" + ClientUtils.escapeQueryChars(queryString.substring(indexOfFirstColon + 1));
     }
     final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
     String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));

@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,9 +42,10 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
   public static final String NESTED_KIDS_CONFIG = "nested_kids_configset";
   @BeforeClass
   public static void setupCluster() throws Exception {
+    Path solrJConfigsets = getFile("solrj").toPath().resolve("solr/configsets");
     configureCluster(1)
-      .addConfig(ANON_KIDS_CONFIG, configset("nested/anonymous"))
-      .addConfig(NESTED_KIDS_CONFIG, configset("nested/regular"))
+      .addConfig(ANON_KIDS_CONFIG, solrJConfigsets.resolve("nested/anonymous/conf"))
+      .addConfig(NESTED_KIDS_CONFIG, solrJConfigsets.resolve("nested/regular/conf"))
       .configure();
   }
 
