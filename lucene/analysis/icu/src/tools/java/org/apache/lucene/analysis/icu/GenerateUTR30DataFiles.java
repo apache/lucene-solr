@@ -21,7 +21,6 @@ import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.text.UnicodeSetIterator;
 import java.io.BufferedReader;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -84,15 +83,15 @@ public class GenerateUTR30DataFiles {
   }
 
   private static void expandRulesInUTR30DataFiles() throws IOException {
-    Predicate<Path> predicate = (path) -> {
-      String name = path.getFileName().toString();
-      return Files.isRegularFile(path)
-          && name.matches(".*\\.(?s:txt)")
-          && !name.equals(NFC_TXT)
-          && !name.equals(NFKC_TXT)
-          && !name.equals(NFKC_CF_TXT);
-
-    };
+    Predicate<Path> predicate =
+        (path) -> {
+          String name = path.getFileName().toString();
+          return Files.isRegularFile(path)
+              && name.matches(".*\\.(?s:txt)")
+              && !name.equals(NFC_TXT)
+              && !name.equals(NFKC_TXT)
+              && !name.equals(NFKC_CF_TXT);
+        };
     try (var stream = Files.list(Paths.get(".")).filter(predicate)) {
       for (Path file : stream.collect(Collectors.toList())) {
         expandDataFileRules(file);
@@ -105,11 +104,11 @@ public class GenerateUTR30DataFiles {
     StringBuilder builder = new StringBuilder();
 
     try (InputStream stream = Files.newInputStream(file);
-         InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-         BufferedReader bufferedReader = new BufferedReader(reader)) {
-    String line;
-    boolean verbatim = false;
-    int lineNum = 0;
+        InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+        BufferedReader bufferedReader = new BufferedReader(reader)) {
+      String line;
+      boolean verbatim = false;
+      int lineNum = 0;
 
       while (null != (line = bufferedReader.readLine())) {
         ++lineNum;
@@ -167,9 +166,11 @@ public class GenerateUTR30DataFiles {
     System.err.print("Downloading " + NFKC_CF_TXT + " and making diacritic rules one-way ... ");
     URLConnection connection = openConnection(new URL(norm2url, NFC_TXT));
     try (BufferedReader reader =
-        new BufferedReader(
-            new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-         Writer writer = new OutputStreamWriter(Files.newOutputStream(Path.of(NFC_TXT)), StandardCharsets.UTF_8)) {
+            new BufferedReader(
+                new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+        Writer writer =
+            new OutputStreamWriter(
+                Files.newOutputStream(Path.of(NFC_TXT)), StandardCharsets.UTF_8)) {
       String line;
 
       while (null != (line = reader.readLine())) {

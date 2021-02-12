@@ -131,7 +131,8 @@ public class GenerateJflexTLDMacros {
     for (int suffixLength = 0; suffixLength < TLDsBySuffixLength.size(); ++suffixLength) {
       int domainsAtThisSuffixLength = TLDsBySuffixLength.get(suffixLength).size();
       totalDomains += domainsAtThisSuffixLength;
-      System.out.printf(Locale.ROOT, "%30s: %4d TLDs%n", getMacroName(suffixLength), domainsAtThisSuffixLength);
+      System.out.printf(
+          Locale.ROOT, "%30s: %4d TLDs%n", getMacroName(suffixLength), domainsAtThisSuffixLength);
     }
     System.out.printf(Locale.ROOT, "%30s: %4d TLDs%n", "Total", totalDomains);
   }
