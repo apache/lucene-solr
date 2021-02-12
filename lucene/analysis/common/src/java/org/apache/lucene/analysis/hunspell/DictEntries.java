@@ -34,8 +34,8 @@ public interface DictEntries {
 
   /**
    * @param entryIndex an index from 0 (inclusive) to {@link #size()} (exclusive)
-   * @return all morphological fields (of {@code kk:vvvvvv} form, sorted, space-separated)
-   *     associated with the homonym at the given entry index, or an empty string
+   * @return morphological fields (of {@code kk:vvvvvv} form, sorted, space-separated, excluding
+   *     {@code ph:}) associated with the homonym at the given entry index, or an empty string
    */
   String getMorphologicalData(int entryIndex);
 
