@@ -41,9 +41,7 @@ configure(project(":lucene:analysis:icu")) {
     dependsOn { sourceSets.tools.runtimeClasspath }
 
     doFirst {
-      // TODO: This is basically sequential execution below. Don't know if it makes
-      // sense to split this into separate tasks?
-
+      // all these steps must be done sequentially: it's a pipeline resulting in utr30.nrm
       project.javaexec {
         main = "org.apache.lucene.analysis.icu.GenerateUTR30DataFiles"
         classpath = sourceSets.tools.runtimeClasspath
@@ -80,7 +78,27 @@ configure(project(":lucene:analysis:icu")) {
     }
   }
 
+  task genRbbi() {
+    // May be undefined yet, so use a provider.
+    dependsOn { sourceSets.tools.runtimeClasspath }
+
+    doFirst {
+      project.javaexec {
+        main = "org.apache.lucene.analysis.icu.RBBIRuleCompiler"
+        classpath = sourceSets.tools.runtimeClasspath
+
+        ignoreExitValue false
+        enableAssertions true
+        args = [
+            "src/data/uax29",
+            "src/resources/org/apache/lucene/analysis/icu/segmentation"
+        ]
+      }
+    }
+  }
+
   task regenerate() {
     dependsOn genUtr30DataFiles
+    dependsOn genRbbi
   }
 }
