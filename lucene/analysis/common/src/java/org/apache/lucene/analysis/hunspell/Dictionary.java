@@ -44,7 +44,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
@@ -83,7 +82,6 @@ public class Dictionary {
   // TODO: really for suffixes we should reverse the automaton and run them backwards
   private static final String PREFIX_CONDITION_REGEX = "%s.*";
   private static final String SUFFIX_CONDITION_REGEX = ".*%s";
-  private static final Pattern MORPH_KEY_PATTERN = Pattern.compile("\\s+(?=\\p{Alpha}{2}:)");
   static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
   CharsetDecoder decoder = replacingDecoder(DEFAULT_CHARSET);
 
@@ -136,15 +134,13 @@ public class Dictionary {
   private String[] morphAliases;
   private int morphAliasCount = 0;
 
-  // st: morphological entries (either directly, or aliased from AM)
-  private String[] stemExceptions = new String[8];
-  private int stemExceptionCount = 0;
+  final List<String> morphData = new ArrayList<>(Collections.singletonList("")); // empty data at 0
 
   /**
-   * we set this during sorting, so we know to add an extra FST output. when set, some words have
-   * exceptional stems, and the last entry is a pointer to stemExceptions
+   * we set this during sorting, so we know to add an extra int (index in {@link #morphData}) to FST
+   * output
    */
-  boolean hasStemExceptions;
+  boolean hasCustomMorphData;
 
   boolean ignoreCase;
   boolean checkSharpS;
@@ -274,7 +270,7 @@ public class Dictionary {
   }
 
   int formStep() {
-    return hasStemExceptions ? 2 : 1;
+    return hasCustomMorphData ? 2 : 1;
   }
 
   /** Looks up Hunspell word forms from the dictionary */
@@ -541,6 +537,44 @@ public class Dictionary {
       }
     }
     return false;
+  }
+
+  /**
+   * @param root a string to look up in the dictionary. No case conversion or affix removal is
+   *     performed. To get the possible roots of any word, you may call {@link
+   *     Hunspell#getRoots(String)}
+   * @return the dictionary entries for the given root, or {@code null} if there's none
+   */
+  public DictEntries lookupEntries(String root) {
+    IntsRef forms = lookupWord(root.toCharArray(), 0, root.length());
+    if (forms == null) return null;
+
+    return new DictEntries() {
+      @Override
+      public int size() {
+        return forms.length / (hasCustomMorphData ? 2 : 1);
+      }
+
+      @Override
+      public String getMorphologicalData(int entryIndex) {
+        if (!hasCustomMorphData) return "";
+        return morphData.get(forms.ints[forms.offset + entryIndex * 2 + 1]);
+      }
+
+      @Override
+      public List<String> getMorphologicalValues(int entryIndex, String key) {
+        assert key.length() == 3;
+        assert key.charAt(2) == ':';
+
+        String fields = getMorphologicalData(entryIndex);
+        if (fields.isEmpty() || !fields.contains(key)) return Collections.emptyList();
+
+        return Arrays.stream(fields.split(" "))
+            .filter(s -> s.startsWith(key))
+            .map(s -> s.substring(3))
+            .collect(Collectors.toList());
+      }
+    };
   }
 
   static String extractLanguageCode(String isoCode) {
@@ -1024,11 +1058,13 @@ public class Dictionary {
             continue;
           }
           line = unescapeEntry(line);
-          // if we havent seen any stem exceptions, try to parse one
-          if (!hasStemExceptions) {
+          // if we haven't seen any custom morphological data, try to parse one
+          if (!hasCustomMorphData) {
             int morphStart = line.indexOf(MORPH_SEPARATOR);
             if (morphStart >= 0 && morphStart < line.length()) {
-              hasStemExceptions = hasStemException(line.substring(morphStart + 1));
+              String data = line.substring(morphStart + 1);
+              hasCustomMorphData =
+                  splitMorphData(data).stream().anyMatch(s -> !s.startsWith("ph:"));
             }
           }
 
@@ -1156,6 +1192,8 @@ public class Dictionary {
       Directory tempDir, String sorted, FlagEnumerator flags) throws IOException {
     boolean success = false;
 
+    Map<String, Integer> morphIndices = new HashMap<>();
+
     EntryGrouper grouper = new EntryGrouper(flags);
 
     try (ByteSequencesReader reader =
@@ -1195,20 +1233,17 @@ public class Dictionary {
           }
           entry = line.substring(0, flagSep);
         }
-        // we possibly have morphological data
-        int stemExceptionID = 0;
+
+        int morphDataID = 0;
         if (end + 1 < line.length()) {
-          String morphData = line.substring(end + 1);
-          for (String datum : splitMorphData(morphData)) {
-            if (datum.startsWith("st:")) {
-              stemExceptionID = addStemException(datum.substring(3));
-            } else if (datum.startsWith("ph:") && datum.length() > 3) {
-              addPhoneticRepEntries(entry, datum.substring(3));
-            }
+          List<String> morphFields = readMorphFields(entry, line.substring(end + 1));
+          if (!morphFields.isEmpty()) {
+            morphFields.sort(Comparator.naturalOrder());
+            morphDataID = addMorphFields(morphIndices, String.join(" ", morphFields));
           }
         }
 
-        grouper.add(entry, wordForm, stemExceptionID);
+        grouper.add(entry, wordForm, morphDataID);
       }
 
       // finalize last entry
@@ -1224,10 +1259,29 @@ public class Dictionary {
     }
   }
 
-  private int addStemException(String stemException) {
-    stemExceptions = ArrayUtil.grow(stemExceptions, stemExceptionCount + 1);
-    stemExceptions[stemExceptionCount++] = stemException;
-    return stemExceptionCount; // we use '0' to indicate no exception for the form
+  private List<String> readMorphFields(String word, String unparsed) {
+    List<String> morphFields = null;
+    for (String datum : splitMorphData(unparsed)) {
+      if (datum.startsWith("ph:")) {
+        addPhoneticRepEntries(word, datum.substring(3));
+      } else {
+        if (morphFields == null) morphFields = new ArrayList<>(1);
+        morphFields.add(datum);
+      }
+    }
+    return morphFields == null ? Collections.emptyList() : morphFields;
+  }
+
+  private int addMorphFields(Map<String, Integer> indices, String morphFields) {
+    Integer alreadyCached = indices.get(morphFields);
+    if (alreadyCached != null) {
+      return alreadyCached;
+    }
+
+    int index = morphData.size();
+    indices.put(morphFields, index);
+    morphData.add(morphFields);
+    return index;
   }
 
   private void addPhoneticRepEntries(String word, String ph) {
@@ -1278,7 +1332,7 @@ public class Dictionary {
     final FSTCompiler<IntsRef> words =
         new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, IntSequenceOutputs.getSingleton());
     private final List<char[]> group = new ArrayList<>();
-    private final List<Integer> stemExceptionIDs = new ArrayList<>();
+    private final List<Integer> morphDataIDs = new ArrayList<>();
     private final IntsRefBuilder scratchInts = new IntsRefBuilder();
     private String currentEntry = null;
     private final FlagEnumerator flagEnumerator;
@@ -1287,7 +1341,7 @@ public class Dictionary {
       this.flagEnumerator = flagEnumerator;
     }
 
-    void add(String entry, char[] flags, int stemExceptionID) throws IOException {
+    void add(String entry, char[] flags, int morphDataID) throws IOException {
       if (!entry.equals(currentEntry)) {
         if (currentEntry != null) {
           if (entry.compareTo(currentEntry) < 0) {
@@ -1299,8 +1353,8 @@ public class Dictionary {
       }
 
       group.add(flags);
-      if (hasStemExceptions) {
-        stemExceptionIDs.add(stemExceptionID);
+      if (hasCustomMorphData) {
+        morphDataIDs.add(morphDataID);
       }
     }
 
@@ -1322,8 +1376,8 @@ public class Dictionary {
         }
 
         currentOrds.append(flagEnumerator.add(flags));
-        if (hasStemExceptions) {
-          currentOrds.append(stemExceptionIDs.get(i));
+        if (hasCustomMorphData) {
+          currentOrds.append(morphDataIDs.get(i));
         }
       }
 
@@ -1331,7 +1385,7 @@ public class Dictionary {
       words.add(scratchInts.get(), currentOrds.get());
 
       group.clear();
-      stemExceptionIDs.clear();
+      morphDataIDs.clear();
     }
   }
 
@@ -1365,10 +1419,6 @@ public class Dictionary {
     }
   }
 
-  String getStemException(int id) {
-    return stemExceptions[id - 1];
-  }
-
   private void parseMorphAlias(String line) {
     if (morphAliases == null) {
       // first line should be the aliases count
@@ -1380,9 +1430,9 @@ public class Dictionary {
     }
   }
 
-  private boolean hasStemException(String morphData) {
+  private boolean hasCustomMorphData(String morphData) {
     for (String datum : splitMorphData(morphData)) {
-      if (datum.startsWith("st:")) {
+      if (!datum.startsWith("ph:")) {
         return true;
       }
     }
@@ -1401,9 +1451,13 @@ public class Dictionary {
     if (morphData.isBlank()) {
       return Collections.emptyList();
     }
-    return Arrays.stream(MORPH_KEY_PATTERN.split(morphData))
-        .map(String::trim)
-        .filter(s -> !s.isBlank())
+    return Arrays.stream(morphData.split("\\s+"))
+        .filter(
+            s ->
+                s.length() > 3
+                    && Character.isLetter(s.charAt(0))
+                    && Character.isLetter(s.charAt(1))
+                    && s.charAt(2) == ':')
         .collect(Collectors.toList());
   }
 
