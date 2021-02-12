@@ -337,9 +337,7 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     assertEquals(expectedScoreMode, scoreModeInWeight.get());
   }
 
-  /**
-   * The FunctionScoreQuery's Scorer score() is going to be called twice for the same doc.
-   */
+  /** The FunctionScoreQuery's Scorer score() is going to be called twice for the same doc. */
   public void testScoreCalledTwice() throws Exception {
     try (Directory dir = newDirectory()) {
       IndexWriterConfig conf = newIndexWriterConfig();
@@ -354,7 +352,9 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
       try (DirectoryReader reader = DirectoryReader.open(dir)) {
         Query q = new TermQuery(new Term("ExampleText", "function"));
 
-        q = FunctionScoreQuery.boostByQuery(q, new PhraseQuery(1, "ExampleText", "function", "plot"), 2);
+        q =
+            FunctionScoreQuery.boostByQuery(
+                q, new PhraseQuery(1, "ExampleText", "function", "plot"), 2);
         q = FunctionScoreQuery.boostByValue(q, DoubleValuesSource.SCORES);
 
         assertEquals(1, new IndexSearcher(reader).search(q, 10).totalHits.value);

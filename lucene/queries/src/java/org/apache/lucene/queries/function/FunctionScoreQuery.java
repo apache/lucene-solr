@@ -19,6 +19,7 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Objects;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause;
@@ -235,6 +236,7 @@ public final class FunctionScoreQuery extends Query {
       DoubleValues scores = valueSource.getValues(context, DoubleValuesSource.fromScorer(in));
       return new FilterScorer(in) {
         int scoresDocId = -1; // remember the last docId we called score() on
+
         @Override
         public float score() throws IOException {
           int docId = docID();
