@@ -146,6 +146,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       createCollectionZkNode(stateManager, collectionName, collectionParams);
 
       if (isPRS) {
+        // In case of a PRS collection, create the collection structure directly instead of resubmitting
+        // to the overseer queue.
+        // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command = new ClusterStateMutator(ocmh.cloudManager).createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
         ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
@@ -220,6 +223,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
             CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
         if (isPRS) {
+          // In case of a PRS collection, execute the ADDREPLICA directly instead of resubmitting
+          // to the overseer queue.
+          // TODO: Consider doing this for all collections, not just the PRS collections.
           ZkWriteCommand command = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, props);
           byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
 //        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
@@ -305,7 +311,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(ErrorCode.BAD_REQUEST, "Underlying core creation failed while creating collection: " + collectionName);
       } else {
-
         log.debug("Finished create command on all shards for collection: {}", collectionName);
         // Emit a warning about production use of data driven functionality
         boolean defaultConfigSetUsed = message.getStr(COLL_CONF) == null ||
