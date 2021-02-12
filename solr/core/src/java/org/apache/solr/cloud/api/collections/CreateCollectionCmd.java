@@ -119,7 +119,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     final String alias = message.getStr(ALIAS, collectionName);
     log.info("Create collection {}", collectionName);
-    final boolean isPrs = message.getBool(DocCollection.PER_REPLICA_STATE, false);
+    final boolean isPRS = message.getBool(DocCollection.PER_REPLICA_STATE, false);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
@@ -179,7 +179,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       createCollectionZkNode(stateManager, collectionName, collectionParams);
 
-      if(isPrs) {
+      if (isPRS) {
+        // In case of a PRS collection, create the collection structure directly instead of resubmitting
+        // to the overseer queue.
+        // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command = new ClusterStateMutator(ocmh.cloudManager).createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
         ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
@@ -269,10 +272,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
               ZkStateReader.NODE_NAME_PROP, nodeName,
               ZkStateReader.REPLICA_TYPE, replicaPosition.type.name(),
               CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
-          if(isPrs) {
+          if (isPRS) {
+            // In case of a PRS collection, execute the ADDREPLICA directly instead of resubmitting
+            // to the overseer queue.
+            // TODO: Consider doing this for all collections, not just the PRS collections.
             ZkWriteCommand command = new SliceMutator(ocmh.cloudManager).addReplica(clusterState, props);
             byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-//        log.info("collection updated : {}", new String(data, StandardCharsets.UTF_8));
             ocmh.zkStateReader.getZkClient().setData(collectionPath, data, true);
             clusterState = clusterState.copyWith(collectionName, command.collection);
             newColl = command.collection;
@@ -318,7 +323,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       if(!isLegacyCloud) {
         // wait for all replica entries to be created
         Map<String, Replica> replicas ;
-        if(isPrs) {
+        if (isPRS) {
           replicas = new ConcurrentHashMap<>();
           newColl.getSlices().stream().flatMap(slice -> slice.getReplicas().stream())
               .filter(r -> coresToCreate.containsKey(r.getCoreName()))       // Only the elements that were asked for...
@@ -337,7 +342,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       shardRequestTracker.processResponses(results, shardHandler, false, null, Collections.emptySet());
       @SuppressWarnings({"rawtypes"})
       boolean failure = results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0;
-      if(isPrs) {
+      if (isPRS) {
         TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
         PerReplicaStates prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
         while (!timeout.hasTimedOut()) {

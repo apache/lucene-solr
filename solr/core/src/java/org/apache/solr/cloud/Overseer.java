@@ -1027,8 +1027,9 @@ public class Overseer implements SolrCloseable {
     getStateUpdateQueue().offer(data);
   }
 
-  /**Submit an intra-process message
-   * This will be picked up and executed when clusterstate updater thread runs
+  /**
+   * Submit an intra-process message which will be picked up and executed when {@link ClusterStateUpdater}'s
+   * loop runs next time
    */
   public void submit(Message message) {
     unprocessedMessages.add(message);
