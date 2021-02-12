@@ -60,7 +60,7 @@ public class PerReplicaStatesOps {
 
         List<Op> ops = new ArrayList<>(operations.size());
         for (PerReplicaStates.Operation op : operations) {
-            //the state of the replica is being updated
+            // the state of the replica is being updated
             String path = znode + "/" + op.state.asString;
             ops.add(op.typ == PerReplicaStates.Operation.Type.ADD ?
                     Op.create(path, null, zkClient.getZkACLProvider().getACLsToAdd(path), CreateMode.PERSISTENT) :
@@ -77,7 +77,8 @@ public class PerReplicaStatesOps {
 
     }
 
-    /**There is a possibility that a replica may have some leftover entries . delete them too
+    /**
+     * There is a possibility that a replica may have some leftover entries. Delete them too.
      */
     private static List<PerReplicaStates.Operation> addDeleteStaleNodes(List<PerReplicaStates.Operation> ops, PerReplicaStates.State rs) {
         while (rs != null) {
@@ -97,9 +98,9 @@ public class PerReplicaStatesOps {
                 persist(operations, znode, zkClient);
                 return;
             } catch (KeeperException.NodeExistsException | KeeperException.NoNodeException e) {
-                //state is stale
+                // state is stale
                 if(log.isInfoEnabled()) {
-                    log.info("stale state for {} , attempt: {}. retrying...", znode, i);
+                    log.info("Stale state for {}, attempt: {}. retrying...", znode, i);
                 }
                 operations = refresh(PerReplicaStates.fetch(znode, zkClient, null));
             }
@@ -111,7 +112,7 @@ public class PerReplicaStatesOps {
     }
 
     /**
-     * state of a replica is changed
+     * Change the state of a replica
      *
      * @param newState the new state
      */
@@ -168,21 +169,21 @@ public class PerReplicaStatesOps {
                         ops.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(st.replica, Replica.State.ACTIVE, Boolean.TRUE, st.version + 1)));
                         ops.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, st));
                     }
-                    //else do not do anything , that node is the leader
+                    // else do not do anything, that node is the leader
                 } else {
-                    //there is no entry for the new leader.
-                    //create one
+                    // there is no entry for the new leader.
+                    // create one
                     ops.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(next, Replica.State.ACTIVE, Boolean.TRUE, 0)));
                 }
             }
 
-            //now go through all other replicas and unset previous leader
+            // now go through all other replicas and unset previous leader
             for (String r : allReplicas) {
                 PerReplicaStates.State st = rs.get(r);
                 if (st == null) continue;//unlikely
                 if (!Objects.equals(r, next)) {
                     if (st.isLeader) {
-                        //some other replica is the leader now. unset
+                        // some other replica is the leader now. unset
                         ops.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(st.replica, st.state, Boolean.FALSE, st.version + 1)));
                         ops.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.DELETE, st));
                     }
@@ -219,7 +220,7 @@ public class PerReplicaStatesOps {
     }
 
     /**
-     * mark a bunch of replicas as DOWN
+     * Mark the given replicas as DOWN
      */
     public static PerReplicaStatesOps downReplicas(List<String> replicas, PerReplicaStates rs) {
         return new PerReplicaStatesOps(prs -> {
@@ -242,7 +243,7 @@ public class PerReplicaStatesOps {
     }
 
     /**
-     * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of states.json
+     * Just creates and deletes a dummy entry so that the {@link Stat#getCversion()} of state.json
      * is updated
      */
     public static PerReplicaStatesOps touchChildren() {

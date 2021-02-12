@@ -1463,7 +1463,7 @@ public class ZkStateReader implements SolrCloseable {
       ClusterState.initReplicaStateProvider(() -> {
         try {
           PerReplicaStates replicaStates = PerReplicaStates.fetch(collectionPath, zkClient, null);
-          log.info("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
+          log.debug("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
           return replicaStates;
         } catch (Exception e) {
           //TODO
