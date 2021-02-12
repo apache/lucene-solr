@@ -36,6 +36,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Optional;
 
 public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     @Before // unique core per test
@@ -328,7 +329,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
      * Check that the backup metadata file exists, and the corresponding index files can be found.
      */
     private static void simpleBackupCheck(URI locationURI, ShardBackupId shardBackupId, String... expectedIndexFiles) throws IOException {
-        try(BackupRepository backupRepository = h.getCoreContainer().newBackupRepository(null)) {
+        try(BackupRepository backupRepository = h.getCoreContainer().newBackupRepository(Optional.empty())) {
             final BackupFilePaths backupFilePaths = new BackupFilePaths(backupRepository, locationURI);
 
             // Ensure that the overall file structure looks correct.
@@ -363,7 +364,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
     private URI bootstrapBackupLocation(Path locationPath) throws IOException {
         final String locationPathStr = locationPath.toString();
         h.getCoreContainer().getAllowPaths().add(locationPath);
-        try (BackupRepository backupRepo = h.getCoreContainer().newBackupRepository(null)) {
+        try (BackupRepository backupRepo = h.getCoreContainer().newBackupRepository(Optional.empty())) {
             final URI locationUri = backupRepo.createURI(locationPathStr);
             final BackupFilePaths backupFilePaths = new BackupFilePaths(backupRepo, locationUri);
             backupFilePaths.createIncrementalBackupFolders();

@@ -187,6 +187,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
         CollectionAdminRequest
                 .createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas)
+                .setMaxShardsPerNode(-1)
                 .process(solrClient);
 
         indexDocs(getCollectionName(), false);
