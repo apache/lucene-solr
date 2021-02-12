@@ -352,11 +352,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         }
         if (prs.allActive()) {
           // we have successfully found all replicas to be ACTIVE
-          // Now ask Overseer to fetch the latest state of collection
-          // from ZK
         } else {
           failure = true;
         }
+        // Now ask Overseer to fetch the latest state of collection
+        // from ZK
         ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
       }
       if (failure) {
