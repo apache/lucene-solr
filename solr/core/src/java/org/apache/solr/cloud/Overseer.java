@@ -265,9 +265,7 @@ public class Overseer implements SolrCloseable {
                 while (unprocessedMessages.size() > 0) {
                   clusterState = zkStateWriter.writePendingUpdates();
                   Message m = unprocessedMessages.remove(0);
-                  if (m instanceof RefreshCollectionMessage) {
-                    clusterState = ((RefreshCollectionMessage) m).run(clusterState, Overseer.this);
-                  }
+                  clusterState = m.run(clusterState, Overseer.this);
                 }
                 // The callback always be called on this thread
                 clusterState = processQueueItem(message, clusterState, zkStateWriter, true, () -> {
@@ -1036,11 +1034,8 @@ public class Overseer implements SolrCloseable {
   }
 
   public interface Message {
-    Operation getOperation();
+    ClusterState run(ClusterState clusterState, Overseer overseer) throws Exception;
 
-    enum Operation {
-      REFRESH_COLL;
-    }
   }
 
 }

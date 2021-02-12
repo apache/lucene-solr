@@ -68,7 +68,7 @@ public class PerReplicaStates implements ReflectMapWriter {
   @JsonProperty
   public final SimpleMap<State> states;
 
-  private volatile AtomicBoolean allActive;
+  private Boolean allActive;
 
   /**
    * Construct with data read from ZK
@@ -98,13 +98,12 @@ public class PerReplicaStates implements ReflectMapWriter {
   /** Check and return if all replicas are ACTIVE
    */
   public boolean allActive() {
-    if (this.allActive != null) return allActive.get();
-    boolean[] result = new boolean[]{true};
+    if (this.allActive != null) return allActive;
+    AtomicBoolean result = new AtomicBoolean(true);
     states.forEachEntry((r, s) -> {
-      if (s.state != Replica.State.ACTIVE) result[0] = false;
+      if (s.state != Replica.State.ACTIVE) result.set(false);
     });
-    this.allActive.set(result[0]);
-    return this.allActive.get();
+    return this.allActive = result.get();
   }
 
   /**Get the changed replicas
