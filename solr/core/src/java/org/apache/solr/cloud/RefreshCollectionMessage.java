@@ -20,7 +20,6 @@ package org.apache.solr.cloud;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 /**
