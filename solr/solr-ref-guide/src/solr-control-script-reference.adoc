@@ -876,8 +876,8 @@ Examples of this command:
 
 == Exporting Documents to a File
 
-The `export` command will allow you to export documents from a collection in either JSON or Javabin format.
-All documents can be exported, or only those that match a query.
+The `export` command will allow you to export documents from a collection in JSON, https://jsonlines.org/[JSON Lines], or Javabin format.
+All documents can be exported, or only those that match a query.  You may need to wrap some parameters with quotes.
 
 `bin/solr export [options]`
 
@@ -886,13 +886,17 @@ All documents can be exported, or only those that match a query.
 The `bin/solr export` command takes the following parameters:
 
 `format`::
-The file format of the export, `jsonl` (default) or `javabin`. Choosing `javabin` exports to a file with extension `.javabin` which is the native Solr format. This is compact and faster to import.
+The file format of the export, `json` (default) or `jsonl` or `javabin`, this also specifies the file extension to be used.
+`json` and `jsonl` both export documents in the same format as using `wt=json`.  The `json` output file is suitable for
+immediately posting back to solr via the `/update/json` end point.  `jsonl` outputs each Solr document on it's own line,
+and it useful for parallel processing tasks.
+Choosing `javabin` exports in the native binary Solr format and is compact and faster to import.
 
 `out`::
-The file name of the export. If the file name ends with `json.gz` the output will be compressed into a .gz file.
+The file name of the export. If the file name ends with `.gz` the output will be compressed into a .gz file.
 
 `query`::
-A custom query. The default is `\*:*` which will export all documents.
+A custom query to select documents for exporting. The default is `\*:*` which will export all documents.
 
 `fields`::
 A comma separated list of fields to be exported.
@@ -905,13 +909,13 @@ The number of documents to export. The default is `100`. The value `-1` will exp
 Export all documents from a collection `gettingstarted`:
 
 [source,bash]
-bin/solr export -url http://localhost:8983/solr/gettingstarted limit -1
+bin/solr export -url http://localhost:8983/solr/gettingstarted -limit -1
 
 Export all documents of collection `gettingstarted` into a file called `1MDocs.json.gz` as a zipped JSON file:
 
 [source,bash]
 ----
-bin/solr export -url http://localhost:8983/solr/gettingstarted -1 -out 1MDocs.json.gz
+bin/solr export -url http://localhost:8983/solr/gettingstarted -limit -1 -out 1MDocs.json.gz
 ----
 
 === Importing Documents to a Collection
