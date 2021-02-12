@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
@@ -74,6 +75,23 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
     assertU(delQ(fqToExcludeNonTestedDocs));
     assertU(commit());
   }
+  
+  @Test
+  public void testParsingChildFilter() throws Exception {
+    String queryString = "_nest_path_:/toppings";
+    String processedQueryString = ChildDocTransformerFactory.processPathHierarchyQueryString(queryString);
+    assertEquals( "_nest_path_:\\/toppings", processedQueryString );    
+  }
+  
+  @Test
+  public void testORingChildFilter() throws Exception {
+    indexSampleData(numberOfDocsPerNestedTest);
+
+    SolrQueryRequest req = req("q", "*:*", "sort", "id asc",
+        "fl", "*, _nest_path_, [child childFilter='type_s:Regular OR type_s:Chocolate']", "fq", fqToExcludeNonTestedDocs);
+    BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
+  }
+  
 
   @Test
   public void testParentFilterJSON() throws Exception {

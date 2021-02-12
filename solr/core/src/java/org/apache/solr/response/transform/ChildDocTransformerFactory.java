@@ -18,6 +18,7 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -160,9 +161,18 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     int indexOfLastPathSepChar = queryString.lastIndexOf(PATH_SEP_CHAR, indexOfFirstColon);
     if (indexOfLastPathSepChar < 0) {
       // regular filter, not hierarchy based.
-      return queryString;  // DEP Need to check if this is needed.  Logic breaks if you have level_i:4 OR level_i:5 due to multiple colons.
-      //return ClientUtils.escapeQueryChars(queryString.substring(0, indexOfFirstColon))
-       //   + ":" + ClientUtils.escapeQueryChars(queryString.substring(indexOfFirstColon + 1));
+
+      // DEP Need to check if this is needed.  Logic breaks if you have 'level_i:4 OR level_i:5' due to multiple colons.
+      // Seems like we need to escape some things but not all things?
+      if (StringUtils.countMatches(queryString, ":") ==1  && StringUtils.countMatches(queryString, "[") == 0) {
+        String escapedQueryString = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfFirstColon))
+            + ":" + ClientUtils.escapeQueryChars(queryString.substring(indexOfFirstColon + 1));
+        return escapedQueryString;
+      }
+      else {
+        return queryString;
+      }
+
     }
     final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
     String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));
