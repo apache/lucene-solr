@@ -3518,21 +3518,11 @@ public class IndexWriter
       }
 
       if (pointInTimeMerges != null) {
-        MergePolicy.OneMerge nextMerge = null;
-
-        if (pendingMerges.size() > 0) {
-          // nocommit getting OneMerge instance here via mergeSource.getNextMerge() will
-          // change the state of pendingMerges, hanging tests.
-          // Is the current solution the right approach to get the merge snapshot for event
-          // callback?
-          nextMerge = pendingMerges.getFirst();
-        }
-
         if (infoStream.isEnabled("IW")) {
           infoStream.message(
               "IW", "now run merges during commit: " + pointInTimeMerges.segString(directory));
         }
-        config.getIndexWriterEventListener().beginMergeOnFullFlush(nextMerge);
+        config.getIndexWriterEventListener().beginMergeOnFullFlush(pointInTimeMerges);
 
         mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
         pointInTimeMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
@@ -3540,7 +3530,7 @@ public class IndexWriter
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "done waiting for merges during commit");
         }
-        config.getIndexWriterEventListener().endMergeOnFullFlush(nextMerge);
+        config.getIndexWriterEventListener().endMergeOnFullFlush(pointInTimeMerges);
 
         synchronized (this) {
           // we need to call this under lock since mergeFinished above is also called under the IW

@@ -388,25 +388,6 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     dir.close();
   }
 
-  private class TesIndexWriterEventListener implements IndexWriterEventListener {
-    private boolean beginMergeCalled = false;
-    private boolean endMergeCalled = false;
-
-    @Override
-    public void beginMergeOnFullFlush(MergePolicy.OneMerge merge) {
-      beginMergeCalled = true;
-    }
-
-    @Override
-    public void endMergeOnFullFlush(MergePolicy.OneMerge merge) {
-      endMergeCalled = true;
-    }
-
-    public boolean isEventsRecorded() {
-      return beginMergeCalled && endMergeCalled;
-    }
-  }
-
   // Test basic semantics of merge on commit and events recording invocation
   public void testMergeOnCommitWithEventListener() throws IOException {
     Directory dir = newDirectory();
@@ -425,7 +406,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     firstReader.close();
     firstWriter.close(); // When this writer closes, it does not merge on commit.
 
-    TesIndexWriterEventListener eventListener = new TesIndexWriterEventListener();
+    MockIndexWriterEventListener eventListener = new MockIndexWriterEventListener();
 
     IndexWriterConfig iwc =
         newIndexWriterConfig(new MockAnalyzer(random()))

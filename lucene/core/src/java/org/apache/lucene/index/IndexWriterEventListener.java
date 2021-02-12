@@ -26,18 +26,24 @@ public interface IndexWriterEventListener {
   IndexWriterEventListener NO_OP_LISTENER =
       new IndexWriterEventListener() {
         @Override
-        public void beginMergeOnFullFlush(MergePolicy.OneMerge merge) {}
+        public void beginMergeOnFullFlush(MergePolicy.MergeSpecification merge) {}
 
         @Override
-        public void endMergeOnFullFlush(MergePolicy.OneMerge merge) {}
+        public void endMergeOnFullFlush(MergePolicy.MergeSpecification merge) {}
       };
 
-  /** Invoked at the start of merge on commit */
-  void beginMergeOnFullFlush(MergePolicy.OneMerge merge);
+  /**
+   * Invoked at the start of merge on commit
+   *
+   * @param merge specification to be tracked
+   */
+  void beginMergeOnFullFlush(MergePolicy.MergeSpecification merge);
 
   /**
    * Invoked at the end of merge on commit, due to either merge completed, or merge timed out
    * according to {@link IndexWriterConfig#setMaxFullFlushMergeWaitMillis(long)}
+   *
+   * @param merge specification to be tracked
    */
-  void endMergeOnFullFlush(MergePolicy.OneMerge merge);
+  void endMergeOnFullFlush(MergePolicy.MergeSpecification merge);
 }
