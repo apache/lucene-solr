@@ -154,15 +154,40 @@ public class Hunspell {
         wordChars,
         offset,
         length,
-        originalCase,
         context,
         (stem, formID, morphDataId) -> {
+          if (!acceptCase(originalCase, formID, stem)) {
+            return dictionary.hasFlag(formID, Dictionary.HIDDEN_FLAG);
+          }
           if (acceptsStem(formID)) {
             result[0] = new Root<>(stem, formID);
           }
           return false;
         });
     return result[0];
+  }
+
+  private boolean acceptCase(WordCase originalCase, int entryId, CharsRef root) {
+    boolean keepCase = dictionary.hasFlag(entryId, dictionary.keepcase);
+    if (originalCase != null) {
+      if (keepCase
+          && dictionary.checkSharpS
+          && originalCase == WordCase.TITLE
+          && containsSharpS(root.chars, root.offset, root.length)) {
+        return true;
+      }
+      return !keepCase;
+    }
+    return !dictionary.hasFlag(entryId, Dictionary.HIDDEN_FLAG);
+  }
+
+  private boolean containsSharpS(char[] word, int offset, int length) {
+    for (int i = 0; i < length; i++) {
+      if (word[i + offset] == 'ß') {
+        return true;
+      }
+    }
+    return false;
   }
 
   boolean acceptsStem(int formID) {
