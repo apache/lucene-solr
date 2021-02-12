@@ -17,6 +17,27 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexCommit;
@@ -52,27 +73,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.apache.solr.core.TrackingBackupRepository.copiedFiles;
 
@@ -140,7 +140,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         int expectedNumDocs = indexDocs(backupCollectionName, true);
         String backupName = BACKUPNAME_PREFIX + testSuffix;
         try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
-                .newBackupRepository(BACKUP_REPO_NAME)) {
+                .newBackupRepository(Optional.of(BACKUP_REPO_NAME))) {
             String backupLocation = repository.getBackupLocation(getBackupLocation());
             long t = System.nanoTime();
             CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
@@ -193,7 +193,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
         String backupName = BACKUPNAME_PREFIX + testSuffix;
         try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
-                .newBackupRepository(BACKUP_REPO_NAME)) {
+                .newBackupRepository(Optional.of(BACKUP_REPO_NAME))) {
             String backupLocation = repository.getBackupLocation(getBackupLocation());
             URI uri = repository.resolve(repository.createURI(backupLocation), backupName);
             BackupFilePaths backupPaths = new BackupFilePaths(repository, uri);
