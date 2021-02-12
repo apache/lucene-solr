@@ -33,6 +33,22 @@ configure(project(":lucene:analysis:icu")) {
         ignoreExitValue false
         workingDir utr30DataDir
       }
+
+      def gennorm = 'c:/_tmp/icu/bin64/gennorm2.exe'
+      project.exec {
+        executable gennorm
+        ignoreExitValue = false
+        args = [
+            "-v",
+            "-s",
+            utr30DataDir,
+            "-o",
+            "${buildDir}/utr30.tmp",
+            "nfc.txt", "nfkc.txt", "nfkc_cf.txt", "BasicFoldings.txt",
+            "DiacriticFolding.txt", "DingbatFolding.txt", "HanRadicalFolding.txt",
+            "NativeDigitFolding.txt"
+        ]
+      }
     }
   }
 
