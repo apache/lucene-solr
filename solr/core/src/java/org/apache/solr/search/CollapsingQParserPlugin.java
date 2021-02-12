@@ -700,7 +700,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if(nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
-      // representative is already part of the collapsedset.
       ords.forEachValue(doc -> collapsedSet.set(doc));
 
       int currentContext = 0;
@@ -2093,7 +2092,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         this.collapsedSet.set(nullDoc);
       }
 
-      // representative is already part of the collapsedset.
       ords.forEachValue(doc -> collapsedSet.set(doc));
 
       return collapsedSet;
