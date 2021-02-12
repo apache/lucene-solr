@@ -84,7 +84,6 @@ public class V2CollectionBackupsAPIMappingTest extends SolrTestCaseJ4 {
 
     assertEquals(CollectionParams.CollectionAction.DELETEBACKUP.lowerName, v1Params.get(ACTION));
     assertEquals("backupName", v1Params.get(NAME));
-    assertEquals("collectionName", v1Params.get(BackupManager.COLLECTION_NAME_PROP));
     assertEquals("/some/location/uri", v1Params.get(CoreAdminParams.BACKUP_LOCATION));
     assertEquals("someRepository", v1Params.get(CoreAdminParams.BACKUP_REPOSITORY));
     assertEquals(123, v1Params.getPrimitiveInt(CoreAdminParams.BACKUP_ID));
