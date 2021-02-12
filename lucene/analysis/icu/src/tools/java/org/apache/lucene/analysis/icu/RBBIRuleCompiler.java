@@ -54,15 +54,18 @@ public class RBBIRuleCompiler {
   static void compile(Path srcDir, Path destDir) throws Exception {
     List<Path> files;
     try (var stream = Files.list(srcDir)) {
-      files = stream.filter(name ->
-          name.getFileName().toString().endsWith("rbbi")).collect(Collectors.toList());
+      files =
+          stream
+              .filter(name -> name.getFileName().toString().endsWith("rbbi"))
+              .collect(Collectors.toList());
     }
 
     if (files.isEmpty()) throw new IOException("No input files matching *.rbbi at: " + srcDir);
     for (Path file : files) {
       Path outputFile = destDir.resolve(file.getFileName().toString().replaceAll("rbbi$", "brk"));
       String rules = getRules(file);
-      System.err.print("Compiling " + file.getFileName() + " to " + outputFile.getFileName() + ": ");
+      System.err.print(
+          "Compiling " + file.getFileName() + " to " + outputFile.getFileName() + ": ");
       /*
        * if there is a syntax error, compileRules() may succeed. the way to
        * check is to try to instantiate from the string. additionally if the
