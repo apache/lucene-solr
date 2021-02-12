@@ -1935,21 +1935,22 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Map<String,SolrInputDocument> allDocs = new HashMap<>();
 
     for (int i =0; i < numRootDocs; i++) {
-      client.add(genNestedDocuments(allDocs, 0, maxDepth));
+      client.add(generateNestedDocuments(allDocs, 0, maxDepth));
     }
 
     client.commit();
 
     // sanity check
-    SolrQuery q = new SolrQuery("q", "*:*", "indent", "true");
+    SolrQuery q = new SolrQuery("q", "*:*", "rows", "0");
     QueryResponse resp = client.query(q);
     assertEquals("Doc count does not match",
         allDocs.size(), resp.getResults().getNumFound());
 
 
-    // base check - we know there is an exact number of these root docs
-    q = new SolrQuery("q","level_i:0", "indent", "true");
-    q.setFields("*", "[child parentFilter=\"level_i:0\"]");
+    // base check - we know there the exact number of these root docs
+    q = new SolrQuery("{!parent which=\"*:* -_nest_path_:*\"}");
+    q.addField("*,[child limit=\"-1\"]");
+    
     resp = client.query(q);
     assertEquals("topLevel count does not match", numRootDocs,
                  resp.getResults().getNumFound());
@@ -1958,13 +1959,14 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       SolrInputDocument origDoc = allDocs.get(docId);
       assertNotNull("docId not found: " + docId, origDoc);
       assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
-      assertEquals("kids mismatch", 
-                   origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
-      if (outDoc.hasChildDocuments()) {
-        for (SolrDocument kid : outDoc.getChildDocuments()) {
-          String kidId = (String)kid.getFieldValue("id");
-          SolrInputDocument origChild = findDecendent(origDoc, kidId);
-          assertNotNull(docId + " doesn't have decendent " + kidId,
+      if (origDoc.containsKey("nested_documents") && outDoc.containsKey("nested_documents")) {
+        assertEquals("kids mismatch", origDoc.getFieldValues("nested_documents").size(), outDoc.getFieldValues("nested_documents").size());         
+      }
+      if (outDoc.containsKey("nested_documents")) {
+        for (Object kid : outDoc.getFieldValues("nested_documents")) {
+          String kidId = (String)((SolrDocument)kid).getFieldValue("id");
+          SolrInputDocument origChild = findDescendant(origDoc, kidId);
+          assertNotNull(docId + " doesn't have descendant " + kidId,
                         origChild);
         }
       }
@@ -1980,32 +1982,34 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       
       q = new SolrQuery("q", "*:*", "indent", "true");
       q.setFilterQueries(parentFilter);
-      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
-                  "\" childFilter=\"" + childFilter + 
-                  "\" limit=\"" + maxKidCount + "\"], name");
+      q.setFields("id, level_i, [child " +
+          "childFilter=\"" + childFilter + 
+          "\" limit=\"" + maxKidCount + "\"], name");
       resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
         SolrInputDocument origDoc = allDocs.get(docId);
         assertNotNull("docId not found: " + docId, origDoc);
         assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
-        assertEquals("kids mismatch", 
-                     origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
-        if (outDoc.hasChildDocuments()) {
+        
+        if (origDoc.containsKey("nested_documents") && outDoc.containsKey("nested_documents")) {
+          assertEquals("kids mismatch", origDoc.getFieldValues("nested_documents").size(), outDoc.getFieldValues("nested_documents").size());         
+        }        
+        if (outDoc.containsKey("nested_documents")) {
           // since we know we are looking at our direct children
           // we can verify the count
-          int numOrigKids = origDoc.getChildDocuments().size();
-          int numOutKids = outDoc.getChildDocuments().size();
+          int numOrigKids = origDoc.getFieldValues("nested_documents").size();
+          int numOutKids = outDoc.getFieldValues("nested_documents").size();
           assertEquals("Num kids mismatch: " + numOrigKids + "/" + maxKidCount,
                        (maxKidCount < numOrigKids ? maxKidCount : numOrigKids),
                        numOutKids);
           
-          for (SolrDocument kid : outDoc.getChildDocuments()) {
-            String kidId = (String)kid.getFieldValue("id");
+          for (Object kid : outDoc.getFieldValues("nested_documents")) {
+            String kidId = (String)((SolrDocument)kid).getFieldValue("id");
             assertEquals("kid is the wrong level",
-                         kidLevel, (int)kid.getFieldValue("level_i"));
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+                         kidLevel, (int)((SolrDocument)kid).getFieldValue("level_i"));
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2014,10 +2018,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     
     // bespoke check - use child transformer twice in one query to get diff kids, with name field in between
     {
+      String parentFilter = "level_i:0";
       q = new SolrQuery("q","level_i:0", "indent", "true");
+      
+      q.setFilterQueries(parentFilter);
       // NOTE: should be impossible to have more then 7 direct kids, or more then 49 grandkids
-      q.setFields("id", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:1\"]",
-                  "name", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:2\"]");
+      //q.setFields("id", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:1\"]",
+      //            "name", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:2\"]");
+      q.setFields("id", "[child limit=100 childFilter=\"level_i:1\"]",
+          "name", "[child limit=100 childFilter=\"level_i:2\"]");      
       resp = client.query(q);
       assertEquals("topLevel count does not match", numRootDocs,
                    resp.getResults().getNumFound());
@@ -2026,20 +2035,24 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         SolrInputDocument origDoc = allDocs.get(docId);
         assertNotNull("docId not found: " + docId, origDoc);
         assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
-        assertEquals("kids mismatch", 
-                     origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
-        if (outDoc.hasChildDocuments()) {
-          for (SolrDocument kid : outDoc.getChildDocuments()) {
-            String kidId = (String)kid.getFieldValue("id");
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+        if (origDoc.containsKey("nested_documents") && outDoc.containsKey("nested_documents")) {
+          assertEquals("kids mismatch", origDoc.getFieldValues("nested_documents").size(), outDoc.getFieldValues("nested_documents").size());         
+        }   
+        //assertEquals("kids mismatch", 
+        //             origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
+        if (outDoc.containsKey("nested_documents")) {
+          for (Object kid : outDoc.getFieldValues("nested_documents")) {
+            String kidId = (String)((SolrDocument)kid).getFieldValue("id");
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
           // the total number of kids should be our direct kids and our grandkids
-          int expectedKidsOut = origDoc.getChildDocuments().size();
-          for (SolrInputDocument origKid : origDoc.getChildDocuments()) {
-            if (origKid.hasChildDocuments()) {
-              expectedKidsOut += origKid.getChildDocuments().size();
+          //int expectedKidsOut = origDoc.getChildDocuments().size();
+          int expectedKidsOut = origDoc.getFieldValues("nested_documents").size();
+          for (Object origKid : origDoc.getFieldValues("nested_documents")) {
+            if (((SolrDocument)origKid).containsKey("nested_documents")) {
+              expectedKidsOut += ((SolrDocument)origKid).getFieldValues("nested_documents").size();
             }
           }
           assertEquals("total number of kids and grandkids doesn't match expected",
@@ -2057,6 +2070,16 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
       String parentFilter = "level_i:" + parentLevel;
       String childFilter = "level_i:[" + kidLevelMin + " TO " + kidLevelMax + "]";
+      // Getting a error about parsing the range query (Invalid Number: [1 TO 1] for field level_i) so
+      // building up an OR query.
+      /*String childFilter = "";
+      for (int i = kidLevelMin; i <= kidLevelMax;i++) {
+        childFilter = childFilter + "level_i:" + i;
+        if (i < kidLevelMax){
+          childFilter = childFilter + " OR ";
+        }
+      }
+      */
       int maxKidCount = TestUtil.nextInt(random(), 1, 7);
       
       q = new SolrQuery("q","*:*", "indent", "true");
@@ -2065,9 +2088,12 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         q = new SolrQuery("q", "name:" + name, "indent", "true");
       }
       q.setFilterQueries(parentFilter);
-      q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
-                  "\" childFilter=\"" + childFilter + 
-                  "\" limit=\"" + maxKidCount + "\"],name");
+      //q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
+      //            "\" childFilter=\"" + childFilter + 
+      //            "\" limit=\"" + maxKidCount + "\"],name");
+      q.setFields("id, level_i, [child " +
+          "childFilter=\"" + childFilter + 
+          "\" limit=\"" + maxKidCount + "\"],name");      
       resp = client.query(q);
       for (SolrDocument outDoc : resp.getResults()) {
         String docId = (String)outDoc.getFieldValue("id");
@@ -2076,18 +2102,18 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         assertEquals("name mismatch", origDoc.getFieldValue("name"), outDoc.getFieldValue("name"));
         // we can't always assert origHasKids==outHasKids, original kids
         // might not go deep enough for childFilter...
-        if (outDoc.hasChildDocuments()) {
+        if (outDoc.containsKey("nested_documents")) {
           // ...however if there are out kids, there *have* to be orig kids
-          assertTrue("orig doc had no kids at all", origDoc.hasChildDocuments());
-          for (SolrDocument kid : outDoc.getChildDocuments()) {
-            String kidId = (String)kid.getFieldValue("id");
-            int kidLevel = (int)kid.getFieldValue("level_i");
-            assertTrue("kid level to high: " + kidLevelMax + "<" + kidLevel,
+          assertTrue("orig doc has some kids", !origDoc.getFieldValues("nested_documents").isEmpty());
+          for (Object kid : outDoc.getFieldValues("nested_documents")) {
+            String kidId = (String)((SolrDocument)kid).getFieldValue("id");
+            int kidLevel = (int)((SolrDocument)kid).getFieldValue("level_i");
+            assertTrue("kid level too high: " + kidLevelMax + "<" + kidLevel,
                        kidLevel <= kidLevelMax);
-            assertTrue("kid level to low: " + kidLevelMin + ">" + kidLevel,
+            assertTrue("kid level too low: " + kidLevelMin + ">" + kidLevel,
                        kidLevelMin <= kidLevel);
-            SolrInputDocument origChild = findDecendent(origDoc, kidId);
-            assertNotNull(docId + " doesn't have decendent " + kidId,
+            SolrInputDocument origChild = findDescendant(origDoc, kidId);
+            assertNotNull(docId + " doesn't have descendant " + kidId,
                           origChild);
           }
         }
@@ -2241,18 +2267,19 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
   }
 
   /** 
-   * Depth first search of a SolrInputDocument looking for a decendent by id, 
-   * returns null if it's not a decendent 
+   * Depth first search of a SolrInputDocument looking for a descendant by id, 
+   * returns null if it's not a descendant 
    */
-  private SolrInputDocument findDecendent(SolrInputDocument parent, String childId) {
+  private SolrInputDocument findDescendant(SolrInputDocument parent, String childId) {
     if (childId.equals(parent.getFieldValue("id"))) {
       return parent;
     }
-    if (! parent.hasChildDocuments() ) {
+    if (! parent.containsKey("nested_documents") ) {
       return null;
     }
-    for (SolrInputDocument kid : parent.getChildDocuments()) {
-      SolrInputDocument result = findDecendent(kid, childId);
+    //for (SolrInputDocument kid : parent.getChildDocuments()) {
+    for (Object kid : parent.getFieldValues("nested_documents")) {
+      SolrInputDocument result = findDescendant((SolrInputDocument)kid, childId);
       if (null != result) {
         return result;
       }
@@ -2268,9 +2295,9 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
   /**
    * recursive method for generating a document, which may also have child documents;
-   * adds all documents constructed (including decendents) to allDocs via their id 
+   * adds all documents constructed (including descendants) to allDocs via their id 
    */
-  private SolrInputDocument genNestedDocuments(Map<String,SolrInputDocument> allDocs, 
+  private SolrInputDocument generateNestedDocuments(Map<String,SolrInputDocument> allDocs, 
                                                int thisLevel,
                                                int maxDepth) {
     String id = "" + (idCounter++);
@@ -2282,10 +2309,13 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     sdoc.addField("name", names[TestUtil.nextInt(random(), 0, names.length-1)]);
     
     if (0 < maxDepth) {
-      // NOTE: range include negative to increase odds of no kids
+      // NOTE: range includes negative to increase odds of no kids
       int numKids = TestUtil.nextInt(random(), -2, 7);
       for(int i=0; i<numKids; i++) {
-        sdoc.addChildDocument(genNestedDocuments(allDocs, thisLevel+1, maxDepth-1));
+        
+        List<Object> nestedDocs = sdoc.containsKey("nested_documents")? (ArrayList<Object>) sdoc.getFieldValues("nested_documents") : new ArrayList<>();
+        nestedDocs.add(generateNestedDocuments(allDocs, thisLevel+1, maxDepth-1));
+        sdoc.setField("nested_documents", nestedDocs);
       }
     }
     return sdoc;

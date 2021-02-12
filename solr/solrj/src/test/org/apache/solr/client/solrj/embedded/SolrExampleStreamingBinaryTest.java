@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -51,27 +52,33 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
     client.deleteByQuery("*:*");
 
     SolrInputDocument child = new SolrInputDocument();
-    child.addField("id", "child");
+    child.addField("id", "P1!C1");
     child.addField("type_s", "child");
     child.addField("text_s", "text");
 
     SolrInputDocument parent = new SolrInputDocument();
-    parent.addField("id", "parent");
+    parent.addField("id", "P1");
     parent.addField("type_s", "parent");
-    parent.addChildDocument(child);
+    parent.setField("nested_children", Arrays.asList(child));
+    //parent.addChildDocument(child);
 
     client.add(parent);
     client.commit();
 
     // create a query with child doc transformer
-    SolrQuery query = new SolrQuery("{!parent which='type_s:parent'}text_s:text");
-    query.addField("*,[child parentFilter='type_s:parent']");
+    SolrQuery query = new SolrQuery("{!parent which=\"*:* -_nest_path_:*\"}text_s:text");
+    query.addField("*,[child]");
 
     // test regular query
     QueryResponse response = client.query(query);
     assertEquals(1, response.getResults().size());
     SolrDocument parentDoc = response.getResults().get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, response.getResults().get(0).getFieldValues("nested_children").size());
+    assertEquals(SolrDocument.class, response.getResults().get(0).getFieldValues("nested_children").iterator().next().getClass());
+    
+
+    // make sure no anonymous children
+    assertEquals(0, parentDoc.getChildDocumentCount());
 
     // test streaming
     final List<SolrDocument> docs = new ArrayList<>();
@@ -88,6 +95,10 @@ public class SolrExampleStreamingBinaryTest extends SolrExampleStreamingTest {
 
     assertEquals(1, docs.size());
     parentDoc = docs.get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, parentDoc.getFieldValues("nested_children").size());
+    assertEquals(SolrDocument.class, parentDoc.getFieldValues("nested_children").iterator().next().getClass());
+    
+    //  make sure no anonymous children
+    assertEquals(0, parentDoc.getChildDocumentCount());
   }
 }

@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.embedded;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -68,20 +69,22 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
     SolrInputDocument parent = new SolrInputDocument();
     parent.addField("id", "parent");
     parent.addField("type_s", "parent");
-    parent.addChildDocument(child);
+    //parent.addChildDocument(child);
+    parent.setField("nested_children", Arrays.asList(child));
 
     client.add(parent);
     client.commit();
 
     // create a query with child doc transformer
-    SolrQuery query = new SolrQuery("{!parent which='type_s:parent'}text_s:text");
-    query.addField("*,[child parentFilter='type_s:parent']");
+    SolrQuery query = new SolrQuery("{!parent which=\"*:* -_nest_path_:*\"}text_s:text");
+    query.addField("*,[child]");
 
     // test regular query
     QueryResponse response = client.query(query);
     assertEquals(1, response.getResults().size());
     SolrDocument parentDoc = response.getResults().get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, response.getResults().get(0).getFieldValues("nested_children").size());
+    assertEquals(SolrDocument.class, response.getResults().get(0).getFieldValues("nested_children").iterator().next().getClass());
 
     // test streaming
     final List<SolrDocument> docs = new ArrayList<>();
@@ -98,6 +101,10 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
 
     assertEquals(1, docs.size());
     parentDoc = docs.get(0);
-    assertEquals(1, parentDoc.getChildDocumentCount());
+    assertEquals(1, parentDoc.getFieldValues("nested_children").size());
+    assertEquals(SolrDocument.class, parentDoc.getFieldValues("nested_children").iterator().next().getClass());
+    
+    //  make sure no anonymous children
+    assertEquals(0, parentDoc.getChildDocumentCount());
   }
 }
