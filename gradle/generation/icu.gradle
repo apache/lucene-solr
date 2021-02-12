@@ -53,6 +53,7 @@ configure(project(":lucene:analysis:icu")) {
       }
 
       def gennorm = 'gennorm2'
+      def icupkg = 'icupkg'
       project.exec {
         executable gennorm
         ignoreExitValue = false
@@ -65,6 +66,15 @@ configure(project(":lucene:analysis:icu")) {
             "nfc.txt", "nfkc.txt", "nfkc_cf.txt", "BasicFoldings.txt",
             "DiacriticFolding.txt", "DingbatFolding.txt", "HanRadicalFolding.txt",
             "NativeDigitFolding.txt"
+        ]
+      }
+      project.exec {
+        executable icupkg
+        ignoreExitValue = false
+        args = [
+            "-tb",
+            "${buildDir}/utr30.tmp",
+            "src/resources/org/apache/lucene/analysis/icu/utr30.nrm"
         ]
       }
     }
