@@ -1189,6 +1189,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
         String backupName = req.getParams().get(NAME);
         final URI locationURI = repository.createURI(location);
+        try {
+          if (!repository.exists(locationURI)) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + locationURI + " does not exist.");
+          }
+        } catch (IOException ex) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + locationURI + ". Is it valid?", ex);
+        }
         URI backupLocation = BackupFilePaths.buildExistingBackupLocationURI(repository, locationURI, backupName);
         if (repository.exists(repository.resolve(backupLocation, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup name [" + backupName + "] at " +

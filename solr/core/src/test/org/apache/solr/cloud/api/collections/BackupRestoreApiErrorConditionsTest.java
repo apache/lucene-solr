@@ -26,6 +26,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.lang.invoke.MethodHandles;
 
 
@@ -125,11 +126,42 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
 
   @Test
   public void testBackupOperationsReportErrorWhenNonexistentLocationProvided() {
-    final Exception e = expectThrows(Exception.class, () -> {
+    // Check message for create-backup
+    Exception e = expectThrows(Exception.class, () -> {
       CollectionAdminRequest.backupCollection(COLLECTION_NAME, BACKUP_NAME)
             .setRepositoryName(VALID_REPOSITORY_NAME)
-            .setLocation("/some/nonexistent/location")
+            .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
             .process(cluster.getSolrClient());
+    });
+    assertTrue(e.getMessage().contains("specified location"));
+    assertTrue(e.getMessage().contains("does not exist"));
+
+    // Check message for list-backup
+    e = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.listBackup(BACKUP_NAME)
+              .setBackupLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+              .setBackupRepository(VALID_REPOSITORY_NAME)
+              .process(cluster.getSolrClient());
+    });
+    assertTrue(e.getMessage().contains("specified location"));
+    assertTrue(e.getMessage().contains("does not exist"));
+
+    // Check message for delete-backup
+    e = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.deleteBackupById(BACKUP_NAME, 1)
+              .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+              .setRepositoryName(VALID_REPOSITORY_NAME)
+              .process(cluster.getSolrClient());
+    });
+    assertTrue(e.getMessage().contains("specified location"));
+    assertTrue(e.getMessage().contains("does not exist"));
+
+    // Check message for restore-backup
+    e = expectThrows(Exception.class, () -> {
+      CollectionAdminRequest.restoreCollection(COLLECTION_NAME + "_restored", BACKUP_NAME)
+              .setLocation(validBackupLocation + File.pathSeparator + "someNonexistentLocation")
+              .setRepositoryName(VALID_REPOSITORY_NAME)
+              .process(cluster.getSolrClient());
     });
     assertTrue(e.getMessage().contains("specified location"));
     assertTrue(e.getMessage().contains("does not exist"));
