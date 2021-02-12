@@ -17,8 +17,6 @@
 package org.apache.lucene.analysis.standard;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -26,6 +24,9 @@ import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -102,7 +103,7 @@ public class GenerateJflexTLDMacros {
       Pattern.compile("([-A-Za-z0-9]+)\\.\\s+\\d+\\s+IN\\s+NS\\s+.*");
   private final URL tldFileURL;
   private long tldFileLastModified = -1L;
-  private final File outputFile;
+  private final Path outputFile;
   private final SortedMap<String, Boolean> processedTLDsLongestFirst =
       new TreeMap<>(
           Comparator.comparing(String::length).reversed().thenComparing(String::compareTo));
@@ -111,7 +112,7 @@ public class GenerateJflexTLDMacros {
 
   public GenerateJflexTLDMacros(String tldFileURL, String outputFile) throws Exception {
     this.tldFileURL = new URL(tldFileURL);
-    this.outputFile = new File(outputFile);
+    this.outputFile = Paths.get(outputFile);
   }
 
   /**
@@ -130,9 +131,10 @@ public class GenerateJflexTLDMacros {
     for (int suffixLength = 0; suffixLength < TLDsBySuffixLength.size(); ++suffixLength) {
       int domainsAtThisSuffixLength = TLDsBySuffixLength.get(suffixLength).size();
       totalDomains += domainsAtThisSuffixLength;
-      System.out.printf("%30s: %4d TLDs%n", getMacroName(suffixLength), domainsAtThisSuffixLength);
+      System.out.printf(
+          Locale.ROOT, "%30s: %4d TLDs%n", getMacroName(suffixLength), domainsAtThisSuffixLength);
     }
-    System.out.printf("%30s: %4d TLDs%n", "Total", totalDomains);
+    System.out.printf(Locale.ROOT, "%30s: %4d TLDs%n", "Total", totalDomains);
   }
 
   /**
@@ -216,7 +218,7 @@ public class GenerateJflexTLDMacros {
         DateFormat.getDateTimeInstance(DateFormat.FULL, DateFormat.FULL, Locale.ROOT);
     dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     try (Writer writer =
-        new OutputStreamWriter(new FileOutputStream(outputFile), StandardCharsets.UTF_8)) {
+        new OutputStreamWriter(Files.newOutputStream(outputFile), StandardCharsets.UTF_8)) {
       writer.write(APACHE_LICENSE);
       writer.write("// Generated from IANA Root Zone Database <");
       writer.write(tldFileURL.toString());
