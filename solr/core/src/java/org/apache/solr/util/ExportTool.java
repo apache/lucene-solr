@@ -130,11 +130,13 @@ public class ExportTool extends SolrCLI.ToolBase {
     }
 
     public void setOutFormat(String out, String format) {
-      this.format = format;
-      if (format == null) format = "jsonl";
+      if (format == null) {
+        format = "json";
+      }      
       if (!formats.contains(format)) {
         throw new IllegalArgumentException("format must be one of :" + formats);
       }
+      this.format = format;
 
       this.out = out;
       if (this.out == null) {
