@@ -234,9 +234,12 @@ public final class FunctionScoreQuery extends Query {
       }
       DoubleValues scores = valueSource.getValues(context, DoubleValuesSource.fromScorer(in));
       return new FilterScorer(in) {
+        int scoresDocId = -1; // remember the last docId we called score() on
         @Override
         public float score() throws IOException {
-          if (scores.advanceExact(docID())) {
+          int docId = docID();
+          if (scoresDocId == docId || scores.advanceExact(docId)) {
+            scoresDocId = docId;
             double factor = scores.doubleValue();
             if (factor >= 0) {
               return (float) (factor * boost);
