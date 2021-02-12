@@ -48,7 +48,6 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
     cluster.deleteAllCollections();
   }
 
-
   /**
    * This test is inspired by the IndexingNestedDocuments.java unit test that 
    * demonstrates creating Anonymous Children docs, and then confirming the
@@ -289,9 +288,6 @@ public class TestExportToolWithNestedDocs extends SolrCloudTestCase {
         "//id=='P11!prod'/skus/[1]/manuals/[1]/id=='P11!D41'",
         "//id=='P11!prod'/skus/[2]/id=='P11!S31'",
         "//id=='P11!prod'/manuals/[1]/id=='P11!D51'"        
-        );
-    
-    
+        );    
   }  
-
 }

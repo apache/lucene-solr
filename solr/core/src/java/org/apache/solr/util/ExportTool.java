@@ -100,7 +100,7 @@ public class ExportTool extends SolrCLI.ToolBase {
     String format;
     String query;
     String coll;
-    String out;   // should be path?
+    String out;
     String fields;
     long limit = 100;
     AtomicLong docsWritten = new AtomicLong(0);
@@ -113,7 +113,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
     public Info(String url) {
       setUrl(url);
-      setOutFormat(null, "jsonl");
+      setOutFormat(null, "json");
 
     }
 
@@ -683,7 +683,6 @@ public class ExportTool extends SolrCLI.ToolBase {
 
 
   static long getDocCount(String coreName, HttpSolrClient client, String query) throws SolrServerException, IOException {
-    //SolrQuery q = new SolrQuery("*:*");
     SolrQuery q = new SolrQuery(query);
     q.setRows(0);
     q.add("distrib", "false");

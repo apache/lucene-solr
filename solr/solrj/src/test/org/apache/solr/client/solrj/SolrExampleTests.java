@@ -2023,8 +2023,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
       
       q.setFilterQueries(parentFilter);
       // NOTE: should be impossible to have more then 7 direct kids, or more then 49 grandkids
-      //q.setFields("id", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:1\"]",
-      //            "name", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:2\"]");
       q.setFields("id", "[child limit=100 childFilter=\"level_i:1\"]",
           "name", "[child limit=100 childFilter=\"level_i:2\"]");      
       resp = client.query(q);
@@ -2038,8 +2036,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         if (origDoc.containsKey("nested_documents") && outDoc.containsKey("nested_documents")) {
           assertEquals("kids mismatch", origDoc.getFieldValues("nested_documents").size(), outDoc.getFieldValues("nested_documents").size());         
         }   
-        //assertEquals("kids mismatch", 
-        //             origDoc.hasChildDocuments(), outDoc.hasChildDocuments());
         if (outDoc.containsKey("nested_documents")) {
           for (Object kid : outDoc.getFieldValues("nested_documents")) {
             String kidId = (String)((SolrDocument)kid).getFieldValue("id");
@@ -2048,7 +2044,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
                           origChild);
           }
           // the total number of kids should be our direct kids and our grandkids
-          //int expectedKidsOut = origDoc.getChildDocuments().size();
           int expectedKidsOut = origDoc.getFieldValues("nested_documents").size();
           for (Object origKid : origDoc.getFieldValues("nested_documents")) {
             if (((SolrDocument)origKid).containsKey("nested_documents")) {
@@ -2088,9 +2083,6 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
         q = new SolrQuery("q", "name:" + name, "indent", "true");
       }
       q.setFilterQueries(parentFilter);
-      //q.setFields("id, level_i, [child parentFilter=\"" + parentFilter +
-      //            "\" childFilter=\"" + childFilter + 
-      //            "\" limit=\"" + maxKidCount + "\"],name");
       q.setFields("id, level_i, [child " +
           "childFilter=\"" + childFilter + 
           "\" limit=\"" + maxKidCount + "\"],name");      

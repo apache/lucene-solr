@@ -69,7 +69,6 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
     SolrInputDocument parent = new SolrInputDocument();
     parent.addField("id", "parent");
     parent.addField("type_s", "parent");
-    //parent.addChildDocument(child);
     parent.setField("nested_children", Arrays.asList(child));
 
     client.add(parent);
