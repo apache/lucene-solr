@@ -203,7 +203,7 @@ public class Overseer implements SolrCloseable {
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 while (unprocessedMessages.size() > 0) {
-                  zkStateWriter.writePendingUpdates();
+                  clusterState = zkStateWriter.writePendingUpdates();
                   Message m = unprocessedMessages.remove(0);
                   if (m instanceof RefreshCollectionMessage) {
                     clusterState = ((RefreshCollectionMessage) m).run(clusterState, Overseer.this);

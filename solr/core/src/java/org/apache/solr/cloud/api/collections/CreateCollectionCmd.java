@@ -349,10 +349,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           // we have successfully found all replicas to be ACTIVE
           // Now ask Overseer to fetch the latest state of collection
           // from ZK
-          ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
         } else {
           failure = true;
         }
+        ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
       }
       if (failure) {
         // Let's cleanup as we hit an exception
