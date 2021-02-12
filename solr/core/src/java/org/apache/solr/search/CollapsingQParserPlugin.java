@@ -658,7 +658,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      if(onlyElevatedRepresentativeVisible) {
+      if(!onlyElevatedRepresentativeVisible) {
         // Check to see if we have documents boosted by the QueryElevationComponent
         if (0 <= ord) {
           if (boostedDocsCollector.collectIfBoosted(ord, globalDoc)) return;
@@ -837,7 +837,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if (collapseValues.advanceExact(contextDoc)) {
         final int collapseValue = (int) collapseValues.longValue();
 
-        if(onlyElevatedRepresentativeVisible) {
+        if(!onlyElevatedRepresentativeVisible) {
           // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
           if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
         }
@@ -860,7 +860,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       } else { // Null Group...
 
-        if(onlyElevatedRepresentativeVisible){
+        if(!onlyElevatedRepresentativeVisible){
           // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         }
@@ -1072,7 +1072,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      if(onlyElevatedRepresentativeVisible){
+      if(!onlyElevatedRepresentativeVisible){
         // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
         if (-1 == ord) {
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
@@ -1267,7 +1267,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       } else { // Null Group...
 
-        if(onlyElevatedRepresentativeVisible){
+        if(!onlyElevatedRepresentativeVisible){
           // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
 
