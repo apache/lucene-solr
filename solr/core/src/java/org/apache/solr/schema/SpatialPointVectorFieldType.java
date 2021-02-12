@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.PointVectorStrategy;
 
@@ -34,6 +35,7 @@ public class SpatialPointVectorFieldType extends AbstractSpatialFieldType<PointV
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
+    CoreContainer.deprecationLog.warn(SpatialPointVectorFieldType.class.getName() + " is deprecated, deprecation= use LatLonPointSpatialField instead");
     super.init(schema, args);
 
     String v = args.remove( "numberType" );

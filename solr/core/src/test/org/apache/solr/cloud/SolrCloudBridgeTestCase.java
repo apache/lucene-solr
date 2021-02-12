@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
@@ -44,6 +45,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
@@ -57,6 +59,8 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -71,6 +75,7 @@ import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -140,19 +145,18 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected volatile static SortedMap<ServletHolder, String> extraServlets;
 
   final Pattern filenameExclusions = Pattern.compile(".*solrconfig(?:-|_).*?\\.xml|.*schema(?:-|_).*?\\.xml");
-  
-  public static Path TEST_PATH() { return SolrTestUtil.getFile("solr/collection1").getParentFile().toPath(); }
+
   
   @Before
   public void beforeSolrCloudBridgeTestCase() throws Exception {
+    Path TEST_PATH = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
+
     COLLECTION = "collection" + collectionCount.incrementAndGet();
     DEFAULT_COLLECTION = COLLECTION;
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
-
-    
-    cluster = configureCluster(numJettys).formatZk(formatZk).withSolrXml(TEST_PATH().resolve(solrxmlString)).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
+    cluster = configureCluster(numJettys).formatZk(formatZk).withSolrXml(TEST_PATH.resolve(solrxmlString)).withJettyConfig(jettyCfg -> jettyCfg.withServlets(extraServlets).enableProxy(enableProxy)).build();
 
     SolrZkClient zkClient = cluster.getSolrClient().getZkStateReader().getZkClient();
 
@@ -162,31 +166,31 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     
     if (schemaString != null) {
       if (zkClient.exists("/configs/_default/schema.xml")) {
-        zkClient.setData("/configs/_default/schema.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
+        zkClient.setData("/configs/_default/schema.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
       } else {
-        byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
+        byte[] data = FileUtils.readFileToByteArray(TEST_PATH.resolve("collection1").resolve("conf").resolve(schemaString).toFile());
         zkClient.create("/configs/_default/schema.xml", data, CreateMode.PERSISTENT, true);
       }
 
       if (zkClient.exists("/configs/_default/managed-schema")) {
-        byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
+        byte[] data = FileUtils.readFileToByteArray(TEST_PATH.resolve("collection1").resolve("conf").resolve(schemaString).toFile());
         zkClient.setData("/configs/_default/managed-schema", data, true);
       }
     }
     if (solrconfigString != null) {
       //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString), "/configs/_default, null);
-      zkClient.setData("/configs/_default/solrconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString).toFile(), true);
+      zkClient.setData("/configs/_default/solrconfig.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve(solrconfigString).toFile(), true);
     }
 
     if (uploadSelectCollection1Config) {
       try {
-        zkClient.create("/configs/_default/solrconfig.snippet.randomindexconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(),
+        zkClient.create("/configs/_default/solrconfig.snippet.randomindexconfig.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml").toFile(),
             CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/enumsConfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("enumsConfig.xml").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/currency.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve("currency.xml").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/old_synonyms.txt", TEST_PATH().resolve("collection1").resolve("conf").resolve("old_synonyms.txt").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/open-exchange-rates.json", TEST_PATH().resolve("collection1").resolve("conf").resolve("open-exchange-rates.json").toFile(), CreateMode.PERSISTENT, true);
-        zkClient.create("/configs/_default/mapping-ISOLatin1Accent.txt", TEST_PATH().resolve("collection1").resolve("conf").resolve("mapping-ISOLatin1Accent.txt").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/enumsConfig.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve("enumsConfig.xml").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/currency.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve("currency.xml").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/old_synonyms.txt", TEST_PATH.resolve("collection1").resolve("conf").resolve("old_synonyms.txt").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/open-exchange-rates.json", TEST_PATH.resolve("collection1").resolve("conf").resolve("open-exchange-rates.json").toFile(), CreateMode.PERSISTENT, true);
+        zkClient.create("/configs/_default/mapping-ISOLatin1Accent.txt", TEST_PATH.resolve("collection1").resolve("conf").resolve("mapping-ISOLatin1Accent.txt").toFile(), CreateMode.PERSISTENT, true);
       } catch (KeeperException.NodeExistsException exists) {
         log.info("extra collection config files already exist in zk");
       }
@@ -208,21 +212,21 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     
     if (createControl) {
-      controlCluster = configureCluster(1).withSolrXml(TEST_PATH().resolve(solrxmlString)).formatZk(formatZk).build();
+      controlCluster = configureCluster(1).withSolrXml(TEST_PATH.resolve(solrxmlString)).formatZk(formatZk).build();
       
       SolrZkClient zkClientControl = controlCluster.getSolrClient().getZkStateReader().getZkClient();
       
-      zkClientControl.uploadToZK(TEST_PATH().resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
+      zkClientControl.uploadToZK(TEST_PATH.resolve("collection1").resolve("conf"), "/configs" + "/" + "_default", filenameExclusions);
 
       if (schemaString != null) {
         //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString), "/configs/_default", null);
         
-        zkClientControl.setData("/configs/_default/schema.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
-        byte[] data = FileUtils.readFileToByteArray(TEST_PATH().resolve("collection1").resolve("conf").resolve(schemaString).toFile());
+        zkClientControl.setData("/configs/_default/schema.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve(schemaString).toFile(), true);
+        byte[] data = FileUtils.readFileToByteArray(TEST_PATH.resolve("collection1").resolve("conf").resolve(schemaString).toFile());
       }
       if (solrconfigString != null) {
         //cloudClient.getZkStateReader().getZkClient().uploadToZK(TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString), "/configs/_default", null);
-        zkClientControl.setData("/configs/_default/solrconfig.xml", TEST_PATH().resolve("collection1").resolve("conf").resolve(solrconfigString).toFile(), true);
+        zkClientControl.setData("/configs/_default/solrconfig.xml", TEST_PATH.resolve("collection1").resolve("conf").resolve(solrconfigString).toFile(), true);
       }
       CollectionAdminRequest.createCollection(COLLECTION, "_default", 1, 1)
           .setMaxShardsPerNode(10)
@@ -365,9 +369,8 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     return resp;
   }
   
-  protected CollectionAdminResponse createCollection(String collectionName, int numShards, int numReplicas, int maxShardsPerNode, String createNodeSetStr, String routerField, String conf) throws SolrServerException, IOException {
+  protected CollectionAdminResponse createCollection(String collectionName, int numShards, int numReplicas, String createNodeSetStr, String routerField, String conf) throws SolrServerException, IOException {
     CollectionAdminResponse resp = CollectionAdminRequest.createCollection(collectionName, conf, numShards, numReplicas)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(routerField)
 
         .process(cluster.getSolrClient());
@@ -652,7 +655,128 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       future.get();
     }
   }
-  
+
+  protected boolean useTlogReplicas() {
+    return false; // MRM TODO:
+  }
+
+  protected int getPullReplicaCount() {
+    return 0; // MRM TODO:
+  }
+
+  public static CloudHttp2SolrClient getCloudSolrClient(String zkHost, boolean shardLeadersOnly) {
+    if (shardLeadersOnly) {
+      return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+          .build();
+    }
+    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+        .build();
+  }
+
+  protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos,
+      String collectionName, int numShards, int replicationFactor, SolrClient client, String createNodeSetStr, String configName) throws SolrServerException, IOException, InterruptedException, TimeoutException {
+
+    int numNrtReplicas = useTlogReplicas()?0:replicationFactor;
+    int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
+    return  createCollection(collectionInfos, collectionName,
+        Utils.makeMap(
+            ZkStateReader.NUM_SHARDS_PROP, numShards,
+            ZkStateReader.NRT_REPLICAS, numNrtReplicas,
+            ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
+            ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
+            ZkStateReader.CREATE_NODE_SET, createNodeSetStr),
+        client, configName);
+  }
+
+  protected CloudHttp2SolrClient createCloudClient(String defaultCollection) {
+    CloudHttp2SolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress(), random().nextBoolean());
+    if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
+    return client;
+  }
+
+  // TODO: Use CollectionAdminRequest#createCollection() instead of a raw request
+  protected CollectionAdminResponse createCollection(Map<String, List<Integer>> collectionInfos, String collectionName, Map<String, Object> collectionProps, SolrClient client, String confSetName)  throws SolrServerException, IOException, InterruptedException, TimeoutException{
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+    for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
+      if(entry.getValue() !=null) params.set(entry.getKey(), String.valueOf(entry.getValue()));
+    }
+    Integer numShards = (Integer) collectionProps.get(ZkStateReader.NUM_SHARDS_PROP);
+    if(numShards==null){
+      String shardNames = (String) collectionProps.get(OverseerCollectionMessageHandler.SHARDS_PROP);
+      numShards = StrUtils.splitSmart(shardNames,',').size();
+    }
+    Integer numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.NRT_REPLICAS);
+    if (numNrtReplicas == null) {
+      numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
+    }
+    if(numNrtReplicas == null){
+      numNrtReplicas = (Integer) OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.get(ZkStateReader.REPLICATION_FACTOR);
+    }
+    if (numNrtReplicas == null) {
+      numNrtReplicas = Integer.valueOf(0);
+    }
+    Integer numTlogReplicas = (Integer) collectionProps.get(ZkStateReader.TLOG_REPLICAS);
+    if (numTlogReplicas == null) {
+      numTlogReplicas = Integer.valueOf(0);
+    }
+    Integer numPullReplicas = (Integer) collectionProps.get(ZkStateReader.PULL_REPLICAS);
+    if (numPullReplicas == null) {
+      numPullReplicas = Integer.valueOf(0);
+    }
+    if (confSetName != null) {
+      params.set("collection.configName", confSetName);
+    } else {
+      params.set("collection.configName", "_default");
+    }
+
+    int clientIndex = random().nextInt(2);
+    List<Integer> list = new ArrayList<>();
+    list.add(numShards);
+    list.add(numNrtReplicas + numTlogReplicas + numPullReplicas);
+    if (collectionInfos != null) {
+      collectionInfos.put(collectionName, list);
+    }
+    params.set("name", collectionName);
+    SolrRequest request = new QueryRequest(params);
+    request.setPath("/admin/collections");
+
+    CollectionAdminResponse res = new CollectionAdminResponse();
+    if (client == null) {
+      final String baseUrl = getBaseUrl((Http2SolrClient) clients.get(clientIndex));
+      try (SolrClient adminClient = createNewSolrClient("", baseUrl)) {
+        res.setResponse(adminClient.request(request));
+      }
+    } else {
+      res.setResponse(client.request(request));
+    }
+
+    try {
+      cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
+          numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
+    } catch (TimeoutException e) {
+      throw new RuntimeException("Timeout waiting for " + numShards + " shards and " + (numNrtReplicas + numTlogReplicas + numPullReplicas) + " replicas.", e);
+    }
+    return res;
+  }
+
+  protected SolrClient createNewSolrClient(String collection, String baseUrl) {
+    try {
+      // setup the server...
+      Http2SolrClient client = getHttpSolrClient(baseUrl + "/" + collection, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_SOCKET_TIMEOUT_MILLIS);
+      return client;
+    }
+    catch (Exception ex) {
+      ParWork.propagateInterrupt(ex);
+      throw new RuntimeException(ex);
+    }
+  }
+
+  public static Http2SolrClient getHttpSolrClient(String url, int connectionTimeoutMillis, int socketTimeoutMillis) {
+    return new Http2SolrClient.Builder(url)
+        .build();
+  }
+
   protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
 
     String coreName = replica.getName();

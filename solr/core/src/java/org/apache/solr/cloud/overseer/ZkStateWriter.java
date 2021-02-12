@@ -469,8 +469,16 @@ public class ZkStateWriter {
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
                   updates.getProperties().clear();
-                  // MRM TODO: look at making this work
-                  // writeStateUpdates(lastVersion, collection, updates);
+                 String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
+                 if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
+                  try {
+                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
+                  } catch (KeeperException.NoNodeException e) {
+                    if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
+                    lastVersion.set(-1);
+                    trackVersions.remove(collection.getName());
+                    // likely deleted
+                  }
                 }
               }
 

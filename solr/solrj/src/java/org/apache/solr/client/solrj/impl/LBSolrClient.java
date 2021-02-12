@@ -55,6 +55,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -66,8 +67,8 @@ public abstract class LBSolrClient extends SolrClient {
 
   // defaults
   protected static final Set<Integer> RETRY_CODES = new HashSet<>(Arrays.asList(403, 503, 500));
-  private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
-  private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
+  private static final int CHECK_INTERVAL = 15 * 1000; //15 seconds between checks
+  private static final int NONSTANDARD_PING_LIMIT = 10;  // number of times we'll ping dead servers not in the server list
   public static final ServerWrapper[] EMPTY_SERVER_WRAPPER = new ServerWrapper[0];
 
   // keys to the maps are currently of the form "http://localhost:8983/solr"
@@ -166,7 +167,7 @@ public abstract class LBSolrClient extends SolrClient {
       fetchNext();
     }
 
-    public synchronized boolean hasNext() {
+    public boolean hasNext() {
       return serverStr != null;
     }
 
@@ -211,14 +212,14 @@ public abstract class LBSolrClient extends SolrClient {
       return skippedIt != null;
     }
 
-    public synchronized String nextOrError() throws SolrServerException {
+    public String nextOrError() throws SolrServerException {
       return nextOrError(null);
     }
 
-    public synchronized String nextOrError(Exception previousEx) throws SolrServerException {
+    public String nextOrError(Exception previousEx) throws SolrServerException {
       String suffix = "";
       if (previousEx == null) {
-        suffix = ":" + zombieServers.keySet();
+        suffix = ": z=" + zombieServers.keySet() + " a=" + req.getServers();
       }
       if (isTimeExceeded(timeAllowedNano, timeOutTime)) {
         throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
@@ -663,16 +664,28 @@ public abstract class LBSolrClient extends SolrClient {
 
       ServerWrapper wrapper = pickServer(serverList, request);
       try {
-        ++numServersTried;
+
         request.setBasePath(wrapper.baseUrl);
         return getClient(wrapper.getBaseUrl()).request(request, collection);
       } catch (SolrException e) {
-        e.printStackTrace();
+         log.warn("LBSolrClient request fail", e);
+         if (e.getCause() instanceof KeeperException.SessionExpiredException || e.getCause() instanceof KeeperException.ConnectionLossException) {
+           ex = e;
+           moveAliveToDead(wrapper);
+           if (justFailed == null) justFailed = new HashMap<>();
+           justFailed.put(wrapper.getBaseUrl(), wrapper);
+           continue;
+         }
         // Server is alive but the request was malformed or invalid
         throw e;
       } catch (SolrServerException e) {
-        e.printStackTrace();
+        log.warn("LBSolrClient request fail", e);
         if (e.getRootCause() instanceof IOException) {
+          ex = e;
+          moveAliveToDead(wrapper);
+          if (justFailed == null) justFailed = new HashMap<>();
+          justFailed.put(wrapper.getBaseUrl(), wrapper);
+        } else if (e.getRootCause() instanceof KeeperException.SessionExpiredException || e.getRootCause() instanceof KeeperException.ConnectionLossException) {
           ex = e;
           moveAliveToDead(wrapper);
           if (justFailed == null) justFailed = new HashMap<>();
@@ -681,9 +694,15 @@ public abstract class LBSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
-        e.printStackTrace();
-        ParWork.propagateInterrupt(e);
-        throw new SolrServerException(e);
+        log.warn("LBSolrClient request fail", e);
+        if (e instanceof KeeperException.SessionExpiredException || e instanceof KeeperException.ConnectionLossException) {
+          moveAliveToDead(wrapper);
+          if (justFailed == null) justFailed = new HashMap<>();
+          justFailed.put(wrapper.getBaseUrl(), wrapper);
+        } else {
+          ParWork.propagateInterrupt(e);
+          throw new SolrServerException(e);
+        }
       }
     }
 
@@ -703,9 +722,11 @@ public abstract class LBSolrClient extends SolrClient {
         addToAlive(wrapper);
         return rsp;
       } catch (SolrException e) {
+        log.warn("LBSolrClient request fail", e);
         // Server is alive but the request was malformed or invalid
         throw e;
       } catch (SolrServerException e) {
+        log.warn("LBSolrClient request fail", e);
         if (e.getRootCause() instanceof IOException) {
           ex = e;
           // still dead
@@ -713,6 +734,7 @@ public abstract class LBSolrClient extends SolrClient {
           throw e;
         }
       } catch (Exception e) {
+        log.warn("LBSolrClient request fail", e);
         ParWork.propagateInterrupt(e);
         throw new SolrServerException(e);
       }

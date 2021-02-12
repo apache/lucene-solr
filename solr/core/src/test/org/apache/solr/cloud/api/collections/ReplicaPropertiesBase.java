@@ -20,7 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -38,7 +38,7 @@ import java.util.Set;
 // Collect useful operations for testing assigning properties to individual replicas
 // Could probably expand this to do something creative with getting random slices
 // and shards, but for now this will do.
-public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBase {
+public abstract class ReplicaPropertiesBase extends SolrCloudBridgeTestCase {
 
   public static NamedList<Object> doPropertyAction(CloudHttp2SolrClient client, String... paramsIn) throws IOException, SolrServerException {
     assertTrue("paramsIn must be an even multiple of 2, it is: " + paramsIn.length, (paramsIn.length % 2) == 0);

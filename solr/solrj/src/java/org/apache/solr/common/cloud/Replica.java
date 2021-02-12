@@ -256,7 +256,7 @@ public class Replica extends ZkNodeProps {
   }
 
   public static String getCoreUrl(String baseUrl, String coreName) {
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(baseUrl.length() + coreName.length() + 1);
     sb.append(baseUrl);
     if (!baseUrl.endsWith("/")) sb.append("/");
     sb.append(coreName);

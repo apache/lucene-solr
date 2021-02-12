@@ -56,7 +56,7 @@ public class ShardRoutingCustomTest extends SolrCloudBridgeTestCase {
         .process(cloudClient).isSuccess());
   }
 
-  private boolean useTlogReplicas() {
+  protected boolean useTlogReplicas() {
     return false;
     // MRM TODO: - a TLog replica can end up configured with no update log
     //return random().nextBoolean();

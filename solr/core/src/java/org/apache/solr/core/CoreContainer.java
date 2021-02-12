@@ -154,6 +154,8 @@ public class CoreContainer implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final Logger deprecationLog = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName() + ".Deprecation");
+
   final SolrCores solrCores = new SolrCores(this);
   private volatile boolean startedLoadingCores;
   private volatile boolean loaded;

@@ -123,8 +123,7 @@ public class FastInputStream extends DataInputInputStream {
 
   @Override
   public int read(byte b[], int off, int len) throws IOException {
-    int r=0;  // number of bytes we have read
-
+    int r=0;  // number of bytes read
     // first read from our buffer;
     if (end-pos > 0) {
       r = Math.min(end-pos, len);

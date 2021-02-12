@@ -158,9 +158,9 @@ public class HttpSolrCall {
   protected SolrQueryRequest solrReq = null;
   protected SolrRequestHandler handler = null;
   protected final SolrParams queryParams;
-  protected String path;
-  protected Action action;
-  protected String coreUrl;
+  protected volatile String path;
+  protected volatile Action action;
+  protected volatile String coreUrl;
   protected SolrConfig config;
   protected Map<String, Integer> invalidStates;
 
@@ -302,21 +302,26 @@ public class HttpSolrCall {
           }
         } else {
           // if we couldn't find it locally, look on other nodes
-          if (idx > 0) {
             if (log.isDebugEnabled()) log.debug("check remote path extraction {} {}", collectionName, origCorename);
 
-            extractRemotePath(collectionName);
+            extractRemotePath(origCorename);
 
             if (action == REMOTEQUERY) {
               path = path.substring(idx);
               if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
               return;
+            } else {
+              extractRemotePath(collectionName);
+              if (action == REMOTEQUERY) {
+                path = path.substring(idx);
+                if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
+                return;
+              }
             }
           }
           //core is not available locally or remotely
           autoCreateSystemColl(collectionName);
           if (action != null) return;
-        }
       }
     }
 

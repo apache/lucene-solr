@@ -855,6 +855,9 @@ public class TransactionLog implements Closeable {
         fos.flushBuffer();
         sz = fos.size();
         assert sz == channel.size();
+      } finally {
+        fosLock.unlock();
+      }
 
         fis = new ChannelFastInputStream(channel, 0);
         if (sz >= 4) {
@@ -863,9 +866,6 @@ public class TransactionLog implements Closeable {
           fis.seek(prevPos);
           nextLength = fis.readInt();
         }
-      } finally {
-        fosLock.unlock();
-      }
     }
 
     /** Returns the next object from the log, or null if none available.

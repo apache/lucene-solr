@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.core.LowerCaseFilterFactory;
 import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
+import org.apache.solr.core.CoreContainer;
 
 import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
 
@@ -56,6 +57,8 @@ public class LowerCaseTokenizerFactory extends TokenizerFactory {
    */
   public LowerCaseTokenizerFactory(Map<String, String> args) {
     super(args);
+    CoreContainer.deprecationLog.warn(LowerCaseTokenizerFactory.class.getName() +
+        " is deprecated, deprecation=Use org.apache.lucene.analysis.core.LetterTokenizerFactory and LowerCaseFilterFactory");
     maxTokenLen = getInt(args, "maxTokenLen", CharTokenizer.DEFAULT_MAX_WORD_LEN);
     if (maxTokenLen > MAX_TOKEN_LENGTH_LIMIT || maxTokenLen <= 0) {
       throw new IllegalArgumentException("maxTokenLen must be greater than 0 and less than " + MAX_TOKEN_LENGTH_LIMIT + " passed: " + maxTokenLen);

@@ -304,6 +304,8 @@ public class SolrTestCase extends Assert {
 
     System.setProperty("useCompoundFile", "false");
 
+
+    System.setProperty("solr.createCollectionTimeout", "10000");
     System.setProperty("solr.enablePublicKeyHandler", "true");
     System.setProperty("solr.zkclienttimeout", "30000");
     System.setProperty("solr.v2RealPath", "true");

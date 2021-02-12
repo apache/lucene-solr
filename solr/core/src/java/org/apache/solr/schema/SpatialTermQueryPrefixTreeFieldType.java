@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
+import org.apache.solr.core.CoreContainer;
 
 /**
  * @see TermQueryPrefixTreeStrategy
@@ -27,6 +28,8 @@ public class SpatialTermQueryPrefixTreeFieldType extends AbstractSpatialPrefixTr
 
   @Override
   protected TermQueryPrefixTreeStrategy newPrefixTreeStrategy(String fieldName) {
+    CoreContainer.deprecationLog.warn(SpatialRecursivePrefixTreeFieldType.class.getName() +
+        " is deprecated, deprecation=use org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy or RptWithGeometrySpatialField");
     return new TermQueryPrefixTreeStrategy(grid,fieldName);
   }
 }

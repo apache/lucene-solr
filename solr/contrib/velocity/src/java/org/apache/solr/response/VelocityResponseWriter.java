@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -96,7 +97,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
   @Override
   public void init(NamedList args) {
-    log.warn("VelocityResponseWriter is deprecated. This may be removed in future Solr releases. Please SOLR-14065.");
+    CoreContainer.deprecationLog.warn("VelocityResponseWriter is deprecated. This may be removed in future Solr releases. Please SOLR-14065.");
     fileResourceLoaderBaseDir = null;
     String templateBaseDir = (String) args.get(TEMPLATE_BASE_DIR);
 

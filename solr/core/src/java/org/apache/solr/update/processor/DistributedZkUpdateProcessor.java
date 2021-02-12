@@ -246,6 +246,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             });
           }
 
+          if (log.isDebugEnabled()) log.debug(
+              "processCommit - Do a local commit for leader");
           try {
             doLocalCommit(cmd);
           } catch (IOException e) {

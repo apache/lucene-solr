@@ -74,7 +74,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
   private ReentrantLock ourLock = new ReentrantLock(true);
   private volatile boolean expired;
-
+  private volatile boolean started;
 
   //  private Set<ZkClientConnectionStrategy.DisconnectedListener> disconnectedListeners = ConcurrentHashMap.newKeySet();
 //  private Set<ZkClientConnectionStrategy.ConnectedListener> connectedListeners = ConcurrentHashMap.newKeySet();
@@ -88,9 +88,13 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public ZooKeeper getKeeper() {
-    if (keeper.getState() == ZooKeeper.States.CLOSED) {
-      throw new AlreadyClosedException(this + " SolrZkClient is not currently connected state=" + keeper.getState());
+    if (!started) {
+      throw new IllegalStateException("You must call start on " + SolrZkClient.class.getName() + " before you can use it");
     }
+
+//    if (keeper != null && keeper.getState() == ZooKeeper.States.CLOSED) {
+//      throw new AlreadyClosedException(this + " SolrZkClient is not currently connected state=" + keeper.getState());
+//    }
 
     SolrZooKeeper rKeeper = keeper;
     return rKeeper;
@@ -145,6 +149,10 @@ public class ConnectionManager implements Watcher, Closeable {
   private void connected() {
     ourLock.lock();
     try {
+      if (lastConnectedState == 1) {
+        log.warn("Fired connected when it appears we were last in a connected state zkstate={} closed={} cmconnected={}", getKeeper().getState(), isClosed, connected);
+      }
+
       connected = true;
       disconnectedLatch = new CountDownLatch(1);
       lastConnectedState = 1;
@@ -163,7 +171,7 @@ public class ConnectionManager implements Watcher, Closeable {
 
   }
 
-  private void disconnected() {
+  private void expired() {
     ourLock.lock();
     try {
       connected = false;
@@ -188,6 +196,7 @@ public class ConnectionManager implements Watcher, Closeable {
   }
 
   public void start() throws IOException {
+    this.started = true;
     updatezk();
   }
 
@@ -246,9 +255,12 @@ public class ConnectionManager implements Watcher, Closeable {
         log.warn("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
 
         client.zkConnManagerCallbackExecutor.execute(() -> {
-          disconnected();
+          reconnect();
         });
-        reconnect();
+        client.zkConnManagerCallbackExecutor.execute(() -> {
+          expired();
+        });
+
       } else if (state == KeeperState.Disconnected) {
         log.info("zkClient has disconnected");
 //        client.zkConnManagerCallbackExecutor.execute(() -> {
@@ -258,6 +270,7 @@ public class ConnectionManager implements Watcher, Closeable {
         log.warn("zkClient received AuthFailed");
       } else if (state == KeeperState.Closed) {
         log.info("zkClient session is closed");
+        lastConnectedState = 0;
         if (!isClosed) {
           close();
         }

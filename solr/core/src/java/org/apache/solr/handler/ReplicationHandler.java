@@ -43,7 +43,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -62,6 +61,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
@@ -654,16 +654,38 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       Directory dir = null;
       try {
         dir = core.getDirectoryFactory().get(core.getNewIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-        SegmentInfos infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
+
+
+        // Figure out what state our local index is in now:
+        String segmentsFileName = SegmentInfos.getLastCommitSegmentsFileName(dir);
+
+        // Also look for any pending_segments_N, in case we crashed mid-commit.  We must "inflate" our infos gen to at least this, since
+        // otherwise we may wind up re-using the pending_segments_N file name on commit, and then our deleter can get angry because it still
+        // wants to delete this file:
+        long maxPendingGen = -1;
+        for(String fileName : dir.listAll()) {
+          if (fileName.startsWith(IndexFileNames.PENDING_SEGMENTS)) {
+            long g = Long.parseLong(fileName.substring(IndexFileNames.PENDING_SEGMENTS.length()+1), Character.MAX_RADIX);
+            if (g > maxPendingGen) {
+              maxPendingGen = g;
+            }
+          }
+        }
+
+        SegmentInfos infos;
+        if (segmentsFileName == null) {
+           infos = SegmentInfos.readCommit(dir, commit.getSegmentsFileName());
+        } else {
+          infos = SegmentInfos.readCommit(dir, segmentsFileName);
+        }
         for (SegmentCommitInfo commitInfo : infos) {
           for (String file : commitInfo.files()) {
             if (file.equals("write.lock")) continue;
             Map<String, Object> fileMeta = new HashMap<>();
             fileMeta.put(NAME, file);
-            fileMeta.put(SIZE, dir.fileLength(file));
-            
-            try (final IndexInput in = dir.openInput(file, IOContext.READONCE)) {
+            try (final IndexInput in = dir.openInput(file, IOContext.DEFAULT)) {
               try {
+                fileMeta.put(SIZE, in.length());
                 long checksum = CodecUtil.retrieveChecksum(in);
                 fileMeta.put(CHECKSUM, checksum);
               } catch (Exception e) {
@@ -681,10 +703,11 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         
         Map<String, Object> fileMeta = new HashMap<>();
         fileMeta.put(NAME, infos.getSegmentsFileName());
-        fileMeta.put(SIZE, dir.fileLength(infos.getSegmentsFileName()));
+
         if (infos.getId() != null) {
-          try (final IndexInput in = dir.openInput(infos.getSegmentsFileName(), IOContext.READONCE)) {
+          try (final IndexInput in = dir.openInput(infos.getSegmentsFileName(), IOContext.DEFAULT)) {
             try {
+              fileMeta.put(SIZE, in.length());
               fileMeta.put(CHECKSUM, CodecUtil.retrieveChecksum(in));
             } catch (Exception e) {
               ParWork.propagateInterrupt(e);
@@ -707,6 +730,8 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           }
         }
       }
+
+       if (log.isDebugEnabled()) log.debug("FileList={}", result);
       rsp.add(CMD_GET_FILE_LIST, result);
       
       if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware()) {

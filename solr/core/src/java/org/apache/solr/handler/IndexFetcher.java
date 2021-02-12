@@ -46,6 +46,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
@@ -131,6 +132,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
+import java.util.zip.InflaterInputStream;
 
 /**
  * <p> Provides functionality of downloading changed index files as well as config files and a timer for scheduling fetches from the
@@ -1067,7 +1069,7 @@ public class IndexFetcher {
             String filename = (String) file.get(NAME);
             long size = (Long) file.get(SIZE);
             Long serverChecksum = (Long) file.get(CHECKSUM);
-            CompareResult compareResult = compareFile(indexDir, filename, size, serverChecksum);
+            CompareResult compareResult = compareFile(indexDir, filename, size, null, masterUrl, "filesToDownload");
 
             if (compareResult.checkSummed && !compareResult.equal && !downloadCompleteIndex && !doDifferentialCopy) {
               stop = true;
@@ -1182,7 +1184,7 @@ public class IndexFetcher {
         if (f.equals(fileInfo.get(NAME))) {
           String filename = (String) fileInfo.get(NAME);
           long size = (Long) fileInfo.get(SIZE);
-          CompareResult compareResult = compareFile(indexDir, filename, size, (Long) fileInfo.get(CHECKSUM));
+          CompareResult compareResult = compareFile(indexDir, filename, size, (Long) fileInfo.get(CHECKSUM), masterUrl, "deleteFilesInAdvance");
           if (!compareResult.equal || filesToAlwaysDownloadIfNoChecksums(f, size, compareResult)) {
             filesTobeDeleted.add(f);
             clearedSpace += size;
@@ -1230,7 +1232,7 @@ public class IndexFetcher {
     boolean checkSummed = false;
   }
 
-  protected static CompareResult compareFile(Directory indexDir, String filename, Long backupIndexFileLen, Long backupIndexFileChecksum) {
+  protected static CompareResult compareFile(Directory indexDir, String filename, Long backupIndexFileLen, Long backupIndexFileChecksum, String masterUrl, String context) {
     CompareResult compareResult = new CompareResult();
     try {
       try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
@@ -1259,7 +1261,7 @@ public class IndexFetcher {
             return compareResult;
           } else {
             log.info(
-                "File {} did not match. expected length is {} and actual length is {}", filename, backupIndexFileLen, indexFileLen);
+                "No checksum file length compare did not match, File={} Context={}. Expected length is {} and actual length is {} from={}", filename, context, backupIndexFileLen, indexFileLen, masterUrl);
             compareResult.equal = false;
             return compareResult;
           }
@@ -1271,7 +1273,7 @@ public class IndexFetcher {
           compareResult.equal = true;
           return compareResult;
         } else {
-          log.info("File {} did not match. expected checksum is {} and actual is checksum {}. " +
+          log.info("Compare File {} did not match. expected checksum is {} and actual is checksum {}. " +
               "expected length is {} and actual length is {}"
               , filename, backupIndexFileChecksum, indexFileChecksum,
               backupIndexFileLen, indexFileLen);
@@ -1316,14 +1318,14 @@ public class IndexFetcher {
       Long checksum = (Long) file.get(CHECKSUM);
       if (slowFileExists(dir, filename)) {
         if (checksum != null) {
-          if (!(compareFile(dir, filename, length, checksum).equal)) {
+          if (!(compareFile(dir, filename, length, checksum, masterUrl, "isIndexStale").equal)) {
             // file exists and size or checksum is different, therefore we must download it again
             log.info("Index is stale using checksums");
             return true;
           }
         } else {
           if (length != dir.fileLength(filename)) {
-            log.warn("File {} did not match. expected length is {} and actual length is {}",
+            log.warn("File {} did not match on stale index check. expected length is {} and actual length is {}",
                 filename, length, dir.fileLength(filename));
             log.info("Index is stale using file lengths");
             return true;
@@ -1671,7 +1673,7 @@ public class IndexFetcher {
    */
   private class FileFetcher {
     private final FileInterface file;
-    private boolean includeChecksum = true;
+    protected boolean includeChecksum = false;
     private final String fileName;
     private final String saveAs;
     private final String solrParamOutput;
@@ -1707,6 +1709,7 @@ public class IndexFetcher {
      * The main method which downloads file
      */
     public void fetchFile() throws Exception {
+      log.info("fetch file {} from {}", file, masterUrl);
       bytesDownloaded = 0;
       try {
         fetch();
@@ -1720,7 +1723,6 @@ public class IndexFetcher {
     
     private void fetch() throws Exception {
       try {
-
         while (true && !stop && !abort) {
           final FastInputStream is = getStream();
           int result;
@@ -1737,6 +1739,7 @@ public class IndexFetcher {
               while (is.read() != -1) {
               }
             }
+            IOUtils.closeQuietly(is); // stream is close shield protected
           }
         }
       } catch (Exception e) {
@@ -1756,8 +1759,6 @@ public class IndexFetcher {
     }
 
     private int fetchPackets(FastInputStream fis) throws Exception {
-      byte[] intbytes = new byte[4];
-      byte[] longbytes = new byte[8];
       try {
         while (true) {
           if (abort) {
@@ -1767,9 +1768,8 @@ public class IndexFetcher {
             throw new ReplicationHandlerException("Index fetch stopped");
           }
           long checkSumServer = -1;
-          fis.readFully(intbytes);
           //read the size of the packet
-          int packetSize = readInt(intbytes);
+          int packetSize = fis.readInt();
           if (packetSize <= 0) {
             log.warn("No content received for file: {}", fileName);
             return NO_CONTENT;
@@ -1781,8 +1781,7 @@ public class IndexFetcher {
           }
           if (checksum != null) {
             //read the checksum
-            fis.readFully(longbytes);
-            checkSumServer = readLong(longbytes);
+            checkSumServer = fis.readLong();
           }
           //then read the packet of bytes
           fis.readFully(buf, 0, packetSize);
@@ -1803,7 +1802,7 @@ public class IndexFetcher {
 
           bytesDownloaded += packetSize;
           // nocommit
-          log.info("Fetched and wrote {} bytes of file: {}", bytesDownloaded, fileName);
+          log.info("Fetched and wrote {} bytes of file={} from replica={}", bytesDownloaded, fileName, masterUrl);
           //errorCount is always set to zero after a successful packet
           errorCount = 0;
           if (bytesDownloaded >= size) {
@@ -1865,6 +1864,7 @@ public class IndexFetcher {
         log.error("Error closing file: {}", this.saveAs, e);
       }
       if (bytesDownloaded != size) {
+        log.warn("bytesDownloaded != size bytesDownloaded={} size={}", bytesDownloaded, size);
         //if the download is not complete then
         //delete the file being downloaded
         try {
@@ -1895,9 +1895,9 @@ public class IndexFetcher {
       params.set(CommonParams.QT, ReplicationHandler.PATH);
       //add the version to download. This is used to reserve the download
       params.set(solrParamOutput, fileName);
-//      if (useInternalCompression) {
-//        params.set(COMPRESSION, "true");
-//      }
+      if (useInternalCompression) {
+        params.set(COMPRESSION, "true");
+      }
       //use checksum
       if (this.includeChecksum) {
         params.set(CHECKSUM, true);
@@ -1940,9 +1940,9 @@ public class IndexFetcher {
         if (is == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Did not find inputstream in response");
         }
-//        if (useInternalCompression) {
-//          is = new InflaterInputStream(is);
-//        }
+        if (useInternalCompression) {
+          is = new InflaterInputStream(is);
+        }
         return new FastInputStream(is);
       } catch (Exception e) {
         //close stream on error
@@ -1952,6 +1952,7 @@ public class IndexFetcher {
         } catch (Exception e1) {
           // quietly
         }
+        IOUtils.closeQuietly(is); // stream is close shield protected
         throw new IOException("Could not download file '" + fileName + "'", e);
       }
     }

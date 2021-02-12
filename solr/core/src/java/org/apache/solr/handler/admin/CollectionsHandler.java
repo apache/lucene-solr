@@ -342,7 +342,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
-  public static long DEFAULT_COLLECTION_OP_TIMEOUT = Long.getLong("solr.default.collection_op_timeout", 30 * 1000);
+  public static long DEFAULT_COLLECTION_OP_TIMEOUT = Long.getLong("solr.default.collection_op_timeout", 60 * 1000);
 
   public SolrResponse sendToOCPQueue(ZkNodeProps m) throws KeeperException, InterruptedException {
     return sendToOCPQueue(coreContainer, m, DEFAULT_COLLECTION_OP_TIMEOUT);

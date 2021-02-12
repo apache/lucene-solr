@@ -16,9 +16,9 @@
  */
 package org.apache.solr.update;
 
+import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -301,16 +301,15 @@ public final class CommitTracker implements Runnable, Closeable {
       command.waitSearcher = WAIT_SEARCHER;
       command.softCommit = softCommit;
       boolean isLeader = false;
-      if (core.getCoreContainer().isZooKeeperAware())  {
-        Replica leader = core.getCoreContainer().getZkController().zkStateReader.getLeader(core.getCoreDescriptor().getCollectionName(), core.getCoreDescriptor().getCloudDescriptor().getShardId());
-        if (core.getName().equals(leader.getName())) {
+      if (core.getCoreContainer().isZooKeeperAware()) {
+        LeaderElector elector = core.getCoreContainer().getZkController().getLeaderElector(core.getName());
+        if (elector != null && elector.isLeader()) {
           isLeader = true;
         }
-      }
-      if (core.getCoreDescriptor().getCloudDescriptor() != null
-          && isLeader
-          && !softCommit) {
-        command.version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
+
+        if (core.getCoreDescriptor().getCloudDescriptor() != null && isLeader) {
+          command.version = core.getUpdateHandler().getUpdateLog().getVersionInfo().getNewClock();
+        }
       }
       // no need for command.maxOptimizeSegments = 1; since it is not optimizing
 

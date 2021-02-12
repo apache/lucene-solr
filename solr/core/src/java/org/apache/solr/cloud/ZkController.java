@@ -284,7 +284,7 @@ public class ZkController implements Closeable, Runnable {
   private final CloudConfig cloudConfig;
   private volatile NodesSysPropsCacher sysPropsCacher;
 
-  private volatile LeaderElector overseerElector;
+  protected volatile LeaderElector overseerElector;
 
   private final Map<String, ReplicateFromLeader> replicateFromLeaders = new ConcurrentHashMap<>(16, 0.75f, 16);
   private final Map<String, ZkCollectionTerms> collectionToTerms = new ConcurrentHashMap<>(16, 0.75f, 16);
@@ -470,7 +470,7 @@ public class ZkController implements Closeable, Runnable {
       @Override
       public void command() {
         synchronized (initLock) {
-          if (cc.isShutDown() || isClosed() || isShutdownCalled || !zkClient.isConnected()) {
+          if (cc.isShutDown() || isClosed() || isShutdownCalled) {
             log.info("skipping zk reconnect logic due to shutdown");
             return;
           }
@@ -555,8 +555,10 @@ public class ZkController implements Closeable, Runnable {
 
     zkClient.setDisconnectListener(() -> {
       try (ParWork worker = new ParWork("disconnected", true, false)) {
+        worker.collect(ZkController.this.overseerElector);
         worker.collect(ZkController.this.overseer);
         worker.collect(leaderElectors.values());
+        leaderElectors.clear();
         // I don't think so...
 //        worker.collect("clearZkCollectionTerms", () -> {
 //          clearZkCollectionTerms();
@@ -823,7 +825,7 @@ public class ZkController implements Closeable, Runnable {
   }
 
   boolean isClosed() {
-    return isClosed || getCoreContainer().isShutDown();
+    return isClosed;
   }
 
   boolean isShutdownCalled() {
@@ -1360,7 +1362,7 @@ public class ZkController implements Closeable, Runnable {
 
       log.info("Wait to see leader for {}, {}", collection, shardId);
       Replica leader = null;
-      for (int i = 0; i < 15; i++) {
+      for (int i = 0; i < 60; i++) {
         if (leaderElector.isLeader()) {
           leader = replica;
           break;

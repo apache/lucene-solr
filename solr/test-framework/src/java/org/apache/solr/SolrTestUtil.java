@@ -274,4 +274,120 @@ public class SolrTestUtil {
   public static int atLeast(int i) {
     return LuceneTestCase.atLeast(i);
   }
+
+
+  public static abstract class StopableThread extends Thread {
+    public abstract void stopThread();
+  }
+
+  public static abstract class HorridGC extends Thread {
+    public abstract void stopHorridGC();
+    public abstract void waitForThreads(int ms) throws InterruptedException;
+  }
+
+  public static HorridGC horridGC() {
+
+    //          try {
+    //            Thread.sleep(random().nextInt(10000));
+    //          } catch (InterruptedException e) {
+    //            throw new RuntimeException();
+    //          }
+    int delay = 10 + LuceneTestCase.random().nextInt(2000);
+    StopableThread thread1 = new StopableThread() {
+      volatile boolean stop = false;
+
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(delay);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new RuntimeException();
+        }
+
+        double sideEffect = 0;
+        for (int i = 0; i < 60000; i++) {
+          if (stop) {
+            return;
+          }
+          sideEffect = slowpoke(599999L);
+          if (stop) {
+            return;
+          }
+          //          try {
+          //            Thread.sleep(random().nextInt(10000));
+          //          } catch (InterruptedException e) {
+          //            throw new RuntimeException();
+          //          }
+        }
+        System.out.println("result = " + sideEffect);
+      }
+
+      @Override
+      public void stopThread() {
+        this.stop = true;
+      }
+    };
+    thread1.start();
+
+    // trigger stop-the-world
+    StopableThread thread2 = new StopableThread() {
+      volatile boolean stop = false;
+
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(delay);
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          throw new RuntimeException();
+        }
+        int cnt = 0;
+        long timestamp = System.currentTimeMillis();
+        while (true) {
+          if (cnt++ > 350) break;
+          System.out.println("Delay " + (System.currentTimeMillis() - timestamp) + " " + cnt);
+
+          timestamp = System.currentTimeMillis();
+          // trigger stop-the-world
+          System.gc();
+          if (stop) {
+            return;
+          }
+//          try {
+//            Thread.sleep(LuceneTestCase.random().nextInt(3));
+//          } catch (InterruptedException e) {
+//            ParWork.propagateInterrupt(e);
+//            throw new RuntimeException();
+//          }
+        }
+      }
+
+      @Override
+      public void stopThread() {
+        this.stop = true;
+      }
+    };
+    thread2.start();
+   return new HorridGC() {
+     @Override
+     public void stopHorridGC() {
+       thread1.stopThread();
+       thread2.stopThread();
+     }
+
+     @Override
+     public void waitForThreads(int ms) throws InterruptedException {
+       thread1.join(ms);
+     }
+   };
+  }
+
+  public static double slowpoke(long iterations) {
+    double d = 0;
+    for (int j = 1; j < iterations; j++) {
+      d += Math.log(Math.E * j);
+    }
+    return d;
+  }
 }

@@ -20,7 +20,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,17 +33,16 @@ public class ZkCmdExecutor {
   private long retryDelay = 500L;
   private int retryCount;
   private IsClosed isClosed;
-  
+
   public ZkCmdExecutor(SolrZkClient solrZkClient, int retryCount) {
     this(solrZkClient, retryCount, null);
   }
-  
+
   /**
    * TODO: At this point, this should probably take a SolrZkClient in
    * its constructor.
-   * 
-   * @param retryCount
-   *          number of retries on connectionloss
+   *
+   * @param retryCount number of retries on connectionloss
    */
   public ZkCmdExecutor(SolrZkClient solrZkClient, int retryCount, IsClosed isClosed) {
     this.retryCount = retryCount;
@@ -52,11 +50,15 @@ public class ZkCmdExecutor {
     this.solrZkClient = solrZkClient;
   }
 
+  public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation) throws KeeperException, InterruptedException {
+    return retryOperation(zkCmdExecutor, operation, true);
+  }
+
   /**
    * Perform the given operation, retrying if the connection fails
    */
   @SuppressWarnings("unchecked")
-  public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation)
+  public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation, boolean retryOnSessionExp)
       throws KeeperException, InterruptedException {
     if (zkCmdExecutor.solrZkClient.isClosed()) {
       throw new AlreadyClosedException("SolrZkClient is already closed");
@@ -67,11 +69,14 @@ public class ZkCmdExecutor {
       try {
         return (T) operation.execute();
       } catch (KeeperException.ConnectionLossException | KeeperException.SessionExpiredException e) {
-        log.warn("ConnectionLost to ZK", e);
+        if (!retryOnSessionExp && e instanceof KeeperException.SessionExpiredException) {
+          throw e;
+        }
+        log.warn("ConnectionLost or SessionExpiration", e);
         if (exception == null) {
           exception = e;
         }
-        if (zkCmdExecutor.solrZkClient.getSolrZooKeeper().getState() == ZooKeeper.States.CLOSED) {
+        if (zkCmdExecutor.solrZkClient.isClosed()) {
           throw e;
         }
         zkCmdExecutor.retryDelay(tryCnt);

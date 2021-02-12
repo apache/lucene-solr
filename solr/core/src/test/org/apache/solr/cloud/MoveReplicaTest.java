@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 
 @LuceneTestCase.SuppressCodecs({"MockRandom", "Direct", "SimpleText"})
+// MRM-TODO: harden
 public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

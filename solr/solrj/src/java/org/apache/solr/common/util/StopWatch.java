@@ -25,12 +25,32 @@ import java.util.concurrent.TimeUnit;
 public class StopWatch {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+
+  public final static ThreadLocal<StopWatch> STOP_WATCH = ThreadLocal.withInitial(StopWatch::new);
+
+
   private long start;
   private String name;
 
   public StopWatch(String name) {
     if (log.isDebugEnabled()) {
       this.name = "StopWatch-" + name;
+    }
+  }
+
+  public StopWatch() {
+
+  }
+
+  public static StopWatch getStopWatch(String name) {
+    StopWatch sw = STOP_WATCH.get();
+    sw.start(name);
+    return sw;
+  }
+
+  public void start(String name) {
+    if (log.isDebugEnabled()) {
+      this.name = name;
       start = System.nanoTime();
     }
   }

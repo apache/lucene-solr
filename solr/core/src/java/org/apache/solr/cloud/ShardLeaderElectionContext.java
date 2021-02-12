@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -107,7 +108,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 //        cancelElection();
 //        return false;
 //      }
-      try {
 
         core.getSolrCoreState().cancelRecovery(false, false);
 
@@ -275,19 +275,26 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       } catch (AlreadyClosedException e) {
         log.info("Already closed, bailing..");
-        throw e;
+        cancelElection();
+        if (e instanceof  RuntimeException) {
+          throw e;
+        } else {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
       } catch (InterruptedException e) {
         log.warn("Interrupted, bailing..");
+        ParWork.propagateInterrupt(e);
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       } catch (Exception e) {
         SolrException.log(log, "There was a problem trying to register as the leader", e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
 
-    } catch (AlreadyClosedException e) {
-      log.info("Already closed, won't become leader");
-      throw e;
-    }
+        cancelElection();
+        if (e instanceof RuntimeException) {
+          throw (RuntimeException) e;
+        } else {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      }
 
     return true;
   }

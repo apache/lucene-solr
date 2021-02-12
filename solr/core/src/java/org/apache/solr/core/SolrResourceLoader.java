@@ -646,6 +646,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public static final ImmutableMap<String,String> SHORT_NAMES;
+  public static final ImmutableMap<String,String> DEPRECATIONS;
   static {
     try (InputStream stream = Utils.class.getClassLoader().getResource("ShortClassNames.properties").openStream()) {
       Properties prop = new Properties();
@@ -653,6 +654,17 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
       for (Map.Entry<Object, Object> e : prop.entrySet()) builder.put(e.getKey().toString(), e.getValue().toString());
       SHORT_NAMES = builder.build();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Resource error: " + e.getMessage(), e);
+    }
+
+    try (InputStream stream = Utils.class.getClassLoader().getResource("Deprecations.properties").openStream()) {
+      Properties prop = new Properties();
+      prop.load(stream);
+      ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
+      for (Map.Entry<Object, Object> e : prop.entrySet()) builder.put(e.getKey().toString(), e.getValue().toString());
+      DEPRECATIONS = builder.build();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Resource error: " + e.getMessage(), e);
@@ -706,30 +718,37 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       }
     }
 
+    String deprecation = DEPRECATIONS.get(cname);
+    if (deprecation != null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not load class=" + cname +
+          " because it has been removed deprecation=" + deprecation);
+    }
+
     Class<? extends T> clazz = null;
     try {
       // first try cname == full name
 
-      String newName = cname;
-      if (newName.startsWith("solr")) {
-        newName = cname.substring("solr".length() + 1);
-      }
+//      String newName = cname;
+//      if (newName.startsWith("solr")) {
+//        newName = cname.substring("solr".length() + 1);
+//      }
 
-      for (String subpackage : subpackages) {
-        try {
-          String name = base + '.' + subpackage + newName;
-          log.trace("Trying class name {}", name);
-
-          clazz = Class.forName(name, true, classLoader).asSubclass(expectedType);
-          //assert false : printMapEntry(cname, name);
-          return clazz;
-        } catch (ClassNotFoundException e1) {
-          // ignore... assume first exception is best.
-        }
-
-      }
-
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name + " Error loading class '" + cname + "'" + " subpackages=" + Arrays.asList(subpackages));
+      throw new IllegalStateException("class " + cname);
+//      for (String subpackage : subpackages) {
+//        try {
+//          String name = base + '.' + subpackage + newName;
+//          log.trace("Trying class name {}", name);
+//
+//          clazz = Class.forName(name, true, classLoader).asSubclass(expectedType);
+//          //assert false : printMapEntry(cname, name);
+//          return clazz;
+//        } catch (ClassNotFoundException e1) {
+//          // ignore... assume first exception is best.
+//        }
+//
+//      }
+//
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name + " Error loading class '" + cname + "'" + " subpackages=" + Arrays.asList(subpackages));
 
     } finally {
       if (clazz != null) {

@@ -30,6 +30,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.legacy.LegacyDoubleField;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.LegacyFloatField;
@@ -94,6 +95,10 @@ public class TrieField extends NumericFieldType {
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+
+    CoreContainer.deprecationLog.warn(TrieField.class.getName() + " fields have been deprecated deprecation=Trie "
+        + "fields are deprecated as of Solr 7.0, see PointFields");
+
     String p = args.remove("precisionStep");
     if (p != null) {
        precisionStepArg = Integer.parseInt(p);

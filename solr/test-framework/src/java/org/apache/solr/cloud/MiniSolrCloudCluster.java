@@ -935,6 +935,36 @@ public class MiniSolrCloudCluster {
     return null;
   }
 
+  public void stopJettyRunners() {
+    List<JettySolrRunner> runners = getJettySolrRunners();
+    try (ParWork work = new ParWork("StopJettyRunners", false, false)) {
+      for (JettySolrRunner runner : runners) {
+        work.collect("", () -> {
+          try {
+            runner.stop();
+          } catch (Exception e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
+      }
+    }
+  }
+
+  public void startJettyRunners() {
+    List<JettySolrRunner> runners = getJettySolrRunners();
+    try (ParWork work = new ParWork("StopJettyRunners", false, false)) {
+      for (JettySolrRunner runner : runners) {
+        work.collect("", () -> {
+          try {
+            runner.start();
+          } catch (Exception e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          }
+        });
+      }
+    }
+  }
+
   /** @lucene.experimental */
   public static final class JettySolrRunnerWithMetrics extends JettySolrRunner {
     public JettySolrRunnerWithMetrics(String solrHome, JettyConfig config) {

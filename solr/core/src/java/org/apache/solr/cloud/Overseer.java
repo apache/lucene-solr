@@ -278,7 +278,9 @@ public class Overseer implements SolrCloseable {
     }
 
     if (!closed) {
-      throw new IllegalStateException("Cannot start an Overseer that is not closed");
+      log.warn("Startomg an Overseer that was not closed");
+      IOUtils.closeQuietly(zkController.overseerElector);
+      IOUtils.closeQuietly(this);
     }
 
 //    if (OUR_JVM_OVERSEER != null) {

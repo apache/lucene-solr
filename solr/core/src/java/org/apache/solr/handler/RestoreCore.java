@@ -90,7 +90,7 @@ public class RestoreCore implements Callable<Boolean> {
             log.warn("Could not read checksum from index file: {}", filename, e);
           }
           long length = indexInput.length();
-          IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
+          IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum, "restore", "restore");
           if (!compareResult.equal ||
               (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, length, compareResult))) {
             backupRepo.copyFileTo(backupPath, filename, restoreIndexDir);

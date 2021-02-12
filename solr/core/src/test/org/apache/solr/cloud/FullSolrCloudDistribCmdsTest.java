@@ -68,6 +68,14 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     useFactory(null);
+
+    System.setProperty("solr.tests.maxBufferedDocs", "1000");
+    System.setProperty("solr.tests.ramBufferSizeMB", "-1");
+    System.setProperty("solr.tests.ramPerThreadHardLimitMB", String.valueOf(Integer.MAX_VALUE));
+    System.setProperty("solr.tests.mergePolicyFactory", "solr.LogDocMergePolicyFactory");
+
+
+
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     System.setProperty("distribUpdateSoTimeout", "10000");
     System.setProperty("socketTimeout", "15000");
@@ -86,10 +94,13 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
 
     System.setProperty("solr.default.collection_op_timeout", "15000");
 
+    System.setProperty("solr.autoCommit.maxTime", "1000");
+
+
 
     // use a 5 node cluster so with a typical 2x2 collection one node isn't involved
     // helps to randomly test edge cases of hitting a node not involved in collection
-    configureCluster(TEST_NIGHTLY ? 5 : 2).configure();
+    configureCluster(TEST_NIGHTLY ? 5 : 6).configure();
   }
 
   @After
@@ -112,7 +123,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   public static String createAndSetNewDefaultCollection() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String name = "test_collection_" + NAME_COUNTER.getAndIncrement();
-    CollectionAdminRequest.createCollection(name, "_default", 3, 3).setMaxShardsPerNode(10)
+    CollectionAdminRequest.createCollection(name, "_default", 1, 2).setMaxShardsPerNode(10)
                  .process(cloudClient);
     cloudClient.setDefaultCollection(name);
     return name;
@@ -464,7 +475,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = createAndSetNewDefaultCollection();
 
-    final int numDocs = 5000;//TEST_NIGHTLY ? atLeast(500) : 59;
+    final int numDocs = 15000;//TEST_NIGHTLY ? atLeast(500) : 59;
     final JettySolrRunner nodeToUpdate = cluster.getRandomJetty(random());
     try (ConcurrentUpdateSolrClient indexClient
          = SolrTestCaseJ4.getConcurrentUpdateSolrClient(nodeToUpdate.getBaseUrl() + "/" + collectionName, 10, 4)) {
@@ -480,10 +491,16 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     long found = cloudClient.query(params("q", "*:*")).getResults().getNumFound();
     assertEquals(numDocs + " found " + found, numDocs, found);
 
+    cluster.getSolrClient().getZkStateReader().checkShardConsistency(collectionName, false, true);
+
+    cluster.stopJettyRunners();
+    cluster.startJettyRunners();
+
+    cluster.waitForActiveCollection(collectionName, 3, 9);
 
     cluster.getSolrClient().getZkStateReader().checkShardConsistency(collectionName, false, true);
     //checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
-    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+    //CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
   
   /**

@@ -149,8 +149,8 @@
          before flushing.
          If both ramBufferSizeMB and maxBufferedDocs is set, then
          Lucene will flush based on whichever limit is hit first.  -->
-         <ramBufferSizeMB>300</ramBufferSizeMB>
-    <!-- <maxBufferedDocs>1000</maxBufferedDocs> -->
+    <ramBufferSizeMB>-1</ramBufferSizeMB>
+    <maxBufferedDocs>1000</maxBufferedDocs>
 
     <!-- Expert: ramPerThreadHardLimitMB sets the maximum amount of RAM that can be consumed
          per thread before they are flushed. When limit is exceeded, this triggers a forced

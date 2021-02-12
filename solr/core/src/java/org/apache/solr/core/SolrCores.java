@@ -401,8 +401,8 @@ class SolrCores implements Closeable {
           }
         }
         if (System.nanoTime() >= timeout) {
-          log.warn("Timed out waiting for SolrCores to finish loading.");
-          throw new RuntimeException("Timed out waiting for SolrCores to finish loading.");
+          log.info("Timed out waiting for SolrCores to finish loading.");
+          // throw new RuntimeException("Timed out waiting for SolrCores to finish loading.");
         }
       }
   }

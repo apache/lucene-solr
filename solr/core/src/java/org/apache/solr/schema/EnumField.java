@@ -25,6 +25,7 @@ import java.util.Locale;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.legacy.LegacyFieldType;
 import org.apache.solr.legacy.LegacyIntField;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Field type for support of string values with custom sort order.
- * @deprecated use {@link EnumFieldType} instead.
+ * @deprecated use {@link org.apache.solr.schema.EnumFieldType} instead.
  */
 @Deprecated
 public class EnumField extends AbstractEnumField {
@@ -181,6 +182,7 @@ public class EnumField extends AbstractEnumField {
 
   @Override
   public List<IndexableField> createFields(SchemaField sf, Object value) {
+    CoreContainer.deprecationLog.warn(EnumField.class.getName() + "is deprecated, deprecation=use org.apache.solr.schema.EnumFieldType instead");
     if (sf.hasDocValues()) {
       List<IndexableField> fields = new ArrayList<>();
       final IndexableField field = createField(sf, value);

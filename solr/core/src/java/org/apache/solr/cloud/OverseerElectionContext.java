@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -77,9 +78,19 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
 //      clearQueue(Overseer.getInternalWorkQueue(zkClient, new Stats()));
 //    }
 
-    boolean success = super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
-    if (!success) {
-      return false;
+    try {
+      boolean success = super.runLeaderProcess(context, weAreReplacement, pauseBeforeStartMs);
+      if (!success) {
+        cancelElection();
+        return false;
+      }
+    } catch (Exception e) {
+      cancelElection();
+      if (e instanceof  RuntimeException) {
+        throw e;
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
     }
 
     if (!overseer.getZkController().getCoreContainer().isShutDown() && !overseer.getZkController().isShutdownCalled()

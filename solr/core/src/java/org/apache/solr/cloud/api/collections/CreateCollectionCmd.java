@@ -27,7 +27,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -95,6 +94,7 @@ import java.util.concurrent.TimeoutException;
 
 public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public final int CREATE_COLLECTION_TIMEOUT = Integer.getInteger("solr.createCollectionTimeout",60000);
   private final OverseerCollectionMessageHandler ocmh;
   private final TimeSource timeSource;
   private final ZkStateReader zkStateReader;
@@ -384,11 +384,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           if (log.isDebugEnabled()) log.debug("createNodeSet={}", createNodeSet);
           if (createNodeSet == null || !createNodeSet.equals(ZkStateReader.CREATE_NODE_SET_EMPTY)) {
             try {
-              zkStateReader.waitForState(collectionName, 10, TimeUnit.SECONDS, (l, c) -> {
-                if (ocmh.isClosed()) {
-                  throw new AlreadyClosedException();
-                }
-
+              zkStateReader.waitForState(collectionName, CREATE_COLLECTION_TIMEOUT, TimeUnit.SECONDS, (l, c) -> {
                 if (c == null) {
                   return false;
                 }

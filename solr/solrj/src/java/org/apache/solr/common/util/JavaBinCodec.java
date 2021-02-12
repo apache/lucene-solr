@@ -71,6 +71,7 @@ import java.util.function.Predicate;
  * <p>
  * NOTE -- {@link JavaBinCodec} instances cannot be reused for more than one marshall or unmarshall operation.
  */
+@SuppressWarnings("unchecked")
 public class JavaBinCodec implements PushWriter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -909,8 +910,7 @@ public class JavaBinCodec implements PushWriter {
     int maxSize = end * ByteUtils.MAX_UTF8_BYTES_PER_CHAR;
 
     if (maxSize <= MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
-      ByteBuffer brr = getByteArr(Math.max(maxSize, 128), false);
-      if (brr.capacity() < maxSize) brr = getByteArr(maxSize, true);
+      ByteBuffer brr = getByteArr(Math.max(8192, maxSize), true);
       byte[] b = brr.array();
       int sz = ByteUtils.UTF16toUTF8(s, 0, end, b, 0);
       writeTag(STR, sz);
@@ -919,8 +919,7 @@ public class JavaBinCodec implements PushWriter {
       // double pass logic for large strings, see SOLR-7971
       int sz = ByteUtils.calcUTF16toUTF8Length(s, 0, end);
       writeTag(STR, sz);
-      ByteBuffer brr = getByteArr(Math.max(8192, 128), false);
-      if (brr.capacity() < maxSize) brr = getByteArr(8192, true);
+      ByteBuffer brr = getByteArr(maxSize, true);
       byte[] b = brr.array();
       ByteUtils.writeUTF16toUTF8(s, 0, end, daos, b);
     }
@@ -934,6 +933,7 @@ public class JavaBinCodec implements PushWriter {
     if (brr == null || resize) {
       brr = ByteBuffer.allocate(sz);
       THREAD_LOCAL_BRR.set(brr);
+      return brr;
     }
     brr.clear();
     return brr;

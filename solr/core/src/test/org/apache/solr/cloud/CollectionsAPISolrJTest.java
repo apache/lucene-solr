@@ -32,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -66,6 +67,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -81,15 +83,55 @@ import static org.apache.solr.common.params.CollectionAdminParams.DEFAULTS;
 
 public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static SolrTestUtil.HorridGC horridGc;
 
   @BeforeClass
   public static void beforeCollectionsAPISolrJTest() throws Exception {
+    System.setProperty("solr.zkclienttimeout", "4000");
+    System.setProperty("zkClientTimeout", "4000");
+
+
+    System.setProperty("solr.http2solrclient.default.idletimeout", "60000");
+    System.setProperty("distribUpdateSoTimeout", "60000");
+    System.setProperty("socketTimeout", "60000");
+    System.setProperty("connTimeout", "60000");
+    System.setProperty("solr.test.socketTimeout.default", "60000");
+    System.setProperty("solr.connect_timeout.default", "60000");
+    System.setProperty("solr.so_commit_timeout.default", "60000");
+    System.setProperty("solr.httpclient.defaultConnectTimeout", "60000");
+    System.setProperty("solr.httpclient.defaultSoTimeout", "60000");
+    System.setProperty("solr.default.collection_op_timeout", "60000");
+
+
+
+    System.setProperty("solr.createCollectionTimeout", "60000");
+
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster( TEST_NIGHTLY ? 4 : 2).formatZk(true)
             .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
             .addConfig("conf2", SolrTestUtil.configset("cloud-dynamic"))
             .configure();
+
+//    horridGc = SolrTestUtil.horridGC();
+//
+//    getTestExecutor().submit(() -> {
+//      try {
+//        Thread.sleep(SolrTestCase.random().nextInt(10 + 10000));
+//      } catch (InterruptedException e) {
+//        e.printStackTrace();
+//      }
+//      horridGc.stopHorridGC();
+//    });
   }
+
+  @AfterClass
+  public static void afterCollectionsAPISolrJTest() throws Exception {
+    if (horridGc != null) {
+      horridGc.stopHorridGC();
+      horridGc.waitForThreads(15000);
+    }
+  }
+
 
   @After
   public void afterTest() throws Exception {
@@ -201,13 +243,12 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  // sadly, can be flakey, fairly rare, create collection timeout - perhaps related to another test running first
+  @Ignore // nocommit - testing large numbers
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";
-    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-            .setMaxShardsPerNode(4).process(cluster.getSolrClient());
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 36, 18)
+            .process(cluster.getSolrClient());
 
-    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     assertEquals(response.toString(), 0, response.getStatus());
     assertTrue(response.toString(), response.isSuccess());

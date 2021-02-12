@@ -198,7 +198,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ops.add(Op.setData(parent, null, -1));
       List<OpResult> results;
 
-      results = zkClient.multi(ops, true);
+      results = zkClient.multi(ops, true, false);
       log.info("Results from call {}", results);
       Iterator<Op> it = ops.iterator();
       for (OpResult result : results) {

@@ -178,6 +178,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -389,11 +390,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public String getIndexDir() {
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       if (_searcher == null) return getNewIndexDir();
       SolrIndexSearcher searcher = _searcher.get();
       return searcher.getPath() == null ? dataDir + "index/" : searcher
           .getPath();
+    } finally {
+      searcherLock.unlock();
     }
   }
 
@@ -1058,11 +1062,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       newSearcherMaxReachedCounter = coreMetricManager.getSolrMetricsContext().counter("maxReached", Category.SEARCHER.toString(), "new");
       newSearcherOtherErrorsCounter = coreMetricManager.getSolrMetricsContext().counter("errors", Category.SEARCHER.toString(), "new");
 
-      StopWatch loadReporters = new StopWatch(this + "-loadReporters");
+      StopWatch loadReporters = StopWatch.getStopWatch(this + "-loadReporters");
       this.coreMetricManager.loadReporters();
       loadReporters.done();
 
-      StopWatch timeDirFactory = new StopWatch(this + "-dirFactory");
+      StopWatch timeDirFactory = StopWatch.getStopWatch(this + "-dirFactory");
       if (updateHandler == null) {
         directoryFactory = initDirectoryFactory();
         recoveryStrategyBuilder = initRecoveryStrategyBuilder();
@@ -1075,7 +1079,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
       timeDirFactory.done();
 
-      StopWatch timeDataDirUpdateLog = new StopWatch(this + "-dataDirUpdateLog");
+      StopWatch timeDataDirUpdateLog = StopWatch.getStopWatch(this + "-dataDirUpdateLog");
       this.dataDir = initDataDir(dataDir, solrConfig, coreDescriptor);
       this.ulogDir = initUpdateLogDir(coreDescriptor);
       timeDataDirUpdateLog.done();
@@ -1084,7 +1088,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, getInstancePath(), this.dataDir);
       }
 
-      StopWatch timeVerInSchema = new StopWatch(this + "-verInSchema");
+      StopWatch timeVerInSchema = StopWatch.getStopWatch(this + "-verInSchema");
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       timeVerInSchema.done();
 
@@ -1096,7 +1100,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
       this.slowQueryThresholdMillis = solrConfig.slowQueryThresholdMillis;
 
-      StopWatch timeInitListeners = new StopWatch(this + "-initListeners");
+      StopWatch timeInitListeners = StopWatch.getStopWatch(this + "-initListeners");
       initListeners();
       timeInitListeners.done();
 
@@ -1108,7 +1112,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       initIndex(prev != null, reload);
       timeInitCodeIndex.done();
 
-      StopWatch timeInitWriters = new StopWatch(this + "-initWriters");
+      StopWatch timeInitWriters = StopWatch.getStopWatch(this + "-initWriters");
       initWriters();
       timeInitWriters.done();
 
@@ -1122,7 +1126,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         return null;
       });
 
-      StopWatch timeUpdateHandler = new StopWatch(this + "-updateHandler");
+      StopWatch timeUpdateHandler = StopWatch.getStopWatch(this + "-updateHandler");
       if (updateHandler != null) {
         this.updateHandler = new DirectUpdateHandler2(this, updateHandler);
       } else {
@@ -1131,7 +1135,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       timeUpdateHandler.done();
 
 
-      StopWatch timeMetricProducerUpdateHanndler = new StopWatch(this + "-metricProducerUpdateHanndler");
+      StopWatch timeMetricProducerUpdateHanndler = StopWatch.getStopWatch(this + "-metricProducerUpdateHanndler");
       coreMetricManager.registerMetricProducer("updateHandler", (SolrMetricProducer) this.updateHandler);
       infoRegistry.put("updateHandler", this.updateHandler);
       timeMetricProducerUpdateHanndler.done();
@@ -1142,7 +1146,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       infoRegistry.put("core", this);
 
-      StopWatch timeBufferUpdatesIfConstructing = new StopWatch(this + "-bufferUpdatesIfConstructing");
+      StopWatch timeBufferUpdatesIfConstructing = StopWatch.getStopWatch(this + "-bufferUpdatesIfConstructing");
       bufferUpdatesIfConstructing(coreDescriptor);
       timeBufferUpdatesIfConstructing.done();
 
@@ -1195,22 +1199,22 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
 
       Future<?> future = coreContainer.coreContainerExecutor.submit(() -> {
-        StopWatch timeInitReqHandlers = new StopWatch(this + "-startCore-timeInitReqHandlers");
+        StopWatch timeInitReqHandlers = StopWatch.getStopWatch(this + "-startCore-timeInitReqHandlers");
         reqHandlers.initHandlersFromConfig(solrConfig);
         timeInitReqHandlers.done();
       });
 
-      StopWatch timeInitQParserPlugins = new StopWatch(this + "-startCore-timeInitQParserPlugins");
+      StopWatch timeInitQParserPlugins = StopWatch.getStopWatch(this + "-startCore-timeInitQParserPlugins");
       qParserPlugins.init(QParserPlugin.standardPlugins, this);
       timeInitQParserPlugins.done();
-      StopWatch timeInitValueSourceParsers = new StopWatch(this + "-startCore-timeInitValueSourceParsers");
+      StopWatch timeInitValueSourceParsers = StopWatch.getStopWatch(this + "-startCore-timeInitValueSourceParsers");
       valueSourceParsers.init(ValueSourceParser.standardValueSourceParsers, this);
       timeInitValueSourceParsers.done();
-      StopWatch timeInitTransformerFactories = new StopWatch(this + "-startCore-timeInitTransformerFactories");
+      StopWatch timeInitTransformerFactories = StopWatch.getStopWatch(this + "-startCore-timeInitTransformerFactories");
       transformerFactories.init(TransformerFactory.defaultFactories, this);
       timeInitTransformerFactories.done();
 
-      StopWatch timeLoadSearchComponents = new StopWatch(this + "-startCore-loadSearchComponents");
+      StopWatch timeLoadSearchComponents = StopWatch.getStopWatch(this + "-startCore-loadSearchComponents");
       loadSearchComponents();
       timeLoadSearchComponents.done();
 
@@ -1222,7 +1226,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       future.get();
 
       // Finally tell anyone who wants to know
-      StopWatch timeInform = new StopWatch(this + "-startCore-inform");
+      StopWatch timeInform = StopWatch.getStopWatch(this + "-startCore-inform");
       this.updateHandler.informEventListeners(this);
       resourceLoader.inform(resourceLoader);
       resourceLoader.inform(this); // last call before the latch is released.
@@ -1233,14 +1237,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // choose to block on registering until properties can be fetched from an MBean,
       // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
       // from the core.
-      StopWatch timeRInform = new StopWatch(this + "-startCore-resourceLoaderInform");
+      StopWatch timeRInform = StopWatch.getStopWatch(this + "-startCore-resourceLoaderInform");
       resourceLoader.inform(infoRegistry);
       timeRInform.done();
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
-      StopWatch timeWaitForSearcher = new StopWatch(this + "-startCore-waitForSearcher");
+      StopWatch timeWaitForSearcher = StopWatch.getStopWatch(this + "-startCore-waitForSearcher");
       // nocommit - wait before publish active
-      if (!getSolrConfig().useColdSearcher) {
+      if (isReloaded && !getSolrConfig().useColdSearcher) {
         try {
           initSearcherFuture[0].get();
         } catch (InterruptedException e) {
@@ -1253,7 +1257,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       boolean dirChanged = false;
 
-      StopWatch timeReloadAndDirChange = new StopWatch(this + "-startCore-timeReloadAndDirChange");
+      StopWatch timeReloadAndDirChange = StopWatch.getStopWatch(this + "-startCore-timeReloadAndDirChange");
       if (isReloaded) {
         RefCounted<IndexWriter> iw = updateHandler.getSolrCoreState().getIndexWriter(this);
         try {
@@ -1273,16 +1277,16 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
       timeReloadAndDirChange.done();
       if (!isReloaded || dirChanged) { // MRM TODO: reload could move to a different index?
-        StopWatch timeSeedVers = new StopWatch(this + "-seedVersionBuckets");
+        StopWatch timeSeedVers = StopWatch.getStopWatch(this + "-seedVersionBuckets");
 
-        StopWatch timeSeedVersions = new StopWatch(this + "-startCore-seedVersions");
+        StopWatch timeSeedVersions = StopWatch.getStopWatch(this + "-startCore-seedVersions");
         seedVersionBuckets();
         timeSeedVersions.done();
 
         timeSeedVers.done();
       }
 
-      StopWatch timeRegConfListener = new StopWatch(this + "-startCore-regConfListener");
+      StopWatch timeRegConfListener = StopWatch.getStopWatch(this + "-startCore-regConfListener");
       registerConfListener();
       timeRegConfListener.done();
 
@@ -1656,7 +1660,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       def = map.get(null);
     }
     if (def == null) {
-      log.debug("no updateRequestProcessorChain defined as default, creating implicit default");
+      if (log.isDebugEnabled()) log.debug("no updateRequestProcessorChain defined as default, creating implicit default");
       // construct the default chain
       UpdateRequestProcessorFactory[] factories = new UpdateRequestProcessorFactory[]{
           new LogUpdateProcessorFactory(),
@@ -1878,17 +1882,16 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         closer.collect("closeSearcher", () -> {
           closeSearcher();
-        });
 
-        closer.collect("snapshotsDir", () -> {
-          Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-          this.directoryFactory.doneWithDirectory(snapshotsDir);
-          try {
-            this.directoryFactory.release(snapshotsDir);
-          } catch (IllegalStateException e) {
-            log.warn("DirectoryFactory likely already closed", e);
+          if (snapshotMgr != null) {
+            Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+            try {
+              this.directoryFactory.doneWithDirectory(snapshotsDir);
+              this.directoryFactory.release(snapshotsDir);
+            } catch (IllegalStateException | IOException e) {
+              log.warn("Exception closing snapshotMgr directory", e);
+            }
           }
-          return snapshotsDir;
         });
 
         List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>();
@@ -1941,7 +1944,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         closer.collect("ondeck", () -> {
 
-          synchronized (searcherLock) {
+          searcherLock.lock();
+          try {
             for (RefCounted<SolrIndexSearcher> searcher : _searchers) {
               try {
                 searcher.get().close();
@@ -1959,21 +1963,25 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               }
             }
             _realtimeSearchers.clear();
+          } finally {
+            searcherLock.unlock();
           }
         });
 
         closer.addCollect();
 
-        closer.collect("SolrCoreState", () -> {
-          boolean closed;
-          if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
-            closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
-          } else {
-            closed = solrCoreState.decrefSolrCoreState(null);
-          }
-          coreStateClosed.set(closed);
-          return solrCoreState;
-        });
+        if (solrCoreState != null) {
+          closer.collect("SolrCoreState", () -> {
+            boolean closed;
+            if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
+              closed = solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
+            } else {
+              closed = solrCoreState.decrefSolrCoreState(null);
+            }
+            coreStateClosed.set(closed);
+            return solrCoreState;
+          });
+        }
 
         closer.collect();
 
@@ -2194,7 +2202,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       new SolrNamedThreadFactory("searcherExecutor", true));
   private AtomicInteger onDeckSearchers = new AtomicInteger();  // number of searchers preparing
   // Lock ordering: one can acquire the openSearcherLock and then the searcherLock, but not vice-versa.
-  private final Object searcherLock = new Object();  // the sync object for the searcher
+  private final ReentrantLock searcherLock = new ReentrantLock(true);  // the sync object for the searcher
+  private final Condition searchLockCondition = searcherLock.newCondition();
   private final ReentrantLock openSearcherLock = new ReentrantLock(true);     // used to serialize opens/reopens for absolute ordering
   private final int maxWarmingSearchers;  // max number of on-deck searchers allowed
   private final int slowQueryThresholdMillis;  // threshold above which a query is considered slow
@@ -2205,11 +2214,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   // For testing
   boolean areAllSearcherReferencesEmpty() {
     boolean isEmpty;
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       isEmpty = _searchers.isEmpty();
       isEmpty = isEmpty && _realtimeSearchers.isEmpty();
       isEmpty = isEmpty && (_searcher == null);
       isEmpty = isEmpty && (realtimeSearcher == null);
+    } finally {
+      searcherLock.unlock();
     }
     return isEmpty;
   }
@@ -2323,17 +2335,23 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * Returns the current registered searcher with its reference count incremented, or null if none are registered.
    */
   public RefCounted<SolrIndexSearcher> getRegisteredSearcher() {
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       if (_searcher != null) {
         _searcher.incref();
       }
       return _searcher;
+    } finally {
+      searcherLock.unlock();
     }
   }
 
   public boolean hasRegisteredSearcher() {
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       return _searcher != null;
+    } finally {
+      searcherLock.unlock();
     }
   }
 
@@ -2344,12 +2362,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * or null is returned if openNew==false.
    */
   public RefCounted<SolrIndexSearcher> getNewestSearcher(boolean openNew) {
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       if (!_searchers.isEmpty()) {
         RefCounted<SolrIndexSearcher> newest = _searchers.getLast();
         newest.incref();
         return newest;
       }
+    } finally {
+      searcherLock.unlock();
     }
 
     return openNew ? getRealtimeSearcher() : null;
@@ -2360,11 +2381,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    * The reference count will be incremented.
    */
   public RefCounted<SolrIndexSearcher> getRealtimeSearcher() {
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       if (realtimeSearcher != null) {
         realtimeSearcher.incref();
         return realtimeSearcher;
       }
+    } finally {
+      searcherLock.unlock();
     }
 
     // use the searcher lock to prevent multiple people from trying to open at once
@@ -2378,11 +2402,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     try {
 
       // try again
-      synchronized (searcherLock) {
+      searcherLock.lock();
+      try {
         if (realtimeSearcher != null) {
           realtimeSearcher.incref();
           return realtimeSearcher;
         }
+      } finally {
+        searcherLock.unlock();
       }
 
       // force a new searcher open
@@ -2436,7 +2463,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         newIndexDirFile = getDirectoryFactory().normalize(newIndexDir);
       }
 
-      synchronized (searcherLock) {
+      searcherLock.lock();
+      try {
         if (coreContainer.isShutDown()) { // if we start new searchers after close we won't close them
           throw new SolrCoreState.CoreIsClosedException();
         }
@@ -2445,6 +2473,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (newestSearcher != null) {
           newestSearcher.incref();      // the matching decref is in the finally block
         }
+      } finally {
+        searcherLock.unlock();
       }
 
       if (newestSearcher != null && (updateHandlerReopens || indexDirFile.equals(newIndexDirFile))) {
@@ -2528,9 +2558,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       List<RefCounted<SolrIndexSearcher>> searcherList;
-      synchronized (searcherLock) {
+      searcherLock.lock();
+      try {
         searcherList = realtime ? _realtimeSearchers : _searchers;
         newSearcher = newHolder(tmp, searcherList);    // refcount now at 1
+      } finally {
+        searcherLock.unlock();
       }
 
 
@@ -2539,13 +2572,16 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // it will be closed.
       newSearcher.incref();
 
-      synchronized (searcherLock) {
+      searcherLock.lock();
+      try {
 
         if (realtimeSearcher != null) {
           realtimeSearcher.decref();
         }
         realtimeSearcher = newSearcher;
         searcherList.add(realtimeSearcher);
+      } finally {
+        searcherLock.unlock();
       }
       success = true;
       return newSearcher;
@@ -2613,68 +2649,66 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // it may take some time to open an index.... we may need to make
     // sure that two threads aren't trying to open one at the same time
     // if it isn't necessary.
-    synchronized (searcherLock) {
+
       for (;;) { // this loop is so w can retry in the event that we exceed maxWarmingSearchers
-        // see if we can return the current searcher
-        if (_searcher != null && !forceNew) {
-          if (returnSearcher) {
-            _searcher.incref();
-            return _searcher;
-          } else {
-            return null;
+        searcherLock.lock();
+        try {
+          // see if we can return the current searcher
+          if (_searcher != null && !forceNew) {
+            if (returnSearcher) {
+              _searcher.incref();
+              return _searcher;
+            } else {
+              return null;
+            }
           }
-        }
 
-        // check to see if we can wait for someone else's searcher to be set
-        if (onDeckSearchers.get() > 0 && !forceNew && _searcher == null) {
-          try {
-            searcherLock.wait();
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
+          // check to see if we can wait for someone else's searcher to be set
+          if (onDeckSearchers.get() > 0 && !forceNew && _searcher == null) {
+            try {
+              searchLockCondition.await(250, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
+            }
           }
-        }
 
-        // check again: see if we can return right now
-        if (_searcher != null && !forceNew) {
-          if (returnSearcher) {
-            _searcher.incref();
-            return _searcher;
-          } else {
-            return null;
+          // check again: see if we can return right now
+          if (_searcher != null && !forceNew) {
+            if (returnSearcher) {
+              _searcher.incref();
+              return _searcher;
+            } else {
+              return null;
+            }
           }
-        }
 
-        // At this point, we know we need to open a new searcher...
-        if (coreContainer.isShutDown()) { // if we start new searchers after close we won't close them
-          throw new SolrCoreState.CoreIsClosedException();
-        }
-
-        // first: increment count to signal other threads that we are
-        // opening a new searcher.
-        onDeckSearchers.incrementAndGet();
-        newSearcherCounter.inc();
-        if (onDeckSearchers.get() < 1) {
-          // should never happen... just a sanity check
-          log.error("{}ERROR!!! onDeckSearchers is {}", logid, onDeckSearchers);
-          onDeckSearchers.set(1);  // reset
-        } else if (onDeckSearchers.get() > maxWarmingSearchers) {
-          onDeckSearchers.decrementAndGet();
-          searcherLock.notifyAll();
-          newSearcherMaxReachedCounter.inc();
-          try {
-            searcherLock.wait();
-          } catch (InterruptedException e) {
-            ParWork.propagateInterrupt(e);
+          // first: increment count to signal other threads that we are
+          // opening a new searcher.
+          onDeckSearchers.incrementAndGet();
+          newSearcherCounter.inc();
+          if (onDeckSearchers.get() < 1) {
+            // should never happen... just a sanity check
+            log.error("{}ERROR!!! onDeckSearchers is {}", logid, onDeckSearchers);
+            onDeckSearchers.set(1);  // reset
+          } else if (onDeckSearchers.get() > maxWarmingSearchers) {
+            onDeckSearchers.decrementAndGet();
+            searchLockCondition.signalAll();
+            newSearcherMaxReachedCounter.inc();
+            try {
+              searchLockCondition.await(250, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+              ParWork.propagateInterrupt(e);
+            }
+            continue;  // go back to the top of the loop and retry
+          } else if (onDeckSearchers.get() > 1) {
+            log.warn("{}PERFORMANCE WARNING: Overlapping onDeckSearchers={}", logid, onDeckSearchers);
           }
-          continue;  // go back to the top of the loop and retry
-        } else if (onDeckSearchers.get() > 1) {
-          log.warn("{}PERFORMANCE WARNING: Overlapping onDeckSearchers={}", logid, onDeckSearchers);
+        } finally {
+          if (searcherLock.isHeldByCurrentThread()) searcherLock.unlock();
         }
 
         break; // I can now exit the loop and proceed to open a searcher
       }
-    }
-
     // a signal to decrement onDeckSearchers if something goes wrong.
     final boolean[] decrementOnDeckCount = new boolean[]{true};
     RefCounted<SolrIndexSearcher> currSearcherHolder = null;     // searcher we are autowarming from
@@ -2702,7 +2736,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
 
       boolean alreadyRegistered = false;
-      synchronized (searcherLock) {
+      searcherLock.lock();
+      try {
         if (_searcher == null) {
           // if there isn't a current searcher then we may
           // want to register this one before warming is complete instead of waiting.
@@ -2717,6 +2752,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           currSearcherHolder = _searcher;
           currSearcherHolder.incref();
         }
+      } finally {
+        searcherLock.unlock();
       }
 
 
@@ -2817,7 +2854,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
           newSearcherOtherErrorsCounter.inc();
 
-          synchronized (searcherLock) {
+          searcherLock.lock();
+          try {
             onDeckSearchers.decrementAndGet();
 
             if (onDeckSearchers.get() < 0) {
@@ -2826,7 +2864,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               onDeckSearchers.set(0); // try and recover
             }
             // if we failed, we need to wake up at least one waiter to continue the process
-            searcherLock.notifyAll();
+            searchLockCondition.notifyAll();
+          } finally {
+            searcherLock.unlock();
           }
 
           if (currSearcherHolder != null) {
@@ -2870,8 +2910,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     RefCounted<SolrIndexSearcher> holder = new RefCounted<SolrIndexSearcher>(newSearcher) {
       @Override
       public void close() {
+        searcherLock.lock();
         try {
-          synchronized (searcherLock) {
+          try {
             // it's possible for someone to get a reference via the _searchers queue
             // and increment the refcount while RefCounted.close() is being called.
             // we check the refcount again to see if this has happened and abort the close.
@@ -2879,6 +2920,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
             // time the counter hits zero.
             if (refcount.get() > 0) return;
             searcherList.remove(this);
+          } finally {
+            searcherLock.unlock();
           }
           resource.close();
         } catch (Exception e) {
@@ -2905,7 +2948,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   // as a result of opening a new searcher).
   private void registerSearcher(RefCounted<SolrIndexSearcher> newSearcherHolder) {
     boolean success = false;
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       try {
         if (_searcher == newSearcherHolder) {
           // trying to re-register the same searcher... this can now happen when a commit has been done but
@@ -2951,16 +2995,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         onDeckSearchers.decrementAndGet();
 
-        searcherLock.notifyAll();
+        searchLockCondition.signalAll();
         assert TestInjection.injectSearcherHooks(getCoreDescriptor() != null && getCoreDescriptor().getCloudDescriptor() != null ? getCoreDescriptor().getCloudDescriptor().getCollectionName() : null);
       }
+    } finally {
+      searcherLock.unlock();
     }
   }
 
-
   public void closeSearcher() {
     log.info("{} Closing main searcher on request realtimeSearcher={} searcher={}", logid, realtimeSearcher, _searcher);
-    synchronized (searcherLock) {
+    searcherLock.lock();
+    try {
       if (realtimeSearcher != null) {
         realtimeSearcher.decref();
         realtimeSearcher = null;
@@ -2969,6 +3015,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         IOUtils.closeQuietly(_searcher.get());   // close this._searcher
         _searcher = null; // isClosed() does check this
       }
+    } finally {
+      searcherLock.unlock();
     }
   }
 

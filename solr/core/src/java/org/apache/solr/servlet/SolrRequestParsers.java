@@ -41,6 +41,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.ParWork;
@@ -107,9 +108,9 @@ public class SolrRequestParsers {
     final int multipartUploadLimitKB, formUploadLimitKB;
     if( globalConfig == null ) {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE; 
-      enableRemoteStreams = false;
+      enableRemoteStreams = true;
       enableStreamBody = false;
-      handleSelect = false;
+      handleSelect = true;
       addHttpRequestToContext = false;
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
@@ -132,7 +133,7 @@ public class SolrRequestParsers {
     enableStreamBody = false;
     handleSelect = false;
     addHttpRequestToContext = false;
-    init(Integer.MAX_VALUE, Integer.MAX_VALUE);
+    init(2048, 2048);
   }
 
   private void init( int multipartUploadLimitKB, int formUploadLimitKB) {       
@@ -504,7 +505,11 @@ public class SolrRequestParsers {
 
     @Override
     public InputStream getStream() throws IOException {
-      return req.getInputStream();
+      // we explicitly protect this servlet stream from being closed
+      // so that it does not trip our test assert in our close shield
+      // in SolrDispatchFilter - we must allow closes from getStream
+      // due to the other impls of ContentStream
+      return new CloseShieldInputStream(req.getInputStream());
     }
   }
 

@@ -37,6 +37,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -185,93 +186,98 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
-    requests.inc();
-    // requests are distributed by default when ZK is in use, unless indicated otherwise
-    boolean distrib = req.getParams().getBool(CommonParams.DISTRIB,
-        req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
-    if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
-     // shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
-      int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
-      if (purpose != 0) {
-        String[] names = SolrPluginUtils.getRequestPurposeNames(purpose);
-//        for (String n : names) {
-//          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
-//        }
-      }
+    if (req.getCore() != null) {
+      MDCLoggingContext.setCoreName(req.getCore().getName());
     }
- //   Timer.Context timer = requestTimes.time();
-  //  @SuppressWarnings("resource")
-  //  Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
     try {
-      if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM))
-        req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
-      SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
-      req.getContext().remove(USEPARAM);
-      rsp.setHttpCaching(httpCaching);
-      handleRequestBody(req, rsp);
-      // count timeouts
-      @SuppressWarnings({"rawtypes"})
-      NamedList header = rsp.getResponseHeader();
-      if (header != null) {
-        if (Boolean.TRUE.equals(header.getBooleanArg(
-            SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          numTimeouts.mark();
-          rsp.setHttpCaching(false);
+      requests.inc();
+      // requests are distributed by default when ZK is in use, unless indicated otherwise
+      boolean distrib = req.getParams().getBool(CommonParams.DISTRIB, req.getCore() != null ? req.getCore().getCoreContainer().isZooKeeperAware() : false);
+      if (req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+        // shardPurposes.computeIfAbsent("total", name -> new Counter()).inc();
+        int purpose = req.getParams().getInt(ShardParams.SHARDS_PURPOSE, 0);
+        if (purpose != 0) {
+          String[] names = SolrPluginUtils.getRequestPurposeNames(purpose);
+          //        for (String n : names) {
+          //          shardPurposes.computeIfAbsent(n, name -> new Counter()).inc();
+          //        }
         }
       }
-    } catch (InterruptedException e) {
-        ParWork.propagateInterrupt(e);
-        throw new AlreadyClosedException(e);
-    } catch (Exception e) {
-      log.error("Exception handling request", e);
-      if (req.getCore() != null) {
-        boolean isTragic = req.getCore().getCoreContainer().checkTragicException(req.getCore());
-        if (isTragic) {
-          if (e instanceof SolrException) {
-            // Tragic exceptions should always throw a server error
-            //assert ((SolrException) e).code() == 500;
-          } else {
-            // wrap it in a solr exception
-            e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+      //   Timer.Context timer = requestTimes.time();
+      //  @SuppressWarnings("resource")
+      //  Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
+      try {
+        if (pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM, pluginInfo.attributes.get(USEPARAM));
+        SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
+        req.getContext().remove(USEPARAM);
+        rsp.setHttpCaching(httpCaching);
+        handleRequestBody(req, rsp);
+        // count timeouts
+        @SuppressWarnings({"rawtypes"}) NamedList header = rsp.getResponseHeader();
+        if (header != null) {
+          if (Boolean.TRUE.equals(header.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+            numTimeouts.mark();
+            rsp.setHttpCaching(false);
           }
         }
-      }
-      boolean incrementErrors = true;
-      boolean isServerError = true;
-      if (e instanceof SolrException) {
-        SolrException se = (SolrException) e;
-        if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
-          incrementErrors = false;
-        } else if (se.code() >= 400 && se.code() < 500) {
-          isServerError = false;
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+        throw new AlreadyClosedException(e);
+      } catch (Exception e) {
+        log.error("Exception handling request", e);
+        if (req.getCore() != null) {
+          boolean isTragic = req.getCore().getCoreContainer().checkTragicException(req.getCore());
+          if (isTragic) {
+            if (e instanceof SolrException) {
+              // Tragic exceptions should always throw a server error
+              //assert ((SolrException) e).code() == 500;
+            } else {
+              // wrap it in a solr exception
+              e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage(), e);
+            }
+          }
         }
-      } else {
-        if (e instanceof SyntaxError) {
-          isServerError = false;
-          e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-        }
-      }
-
-      rsp.setException(e);
-
-      if (incrementErrors) {
-        SolrException.log(log, e);
-
-        numErrors.mark();
-        if (isServerError) {
-          numServerErrors.mark();
+        boolean incrementErrors = true;
+        boolean isServerError = true;
+        if (e instanceof SolrException) {
+          SolrException se = (SolrException) e;
+          if (se.code() == SolrException.ErrorCode.CONFLICT.code) {
+            incrementErrors = false;
+          } else if (se.code() >= 400 && se.code() < 500) {
+            isServerError = false;
+          }
         } else {
-          numClientErrors.mark();
+          if (e instanceof SyntaxError) {
+            isServerError = false;
+            e = new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+          }
+        }
+
+        rsp.setException(e);
+
+        if (incrementErrors) {
+          SolrException.log(log, e);
+
+          numErrors.mark();
+          if (isServerError) {
+            numServerErrors.mark();
+          } else {
+            numClientErrors.mark();
+          }
+        }
+      } finally {
+        //dTimer.stop();
+        //long elapsed = timer.stop();
+        //totalTime.inc(elapsed);
+        if (distrib) {
+          //distribTotalTime.inc(elapsed);
+        } else {
+          //localTotalTime.inc(elapsed);
         }
       }
     } finally {
-      //dTimer.stop();
-      //long elapsed = timer.stop();
-      //totalTime.inc(elapsed);
-      if (distrib) {
-        //distribTotalTime.inc(elapsed);
-      } else {
-        //localTotalTime.inc(elapsed);
+      if (req.getCore() != null) {
+        MDCLoggingContext.clear();
       }
     }
   }
