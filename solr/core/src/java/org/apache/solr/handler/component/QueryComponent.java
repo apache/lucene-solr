@@ -137,8 +137,12 @@ public class QueryComponent extends SearchComponent
     }
     SolrQueryResponse rsp = rb.rsp;
 
-    // Generate Query ID
-    rb.queryID = generateQueryID(req);
+    boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+
+    if (isCancellableQuery) {
+      // Generate Query ID
+      rb.queryID = generateQueryID(req);
+    }
 
     // Set field flags    
     ReturnFields returnFields = new SolrReturnFields( req );
@@ -366,21 +370,24 @@ public class QueryComponent extends SearchComponent
     cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
 
-    // Set the queryID for the searcher to consume
-    String queryID = params.get(ShardParams.QUERY_ID);
-
     boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
-    cmd.setQueryCancellable(isCancellableQuery);
 
-    if (queryID == null) {
-      if (rb.isDistrib) {
-        throw new IllegalStateException("QueryID is null for distributed query");
+    if (isCancellableQuery) {
+      // Set the queryID for the searcher to consume
+      String queryID = params.get(ShardParams.QUERY_ID);
+
+      cmd.setQueryCancellable(true);
+
+      if (queryID == null) {
+        if (rb.isDistrib) {
+          throw new IllegalStateException("QueryID is null for distributed query");
+        }
+
+        queryID = rb.queryID;
       }
 
-      queryID = rb.queryID;
+      cmd.setQueryID(queryID);
     }
-
-    cmd.setQueryID(queryID);
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
@@ -655,8 +662,10 @@ public class QueryComponent extends SearchComponent
       return;
     }
 
-    // Remove the current queryID from the active list
-    rb.req.getCore().releaseQueryID(rb.queryID);
+    if (rb.queryID != null) {
+      // Remove the current queryID from the active list
+      rb.req.getCore().releaseQueryID(rb.queryID);
+    }
 
     if (rb.grouping()) {
       groupedFinishStage(rb);

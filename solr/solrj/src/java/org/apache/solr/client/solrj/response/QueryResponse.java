@@ -55,6 +55,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<Object> _statsInfo = null;
   private NamedList<NamedList<Object>> _termsInfo = null;
   private NamedList<SolrDocumentList> _moreLikeThisInfo = null;
+  private NamedList<String> _tasksInfo = null;
   private String _cursorMarkNext = null;
 
   // Grouping response
@@ -183,6 +184,9 @@ public class QueryResponse extends SolrResponseBase
       }
       else if ( "moreLikeThis".equals( n ) ) {
         _moreLikeThisInfo = (NamedList<SolrDocumentList>) res.getVal( i );
+      }
+      else if ("taskList".equals( n )) {
+        _tasksInfo = (NamedList<String>) res.getVal( i );
       }
       else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
         _cursorMarkNext = (String) res.getVal( i );
@@ -590,6 +594,10 @@ public class QueryResponse extends SolrResponseBase
 
   public NamedList<SolrDocumentList> getMoreLikeThis() {
     return _moreLikeThisInfo;
+  }
+
+  public NamedList<String> getTasksInfo() {
+    return _tasksInfo;
   }
   
   /**

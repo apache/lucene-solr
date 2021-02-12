@@ -1,5 +1,7 @@
 package org.apache.solr.handler.component;
 
+import org.apache.solr.api.Api;
+import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -15,11 +17,13 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.QUERY_CANCELLATION_UUID;
 import static org.apache.solr.handler.component.ShardRequest.PURPOSE_CANCEL_TASK;
+import static org.apache.solr.handler.component.ShardRequest.PURPOSE_LIST_TASKS;
 
 public class TaskManagementHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
     private enum TaskRequestType {
@@ -45,18 +49,20 @@ public class TaskManagementHandler extends RequestHandlerBase implements SolrCor
 
         shardHandler.prepDistributed(rb);
 
-        String cancellationUUID = req.getParams().get(QUERY_CANCELLATION_UUID, null);
-
-        if (cancellationUUID == null) {
-            throw new IllegalArgumentException("Query cancellation was requested but no query UUID for cancellation was given");
-        }
-
-        rb.setCancellationUUID(cancellationUUID);
-
         if (taskRequestType == TaskRequestType.TASK_CANCEL) {
             rb.setCancellation(true);
         } else if (taskRequestType == TaskRequestType.TASK_LIST) {
             rb.setTaskListRequest(true);
+        }
+
+        if (rb.isCancellation()) {
+            String cancellationUUID = req.getParams().get(QUERY_CANCELLATION_UUID, null);
+
+            if (cancellationUUID == null) {
+                throw new IllegalArgumentException("Query cancellation was requested but no query UUID for cancellation was given");
+            }
+
+            rb.setCancellationUUID(cancellationUUID);
         }
 
         for(SearchComponent c : components ) {
@@ -69,7 +75,12 @@ public class TaskManagementHandler extends RequestHandlerBase implements SolrCor
             }
         } else {
             ShardRequest sreq = new ShardRequest();
-            sreq.purpose = PURPOSE_CANCEL_TASK;
+
+            if (taskRequestType == TaskRequestType.TASK_CANCEL) {
+                sreq.purpose = PURPOSE_CANCEL_TASK;
+            } else {
+                sreq.purpose = PURPOSE_LIST_TASKS;
+            }
 
             // Distribute to all shards
             sreq.shards = rb.shards;
@@ -104,6 +115,10 @@ public class TaskManagementHandler extends RequestHandlerBase implements SolrCor
             }
 
             rb.finished.add(srsp.getShardRequest());
+
+            for (SearchComponent c : components) {
+                c.handleResponses(rb, srsp.getShardRequest());
+            }
         }
 
         rsp.getValues().add("status", "query with queryID " + rb.getCancellationUUID() + " " + "cancelled");
@@ -141,16 +156,26 @@ public class TaskManagementHandler extends RequestHandlerBase implements SolrCor
         return null;
     }
 
-    private List<SearchComponent> buildComponentsList() {
-        List<SearchComponent> components = new ArrayList<>(1);
-
-        QueryCancellationComponent component = new QueryCancellationComponent();
-        components.add(component);
-
-        TaskManagementComponent taskManagementComponent = new TaskManagementComponent();
-        components.add(taskManagementComponent);
-
-        return components;
+    @Override
+    public Boolean registerV2() {
+        return Boolean.TRUE;
     }
+
+    @Override
+    public Collection<Api> getApis() {
+        return ApiBag.wrapRequestHandlers(this, "core.tasks.cancel", "core.tasks.list");
+    }
+
+    private List<SearchComponent> buildComponentsList() {
+    List<SearchComponent> components = new ArrayList<>(1);
+
+    QueryCancellationComponent component = new QueryCancellationComponent();
+    components.add(component);
+
+    ActiveTasksListComponent activeTasksListComponent = new ActiveTasksListComponent();
+    components.add(activeTasksListComponent);
+
+    return components;
+}
 }
 

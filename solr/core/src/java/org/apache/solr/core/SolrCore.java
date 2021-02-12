@@ -205,6 +205,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   //TODO: This needs to become a time aware storage model
   private final Map<String, CancellableTask> activeCancellableQueries = new ConcurrentHashMap<>();
+  private final Map<String, CancellableTask> activeQueriesGenerated = new ConcurrentHashMap<>();
 
   private boolean isReloaded = false;
 
@@ -3255,7 +3256,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public String generateQueryID() {
     UUID queryID = UUID.randomUUID();
 
-    while (activeCancellableQueries.get(queryID) != null) {
+    while (activeQueriesGenerated.get(queryID) != null) {
       queryID = UUID.randomUUID();
     }
 
@@ -3263,7 +3264,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     // associated with the queryID.
 
     CancellableCollector cancellableCollector = new CancellableCollector(new SentinelEmptyCollector());
-    activeCancellableQueries.put(queryID.toString(), cancellableCollector);
+    activeQueriesGenerated.put(queryID.toString(), cancellableCollector);
 
     return queryID.toString();
   }
@@ -3273,7 +3274,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       return;
     }
 
-    activeCancellableQueries.remove(inputQueryID);
+    activeQueriesGenerated.remove(inputQueryID);
   }
 
   public void addShardLevelActiveQuery(String queryID, CancellableCollector collector) {
@@ -3299,6 +3300,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
 
     activeCancellableQueries.remove(queryID);
+  }
+
+  public Iterator<Map.Entry<String, CancellableTask>> getActiveQueriesGenerated() {
+    return activeQueriesGenerated.entrySet().iterator();
   }
 
   /**

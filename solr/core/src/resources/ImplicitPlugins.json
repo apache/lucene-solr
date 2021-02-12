@@ -165,7 +165,7 @@
       "class": "solr.TaskManagementHandler",
       "useParams":"_LIST_TASKS",
       "components": [
-        "taskmanagement"
+        "activetaskslistcomponent"
       ]
     }
   }
