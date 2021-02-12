@@ -30,7 +30,7 @@ public class Node {
   public Node(String id, boolean track) {
     this.id=id;
     if(track) {
-      ancestors = new HashSet<>();
+      ancestors = new TreeSet<>();
     }
   }
 
