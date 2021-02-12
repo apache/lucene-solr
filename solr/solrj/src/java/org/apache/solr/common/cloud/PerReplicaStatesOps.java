@@ -76,7 +76,7 @@ public class PerReplicaStatesOps {
   }
 
   /**
-   * There is a possibility that a replica may have some leftover entries . delete them too
+   * There is a possibility that a replica may have some leftover entries. Delete them too.
    */
   private static List<PerReplicaStates.Operation> addDeleteStaleNodes(List<PerReplicaStates.Operation> ops, PerReplicaStates.State rs) {
     while (rs != null) {
@@ -96,9 +96,9 @@ public class PerReplicaStatesOps {
         persist(operations, znode, zkClient);
         return;
       } catch (KeeperException.NodeExistsException | KeeperException.NoNodeException e) {
-        //state is stale
+        // state is stale
         if (log.isInfoEnabled()) {
-          log.info("stale state for {} , attempt: {}. retrying...", znode, i);
+          log.info("Stale state for {}, attempt: {}. retrying...", znode, i);
         }
         operations = refresh(PerReplicaStates.fetch(znode, zkClient, null));
       }
@@ -110,7 +110,7 @@ public class PerReplicaStatesOps {
   }
 
   /**
-   * state of a replica is changed
+   * Change the state of a replica
    *
    * @param newState the new state
    */
@@ -218,7 +218,7 @@ public class PerReplicaStatesOps {
   }
 
   /**
-   * mark a bunch of replicas as DOWN
+   * Mark the given replicas as DOWN
    */
   public static PerReplicaStatesOps downReplicas(List<String> replicas, PerReplicaStates rs) {
     return new PerReplicaStatesOps(prs -> {

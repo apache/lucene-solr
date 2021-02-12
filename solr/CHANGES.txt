@@ -240,6 +240,8 @@ Other Changes
 ---------------------
 (No changes)
 
+* SOLR-15136: Reduce excessive logging introduced with Per Replica States feature (Ishan Chattopadhyaya)
+
 ==================  8.8.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
