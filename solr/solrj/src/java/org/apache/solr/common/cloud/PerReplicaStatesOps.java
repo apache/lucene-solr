@@ -69,10 +69,8 @@ public class PerReplicaStatesOps {
         try {
             zkClient.multi(ops, true);
         } catch (KeeperException e) {
-            if(log.isErrorEnabled()) {
-                log.error("multi op exception " , e);
-            }
-            throw e;
+          log.error("Multi-op exception: {}", zkClient.getChildren(znode, null, true));
+          throw e;
         }
 
     }
@@ -119,7 +117,7 @@ public class PerReplicaStatesOps {
     public static PerReplicaStatesOps flipState(String replica, Replica.State newState, PerReplicaStates rs) {
         return new PerReplicaStatesOps(prs -> {
             List<PerReplicaStates.Operation> operations = new ArrayList<>(2);
-            PerReplicaStates.State existing = rs.get(replica);
+            PerReplicaStates.State existing = prs.get(replica);
             if (existing == null) {
                 operations.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(replica, newState, Boolean.FALSE, 0)));
             } else {
@@ -127,7 +125,7 @@ public class PerReplicaStatesOps {
                 addDeleteStaleNodes(operations, existing);
             }
             if (log.isDebugEnabled()) {
-                log.debug("flipState on {}, {} -> {}, ops :{}", rs.path, replica, newState, operations);
+                log.debug("flipState on {}, {} -> {}, ops :{}", prs.path, replica, newState, operations);
             }
             return operations;
         }).init(rs);
@@ -163,7 +161,7 @@ public class PerReplicaStatesOps {
         return new PerReplicaStatesOps(prs -> {
             List<PerReplicaStates.Operation> ops = new ArrayList<>();
             if (next != null) {
-                PerReplicaStates.State st = rs.get(next);
+                PerReplicaStates.State st = prs.get(next);
                 if (st != null) {
                     if (!st.isLeader) {
                         ops.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(st.replica, Replica.State.ACTIVE, Boolean.TRUE, st.version + 1)));
@@ -179,7 +177,7 @@ public class PerReplicaStatesOps {
 
             // now go through all other replicas and unset previous leader
             for (String r : allReplicas) {
-                PerReplicaStates.State st = rs.get(r);
+                PerReplicaStates.State st = prs.get(r);
                 if (st == null) continue;//unlikely
                 if (!Objects.equals(r, next)) {
                     if (st.isLeader) {
@@ -190,7 +188,7 @@ public class PerReplicaStatesOps {
                 }
             }
             if (log.isDebugEnabled()) {
-                log.debug("flipLeader on:{}, {} -> {}, ops: {}", rs.path, allReplicas, next, ops);
+                log.debug("flipLeader on:{}, {} -> {}, ops: {}", prs.path, allReplicas, next, ops);
             }
             return ops;
         }).init(rs);
@@ -204,10 +202,10 @@ public class PerReplicaStatesOps {
     public static PerReplicaStatesOps deleteReplica(String replica, PerReplicaStates rs) {
         return new PerReplicaStatesOps(prs -> {
             List<PerReplicaStates.Operation> result;
-            if (rs == null) {
+            if (prs == null) {
                 result = Collections.emptyList();
             } else {
-                PerReplicaStates.State state = rs.get(replica);
+                PerReplicaStates.State state = prs.get(replica);
                 result = addDeleteStaleNodes(new ArrayList<>(), state);
             }
             return result;
@@ -226,7 +224,7 @@ public class PerReplicaStatesOps {
         return new PerReplicaStatesOps(prs -> {
             List<PerReplicaStates.Operation> operations = new ArrayList<>();
             for (String replica : replicas) {
-                PerReplicaStates.State r = rs.get(replica);
+                PerReplicaStates.State r = prs.get(replica);
                 if (r != null) {
                     if (r.state == Replica.State.DOWN && !r.isLeader) continue;
                     operations.add(new PerReplicaStates.Operation(PerReplicaStates.Operation.Type.ADD, new PerReplicaStates.State(replica, Replica.State.DOWN, Boolean.FALSE, r.version + 1)));
@@ -236,7 +234,7 @@ public class PerReplicaStatesOps {
                 }
             }
             if (log.isDebugEnabled()) {
-                log.debug("for coll: {} down replicas {}, ops {}", rs, replicas, operations);
+                log.debug("for coll: {} down replicas {}, ops {}", prs, replicas, operations);
             }
             return operations;
         }).init(rs);

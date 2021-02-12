@@ -100,7 +100,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     assertThat(CollectionAdminRequest.listCollections(cloudClient), not(hasItem(collectionName)));
     
     // Create a collection that would fail
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1).setPerReplicaState(random().nextBoolean());
 
     Properties properties = new Properties();
     Path tmpDir = createTempDir();
