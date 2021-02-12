@@ -17,11 +17,13 @@
 
 /**
  * A Java implementation of <a href="http://hunspell.github.io/">Hunspell</a> stemming and
- * spell-checking algorithms ({@link org.apache.lucene.analysis.hunspell.Hunspell}), and a stemming
- * TokenFilter ({@link org.apache.lucene.analysis.hunspell.HunspellStemFilter}) based on it.
+ * spell-checking algorithms, and a stemming TokenFilter based on it.
  *
  * <p>For dictionaries, see e.g. <a href="https://github.com/LibreOffice/dictionaries">LibreOffice
  * repository</a> or <a href="https://github.com/wooorm/dictionaries">Titus Wormer's collection
  * (UTF)</a>
+ *
+ * @see org.apache.lucene.analysis.hunspell.HunspellStemFilter
+ * @see org.apache.lucene.analysis.hunspell.SpellChecker
  */
 package org.apache.lucene.analysis.hunspell;

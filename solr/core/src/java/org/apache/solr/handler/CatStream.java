@@ -17,10 +17,7 @@
 
 package org.apache.solr.handler;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
-import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.LineIterator;
@@ -184,12 +180,7 @@ public class CatStream extends TupleStream implements Expressible {
     while (allFilesToCrawl.hasNext()) {
       closeCurrentFileIfSet();
       currentFilePath = allFilesToCrawl.next();
-      File currentFile = currentFilePath.absolutePath.toFile();
-      if(currentFile.getName().endsWith(".gz")) {
-        currentFileLines = new LineIterator(new InputStreamReader(new GZIPInputStream(new FileInputStream(currentFile)), "UTF-8"));
-      } else {
-        currentFileLines = FileUtils.lineIterator(currentFile, "UTF-8");
-      }
+      currentFileLines = FileUtils.lineIterator(currentFilePath.absolutePath.toFile(), "UTF-8");
       if (currentFileLines.hasNext()) return true;
     }
 

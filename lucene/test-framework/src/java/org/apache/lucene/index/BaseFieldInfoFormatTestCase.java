@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -64,9 +63,6 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     assertFalse(infos2.fieldInfo("field").omitsNorms());
     assertFalse(infos2.fieldInfo("field").hasPayloads());
     assertFalse(infos2.fieldInfo("field").hasVectors());
-    assertEquals(0, infos2.fieldInfo("field").getPointDimensionCount());
-    assertEquals(0, infos2.fieldInfo("field").getVectorDimension());
-    assertFalse(infos2.fieldInfo("field").isSoftDeletesField());
     dir.close();
   }
 
@@ -257,12 +253,7 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     for (int i = 0; i < numFields; i++) {
       fieldNames.add(TestUtil.randomUnicodeString(random()));
     }
-
-    String softDeletesField =
-        random().nextBoolean() ? TestUtil.randomUnicodeString(random()) : null;
-    FieldInfos.Builder builder =
-        new FieldInfos.Builder(new FieldInfos.FieldNumbers(softDeletesField));
-
+    FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
     for (String field : fieldNames) {
       IndexableFieldType fieldType = randomFieldType(random());
       FieldInfo fi = builder.getOrAdd(field);
@@ -280,19 +271,6 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
           fi.setStorePayloads();
         }
       }
-
-      if (fieldType.pointDimensionCount() > 0) {
-        fi.setPointDimensions(
-            fieldType.pointDimensionCount(),
-            fieldType.pointIndexDimensionCount(),
-            fieldType.pointNumBytes());
-      }
-
-      if (fieldType.vectorDimension() > 0) {
-        fi.setVectorDimensionAndSearchStrategy(
-            fieldType.vectorDimension(), fieldType.vectorSearchStrategy());
-      }
-
       addAttributes(fi);
     }
     FieldInfos infos = builder.finish();
@@ -302,11 +280,11 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     dir.close();
   }
 
-  private IndexableFieldType randomFieldType(Random r) {
+  private final IndexableFieldType randomFieldType(Random r) {
     FieldType type = new FieldType();
 
     if (r.nextBoolean()) {
-      IndexOptions[] values = IndexOptions.values();
+      IndexOptions values[] = IndexOptions.values();
       type.setIndexOptions(values[r.nextInt(values.length)]);
       type.setOmitNorms(r.nextBoolean());
 
@@ -323,22 +301,8 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
     }
 
     if (r.nextBoolean()) {
-      DocValuesType[] values = DocValuesType.values();
+      DocValuesType values[] = getDocValuesTypes();
       type.setDocValuesType(values[r.nextInt(values.length)]);
-    }
-
-    if (r.nextBoolean()) {
-      int dimension = 1 + r.nextInt(PointValues.MAX_DIMENSIONS);
-      int indexDimension = 1 + r.nextInt(Math.min(dimension, PointValues.MAX_INDEX_DIMENSIONS));
-      int dimensionNumBytes = 1 + r.nextInt(PointValues.MAX_NUM_BYTES);
-      type.setDimensions(dimension, indexDimension, dimensionNumBytes);
-    }
-
-    if (r.nextBoolean()) {
-      int dimension = 1 + r.nextInt(VectorValues.MAX_DIMENSIONS);
-      VectorValues.SearchStrategy searchStrategy =
-          RandomPicks.randomFrom(r, VectorValues.SearchStrategy.values());
-      type.setVectorDimensionsAndSearchStrategy(dimension, searchStrategy);
     }
 
     return type;
@@ -346,6 +310,17 @@ public abstract class BaseFieldInfoFormatTestCase extends BaseIndexFileFormatTes
 
   /** Hook to add any codec attributes to fieldinfo instances added in this test. */
   protected void addAttributes(FieldInfo fi) {}
+
+  /**
+   * Docvalues types to test.
+   *
+   * @deprecated only for Only available to ancient codecs can limit this to the subset of types
+   *     they support.
+   */
+  @Deprecated
+  protected DocValuesType[] getDocValuesTypes() {
+    return DocValuesType.values();
+  }
 
   /** equality for entirety of fieldinfos */
   protected void assertEquals(FieldInfos expected, FieldInfos actual) {

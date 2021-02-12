@@ -42,7 +42,6 @@ class MinimumShouldMatchIntervalsSource extends IntervalsSource {
   private final int minShouldMatch;
 
   MinimumShouldMatchIntervalsSource(IntervalsSource[] sources, int minShouldMatch) {
-    assert minShouldMatch < sources.length;
     this.sources = sources;
     this.minShouldMatch = minShouldMatch;
   }

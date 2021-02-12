@@ -45,16 +45,16 @@ public class JSONWriter extends TextResponseWriter implements JsonTextWriter {
     this.wrapperFunction = wrapperFunction;
     this.namedListStyle = namedListStyle;
   }
-  private JSONWriter(Writer writer, boolean indent, String namedListStyle) throws IOException {
-    super(writer, indent);
+  private JSONWriter(Writer writer, boolean intend, String namedListStyle) throws IOException {
+    super(writer, intend);
     this.namedListStyle = namedListStyle;
 
   }
 
   /**Strictly for testing only
    */
-  public static void write(Writer writer, boolean indent,  String namedListStyle, Object val) throws IOException {
-    JSONWriter jw = new JSONWriter(writer, indent, namedListStyle);
+  public static void write(Writer writer, boolean intend,  String namedListStyle, Object val) throws IOException {
+    JSONWriter jw = new JSONWriter(writer, intend, namedListStyle);
     jw.writeVal(null, val);
     jw.close();
 

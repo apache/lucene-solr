@@ -404,16 +404,6 @@ public final class Intervals {
    * Return intervals that span combinations of intervals from {@code minShouldMatch} of the sources
    */
   public static IntervalsSource atLeast(int minShouldMatch, IntervalsSource... sources) {
-    if (minShouldMatch == sources.length) {
-      return unordered(sources);
-    }
-    if (minShouldMatch > sources.length) {
-      return new NoMatchIntervalsSource(
-          "Too few sources to match minimum of ["
-              + minShouldMatch
-              + "]: "
-              + Arrays.toString(sources));
-    }
     return new MinimumShouldMatchIntervalsSource(sources, minShouldMatch);
   }
 

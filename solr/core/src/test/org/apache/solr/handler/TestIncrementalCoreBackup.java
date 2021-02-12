@@ -31,9 +31,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 
@@ -62,22 +62,21 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
         assertQ(req("q", "id:2"), "//result[@numFound='0']");
 
         //call backup
-        final Path locationPath = createBackupLocation();
-        final URI locationUri = bootstrapBackupLocation(locationPath);
+        final URI location = createAndBootstrapLocationForBackup();
         final ShardBackupId shardBackupId = new ShardBackupId("shard1", BackupId.zero());
 
         final CoreContainer cores = h.getCoreContainer();
-        cores.getAllowPaths().add(Paths.get(locationUri));
+        cores.getAllowPaths().add(Paths.get(location));
         try (final CoreAdminHandler admin = new CoreAdminHandler(cores)) {
             SolrQueryResponse resp = new SolrQueryResponse();
             admin.handleRequestBody
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, shardBackupId.getIdAsString())
                             , resp);
             assertNull("Backup should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, shardBackupId);
+            simpleBackupCheck(location, shardBackupId);
         }
     }
 
@@ -101,8 +100,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
 
         final CoreContainer cores = h.getCoreContainer();
         final CoreAdminHandler admin = new CoreAdminHandler(cores);
-        final Path locationPath = createBackupLocation();
-        final URI locationUri = bootstrapBackupLocation(locationPath);
+        final URI location = createAndBootstrapLocationForBackup();
 
         final ShardBackupId firstShardBackup = new ShardBackupId("shard1", BackupId.zero());
         { // first a backup before we've ever done *anything*...
@@ -110,11 +108,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
             admin.handleRequestBody
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, firstShardBackup.getIdAsString()),
                             resp);
             assertNull("Backup should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, firstShardBackup, initialEmptyIndexSegmentFileName);
+            simpleBackupCheck(location, firstShardBackup, initialEmptyIndexSegmentFileName);
         }
 
         { // Empty (named) snapshot..
@@ -135,11 +133,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
             admin.handleRequestBody
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, secondShardBackupId.getIdAsString()),
                             resp);
             assertNull("Backup should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, secondShardBackupId, initialEmptyIndexSegmentFileName);
+            simpleBackupCheck(location, secondShardBackupId, initialEmptyIndexSegmentFileName);
         }
 
         { // Second empty (named) snapshot..
@@ -156,7 +154,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
         assertU(commit());
 
         for (ShardBackupId shardBackupId: Arrays.asList(firstShardBackup, secondShardBackupId)) {
-            simpleBackupCheck(locationUri, shardBackupId, initialEmptyIndexSegmentFileName);
+            simpleBackupCheck(location, shardBackupId, initialEmptyIndexSegmentFileName);
         }
 
         // Make backups from each of the snapshots and check they are still empty as well...
@@ -167,11 +165,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
                             "commitName", "empty_snapshotA",
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, thirdShardBackup.getIdAsString()),
                             resp);
             assertNull("Backup from snapshot empty_snapshotA should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, thirdShardBackup, initialEmptyIndexSegmentFileName);
+            simpleBackupCheck(location, thirdShardBackup, initialEmptyIndexSegmentFileName);
         }
         {
             final ShardBackupId fourthShardBackup = new ShardBackupId("shard1", new BackupId(3));
@@ -180,11 +178,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
                             "commitName", "empty_snapshotB",
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, fourthShardBackup.getIdAsString()),
                             resp);
             assertNull("Backup from snapshot empty_snapshotB should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, fourthShardBackup, initialEmptyIndexSegmentFileName);
+            simpleBackupCheck(location, fourthShardBackup, initialEmptyIndexSegmentFileName);
         }
         admin.close();
     }
@@ -211,8 +209,7 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
 
         final CoreContainer cores = h.getCoreContainer();
         final CoreAdminHandler admin = new CoreAdminHandler(cores);
-        final Path locationPath = createBackupLocation();
-        final URI locationUri = bootstrapBackupLocation(locationPath);
+        final URI location = createAndBootstrapLocationForBackup();
 
         final ShardBackupId firstShardBackupId = new ShardBackupId("shard1", BackupId.zero());
         { // take an initial 'backup1a' containing our 1 document
@@ -221,11 +218,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
                             "name", "backup1a",
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, firstShardBackupId.getIdAsString()),
                             resp);
             assertNull("Backup should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, firstShardBackupId, oneDocSegmentFile);
+            simpleBackupCheck(location, firstShardBackupId, oneDocSegmentFile);
         }
 
         { // and an initial "snapshot1a' that should eventually match
@@ -254,11 +251,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
             admin.handleRequestBody
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, secondShardBackupId.getIdAsString()),
                             resp);
             assertNull("Backup should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, secondShardBackupId, oneDocSegmentFile);
+            simpleBackupCheck(location, secondShardBackupId, oneDocSegmentFile);
         }
 
         { // and a second "snapshot1b' should also still be identical
@@ -273,8 +270,8 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
 
         // Hard Committing the 2nd doc now should not affect the existing backups or snapshots...
         assertU(commit());
-        simpleBackupCheck(locationUri, firstShardBackupId, oneDocSegmentFile); // backup1a
-        simpleBackupCheck(locationUri, secondShardBackupId, oneDocSegmentFile); // backup1b
+        simpleBackupCheck(location, firstShardBackupId, oneDocSegmentFile); // backup1a
+        simpleBackupCheck(location, secondShardBackupId, oneDocSegmentFile); // backup1b
 
         final ShardBackupId thirdShardBackupId = new ShardBackupId("shard1", new BackupId(2));
         { // But we should be able to confirm both docs appear in a new backup (not based on a previous snapshot)
@@ -282,13 +279,13 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
             admin.handleRequestBody
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, thirdShardBackupId.getIdAsString()),
                             resp);
             assertNull("Backup should have succeeded", resp.getException());
             // TODO This doesn't actually check that backup has both docs!  Can we do better than this without doing a full restore?
             // Maybe validate the new segments_X file at least to show that it's picked up the latest commit?
-            simpleBackupCheck(locationUri, thirdShardBackupId);
+            simpleBackupCheck(location, thirdShardBackupId);
         }
 
         // if we go back and create backups from our earlier snapshots they should still only
@@ -301,11 +298,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
                             "commitName", "snapshot1a",
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, fourthShardBackupId.getIdAsString()),
                             resp);
             assertNull("Backup of snapshot1a should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, fourthShardBackupId, oneDocSegmentFile);
+            simpleBackupCheck(location, fourthShardBackupId, oneDocSegmentFile);
         }
         final ShardBackupId fifthShardBackupId = new ShardBackupId("shard1", new BackupId(4));
         {
@@ -314,11 +311,11 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
                     (req(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.BACKUPCORE.toString(),
                             "core", DEFAULT_TEST_COLLECTION_NAME,
                             "commitName", "snapshot1b",
-                            "location", locationPath.toString(),
+                            "location", location.getPath(),
                             CoreAdminParams.SHARD_BACKUP_ID, fifthShardBackupId.getIdAsString()),
                             resp);
             assertNull("Backup of snapshot1b should have succeeded", resp.getException());
-            simpleBackupCheck(locationUri, fifthShardBackupId, oneDocSegmentFile);
+            simpleBackupCheck(location, fifthShardBackupId, oneDocSegmentFile);
         }
 
         admin.close();
@@ -356,18 +353,15 @@ public class TestIncrementalCoreBackup extends SolrTestCaseJ4 {
         }
     }
 
-    private Path createBackupLocation() {
-        return createTempDir().toAbsolutePath();
-    }
+    private URI createAndBootstrapLocationForBackup() throws IOException {
+        final File locationFile = createTempDir().toFile();
+        final String location = locationFile.getAbsolutePath();
 
-    private URI bootstrapBackupLocation(Path locationPath) throws IOException {
-        final String locationPathStr = locationPath.toString();
-        h.getCoreContainer().getAllowPaths().add(locationPath);
+        h.getCoreContainer().getAllowPaths().add(locationFile.toPath());
         try (BackupRepository backupRepo = h.getCoreContainer().newBackupRepository(null)) {
-            final URI locationUri = backupRepo.createURI(locationPathStr);
-            final BackupFilePaths backupFilePaths = new BackupFilePaths(backupRepo, locationUri);
+            final BackupFilePaths backupFilePaths = new BackupFilePaths(backupRepo, backupRepo.createURI(location));
             backupFilePaths.createIncrementalBackupFolders();
-            return locationUri;
+            return backupRepo.createURI(location);
         }
     }
 }

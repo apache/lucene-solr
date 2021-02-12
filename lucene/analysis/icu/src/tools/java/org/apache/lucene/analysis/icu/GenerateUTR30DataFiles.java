@@ -21,6 +21,10 @@ import com.ibm.icu.lang.UProperty;
 import com.ibm.icu.text.UnicodeSet;
 import com.ibm.icu.text.UnicodeSetIterator;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -30,16 +34,11 @@ import java.io.Writer;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Downloads/generates lucene/analysis/icu/src/data/utr30/*.txt
@@ -83,33 +82,33 @@ public class GenerateUTR30DataFiles {
   }
 
   private static void expandRulesInUTR30DataFiles() throws IOException {
-    Predicate<Path> predicate =
-        (path) -> {
-          String name = path.getFileName().toString();
-          return Files.isRegularFile(path)
-              && name.matches(".*\\.(?s:txt)")
-              && !name.equals(NFC_TXT)
-              && !name.equals(NFKC_TXT)
-              && !name.equals(NFKC_CF_TXT);
+    FileFilter filter =
+        new FileFilter() {
+          @Override
+          public boolean accept(File pathname) {
+            String name = pathname.getName();
+            return pathname.isFile()
+                && name.matches(".*\\.(?s:txt)")
+                && !name.equals(NFC_TXT)
+                && !name.equals(NFKC_TXT)
+                && !name.equals(NFKC_CF_TXT);
+          }
         };
-    try (var stream = Files.list(Paths.get(".")).filter(predicate)) {
-      for (Path file : stream.collect(Collectors.toList())) {
-        expandDataFileRules(file);
-      }
+    for (File file : new File(".").listFiles(filter)) {
+      expandDataFileRules(file);
     }
   }
 
-  private static void expandDataFileRules(Path file) throws IOException {
-    boolean modified = false;
+  private static void expandDataFileRules(File file) throws IOException {
+    final FileInputStream stream = new FileInputStream(file);
+    final InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
+    final BufferedReader bufferedReader = new BufferedReader(reader);
     StringBuilder builder = new StringBuilder();
-
-    try (InputStream stream = Files.newInputStream(file);
-        InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8);
-        BufferedReader bufferedReader = new BufferedReader(reader)) {
-      String line;
-      boolean verbatim = false;
-      int lineNum = 0;
-
+    String line;
+    boolean verbatim = false;
+    boolean modified = false;
+    int lineNum = 0;
+    try {
       while (null != (line = bufferedReader.readLine())) {
         ++lineNum;
         if (VERBATIM_RULE_LINE_PATTERN.matcher(line).matches()) {
@@ -125,7 +124,7 @@ public class GenerateUTR30DataFiles {
               String rightHandSide = ruleMatcher.group(2).trim();
               expandSingleRule(builder, leftHandSide, rightHandSide);
             } catch (IllegalArgumentException e) {
-              System.err.println("ERROR in " + file.getFileName() + " line #" + lineNum + ":");
+              System.err.println("ERROR in " + file.getName() + " line #" + lineNum + ":");
               e.printStackTrace(System.err);
               System.exit(1);
             }
@@ -143,11 +142,18 @@ public class GenerateUTR30DataFiles {
           }
         }
       }
+    } finally {
+      bufferedReader.close();
     }
-
     if (modified) {
-      System.err.println("Expanding rules in and overwriting " + file.getFileName());
-      Files.writeString(file, builder.toString(), StandardCharsets.UTF_8);
+      System.err.println("Expanding rules in and overwriting " + file.getName());
+      final FileOutputStream out = new FileOutputStream(file, false);
+      Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+      try {
+        writer.write(builder.toString());
+      } finally {
+        writer.close();
+      }
     }
   }
 
@@ -165,12 +171,11 @@ public class GenerateUTR30DataFiles {
 
     System.err.print("Downloading " + NFKC_CF_TXT + " and making diacritic rules one-way ... ");
     URLConnection connection = openConnection(new URL(norm2url, NFC_TXT));
-    try (BufferedReader reader =
-            new BufferedReader(
-                new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-        Writer writer =
-            new OutputStreamWriter(
-                Files.newOutputStream(Path.of(NFC_TXT)), StandardCharsets.UTF_8)) {
+    BufferedReader reader =
+        new BufferedReader(
+            new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+    Writer writer = new OutputStreamWriter(new FileOutputStream(NFC_TXT), StandardCharsets.UTF_8);
+    try {
       String line;
 
       while (null != (line = reader.readLine())) {
@@ -203,6 +208,9 @@ public class GenerateUTR30DataFiles {
         writer.write(line);
         writer.write("\n");
       }
+    } finally {
+      reader.close();
+      writer.close();
     }
     System.err.println("done.");
   }
@@ -210,7 +218,7 @@ public class GenerateUTR30DataFiles {
   private static void download(URL url, String outputFile) throws IOException {
     final URLConnection connection = openConnection(url);
     final InputStream inputStream = connection.getInputStream();
-    final OutputStream outputStream = Files.newOutputStream(Path.of(outputFile));
+    final OutputStream outputStream = new FileOutputStream(outputFile);
     int numBytes;
     try {
       while (-1 != (numBytes = inputStream.read(DOWNLOAD_BUFFER))) {

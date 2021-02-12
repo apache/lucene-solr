@@ -1028,6 +1028,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               + " parameter or as a default repository property or as a cluster property.");
         }
       }
+
       boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
 
       // Check if the specified location is valid for this repository.

@@ -421,7 +421,7 @@ A step-by-step guide for setting up https://www.dbvis.com/[DbVisualizer] is in t
 
 A step-by-step guide for setting up http://squirrel-sql.sourceforge.net[SQuirreL SQL] is in the section <<solr-jdbc-squirrel-sql.adoc#,Solr JDBC - SQuirreL SQL>>.
 
-=== Apache Zeppelin
+=== Apache Zeppelin (incubating)
 
 A step-by-step guide for setting up http://zeppelin.apache.org/[Apache Zeppelin] is in the section <<solr-jdbc-apache-zeppelin.adoc#,Solr JDBC - Apache Zeppelin>>.
 

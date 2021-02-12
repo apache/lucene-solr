@@ -22,45 +22,42 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.VectorField;
+import org.apache.lucene.index.VectorValues.SearchStrategy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.VectorUtil;
 
-/**
- * Base class aiming at testing {@link VectorFormat vectors formats}. To test a new format, all you
- * need is to register a new {@link Codec} which uses it and extend this class and override {@link
- * #getCodec()}.
- *
- * @lucene.experimental
- */
-public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCase {
+/** Test Indexing/IndexWriter with vectors */
+public class TestVectorValues extends LuceneTestCase {
 
-  @Override
-  protected void addRandomFields(Document doc) {
-    doc.add(new VectorField("v2", randomVector(30), VectorValues.SearchStrategy.NONE));
+  private IndexWriterConfig createIndexWriterConfig() {
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(Codec.forName("Lucene90"));
+    return iwc;
   }
 
   // Suddenly add vectors to an existing field:
   public void testUpgradeFieldToVectors() throws Exception {
     try (Directory dir = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(newStringField("f", "foo", Field.Store.NO));
+        doc.add(newStringField("f", "foo", Store.NO));
         w.addDocument(doc);
       }
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
@@ -82,7 +79,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
     expectThrows(IllegalArgumentException.class, () -> new VectorField("f", null));
     expectThrows(
         IllegalArgumentException.class,
-        () -> new VectorField("f", new float[1], (VectorValues.SearchStrategy) null));
+        () -> new VectorField("f", new float[1], (SearchStrategy) null));
     expectThrows(IllegalArgumentException.class, () -> new VectorField("f", new float[0]));
     expectThrows(
         IllegalArgumentException.class,
@@ -104,15 +101,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   public void testFieldCreateFieldType() {
     expectThrows(
         IllegalArgumentException.class,
-        () -> VectorField.createHnswType(0, VectorValues.SearchStrategy.EUCLIDEAN_HNSW, 16, 16));
+        () -> VectorField.createHnswType(0, SearchStrategy.EUCLIDEAN_HNSW, 16, 16));
     expectThrows(
         IllegalArgumentException.class,
         () ->
             VectorField.createHnswType(
-                VectorValues.MAX_DIMENSIONS + 1,
-                VectorValues.SearchStrategy.EUCLIDEAN_HNSW,
-                16,
-                16));
+                VectorValues.MAX_DIMENSIONS + 1, SearchStrategy.EUCLIDEAN_HNSW, 16, 16));
     expectThrows(
         IllegalArgumentException.class,
         () -> VectorField.createHnswType(VectorValues.MAX_DIMENSIONS + 1, null, 16, 16));
@@ -120,14 +114,14 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         IllegalArgumentException.class,
         () ->
             VectorField.createHnswType(
-                VectorValues.MAX_DIMENSIONS + 1, VectorValues.SearchStrategy.NONE, 16, 16));
+                VectorValues.MAX_DIMENSIONS + 1, SearchStrategy.NONE, 16, 16));
   }
 
   // Illegal schema change tests:
 
   public void testIllegalDimChangeTwoDocs() throws Exception {
     try (Directory dir = newDirectory();
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
@@ -147,7 +141,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testIllegalSearchStrategyChange() throws Exception {
     try (Directory dir = newDirectory();
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
@@ -168,13 +162,13 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testIllegalDimChangeTwoWriters() throws Exception {
     try (Directory dir = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
 
-      try (IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc2 = new Document();
         doc2.add(new VectorField("f", new float[1], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         IllegalArgumentException expected =
@@ -187,13 +181,13 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testIllegalSearchStrategyChangeTwoWriters() throws Exception {
     try (Directory dir = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
 
-      try (IndexWriter w2 = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc2 = new Document();
         doc2.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
         IllegalArgumentException expected =
@@ -211,10 +205,10 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
     doc.add(new VectorField(fieldName, new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         w2.addIndexes(dir);
         w2.forceMerge(1);
         try (IndexReader reader = w2.getReader()) {
@@ -233,12 +227,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
     Document doc = new Document();
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         w.addDocument(doc);
       }
       doc.add(
           new VectorField(fieldName, new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         w2.addDocument(doc);
         w2.addIndexes(dir);
         w2.forceMerge(1);
@@ -260,10 +254,10 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
     doc.add(new VectorField(fieldName, vector, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         vector[0] = 1;
         w2.addDocument(doc);
         w2.addIndexes(dir);
@@ -286,12 +280,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   public void testIllegalDimChangeViaAddIndexesDirectory() throws Exception {
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
+        doc.add(new VectorField("f", new float[4], SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[5], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w2.addDocument(doc);
@@ -307,12 +301,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   public void testIllegalSearchStrategyChangeViaAddIndexesDirectory() throws Exception {
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
         w2.addDocument(doc);
@@ -328,12 +322,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   public void testIllegalDimChangeViaAddIndexesCodecReader() throws Exception {
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
+        doc.add(new VectorField("f", new float[4], SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[5], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w2.addDocument(doc);
@@ -352,12 +346,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   public void testIllegalSearchStrategyChangeViaAddIndexesCodecReader() throws Exception {
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
         w2.addDocument(doc);
@@ -377,12 +371,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   public void testIllegalDimChangeViaAddIndexesSlowCodecReader() throws Exception {
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[5], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w2.addDocument(doc);
@@ -399,14 +393,14 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   public void testIllegalSearchStrategyChangeViaAddIndexesSlowCodecReader() throws Exception {
     try (Directory dir = newDirectory();
         Directory dir2 = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
-      try (IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig())) {
+      try (IndexWriter w2 = new IndexWriter(dir2, createIndexWriterConfig())) {
         Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
+        doc.add(new VectorField("f", new float[4], SearchStrategy.EUCLIDEAN_HNSW));
         w2.addDocument(doc);
         try (DirectoryReader r = DirectoryReader.open(dir)) {
           IllegalArgumentException expected =
@@ -421,7 +415,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testIllegalMultipleValues() throws Exception {
     try (Directory dir = newDirectory();
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -435,7 +429,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testIllegalDimensionTooLarge() throws Exception {
     try (Directory dir = newDirectory();
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       expectThrows(
           IllegalArgumentException.class,
@@ -454,12 +448,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testIllegalEmptyVector() throws Exception {
     try (Directory dir = newDirectory();
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
       Exception e =
           expectThrows(
               IllegalArgumentException.class,
-              () -> doc.add(new VectorField("f", new float[0], VectorValues.SearchStrategy.NONE)));
+              () -> doc.add(new VectorField("f", new float[0], SearchStrategy.NONE)));
       assertEquals("cannot index an empty vector", e.getMessage());
 
       Document doc2 = new Document();
@@ -471,7 +465,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   // Write vectors, one segment with default codec, another with SimpleText, then forceMerge
   public void testDifferentCodecs1() throws Exception {
     try (Directory dir = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
@@ -497,7 +491,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
       }
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
         w.addDocument(doc);
@@ -518,9 +512,9 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testDeleteAllVectorDocs() throws Exception {
     try (Directory dir = newDirectory();
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
-      doc.add(new StringField("id", "0", Field.Store.NO));
+      doc.add(new StringField("id", "0", Store.NO));
       doc.add(
           new VectorField(
               "v", new float[] {2, 3, 5}, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -541,9 +535,9 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testVectorFieldMissingFromOneSegment() throws Exception {
     try (Directory dir = FSDirectory.open(createTempDir());
-        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc = new Document();
-      doc.add(new StringField("id", "0", Field.Store.NO));
+      doc.add(new StringField("id", "0", Store.NO));
       doc.add(
           new VectorField(
               "v0", new float[] {2, 3, 5}, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
@@ -574,7 +568,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
               random().nextInt(VectorValues.SearchStrategy.values().length)];
     }
     try (Directory dir = newDirectory();
-        RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig())) {
+        RandomIndexWriter w = new RandomIndexWriter(random(), dir, createIndexWriterConfig())) {
       for (int i = 0; i < numDocs; i++) {
         Document doc = new Document();
         for (int field = 0; field < numFields; field++) {
@@ -616,7 +610,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
     String fieldName = "field";
     float[] v = {0};
     try (Directory dir = newDirectory();
-        IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter iw = new IndexWriter(dir, createIndexWriterConfig())) {
       Document doc1 = new Document();
       doc1.add(new VectorField(fieldName, v, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       v[0] = 1;
@@ -643,7 +637,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   public void testSortedIndex() throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriterConfig iwc = createIndexWriterConfig();
     iwc.setIndexSort(new Sort(new SortField("sortkey", SortField.Type.INT)));
     String fieldName = "field";
     try (Directory dir = newDirectory();
@@ -681,15 +675,13 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
       Document doc = new Document();
       float[] v = new float[] {1};
-      doc.add(new VectorField("field1", v, VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
-      doc.add(new VectorField("field2", new float[] {1, 2, 3}, VectorValues.SearchStrategy.NONE));
+      doc.add(new VectorField("field1", v, SearchStrategy.EUCLIDEAN_HNSW));
+      doc.add(new VectorField("field2", new float[] {1, 2, 3}, SearchStrategy.NONE));
       iw.addDocument(doc);
       v[0] = 2;
       iw.addDocument(doc);
       doc = new Document();
-      doc.add(
-          new VectorField(
-              "field3", new float[] {1, 2, 3}, VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
+      doc.add(new VectorField("field3", new float[] {1, 2, 3}, SearchStrategy.DOT_PRODUCT_HNSW));
       iw.addDocument(doc);
       iw.forceMerge(1);
       try (IndexReader reader = iw.getReader()) {
@@ -729,7 +721,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
    * consistently.
    */
   public void testRandom() throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriterConfig iwc = createIndexWriterConfig();
     if (random().nextBoolean()) {
       iwc.setIndexSort(new Sort(new SortField("sortkey", SortField.Type.INT)));
     }
@@ -750,9 +742,9 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         if (random().nextBoolean() && values[i] != null) {
           // sometimes use a shared scratch array
           System.arraycopy(values[i], 0, scratch, 0, scratch.length);
-          add(iw, fieldName, i, scratch, VectorValues.SearchStrategy.NONE);
+          add(iw, fieldName, i, scratch, SearchStrategy.NONE);
         } else {
-          add(iw, fieldName, i, values[i], VectorValues.SearchStrategy.NONE);
+          add(iw, fieldName, i, values[i], SearchStrategy.NONE);
         }
         if (random().nextInt(10) == 2) {
           // sometimes delete a random document
@@ -825,7 +817,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         values[i] = value;
         id2value[id] = value;
         id2ord[id] = i;
-        add(iw, fieldName, id, value, VectorValues.SearchStrategy.EUCLIDEAN_HNSW);
+        add(iw, fieldName, id, value, SearchStrategy.EUCLIDEAN_HNSW);
       }
       try (IndexReader reader = iw.getReader()) {
         for (LeafReaderContext ctx : reader.leaves()) {
@@ -858,18 +850,14 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   private void add(
-      IndexWriter iw,
-      String field,
-      int id,
-      float[] vector,
-      VectorValues.SearchStrategy searchStrategy)
+      IndexWriter iw, String field, int id, float[] vector, SearchStrategy searchStrategy)
       throws IOException {
     add(iw, field, id, random().nextInt(100), vector, searchStrategy);
   }
 
   private void add(IndexWriter iw, String field, int id, int sortkey, float[] vector)
       throws IOException {
-    add(iw, field, id, sortkey, vector, VectorValues.SearchStrategy.NONE);
+    add(iw, field, id, sortkey, vector, SearchStrategy.NONE);
   }
 
   private void add(
@@ -878,7 +866,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
       int id,
       int sortkey,
       float[] vector,
-      VectorValues.SearchStrategy searchStrategy)
+      SearchStrategy searchStrategy)
       throws IOException {
     Document doc = new Document();
     if (vector != null) {
@@ -902,7 +890,7 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testCheckIndexIncludesVectors() throws Exception {
     try (Directory dir = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         Document doc = new Document();
         doc.add(new VectorField("v1", randomVector(3), VectorValues.SearchStrategy.NONE));
         w.addDocument(doc);
@@ -936,14 +924,14 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
 
   public void testAdvance() throws Exception {
     try (Directory dir = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
+      try (IndexWriter w = new IndexWriter(dir, createIndexWriterConfig())) {
         int numdocs = atLeast(1500);
         String fieldName = "field";
         for (int i = 0; i < numdocs; i++) {
           Document doc = new Document();
           // randomly add a vector field
           if (random().nextInt(4) == 3) {
-            doc.add(new VectorField(fieldName, new float[4], VectorValues.SearchStrategy.NONE));
+            doc.add(new VectorField(fieldName, new float[4], SearchStrategy.NONE));
           }
           w.addDocument(doc);
         }

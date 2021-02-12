@@ -28,6 +28,7 @@ import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 public class JsonValidatorTest extends SolrTestCaseJ4  {
 
   public void testSchema() {
+    checkSchema("collections.Commands");
     checkSchema("collections.collection.Commands");
     checkSchema("collections.collection.shards.Commands");
     checkSchema("collections.collection.shards.shard.Commands");
@@ -42,42 +43,38 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
 
 
   public void testSchemaValidation() {
-    // merge-indexes chosen to exercise string and array/list props.
-    ValidatingJsonMap spec = Utils.getSpec("cores.core.Commands").getSpec();
-    final Map<String, Object> mergeIndexesSchema = spec.getMap("commands", NOT_NULL).getMap("merge-indexes", NOT_NULL);
-    final JsonSchemaValidator mergeIndexesSchemaValidator = new JsonSchemaValidator(mergeIndexesSchema);
-
-    List<String> errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [ c1 , c2]}"));
+    ValidatingJsonMap spec = Utils.getSpec("collections.Commands").getSpec();
+    @SuppressWarnings({"rawtypes"})
+    Map createSchema = spec.getMap("commands", NOT_NULL).getMap("create-alias", NOT_NULL);
+    JsonSchemaValidator validator = new JsonSchemaValidator(createSchema);
+    List<String> errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ c1 , c2]}"));
     assertNull(toJSONString(errs), errs);
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [c1] }"));
+    errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [c1] }"));
     assertNull(toJSONString(errs), errs);
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, x:y, indexDir: [ c1 , c2]}"));
+    errs = validator.validateJson(Utils.fromJSONString("{name : x, x:y, collections: [ c1 , c2]}"));
     assertNotNull(toJSONString(errs), errs);
     assertTrue(toJSONString(errs), errs.get(0).contains("Unknown"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : 123, indexDir: c1 }"));
+    errs = validator.validateJson(Utils.fromJSONString("{name : 123, collections: c1 }"));
     assertNotNull(toJSONString(errs), errs);
     assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{x:y, indexDir: [ c1 , c2]}"));
+    errs = validator.validateJson(Utils.fromJSONString("{x:y, collections: [ c1 , c2]}"));
     assertTrue(toJSONString(errs), StrUtils.join(errs, '|').contains("Unknown"));
-    errs = mergeIndexesSchemaValidator.validateJson(Utils.fromJSONString("{async : x, indexDir: [ 1 , 2]}"));
+    errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ 1 , 2]}"));
     assertFalse(toJSONString(errs), errs.isEmpty());
     assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
-
-
-    final JsonSchemaValidator personSchemaValidator = new JsonSchemaValidator("{" +
+    validator = new JsonSchemaValidator("{" +
         "  type:object," +
         "  properties: {" +
         "   age : {type: number}," +
         "   adult : {type: boolean}," +
         "   name: {type: string}}}");
-    errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
+    errs = validator.validateJson(Utils.fromJSONString("{name:x, age:21, adult:true}"));
     assertNull(errs);
-    errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:'21', adult:'true'}"));
+    errs = validator.validateJson(Utils.fromJSONString("{name:x, age:'21', adult:'true'}"));
     assertNotNull(errs);
-    errs = personSchemaValidator.validateJson(Utils.fromJSONString("{name:x, age:'x21', adult:'true'}"));
+
+    errs = validator.validateJson(Utils.fromJSONString("{name:x, age:'x21', adult:'true'}"));
     assertEquals(1, errs.size());
-
-
     Exception e = expectThrows(Exception.class, () -> {
       new JsonSchemaValidator("{" +
           "  type:object," +
@@ -109,16 +106,16 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     });
     assertTrue(e.getMessage().contains("Unknown key : propertes"));
 
-    final JsonSchemaValidator personWithEnumValidator = new JsonSchemaValidator("{" +
+    validator = new JsonSchemaValidator("{" +
         "  type:object," +
         "  properties: {" +
         "   age : {type: number}," +
         "   sex: {type: string, enum:[M, F]}," +
         "   adult : {type: boolean}," +
         "   name: {type: string}}}");
-    errs = personWithEnumValidator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:M}"));
+    errs = validator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:M}"));
     assertNull("errs are " + errs, errs);
-    errs = personWithEnumValidator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:m}"));
+    errs = validator.validateJson(Utils.fromJSONString("{name: 'Joe Average' , sex:m}"));
     assertEquals(1, errs.size());
     assertTrue(errs.get(0).contains("Value of enum"));
 
@@ -142,8 +139,8 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
         "\n" +
         "  }\n" +
         "}";
-    final JsonSchemaValidator nestedObjectValidator = new JsonSchemaValidator(schema);
-    nestedObjectValidator.validateJson(Utils.fromJSONString("{\n" +
+    validator = new JsonSchemaValidator(schema);
+    validator.validateJson(Utils.fromJSONString("{\n" +
         "  'links': [\n" +
         "    {\n" +
         "        'rel': 'x',\n" +
@@ -164,12 +161,11 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
         "'type' : 'object',\n" +
         "'oneOf' : ['a', 'b']\n" +
         "}";
-
-    final JsonSchemaValidator mutuallyExclusivePropertiesValidator = new JsonSchemaValidator(schema);
-    errs = mutuallyExclusivePropertiesValidator.validateJson(Utils.fromJSONString("" +
+    validator = new JsonSchemaValidator(schema);
+    errs = validator.validateJson(Utils.fromJSONString("" +
         "{'c':'val'}"));
     assertNotNull(errs);
-    errs = mutuallyExclusivePropertiesValidator.validateJson(Utils.fromJSONString("" +
+    errs = validator.validateJson(Utils.fromJSONString("" +
         "{'a':'val'}"));
     assertNull(errs);
 

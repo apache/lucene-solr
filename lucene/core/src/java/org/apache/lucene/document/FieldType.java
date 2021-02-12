@@ -367,8 +367,7 @@ public class FieldType implements IndexableFieldType {
     return dimensionNumBytes;
   }
 
-  /** Enable vector indexing, with the specified number of dimensions and distance function. */
-  public void setVectorDimensionsAndSearchStrategy(
+  void setVectorDimensionsAndSearchStrategy(
       int numDimensions, VectorValues.SearchStrategy distFunc) {
     checkIfFrozen();
     if (numDimensions <= 0) {

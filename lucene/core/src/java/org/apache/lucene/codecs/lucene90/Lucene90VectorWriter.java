@@ -54,25 +54,23 @@ public final class Lucene90VectorWriter extends VectorWriter {
     String metaFileName =
         IndexFileNames.segmentFileName(
             state.segmentInfo.name, state.segmentSuffix, Lucene90VectorFormat.META_EXTENSION);
+    meta = state.directory.createOutput(metaFileName, state.context);
 
     String vectorDataFileName =
         IndexFileNames.segmentFileName(
             state.segmentInfo.name,
             state.segmentSuffix,
             Lucene90VectorFormat.VECTOR_DATA_EXTENSION);
+    vectorData = state.directory.createOutput(vectorDataFileName, state.context);
 
     String indexDataFileName =
         IndexFileNames.segmentFileName(
             state.segmentInfo.name,
             state.segmentSuffix,
             Lucene90VectorFormat.VECTOR_INDEX_EXTENSION);
+    vectorIndex = state.directory.createOutput(indexDataFileName, state.context);
 
-    boolean success = false;
     try {
-      meta = state.directory.createOutput(metaFileName, state.context);
-      vectorData = state.directory.createOutput(vectorDataFileName, state.context);
-      vectorIndex = state.directory.createOutput(indexDataFileName, state.context);
-
       CodecUtil.writeIndexHeader(
           meta,
           Lucene90VectorFormat.META_CODEC_NAME,
@@ -91,11 +89,8 @@ public final class Lucene90VectorWriter extends VectorWriter {
           Lucene90VectorFormat.VERSION_CURRENT,
           state.segmentInfo.getId(),
           state.segmentSuffix);
-      success = true;
-    } finally {
-      if (success == false) {
-        IOUtils.closeWhileHandlingException(this);
-      }
+    } catch (IOException e) {
+      IOUtils.closeWhileHandlingException(this);
     }
   }
 

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
@@ -26,6 +27,7 @@ class CheckCompoundPattern {
   private final char[] endFlags;
   private final char[] beginFlags;
   private final Dictionary dictionary;
+  private final BytesRef scratch = new BytesRef();
 
   CheckCompoundPattern(
       String unparsed, Dictionary.FlagParsingStrategy strategy, Dictionary dictionary) {
@@ -91,7 +93,7 @@ class CheckCompoundPattern {
 
   private boolean hasAllFlags(char[] flags, IntsRef forms) {
     for (char flag : flags) {
-      if (!dictionary.hasFlag(forms, flag)) {
+      if (!dictionary.hasFlag(forms, flag, scratch)) {
         return false;
       }
     }

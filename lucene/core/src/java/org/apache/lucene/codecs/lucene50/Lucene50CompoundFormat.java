@@ -14,16 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.lucene50;
+package org.apache.lucene.codecs.lucene50;
 
 import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.CompoundDirectory;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexOutput;
 
 /**
  * Lucene 5.0 compound file format
@@ -83,6 +86,55 @@ public final class Lucene50CompoundFormat extends CompoundFormat {
 
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext context) throws IOException {
-    throw new UnsupportedOperationException("Old formats can't be used for writing");
+    String dataFile = IndexFileNames.segmentFileName(si.name, "", DATA_EXTENSION);
+    String entriesFile = IndexFileNames.segmentFileName(si.name, "", ENTRIES_EXTENSION);
+
+    try (IndexOutput data = dir.createOutput(dataFile, context);
+        IndexOutput entries = dir.createOutput(entriesFile, context)) {
+      CodecUtil.writeIndexHeader(data, DATA_CODEC, VERSION_CURRENT, si.getId(), "");
+      CodecUtil.writeIndexHeader(entries, ENTRY_CODEC, VERSION_CURRENT, si.getId(), "");
+
+      writeCompoundFile(entries, data, dir, si);
+
+      CodecUtil.writeFooter(data);
+      CodecUtil.writeFooter(entries);
+    }
+  }
+
+  private void writeCompoundFile(
+      IndexOutput entries, IndexOutput data, Directory dir, SegmentInfo si) throws IOException {
+    // write number of files
+    entries.writeVInt(si.files().size());
+    for (String file : si.files()) {
+      // write bytes for file
+      long startOffset = data.getFilePointer();
+      try (ChecksumIndexInput in = dir.openChecksumInput(file, IOContext.READONCE)) {
+
+        // just copies the index header, verifying that its id matches what we expect
+        CodecUtil.verifyAndCopyIndexHeader(in, data, si.getId());
+
+        // copy all bytes except the footer
+        long numBytesToCopy = in.length() - CodecUtil.footerLength() - in.getFilePointer();
+        data.copyBytes(in, numBytesToCopy);
+
+        // verify footer (checksum) matches for the incoming file we are copying
+        long checksum = CodecUtil.checkFooter(in);
+
+        // this is poached from CodecUtil.writeFooter, but we need to use our own checksum, not
+        // data.getChecksum(), but I think
+        // adding a public method to CodecUtil to do that is somewhat dangerous:
+        data.writeInt(CodecUtil.FOOTER_MAGIC);
+        data.writeInt(0);
+        data.writeLong(checksum);
+      }
+      long endOffset = data.getFilePointer();
+
+      long length = endOffset - startOffset;
+
+      // write entry for file
+      entries.writeString(IndexFileNames.stripSegmentName(file));
+      entries.writeLong(startOffset);
+      entries.writeLong(length);
+    }
   }
 }

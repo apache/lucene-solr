@@ -22,7 +22,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
+import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
@@ -51,7 +51,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
       return;
     }
 
-    RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, RateLimiterPayload.class);
+    RateLimiterMeta rateLimiterMeta = mapper.readValue(configInput, RateLimiterMeta.class);
 
     constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
   }
@@ -74,7 +74,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
         return rateLimiterConfig;
       }
 
-      RateLimiterPayload rateLimiterMeta = mapper.readValue(configInput, RateLimiterPayload.class);
+      RateLimiterMeta rateLimiterMeta = mapper.readValue(configInput, RateLimiterMeta.class);
 
       constructQueryRateLimiterConfigInternal(rateLimiterMeta, rateLimiterConfig);
 
@@ -88,7 +88,7 @@ public class QueryRateLimiter extends RequestRateLimiter {
     }
   }
 
-  private static void constructQueryRateLimiterConfigInternal(RateLimiterPayload rateLimiterMeta, RateLimiterConfig rateLimiterConfig) {
+  private static void constructQueryRateLimiterConfigInternal(RateLimiterMeta rateLimiterMeta, RateLimiterConfig rateLimiterConfig) {
 
     if (rateLimiterMeta == null) {
       // No Rate limiter configuration defined in clusterprops.json

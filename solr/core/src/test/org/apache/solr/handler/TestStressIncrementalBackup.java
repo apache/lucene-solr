@@ -17,6 +17,11 @@
 
 package org.apache.solr.handler;
 
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -27,31 +32,26 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import static org.apache.solr.handler.TestStressThreadBackup.makeDoc;
 
 //@LuceneTestCase.Nightly
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
+@LogLevel("org.apache.solr.handler.SnapShooter=DEBUG;org.apache.solr.core.IndexDeletionPolicyWrapper=DEBUG")
 public class TestStressIncrementalBackup extends SolrCloudTestCase {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private Path backupPath;
+    private File backupDir;
     private SolrClient adminClient;
     private SolrClient coreClient;
-    
     @Before
     public void beforeTest() throws Exception {
-        backupPath = createTempDir(getTestClass().getSimpleName() + "_backups");
-        System.setProperty("solr.allowPaths", backupPath.toString());
+        backupDir = createTempDir(getTestClass().getSimpleName() + "_backups").toFile();
 
         // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
         // bring myself to deal with the nonsense that is SolrJettyTestBase.
@@ -87,8 +87,6 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
         if (null != coreClient) {
             coreClient.close();
         }
-
-        System.clearProperty("solr.allowPaths");
     }
 
     public void testCoreAdminHandler() throws Exception {
@@ -160,7 +158,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
 
     public void makeBackup() throws Exception {
         CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(DEFAULT_TEST_COLLECTION_NAME, "stressBackup")
-                .setLocation(backupPath.toString())
+                .setLocation(backupDir.getAbsolutePath())
                 .setIncremental(true)
                 .setMaxNumberBackupPoints(5);
         if (random().nextBoolean()) {

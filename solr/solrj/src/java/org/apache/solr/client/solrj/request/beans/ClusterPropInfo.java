@@ -14,57 +14,59 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.client.solrj.request.beans;
 
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
-import java.util.List;
-import java.util.Map;
+public class ClusterPropInfo implements ReflectMapWriter {
 
-public class CreatePayload implements ReflectMapWriter {
-    @JsonProperty(required = true)
-    public String name;
+  @JsonProperty
+  public String urlScheme;
 
-    @JsonProperty
-    public String config;
+  @JsonProperty
+  public Integer maxCoresPerNode;
+  @JsonProperty
+  public String location;
 
-    @JsonProperty
-    public Map<String, Object> router;
+  @JsonProperty
+  public DefaultsInfo defaults;
 
+  @JsonProperty
+  public CollectionDefaults collectionDefaults;
+
+  public static class CollectionDefaults implements ReflectMapWriter {
     @JsonProperty
     public Integer numShards;
-
     @JsonProperty
-    public String shards;
-
+    public Integer tlogReplicas;
     @JsonProperty
-    public Integer replicationFactor;
-
+    public Integer pullReplicas;
     @JsonProperty
     public Integer nrtReplicas;
 
-    @JsonProperty
-    public Integer tlogReplicas;
+  }
+
+  public static class DefaultsInfo implements ReflectMapWriter {
 
     @JsonProperty
-    public Integer pullReplicas;
+    public CollectionDefaults collection;
 
     @JsonProperty
-    public List<String> nodeSet;
+    public ClusterInfo cluster;
+
+  }
+
+  public static class ClusterInfo implements ReflectMapWriter {
+    @JsonProperty
+    public Boolean useLegacyReplicaAssignment;
+
 
     @JsonProperty
-    public Boolean shuffleNodes;
+    public CollectionDefaults collection;
 
-    @JsonProperty
-    public Map<String, Object> properties;
+  }
 
-    @JsonProperty
-    public String async;
 
-    @JsonProperty
-    public Boolean waitForFinalState;
-
-    @JsonProperty
-    public Boolean perReplicaState;
 }

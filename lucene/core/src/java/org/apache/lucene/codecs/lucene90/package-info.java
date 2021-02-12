@@ -234,7 +234,7 @@
  * <td>Stores metadata about a segment</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90CompoundFormat Compound File}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat Compound File}</td>
  * <td>.cfs, .cfe</td>
  * <td>An optional "virtual" file consisting of all the other index files for
  * systems that frequently run out of file handles.</td>
