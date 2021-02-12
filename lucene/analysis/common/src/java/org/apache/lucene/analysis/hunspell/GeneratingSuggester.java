@@ -43,9 +43,9 @@ class GeneratingSuggester {
   private static final int MAX_WORDS = 100;
   private static final int MAX_GUESSES = 200;
   private final Dictionary dictionary;
-  private final SpellChecker speller;
+  private final Hunspell speller;
 
-  GeneratingSuggester(SpellChecker speller) {
+  GeneratingSuggester(Hunspell speller) {
     this.dictionary = speller.dictionary;
     this.speller = speller;
   }

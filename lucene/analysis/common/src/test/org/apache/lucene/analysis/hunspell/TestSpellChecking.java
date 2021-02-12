@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
 
-public class SpellCheckerTest extends StemmerTestBase {
+public class TestSpellChecking extends StemmerTestBase {
 
   public void testBase() throws Exception {
     doTest("base");
@@ -221,11 +221,11 @@ public class SpellCheckerTest extends StemmerTestBase {
     InputStream affixStream = Files.newInputStream(Path.of(basePath.toString() + ".aff"));
     InputStream dictStream = Files.newInputStream(Path.of(basePath.toString() + ".dic"));
 
-    SpellChecker speller;
+    Hunspell speller;
     try {
       Dictionary dictionary =
           new Dictionary(new ByteBuffersDirectory(), "dictionary", affixStream, dictStream);
-      speller = new SpellChecker(dictionary);
+      speller = new Hunspell(dictionary);
     } finally {
       IOUtils.closeWhileHandlingException(affixStream);
       IOUtils.closeWhileHandlingException(dictStream);
