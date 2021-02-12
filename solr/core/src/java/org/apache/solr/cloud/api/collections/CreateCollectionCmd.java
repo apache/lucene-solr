@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -316,7 +317,16 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       if(!isLegacyCloud) {
         // wait for all replica entries to be created
-        Map<String, Replica> replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
+        Map<String, Replica> replicas ;
+        if(isPrs) {
+          replicas = new ConcurrentHashMap<>();
+          newColl.getSlices().stream().flatMap(slice -> slice.getReplicas().stream())
+              .filter(r -> coresToCreate.containsKey(r.getCoreName()))       // Only the elements that were asked for...
+              .forEach(r -> replicas.putIfAbsent(r.getCoreName(), r)); // ...get added to the map
+        } else {
+          replicas = ocmh.waitToSeeReplicasInState(collectionName, coresToCreate.keySet());
+        }
+
         for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
           ShardRequest sreq = e.getValue();
           sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
