@@ -16,6 +16,10 @@
  */
 package org.apache.solr.scripting.xslt;
 
+import static org.apache.solr.scripting.xslt.XSLTConstants.TR;
+import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_DEFAULT;
+import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_PARAM;
+
 import java.io.BufferedReader;
 import java.io.CharArrayReader;
 import java.io.CharArrayWriter;
@@ -23,16 +27,10 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.XMLErrorLogger;
@@ -40,7 +38,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
-import org.apache.solr.util.xslt.TransformerProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *  Customize the format of your search results via XSL stylesheet applied to the default
@@ -51,14 +50,9 @@ import org.apache.solr.util.xslt.TransformerProvider;
  *  to it.
  */
 public class XSLTResponseWriter implements QueryResponseWriter {
-  /** Transformer param */
-  public static final String TR = "tr";
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
-  public static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
 
   private Integer xsltCacheLifetimeSeconds = null;
-  public static final int XSLT_CACHE_DEFAULT = 60;
-  private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
@@ -66,10 +60,8 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     final SolrParams p = n.toSolrParams();
-      xsltCacheLifetimeSeconds = p.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
-      log.info("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
+    xsltCacheLifetimeSeconds = p.getInt(XSLT_CACHE_PARAM, XSLT_CACHE_DEFAULT);
   }
-
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
@@ -119,26 +111,9 @@ public class XSLTResponseWriter implements QueryResponseWriter {
     }
   }
 
-  /** Get Transformer from request context, or from TransformerProvider.
-   *  This allows either getContentType(...) or write(...) to instantiate the Transformer,
-   *  depending on which one is called first, then the other one reuses the same Transformer
-   */
   protected Transformer getTransformer(SolrQueryRequest request) throws IOException {
-    final String xslt = request.getParams().get(TR,null);
-    if(xslt==null) {
-      throw new IOException("'" + TR + "' request parameter is required to use the XSLTResponseWriter");
-    }
-    // not the cleanest way to achieve this
-    SolrConfig solrConfig = request.getCore().getSolrConfig();
-    // no need to synchronize access to context, right?
-    // Nothing else happens with it at the same time
-    final Map<Object,Object> ctx = request.getContext();
-    Transformer result = (Transformer)ctx.get(CONTEXT_TRANSFORMER_KEY);
-    if(result==null) {
-      result = TransformerProvider.instance.getTransformer(solrConfig, xslt,xsltCacheLifetimeSeconds.intValue());
-      result.setErrorListener(xmllog);
-      ctx.put(CONTEXT_TRANSFORMER_KEY,result);
-    }
-    return result;
+    final String xslt = request.getParams().required().get(TR);
+    return TransformerProvider.getTransformer(request, xslt, xsltCacheLifetimeSeconds);
   }
+
 }

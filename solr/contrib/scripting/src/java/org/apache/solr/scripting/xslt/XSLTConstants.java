@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-/**
- * XSLT related utilities.  This is hear to support other plugins, however
- * the use of the `tr` parameter on requests and updates has been moved to
- * the Scripting contrib module.
- */
-package org.apache.solr.util.xslt;
+package org.apache.solr.scripting.xslt;
+
+class XSLTConstants {
+  /** Transformer param */
+  static final String TR = "tr";
+  static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
+  static final int XSLT_CACHE_DEFAULT = 60;
+  static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds";
+}

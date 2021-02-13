@@ -14,28 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util.xslt;
+package org.apache.solr.scripting.xslt;
+
+import static org.apache.solr.scripting.xslt.XSLTConstants.CONTEXT_TRANSFORMER_KEY;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.commons.io.IOUtils;
-
 import javax.xml.transform.Templates;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamSource;
-
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SystemIdResolver;
+import org.apache.solr.util.TimeOut;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** 
  *  Singleton that creates a Transformer for XSLT
@@ -45,8 +46,7 @@ import org.apache.solr.core.SolrConfig;
  *  See http://www.javaworld.com/javaworld/jw-05-2003/jw-0502-xsl_p.html for
  *  one possible way of improving caching. 
  */
-
-public class TransformerProvider {
+class TransformerProvider {
   private String lastFilename;
   private Templates lastTemplates = null;
   private TimeOut cacheExpiresTimeout;
@@ -64,7 +64,28 @@ public class TransformerProvider {
         + "for high load scenarios, unless a single XSLT transform is used"
         + " and xsltCacheLifetimeSeconds is set to a sufficiently high value.");
   }
-  
+
+  /**
+   * Get Transformer from request context, or from TransformerProvider. This allows either
+   * getContentType(...) or write(...) to instantiate the Transformer, depending on which one is
+   * called first, then the other one reuses the same Transformer
+   */
+  static Transformer getTransformer(
+      SolrQueryRequest request, String xslt, int xsltCacheLifetimeSeconds) throws IOException {
+    // not the cleanest way to achieve this
+    // no need to synchronize access to context, right?
+    // Nothing else happens with it at the same time
+    final Map<Object, Object> ctx = request.getContext();
+    Transformer result = (Transformer) ctx.get(CONTEXT_TRANSFORMER_KEY);
+    if (result == null) {
+      SolrConfig solrConfig = request.getCore().getSolrConfig();
+      result = instance.getTransformer(solrConfig, xslt, xsltCacheLifetimeSeconds);
+      result.setErrorListener(xmllog);
+      ctx.put(CONTEXT_TRANSFORMER_KEY, result);
+    }
+    return result;
+  }
+
   /** Return a new Transformer, possibly created from our cached Templates object  
    * @throws IOException If there is a low-level I/O error.
    */ 

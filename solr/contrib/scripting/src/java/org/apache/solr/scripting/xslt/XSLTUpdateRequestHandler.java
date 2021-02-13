@@ -17,7 +17,8 @@
 
 package org.apache.solr.scripting.xslt;
 
-import java.io.IOException;
+import static org.apache.solr.scripting.xslt.XSLTConstants.*;
+
 import java.util.Map;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -33,13 +34,11 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.util.xslt.TransformerProvider;
 import org.xml.sax.InputSource;
 import org.xml.sax.XMLReader;
 
@@ -48,8 +47,6 @@ import org.xml.sax.XMLReader;
  * format to the Solr XML format using an XSLT stylesheet via the 'tr' parameter.
  */
 public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
-  /** Transformer param */
-  public static final String TR = "tr";
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
@@ -66,9 +63,6 @@ public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
 
   @VisibleForTesting
   static class XsltXMLLoader extends XMLLoader {
-    static final String CONTEXT_TRANSFORMER_KEY = "xsltupdater.transformer";
-    static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds";
-    static final int XSLT_CACHE_DEFAULT = 60;
 
     int xsltCacheLifetimeSeconds;
 
@@ -105,7 +99,7 @@ public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
                 + " after enabling authentication and authorization.");
       }
 
-      final Transformer t = getTransformer(tr, req);
+      final Transformer t = TransformerProvider.getTransformer(req, tr, xsltCacheLifetimeSeconds);
       final DOMResult result = new DOMResult();
 
       // first step: read XML and build DOM using Transformer (this is no overhead, as XSL always
@@ -135,26 +129,6 @@ public class XSLTUpdateRequestHandler extends UpdateRequestHandler {
       }
     }
 
-    /**
-     * Get Transformer from request context, or from TransformerProvider. This allows either
-     * getContentType(...) or write(...) to instantiate the Transformer, depending on which one is
-     * called first, then the other one reuses the same Transformer
-     */
-    Transformer getTransformer(String xslt, SolrQueryRequest request) throws IOException {
-      // not the cleanest way to achieve this
-      // no need to synchronize access to context, right?
-      // Nothing else happens with it at the same time
-      final Map<Object, Object> ctx = request.getContext();
-      Transformer result = (Transformer) ctx.get(CONTEXT_TRANSFORMER_KEY);
-      if (result == null) {
-        SolrConfig solrConfig = request.getCore().getSolrConfig();
-        result =
-            TransformerProvider.instance.getTransformer(solrConfig, xslt, xsltCacheLifetimeSeconds);
-        result.setErrorListener(xmllog);
-        ctx.put(CONTEXT_TRANSFORMER_KEY, result);
-      }
-      return result;
-    }
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
