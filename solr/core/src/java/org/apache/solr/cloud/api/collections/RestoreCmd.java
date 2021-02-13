@@ -17,7 +17,26 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -47,25 +66,6 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
@@ -343,7 +343,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(shard.getName(), Slice.State.CONSTRUCTION.toString());
       }
       propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollection.getName());
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, new ZkNodeProps(propMap),
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      }
     }
 
     private List<ReplicaPosition> getReplicaPositions(DocCollection restoreCollection, List<String> nodeList, ClusterState clusterState, List<String> sliceNames) throws IOException, InterruptedException {
@@ -461,7 +466,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       for (Slice shard : restoreCollection.getSlices()) {
         propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
       }
-      ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, new ZkNodeProps(propMap),
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      }
     }
 
     private void addReplicasToShards(@SuppressWarnings({"rawtypes"}) NamedList results,
