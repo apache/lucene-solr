@@ -107,7 +107,7 @@ public class LiveIndexWriterConfig {
   protected volatile long maxFullFlushMergeWaitMillis;
 
   /** The IndexWriter event listener to record key events * */
-  protected volatile IndexWriterEventListener eventListener;
+  protected IndexWriterEventListener eventListener;
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
