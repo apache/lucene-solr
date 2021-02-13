@@ -26,20 +26,16 @@ import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.invoke.MethodHandles;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *  Customize the format of your search results via XSL stylesheet applied to the default
@@ -53,9 +49,6 @@ public class XSLTResponseWriter implements QueryResponseWriter {
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
 
   private Integer xsltCacheLifetimeSeconds = null;
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
