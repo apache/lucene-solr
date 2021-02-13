@@ -16,21 +16,20 @@
  */
 package org.apache.solr.scripting.xslt;
 
-import org.apache.solr.SolrTestCaseJ4;
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.loader.XMLLoader;
+import org.apache.solr.handler.loader.ContentStreamLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
@@ -124,7 +123,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
     SolrQueryRequest req = req("tr", "xsl-update-handler-test.xsl");
     SolrQueryResponse rsp = new SolrQueryResponse();
     BufferingRequestProcessor p = new BufferingRequestProcessor(null);
-    XMLLoader loader = new XMLLoader(true).init(null);
+    ContentStreamLoader loader = new XSLTUpdateRequestHandler.XsltXMLLoader().init(null);
     loader.load(req, rsp, new ContentStreamBase.StringStream(xml), p);
 
     AddUpdateCommand add = p.addCommands.get(0);
