@@ -107,14 +107,26 @@ configure(project(":lucene:analysis:icu")) {
   task foo() {
     doFirst {
       def v = getVersion('com.ibm.icu', 'icu4j');
-      def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-src.tgz")
-      logger.lifecycle("Trying to download and compile ICU version: ${v} from:\n  ${src}")
-
       def target = file("${buildDir}/icu").toPath().resolve("icu4c-${v.replace(".", "_")}-src.tgz")
-      Files.createDirectories(target.parent)
 
-      Files.write(target, src.toURL().openStream().bytes)
-      logger.lifecycle("Downloaded ${Files.size(target)} bytes.")
+      if (!Files.exists(target)) {
+        Files.createDirectories(target.parent)
+        def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-src.tgz")
+        logger.lifecycle("Trying to download and compile ICU version: ${v} from:\n  ${src}")
+        Files.write(target, src.toURL().openStream().bytes)
+        logger.lifecycle("Downloaded ${Files.size(target)} bytes.")
+      }
+
+      project.exec {
+        executable "tar"
+        ignoreExitValue false
+
+        workingDir target.parent.toAbsolutePath().toString()
+        args = [
+            "-zxvf",
+            target.toAbsolutePath().toString()
+        ]
+      }
     }
   }
 }
