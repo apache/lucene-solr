@@ -278,6 +278,7 @@ public interface CommonParams {
    */
   String REQUEST_PURPOSE = "requestPurpose";
 
+  /** Not actually a parameter but a format for 'wt' */
   String JAVABIN = "javabin";
 
   String JSON = "json";

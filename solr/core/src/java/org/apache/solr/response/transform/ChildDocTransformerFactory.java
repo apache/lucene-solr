@@ -16,9 +16,9 @@
  */
 package org.apache.solr.response.transform;
 
-import java.io.IOException;
+import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
-import org.apache.commons.lang3.StringUtils;
+import java.io.IOException;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
@@ -36,8 +36,6 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
-
-import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
 /**
  * Attaches all descendants (child documents) to each parent document.
@@ -145,11 +143,13 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     try {
       return QParser.getParser(qstr, req).getQuery();
     } catch (SyntaxError syntaxError) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Failed to parse '" + param + "' param.");
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Failed to parse '" + param + "' param: " + syntaxError.getMessage(),
+          syntaxError);
     }
   }
 
-  // NOTE: THIS FEATURE IS PRESENTLY EXPERIMENTAL; WAIT TO SEE IT IN THE REF GUIDE.  FINAL SYNTAX IS TBD.
   protected static String processPathHierarchyQueryString(String queryString) {
     // if the filter includes a path string, build a lucene query string to match those specific child documents.
     // e.g. /toppings/ingredients/name_s:cocoa -> +_nest_path_:/toppings/ingredients +(name_s:cocoa)
@@ -160,19 +160,7 @@ public class ChildDocTransformerFactory extends TransformerFactory {
     }
     int indexOfLastPathSepChar = queryString.lastIndexOf(PATH_SEP_CHAR, indexOfFirstColon);
     if (indexOfLastPathSepChar < 0) {
-      // regular filter, not hierarchy based.
-
-      // DEP Need to check if this is needed.  Logic breaks if you have 'level_i:4 OR level_i:5' due to multiple colons.
-      // Seems like we need to escape some things but not all things?
-      if (StringUtils.countMatches(queryString, ":") ==1  && StringUtils.countMatches(queryString, "[") == 0) {
-        String escapedQueryString = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfFirstColon))
-            + ":" + ClientUtils.escapeQueryChars(queryString.substring(indexOfFirstColon + 1));
-        return escapedQueryString;
-      }
-      else {
-        return queryString;
-      }
-
+      return queryString;
     }
     final boolean isAbsolutePath = queryString.charAt(0) == PATH_SEP_CHAR;
     String path = ClientUtils.escapeQueryChars(queryString.substring(0, indexOfLastPathSepChar));

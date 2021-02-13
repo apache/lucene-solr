@@ -21,7 +21,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import com.google.common.collect.Iterables;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
@@ -74,23 +73,21 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
     assertU(delQ(fqToExcludeNonTestedDocs));
     assertU(commit());
   }
-  
-  @Test
-  public void testParsingChildFilter() throws Exception {
-    String queryString = "_nest_path_:/toppings";
-    String processedQueryString = ChildDocTransformerFactory.processPathHierarchyQueryString(queryString);
-    assertEquals( "_nest_path_:\\/toppings", processedQueryString );    
-  }
-  
+
   @Test
   public void testORingChildFilter() throws Exception {
-    indexSampleData(numberOfDocsPerNestedTest);
-
-    SolrQueryRequest req = req("q", "*:*", "sort", "id asc",
-        "fl", "*, _nest_path_, [child childFilter='type_s:Regular OR type_s:Chocolate']", "fq", fqToExcludeNonTestedDocs);
-    BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
+    // just check we don't throw an exception. Thus used to do before SOLR-15152
+    assertQ(
+        req(
+            "q",
+            "*:*",
+            "sort",
+            "id asc",
+            "fl",
+            "*, _nest_path_, [child childFilter='type_s:Regular OR type_s:Chocolate']",
+            "fq",
+            fqToExcludeNonTestedDocs));
   }
-  
 
   @Test
   public void testParentFilterJSON() throws Exception {
@@ -128,7 +125,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   public void testParentFilterLimitJSON() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
 
-    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=1]",
+    try (var req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='{!field f=_nest_path_}/toppings' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
       Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
@@ -175,7 +172,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
     assertU(delQ("_nest_path_:\\/toppings"));
     assertU(commit());
 
-    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=1]",
+    try (var req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:\\\\/toppings' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
       Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();

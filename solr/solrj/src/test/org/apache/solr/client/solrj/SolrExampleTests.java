@@ -2065,16 +2065,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
       String parentFilter = "level_i:" + parentLevel;
       String childFilter = "level_i:[" + kidLevelMin + " TO " + kidLevelMax + "]";
-      // Getting a error about parsing the range query (Invalid Number: [1 TO 1] for field level_i) so
-      // building up an OR query.
-      /*String childFilter = "";
-      for (int i = kidLevelMin; i <= kidLevelMax;i++) {
-        childFilter = childFilter + "level_i:" + i;
-        if (i < kidLevelMax){
-          childFilter = childFilter + " OR ";
-        }
-      }
-      */
+
       int maxKidCount = TestUtil.nextInt(random(), 1, 7);
       
       q = new SolrQuery("q","*:*", "indent", "true");
