@@ -1,3 +1,5 @@
+import java.nio.file.Files
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -100,5 +102,19 @@ configure(project(":lucene:analysis:icu")) {
   task regenerate() {
     dependsOn genUtr30DataFiles
     dependsOn genRbbi
+  }
+
+  task foo() {
+    doFirst {
+      def v = getVersion('com.ibm.icu', 'icu4j');
+      def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-src.tgz")
+      logger.lifecycle("Trying to download and compile ICU version: ${v} from:\n  ${src}")
+
+      def target = file("${buildDir}/icu").toPath().resolve("icu4c-${v.replace(".", "_")}-src.tgz")
+      Files.createDirectories(target.parent)
+
+      Files.write(target, src.toURL().openStream().bytes)
+      logger.lifecycle("Downloaded ${Files.size(target)} bytes.")
+    }
   }
 }
