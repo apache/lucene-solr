@@ -175,8 +175,13 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       assert zkController != null;
       assert zkController.getOverseer() != null;
       DocCollection coll = zkStateReader.getCollection(this.collection);
-      if (coll == null || ZkController.sendToOverseer(coll, id)) {
-        zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+      if (coll == null || ZkController.updateStateDotJson(coll, id)) {
+        if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          zkController.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceSetShardLeader, m,
+              zkController.getSolrCloudManager(), zkStateReader);
+        } else {
+          zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+        }
       } else {
         PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
         PerReplicaStatesOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs)

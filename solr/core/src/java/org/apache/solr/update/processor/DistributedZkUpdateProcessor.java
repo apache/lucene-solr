@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -48,6 +49,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CommonParams;
@@ -97,6 +99,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   // this is set to true in the constructor if the next processors in the chain
   // are custom and may modify the SolrInputDocument racing with its serialization for replication
   private final boolean cloneRequiredOnLeader;
+  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
   //used for keeping track of replicas that have processed an add/update from the leader
   private RollupRequestReplicationTracker rollupReplicationTracker = null;
@@ -110,6 +113,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     CoreContainer cc = req.getCore().getCoreContainer();
     cloudDesc = req.getCore().getCoreDescriptor().getCloudDescriptor();
     zkController = cc.getZkController();
+    distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
     cmdDistrib = new SolrCmdDistributor(cc.getUpdateShardHandler());
     cloneRequiredOnLeader = isCloneRequiredOnLeader(next);
     collection = cloudDesc.getCollectionName();
@@ -936,7 +940,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,
                           "routeKey", routeKey + "!");
-                      zkController.getOverseer().offerStateUpdate(Utils.toJSON(map));
+                      if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+                        ZkNodeProps message = new ZkNodeProps(map);
+                        distributedClusterStateUpdater.doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceRemoveRoutingRule, message,
+                            zkController.getOverseer().getSolrCloudManager(), zkController.getOverseer().getZkStateReader());
+                      } else {
+                        zkController.getOverseer().offerStateUpdate(Utils.toJSON(map));
+                      }
                     } catch (KeeperException e) {
                       log.warn("Exception while removing routing rule for route key: {}", routeKey, e);
                     } catch (Exception e) {

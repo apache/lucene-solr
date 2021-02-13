@@ -24,7 +24,6 @@ import org.apache.zookeeper.data.Stat;
 
 /**
  * Refresh the Cluster State for a given collection
- *
  */
 public class RefreshCollectionMessage implements Overseer.Message {
   public final String collection;
@@ -44,7 +43,7 @@ public class RefreshCollectionMessage implements Overseer.Message {
       //our state is up to date
       return clusterState;
     } else {
-      coll = ZkStateReader.getCollectionLive(overseer.getZkStateReader(), collection);
+      coll = overseer.getZkStateReader().getCollectionLive(collection);
       return clusterState.copyWith(collection, coll);
     }
   }
