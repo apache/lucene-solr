@@ -38,7 +38,12 @@ import java.nio.file.Files
 configure(project(":lucene:analysis:icu")) {
   def utr30DataDir = file("src/data/utr30")
 
+  def icuBuildDir = file("${buildDir}/icu")
+  def icuBinDir = file("${icuBuildDir}/icu/source/bin")
+
   task genUtr30DataFiles() {
+    dependsOn "compileIcuLinux"
+
     // May be undefined yet, so use a provider.
     dependsOn { sourceSets.tools.runtimeClasspath }
 
@@ -52,8 +57,9 @@ configure(project(":lucene:analysis:icu")) {
         workingDir utr30DataDir
       }
 
-      def gennorm = 'gennorm2'
-      def icupkg = 'icupkg'
+      def gennorm = file("${icuBinDir}/gennorm2")
+      def icupkg =  file("${icuBinDir}/icupkg")
+
       project.exec {
         executable gennorm
         ignoreExitValue = false
@@ -104,27 +110,61 @@ configure(project(":lucene:analysis:icu")) {
     dependsOn genRbbi
   }
 
-  task foo() {
+  task compileIcuLinux() {
     doFirst {
       def v = getVersion('com.ibm.icu', 'icu4j');
-      def target = file("${buildDir}/icu").toPath().resolve("icu4c-${v.replace(".", "_")}-src.tgz")
+      def icuSrcTgz = file("${icuBuildDir}/icu4c-${v.replace(".", "_")}-src.tgz")
 
-      if (!Files.exists(target)) {
-        Files.createDirectories(target.parent)
+      if (!icuSrcTgz.exists()) {
+        icuBuildDir.mkdirs()
         def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-src.tgz")
         logger.lifecycle("Trying to download and compile ICU version: ${v} from:\n  ${src}")
-        Files.write(target, src.toURL().openStream().bytes)
-        logger.lifecycle("Downloaded ${Files.size(target)} bytes.")
+        Files.write(icuSrcTgz.toPath(), src.toURL().openStream().bytes)
+        logger.lifecycle("Downloaded ${icuSrcTgz.size()} bytes.")
       }
+
+      def icuSrcDir = file("${icuBuildDir}/icu/source")
+      project.delete icuSrcDir
 
       project.exec {
         executable "tar"
         ignoreExitValue false
 
-        workingDir target.parent.toAbsolutePath().toString()
+        workingDir icuBuildDir
         args = [
             "-zxvf",
-            target.toAbsolutePath().toString()
+            icuSrcTgz
+        ]
+      }
+
+      project.exec {
+        executable "sh"
+        ignoreExitValue false
+
+        workingDir icuSrcDir
+        args = [
+          "configure",
+          "--prefix=${icuSrcDir}",
+          "--enable-rpath"
+        ]
+      }
+
+      project.exec {
+        executable "make"
+        ignoreExitValue false
+        workingDir icuSrcDir
+        args = [
+          "-j4"
+        ]
+      }
+
+      logger.lifecycle("Compiled ICU, checking...")
+      project.exec {
+        executable "./derb"
+        ignoreExitValue false
+        workingDir icuBinDir
+        args = [
+          "-V"
         ]
       }
     }
