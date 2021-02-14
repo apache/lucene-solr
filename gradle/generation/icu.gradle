@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 import java.nio.file.Files
 
 /*
@@ -17,32 +19,95 @@ import java.nio.file.Files
  * limitations under the License.
  */
 
-/* NOTE: when regenerating, you need icu4c binaries in PATH.
+/* Regenerates ICU data files.
+ *
  * The icu4c version must match exactly the icu4j version in version.props:
- * The one on your system is probably different.
- *
- * You can download the C sources to a standalone folder with these steps:
- * (example for icu 62.2)
- *
- * # download version matching icu4j version in version.props
- * curl -fLO https://github.com/unicode-org/icu/releases/download/release-62-2/icu4c-62_2-src.tgz
- * # extract
- * tar -zxvf icu4c-62_2-src.tgz
- * # compile
- * (cd icu/source && ./configure --prefix=$(pwd) --enable-rpath && make -j4)
- * # test binaries work
- * icu/source/bin/derb -V
- * # put in PATH
- * export PATH=$(pwd)/icu/source/bin:$PATH
+ * The one on your system is probably different. This script will attempt to
+ * download and compile a matching icu4c version automatically.
  */
 configure(project(":lucene:analysis:icu")) {
   def utr30DataDir = file("src/data/utr30")
 
   def icuBuildDir = file("${buildDir}/icu")
   def icuBinDir = file("${icuBuildDir}/icu/source/bin")
+  def gennorm = file("${icuBinDir}/gennorm2")
+  def icupkg =  file("${icuBinDir}/icupkg")
+
+  task compileIcuLinux() {
+    doFirst {
+      // Fail with a reasonable error on Windows.
+      if (Os.FAMILY_WINDOWS) {
+        throw new GradleException("ICU regeneration not supported on Windows.")
+      }
+
+      def v = getVersion('com.ibm.icu', 'icu4j');
+      def icuSrcTgz = file("${icuBuildDir}/icu4c-${v.replace(".", "_")}-src.tgz")
+
+      // download version matching icu4j version in version.props
+      // curl -fLO https://github.com/unicode-org/icu/releases/download/release-62-2/icu4c-62_2-src.tgz
+      if (!icuSrcTgz.exists()) {
+        icuBuildDir.mkdirs()
+        def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-src.tgz")
+        logger.lifecycle("Trying to download and compile ICU version: ${v} from:\n  ${src}")
+        Files.write(icuSrcTgz.toPath(), src.toURL().openStream().bytes)
+        logger.lifecycle("Downloaded ${icuSrcTgz.size()} bytes.")
+      }
+
+      def icuSrcDir = file("${icuBuildDir}/icu/source")
+      project.delete icuSrcDir
+
+      // extract tgz
+      // tar -zxvf icu4c-62_2-src.tgz
+      project.exec {
+        executable "tar"
+        ignoreExitValue false
+
+        workingDir icuBuildDir
+        args = [
+            "-zxvf",
+            icuSrcTgz
+        ]
+      }
+
+      // compile
+      // (cd icu/source && ./configure --prefix=$(pwd) --enable-rpath && make -j4)
+      project.exec {
+        executable "sh"
+        ignoreExitValue false
+
+        workingDir icuSrcDir
+        args = [
+            "configure",
+            "--prefix=${icuSrcDir}",
+            "--enable-rpath"
+        ]
+      }
+
+      project.exec {
+        executable "make"
+        ignoreExitValue false
+        workingDir icuSrcDir
+        args = [
+            "-j4"
+        ]
+      }
+
+      // test that the binaries work
+      // derb -V
+      logger.lifecycle("Compiled ICU, checking...")
+      project.exec {
+        executable "./derb"
+        ignoreExitValue false
+        workingDir icuBinDir
+        args = [
+            "-V"
+        ]
+      }
+    }
+  }
 
   task genUtr30DataFiles() {
-    dependsOn "compileIcuLinux"
+    dependsOn compileIcuLinux
 
     // May be undefined yet, so use a provider.
     dependsOn { sourceSets.tools.runtimeClasspath }
@@ -56,9 +121,6 @@ configure(project(":lucene:analysis:icu")) {
         ignoreExitValue false
         workingDir utr30DataDir
       }
-
-      def gennorm = file("${icuBinDir}/gennorm2")
-      def icupkg =  file("${icuBinDir}/icupkg")
 
       project.exec {
         executable gennorm
@@ -108,65 +170,5 @@ configure(project(":lucene:analysis:icu")) {
   task regenerate() {
     dependsOn genUtr30DataFiles
     dependsOn genRbbi
-  }
-
-  task compileIcuLinux() {
-    doFirst {
-      def v = getVersion('com.ibm.icu', 'icu4j');
-      def icuSrcTgz = file("${icuBuildDir}/icu4c-${v.replace(".", "_")}-src.tgz")
-
-      if (!icuSrcTgz.exists()) {
-        icuBuildDir.mkdirs()
-        def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-src.tgz")
-        logger.lifecycle("Trying to download and compile ICU version: ${v} from:\n  ${src}")
-        Files.write(icuSrcTgz.toPath(), src.toURL().openStream().bytes)
-        logger.lifecycle("Downloaded ${icuSrcTgz.size()} bytes.")
-      }
-
-      def icuSrcDir = file("${icuBuildDir}/icu/source")
-      project.delete icuSrcDir
-
-      project.exec {
-        executable "tar"
-        ignoreExitValue false
-
-        workingDir icuBuildDir
-        args = [
-            "-zxvf",
-            icuSrcTgz
-        ]
-      }
-
-      project.exec {
-        executable "sh"
-        ignoreExitValue false
-
-        workingDir icuSrcDir
-        args = [
-          "configure",
-          "--prefix=${icuSrcDir}",
-          "--enable-rpath"
-        ]
-      }
-
-      project.exec {
-        executable "make"
-        ignoreExitValue false
-        workingDir icuSrcDir
-        args = [
-          "-j4"
-        ]
-      }
-
-      logger.lifecycle("Compiled ICU, checking...")
-      project.exec {
-        executable "./derb"
-        ignoreExitValue false
-        workingDir icuBinDir
-        args = [
-          "-V"
-        ]
-      }
-    }
   }
 }
