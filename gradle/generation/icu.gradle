@@ -33,7 +33,7 @@ configure(project(":lucene:analysis:icu")) {
   def gennorm
   def icupkg
 
-  if (Os.FAMILY_WINDOWS) {
+  if (Os.isFamily(Os.FAMILY_WINDOWS)) {
     icuBinDir = file("${icuBuildDir}/bin64")
     gennorm = file("${icuBinDir}/gennorm2.exe")
     icupkg =  file("${icuBinDir}/icupkg.exe")
@@ -44,7 +44,7 @@ configure(project(":lucene:analysis:icu")) {
   }
 
   task genUtr30DataFiles() {
-    dependsOn Os.FAMILY_WINDOWS ? "compileIcuWindows" : "compileIcuLinux"
+    dependsOn Os.isFamily(Os.FAMILY_WINDOWS) ? "compileIcuWindows" : "compileIcuLinux"
 
     // May be undefined yet, so use a provider.
     dependsOn { sourceSets.tools.runtimeClasspath }
@@ -138,7 +138,7 @@ configure(project(":lucene:analysis:icu")) {
 
   task compileIcuLinux() {
     doFirst {
-      if (Os.FAMILY_WINDOWS) {
+      if (Os.isFamily(Os.FAMILY_WINDOWS)) {
         throw new GradleException("ICU compilation not supported on Windows.")
       }
 
