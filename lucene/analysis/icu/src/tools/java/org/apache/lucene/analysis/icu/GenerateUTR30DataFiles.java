@@ -61,7 +61,7 @@ public class GenerateUTR30DataFiles {
   private static final String NFC_TXT = "nfc.txt";
   private static final String NFKC_TXT = "nfkc.txt";
   private static final String NFKC_CF_TXT = "nfkc_cf.txt";
-  private static byte[] DOWNLOAD_BUFFER = new byte[8192];
+
   private static final Pattern ROUND_TRIP_MAPPING_LINE_PATTERN =
       Pattern.compile("^\\s*([^=]+?)\\s*=\\s*(.*)$");
   private static final Pattern VERBATIM_RULE_LINE_PATTERN =
@@ -209,16 +209,9 @@ public class GenerateUTR30DataFiles {
 
   private static void download(URL url, String outputFile) throws IOException {
     final URLConnection connection = openConnection(url);
-    final InputStream inputStream = connection.getInputStream();
-    final OutputStream outputStream = Files.newOutputStream(Path.of(outputFile));
-    int numBytes;
-    try {
-      while (-1 != (numBytes = inputStream.read(DOWNLOAD_BUFFER))) {
-        outputStream.write(DOWNLOAD_BUFFER, 0, numBytes);
-      }
-    } finally {
-      inputStream.close();
-      outputStream.close();
+    try (InputStream inputStream = connection.getInputStream();
+        OutputStream outputStream = Files.newOutputStream(Path.of(outputFile))) {
+      inputStream.transferTo(outputStream);
     }
   }
 
