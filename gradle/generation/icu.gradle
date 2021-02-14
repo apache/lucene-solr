@@ -29,15 +29,117 @@ configure(project(":lucene:analysis:icu")) {
   def utr30DataDir = file("src/data/utr30")
 
   def icuBuildDir = file("${buildDir}/icu")
-  def icuBinDir = file("${icuBuildDir}/icu/source/bin")
-  def gennorm = file("${icuBinDir}/gennorm2")
-  def icupkg =  file("${icuBinDir}/icupkg")
+  def icuBinDir
+  def gennorm
+  def icupkg
+
+  if (Os.FAMILY_WINDOWS) {
+    icuBinDir = file("${icuBuildDir}/bin64")
+    gennorm = file("${icuBinDir}/gennorm2.exe")
+    icupkg =  file("${icuBinDir}/icupkg.exe")
+  } else {
+    icuBinDir = file("${icuBuildDir}/icu/source/bin")
+    gennorm = file("${icuBinDir}/gennorm2")
+    icupkg = file("${icuBinDir}/icupkg")
+  }
+
+  task genUtr30DataFiles() {
+    dependsOn Os.FAMILY_WINDOWS ? "compileIcuWindows" : "compileIcuLinux"
+
+    // May be undefined yet, so use a provider.
+    dependsOn { sourceSets.tools.runtimeClasspath }
+
+    doFirst {
+      // all these steps must be done sequentially: it's a pipeline resulting in utr30.nrm
+      project.javaexec {
+        main = "org.apache.lucene.analysis.icu.GenerateUTR30DataFiles"
+        classpath = sourceSets.tools.runtimeClasspath
+
+        ignoreExitValue false
+        workingDir utr30DataDir
+      }
+
+      project.exec {
+        executable gennorm
+        ignoreExitValue = false
+        args = [
+            "-v",
+            "-s",
+            utr30DataDir,
+            "-o",
+            "${buildDir}/utr30.tmp",
+            "nfc.txt", "nfkc.txt", "nfkc_cf.txt", "BasicFoldings.txt",
+            "DiacriticFolding.txt", "DingbatFolding.txt", "HanRadicalFolding.txt",
+            "NativeDigitFolding.txt"
+        ]
+      }
+      project.exec {
+        executable icupkg
+        ignoreExitValue = false
+        args = [
+            "-tb",
+            "${buildDir}/utr30.tmp",
+            "src/resources/org/apache/lucene/analysis/icu/utr30.nrm"
+        ]
+      }
+    }
+  }
+
+  task genRbbi() {
+    // May be undefined yet, so use a provider.
+    dependsOn { sourceSets.tools.runtimeClasspath }
+
+    doFirst {
+      project.javaexec {
+        main = "org.apache.lucene.analysis.icu.RBBIRuleCompiler"
+        classpath = sourceSets.tools.runtimeClasspath
+
+        ignoreExitValue false
+        enableAssertions true
+        args = [
+            "src/data/uax29",
+            "src/resources/org/apache/lucene/analysis/icu/segmentation"
+        ]
+      }
+    }
+  }
+
+  task regenerate() {
+    dependsOn genUtr30DataFiles
+    dependsOn genRbbi
+  }
+
+  task compileIcuWindows() {
+    doFirst {
+      def v = getVersion('com.ibm.icu', 'icu4j');
+
+      def icuBinZip = file("${icuBuildDir}/icu4c-${v.replace(".", "_")}.zip")
+      if (!icuBinZip.exists()) {
+        icuBuildDir.mkdirs()
+
+        // No official Windows binaries for ICU 62.2... I've checked the script
+        // against ICU 68.2 (below) and it works but results in a different generated file.
+        // def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-68-2/icu4c-68_2-Win64-MSVC2019.zip")
+        def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-Win64-MSVC2019.zip")
+
+        logger.lifecycle("Trying to download binary ICU version: ${v} from:\n  ${src}")
+        Files.write(icuBinZip.toPath(), src.toURL().openStream().bytes)
+        logger.lifecycle("Downloaded ${icuBinZip.size()} bytes.")
+      }
+
+      // Unzip.
+      project.copy {
+        into icuBuildDir
+        from zipTree(icuBinZip)
+      }
+
+    }
+  }
 
   task compileIcuLinux() {
     doFirst {
-      // Fail with a reasonable error on Windows.
       if (Os.FAMILY_WINDOWS) {
-        throw new GradleException("ICU regeneration not supported on Windows.")
+        throw new GradleException("ICU compilation not supported on Windows.")
       }
 
       def v = getVersion('com.ibm.icu', 'icu4j');
@@ -104,71 +206,5 @@ configure(project(":lucene:analysis:icu")) {
         ]
       }
     }
-  }
-
-  task genUtr30DataFiles() {
-    dependsOn compileIcuLinux
-
-    // May be undefined yet, so use a provider.
-    dependsOn { sourceSets.tools.runtimeClasspath }
-
-    doFirst {
-      // all these steps must be done sequentially: it's a pipeline resulting in utr30.nrm
-      project.javaexec {
-        main = "org.apache.lucene.analysis.icu.GenerateUTR30DataFiles"
-        classpath = sourceSets.tools.runtimeClasspath
-
-        ignoreExitValue false
-        workingDir utr30DataDir
-      }
-
-      project.exec {
-        executable gennorm
-        ignoreExitValue = false
-        args = [
-            "-v",
-            "-s",
-            utr30DataDir,
-            "-o",
-            "${buildDir}/utr30.tmp",
-            "nfc.txt", "nfkc.txt", "nfkc_cf.txt", "BasicFoldings.txt",
-            "DiacriticFolding.txt", "DingbatFolding.txt", "HanRadicalFolding.txt",
-            "NativeDigitFolding.txt"
-        ]
-      }
-      project.exec {
-        executable icupkg
-        ignoreExitValue = false
-        args = [
-            "-tb",
-            "${buildDir}/utr30.tmp",
-            "src/resources/org/apache/lucene/analysis/icu/utr30.nrm"
-        ]
-      }
-    }
-  }
-
-  task genRbbi() {
-    // May be undefined yet, so use a provider.
-    dependsOn { sourceSets.tools.runtimeClasspath }
-
-    doFirst {
-      project.javaexec {
-        main = "org.apache.lucene.analysis.icu.RBBIRuleCompiler"
-        classpath = sourceSets.tools.runtimeClasspath
-
-        ignoreExitValue false
-        enableAssertions true
-        args = [
-            "src/data/uax29",
-            "src/resources/org/apache/lucene/analysis/icu/segmentation"
-        ]
-      }
-    }
-  }
-
-  task regenerate() {
-    dependsOn genUtr30DataFiles
-    dependsOn genRbbi
   }
 }
