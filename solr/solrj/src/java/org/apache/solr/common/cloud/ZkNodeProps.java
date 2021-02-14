@@ -40,7 +40,7 @@ public class ZkNodeProps implements JSONWriter.Writable {
    * Installations that use an older (pre-8.8) SolrJ against a 8.8.0 or newer server will need to set this system
    * property to true to avoid NPEs when reading cluster state from Zookeeper, see SOLR-15145.
    */
-  static final boolean STORE_BASE_URL = Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "true"));
+  public static final boolean STORE_BASE_URL = Boolean.parseBoolean(System.getProperty("solr.storeBaseUrl", "true"));
 
   protected final Map<String,Object> propMap;
 
@@ -125,10 +125,15 @@ public class ZkNodeProps implements JSONWriter.Writable {
   @Override
   public void write(JSONWriter jsonWriter) {
     // don't write out the base_url if we have a node_name
-    if (!STORE_BASE_URL && propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.containsKey(ZkStateReader.NODE_NAME_PROP)) {
-      final Map<String,Object> filtered = new HashMap<>(propMap);
+    if (!STORE_BASE_URL && propMap.containsKey(ZkStateReader.BASE_URL_PROP) && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
+      final Map<String, Object> filtered = new HashMap<>(propMap);
       filtered.remove(ZkStateReader.BASE_URL_PROP);
       jsonWriter.write(filtered);
+    } else if (STORE_BASE_URL && propMap.get(ZkStateReader.BASE_URL_PROP) == null && propMap.get(ZkStateReader.NODE_NAME_PROP) != null) {
+      // this is for back-compat with older SolrJ
+      final Map<String, Object> addBaseUrl = new HashMap<>(propMap);
+      addBaseUrl.put(ZkStateReader.BASE_URL_PROP, UrlScheme.INSTANCE.getBaseUrlForNodeName((String)propMap.get(ZkStateReader.NODE_NAME_PROP)));
+      jsonWriter.write(addBaseUrl);
     } else {
       jsonWriter.write(propMap);
     }
