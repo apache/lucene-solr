@@ -188,6 +188,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
+        ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
       } else {
         ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
 
@@ -319,6 +320,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           coresToCreate.put(coreName, sreq);
         }
       }
+      if(isPRS) {
+        ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
+      }
 
       if(!isLegacyCloud) {
         // wait for all replica entries to be created
@@ -350,11 +354,10 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           Thread.sleep(100);
           prs = PerReplicaStates.fetch(collectionPath, ocmh.zkStateReader.getZkClient(), null);
         }
-        if (prs.allActive()) {
-          // we have successfully found all replicas to be ACTIVE
-        } else {
+        if (!prs.allActive()) {
           failure = true;
-        }
+        }  // we have successfully found all replicas to be ACTIVE
+
         // Now ask Overseer to fetch the latest state of collection
         // from ZK
         ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
