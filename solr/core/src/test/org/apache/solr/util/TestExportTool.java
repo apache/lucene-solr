@@ -20,6 +20,7 @@ package org.apache.solr.util;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,6 +45,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
+import org.apache.solr.util.ExportTool.DocsSink;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
@@ -51,9 +54,9 @@ public class TestExportTool extends SolrCloudTestCase {
   public void testOutputFormatToFileNameMapping() throws Exception {
     String url = "http://example:8983/solr/mycollection";
     ExportTool.Info info = new ExportTool.MultiThreadedRunner(url);
+    
     info.setOutFormat(null, "json");
     assertEquals("mycollection.json", info.out);
-    System.out.println(info.out);
     
     info.setOutFormat(null, "jsonl");
     assertEquals("mycollection.jsonl", info.out);
@@ -111,7 +114,7 @@ public class TestExportTool extends SolrCloudTestCase {
       assertJsonLinesDocsCount(info, 200, record -> "2019-09-30T05:58:03Z".equals(record.get("a_dt")));
 
       info = new ExportTool.MultiThreadedRunner(url);
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl";
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl.gz";
       info.setOutFormat(absolutePath, "jsonl");
       info.setLimit("-1");
       info.fields = "id,desc_s";
@@ -212,12 +215,12 @@ public class TestExportTool extends SolrCloudTestCase {
       }
       info = new ExportTool.MultiThreadedRunner(url);
       info.output = System.out;
-      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".json";
+      absolutePath = tmpFileLoc + COLLECTION_NAME + random().nextInt(100000) + ".jsonl.gz";
       info.setOutFormat(absolutePath, "jsonl");
       info.fields = "id,desc_s";
       info.setLimit("-1");
       info.exportDocs();
-      long actual = ((ExportTool.JsonSink) info.sink).info.docsWritten.get();
+      long actual = ((DocsSink) info.sink).info.docsWritten.get();
       assertTrue("docs written :" + actual + "docs produced : " + info.docsWritten.get(), actual >= docCount);
       assertJsonLinesDocsCount(info, docCount,null);
     } finally {
@@ -249,8 +252,12 @@ public class TestExportTool extends SolrCloudTestCase {
 
     JsonRecordReader jsonReader;
     Reader rdr;
-    jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));
-    rdr = new InputStreamReader(new FileInputStream(info.out), StandardCharsets.UTF_8);
+    jsonReader = JsonRecordReader.getInst("/", Arrays.asList("$FQN:/**"));   
+    InputStream is = new FileInputStream(info.out);
+    if(info.out.endsWith(".gz")) {
+      is = new GZIPInputStream(is);
+    }
+    rdr = new InputStreamReader(is, StandardCharsets.UTF_8);
     try {
       int[] count = new int[]{0};
       jsonReader.streamRecords(rdr, (record, path) -> {
