@@ -77,7 +77,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   @Test
   public void testNonTrivialChildFilter() throws Exception {
-    // just check we don't throw an exception. Thus used to throw before SOLR-15152
+    // just check we don't throw an exception. This used to throw before SOLR-15152
     assertQ(
             req(
                     "q",
