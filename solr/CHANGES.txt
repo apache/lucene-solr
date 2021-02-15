@@ -239,6 +239,8 @@ Optimizations
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
+* SOLR-15149: Better exception handling for LTR model creation errors (Alessandro Benedetti, Christine Poerschke)
+
 
 Other Changes
 ---------------------
