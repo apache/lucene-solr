@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -137,6 +138,8 @@ public class Http2SolrClient extends SolrClient {
   private ExecutorService executor;
   private boolean shutdownExecutor;
 
+  private final String basicAuthAuthorizationStr;
+
   protected Http2SolrClient(String serverBaseUrl, Builder builder) {
     if (serverBaseUrl != null)  {
       if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
@@ -157,6 +160,11 @@ public class Http2SolrClient extends SolrClient {
       closeClient = true;
     } else {
       httpClient = builder.http2SolrClient.httpClient;
+    }
+    if (builder.basicAuthUser != null && builder.basicAuthPassword != null) {
+      basicAuthAuthorizationStr = basicAuthCredentialsToAuthorizationString(builder.basicAuthUser, builder.basicAuthPassword);
+    } else {
+      basicAuthAuthorizationStr = null;
     }
     assert ObjectReleaseTracker.track(this);
   }
@@ -231,6 +239,7 @@ public class Http2SolrClient extends SolrClient {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+
     return httpClient;
   }
 
@@ -470,10 +479,16 @@ public class Http2SolrClient extends SolrClient {
 
   private void setBasicAuthHeader(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, Request req) {
     if (solrRequest.getBasicAuthUser() != null && solrRequest.getBasicAuthPassword() != null) {
-      String userPass = solrRequest.getBasicAuthUser() + ":" + solrRequest.getBasicAuthPassword();
-      String encoded = Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
-      req.header("Authorization", "Basic " + encoded);
+      String encoded = basicAuthCredentialsToAuthorizationString(solrRequest.getBasicAuthUser(), solrRequest.getBasicAuthPassword());
+      req.header("Authorization", encoded);
+    } else if (basicAuthAuthorizationStr != null) {
+      req.header("Authorization", basicAuthAuthorizationStr);
     }
+  }
+
+  private String basicAuthCredentialsToAuthorizationString(String user, String pass) {
+    String userPass = user + ":" + pass;
+    return "Basic " + Base64.byteArrayToBase64(userPass.getBytes(FALLBACK_CHARSET));
   }
 
   private Request makeRequest(@SuppressWarnings({"rawtypes"})SolrRequest solrRequest, String collection)
@@ -841,6 +856,8 @@ public class Http2SolrClient extends SolrClient {
     private Integer idleTimeout;
     private Integer connectionTimeout;
     private Integer maxConnectionsPerHost;
+    private String basicAuthUser;
+    private String basicAuthPassword;
     private boolean useHttp1_1 = Boolean.getBoolean("solr.http1");
     protected String baseSolrUrl;
     private ExecutorService executor;
@@ -854,7 +871,32 @@ public class Http2SolrClient extends SolrClient {
     }
 
     public Http2SolrClient build() {
-      return new Http2SolrClient(baseSolrUrl, this);
+      Http2SolrClient client = new Http2SolrClient(baseSolrUrl, this);
+      try {
+        httpClientBuilderSetup(client);
+      } catch (RuntimeException e) {
+        try {
+          client.close();
+        } catch (Exception exceptionOnClose) {
+          e.addSuppressed(exceptionOnClose);
+        }
+        throw e;
+      }
+      return client;
+    }
+
+    private void httpClientBuilderSetup(Http2SolrClient client) {
+      String factoryClassName = System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+      if (factoryClassName != null) {
+        log.debug ("Using Builder Factory: {}", factoryClassName);
+        HttpClientBuilderFactory factory;
+        try {
+          factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).getConstructor().newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | InvocationTargetException | NoSuchMethodException e) {
+          throw new RuntimeException("Unable to instantiate " + Http2SolrClient.class.getName(), e);
+        }
+        factory.setup(client);
+      }
     }
 
     /**
@@ -872,6 +914,17 @@ public class Http2SolrClient extends SolrClient {
 
     public Builder withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
+      return this;
+    }
+
+    public Builder withBasicAuthCredentials(String user, String pass) {
+      if (user != null || pass != null) {
+        if (user == null || pass == null) {
+          throw new IllegalStateException("Invalid Authentication credentials. Either both or none must be provided");
+        }
+      }
+      this.basicAuthUser = user;
+      this.basicAuthPassword = pass;
       return this;
     }
 
