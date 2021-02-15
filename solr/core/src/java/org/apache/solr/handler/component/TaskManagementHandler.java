@@ -14,9 +14,12 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  * Abstract class which serves as the root of all task managing handlers
@@ -33,7 +36,7 @@ public abstract class TaskManagementHandler extends RequestHandlerBase implement
         this.shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
     }
 
-    protected void processRequest(ResponseBuilder rb) throws IOException {
+    protected void processRequest(SolrQueryRequest req, ResponseBuilder rb, Map<String, String> extraParams) throws IOException {
         ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
         List<SearchComponent> components = rb.components;
 
@@ -59,6 +62,9 @@ public abstract class TaskManagementHandler extends RequestHandlerBase implement
 
             for (String shard : sreq.actualShards) {
                 ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
+                String reqPath = (String) req.getContext().get(PATH);
+
+                params.set(CommonParams.QT, reqPath);
                 params.remove(ShardParams.SHARDS);      // not a top-level request
                 params.set(DISTRIB, "false");               // not a top-level request
                 params.remove("indent");
@@ -67,6 +73,16 @@ public abstract class TaskManagementHandler extends RequestHandlerBase implement
                 params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
                 params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
                 params.set(CommonParams.OMIT_HEADER, false);
+
+                if (extraParams != null) {
+                    Iterator<Map.Entry<String, String>> iterator = extraParams.entrySet().iterator();
+
+                    while (iterator.hasNext()) {
+                        Map.Entry<String, String> entry = iterator.next();
+
+                        params.set(entry.getKey(), entry.getValue());
+                    }
+                }
 
                 shardHandler.submit(sreq, shard, params);
             }

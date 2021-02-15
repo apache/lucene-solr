@@ -180,7 +180,7 @@ import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CommonParams.*;
 
 /**
  * SolrCore got its name because it represents the "core" of Solr -- one index and everything needed to make it work.
@@ -3253,16 +3253,32 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return blobRef;
   }
 
+  /** Generates a UUID for the given query or if the user provided a UUID
+   * for this query, uses that.
+   */
   public String generateQueryID(SolrQueryRequest req) {
-    UUID queryID = UUID.randomUUID();
+    String queryID;
+    String customQueryUUID = req.getParams().get(CUSTOM_QUERY_UUID, null);
 
-    while (activeQueriesGenerated.get(queryID) != null) {
-      queryID = UUID.randomUUID();
+    if (customQueryUUID != null) {
+      queryID = customQueryUUID;
+    } else {
+      queryID = UUID.randomUUID().toString();
     }
 
-    activeQueriesGenerated.put(queryID.toString(), req.getHttpSolrCall().getReq().getQueryString());
+    if (activeQueriesGenerated.containsKey(queryID)) {
+      if (customQueryUUID != null) {
+        throw new IllegalArgumentException("Duplicate query UUID given");
+      } else {
+        while (activeQueriesGenerated.get(queryID) != null) {
+          queryID = UUID.randomUUID().toString();
+        }
+      }
+    }
 
-    return queryID.toString();
+    activeQueriesGenerated.put(queryID, req.getHttpSolrCall().getReq().getQueryString());
+
+    return queryID;
   }
 
   public void releaseQueryID(String inputQueryID) {

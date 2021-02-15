@@ -114,8 +114,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount; assertEquals(pathToClassMap.get("/analysis/field"), "solr.FieldAnalysisRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/debug/dump"), "solr.DumpRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("update"), "solr.UpdateRequestHandlerApi");
-      ++ihCount; assertEquals(pathToClassMap.get("/tasks/cancel"), "solr.TaskManagementHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/tasks/list"), "solr.TaskManagementHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/tasks/cancel"), "solr.QueryCancellationHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/tasks/list"), "solr.ActiveTasksListHandler");
     }
     assertEquals("wrong number of implicit handlers", ihCount, implicitHandlers.size());
   }

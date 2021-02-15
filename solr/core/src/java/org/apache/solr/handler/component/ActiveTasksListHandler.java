@@ -15,6 +15,8 @@ import java.util.List;
  * Handles request for listing all active cancellable tasks
  */
 public class ActiveTasksListHandler extends TaskManagementHandler {
+    // This can be a parent level member but we keep it here to allow future handlers to have
+    // a custom list of components
     private List<SearchComponent> components;
 
     @Override
@@ -23,12 +25,12 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
         rb.setTaskListRequest(true);
 
-        processRequest(rb);
+        processRequest(req, rb, null /*extraParams*/);
     }
 
     @Override
     public String getDescription() {
-        return "List active cancellable tasks";
+        return "activetaskslist";
     }
 
     @Override

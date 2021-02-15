@@ -23,9 +23,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -73,6 +78,39 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
    NamedList<Object> rsp = cloudClient.request(new LukeRequest());
    System.out.println(rsp);
   }
+
+  // TODO: atri
+    @Test
+    public void doBlobHandlerTest() throws Exception {
+
+        try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+            CollectionAdminResponse response1;
+            CollectionAdminRequest.Create createCollectionRequest = CollectionAdminRequest.createCollection(".system",1,2);
+            response1 = createCollectionRequest.process(client);
+            assertEquals(0, response1.getStatus());
+            assertTrue(response1.isSuccess());
+            DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
+            Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
+
+            String baseUrl = replica.getBaseUrl();
+            String url = baseUrl + "/tasks/cancel";
+            MapWriter map = TestSolrConfigHandlerConcurrent.getAsMap(url, cloudClient);
+            assertNotNull(map);
+            assertEquals("solr.BlobHandler", map._get(asList(
+                    "config",
+                    "requestHandler",
+                    "/blob",
+                    "class"),null));
+            map = TestSolrConfigHandlerConcurrent.getAsMap(baseUrl + "/.system/schema/fields/blob", cloudClient);
+            assertNotNull(map);
+            assertEquals("blob", map._get(asList(
+                    "field",
+                    "name"),null));
+            assertEquals("bytes", map._get( asList(
+                    "field",
+                    "type"),null));
+        }
+    }
 
   private void testReqHandlerAPIs() throws Exception {
     String testServerBaseUrl = getRandomServer(cloudClient,"collection1");

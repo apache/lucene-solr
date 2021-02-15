@@ -166,6 +166,11 @@ public interface CommonParams {
   String IS_QUERY_CANCELLABLE = "canCancel";
 
   /**
+   * Custom query UUID if provided.
+   */
+  String CUSTOM_QUERY_UUID = "queryUUID";
+
+  /**
    * UUID for query to be cancelled
    */
   String QUERY_CANCELLATION_UUID = "cancelUUID";
