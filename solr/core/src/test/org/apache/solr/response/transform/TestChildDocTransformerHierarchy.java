@@ -76,6 +76,21 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testNonTrivialChildFilter() throws Exception {
+    // just check we don't throw an exception. Thus used to throw before SOLR-15152
+    assertQ(
+            req(
+                    "q",
+                    "*:*",
+                    "sort",
+                    "id asc",
+                    "fl",
+                    "*, _nest_path_, [child childFilter='type_s:Regular OR type_s:Chocolate']",
+                    "fq",
+                    fqToExcludeNonTestedDocs));
+  }
+
+  @Test
   public void testParentFilterJSON() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
     String[] tests = new String[] {
@@ -111,7 +126,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   public void testParentFilterLimitJSON() throws Exception {
     indexSampleData(numberOfDocsPerNestedTest);
 
-    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=1]",
+    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='{!field f=_nest_path_}/toppings' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
       Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
@@ -158,7 +173,7 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
     assertU(delQ("_nest_path_:\\/toppings"));
     assertU(commit());
 
-    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:/toppings' limit=1]",
+    try(SolrQueryRequest req = req("q", "type_s:donut", "sort", "id asc", "fl", "id, type_s, toppings, _nest_path_, [child childFilter='_nest_path_:\\\\/toppings' limit=1]",
         "fq", fqToExcludeNonTestedDocs)) {
       BasicResultContext res = (BasicResultContext) h.queryAndResponse("/select", req).getResponse();
       Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
