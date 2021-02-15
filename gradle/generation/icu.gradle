@@ -51,12 +51,16 @@ configure(project(":lucene:analysis:icu")) {
 
     doFirst {
       // all these steps must be done sequentially: it's a pipeline resulting in utr30.nrm
+      def v = getVersion('com.ibm.icu', 'icu4j');
       project.javaexec {
         main = "org.apache.lucene.analysis.icu.GenerateUTR30DataFiles"
         classpath = sourceSets.tools.runtimeClasspath
 
         ignoreExitValue false
         workingDir utr30DataDir
+        args = [
+            "release-${v.replace(".", "-")}"
+        ]
       }
 
       project.exec {

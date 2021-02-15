@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Downloads/generates lucene/analysis/icu/src/data/utr30/*.txt
+ * Downloads/generates lucene/analysis/icu/src/data/utr30/*.txt for the specified icu release tag.
  *
  * <p>ASSUMPTION: This class will be run with current directory set to
  * lucene/analysis/icu/src/data/utr30/
@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
  */
 public class GenerateUTR30DataFiles {
   private static final String ICU_GIT_TAG_URL = "https://raw.githubusercontent.com/unicode-org/icu";
-  private static final String ICU_RELEASE_TAG = "maint/maint-62";
   private static final String ICU_DATA_NORM2_PATH = "icu4c/source/data/unidata/norm2";
   private static final String NFC_TXT = "nfc.txt";
   private static final String NFKC_TXT = "nfkc.txt";
@@ -74,7 +73,11 @@ public class GenerateUTR30DataFiles {
 
   public static void main(String args[]) {
     try {
-      getNFKCDataFilesFromIcuProject();
+      if (args.length != 1) {
+        throw new IllegalArgumentException(
+            "usage: " + GenerateUTR30DataFiles.class.getName() + " <releaseTag>");
+      }
+      getNFKCDataFilesFromIcuProject(args[0]);
       expandRulesInUTR30DataFiles();
     } catch (Throwable t) {
       t.printStackTrace(System.err);
@@ -151,9 +154,9 @@ public class GenerateUTR30DataFiles {
     }
   }
 
-  private static void getNFKCDataFilesFromIcuProject() throws IOException {
+  private static void getNFKCDataFilesFromIcuProject(String releaseTag) throws IOException {
     URL icuTagsURL = new URL(ICU_GIT_TAG_URL + "/");
-    URL icuReleaseTagURL = new URL(icuTagsURL, ICU_RELEASE_TAG + "/");
+    URL icuReleaseTagURL = new URL(icuTagsURL, releaseTag + "/");
     URL norm2url = new URL(icuReleaseTagURL, ICU_DATA_NORM2_PATH + "/");
 
     System.err.print("Downloading " + NFKC_TXT + " ... ");

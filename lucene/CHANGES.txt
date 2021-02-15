@@ -253,6 +253,8 @@ Other
 * LUCENE-9627: Remove unused Lucene50FieldInfosFormat codec and small refactor some codecs
   to separate reading header/footer from reading content of the file. (Ignacio Vera)
 
+* LUCENE-9773: Upgrade icu to 68.2 (Robert Muir)
+
 ======================= Lucene 8.9.0 =======================
 
 API Changes
