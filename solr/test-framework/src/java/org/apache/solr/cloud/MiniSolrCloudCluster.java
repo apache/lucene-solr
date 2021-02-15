@@ -120,6 +120,7 @@ public class MiniSolrCloudCluster {
       "    <str name=\"zkACLProvider\">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str> \n" +
       "    <str name=\"pkiHandlerPrivateKeyPath\">${pkiHandlerPrivateKeyPath:cryptokeys/priv_key512_pkcs8.pem}</str> \n" +
       "    <str name=\"pkiHandlerPublicKeyPath\">${pkiHandlerPublicKeyPath:cryptokeys/pub_key512.der}</str> \n" +
+      "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n" +
       "  </solrcloud>\n" +
       // NOTE: this turns off the metrics collection unless overriden by a sysprop
       "  <metrics enabled=\"${metricsEnabled:false}\">\n" +

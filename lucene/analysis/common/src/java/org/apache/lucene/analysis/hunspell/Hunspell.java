@@ -34,15 +34,25 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
 
 /**
- * A spell checker based on Hunspell dictionaries. The objects of this class are not thread-safe
- * (but a single underlying Dictionary can be shared by multiple spell-checkers in different
- * threads). Not all Hunspell features are supported yet.
+ * A spell checker based on Hunspell dictionaries. This class can be used in place of native
+ * Hunspell for many languages for spell-checking and suggesting purposes. Note that not all
+ * languages are supported yet. For example:
+ *
+ * <ul>
+ *   <li>Hungarian (as it doesn't only rely on dictionaries, but has some logic directly in the
+ *       source code
+ *   <li>Languages with Unicode characters outside of the Basic Multilingual Plane
+ *   <li>PHONE affix file option for suggestions
+ * </ul>
+ *
+ * <p>The objects of this class are not thread-safe (but a single underlying Dictionary can be
+ * shared by multiple spell-checkers in different threads).
  */
-public class SpellChecker {
+public class Hunspell {
   final Dictionary dictionary;
   final Stemmer stemmer;
 
-  public SpellChecker(Dictionary dictionary) {
+  public Hunspell(Dictionary dictionary) {
     this.dictionary = dictionary;
     stemmer = new Stemmer(dictionary);
   }
@@ -448,8 +458,8 @@ public class SpellChecker {
       }
     }
 
-    SpellChecker suggestionSpeller =
-        new SpellChecker(dictionary) {
+    Hunspell suggestionSpeller =
+        new Hunspell(dictionary) {
           @Override
           boolean acceptsStem(int formID) {
             return !dictionary.hasFlag(formID, dictionary.noSuggest)
