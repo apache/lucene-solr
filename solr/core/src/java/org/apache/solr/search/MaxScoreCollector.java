@@ -41,7 +41,12 @@ public class MaxScoreCollector extends SimpleCollector {
   }
 
   @Override
-  public void setScorer(Scorable scorer) {
+  public void setScorer(Scorable scorer) throws IOException {
+    if (maxScore == Float.MIN_VALUE) {
+      scorer.setMinCompetitiveScore(0f);
+    } else {
+      scorer.setMinCompetitiveScore(Math.nextUp(maxScore));
+    }
     this.scorer = scorer;
   }
 

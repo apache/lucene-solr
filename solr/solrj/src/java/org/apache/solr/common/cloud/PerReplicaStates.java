@@ -67,6 +67,8 @@ public class PerReplicaStates implements ReflectMapWriter {
   @JsonProperty
   public final SimpleMap<State> states;
 
+  private volatile Boolean allActive;
+
   /**
    * Construct with data read from ZK
    * @param path path from where this is loaded
@@ -90,6 +92,17 @@ public class PerReplicaStates implements ReflectMapWriter {
     }
     this.states = new WrappedSimpleMap<>(tmp);
 
+  }
+
+  /** Check and return if all replicas are ACTIVE
+   */
+  public boolean allActive() {
+    if (this.allActive != null) return allActive;
+    boolean[] result = new boolean[]{true};
+    states.forEachEntry((r, s) -> {
+      if (s.state != Replica.State.ACTIVE) result[0] = false;
+    });
+    return this.allActive = result[0];
   }
 
   /**Get the changed replicas

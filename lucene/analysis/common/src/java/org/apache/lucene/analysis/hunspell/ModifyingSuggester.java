@@ -28,10 +28,10 @@ class ModifyingSuggester {
   private static final int MAX_CHAR_DISTANCE = 4;
   private final LinkedHashSet<String> result = new LinkedHashSet<>();
   private final char[] tryChars;
-  private final SpellChecker speller;
+  private final Hunspell speller;
   boolean hasGoodSuggestions;
 
-  ModifyingSuggester(SpellChecker speller) {
+  ModifyingSuggester(Hunspell speller) {
     this.speller = speller;
     tryChars = speller.dictionary.tryChars.toCharArray();
   }

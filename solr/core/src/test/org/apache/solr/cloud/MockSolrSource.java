@@ -26,8 +26,17 @@ public class MockSolrSource  {
 
   public static ZkController makeSimpleMock(Overseer overseer, ZkStateReader reader, SolrZkClient zkClient) {
     ZkController zkControllerMock = mock(ZkController.class);
-    if (overseer == null) overseer = mock(Overseer.class);
-    
+    final DistributedClusterStateUpdater distributedClusterStateUpdater;
+    if (overseer == null) {
+      // When no overseer is passed, the Overseer queue does nothing. Replicate this in how we handle distributed state
+      // updates by doing nothing as well...
+      distributedClusterStateUpdater = mock(DistributedClusterStateUpdater.class);
+      overseer = mock(Overseer.class);
+      when(overseer.getDistributedClusterStateUpdater()).thenReturn(distributedClusterStateUpdater);
+    } else {
+      // Use the same configuration for state updates as the Overseer.
+      distributedClusterStateUpdater = overseer.getDistributedClusterStateUpdater();
+    }
 
     if (reader != null && zkClient == null) {
       zkClient = reader.getZkClient();
@@ -38,11 +47,11 @@ public class MockSolrSource  {
       when(reader.getZkClient()).thenReturn(zkClient);
     }
      
-    
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
     when(zkControllerMock.getZkStateReader()).thenReturn(reader);
     when(zkControllerMock.getZkClient()).thenReturn(zkClient);
     when(zkControllerMock.getOverseer()).thenReturn(overseer);
+    when(zkControllerMock.getDistributedClusterStateUpdater()).thenReturn(distributedClusterStateUpdater);
     return zkControllerMock;
   }
 }

@@ -175,6 +175,7 @@ public class Dictionary {
   int maxDiff = 5;
   int maxNGramSuggestions = Integer.MAX_VALUE;
   boolean onlyMaxDiff;
+  char noSuggest, subStandard;
 
   // FSTs used for ICONV/OCONV, output ord pointing to replacement text
   FST<CharsRef> iconv;
@@ -233,7 +234,7 @@ public class Dictionary {
     try (BufferedInputStream affixStream =
         new BufferedInputStream(affix, MAX_PROLOGUE_SCAN_WINDOW) {
           @Override
-          public void close() throws IOException {
+          public void close() {
             // TODO: maybe we should consume and close it? Why does it need to stay open?
             // Don't close the affix stream as per javadoc.
           }
@@ -431,6 +432,10 @@ public class Dictionary {
         onlyMaxDiff = true;
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("NOSUGGEST".equals(firstWord)) {
+        noSuggest = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("SUBSTANDARD".equals(firstWord)) {
+        subStandard = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
         compoundMin = Math.max(1, parseNum(reader, line));
       } else if ("COMPOUNDWORDMAX".equals(firstWord)) {
@@ -466,11 +471,12 @@ public class Dictionary {
               new CheckCompoundPattern(reader.readLine(), flagParsingStrategy, this));
         }
       } else if ("SET".equals(firstWord)) {
-        // We could add some sanity-checking whether set command is identical to what was
-        // parsed in readConfig. This would handle cases of flags too far in the file or
-        // duplicated (both are incorrect, I assume).
+        checkCriticalDirectiveSame(
+            "SET", reader, decoder.charset(), getDecoder(singleArgument(reader, line)).charset());
       } else if ("FLAG".equals(firstWord)) {
-        // Similar for FLAG.
+        FlagParsingStrategy strategy = getFlagParsingStrategy(line, decoder.charset());
+        checkCriticalDirectiveSame(
+            "FLAG", reader, flagParsingStrategy.getClass(), strategy.getClass());
       }
     }
 
@@ -492,6 +498,19 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private void checkCriticalDirectiveSame(
+      String directive, LineNumberReader reader, Object expected, Object actual)
+      throws ParseException {
+    if (!expected.equals(actual)) {
+      throw new ParseException(
+          directive
+              + " directive should occur at most once, and in the first "
+              + MAX_PROLOGUE_SCAN_WINDOW
+              + " bytes of the *.aff file",
+          reader.getLineNumber());
+    }
   }
 
   private List<String> parseMapEntry(LineNumberReader reader, String line) throws ParseException {
@@ -1386,14 +1405,6 @@ public class Dictionary {
         .map(String::trim)
         .filter(s -> !s.isBlank())
         .collect(Collectors.toList());
-  }
-
-  boolean isForbiddenWord(char[] word, int length) {
-    if (forbiddenword != FLAG_UNSET) {
-      IntsRef forms = lookupWord(word, 0, length);
-      return forms != null && hasFlag(forms, forbiddenword);
-    }
-    return false;
   }
 
   boolean hasFlag(IntsRef forms, char flag) {

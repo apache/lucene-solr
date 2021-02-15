@@ -229,7 +229,7 @@ public class SliceMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shard);
     if (slice == null) {
-      throw new RuntimeException("Overseer.addRoutingRule unknown collection: " + collectionName + " slice:" + shard);
+      throw new RuntimeException("Overseer.addRoutingRule collection: " + collectionName + ", unknown slice: " + shard);
     }
 
     Map<String, RoutingRule> routingRules = slice.getRoutingRules();

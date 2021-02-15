@@ -185,6 +185,29 @@ public class TestLinearModel extends TestRerankBase {
   }
 
   @Test
+  public void integerAndLongFeatureWeights_shouldCreateModel() {
+    final List<Feature> features = getFeatures(new String[]
+        {"constant1", "constant5"});
+    final List<Normalizer> norms =
+        new ArrayList<>(Collections.nCopies(features.size(),IdentityNormalizer.INSTANCE));
+
+    final Map<String,Object> weights = new HashMap<>();
+    weights.put("constant1", 100L);
+    weights.put("constant5", 1);
+
+    Map<String,Object> params = new HashMap<>();
+    params.put("weights", weights);
+
+    final LTRScoringModel ltrScoringModel = createLinearModel("test6",
+        features, norms, "test", fstore.getFeatures(),
+        params);
+
+    store.addModel(ltrScoringModel);
+    final LTRScoringModel m = store.getModel("test6");
+    assertEquals(ltrScoringModel, m);
+  }
+
+  @Test
   public void emptyFeaturesTest() {
     final ModelException expectedException =
         new ModelException("no features declared for model test6");
@@ -202,6 +225,30 @@ public class TestLinearModel extends TestRerankBase {
           features, norms, "test", fstore.getFeatures(),
           params);
       store.addModel(ltrScoringModel);
+    });
+    assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void notExistentStore_shouldThrowMeaningFulException(){
+    final ModelException expectedException =
+        new ModelException("Feature Store not found: not_existent_store");
+
+    ModelException ex = expectThrows(ModelException.class, () -> {
+      createModelFromFiles("linear-model_notExistentStore.json",
+          "features-store-test-model.json");
+    });
+    assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void notExistentFeature_shouldThrowMeaningFulException(){
+    final ModelException expectedException =
+        new ModelException("Feature:notExist1 not found in store: test");
+
+    ModelException ex = expectThrows(ModelException.class, () -> {
+      createModelFromFiles("linear-model_notExistentFeature.json",
+          "features-store-test-model.json");
     });
     assertEquals(expectedException.toString(), ex.toString());
   }

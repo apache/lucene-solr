@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -94,14 +93,10 @@ final class Stemmer {
       word = scratchBuffer;
     }
 
-    if (dictionary.isForbiddenWord(word, length)) {
-      return Collections.emptyList();
-    }
-
     List<CharsRef> list = new ArrayList<>();
     RootProcessor processor =
-        (stem, forms, formID) -> {
-          list.add(newStem(stem, forms, formID));
+        (stem, formID, stemException) -> {
+          list.add(newStem(stem, stemException));
           return true;
         };
 
@@ -273,7 +268,7 @@ final class Stemmer {
             continue;
           }
         }
-        if (!processor.processRoot(new CharsRef(word, offset, length), forms, i)) {
+        if (!callProcessor(word, offset, length, processor, forms, i)) {
           return false;
         }
       }
@@ -344,23 +339,27 @@ final class Stemmer {
   }
 
   interface RootProcessor {
-    /** @return whether the processing should be continued */
-    boolean processRoot(CharsRef stem, IntsRef forms, int formID);
+    /**
+     * @param stem the text of the found dictionary entry
+     * @param formID internal id of the dictionary entry, e.g. to be used in {@link
+     *     Dictionary#hasFlag(int, char)}
+     * @param stemException "st:" morphological data if present, {@code null} otherwise
+     * @return whether the processing should be continued
+     */
+    boolean processRoot(CharsRef stem, int formID, String stemException);
   }
 
-  private CharsRef newStem(CharsRef stem, IntsRef forms, int formID) {
-    final String exception;
+  private String stemException(IntsRef forms, int formIndex) {
     if (dictionary.hasStemExceptions) {
-      int exceptionID = forms.ints[forms.offset + formID + 1];
+      int exceptionID = forms.ints[forms.offset + formIndex + 1];
       if (exceptionID > 0) {
-        exception = dictionary.getStemException(exceptionID);
-      } else {
-        exception = null;
+        return dictionary.getStemException(exceptionID);
       }
-    } else {
-      exception = null;
     }
+    return null;
+  }
 
+  private CharsRef newStem(CharsRef stem, String exception) {
     if (dictionary.needsOutputCleaning) {
       scratchSegment.setLength(0);
       if (exception != null) {
@@ -704,7 +703,7 @@ final class Stemmer {
               continue;
             }
           }
-          if (!processor.processRoot(new CharsRef(strippedWord, offset, length), forms, i)) {
+          if (!callProcessor(strippedWord, offset, length, processor, forms, i)) {
             return false;
           }
         }
@@ -757,6 +756,12 @@ final class Stemmer {
     return true;
   }
 
+  private boolean callProcessor(
+      char[] word, int offset, int length, RootProcessor processor, IntsRef forms, int i) {
+    CharsRef stem = new CharsRef(word, offset, length);
+    return processor.processRoot(stem, forms.ints[forms.offset + i], stemException(forms, i));
+  }
+
   private boolean needsAnotherAffix(int affix, int previousAffix, boolean isSuffix, int prefixId) {
     char circumfix = dictionary.circumfix;
     // if circumfix was previously set by a prefix, we must check this suffix,
@@ -765,7 +770,6 @@ final class Stemmer {
         && isFlagAppendedByAffix(prefixId, circumfix) != isFlagAppendedByAffix(affix, circumfix)) {
       return true;
     }
-
     if (isFlagAppendedByAffix(affix, dictionary.needaffix)) {
       return !isSuffix
           || previousAffix < 0

@@ -43,30 +43,30 @@ class GeneratingSuggester {
   private static final int MAX_WORDS = 100;
   private static final int MAX_GUESSES = 200;
   private final Dictionary dictionary;
-  private final SpellChecker speller;
+  private final Hunspell speller;
 
-  GeneratingSuggester(SpellChecker speller) {
+  GeneratingSuggester(Hunspell speller) {
     this.dictionary = speller.dictionary;
     this.speller = speller;
   }
 
   List<String> suggest(String word, WordCase originalCase, Set<String> prevSuggestions) {
-    List<Weighted<DictEntry>> roots = findSimilarDictionaryEntries(word, originalCase);
+    List<Weighted<Root<String>>> roots = findSimilarDictionaryEntries(word, originalCase);
     List<Weighted<String>> expanded = expandRoots(word, roots);
     TreeSet<Weighted<String>> bySimilarity = rankBySimilarity(word, expanded);
     return getMostRelevantSuggestions(bySimilarity, prevSuggestions);
   }
 
-  private List<Weighted<DictEntry>> findSimilarDictionaryEntries(
+  private List<Weighted<Root<String>>> findSimilarDictionaryEntries(
       String word, WordCase originalCase) {
-    TreeSet<Weighted<DictEntry>> roots = new TreeSet<>();
+    TreeSet<Weighted<Root<String>>> roots = new TreeSet<>();
     processFST(
         dictionary.words,
         (key, forms) -> {
           if (Math.abs(key.length - word.length()) > 4) return;
 
           String root = toString(key);
-          List<DictEntry> entries = filterSuitableEntries(root, forms);
+          List<Root<String>> entries = filterSuitableEntries(root, forms);
           if (entries.isEmpty()) return;
 
           if (originalCase == WordCase.LOWER
@@ -106,26 +106,28 @@ class GeneratingSuggester {
     return new String(chars);
   }
 
-  private List<DictEntry> filterSuitableEntries(String word, IntsRef forms) {
-    List<DictEntry> result = new ArrayList<>();
+  private List<Root<String>> filterSuitableEntries(String word, IntsRef forms) {
+    List<Root<String>> result = new ArrayList<>();
     for (int i = 0; i < forms.length; i += dictionary.formStep()) {
       int entryId = forms.ints[forms.offset + i];
       if (dictionary.hasFlag(entryId, dictionary.forbiddenword)
+          || dictionary.hasFlag(entryId, dictionary.noSuggest)
           || dictionary.hasFlag(entryId, Dictionary.HIDDEN_FLAG)
           || dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
         continue;
       }
-      result.add(new DictEntry(word, entryId));
+      result.add(new Root<>(word, entryId));
     }
 
     return result;
   }
 
-  private List<Weighted<String>> expandRoots(String misspelled, List<Weighted<DictEntry>> roots) {
+  private List<Weighted<String>> expandRoots(
+      String misspelled, List<Weighted<Root<String>>> roots) {
     int thresh = calcThreshold(misspelled);
 
     TreeSet<Weighted<String>> expanded = new TreeSet<>();
-    for (Weighted<DictEntry> weighted : roots) {
+    for (Weighted<Root<String>> weighted : roots) {
       for (String guess : expandRoot(weighted.word, misspelled)) {
         String lower = dictionary.toLowerCase(guess);
         int sc =
@@ -155,7 +157,7 @@ class GeneratingSuggester {
     return thresh / 3 - 1;
   }
 
-  private List<String> expandRoot(DictEntry root, String misspelled) {
+  private List<String> expandRoot(Root<String> root, String misspelled) {
     List<String> crossProducts = new ArrayList<>();
     Set<String> result = new LinkedHashSet<>();
 
@@ -225,7 +227,7 @@ class GeneratingSuggester {
     return result.stream().limit(MAX_WORDS).collect(Collectors.toList());
   }
 
-  private boolean hasCompatibleFlags(DictEntry root, int affixId) {
+  private boolean hasCompatibleFlags(Root<?> root, int affixId) {
     if (!dictionary.hasFlag(root.entryId, dictionary.affixData(affixId, AFFIX_FLAG))) {
       return false;
     }
@@ -431,39 +433,6 @@ class GeneratingSuggester {
     public int compareTo(Weighted<T> o) {
       int cmp = Integer.compare(score, o.score);
       return cmp != 0 ? -cmp : word.compareTo(o.word);
-    }
-  }
-
-  private static class DictEntry implements Comparable<DictEntry> {
-    private final String word;
-    private final int entryId;
-
-    DictEntry(String word, int entryId) {
-      this.word = word;
-      this.entryId = entryId;
-    }
-
-    @Override
-    public String toString() {
-      return word;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof DictEntry)) return false;
-      DictEntry dictEntry = (DictEntry) o;
-      return entryId == dictEntry.entryId && word.equals(dictEntry.word);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(word, entryId);
-    }
-
-    @Override
-    public int compareTo(DictEntry o) {
-      return word.compareTo(o.word);
     }
   }
 }
