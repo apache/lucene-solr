@@ -293,11 +293,12 @@ public class Hunspell {
         return false;
       }
 
-      String spaceSeparated =
-          new String(tail.chars, tail.offset, length)
-              + " "
-              + new String(tail.chars, tail.offset + length, nextPartLength);
-      return !checkWord(spaceSeparated);
+      char[] spaceSeparated = new char[length + nextPartLength + 1];
+      System.arraycopy(tail.chars, tail.offset, spaceSeparated, 0, length);
+      System.arraycopy(
+          tail.chars, tail.offset + length, spaceSeparated, length + 1, nextPartLength);
+      spaceSeparated[length] = ' ';
+      return !Boolean.TRUE.equals(checkSimpleWord(spaceSeparated, spaceSeparated.length, null));
     }
 
     private boolean isMisspelledSimpleWord(int length, WordCase originalCase) {
