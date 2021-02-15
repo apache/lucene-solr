@@ -1,0 +1,18 @@
+{
+  "documentation": "https://lucene.apache.org/solr/guide/task-management.html",
+  "description": "Cancel a currently running task",
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/tasks/cancel"
+    ],
+    "params": {
+      "cancelUUID": {
+        "type":"string",
+        "description": "Specify the UUID for the query to cancel"
+      }
+    }
+  }
+}

@@ -1574,7 +1574,7 @@ public class QueryComponent extends SearchComponent
               getZkController().getNodeName();
     }
 
-    final String localQueryID = req.getCore().generateQueryID();
+    final String localQueryID = req.getCore().generateQueryID(req);
 
     if (nodeName != null) {
       return nodeName.concat(localQueryID);

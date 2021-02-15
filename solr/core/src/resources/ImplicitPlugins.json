@@ -155,17 +155,17 @@
       }
     },
     "/tasks/cancel": {
-      "class": "solr.TaskManagementHandler",
+      "class": "solr.QueryCancellationHandler",
       "useParams":"_TASK_CANCELLATION",
       "components": [
         "querycancellation"
       ]
     },
     "/tasks/list": {
-      "class": "solr.TaskManagementHandler",
+      "class": "solr.ActiveTasksListHandler",
       "useParams":"_LIST_TASKS",
       "components": [
-        "activetaskslistcomponent"
+        "activetaskslist"
       ]
     }
   }

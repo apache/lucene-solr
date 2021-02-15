@@ -1,7 +1,5 @@
 package org.apache.solr.handler.component;
 
-import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -10,77 +8,47 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.QUERY_CANCELLATION_UUID;
-import static org.apache.solr.handler.component.ShardRequest.PURPOSE_CANCEL_TASK;
-import static org.apache.solr.handler.component.ShardRequest.PURPOSE_LIST_TASKS;
 
-public class TaskManagementHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
-    private enum TaskRequestType {
-        TASK_CANCEL,
-        TASK_LIST
-    };
-
+/**
+ * Abstract class which serves as the root of all task managing handlers
+ */
+public abstract class TaskManagementHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
     private ShardHandlerFactory shardHandlerFactory;
-    private TaskRequestType taskRequestType;
-
 
     @SuppressWarnings("unchecked")
     @Override
-    public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-        CoreContainer cc = req.getCore().getCoreContainer();
-        boolean isZkAware = cc.isZooKeeperAware();
-        boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
+    public abstract void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception;
 
-        List<SearchComponent> components = buildComponentsList();
-        ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
+    @Override
+    public void inform(SolrCore core) {
+        this.shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
+    }
 
+    protected void processRequest(ResponseBuilder rb) throws IOException {
         ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+        List<SearchComponent> components = rb.components;
 
         shardHandler.prepDistributed(rb);
 
-        if (taskRequestType == TaskRequestType.TASK_CANCEL) {
-            rb.setCancellation(true);
-        } else if (taskRequestType == TaskRequestType.TASK_LIST) {
-            rb.setTaskListRequest(true);
-        }
-
-        if (rb.isCancellation()) {
-            String cancellationUUID = req.getParams().get(QUERY_CANCELLATION_UUID, null);
-
-            if (cancellationUUID == null) {
-                throw new IllegalArgumentException("Query cancellation was requested but no query UUID for cancellation was given");
-            }
-
-            rb.setCancellationUUID(cancellationUUID);
-        }
-
-        for(SearchComponent c : components ) {
+        for(SearchComponent c : components) {
             c.prepare(rb);
         }
 
-        if (!isDistrib) {
+        if (!rb.isDistrib) {
             for (SearchComponent component : components) {
                 component.process(rb);
             }
         } else {
             ShardRequest sreq = new ShardRequest();
-
-            if (taskRequestType == TaskRequestType.TASK_CANCEL) {
-                sreq.purpose = PURPOSE_CANCEL_TASK;
-            } else {
-                sreq.purpose = PURPOSE_LIST_TASKS;
-            }
 
             // Distribute to all shards
             sreq.shards = rb.shards;
@@ -120,62 +88,30 @@ public class TaskManagementHandler extends RequestHandlerBase implements SolrCor
                 c.handleResponses(rb, srsp.getShardRequest());
             }
         }
-
-        rsp.getValues().add("status", "query with queryID " + rb.getCancellationUUID() + " " + "cancelled");
     }
 
-    @Override
-    public void inform(SolrCore core) {
-        this.shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
+    public static List<SearchComponent> buildComponentsList() {
+        List<SearchComponent> components = new ArrayList<>(2);
+
+        QueryCancellationComponent component = new QueryCancellationComponent();
+        components.add(component);
+
+        ActiveTasksListComponent activeTasksListComponent = new ActiveTasksListComponent();
+        components.add(activeTasksListComponent);
+
+        return components;
     }
 
-    @Override
-    public String getDescription() {
-        return "Cancel queries";
+    public static ResponseBuilder buildResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp,
+                                                       List<SearchComponent> components) {
+        CoreContainer cc = req.getCore().getCoreContainer();
+        boolean isZkAware = cc.isZooKeeperAware();
+
+        ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
+
+        rb.isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
+
+        return rb;
     }
-
-    @Override
-    public Category getCategory() {
-        return Category.ADMIN;
-    }
-
-    @Override
-    public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
-        return PermissionNameProvider.Name.READ_PERM;
-    }
-
-    @Override
-    public SolrRequestHandler getSubHandler(String path) {
-        if (path.equals("/tasks/cancel")) {
-            taskRequestType = TaskRequestType.TASK_CANCEL;
-            return this;
-        } else if (path.equals("/tasks/list")) {
-            taskRequestType = TaskRequestType.TASK_LIST;
-            return this;
-        }
-        return null;
-    }
-
-    @Override
-    public Boolean registerV2() {
-        return Boolean.TRUE;
-    }
-
-    @Override
-    public Collection<Api> getApis() {
-        return ApiBag.wrapRequestHandlers(this, "core.tasks.cancel", "core.tasks.list");
-    }
-
-    private List<SearchComponent> buildComponentsList() {
-    List<SearchComponent> components = new ArrayList<>(1);
-
-    QueryCancellationComponent component = new QueryCancellationComponent();
-    components.add(component);
-
-    ActiveTasksListComponent activeTasksListComponent = new ActiveTasksListComponent();
-    components.add(activeTasksListComponent);
-
-    return components;
-}
 }
 

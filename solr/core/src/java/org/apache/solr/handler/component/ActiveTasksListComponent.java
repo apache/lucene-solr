@@ -28,11 +28,11 @@ public class ActiveTasksListComponent extends SearchComponent {
 
         NamedList<String> temp = new NamedList<>();
 
-        Iterator<Map.Entry<String, CancellableTask>> iterator = rb.req.getCore().getActiveQueriesGenerated();
+        Iterator<Map.Entry<String, String>> iterator = rb.req.getCore().getActiveQueriesGenerated();
 
         while (iterator.hasNext()) {
-            Map.Entry<String, CancellableTask> entry = iterator.next();
-            temp.add(entry.getKey(), entry.getValue().toString());
+            Map.Entry<String, String> entry = iterator.next();
+            temp.add(entry.getKey(), entry.getValue());
         }
 
         rb.rsp.add("taskList", temp);
@@ -40,7 +40,7 @@ public class ActiveTasksListComponent extends SearchComponent {
 
     @Override
     public String getDescription() {
-        return "activetaskslistcomponent";
+        return "activetaskslist";
     }
 
     @Override
