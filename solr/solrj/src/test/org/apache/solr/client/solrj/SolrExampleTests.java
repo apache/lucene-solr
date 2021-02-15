@@ -1949,7 +1949,7 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
 
     // base check - we know there the exact number of these root docs
     q = new SolrQuery("{!parent which=\"*:* -_nest_path_:*\"}");
-    q.addField("*,[child limit=\"-1\"]");
+    q.setFields("*","[child limit=\"-1\"]");
     
     resp = client.query(q);
     assertEquals("topLevel count does not match", numRootDocs,
