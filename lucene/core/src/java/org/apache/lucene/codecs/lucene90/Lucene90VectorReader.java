@@ -67,20 +67,28 @@ public final class Lucene90VectorReader extends VectorReader {
 
     int versionMeta = readMetadata(state, Lucene90VectorFormat.META_EXTENSION);
     long[] checksumRef = new long[1];
-    vectorData =
-        openDataInput(
-            state,
-            versionMeta,
-            Lucene90VectorFormat.VECTOR_DATA_EXTENSION,
-            Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME,
-            checksumRef);
-    vectorIndex =
-        openDataInput(
-            state,
-            versionMeta,
-            Lucene90VectorFormat.VECTOR_INDEX_EXTENSION,
-            Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME,
-            checksumRef);
+    boolean success = false;
+    try {
+      vectorData =
+          openDataInput(
+              state,
+              versionMeta,
+              Lucene90VectorFormat.VECTOR_DATA_EXTENSION,
+              Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME,
+              checksumRef);
+      vectorIndex =
+          openDataInput(
+              state,
+              versionMeta,
+              Lucene90VectorFormat.VECTOR_INDEX_EXTENSION,
+              Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME,
+              checksumRef);
+      success = true;
+    } finally {
+      if (success == false) {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
     checksumSeed = checksumRef[0];
   }
 
@@ -116,37 +124,28 @@ public final class Lucene90VectorReader extends VectorReader {
       String codecName,
       long[] checksumRef)
       throws IOException {
-    boolean success = false;
-
     String fileName =
         IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
     IndexInput in = state.directory.openInput(fileName, state.context);
-    try {
-      int versionVectorData =
-          CodecUtil.checkIndexHeader(
-              in,
-              codecName,
-              Lucene90VectorFormat.VERSION_START,
-              Lucene90VectorFormat.VERSION_CURRENT,
-              state.segmentInfo.getId(),
-              state.segmentSuffix);
-      if (versionMeta != versionVectorData) {
-        throw new CorruptIndexException(
-            "Format versions mismatch: meta="
-                + versionMeta
-                + ", "
-                + codecName
-                + "="
-                + versionVectorData,
-            in);
-      }
-      checksumRef[0] = CodecUtil.retrieveChecksum(in);
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(in);
-      }
+    int versionVectorData =
+        CodecUtil.checkIndexHeader(
+            in,
+            codecName,
+            Lucene90VectorFormat.VERSION_START,
+            Lucene90VectorFormat.VERSION_CURRENT,
+            state.segmentInfo.getId(),
+            state.segmentSuffix);
+    if (versionMeta != versionVectorData) {
+      throw new CorruptIndexException(
+          "Format versions mismatch: meta="
+              + versionMeta
+              + ", "
+              + codecName
+              + "="
+              + versionVectorData,
+          in);
     }
+    checksumRef[0] = CodecUtil.retrieveChecksum(in);
     return in;
   }
 
