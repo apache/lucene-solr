@@ -25,8 +25,43 @@ import org.apache.solr.common.annotation.JsonProperty;
  */
 public class AffinityPlacementConfig implements PlacementPluginConfig {
 
-  public static final String COLLECTION_NODE_TYPE_PROPERTY = "placement.affinity.node_type";
-  public static final String WITH_COLLECTION_PROPERTY = "placement.affinity.withCollection";
+  /**
+   * Collection property that defines a comma-separate list of required node types.
+   */
+  public static final String COLLECTION_NODE_TYPE_PROPERTY = COLLECTION_PROPERTY_PREFIX + "affinity.node_type";
+  /**
+   * Collection property that defines the secondary collection name to be co-located with
+   * this collection.
+   */
+  public static final String WITH_COLLECTION_PROPERTY = COLLECTION_PROPERTY_PREFIX + "affinity.withCollection";
+  /**
+   * <p>Name of the system property on a node indicating which (public cloud) Availability Zone that node is in. The value
+   * is any string, different strings denote different availability zones.
+   *
+   * <p>Nodes on which this system property is not defined are considered being in the same Availability Zone
+   * {@link #UNDEFINED_AVAILABILITY_ZONE} (hopefully the value of this constant is not the name of a real Availability Zone :).
+   */
+  public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
+  /**
+   * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
+   * The value of that system property is a comma-separated list or a single string of value names of
+   * {@link org.apache.solr.cluster.Replica.ReplicaType} (case insensitive). If that property is not defined, that node is
+   * considered accepting all replica types (i.e. undefined is equivalent to {@code "NRT,Pull,tlog"}).
+   */
+  public static final String REPLICA_TYPE_SYSPROP = "replica_type";
+  /**
+   * Name of the system property on a node indicating the arbitrary "node type" (for example, a node
+   * more suitable for the indexing work load could be labeled as <code>node_type: indexing</code>).
+   * The value of this system property is a comma-separated list or a single label (labels must not
+   * contain commas), which represent a logical OR for the purpose of placement. Collections may
+   * indicate the required node types using the {@link AffinityPlacementConfig#COLLECTION_NODE_TYPE_PROPERTY},
+   * and replicas will be placed only on the nodes that match one of the types.
+   */
+  public static final String NODE_TYPE_SYSPROP = "node_type";
+  /**
+   * This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe)
+   */
+  public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
 
   public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 20L;
   public static final long DEFAULT_PRIORITIZED_FREE_DISK_GB = 100L;

@@ -115,30 +115,6 @@ import java.util.stream.Collectors;
 public class AffinityPlacementFactory implements PlacementPluginFactory<AffinityPlacementConfig> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * <p>Name of the system property on a node indicating which (public cloud) Availability Zone that node is in. The value
-   * is any string, different strings denote different availability zones.
-   *
-   * <p>Nodes on which this system property is not defined are considered being in the same Availability Zone
-   * {@link #UNDEFINED_AVAILABILITY_ZONE} (hopefully the value of this constant is not the name of a real Availability Zone :).
-   */
-  public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
-
-  /**
-   * <p>Name of the system property on a node indicating the type of replicas allowed on that node.
-   * The value of that system property is a comma separated list or a single string of value names of
-   * {@link org.apache.solr.cluster.Replica.ReplicaType} (case insensitive). If that property is not defined, that node is
-   * considered accepting all replica types (i.e. undefined is equivalent to {@code "NRT,Pull,tlog"}).
-   */
-  public static final String REPLICA_TYPE_SYSPROP = "replica_type";
-
-  public static final String NODE_TYPE_SYSPROP = "node_type";
-
-  /**
-   * This is the "AZ" name for nodes that do not define an AZ. Should not match a real AZ name (I think we're safe)
-   */
-  public static final String UNDEFINED_AVAILABILITY_ZONE = "uNd3f1NeD";
-
   private AffinityPlacementConfig config = AffinityPlacementConfig.DEFAULT;
 
   /**
@@ -201,9 +177,9 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       // Request all needed attributes
       AttributeFetcher attributeFetcher = placementContext.getAttributeFetcher();
       attributeFetcher
-          .requestNodeSystemProperty(AVAILABILITY_ZONE_SYSPROP)
-          .requestNodeSystemProperty(NODE_TYPE_SYSPROP)
-          .requestNodeSystemProperty(REPLICA_TYPE_SYSPROP);
+          .requestNodeSystemProperty(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
+          .requestNodeSystemProperty(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP);
       attributeFetcher
           .requestNodeMetric(NodeMetricImpl.NUM_CORES)
           .requestNodeMetric(NodeMetricImpl.FREE_DISK_GB);
@@ -359,13 +335,13 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
     }
 
     /**
-     * Resolves the AZ of a node and takes care of nodes that have no defined AZ in system property {@link #AVAILABILITY_ZONE_SYSPROP}
-     * to then return {@link #UNDEFINED_AVAILABILITY_ZONE} as the AZ name.
+     * Resolves the AZ of a node and takes care of nodes that have no defined AZ in system property {@link AffinityPlacementConfig#AVAILABILITY_ZONE_SYSPROP}
+     * to then return {@link AffinityPlacementConfig#UNDEFINED_AVAILABILITY_ZONE} as the AZ name.
      */
     private String getNodeAZ(Node n, final AttributeValues attrValues) {
-      Optional<String> nodeAz = attrValues.getSystemProperty(n, AVAILABILITY_ZONE_SYSPROP);
+      Optional<String> nodeAz = attrValues.getSystemProperty(n, AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP);
       // All nodes with undefined AZ will be considered part of the same AZ. This also works for deployments that do not care about AZ's
-      return nodeAz.orElse(UNDEFINED_AVAILABILITY_ZONE);
+      return nodeAz.orElse(AffinityPlacementConfig.UNDEFINED_AVAILABILITY_ZONE);
     }
 
     /**
@@ -399,7 +375,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
      * as it would not be possible to make any meaningful placement decisions.
      *
      * @param nodes      all nodes on which this plugin should compute placement
-     * @param attrValues attributes fetched for the nodes. This method uses system property {@link #REPLICA_TYPE_SYSPROP} as
+     * @param attrValues attributes fetched for the nodes. This method uses system property {@link AffinityPlacementConfig#REPLICA_TYPE_SYSPROP} as
      *                   well as the number of cores on each node.
      */
     private Pair<EnumMap<Replica.ReplicaType, Set<Node>>, Map<Node, Integer>> getNodesPerReplicaType(Set<Node> nodes, final AttributeValues attrValues) {
@@ -437,7 +413,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Integer coresCount = attrValues.getNodeMetric(node, NodeMetricImpl.NUM_CORES).get();
         coresOnNodes.put(node, coresCount);
 
-        String supportedReplicaTypes = attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).isPresent() ? attrValues.getSystemProperty(node, REPLICA_TYPE_SYSPROP).get() : null;
+        String supportedReplicaTypes = attrValues.getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP).isPresent() ? attrValues.getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP).get() : null;
         // If property not defined or is only whitespace on a node, assuming node can take any replica type
         if (supportedReplicaTypes == null || supportedReplicaTypes.isBlank()) {
           for (Replica.ReplicaType rt : Replica.ReplicaType.values()) {
@@ -667,11 +643,11 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       Set<String> collNodeTypes = Set.copyOf(StrUtils.splitSmart(collProperty, ','));
       Set<Node> filteredNodes = initialNodes.stream()
           .filter(n -> {
-            Optional<String> nodePropOpt = attributeValues.getSystemProperty(n, AffinityPlacementConfig.COLLECTION_NODE_TYPE_PROPERTY);
+            Optional<String> nodePropOpt = attributeValues.getSystemProperty(n, AffinityPlacementConfig.NODE_TYPE_SYSPROP);
             if (!nodePropOpt.isPresent()) {
               return false;
             }
-            Set<String> nodeTypes = Set.copyOf(StrUtils.splitSmart(nodePropOpt.get(), ','));
+            Set<String> nodeTypes = new HashSet<>(StrUtils.splitSmart(nodePropOpt.get(), ','));
             nodeTypes.retainAll(collNodeTypes);
             return !nodeTypes.isEmpty();
           }).collect(Collectors.toSet());

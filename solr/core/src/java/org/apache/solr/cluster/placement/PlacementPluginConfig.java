@@ -25,4 +25,6 @@ import org.apache.solr.common.util.ReflectMapWriter;
  * annotated with {@link org.apache.solr.common.annotation.JsonProperty} if needed.
  */
 public interface PlacementPluginConfig extends ReflectMapWriter {
+
+    public static final String COLLECTION_PROPERTY_PREFIX = "placement.";
 }
