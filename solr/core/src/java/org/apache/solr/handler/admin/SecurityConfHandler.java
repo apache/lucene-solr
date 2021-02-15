@@ -265,22 +265,25 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
 
   @Override
   public Collection<Api> getApis() {
-    if (apis == null) {
+    Collection<Api> syncedApis = apis;
+    if (syncedApis == null) {
       synchronized (this) {
-        if (apis == null) {
-          Collection<Api> apis = new ArrayList<>();
+        syncedApis = apis;
+        if (syncedApis == null) {
+          syncedApis = new ArrayList<>();
+          apis = syncedApis;
           final SpecProvider authcCommands = Utils.getSpec("cluster.security.authentication.Commands");
           final SpecProvider authzCommands = Utils.getSpec("cluster.security.authorization.Commands");
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
-          apis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
+          syncedApis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authentication")));
+          syncedApis.add(new ReqHandlerToApi(this, Utils.getSpec("cluster.security.authorization")));
           SpecProvider authcSpecProvider = () -> {
             AuthenticationPlugin authcPlugin = cores.getAuthenticationPlugin();
-            return authcPlugin != null && authcPlugin instanceof SpecProvider ?
+            return authcPlugin instanceof SpecProvider ?
                 ((SpecProvider) authcPlugin).getSpec() :
                 authcCommands.getSpec();
           };
 
-          apis.add(new ReqHandlerToApi(this, authcSpecProvider) {
+          syncedApis.add(new ReqHandlerToApi(this, authcSpecProvider) {
             @Override
             public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
               //it is possible that the Authentication plugin is modified since the last call. invalidate the
@@ -293,11 +296,11 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
 
           SpecProvider authzSpecProvider = () -> {
             AuthorizationPlugin authzPlugin = cores.getAuthorizationPlugin();
-            return authzPlugin != null && authzPlugin instanceof SpecProvider ?
+            return authzPlugin instanceof SpecProvider ?
                 ((SpecProvider) authzPlugin).getSpec() :
                 authzCommands.getSpec();
           };
-          apis.add(new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
+          syncedApis.add(new ApiBag.ReqHandlerToApi(this, authzSpecProvider) {
             @Override
             public synchronized Map<String, JsonSchemaValidator> getCommandSchema() {
               //it is possible that the Authorization plugin is modified since the last call. invalidate the
@@ -308,11 +311,11 @@ public abstract class SecurityConfHandler extends RequestHandlerBase implements 
             }
           });
 
-          this.apis = ImmutableList.copyOf(apis);
+          syncedApis = ImmutableList.copyOf(syncedApis);
         }
       }
     }
-    return this.apis;
+    return syncedApis;
   }
 
   @Override

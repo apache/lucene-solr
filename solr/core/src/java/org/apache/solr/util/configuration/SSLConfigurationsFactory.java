@@ -28,14 +28,17 @@ public class SSLConfigurationsFactory {
    * @return Configurations object
    */
   static public SSLConfigurations current() {
-    if (currentConfigurations == null) {
+    SSLConfigurations syncedCurrentConfigurations = currentConfigurations;
+    if (syncedCurrentConfigurations == null) {
       synchronized (SSLConfigurationsFactory.class) {
-        if (currentConfigurations == null) {
-          currentConfigurations = getInstance();
+        syncedCurrentConfigurations = currentConfigurations;
+        if (syncedCurrentConfigurations == null) {
+          syncedCurrentConfigurations = getInstance();
+          currentConfigurations = syncedCurrentConfigurations;
         }
       }
     }
-    return currentConfigurations;
+    return syncedCurrentConfigurations;
   }
 
   private static SSLConfigurations getInstance() {
