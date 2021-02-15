@@ -1430,15 +1430,6 @@ public class Dictionary {
     }
   }
 
-  private boolean hasCustomMorphData(String morphData) {
-    for (String datum : splitMorphData(morphData)) {
-      if (!datum.startsWith("ph:")) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   private List<String> splitMorphData(String morphData) {
     // first see if it's an alias
     if (morphAliasCount > 0) {
