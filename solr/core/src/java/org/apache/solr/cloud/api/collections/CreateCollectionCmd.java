@@ -166,6 +166,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ocmh.zkStateReader.getZkClient().create(collectionPath, data, CreateMode.PERSISTENT, true);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
+        ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
       } else {
         if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
           // The message has been crafted by CollectionsHandler.CollectionOperation.CREATE_OP and defines the QUEUE_OPERATION
@@ -299,6 +300,9 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         sreq.params = params;
 
         coresToCreate.put(coreName, sreq);
+      }
+      if(isPRS) {
+        ocmh.overseer.submit(new RefreshCollectionMessage(collectionName));
       }
 
       // PRS collections did their own thing and we didn't create a StateChangeRecorder for them
