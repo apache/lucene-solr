@@ -205,6 +205,7 @@ public class TestAllDictionaries extends LuceneTestCase {
         + ("strips=" + RamUsageTester.humanSizeOf(dic.stripData) + ", ")
         + ("conditions=" + RamUsageTester.humanSizeOf(dic.patterns) + ", ")
         + ("affixData=" + RamUsageTester.humanSizeOf(dic.affixData) + ", ")
+        + ("morphData=" + RamUsageTester.humanSizeOf(dic.morphData) + ", ")
         + ("prefixes=" + RamUsageTester.humanSizeOf(dic.prefixes) + ", ")
         + ("suffixes=" + RamUsageTester.humanSizeOf(dic.suffixes) + ")");
   }

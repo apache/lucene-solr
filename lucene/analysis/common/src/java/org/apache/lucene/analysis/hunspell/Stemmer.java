@@ -343,23 +343,28 @@ final class Stemmer {
      * @param stem the text of the found dictionary entry
      * @param formID internal id of the dictionary entry, e.g. to be used in {@link
      *     Dictionary#hasFlag(int, char)}
-     * @param stemException "st:" morphological data if present, {@code null} otherwise
+     * @param morphDataId the id of the custom morphological data (0 if none), to be used with
+     *     {@link Dictionary#morphData}
      * @return whether the processing should be continued
      */
-    boolean processRoot(CharsRef stem, int formID, String stemException);
+    boolean processRoot(CharsRef stem, int formID, int morphDataId);
   }
 
-  private String stemException(IntsRef forms, int formIndex) {
-    if (dictionary.hasStemExceptions) {
-      int exceptionID = forms.ints[forms.offset + formIndex + 1];
-      if (exceptionID > 0) {
-        return dictionary.getStemException(exceptionID);
+  private String stemException(int morphDataId) {
+    if (morphDataId > 0) {
+      String data = dictionary.morphData.get(morphDataId);
+      int start = data.startsWith("st:") ? 0 : data.indexOf(" st:");
+      if (start >= 0) {
+        int nextSpace = data.indexOf(' ', start + 3);
+        return data.substring(start + 3, nextSpace < 0 ? data.length() : nextSpace);
       }
     }
     return null;
   }
 
-  private CharsRef newStem(CharsRef stem, String exception) {
+  private CharsRef newStem(CharsRef stem, int morphDataId) {
+    String exception = stemException(morphDataId);
+
     if (dictionary.needsOutputCleaning) {
       scratchSegment.setLength(0);
       if (exception != null) {
@@ -759,7 +764,8 @@ final class Stemmer {
   private boolean callProcessor(
       char[] word, int offset, int length, RootProcessor processor, IntsRef forms, int i) {
     CharsRef stem = new CharsRef(word, offset, length);
-    return processor.processRoot(stem, forms.ints[forms.offset + i], stemException(forms, i));
+    int morphDataId = dictionary.hasCustomMorphData ? forms.ints[forms.offset + i + 1] : 0;
+    return processor.processRoot(stem, forms.ints[forms.offset + i], morphDataId);
   }
 
   private boolean needsAnotherAffix(int affix, int previousAffix, boolean isSuffix, int prefixId) {

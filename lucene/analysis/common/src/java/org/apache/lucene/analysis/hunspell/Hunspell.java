@@ -156,7 +156,7 @@ public class Hunspell {
         length,
         originalCase,
         context,
-        (stem, formID, stemException) -> {
+        (stem, formID, morphDataId) -> {
           if (acceptsStem(formID)) {
             result[0] = new Root<>(stem, formID);
           }
@@ -251,6 +251,24 @@ public class Hunspell {
 
   private boolean equalsIgnoreCase(CharSequence cr1, CharSequence cr2) {
     return cr1.toString().equalsIgnoreCase(cr2.toString());
+  }
+
+  /**
+   * Find all roots that could result in the given word after case conversion and adding affixes.
+   * This corresponds to the original {@code hunspell -s} (stemming) functionality.
+   *
+   * <p>Some affix rules are relaxed in this stemming process: e.g. explicitly forbidden words are
+   * still returned. Some of the returned roots may be synthetic and not directly occur in the *.dic
+   * file (but differ from some existing entries in case). No roots are returned for compound words.
+   *
+   * <p>The returned roots may be used to retrieve morphological data via {@link
+   * Dictionary#lookupEntries}.
+   */
+  public List<String> getRoots(String word) {
+    return stemmer.stem(word).stream()
+        .map(CharsRef::toString)
+        .distinct()
+        .collect(Collectors.toList());
   }
 
   private class CompoundPart {
