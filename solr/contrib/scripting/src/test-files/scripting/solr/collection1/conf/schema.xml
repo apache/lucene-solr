@@ -29,6 +29,7 @@
 
   <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0" docValues="${solr.tests.numeric.dv}"/>
 
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
   <!-- solr.TextField allows the specification of custom
@@ -52,6 +53,9 @@
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="name" type="nametext" indexed="true" stored="true"/>
   <field name="subject" type="text" indexed="true" stored="true"/>
+  <field name="text" type="text" indexed="true" stored="true"/>
+  <field name="title" type="text" indexed="true" stored="true"/>
+  <field name="timestamp" type="date" indexed="true" stored="true"/>
 
 
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields

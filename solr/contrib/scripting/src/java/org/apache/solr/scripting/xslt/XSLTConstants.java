@@ -14,10 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * XSLT related utilities (deprecated package, do not add new classes)
- */
-package org.apache.solr.util.xslt;
 
+package org.apache.solr.scripting.xslt;
 
+class XSLTConstants {
+  /** Transformer param */
+  static final String TR = "tr";
+  static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
+  static final int XSLT_CACHE_DEFAULT = 60;
+  static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds";
+}

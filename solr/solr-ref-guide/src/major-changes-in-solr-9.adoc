@@ -144,8 +144,11 @@ _(raw; not yet edited)_
 
 * SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
 
-* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
- of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name.
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name.
+
+* SOLR-15121: XSLTResponseWriter moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.
 
 === Upgrade Prerequisites in Solr 9
 
