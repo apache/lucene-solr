@@ -10,7 +10,7 @@
             {
                 "weight" : "1f",
                 "root": {
-                    "feature": "matchedTitle",
+                    "feature": "notExist1",
                     "threshold": "0.5f",
                     "left" : {
                         "value" : "-100"
