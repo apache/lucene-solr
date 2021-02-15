@@ -300,7 +300,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
     Feature extractedFromStore = featureName == null ? null : featureStore.get(featureName);
     if (extractedFromStore == null) {
       if (featureStore.getFeatures().isEmpty()) {
-        throw new ModelException("Feature Store not found: " + featureStore.getName());
+        throw new ModelException("Missing or empty feature store: " + featureStore.getName());
       } else {
         throw new ModelException("Feature: " + featureName + " not found in store: " + featureStore.getName());
       }
