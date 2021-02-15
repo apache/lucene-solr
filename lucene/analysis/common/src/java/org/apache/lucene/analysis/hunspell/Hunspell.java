@@ -336,7 +336,9 @@ public class Hunspell {
 
   private boolean mayBreakIntoCompounds(char[] chars, int offset, int length, int breakPos) {
     if (dictionary.checkCompoundCase) {
-      if (Character.isUpperCase(chars[breakPos - 1]) || Character.isUpperCase(chars[breakPos])) {
+      char a = chars[breakPos - 1];
+      char b = chars[breakPos];
+      if ((Character.isUpperCase(a) || Character.isUpperCase(b)) && a != '-' && b != '-') {
         return false;
       }
     }
