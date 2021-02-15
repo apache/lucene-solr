@@ -1,6 +1,5 @@
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.search.CancellableTask;
 import org.apache.solr.common.util.NamedList;
 
 import java.io.IOException;
