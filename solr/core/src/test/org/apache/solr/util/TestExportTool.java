@@ -45,7 +45,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
-import org.apache.solr.util.ExportTool.DocsSink;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
