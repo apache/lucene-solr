@@ -22,7 +22,7 @@ The `ExternalFileField` type makes it possible to specify the values for a field
 
 [IMPORTANT]
 ====
-External fields are not searchable. They can be used only for function queries or display. For more information on function queries, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
+External fields are not searchable. They can be used only for function queries or display. For more information on function queries, see the section on <<function-queries.adoc#,Function Queries>>.
 ====
 
 The `ExternalFileField` type is handy for cases where you want to update a particular field in many documents more often than you want to update the rest of the documents. For example, suppose you have implemented a document rank based on the number of views. You might want to update the rank of all the documents daily or hourly, while the rest of the contents of the documents might be updated much less frequently. Without `ExternalFileField`, you would need to update each document just to change the rank. Using `ExternalFileField` is much more efficient because all document values for a particular field are stored in an external file that can be updated as frequently as you wish.

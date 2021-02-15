@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.hunspell;
 
 import java.util.List;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 
 class CompoundRule {
@@ -51,16 +50,15 @@ class CompoundRule {
     data = parsedFlags.toString().toCharArray();
   }
 
-  boolean mayMatch(List<IntsRef> words, BytesRef scratch) {
-    return match(words, 0, 0, scratch, false);
+  boolean mayMatch(List<IntsRef> words) {
+    return match(words, 0, 0, false);
   }
 
-  boolean fullyMatches(List<IntsRef> words, BytesRef scratch) {
-    return match(words, 0, 0, scratch, true);
+  boolean fullyMatches(List<IntsRef> words) {
+    return match(words, 0, 0, true);
   }
 
-  private boolean match(
-      List<IntsRef> words, int patternIndex, int wordIndex, BytesRef scratch, boolean fully) {
+  private boolean match(List<IntsRef> words, int patternIndex, int wordIndex, boolean fully) {
     if (patternIndex >= data.length) {
       return wordIndex >= words.size();
     }
@@ -71,12 +69,12 @@ class CompoundRule {
     char flag = data[patternIndex];
     if (patternIndex < data.length - 1 && data[patternIndex + 1] == '*') {
       int startWI = wordIndex;
-      while (wordIndex < words.size() && dictionary.hasFlag(words.get(wordIndex), flag, scratch)) {
+      while (wordIndex < words.size() && dictionary.hasFlag(words.get(wordIndex), flag)) {
         wordIndex++;
       }
 
       while (wordIndex >= startWI) {
-        if (match(words, patternIndex + 2, wordIndex, scratch, fully)) {
+        if (match(words, patternIndex + 2, wordIndex, fully)) {
           return true;
         }
 
@@ -86,16 +84,16 @@ class CompoundRule {
     }
 
     boolean currentWordMatches =
-        wordIndex < words.size() && dictionary.hasFlag(words.get(wordIndex), flag, scratch);
+        wordIndex < words.size() && dictionary.hasFlag(words.get(wordIndex), flag);
 
     if (patternIndex < data.length - 1 && data[patternIndex + 1] == '?') {
-      if (currentWordMatches && match(words, patternIndex + 2, wordIndex + 1, scratch, fully)) {
+      if (currentWordMatches && match(words, patternIndex + 2, wordIndex + 1, fully)) {
         return true;
       }
-      return match(words, patternIndex + 2, wordIndex, scratch, fully);
+      return match(words, patternIndex + 2, wordIndex, fully);
     }
 
-    return currentWordMatches && match(words, patternIndex + 1, wordIndex + 1, scratch, fully);
+    return currentWordMatches && match(words, patternIndex + 1, wordIndex + 1, fully);
   }
 
   @Override

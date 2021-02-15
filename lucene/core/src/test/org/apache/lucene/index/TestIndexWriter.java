@@ -3847,6 +3847,41 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(writer, dir);
   }
 
+  public void testAbortFullyDeletedSegment() throws Exception {
+    AtomicBoolean abortMergeBeforeCommit = new AtomicBoolean();
+    OneMergeWrappingMergePolicy mergePolicy =
+        new OneMergeWrappingMergePolicy(
+            newMergePolicy(),
+            toWrap ->
+                new MergePolicy.OneMerge(toWrap.segments) {
+                  @Override
+                  void onMergeComplete() throws IOException {
+                    super.onMergeComplete();
+                    if (abortMergeBeforeCommit.get()) {
+                      setAborted();
+                    }
+                  }
+                }) {
+          @Override
+          public boolean keepFullyDeletedSegment(IOSupplier<CodecReader> readerIOSupplier) {
+            return true;
+          }
+        };
+
+    Directory dir = newDirectory();
+    IndexWriterConfig indexWriterConfig =
+        newIndexWriterConfig().setMergePolicy(mergePolicy).setCommitOnClose(false);
+    IndexWriter writer = new IndexWriter(dir, indexWriterConfig);
+    writer.addDocument(Collections.singletonList(new StringField("id", "1", Field.Store.YES)));
+    writer.flush();
+
+    writer.deleteDocuments(new Term("id", "1"));
+    abortMergeBeforeCommit.set(true);
+    writer.flush();
+    writer.forceMerge(1);
+    IOUtils.close(writer, dir);
+  }
+
   private void assertHardLiveDocs(IndexWriter writer, Set<Integer> uniqueDocs) throws IOException {
     try (DirectoryReader reader = DirectoryReader.open(writer)) {
       assertEquals(uniqueDocs.size(), reader.numDocs());
@@ -4599,5 +4634,53 @@ public class TestIndexWriter extends LuceneTestCase {
         assertEquals(threads.length, writer.getDocStats().maxDoc);
       }
     }
+  }
+
+  public void testGetFieldNames() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    assertEquals(Set.of(), writer.getFieldNames());
+
+    addDocWithField(writer, "f1");
+    assertEquals(Set.of("f1"), writer.getFieldNames());
+
+    // should be unmodifiable:
+    final Set<String> fieldSet = writer.getFieldNames();
+    assertThrows(UnsupportedOperationException.class, () -> fieldSet.add("cannot modify"));
+    assertThrows(UnsupportedOperationException.class, () -> fieldSet.remove("f1"));
+
+    addDocWithField(writer, "f2");
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    // set from a previous call is an independent immutable copy, cannot be modified.
+    assertEquals(Set.of("f1"), fieldSet);
+
+    // flush should not have an effect on field names
+    writer.flush();
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    // commit should not have an effect on field names
+    writer.commit();
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    writer.close();
+
+    // new writer should identify committed fields
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    assertEquals(Set.of("f1", "f2"), writer.getFieldNames());
+
+    writer.deleteAll();
+    assertEquals(Set.of(), writer.getFieldNames());
+
+    writer.close();
+    dir.close();
+  }
+
+  private static void addDocWithField(IndexWriter writer, String field) throws IOException {
+    Document doc = new Document();
+    doc.add(newField(field, "value", storedTextType));
+    writer.addDocument(doc);
   }
 }

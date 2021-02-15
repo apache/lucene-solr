@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.handler.DumpRequestHandler;
@@ -47,6 +48,7 @@ import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
+import org.apache.solr.util.TimeOut;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
@@ -613,10 +615,10 @@ public class TestSolrConfigHandler extends RestTestBase {
                                            long maxTimeoutSeconds) throws Exception {
 
     boolean success = false;
-    long startTime = System.nanoTime();
     LinkedHashMapWriter m = null;
 
-    while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS) < maxTimeoutSeconds) {
+    TimeOut timeOut = new TimeOut(maxTimeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (! timeOut.hasTimedOut()) {
       try {
         m = testServerBaseUrl == null ? getRespMap(uri, harness) : TestSolrConfigHandlerConcurrent.getAsMap(testServerBaseUrl + uri, cloudSolrClient);
       } catch (Exception e) {

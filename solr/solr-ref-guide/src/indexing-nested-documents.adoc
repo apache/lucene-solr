@@ -18,7 +18,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr supports indexing nested documents, described here, and ways to <<searching-nested-documents.adoc#searching-nested-documents,search and retrieve>> them very efficiently.
+Solr supports indexing nested documents, described here, and ways to <<searching-nested-documents.adoc#,search and retrieve>> them very efficiently.
 
 By way of examples: nested documents in Solr can be used to bind a blog post (parent document)
 with comments (child documents) -- or as a way to model major product lines as parent documents,
@@ -33,7 +33,7 @@ In terms of performance, indexing the relationships between documents usually yi
  since the relationships are already stored in the index and do not need to be computed.
 
 However, nested documents are less flexible than query time joins as it imposes rules that some applications may not be able to accept.
-Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#using-solrj,SolrJ>> with javabin.
+Nested documents may be indexed via either the XML or JSON data syntax, and is also supported by <<using-solrj.adoc#,SolrJ>> with javabin.
 
 
 [CAUTION]

@@ -359,14 +359,14 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() throws IOException {
-      dataIn.seek(ord * byteSize);
+      dataIn.seek((long) ord * byteSize);
       dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
 
     @Override
     public BytesRef binaryValue() throws IOException {
-      dataIn.seek(ord * byteSize);
+      dataIn.seek((long) ord * byteSize);
       dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize, false);
       return binaryValue;
     }
@@ -440,7 +440,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue(int targetOrd) throws IOException {
-      dataIn.seek(targetOrd * byteSize);
+      dataIn.seek((long) targetOrd * byteSize);
       dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
@@ -452,8 +452,7 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     private void readValue(int targetOrd) throws IOException {
-      long offset = targetOrd * byteSize;
-      dataIn.seek(offset);
+      dataIn.seek((long) targetOrd * byteSize);
       dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
     }
   }

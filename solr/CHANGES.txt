@@ -72,6 +72,9 @@ Improvements
 * SOLR-14949: Docker: Ability to customize the FROM image when building.
   (Houston Putman)
 
+* SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
+when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
@@ -196,24 +199,35 @@ Other Changes
 * SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
  of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name. (Eric Pugh)
 
+* SOLR-15118: Switch /v2/collections APIs over to the now-preferred annotated-POJO implementation approach (Jason Gerlowski)
+
+* SOLR-14928: Allow cluster state updates to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
-  
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
 
 New Features
 ---------------------
-(No changes)
+* SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
 
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
 
 * SOLR-15085: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was passed to it. (Tim Owen via Mike Drob)
+
+* SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
+
+* SOLR-13608: Backups are now done incrementally by default.  Multiple backups can be stored at the same location, and each
+  backup will only upload those files that are new since the last backup. (Jason Gerlowski, shalin , Cao Manh Dat)
+
+* SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consistency and clarity. (Eric Pugh)
 
 Optimizations
 ---------------------
@@ -225,10 +239,28 @@ Optimizations
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
+* SOLR-15149: Better exception handling for LTR model creation errors (Alessandro Benedetti, Christine Poerschke)
+
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
+
+==================  8.8.1 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-15145: System property to control whether base_url is stored in state.json to enable back-compat with older SolrJ versions.
+  (Timothy Potter)
+
+* SOLR-15114: Fix bug that caused WAND optimization to be disabled in cases where the max score is requested (such as
+  multi-shard requests in SolrCloud) (Naoto Minami via Tomás Fernández Löbbe)
+
+* SOLR-15136: Reduce excessive logging introduced with Per Replica States feature (Ishan Chattopadhyaya)
+
+* SOLR-15138: Collection creation for PerReplicaStates does not scale to large collections as well as regular collections
+  (Mike Drob, Ilan Ginzburg, noble, Ishan Chattopadhyaya)
 
 ==================  8.8.0 ==================
 

@@ -181,8 +181,15 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     if (log.isInfoEnabled()) {
       log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
     }
-    ZkDistributedQueue q = jettys.get(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
-    q.offer(Utils.toJSON(m));
+
+    final Overseer overseer = jettys.get(0).getCoreContainer().getZkController().getOverseer();
+    if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      overseer.getDistributedClusterStateUpdater().doSingleStateUpdate(
+          DistributedClusterStateUpdater.MutatingCommand.ReplicaSetState, m, overseer.getSolrCloudManager(), overseer.getZkStateReader());
+    } else {
+      ZkDistributedQueue q = overseer.getStateUpdateQueue();
+      q.offer(Utils.toJSON(m));
+    }
 
     verifyReplicaStatus(cloudClient.getZkStateReader(), "football", "shard1", notLeader.getName(), Replica.State.DOWN);
 

@@ -16,22 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -45,6 +29,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.LockTree;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerMessageHandler;
@@ -52,6 +37,7 @@ import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.SolrException;
@@ -80,28 +66,37 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.RTimer;
-import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.ELECTION_NODE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import static org.apache.solr.common.cloud.ZkStateReader.*;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
@@ -155,6 +150,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   String myId;
   Stats stats;
   TimeSource timeSource;
+  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
@@ -192,6 +188,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     this.myId = myId;
     this.stats = stats;
     this.overseer = overseer;
+    this.distributedClusterStateUpdater = overseer.getDistributedClusterStateUpdater();
     this.cloudManager = overseer.getSolrCloudManager();
     this.timeSource = cloudManager.getTimeSource();
     this.isClosed = false;
@@ -200,6 +197,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         .put(DELETENODE, new DeleteNodeCmd(this))
         .put(BACKUP, new BackupCmd(this))
         .put(RESTORE, new RestoreCmd(this))
+        .put(DELETEBACKUP, new DeleteBackupCmd(this))
         .put(CREATESNAPSHOT, new CreateSnapshotCmd(this))
         .put(DELETESNAPSHOT, new DeleteSnapshotCmd(this))
         .put(SPLITSHARD, new SplitShardCmd(this))
@@ -272,6 +270,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     return new OverseerSolrResponse(results);
   }
 
+  DistributedClusterStateUpdater getDistributedClusterStateUpdater() {
+    return distributedClusterStateUpdater;
+  }
+
   @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
   @SuppressWarnings({"unchecked"})
   private void mockOperation(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws InterruptedException {
@@ -333,23 +335,31 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   private void processReplicaAddPropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
-    SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+      distributedClusterStateUpdater.doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.ReplicaAddReplicaProperty, m,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   private void processReplicaDeletePropertyCommand(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
-    SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
     ZkNodeProps m = new ZkNodeProps(propMap);
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+      distributedClusterStateUpdater.doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.ReplicaDeleteReplicaProperty, m,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   private void balanceProperty(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
@@ -358,11 +368,15 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           "The '" + COLLECTION_PROP + "' and '" + PROPERTY_PROP +
               "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
     }
-    SolrZkClient zkClient = zkStateReader.getZkClient();
     Map<String, Object> m = new HashMap<>();
     m.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     m.putAll(message.getProperties());
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+      distributedClusterStateUpdater.doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.BalanceShardsUnique, new ZkNodeProps(m),
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   /**
@@ -429,7 +443,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         ZkStateReader.NODE_NAME_PROP, replica.getNodeName(),
         ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
-    overseer.offerStateUpdate(Utils.toJSON(m));
+    if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+      distributedClusterStateUpdater.doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceRemoveReplica, m,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(m));
+    }
   }
 
   void checkRequired(ZkNodeProps message, String... props) {
@@ -487,59 +506,28 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   String waitForCoreNodeName(String collectionName, String msgNodeName, String msgCore) {
-    int retryCount = 320;
-    while (retryCount-- > 0) {
-      final DocCollection docCollection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
-      if (docCollection != null && docCollection.getSlicesMap() != null) {
-        Map<String,Slice> slicesMap = docCollection.getSlicesMap();
-        for (Slice slice : slicesMap.values()) {
-          for (Replica replica : slice.getReplicas()) {
-            // TODO: for really large clusters, we could 'index' on this
-
-            String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
-            String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-
-            if (nodeName.equals(msgNodeName) && core.equals(msgCore)) {
-              return replica.getName();
-            }
-          }
-        }
-      }
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+    try {
+      DocCollection collection = zkStateReader.waitForState(collectionName, 320, TimeUnit.SECONDS, c ->
+        ClusterStateMutator.getAssignedCoreNodeName(c, msgNodeName, msgCore) != null
+      );
+      return ClusterStateMutator.getAssignedCoreNodeName(collection, msgNodeName, msgCore);
+    } catch (TimeoutException | InterruptedException e) {
+      SolrZkClient.checkInterrupted(e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed waiting for coreNodeName", e);
     }
-    throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find coreNodeName");
   }
 
   ClusterState waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
     log.debug("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
-    RTimer timer = new RTimer();
-    int retryCount = 320;
-    while (retryCount-- > 0) {
-      ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection collection = clusterState.getCollection(collectionName);
-
-      if (collection == null) {
-        throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Unable to find collection: " + collectionName + " in clusterstate");
-      }
-      Slice slice = collection.getSlice(sliceName);
-      if (slice != null) {
-        if (log.isDebugEnabled()) {
-          log.debug("Waited for {}ms for slice {} of collection {} to be available",
-              timer.getTime(), sliceName, collectionName);
-        }
-        return clusterState;
-      }
-      Thread.sleep(1000);
+    try {
+      zkStateReader.waitForState(collectionName, 320, TimeUnit.SECONDS, c -> {
+        return c != null && c.getSlice(sliceName) != null;
+      });
+    } catch (TimeoutException | InterruptedException e) {
+      SolrZkClient.checkInterrupted(e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed waiting for new slice", e);
     }
-    throw new SolrException(ErrorCode.SERVER_ERROR,
-        "Could not find new slice " + sliceName + " in collection " + collectionName
-            + " even after waiting for " + timer.getTime() + "ms"
-    );
+    return zkStateReader.getClusterState();
   }
 
   DocRouter.Range intersect(DocRouter.Range a, DocRouter.Range b) {
@@ -590,35 +578,39 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       reloadCollection(null, new ZkNodeProps(NAME, collectionName), results);
     }
 
-    overseer.offerStateUpdate(Utils.toJSON(message));
-
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, timeSource);
-    boolean areChangesVisible = true;
-    while (!timeout.hasTimedOut()) {
-      DocCollection collection = cloudManager.getClusterStateProvider().getClusterState().getCollection(collectionName);
-      areChangesVisible = true;
-      for (Map.Entry<String,Object> updateEntry : message.getProperties().entrySet()) {
-        String updateKey = updateEntry.getKey();
-
-        if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
-            && !updateKey.equals(Overseer.QUEUE_OPERATION)
-            && updateEntry.getValue() != null // handled below in a separate conditional
-            && !updateEntry.getValue().equals(collection.get(updateKey))) {
-          areChangesVisible = false;
-          break;
-        }
-
-        if (updateEntry.getValue() == null && collection.containsKey(updateKey)) {
-          areChangesVisible = false;
-          break;
-        }
-      }
-      if (areChangesVisible) break;
-      timeout.sleep(100);
+    if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+      // Apply the state update right away. The wait will still be useful for the change to be visible in the local cluster state (watchers have fired).
+      distributedClusterStateUpdater.doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, message,
+          cloudManager, zkStateReader);
+    } else {
+      overseer.offerStateUpdate(Utils.toJSON(message));
     }
 
-    if (!areChangesVisible)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not modify collection " + message);
+    try {
+      zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, c -> {
+        if (c == null) return false;
+
+        for (Map.Entry<String,Object> updateEntry : message.getProperties().entrySet()) {
+          String updateKey = updateEntry.getKey();
+
+          if (!updateKey.equals(ZkStateReader.COLLECTION_PROP)
+                  && !updateKey.equals(Overseer.QUEUE_OPERATION)
+                  && updateEntry.getValue() != null // handled below in a separate conditional
+                  && !updateEntry.getValue().equals(c.get(updateKey))) {
+            return false;
+          }
+          if (updateEntry.getValue() == null && c.containsKey(updateKey)) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    } catch (TimeoutException | InterruptedException e) {
+      SolrZkClient.checkInterrupted(e);
+      log.debug("modifyCollection(ClusterState={}, ZkNodeProps={}, NamedList={})", clusterState, message, results, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to modify collection", e);
+    }
 
     // if switching to/from read-only mode reload the collection
     if (message.keySet().contains(ZkStateReader.READ_ONLY)) {
@@ -636,33 +628,39 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   Map<String, Replica> waitToSeeReplicasInState(String collectionName, Collection<String> coreNames) throws InterruptedException {
     assert coreNames.size() > 0;
-    Map<String, Replica> result = new HashMap<>();
-    TimeOut timeout = new TimeOut(Integer.getInteger("solr.waitToSeeReplicasInStateTimeoutSeconds", 120), TimeUnit.SECONDS, timeSource); // could be a big cluster
-    while (true) {
-      DocCollection coll = zkStateReader.getClusterState().getCollection(collectionName);
-      for (String coreName : coreNames) {
-        if (result.containsKey(coreName)) continue;
-        for (Slice slice : coll.getSlices()) {
-          for (Replica replica : slice.getReplicas()) {
-            if (coreName.equals(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
-              result.put(coreName, replica);
-              break;
-            }
-          }
-        }
-      }
+    Map<String, Replica> results = new ConcurrentHashMap<>();
 
-      if (result.size() == coreNames.size()) {
-        return result;
-      } else {
-        log.debug("Expecting {} cores but found {}", coreNames, result);
-      }
-      if (timeout.hasTimedOut()) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out waiting to see all replicas: " + coreNames + " in cluster state. Last state: " + coll);
-      }
+    long maxWait = Long.getLong("solr.waitToSeeReplicasInStateTimeoutSeconds", 120); // could be a big cluster
+    try {
+      zkStateReader.waitForState(collectionName, maxWait, TimeUnit.SECONDS, c -> {
+        if (c == null) return false;
 
-      Thread.sleep(100);
+        // We write into a ConcurrentHashMap, which will be ok if called multiple times by multiple threads
+        c.getSlices().stream().flatMap(slice -> slice.getReplicas().stream())
+            .filter(r -> coreNames.contains(r.getCoreName()))       // Only the elements that were asked for...
+            .forEach(r -> results.putIfAbsent(r.getCoreName(), r)); // ...get added to the map
+
+        log.debug("Expecting {} cores, found {}", coreNames, results);
+        return results.size() == coreNames.size();
+      });
+    } catch (TimeoutException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
+
+    return results;
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  void cleanBackup(BackupRepository  repository, URI backupUri, BackupId backupId) throws Exception {
+    ((DeleteBackupCmd)commandMap.get(DELETEBACKUP))
+            .deleteBackupIds(backupUri, repository, Collections.singleton(backupId), new NamedList());
+  }
+
+  void deleteBackup(BackupRepository repository, URI backupPath,
+                    int maxNumBackup,
+                    @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+    ((DeleteBackupCmd)commandMap.get(DELETEBACKUP))
+            .keepNumberOfBackup(repository, backupPath, maxNumBackup, results);
   }
 
   List<ZkNodeProps> addReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
