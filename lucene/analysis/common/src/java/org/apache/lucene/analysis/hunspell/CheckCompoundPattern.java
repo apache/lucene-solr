@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.hunspell;
 
 import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.IntsRef;
 
 class CheckCompoundPattern {
   private final String endChars;
@@ -51,10 +50,9 @@ class CheckCompoundPattern {
     return endChars + " " + beginChars + (replacement == null ? "" : " -> " + replacement);
   }
 
-  boolean prohibitsCompounding(
-      CharsRef word, int breakPos, CharsRef stemBefore, CharsRef stemAfter) {
+  boolean prohibitsCompounding(CharsRef word, int breakPos, Root<?> rootBefore, Root<?> rootAfter) {
     if (isNonAffixedPattern(endChars)) {
-      if (!charsMatch(word, breakPos - stemBefore.length, stemBefore)) {
+      if (!charsMatch(word, breakPos - rootBefore.word.length(), rootBefore.word)) {
         return false;
       }
     } else if (!charsMatch(word, breakPos - endChars.length(), endChars)) {
@@ -62,18 +60,18 @@ class CheckCompoundPattern {
     }
 
     if (isNonAffixedPattern(beginChars)) {
-      if (!charsMatch(word, breakPos, stemAfter)) {
+      if (!charsMatch(word, breakPos, rootAfter.word)) {
         return false;
       }
     } else if (!charsMatch(word, breakPos, beginChars)) {
       return false;
     }
 
-    if (endFlags.length > 0 && !stemHasFlags(stemBefore, endFlags)) {
+    if (endFlags.length > 0 && !hasAllFlags(rootBefore, endFlags)) {
       return false;
     }
     //noinspection RedundantIfStatement
-    if (beginFlags.length > 0 && !stemHasFlags(stemAfter, beginFlags)) {
+    if (beginFlags.length > 0 && !hasAllFlags(rootAfter, beginFlags)) {
       return false;
     }
 
@@ -84,14 +82,9 @@ class CheckCompoundPattern {
     return pattern.length() == 1 && pattern.charAt(0) == '0';
   }
 
-  private boolean stemHasFlags(CharsRef stem, char[] flags) {
-    IntsRef forms = dictionary.lookupWord(stem.chars, stem.offset, stem.length);
-    return forms != null && hasAllFlags(flags, forms);
-  }
-
-  private boolean hasAllFlags(char[] flags, IntsRef forms) {
+  private boolean hasAllFlags(Root<?> root, char[] flags) {
     for (char flag : flags) {
-      if (!dictionary.hasFlag(forms, flag)) {
+      if (!dictionary.hasFlag(root.entryId, flag)) {
         return false;
       }
     }

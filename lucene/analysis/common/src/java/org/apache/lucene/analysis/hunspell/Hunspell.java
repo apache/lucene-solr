@@ -226,13 +226,13 @@ public class Hunspell {
     int breakPos = prev.length;
     int remainingLength = word.length - breakPos;
     int breakOffset = word.offset + breakPos;
-    Root<CharsRef> tailStem =
+    Root<CharsRef> lastRoot =
         findStem(word.chars, breakOffset, remainingLength, originalCase, COMPOUND_END);
-    if (tailStem != null
-        && !dictionary.hasFlag(tailStem.entryId, dictionary.forbiddenword)
-        && !(dictionary.checkCompoundDup && equalsIgnoreCase(prev.stem, tailStem.word))
-        && !hasForceUCaseProblem(word.chars, breakOffset, remainingLength, originalCase)
-        && prev.mayCompound(tailStem, remainingLength, originalCase)) {
+    if (lastRoot != null
+        && !dictionary.hasFlag(lastRoot.entryId, dictionary.forbiddenword)
+        && !(dictionary.checkCompoundDup && prev.root.equals(lastRoot))
+        && !hasForceUCaseProblem(lastRoot, originalCase)
+        && prev.mayCompound(lastRoot, remainingLength, originalCase)) {
       return true;
     }
 
@@ -240,17 +240,9 @@ public class Hunspell {
     return checkCompounds(tail, originalCase, prev);
   }
 
-  private boolean hasForceUCaseProblem(
-      char[] chars, int offset, int length, WordCase originalCase) {
-    if (dictionary.forceUCase == FLAG_UNSET) return false;
+  private boolean hasForceUCaseProblem(Root<?> root, WordCase originalCase) {
     if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
-
-    IntsRef forms = dictionary.lookupWord(chars, offset, length);
-    return forms != null && dictionary.hasFlag(forms, dictionary.forceUCase);
-  }
-
-  private boolean equalsIgnoreCase(CharSequence cr1, CharSequence cr2) {
-    return cr1.toString().equalsIgnoreCase(cr2.toString());
+    return dictionary.hasFlag(root.entryId, dictionary.forceUCase);
   }
 
   /**
@@ -274,19 +266,20 @@ public class Hunspell {
   private class CompoundPart {
     final CompoundPart prev;
     final int index, length;
-    final CharsRef tail, stem;
+    final CharsRef tail;
+    final Root<CharsRef> root;
     final CheckCompoundPattern enablingPattern;
 
     CompoundPart(
         CompoundPart prev,
         CharsRef tail,
         int length,
-        Root<CharsRef> stem,
+        Root<CharsRef> root,
         CheckCompoundPattern enabler) {
       this.prev = prev;
       this.tail = tail;
       this.length = length;
-      this.stem = stem.word;
+      this.root = root;
       index = prev == null ? 1 : prev.index + 1;
       enablingPattern = enabler;
     }
@@ -296,12 +289,12 @@ public class Hunspell {
       return (prev == null ? "" : prev + "+") + tail.subSequence(0, length);
     }
 
-    boolean mayCompound(Root<CharsRef> nextStem, int nextPartLength, WordCase originalCase) {
+    boolean mayCompound(Root<CharsRef> nextRoot, int nextPartLength, WordCase originalCase) {
       boolean patternsOk =
           enablingPattern != null
-              ? enablingPattern.prohibitsCompounding(tail, length, stem, nextStem.word)
+              ? enablingPattern.prohibitsCompounding(tail, length, root, nextRoot)
               : dictionary.checkCompoundPatterns.stream()
-                  .noneMatch(p -> p.prohibitsCompounding(tail, length, stem, nextStem.word));
+                  .noneMatch(p -> p.prohibitsCompounding(tail, length, root, nextRoot));
       if (!patternsOk) {
         return false;
       }
