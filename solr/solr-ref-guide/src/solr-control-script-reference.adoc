@@ -906,7 +906,7 @@ The number of documents to export. The default is `100`. The value `-1` will exp
 
 *Examples*
 
-Export all documents from a collection `gettingstarted`:
+Export all documents from a collection `gettingstarted` into a file called `gettingstarted.json`:
 
 [source,bash]
 bin/solr export -url http://localhost:8983/solr/gettingstarted -limit -1
@@ -921,10 +921,15 @@ bin/solr export -url http://localhost:8983/solr/gettingstarted -limit -1 -out 1M
 === Importing Documents to a Collection
 
 Once you have exported documents in a file, you can use the <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,/update request handler>> to import them to a new Solr collection.
+Notice the different endpoints used depending on the format.  
+
+*Example: import `json` files*
+
+`curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json?commit=true`
 
 *Example: import `jsonl` files*
 
-`curl -X POST -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true`
+`curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json/docs?commit=true`
 
 *Example: import `javabin` files*
 
