@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -48,6 +49,7 @@ import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -87,18 +89,21 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
     private static long docsSeed; // see indexDocs()
     protected static final int NUM_SHARDS = 2;//granted we sometimes shard split to get more
+    protected static final int REPL_FACTOR = 2;
     protected static final String BACKUPNAME_PREFIX = "mytestbackup";
     protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
 
     protected String testSuffix = "test1";
-    protected int replFactor;
-    protected int numTlogReplicas;
-    protected int numPullReplicas;
 
     @BeforeClass
     public static void createCluster() throws Exception {
         docsSeed = random().nextLong();
         System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    }
+
+    @Before
+    public void setUpTrackingRepo() {
+        TrackingBackupRepository.clear();
     }
 
     /**
@@ -114,12 +119,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         this.testSuffix = testSuffix;
     }
 
-    private void randomizeReplicaTypes() {
-        replFactor = TestUtil.nextInt(random(), 1, 2);
-//    numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
-//    numPullReplicas = TestUtil.nextInt(random(), 0, 1);
-    }
-
     /**
      * @return The absolute path for the backup location.
      *         Could return null.
@@ -128,11 +127,10 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
     @Test
     public void testSimple() throws Exception {
+        setTestSuffix("testbackupincsimple");
         final String backupCollectionName = getCollectionName();
         final String restoreCollectionName = backupCollectionName + "_restore";
-        TrackingBackupRepository.clear();
 
-        setTestSuffix("testbackupincsimple");
         CloudSolrClient solrClient = cluster.getSolrClient();
 
         CollectionAdminRequest
@@ -166,9 +164,12 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             log.info("Created backup with {} docs, took {}ms", numFound, timeTaken);
 
             t = System.nanoTime();
+            randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", NUM_SHARDS, 1);
             CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
                     .setBackupId(0)
-                    .setLocation(backupLocation).setRepositoryName(BACKUP_REPO_NAME).processAndWait(solrClient, 500);
+                    .setLocation(backupLocation)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .processAndWait(solrClient, 500);
             timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
             log.info("Restored from backup, took {}ms", timeTaken);
             numFound = cluster.getSolrClient().query(restoreCollectionName,
@@ -178,17 +179,54 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
 
     @Test
+    public void testRestoreToOriginalCollection() throws Exception {
+        setTestSuffix("testbackuprestoretooriginal");
+        final String backupCollectionName = getCollectionName();
+        final String backupName = BACKUPNAME_PREFIX + testSuffix;
+
+        // Bootstrap the backup collection with seed docs
+        CollectionAdminRequest
+                .createCollection(backupCollectionName, "conf1", NUM_SHARDS, REPL_FACTOR)
+                .process(cluster.getSolrClient());
+        final int firstBatchNumDocs = indexDocs(backupCollectionName, true);
+
+        // Backup and immediately add more docs to the collection
+        try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
+                .newBackupRepository(BACKUP_REPO_NAME)) {
+            final String backupLocation = repository.getBackupLocation(getBackupLocation());
+            final RequestStatusState result = CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+                    .setLocation(backupLocation)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .processAndWait(cluster.getSolrClient(), 10 * 1000);
+            assertEquals(RequestStatusState.COMPLETED, result);
+        }
+        final int secondBatchNumDocs = indexDocs(backupCollectionName, true);
+        final int maxDocs = secondBatchNumDocs + firstBatchNumDocs;
+        assertEquals(maxDocs, getNumDocsInCollection(backupCollectionName));
+
+        // Restore original docs and validate that doc count is correct
+        try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
+                .newBackupRepository(BACKUP_REPO_NAME)) {
+            final String backupLocation = repository.getBackupLocation(getBackupLocation());
+            final RequestStatusState result = CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
+                    .setLocation(backupLocation)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .processAndWait(cluster.getSolrClient(), 20 * 1000);
+            assertEquals(RequestStatusState.COMPLETED, result);
+        }
+        assertEquals(firstBatchNumDocs, getNumDocsInCollection(backupCollectionName));
+
+    }
+
+    @Test
     @Slow
     @SuppressWarnings("rawtypes")
     public void testBackupIncremental() throws Exception {
-        TrackingBackupRepository.clear();
-
         setTestSuffix("testbackupinc");
-        randomizeReplicaTypes();
         CloudSolrClient solrClient = cluster.getSolrClient();
 
         CollectionAdminRequest
-                .createCollection(getCollectionName(), "conf1", NUM_SHARDS, replFactor, numTlogReplicas, numPullReplicas)
+                .createCollection(getCollectionName(), "conf1", NUM_SHARDS, REPL_FACTOR)
                 .process(solrClient);
 
         indexDocs(getCollectionName(), false);
@@ -341,8 +379,11 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
         String restoreCollectionName = getCollectionName() + "_restored";
 
+        randomlyPrecreateRestoreCollection(restoreCollectionName, "conf1", NUM_SHARDS, REPL_FACTOR);
         CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-                .setLocation(backupLocation).setRepositoryName(BACKUP_REPO_NAME).process(solrClient);
+                .setLocation(backupLocation)
+                .setRepositoryName(BACKUP_REPO_NAME)
+                .process(solrClient);
 
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(
                 restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
@@ -378,6 +419,18 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         int numDocs = random.nextInt(100) + 5;
         indexDocs(collectionName, numDocs, useUUID);
         return numDocs;
+    }
+
+    private void randomlyPrecreateRestoreCollection(String restoreCollectionName, String configName, int numShards, int numReplicas) throws Exception {
+        if (random().nextBoolean()) {
+            CollectionAdminRequest.createCollection(restoreCollectionName, configName, numShards, numReplicas)
+                    .process(cluster.getSolrClient());
+            cluster.waitForActiveCollection(restoreCollectionName, numShards, numShards*numReplicas);
+        }
+    }
+
+    private long getNumDocsInCollection(String collectionName) throws Exception {
+        return new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), collectionName).getResults().getNumFound();
     }
 
     private class IncrementalBackupVerifier {
