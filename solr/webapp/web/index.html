@@ -46,6 +46,8 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/threads.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/chosen.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/overview.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/sqlquery.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/ui-grid.min.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/jquery-ui.min.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/jquery-ui.structure.min.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/jstree.style.min.css?_=${version}">
@@ -62,6 +64,7 @@ limitations under the License.
   <script src="libs/ngtimeago.js"></script>
   <script src="libs/highlight.js"></script>
   <script src="libs/d3.js"></script>
+  <script src="libs/ui-grid.min.js"></script>
   <script src="libs/jquery-ui.min.js"></script>
   <script src="libs/angular-utf8-base64.min.js"></script>
   <script src="js/angular/app.js"></script>
@@ -87,6 +90,7 @@ limitations under the License.
   <script src="js/angular/controllers/schema.js"></script>
   <script src="js/angular/controllers/segments.js"></script>
   <script src="js/angular/controllers/unknown.js"></script>
+  <script src="js/angular/controllers/sqlquery.js"></script>
 
 
 </head>
@@ -195,6 +199,7 @@ limitations under the License.
                 <li class="files" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
                 <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
                 <li class="stream" ng-class="{active:page=='stream'}"><a href="#/{{currentCollection.name}}/stream"><span>Stream</span></a></li>
+                <li class="query" ng-class="{active:page=='sqlquery'}"><a href="#/{{currentCollection.name}}/sqlquery"><span>SQL</span></a></li>
                 <li class="schema" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='schema'}"><a href="#/{{currentCollection.name}}/schema"><span>Schema</span></a></li>
               </ul>
             </div>
