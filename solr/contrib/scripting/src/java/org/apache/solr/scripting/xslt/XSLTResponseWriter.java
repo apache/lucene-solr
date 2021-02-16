@@ -14,7 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package org.apache.solr.scripting.xslt;
+
+import static org.apache.solr.scripting.xslt.XSLTConstants.TR;
+import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_DEFAULT;
+import static org.apache.solr.scripting.xslt.XSLTConstants.XSLT_CACHE_PARAM;
 
 import java.io.BufferedReader;
 import java.io.CharArrayReader;
@@ -22,48 +26,36 @@ import java.io.CharArrayWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
-
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.xslt.TransformerProvider;
+import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLWriter;
 
-/** QueryResponseWriter which captures the output of the XMLWriter
- *  (in memory for now, not optimal performancewise), and applies an XSLT transform
+/**
+ *  Customize the format of your search results via XSL stylesheet applied to the default
+ *  XML response format.
+ *
+ *  QueryResponseWriter captures the output of the XMLWriter
+ *  (in memory for now, not optimal performance-wise), and applies an XSLT transform
  *  to it.
  */
 public class XSLTResponseWriter implements QueryResponseWriter {
-
   public static final String DEFAULT_CONTENT_TYPE = "application/xml";
-  public static final String CONTEXT_TRANSFORMER_KEY = "xsltwriter.transformer";
-  
-  private Integer xsltCacheLifetimeSeconds = null; 
-  public static final int XSLT_CACHE_DEFAULT = 60;
-  private static final String XSLT_CACHE_PARAM = "xsltCacheLifetimeSeconds"; 
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
-  
+  private Integer xsltCacheLifetimeSeconds = null;
+
   @Override
   public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     final SolrParams p = n.toSolrParams();
-      xsltCacheLifetimeSeconds = p.getInt(XSLT_CACHE_PARAM,XSLT_CACHE_DEFAULT);
-      log.info("xsltCacheLifetimeSeconds={}", xsltCacheLifetimeSeconds);
+    xsltCacheLifetimeSeconds = p.getInt(XSLT_CACHE_PARAM, XSLT_CACHE_DEFAULT);
   }
 
-  
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
     Transformer t = null;
@@ -73,7 +65,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       // TODO should our parent interface throw (IO)Exception?
       throw new RuntimeException("getTransformer fails in getContentType",e);
     }
-    
+
     String mediaType = t.getOutputProperty("media-type");
     if (mediaType == null || mediaType.length()==0) {
       // This did not happen in my tests, mediaTypeFromXslt is set to "text/xml"
@@ -81,7 +73,7 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       // if this is standard behavior or if it's just my JVM/libraries
       mediaType = DEFAULT_CONTENT_TYPE;
     }
-    
+
     if (!mediaType.contains("charset")) {
       String encoding = t.getOutputProperty("encoding");
       if (encoding == null || encoding.length()==0) {
@@ -89,18 +81,18 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       }
       mediaType = mediaType + "; charset=" + encoding;
     }
-    
+
     return mediaType;
   }
 
   @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     final Transformer t = getTransformer(request);
-    
+
     // capture the output of the XMLWriter
     final CharArrayWriter w = new CharArrayWriter();
     XMLWriter.writeResponse(w,request,response);
-    
+
     // and write transformed result to our writer
     final Reader r = new BufferedReader(new CharArrayReader(w.toCharArray()));
     final StreamSource source = new StreamSource(r);
@@ -111,27 +103,10 @@ public class XSLTResponseWriter implements QueryResponseWriter {
       throw new IOException("XSLT transformation error", te);
     }
   }
-  
-  /** Get Transformer from request context, or from TransformerProvider.
-   *  This allows either getContentType(...) or write(...) to instantiate the Transformer,
-   *  depending on which one is called first, then the other one reuses the same Transformer
-   */
+
   protected Transformer getTransformer(SolrQueryRequest request) throws IOException {
-    final String xslt = request.getParams().get(CommonParams.TR,null);
-    if(xslt==null) {
-      throw new IOException("'" + CommonParams.TR + "' request parameter is required to use the XSLTResponseWriter");
-    }
-    // not the cleanest way to achieve this
-    SolrConfig solrConfig = request.getCore().getSolrConfig();
-    // no need to synchronize access to context, right? 
-    // Nothing else happens with it at the same time
-    final Map<Object,Object> ctx = request.getContext();
-    Transformer result = (Transformer)ctx.get(CONTEXT_TRANSFORMER_KEY);
-    if(result==null) {
-      result = TransformerProvider.instance.getTransformer(solrConfig, xslt,xsltCacheLifetimeSeconds.intValue());
-      result.setErrorListener(xmllog);
-      ctx.put(CONTEXT_TRANSFORMER_KEY,result);
-    }
-    return result;
+    final String xslt = request.getParams().required().get(TR);
+    return TransformerProvider.getTransformer(request, xslt, xsltCacheLifetimeSeconds);
   }
+
 }

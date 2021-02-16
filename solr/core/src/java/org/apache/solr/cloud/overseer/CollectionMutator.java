@@ -26,14 +26,12 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.*;
-import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -155,24 +153,9 @@ public class CollectionMutator {
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
-    DocCollection newCollection = null;
-    Map<String, Slice> slices;
-
-    if (collection == null) {
-      //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
-      // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
-      slices = new LinkedHashMap<>(1);
-      slices.put(slice.getName(), slice);
-      Map<String, Object> props = new HashMap<>(1);
-      props.put(DocCollection.DOC_ROUTER, Utils.makeMap(NAME, ImplicitDocRouter.NAME));
-      newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
-    } else {
-      slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
-      slices.put(slice.getName(), slice);
-      newCollection = collection.copyWithSlices(slices);
-    }
-
-    return newCollection;
+    Map<String, Slice> slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
+    slices.put(slice.getName(), slice);
+    return collection.copyWithSlices(slices);
   }
 
   static boolean checkCollectionKeyExistence(ZkNodeProps message) {

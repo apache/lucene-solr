@@ -14,10 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
- * XSLT related utilities (deprecated package, do not add new classes)
- */
-package org.apache.solr.util.xslt;
+package org.apache.lucene.codecs.lucene90;
 
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseVectorFormatTestCase;
+import org.apache.lucene.util.TestUtil;
 
+public class TestLucene90VectorFormat extends BaseVectorFormatTestCase {
+
+  @Override
+  protected Codec getCodec() {
+    return TestUtil.getDefaultCodec();
+  }
+}

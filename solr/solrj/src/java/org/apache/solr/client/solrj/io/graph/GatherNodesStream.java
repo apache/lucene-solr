@@ -18,14 +18,12 @@
 package org.apache.solr.client.solrj.io.graph;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
+import java.lang.invoke.MethodHandles;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -51,6 +49,8 @@ import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.SORT;
 
@@ -75,6 +75,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private Traversal traversal;
   private List<Metric> metrics;
   private int maxDocFreq;
+  private  SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssX", Locale.ENGLISH);
+  private Set<String> windowSet;
+  private int window = Integer.MIN_VALUE;
+  private int lag = 1;
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public GatherNodesStream(String zkHost,
                            String collection,
@@ -98,7 +103,9 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         metrics,
         trackTraversal,
         scatter,
-        maxDocFreq);
+        maxDocFreq,
+        Integer.MIN_VALUE,
+    1);
   }
 
   public GatherNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -196,6 +203,20 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       useDefaultTraversal = true;
     }
 
+    StreamExpressionNamedParameter windowExpression = factory.getNamedOperand(expression, "window");
+    int timeWindow = Integer.MIN_VALUE;
+
+    if(windowExpression != null) {
+      timeWindow = Integer.parseInt(((StreamExpressionValue) windowExpression.getParameter()).getValue());
+    }
+
+    StreamExpressionNamedParameter lagExpression = factory.getNamedOperand(expression, "lag");
+    int timeLag = 1;
+
+    if(lagExpression != null) {
+      timeLag = Integer.parseInt(((StreamExpressionValue) lagExpression.getParameter()).getValue());
+    }
+
     StreamExpressionNamedParameter docFreqExpression = factory.getNamedOperand(expression, "maxDocFreq");
     int docFreq = -1;
 
@@ -210,7 +231,10 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           !namedParam.getName().equals("walk") &&
           !namedParam.getName().equals("scatter") &&
           !namedParam.getName().equals("maxDocFreq") &&
-          !namedParam.getName().equals("trackTraversal"))
+          !namedParam.getName().equals("trackTraversal") &&
+          !namedParam.getName().equals("window") &&
+          !namedParam.getName().equals("lag")
+      )
       {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
@@ -242,7 +266,9 @@ public class GatherNodesStream extends TupleStream implements Expressible {
          metrics,
          trackTraversal,
          scatter,
-         docFreq);
+         docFreq,
+         timeWindow,
+         timeLag);
   }
 
   @SuppressWarnings({"unchecked"})
@@ -256,7 +282,9 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                     List<Metric> metrics,
                     boolean trackTraversal,
                     Set<Traversal.Scatter> scatter,
-                    int maxDocFreq) {
+                    int maxDocFreq,
+                    int window,
+                    int lag) {
     this.zkHost = zkHost;
     this.collection = collection;
     this.tupleStream = tupleStream;
@@ -268,6 +296,13 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     this.trackTraversal = trackTraversal;
     this.scatter = scatter;
     this.maxDocFreq = maxDocFreq;
+    this.window = window;
+
+    if(window > Integer.MIN_VALUE) {
+      windowSet = new HashSet<>();
+    }
+
+    this.lag = lag;
   }
 
   @Override
@@ -506,6 +541,26 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
 
+  private String[] getTenSecondWindow(int size, int lag, String start) {
+    try {
+      String[] window = new String[size];
+      Date date = this.dateFormat.parse(start);
+      Instant instant = date.toInstant();
+
+      for (int i = 0; i < size; i++) {
+        Instant windowInstant = instant.minus(10 * (i + lag), ChronoUnit.SECONDS);
+        String windowString = windowInstant.toString();
+        windowString = windowString.substring(0, 18) + "0Z";
+        window[i] = windowString;
+      }
+
+      return window;
+    } catch(ParseException e) {
+      log.warn("Unparseable date:{}", String.valueOf(start));
+      return new String[0];
+    }
+  }
+
   public void close() throws IOException {
     tupleStream.close();
   }
@@ -558,8 +613,33 @@ public class GatherNodesStream extends TupleStream implements Expressible {
             }
           }
 
-          joinBatch.add(value);
-          if (joinBatch.size() == 400) {
+          if(windowSet == null || (lag == 1 && !windowSet.contains(String.valueOf(value)))) {
+            joinBatch.add(value);
+          }
+
+          if(window > Integer.MIN_VALUE && value != null) {
+            windowSet.add(value);
+
+            /*
+            * A time window has been set.
+            * The join value is expected to be an ISO formatted time stamp.
+            * We derive the window and add it to the join values below.
+            */
+
+            String[] timeWindow = getTenSecondWindow(window, lag, value);
+            for(String windowString : timeWindow) {
+              if(!windowSet.contains(windowString)) {
+                /*
+                * Time windows can overlap, so make sure we don't query for the same timestamp more then once.
+                * This would cause duplicate results if overlapping windows are collected in different threads.
+                */
+                joinBatch.add(windowString);
+              }
+              windowSet.add(windowString);
+            }
+          }
+
+          if (joinBatch.size() >= 400) {
             JoinRunner joinRunner = new JoinRunner(joinBatch);
             @SuppressWarnings({"rawtypes"})
             Future future = threadPool.submit(joinRunner);

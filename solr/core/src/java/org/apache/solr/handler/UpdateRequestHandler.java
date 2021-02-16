@@ -64,7 +64,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   // NOTE: This constant is for use with the <add> XML tag, not the HTTP param with same name
   public static final String COMMIT_WITHIN = "commitWithin";
 
-  Map<String,ContentStreamLoader> loaders = null;
+  protected Map<String,ContentStreamLoader> loaders = null;
 
   ContentStreamLoader instance = new ContentStreamLoader() {
     @Override
@@ -168,7 +168,7 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
 
   @Override
   public String getDescription() {
-    return "Add documents using XML (with XSLT), CSV, JSON, or javabin";
+    return "Add documents using XML, CSV, JSON, or javabin.";
   }
 
   @Override
@@ -182,6 +182,3 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase implements Pe
   public static final String BIN_PATH = "/update/bin";
 
 }
-
-
-

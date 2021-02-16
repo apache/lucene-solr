@@ -74,7 +74,7 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
         new LocalSolrQueryRequest(null, createReqParams),
         null,
         ocmh.overseer.getCoreContainer().getCollectionsHandler());
-    createMsgMap.put(Overseer.QUEUE_OPERATION, "create");
+    createMsgMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
 
     NamedList results = new NamedList();
     try {

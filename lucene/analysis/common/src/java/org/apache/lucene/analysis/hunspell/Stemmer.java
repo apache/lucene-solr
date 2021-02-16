@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -94,14 +93,10 @@ final class Stemmer {
       word = scratchBuffer;
     }
 
-    if (dictionary.isForbiddenWord(word, length)) {
-      return Collections.emptyList();
-    }
-
     List<CharsRef> list = new ArrayList<>();
     RootProcessor processor =
-        (stem, forms, formID) -> {
-          list.add(newStem(stem, forms, formID));
+        (stem, formID, stemException) -> {
+          list.add(newStem(stem, stemException));
           return true;
         };
 
@@ -273,7 +268,7 @@ final class Stemmer {
             continue;
           }
         }
-        if (!processor.processRoot(new CharsRef(word, offset, length), forms, i)) {
+        if (!callProcessor(word, offset, length, processor, forms, i)) {
           return false;
         }
       }
@@ -344,22 +339,31 @@ final class Stemmer {
   }
 
   interface RootProcessor {
-    /** @return whether the processing should be continued */
-    boolean processRoot(CharsRef stem, IntsRef forms, int formID);
+    /**
+     * @param stem the text of the found dictionary entry
+     * @param formID internal id of the dictionary entry, e.g. to be used in {@link
+     *     Dictionary#hasFlag(int, char)}
+     * @param morphDataId the id of the custom morphological data (0 if none), to be used with
+     *     {@link Dictionary#morphData}
+     * @return whether the processing should be continued
+     */
+    boolean processRoot(CharsRef stem, int formID, int morphDataId);
   }
 
-  private CharsRef newStem(CharsRef stem, IntsRef forms, int formID) {
-    final String exception;
-    if (dictionary.hasStemExceptions) {
-      int exceptionID = forms.ints[forms.offset + formID + 1];
-      if (exceptionID > 0) {
-        exception = dictionary.getStemException(exceptionID);
-      } else {
-        exception = null;
+  private String stemException(int morphDataId) {
+    if (morphDataId > 0) {
+      String data = dictionary.morphData.get(morphDataId);
+      int start = data.startsWith("st:") ? 0 : data.indexOf(" st:");
+      if (start >= 0) {
+        int nextSpace = data.indexOf(' ', start + 3);
+        return data.substring(start + 3, nextSpace < 0 ? data.length() : nextSpace);
       }
-    } else {
-      exception = null;
     }
+    return null;
+  }
+
+  private CharsRef newStem(CharsRef stem, int morphDataId) {
+    String exception = stemException(morphDataId);
 
     if (dictionary.needsOutputCleaning) {
       scratchSegment.setLength(0);
@@ -704,7 +708,7 @@ final class Stemmer {
               continue;
             }
           }
-          if (!processor.processRoot(new CharsRef(strippedWord, offset, length), forms, i)) {
+          if (!callProcessor(strippedWord, offset, length, processor, forms, i)) {
             return false;
           }
         }
@@ -757,6 +761,13 @@ final class Stemmer {
     return true;
   }
 
+  private boolean callProcessor(
+      char[] word, int offset, int length, RootProcessor processor, IntsRef forms, int i) {
+    CharsRef stem = new CharsRef(word, offset, length);
+    int morphDataId = dictionary.hasCustomMorphData ? forms.ints[forms.offset + i + 1] : 0;
+    return processor.processRoot(stem, forms.ints[forms.offset + i], morphDataId);
+  }
+
   private boolean needsAnotherAffix(int affix, int previousAffix, boolean isSuffix, int prefixId) {
     char circumfix = dictionary.circumfix;
     // if circumfix was previously set by a prefix, we must check this suffix,
@@ -765,7 +776,6 @@ final class Stemmer {
         && isFlagAppendedByAffix(prefixId, circumfix) != isFlagAppendedByAffix(affix, circumfix)) {
       return true;
     }
-
     if (isFlagAppendedByAffix(affix, dictionary.needaffix)) {
       return !isSuffix
           || previousAffix < 0

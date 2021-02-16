@@ -37,6 +37,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -44,6 +45,7 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.RamUsageTester;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -147,28 +149,33 @@ public class TestAllDictionaries extends LuceneTestCase {
   }
 
   public void testDictionariesLoadSuccessfully() throws Exception {
+    AtomicLong totalMemory = new AtomicLong();
+    AtomicLong totalWords = new AtomicLong();
     int threads = Runtime.getRuntime().availableProcessors();
     ExecutorService executor =
         Executors.newFixedThreadPool(threads, new NamedThreadFactory("dictCheck-"));
-    try {
-      List<Path> failures = Collections.synchronizedList(new ArrayList<>());
-      Function<Path, Void> process =
-          (Path aff) -> {
-            try {
-              System.out.println(aff + "\t" + memoryUsage(loadDictionary(aff)));
-            } catch (Throwable e) {
-              failures.add(aff);
-              System.err.println("While checking " + aff + ":");
-              e.printStackTrace();
-            }
-            return null;
-          };
+    List<Path> failures = Collections.synchronizedList(new ArrayList<>());
+    Function<Path, Void> process =
+        (Path aff) -> {
+          try {
+            Dictionary dic = loadDictionary(aff);
+            totalMemory.addAndGet(RamUsageTester.sizeOf(dic));
+            totalWords.addAndGet(RamUsageTester.sizeOf(dic.words));
+            System.out.println(aff + "\t" + memoryUsageSummary(dic));
+          } catch (Throwable e) {
+            failures.add(aff);
+            System.err.println("While checking " + aff + ":");
+            e.printStackTrace();
+          }
+          return null;
+        };
 
-      for (Future<?> future :
-          executor.invokeAll(
-              findAllAffixFiles()
-                  .map(aff -> (Callable<?>) () -> process.apply(aff))
-                  .collect(Collectors.toList()))) {
+    List<Callable<Void>> tasks =
+        findAllAffixFiles()
+            .map(aff -> (Callable<Void>) () -> process.apply(aff))
+            .collect(Collectors.toList());
+    try {
+      for (Future<?> future : executor.invokeAll(tasks)) {
         future.get();
       }
 
@@ -181,11 +188,16 @@ public class TestAllDictionaries extends LuceneTestCase {
       }
     } finally {
       executor.shutdown();
-      executor.awaitTermination(1, TimeUnit.MINUTES);
+      assertTrue(executor.awaitTermination(1, TimeUnit.MINUTES));
     }
+
+    System.out.println("Total dictionaries loaded: " + tasks.size());
+    System.out.println("Total memory: " + RamUsageEstimator.humanReadableUnits(totalMemory.get()));
+    System.out.println(
+        "Total memory for word storage: " + RamUsageEstimator.humanReadableUnits(totalWords.get()));
   }
 
-  private static String memoryUsage(Dictionary dic) {
+  private static String memoryUsageSummary(Dictionary dic) {
     return RamUsageTester.humanSizeOf(dic)
         + "\t("
         + ("words=" + RamUsageTester.humanSizeOf(dic.words) + ", ")
@@ -193,6 +205,7 @@ public class TestAllDictionaries extends LuceneTestCase {
         + ("strips=" + RamUsageTester.humanSizeOf(dic.stripData) + ", ")
         + ("conditions=" + RamUsageTester.humanSizeOf(dic.patterns) + ", ")
         + ("affixData=" + RamUsageTester.humanSizeOf(dic.affixData) + ", ")
+        + ("morphData=" + RamUsageTester.humanSizeOf(dic.morphData) + ", ")
         + ("prefixes=" + RamUsageTester.humanSizeOf(dic.prefixes) + ", ")
         + ("suffixes=" + RamUsageTester.humanSizeOf(dic.suffixes) + ")");
   }

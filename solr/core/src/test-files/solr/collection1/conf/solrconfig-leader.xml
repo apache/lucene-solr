@@ -18,7 +18,7 @@
 -->
 
 <config>
-  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>  
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <dataDir>${solr.data.dir:}</dataDir>
@@ -35,10 +35,10 @@
   <requestHandler name="/replication" class="solr.ReplicationHandler">
     <lst name="leader">
       <str name="replicateAfter">commit</str>
-      <!-- we don't really need dummy.xsl, but we want to be sure subdir 
+      <!-- we don't really need foo/bar.txt, but we want to be sure subdir
            files replicate (see SOLR-3809)
       -->
-      <str name="confFiles">schema.xml,xslt/dummy.xsl</str>
+      <str name="confFiles">schema.xml,foo/bar.txt</str>
     </lst>
   </requestHandler>
 

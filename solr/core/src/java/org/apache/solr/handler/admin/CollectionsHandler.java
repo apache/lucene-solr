@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue;
@@ -66,6 +67,10 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.backup.BackupFilePaths;
+import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.BackupManager;
+import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
@@ -125,13 +130,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   protected final CoreContainer coreContainer;
   private final CollectionHandlerApi v2Handler;
+  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
   public CollectionsHandler() {
-    super();
     // Unlike most request handlers, CoreContainer initialization
     // should happen in the constructor...
-    this.coreContainer = null;
-    v2Handler = new CollectionHandlerApi(this);
+    this(null);
   }
 
 
@@ -143,6 +147,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   public CollectionsHandler(final CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     v2Handler = new CollectionHandlerApi(this);
+    // Get the state change factory to know if need to enqueue to Overseer or process distributed.
+    // Some SolrCloud tests do not need Zookeeper and end up with a null cloudConfig in NodeConfig (because
+    // TestHarness.buildTestNodeConfig() uses the zkHost to decide it's SolrCloud).
+    // These tests do not use Zookeeper and do not do state updates (see subclasses of TestBaseStatsCacheCloud).
+    // Some non SolrCloud tests do not even pass a config at all, so let be cautious here (code is not pretty).
+    // We do want to initialize here and not do it lazy to not deal with synchronization for actual prod code.
+    if (coreContainer == null || coreContainer.getConfig() == null || coreContainer.getConfig().getCloudConfig() == null) {
+      distributedClusterStateUpdater = null;
+    } else {
+      distributedClusterStateUpdater = new DistributedClusterStateUpdater(coreContainer.getConfig().getCloudConfig().getDistributedClusterStateUpdates());
+    }
   }
 
   @Override
@@ -246,7 +261,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         rsp.setException(exp);
       }
 
-      //TODO yuck; shouldn't create-collection at the overseer do this?  (conditionally perhaps)
+      // Even if Overseer does wait for the collection to be created, it sees a different cluster state than this node,
+      // so this wait is required to make sure the local node Zookeeper watches fired and now see the collection.
       if (action.equals(CollectionAction.CREATE) && asyncId == null) {
         if (rsp.getException() == null) {
           waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
@@ -254,8 +270,16 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
     } else {
-      // submits and doesn't wait for anything (no response)
-      coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
+      if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+        DistributedClusterStateUpdater.MutatingCommand command = DistributedClusterStateUpdater.MutatingCommand.getCommandFor(operation.action);
+        ZkNodeProps message = new ZkNodeProps(props);
+        // We do the state change synchronously but do not wait for it to be visible in this node's cluster state updated via ZK watches
+        distributedClusterStateUpdater.doSingleStateUpdate(command, message,
+            coreContainer.getZkController().getSolrCloudManager(), coreContainer.getZkController().getZkStateReader());
+      } else {
+        // submits and doesn't wait for anything (no response)
+        coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
+      }
     }
 
   }
@@ -1028,12 +1052,10 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
               + " parameter or as a default repository property or as a cluster property.");
         }
       }
-      log.debug("Provided backup location is: {}", location);
       boolean incremental = req.getParams().getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
 
       // Check if the specified location is valid for this repository.
       final URI uri = repository.createURI(location);
-      log.debug("Provided backup location uri is: {}", uri);
       try {
         if (!repository.exists(uri)) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "specified location " + uri + " does not exist.");
@@ -1115,9 +1137,115 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       // from CREATE_OP:
       copy(req.getParams(), params, COLL_CONF, REPLICATION_FACTOR, NRT_REPLICAS, TLOG_REPLICAS,
-          PULL_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE);
+          PULL_REPLICAS, CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE, BACKUP_ID);
       copyPropertiesWithPrefix(req.getParams(), params, PROPERTY_PREFIX);
       return params;
+    }),
+    DELETEBACKUP_OP(DELETEBACKUP, (req, rsp, h) -> {
+      req.getParams().required().check(NAME);
+
+      CoreContainer cc = h.coreContainer;
+      String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
+      try (BackupRepository repository = cc.newBackupRepository(repo)) {
+
+        String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
+        if (location == null) {
+          //Refresh the cluster property file to make sure the value set for location is the latest
+          // Check if the location is specified in the cluster property.
+          location = new ClusterProperties(h.coreContainer.getZkController().getZkClient()).getClusterProperty("location", null);
+          if (location == null) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+                    + " parameter or as a default repository property or as a cluster property.");
+          }
+        }
+
+        // Check if the specified location is valid for this repository.
+        URI uri = repository.createURI(location);
+        try {
+          if (!repository.exists(uri)) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + uri + " does not exist.");
+          }
+        } catch (IOException ex) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + uri + ". Is it valid?", ex);
+        }
+
+        int deletionModesProvided = 0;
+        if (req.getParams().get(MAX_NUM_BACKUP_POINTS) != null) deletionModesProvided++;
+        if (req.getParams().get(BACKUP_PURGE_UNUSED) != null) deletionModesProvided++;
+        if (req.getParams().get(BACKUP_ID) != null) deletionModesProvided++;
+        if (deletionModesProvided != 1) {
+          throw new SolrException(BAD_REQUEST,
+                  String.format(Locale.ROOT, "Exactly one of %s, %s, and %s parameters must be provided",
+                          MAX_NUM_BACKUP_POINTS, BACKUP_PURGE_UNUSED, BACKUP_ID));
+        }
+
+        final Map<String, Object> params = copy(req.getParams(), null, NAME, BACKUP_REPOSITORY,
+                BACKUP_LOCATION, BACKUP_ID, MAX_NUM_BACKUP_POINTS, BACKUP_PURGE_UNUSED);
+        params.put(BACKUP_LOCATION, location);
+        if (repo != null) {
+          params.put(CoreAdminParams.BACKUP_REPOSITORY, repo);
+        }
+        return params;
+      }
+    }),
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    LISTBACKUP_OP(LISTBACKUP, (req, rsp, h) -> {
+      req.getParams().required().check(NAME);
+
+      CoreContainer cc = h.coreContainer;
+      String repo = req.getParams().get(CoreAdminParams.BACKUP_REPOSITORY);
+      try (BackupRepository repository = cc.newBackupRepository(repo)) {
+
+        String location = repository.getBackupLocation(req.getParams().get(CoreAdminParams.BACKUP_LOCATION));
+        if (location == null) {
+          //Refresh the cluster property file to make sure the value set for location is the latest
+          // Check if the location is specified in the cluster property.
+          location = new ClusterProperties(h.coreContainer.getZkController().getZkClient()).getClusterProperty(CoreAdminParams.BACKUP_LOCATION, null);
+          if (location == null) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query"
+                    + " parameter or as a default repository property or as a cluster property.");
+          }
+        }
+
+        String backupName = req.getParams().get(NAME);
+        final URI locationURI = repository.createURI(location);
+        try {
+          if (!repository.exists(locationURI)) {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "specified location " + locationURI + " does not exist.");
+          }
+        } catch (IOException ex) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Failed to check the existance of " + locationURI + ". Is it valid?", ex);
+        }
+        URI backupLocation = BackupFilePaths.buildExistingBackupLocationURI(repository, locationURI, backupName);
+        if (repository.exists(repository.resolve(backupLocation, BackupManager.TRADITIONAL_BACKUP_PROPS_FILE))) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "The backup name [" + backupName + "] at " +
+                  "location [" + location + "] holds a non-incremental (legacy) backup, but " +
+                  "backup-listing is only supported on incremental backups");
+        }
+
+        String[] subFiles = repository.listAllOrEmpty(backupLocation);
+        List<BackupId> propsFiles = BackupFilePaths.findAllBackupIdsFromFileListing(subFiles);
+
+        NamedList<Object> results = new NamedList<>();
+        ArrayList<Map> backups = new ArrayList<>();
+        String collectionName = null;
+        for (BackupId backupId: propsFiles) {
+          BackupProperties properties = BackupProperties.readFrom(repository, backupLocation, BackupFilePaths.getBackupPropsName(backupId));
+          if (collectionName == null) {
+            collectionName = properties.getCollection();
+            results.add(BackupManager.COLLECTION_NAME_PROP, collectionName);
+          }
+
+          Map<Object, Object> details = properties.getDetails();
+          details.put("backupId", backupId.id);
+          backups.add(details);
+        }
+
+        results.add("backups", backups);
+        SolrResponse response = new OverseerSolrResponse(results);
+        rsp.getValues().addAll(response.getResponse());
+        return null;
+      }
     }),
     CREATESNAPSHOT_OP(CREATESNAPSHOT, (req, rsp, h) -> {
       req.getParams().required().check(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME);
