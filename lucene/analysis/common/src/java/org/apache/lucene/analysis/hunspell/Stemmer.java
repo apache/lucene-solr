@@ -247,19 +247,12 @@ final class Stemmer {
         if (dictionary.hasFlag(entryId, dictionary.needaffix)) {
           continue;
         }
-        // we can't add this form, it only belongs inside a compound word
-        if (!context.isCompound() && dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
-          continue;
+        if ((context == WordContext.COMPOUND_BEGIN || context == WordContext.COMPOUND_MIDDLE)
+            && dictionary.hasFlag(entryId, dictionary.compoundForbid)) {
+          return false;
         }
-        if (context.isCompound()) {
-          if (context != WordContext.COMPOUND_END
-              && dictionary.hasFlag(entryId, dictionary.compoundForbid)) {
-            return false;
-          }
-          if (!dictionary.hasFlag(entryId, dictionary.compoundFlag)
-              && !dictionary.hasFlag(entryId, context.requiredFlag(dictionary))) {
-            continue;
-          }
+        if (!isRootCompatibleWithContext(context, -1, entryId)) {
+          continue;
         }
         if (!callProcessor(word, offset, length, processor, forms, i)) {
           return false;
@@ -540,8 +533,8 @@ final class Stemmer {
       if (!isPrefix && dictionary.hasFlag(append, dictionary.compoundForbid)) {
         return false;
       }
-      WordContext allowed = isPrefix ? WordContext.COMPOUND_BEGIN : WordContext.COMPOUND_END;
-      if (context != allowed && !dictionary.hasFlag(append, dictionary.compoundPermit)) {
+      if (!context.isAffixAllowedWithoutSpecialPermit(isPrefix)
+          && !dictionary.hasFlag(append, dictionary.compoundPermit)) {
         return false;
       }
       if (context == WordContext.COMPOUND_END
@@ -550,18 +543,17 @@ final class Stemmer {
           && dictionary.hasFlag(append, dictionary.onlyincompound)) {
         return false;
       }
+    } else if (dictionary.hasFlag(append, dictionary.onlyincompound)) {
+      return false;
     }
 
     if (recursionDepth == 0) {
-      // check if affix is allowed in a non-compound word
-      return context.isCompound() || !dictionary.hasFlag(append, dictionary.onlyincompound);
+      return true;
     }
 
     if (dictionary.isCrossProduct(affix)) {
       // cross check incoming continuation class (flag of previous affix) against list.
-      if (context.isCompound() || !dictionary.hasFlag(append, dictionary.onlyincompound)) {
-        return previousWasPrefix || dictionary.hasFlag(append, prevFlag);
-      }
+      return previousWasPrefix || dictionary.hasFlag(append, prevFlag);
     }
 
     return false;
@@ -640,18 +632,10 @@ final class Stemmer {
             }
           }
 
-          if (!context.isCompound() && dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
+          if (!isRootCompatibleWithContext(context, affix, entryId)) {
             continue;
           }
-          if (context.isCompound()) {
-            char cFlag = context.requiredFlag(dictionary);
-            if (!dictionary.hasFlag(entryId, cFlag)
-                && !isFlagAppendedByAffix(affix, cFlag)
-                && !dictionary.hasFlag(entryId, dictionary.compoundFlag)
-                && !isFlagAppendedByAffix(affix, dictionary.compoundFlag)) {
-              continue;
-            }
-          }
+
           if (!callProcessor(strippedWord, offset, length, processor, forms, i)) {
             return false;
           }
@@ -701,6 +685,20 @@ final class Stemmer {
           processor);
     }
 
+    return true;
+  }
+
+  private boolean isRootCompatibleWithContext(WordContext context, int lastAffix, int entryId) {
+    if (!context.isCompound() && dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
+      return false;
+    }
+    if (context.isCompound() && context != WordContext.COMPOUND_RULE_END) {
+      char cFlag = context.requiredFlag(dictionary);
+      return dictionary.hasFlag(entryId, cFlag)
+          || isFlagAppendedByAffix(lastAffix, cFlag)
+          || dictionary.hasFlag(entryId, dictionary.compoundFlag)
+          || isFlagAppendedByAffix(lastAffix, dictionary.compoundFlag);
+    }
     return true;
   }
 
