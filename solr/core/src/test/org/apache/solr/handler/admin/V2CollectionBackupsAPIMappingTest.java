@@ -72,7 +72,6 @@ public class V2CollectionBackupsAPIMappingTest extends SolrTestCaseJ4 {
     final SolrParams v1Params = captureConvertedV1Params("/collections/backups", "POST",
             "{'delete-backups': {" +
                     "'name': 'backupName', " +
-                    "'collection': 'collectionName', " +
                     "'location': '/some/location/uri', " +
                     "'repository': 'someRepository', " +
                     "'backupId': 123, " +
