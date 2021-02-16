@@ -105,13 +105,8 @@ final class IntersectTermsEnumFrame {
     this.termState = ite.fr.parent.postingsReader.newTermState();
     this.termState.totalTermFreq = -1;
     this.version = ite.fr.parent.version;
-    if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-      suffixLengthBytes = new byte[32];
-      suffixLengthsReader = new ByteArrayDataInput();
-    } else {
-      suffixLengthBytes = null;
-      suffixLengthsReader = suffixesReader;
-    }
+    suffixLengthBytes = new byte[32];
+    suffixLengthsReader = new ByteArrayDataInput();
   }
 
   void loadNextFloorBlock() throws IOException {
@@ -184,44 +179,33 @@ final class IntersectTermsEnumFrame {
     isLastInFloor = (code & 1) != 0;
 
     // term suffixes:
-    if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-      final long codeL = ite.in.readVLong();
-      isLeafBlock = (codeL & 0x04) != 0;
-      final int numSuffixBytes = (int) (codeL >>> 3);
-      if (suffixBytes.length < numSuffixBytes) {
-        suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
-      }
-      final CompressionAlgorithm compressionAlg;
-      try {
-        compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
-      } catch (IllegalArgumentException e) {
-        throw new CorruptIndexException(e.getMessage(), ite.in, e);
-      }
-      compressionAlg.read(ite.in, suffixBytes, numSuffixBytes);
-      suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
-
-      int numSuffixLengthBytes = ite.in.readVInt();
-      final boolean allEqual = (numSuffixLengthBytes & 0x01) != 0;
-      numSuffixLengthBytes >>>= 1;
-      if (suffixLengthBytes.length < numSuffixLengthBytes) {
-        suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
-      }
-      if (allEqual) {
-        Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ite.in.readByte());
-      } else {
-        ite.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
-      }
-      suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
-    } else {
-      code = ite.in.readVInt();
-      isLeafBlock = (code & 1) != 0;
-      int numBytes = code >>> 1;
-      if (suffixBytes.length < numBytes) {
-        suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      ite.in.readBytes(suffixBytes, 0, numBytes);
-      suffixesReader.reset(suffixBytes, 0, numBytes);
+    final long codeL = ite.in.readVLong();
+    isLeafBlock = (codeL & 0x04) != 0;
+    final int numSuffixBytes = (int) (codeL >>> 3);
+    if (suffixBytes.length < numSuffixBytes) {
+      suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
     }
+    final CompressionAlgorithm compressionAlg;
+    try {
+      compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
+    } catch (IllegalArgumentException e) {
+      throw new CorruptIndexException(e.getMessage(), ite.in, e);
+    }
+    compressionAlg.read(ite.in, suffixBytes, numSuffixBytes);
+    suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
+
+    int numSuffixLengthBytes = ite.in.readVInt();
+    final boolean allEqual = (numSuffixLengthBytes & 0x01) != 0;
+    numSuffixLengthBytes >>>= 1;
+    if (suffixLengthBytes.length < numSuffixLengthBytes) {
+      suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
+    }
+    if (allEqual) {
+      Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ite.in.readByte());
+    } else {
+      ite.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
+    }
+    suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
 
     // stats
     int numBytes = ite.in.readVInt();
@@ -315,35 +299,23 @@ final class IntersectTermsEnumFrame {
       // just skipN here:
 
       // stats
-      if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-        if (statsSingletonRunLength > 0) {
+      if (statsSingletonRunLength > 0) {
+        termState.docFreq = 1;
+        termState.totalTermFreq = 1;
+        statsSingletonRunLength--;
+      } else {
+        int token = statsReader.readVInt();
+        if ((token & 1) == 1) {
           termState.docFreq = 1;
           termState.totalTermFreq = 1;
-          statsSingletonRunLength--;
+          statsSingletonRunLength = token >>> 1;
         } else {
-          int token = statsReader.readVInt();
-          if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES
-              && (token & 1) == 1) {
-            termState.docFreq = 1;
-            termState.totalTermFreq = 1;
-            statsSingletonRunLength = token >>> 1;
+          termState.docFreq = token >>> 1;
+          if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+            termState.totalTermFreq = termState.docFreq;
           } else {
-            termState.docFreq = token >>> 1;
-            if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
-              termState.totalTermFreq = termState.docFreq;
-            } else {
-              termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
-            }
+            termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
           }
-        }
-      } else {
-        termState.docFreq = statsReader.readVInt();
-        // if (DEBUG) System.out.println("    dF=" + state.docFreq);
-        if (ite.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
-          termState.totalTermFreq = termState.docFreq; // all postings have freq=1
-        } else {
-          termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
-          // if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
         }
       }
       // metadata

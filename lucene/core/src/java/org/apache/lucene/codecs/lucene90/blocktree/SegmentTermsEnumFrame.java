@@ -102,13 +102,8 @@ final class SegmentTermsEnumFrame {
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
     this.version = ste.fr.parent.version;
-    if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-      suffixLengthBytes = new byte[32];
-      suffixLengthsReader = new ByteArrayDataInput();
-    } else {
-      suffixLengthBytes = null;
-      suffixLengthsReader = suffixesReader;
-    }
+    suffixLengthBytes = new byte[32];
+    suffixLengthsReader = new ByteArrayDataInput();
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -179,43 +174,32 @@ final class SegmentTermsEnumFrame {
 
     final long startSuffixFP = ste.in.getFilePointer();
     // term suffixes:
-    if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-      final long codeL = ste.in.readVLong();
-      isLeafBlock = (codeL & 0x04) != 0;
-      final int numSuffixBytes = (int) (codeL >>> 3);
-      if (suffixBytes.length < numSuffixBytes) {
-        suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
-      }
-      try {
-        compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
-      } catch (IllegalArgumentException e) {
-        throw new CorruptIndexException(e.getMessage(), ste.in, e);
-      }
-      compressionAlg.read(ste.in, suffixBytes, numSuffixBytes);
-      suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
-
-      int numSuffixLengthBytes = ste.in.readVInt();
-      final boolean allEqual = (numSuffixLengthBytes & 0x01) != 0;
-      numSuffixLengthBytes >>>= 1;
-      if (suffixLengthBytes.length < numSuffixLengthBytes) {
-        suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
-      }
-      if (allEqual) {
-        Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ste.in.readByte());
-      } else {
-        ste.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
-      }
-      suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
-    } else {
-      code = ste.in.readVInt();
-      isLeafBlock = (code & 1) != 0;
-      int numBytes = code >>> 1;
-      if (suffixBytes.length < numBytes) {
-        suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      ste.in.readBytes(suffixBytes, 0, numBytes);
-      suffixesReader.reset(suffixBytes, 0, numBytes);
+    final long codeL = ste.in.readVLong();
+    isLeafBlock = (codeL & 0x04) != 0;
+    final int numSuffixBytes = (int) (codeL >>> 3);
+    if (suffixBytes.length < numSuffixBytes) {
+      suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
     }
+    try {
+      compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
+    } catch (IllegalArgumentException e) {
+      throw new CorruptIndexException(e.getMessage(), ste.in, e);
+    }
+    compressionAlg.read(ste.in, suffixBytes, numSuffixBytes);
+    suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
+
+    int numSuffixLengthBytes = ste.in.readVInt();
+    final boolean allEqual = (numSuffixLengthBytes & 0x01) != 0;
+    numSuffixLengthBytes >>>= 1;
+    if (suffixLengthBytes.length < numSuffixLengthBytes) {
+      suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
+    }
+    if (allEqual) {
+      Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ste.in.readByte());
+    } else {
+      ste.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
+    }
+    suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
     totalSuffixBytes = ste.in.getFilePointer() - startSuffixFP;
 
     /*if (DEBUG) {
@@ -470,36 +454,23 @@ final class SegmentTermsEnumFrame {
 
       // TODO: if docFreq were bulk decoded we could
       // just skipN here:
-
-      if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-        if (statsSingletonRunLength > 0) {
+      if (statsSingletonRunLength > 0) {
+        state.docFreq = 1;
+        state.totalTermFreq = 1;
+        statsSingletonRunLength--;
+      } else {
+        int token = statsReader.readVInt();
+        if ((token & 1) == 1) {
           state.docFreq = 1;
           state.totalTermFreq = 1;
-          statsSingletonRunLength--;
+          statsSingletonRunLength = token >>> 1;
         } else {
-          int token = statsReader.readVInt();
-          if ((token & 1) == 1) {
-            state.docFreq = 1;
-            state.totalTermFreq = 1;
-            statsSingletonRunLength = token >>> 1;
+          state.docFreq = token >>> 1;
+          if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+            state.totalTermFreq = state.docFreq;
           } else {
-            state.docFreq = token >>> 1;
-            if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
-              state.totalTermFreq = state.docFreq;
-            } else {
-              state.totalTermFreq = state.docFreq + statsReader.readVLong();
-            }
+            state.totalTermFreq = state.docFreq + statsReader.readVLong();
           }
-        }
-      } else {
-        assert statsSingletonRunLength == 0;
-        state.docFreq = statsReader.readVInt();
-        // if (DEBUG) System.out.println("    dF=" + state.docFreq);
-        if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
-          state.totalTermFreq = state.docFreq; // all postings have freq=1
-        } else {
-          state.totalTermFreq = state.docFreq + statsReader.readVLong();
-          // if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
         }
       }
 

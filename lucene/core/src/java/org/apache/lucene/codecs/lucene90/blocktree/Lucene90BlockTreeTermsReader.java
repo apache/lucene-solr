@@ -81,19 +81,10 @@ public final class Lucene90BlockTreeTermsReader extends FieldsProducer {
   static final String TERMS_CODEC_NAME = "BlockTreeTermsDict";
 
   /** Initial terms format. */
-  public static final int VERSION_START = 3;
-
-  /** The long[] + byte[] metadata has been replaced with a single byte[]. */
-  public static final int VERSION_META_LONGS_REMOVED = 4;
-
-  /** Suffixes are compressed to save space. */
-  public static final int VERSION_COMPRESSED_SUFFIXES = 5;
-
-  /** Metadata is written to its own file. */
-  public static final int VERSION_META_FILE = 6;
+  public static final int VERSION_START = 0;
 
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_META_FILE;
+  public static final int VERSION_CURRENT = VERSION_START;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";
@@ -155,45 +146,24 @@ public final class Lucene90BlockTreeTermsReader extends FieldsProducer {
           state.segmentInfo.getId(),
           state.segmentSuffix);
 
-      if (version < VERSION_META_FILE) {
-        // Have PostingsReader init itself
-        postingsReader.init(termsIn, state);
-
-        // Verifying the checksum against all bytes would be too costly, but for now we at least
-        // verify proper structure of the checksum footer. This is cheap and can detect some forms
-        // of corruption such as file truncation.
-        CodecUtil.retrieveChecksum(indexIn);
-        CodecUtil.retrieveChecksum(termsIn);
-      }
-
       // Read per-field details
       String metaName =
           IndexFileNames.segmentFileName(segment, state.segmentSuffix, TERMS_META_EXTENSION);
       Map<String, FieldReader> fieldMap = null;
       Throwable priorE = null;
       long indexLength = -1, termsLength = -1;
-      try (ChecksumIndexInput metaIn =
-          version >= VERSION_META_FILE
-              ? state.directory.openChecksumInput(metaName, state.context)
-              : null) {
+      try (ChecksumIndexInput metaIn = state.directory.openChecksumInput(metaName, state.context)) {
         try {
           final IndexInput indexMetaIn, termsMetaIn;
-          if (version >= VERSION_META_FILE) {
-            CodecUtil.checkIndexHeader(
-                metaIn,
-                TERMS_META_CODEC_NAME,
-                version,
-                version,
-                state.segmentInfo.getId(),
-                state.segmentSuffix);
-            indexMetaIn = termsMetaIn = metaIn;
-            postingsReader.init(metaIn, state);
-          } else {
-            seekDir(termsIn);
-            seekDir(indexIn);
-            indexMetaIn = indexIn;
-            termsMetaIn = termsIn;
-          }
+          CodecUtil.checkIndexHeader(
+              metaIn,
+              TERMS_META_CODEC_NAME,
+              version,
+              version,
+              state.segmentInfo.getId(),
+              state.segmentSuffix);
+          indexMetaIn = termsMetaIn = metaIn;
+          postingsReader.init(metaIn, state);
 
           final int numFields = termsMetaIn.readVInt();
           if (numFields < 0) {
@@ -220,14 +190,6 @@ public final class Lucene90BlockTreeTermsReader extends FieldsProducer {
                     ? sumTotalTermFreq
                     : termsMetaIn.readVLong();
             final int docCount = termsMetaIn.readVInt();
-            if (version < VERSION_META_LONGS_REMOVED) {
-              final int longsSize = termsMetaIn.readVInt();
-              if (longsSize < 0) {
-                throw new CorruptIndexException(
-                    "invalid longsSize for field: " + fieldInfo.name + ", longsSize=" + longsSize,
-                    termsMetaIn);
-              }
-            }
             BytesRef minTerm = readBytesRef(termsMetaIn);
             BytesRef maxTerm = readBytesRef(termsMetaIn);
             if (docCount < 0
@@ -266,10 +228,8 @@ public final class Lucene90BlockTreeTermsReader extends FieldsProducer {
               throw new CorruptIndexException("duplicate field: " + fieldInfo.name, termsMetaIn);
             }
           }
-          if (version >= VERSION_META_FILE) {
-            indexLength = metaIn.readLong();
-            termsLength = metaIn.readLong();
-          }
+          indexLength = metaIn.readLong();
+          termsLength = metaIn.readLong();
         } catch (Throwable exception) {
           priorE = exception;
         } finally {
@@ -280,15 +240,10 @@ public final class Lucene90BlockTreeTermsReader extends FieldsProducer {
           }
         }
       }
-      if (version >= VERSION_META_FILE) {
-        // At this point the checksum of the meta file has been verified so the lengths are likely
-        // correct
-        CodecUtil.retrieveChecksum(indexIn, indexLength);
-        CodecUtil.retrieveChecksum(termsIn, termsLength);
-      } else {
-        assert indexLength == -1 : indexLength;
-        assert termsLength == -1 : termsLength;
-      }
+      // At this point the checksum of the meta file has been verified so the lengths are likely
+      // correct
+      CodecUtil.retrieveChecksum(indexIn, indexLength);
+      CodecUtil.retrieveChecksum(termsIn, termsLength);
       List<String> fieldList = new ArrayList<>(fieldMap.keySet());
       fieldList.sort(null);
       this.fieldMap = fieldMap;
