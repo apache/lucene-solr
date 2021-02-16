@@ -20,6 +20,8 @@ Bug Fixes
 * SOLR-15138: Collection creation for PerReplicaStates does not scale to large collections as well as regular collections
   (Mike Drob, Ilan Ginzburg, noble, Ishan Chattopadhyaya)
 
+* SOLR-15135: Admin UI display collections with perReplicaState=true in graph view (Timothy Potter)
+
 ==================  8.8.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
