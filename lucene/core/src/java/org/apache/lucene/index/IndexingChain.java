@@ -620,69 +620,38 @@ final class IndexingChain implements Accountable {
       abortingExceptionConsumer.accept(th);
       throw th;
     }
-    for (int i = 0; i < fieldCount; i++) {
-      fields[i].checkIndexOptionsConsistency(docID);
-    }
   }
 
   private int processField(int docID, IndexableField field, long fieldGen, int fieldCount)
       throws IOException {
     String fieldName = field.name();
     IndexableFieldType fieldType = field.fieldType();
-    PerField fp = getOrAddField(fieldName, fieldType);
-    if (fp.fieldGen
-        != fieldGen) { // if this is the first time we encounter the field in the current doc
-      fp.resetFieldSchemaForCurDoc();
-      if (fp.fieldGen == -1) {
-        fp.setFistTimeField(); // this doc introduces new field for the whole segment
-      }
-      fields[fieldCount++] = fp;
-    }
 
-    // Invert indexed fields:
+    PerField fp = null;
+
     if (fieldType.indexOptions() == null) {
       throw new NullPointerException(
           "IndexOptions must not be null (field: \"" + field.name() + "\")");
     }
+
+    // Invert indexed fields:
     if (fieldType.indexOptions() != IndexOptions.NONE) {
-      if (fp.invertState == null) {
-        // This is the first time we are seeing this field indexed with postings
-        // This is only allowed if this is the first document in the segment that introduces this
-        // field
-        if (fp.getFirstTimeField() == false) {
-          throw new IllegalArgumentException(
-              "Inconsistency of field indexing options across documents! "
-                  + "Field ["
-                  + field.name()
-                  + "] of doc ["
-                  + docID
-                  + "] must be indexed without postings!");
-        }
-        initIndexOptions(fp.fieldInfo, fieldType.indexOptions());
-        fp.setInvertState();
+      fp = getOrAddField(fieldName, fieldType, true);
+      boolean first = fp.fieldGen != fieldGen;
+      fp.invert(docID, field, first);
+
+      if (first) {
+        fields[fieldCount++] = fp;
+        fp.fieldGen = fieldGen;
       }
-      fp.invert(docID, field, fp.getIndexedCurDoc() == false);
-      fp.setIndexedCurDoc();
     } else {
       verifyUnIndexedFieldType(fieldName, fieldType);
     }
 
     // Add stored fields:
     if (fieldType.stored()) {
-      if (fp.getStored() == false) {
-        // This is the first time we are seeing this field indexed with stored options.
-        // This is only allowed if this is the first document in the segment that introduces this
-        // field
-        if (fp.getFirstTimeField() == false) {
-          throw new IllegalArgumentException(
-              "Inconsistency of field indexing options across documents! "
-                  + "Field ["
-                  + field.name()
-                  + "] of doc ["
-                  + docID
-                  + "] must be indexed without stored options!");
-        }
-        fp.setStored();
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
       }
       String value = field.stringValue();
       if (value != null && value.length() > IndexWriter.MAX_STORED_STRING_LENGTH) {
@@ -699,7 +668,6 @@ final class IndexingChain implements Accountable {
         onAbortingException(th);
         throw th;
       }
-      fp.setStoredCurDoc();
     }
 
     DocValuesType dvType = fieldType.docValuesType();
@@ -708,21 +676,24 @@ final class IndexingChain implements Accountable {
           "docValuesType must not be null (field: \"" + fieldName + "\")");
     }
     if (dvType != DocValuesType.NONE) {
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
+      }
       indexDocValue(docID, fp, dvType, field);
-      fp.setHasDocValuesCurDoc();
     }
-
     if (fieldType.pointDimensionCount() != 0) {
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
+      }
       indexPoint(docID, fp, field);
-      fp.setHasPointsCurDoc();
     }
-
     if (fieldType.vectorDimension() != 0) {
+      if (fp == null) {
+        fp = getOrAddField(fieldName, fieldType, false);
+      }
       indexVector(docID, fp, field);
-      fp.setHasVectorsCurDoc();
     }
 
-    fp.fieldGen = fieldGen; // successfully processed the field for the current document
     return fieldCount;
   }
 
@@ -761,23 +732,12 @@ final class IndexingChain implements Accountable {
   private void indexPoint(int docID, PerField fp, IndexableField field) {
     int pointDimensionCount = field.fieldType().pointDimensionCount();
     int pointIndexDimensionCount = field.fieldType().pointIndexDimensionCount();
+
     int dimensionNumBytes = field.fieldType().pointNumBytes();
 
     // Record dimensions for this field; this setter will throw IllegalArgExc if
     // the dimensions were already set to something different:
     if (fp.fieldInfo.getPointDimensionCount() == 0) {
-      // This is the first time we are seeing this field indexed with points.
-      // This is only allowed if this is the first document in the segment that introduces this
-      // field
-      if (fp.getFirstTimeField() == false) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + field.name()
-                + "] of doc ["
-                + docID
-                + "] must be indexed without points!");
-      }
       fieldInfos.globalFieldNumbers.setDimensions(
           fp.fieldInfo.number,
           fp.fieldInfo.name,
@@ -788,6 +748,7 @@ final class IndexingChain implements Accountable {
 
     fp.fieldInfo.setPointDimensions(
         pointDimensionCount, pointIndexDimensionCount, dimensionNumBytes);
+
     if (fp.pointValuesWriter == null) {
       fp.pointValuesWriter = new PointValuesWriter(byteBlockAllocator, bytesUsed, fp.fieldInfo);
     }
@@ -891,25 +852,15 @@ final class IndexingChain implements Accountable {
   /** Called from processDocument to index one field's doc value */
   private void indexDocValue(int docID, PerField fp, DocValuesType dvType, IndexableField field)
       throws IOException {
+
     if (fp.fieldInfo.getDocValuesType() == DocValuesType.NONE) {
-      // This is the first time we are seeing this field indexed with doc values.
-      // This is only allowed if this is the first document in the segment that introduces this
-      // field
-      if (fp.getFirstTimeField() == false) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + field.name()
-                + "] of doc ["
-                + docID
-                + "] must be indexed without doc values!");
-      }
+      // This is the first time we are seeing this field indexed with doc values, so we
+      // now record the DV type so that any future attempt to (illegally) change
+      // the DV type of this field, will throw an IllegalArgExc:
       if (indexWriterConfig.getIndexSort() != null) {
         final Sort indexSort = indexWriterConfig.getIndexSort();
         validateIndexSortDVType(indexSort, fp.fieldInfo.name, dvType);
       }
-      // Record the DV type so that any future attempt to (illegally) change
-      // the DV type of this field, will throw an IllegalArgExc:
       fieldInfos.globalFieldNumbers.setDocValuesType(
           fp.fieldInfo.number, fp.fieldInfo.name, dvType);
     }
@@ -969,20 +920,9 @@ final class IndexingChain implements Accountable {
     VectorValues.SearchStrategy searchStrategy = field.fieldType().vectorSearchStrategy();
 
     // Record dimensions and distance function for this field; this setter will throw IllegalArgExc
-    // if the dimensions or distance function were already set to something different:
+    // if
+    // the dimensions or distance function were already set to something different:
     if (fp.fieldInfo.getVectorDimension() == 0) {
-      // This is the first time we are seeing this field indexed with vectors.
-      // This is only allowed if this is the first document in the segment that introduces this
-      // field
-      if (fp.getFirstTimeField() == false) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + field.name()
-                + "] of doc ["
-                + docID
-                + "] must be indexed without vectors!");
-      }
       fieldInfos.globalFieldNumbers.setVectorDimensionsAndSearchStrategy(
           fp.fieldInfo.number, fp.fieldInfo.name, dimension, searchStrategy);
     }
@@ -1008,7 +948,8 @@ final class IndexingChain implements Accountable {
    * Returns a previously created {@link PerField}, absorbing the type information from {@link
    * FieldType}, and creates a new {@link PerField} if this field name wasn't seen yet.
    */
-  private PerField getOrAddField(String name, IndexableFieldType fieldType) {
+  private PerField getOrAddField(String name, IndexableFieldType fieldType, boolean invert) {
+
     // Make sure we have a PerField allocated
     final int hashPos = name.hashCode() & hashMask;
     PerField fp = fieldHash[hashPos];
@@ -1018,15 +959,19 @@ final class IndexingChain implements Accountable {
 
     if (fp == null) {
       // First time we are seeing this field in this segment
+
       FieldInfo fi = fieldInfos.getOrAdd(name);
+      initIndexOptions(fi, fieldType.indexOptions());
       Map<String, String> attributes = fieldType.getAttributes();
       if (attributes != null) {
         attributes.forEach((k, v) -> fi.putAttribute(k, v));
       }
+
       fp =
           new PerField(
               indexCreatedVersionMajor,
               fi,
+              invert,
               indexWriterConfig.getSimilarity(),
               indexWriterConfig.getInfoStream(),
               indexWriterConfig.getAnalyzer());
@@ -1046,7 +991,12 @@ final class IndexingChain implements Accountable {
         System.arraycopy(fields, 0, newFields, 0, fields.length);
         fields = newFields;
       }
+
+    } else if (invert && fp.invertState == null) {
+      initIndexOptions(fp.fieldInfo, fieldType.indexOptions());
+      fp.setInvertState();
     }
+
     return fp;
   }
 
@@ -1107,16 +1057,10 @@ final class IndexingChain implements Accountable {
     private final InfoStream infoStream;
     private final Analyzer analyzer;
 
-    // for the current doc collects all indexing options of the field
-    // this schema is later compared to the field schema of the whole segment
-    // to ensure consistency of indexing options of this field between all docs in the segment
-    private final boolean[] schemaCurDoc;
-
-    private boolean stored = false;
-
     PerField(
         int indexCreatedVersionMajor,
         FieldInfo fieldInfo,
+        boolean invert,
         Similarity similarity,
         InfoStream infoStream,
         Analyzer analyzer) {
@@ -1125,9 +1069,9 @@ final class IndexingChain implements Accountable {
       this.similarity = similarity;
       this.infoStream = infoStream;
       this.analyzer = analyzer;
-      this.schemaCurDoc =
-          new boolean[6]; // 0)firstTimeField 1)indexed 2) stored 3) docValues 4)points 5) vectors
-      this.schemaCurDoc[0] = true;
+      if (invert) {
+        setInvertState();
+      }
     }
 
     void setInvertState() {
@@ -1148,76 +1092,25 @@ final class IndexingChain implements Accountable {
       return this.fieldInfo.name.compareTo(other.fieldInfo.name);
     }
 
-    // check consistency of field indexing options of the current doc and other docs in the segment
-    // check if the field of the current doc is missing some indexing options
-    void checkIndexOptionsConsistency(int docID) {
-      if (getIndexedCurDoc() == false && fieldInfo.getIndexOptions() != IndexOptions.NONE) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + fieldInfo.name
-                + "] of doc ["
-                + docID
-                + "] must be indexed with postings!");
-      }
-      if (getStoredCurDoc() == false && getStored()) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + fieldInfo.name
-                + "] of doc ["
-                + docID
-                + "] must be indexed with stored options!");
-      }
-      if (getDocValuesCurDoc() == false && fieldInfo.getDocValuesType() != DocValuesType.NONE) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + fieldInfo.name
-                + "] of doc ["
-                + docID
-                + "] must be indexed with doc values!");
-      }
-      if (getHasPointsCurDoc() == false && fieldInfo.getPointDimensionCount() != 0) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + fieldInfo.name
-                + "] of doc ["
-                + docID
-                + "] must be indexed with points!");
-      }
-      if (getHasVectorsCurDoc() == false && fieldInfo.getVectorDimension() != 0) {
-        throw new IllegalArgumentException(
-            "Inconsistency of field indexing options across documents! "
-                + "Field ["
-                + fieldInfo.name
-                + "] of doc ["
-                + docID
-                + "] must be indexed with vectors!");
-      }
-    }
-
     public void finish(int docID) throws IOException {
-      if (fieldInfo.getIndexOptions() != IndexOptions.NONE) {
-        if (fieldInfo.omitsNorms() == false) {
-          long normValue;
-          if (invertState.length == 0) {
-            // the field exists in this document, but it did not have
-            // any indexed tokens, so we assign a default value of zero
-            // to the norm
-            normValue = 0;
-          } else {
-            normValue = similarity.computeNorm(invertState);
-            if (normValue == 0) {
-              throw new IllegalStateException(
-                  "Similarity " + similarity + " return 0 for non-empty field");
-            }
+      if (fieldInfo.omitsNorms() == false) {
+        long normValue;
+        if (invertState.length == 0) {
+          // the field exists in this document, but it did not have
+          // any indexed tokens, so we assign a default value of zero
+          // to the norm
+          normValue = 0;
+        } else {
+          normValue = similarity.computeNorm(invertState);
+          if (normValue == 0) {
+            throw new IllegalStateException(
+                "Similarity " + similarity + " return 0 for non-empty field");
           }
-          norms.addValue(docID, normValue);
         }
-        termsHashPerField.finish();
+        norms.addValue(docID, normValue);
       }
+
+      termsHashPerField.finish();
     }
 
     /**
@@ -1230,7 +1123,9 @@ final class IndexingChain implements Accountable {
         // this document:
         invertState.reset();
       }
+
       IndexableFieldType fieldType = field.fieldType();
+
       IndexOptions indexOptions = fieldType.indexOptions();
       fieldInfo.setIndexOptions(indexOptions);
 
@@ -1380,68 +1275,6 @@ final class IndexingChain implements Accountable {
         invertState.position += analyzer.getPositionIncrementGap(fieldInfo.name);
         invertState.offset += analyzer.getOffsetGap(fieldInfo.name);
       }
-    }
-
-    void resetFieldSchemaForCurDoc() {
-      for (int i = 0; i < schemaCurDoc.length; i++) {
-        schemaCurDoc[i] = false;
-      }
-    }
-
-    void setFistTimeField() {
-      schemaCurDoc[0] = true;
-    }
-
-    boolean getFirstTimeField() {
-      return schemaCurDoc[0];
-    }
-
-    void setIndexedCurDoc() {
-      schemaCurDoc[1] = true;
-    }
-
-    boolean getIndexedCurDoc() {
-      return schemaCurDoc[1];
-    }
-
-    void setStoredCurDoc() {
-      schemaCurDoc[2] = true;
-    }
-
-    boolean getStoredCurDoc() {
-      return schemaCurDoc[2];
-    }
-
-    void setStored() {
-      stored = true; // set stored at the segment level
-    }
-
-    boolean getStored() { // if this field is set as stored at the segment level
-      return stored;
-    }
-
-    void setHasDocValuesCurDoc() {
-      schemaCurDoc[3] = true;
-    }
-
-    boolean getDocValuesCurDoc() {
-      return schemaCurDoc[3];
-    }
-
-    void setHasPointsCurDoc() {
-      schemaCurDoc[4] = true;
-    }
-
-    boolean getHasPointsCurDoc() {
-      return schemaCurDoc[4];
-    }
-
-    void setHasVectorsCurDoc() {
-      schemaCurDoc[5] = true;
-    }
-
-    boolean getHasVectorsCurDoc() {
-      return schemaCurDoc[5];
     }
   }
 
