@@ -333,9 +333,14 @@ configure([project(":solr"), project(":lucene"),]) {
     }
 
     doFirst {
-      def allReferenced = validationTasks.collectMany { task ->
-        task.project.jarInfos.collectMany { it.referencedFiles }
-      }.collect { it.toString() }
+      def allReferenced = validationTasks
+          .findAll { task ->
+            task.getEnabled()
+          }
+          .collectMany { task ->
+            task.project.jarInfos.collectMany { it.referencedFiles }
+          }
+          .collect { it.toString() }
 
       def patterns = ext.exclude
       def allExisting = fileTree(licensesDir, {
