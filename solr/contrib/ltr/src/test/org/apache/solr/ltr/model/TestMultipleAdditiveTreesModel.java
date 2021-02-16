@@ -229,7 +229,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestMissingFeatureStore(){
     final ModelException expectedException =
-        new ModelException("Feature Store not found: not_existent_store");
+        new ModelException("Missing or empty feature store: not_existent_store");
 
     ModelException ex = expectThrows(ModelException.class, () -> {
       createModelFromFiles("multipleadditivetreesmodel_notExistentStore.json",
@@ -241,7 +241,7 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   @Test
   public void multipleAdditiveTreesTestUnknownFeature(){
     final ModelException expectedException =
-        new ModelException("Feature:notExist1 not found in store: _DEFAULT_");
+        new ModelException("Feature: notExist1 not found in store: _DEFAULT_");
 
     ModelException ex = expectThrows(ModelException.class, () -> {
       createModelFromFiles("multipleadditivetreesmodel_unknownFeature.json",
