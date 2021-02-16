@@ -232,7 +232,7 @@ public class TestLinearModel extends TestRerankBase {
   @Test
   public void notExistentStore_shouldThrowMeaningFulException(){
     final ModelException expectedException =
-        new ModelException("Feature Store not found: not_existent_store");
+        new ModelException("Missing or empty feature store: not_existent_store");
 
     ModelException ex = expectThrows(ModelException.class, () -> {
       createModelFromFiles("linear-model_notExistentStore.json",
@@ -244,7 +244,7 @@ public class TestLinearModel extends TestRerankBase {
   @Test
   public void notExistentFeature_shouldThrowMeaningFulException(){
     final ModelException expectedException =
-        new ModelException("Feature:notExist1 not found in store: test");
+        new ModelException("Feature: notExist1 not found in store: test");
 
     ModelException ex = expectThrows(ModelException.class, () -> {
       createModelFromFiles("linear-model_notExistentFeature.json",
