@@ -51,7 +51,7 @@ import org.apache.lucene.util.IntsRef;
 public class Hunspell {
   final Dictionary dictionary;
   final Stemmer stemmer;
-  private final Runnable checkCanceled;
+  final Runnable checkCanceled;
 
   public Hunspell(Dictionary dictionary) {
     this(dictionary, () -> {});
