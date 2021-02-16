@@ -218,6 +218,9 @@ New Features
 ---------------------
 * SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
 
+* SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
+
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
