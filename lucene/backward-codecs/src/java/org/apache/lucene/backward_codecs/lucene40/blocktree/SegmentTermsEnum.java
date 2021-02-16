@@ -237,11 +237,11 @@ final class SegmentTermsEnum extends BaseTermsEnum {
       throws IOException {
     scratchReader.reset(frameData.bytes, frameData.offset, frameData.length);
     final long code = scratchReader.readVLong();
-    final long fpSeek = code >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
+    final long fpSeek = code >>> Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
     final SegmentTermsEnumFrame f = getFrame(1 + currentFrame.ord);
-    f.hasTerms = (code & BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS) != 0;
+    f.hasTerms = (code & Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS) != 0;
     f.hasTermsOrig = f.hasTerms;
-    f.isFloor = (code & BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0;
+    f.isFloor = (code & Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0;
     if (f.isFloor) {
       f.setFloorData(scratchReader, frameData);
     }
@@ -394,8 +394,8 @@ final class SegmentTermsEnum extends BaseTermsEnum {
                 + (char) arc.label()
                 + " targetLabel="
                 + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
-        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
+        if (arc.output() != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
         if (arc.isFinal()) {
           lastFrame = stack[1 + lastFrame.ord];
@@ -491,7 +491,8 @@ final class SegmentTermsEnum extends BaseTermsEnum {
       // term.length = 0;
       targetUpto = 0;
       currentFrame =
-          pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
+          pushFrame(
+              arc, Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
     }
 
     // if (DEBUG) {
@@ -553,8 +554,8 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         term.setByteAt(targetUpto, (byte) targetLabel);
         // Aggregate output as we go:
         assert arc.output() != null;
-        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
+        if (arc.output() != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
 
         // if (DEBUG) {
@@ -568,7 +569,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
           currentFrame =
               pushFrame(
                   arc,
-                  BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()),
+                  Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()),
                   targetUpto);
           // if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" +
           // currentFrame.hasTerms);
@@ -684,8 +685,8 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         // seek; but, often the FST doesn't have any
         // shared bytes (but this could change if we
         // reverse vLong byte order)
-        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
+        if (arc.output() != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
         if (arc.isFinal()) {
           lastFrame = stack[1 + lastFrame.ord];
@@ -775,7 +776,8 @@ final class SegmentTermsEnum extends BaseTermsEnum {
       // term.length = 0;
       targetUpto = 0;
       currentFrame =
-          pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
+          pushFrame(
+              arc, Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
     }
 
     // if (DEBUG) {
@@ -837,8 +839,8 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         arc = nextArc;
         // Aggregate output as we go:
         assert arc.output() != null;
-        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
+        if (arc.output() != Lucene40BlockTreeTermsReader.NO_OUTPUT) {
+          output = Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
 
         // if (DEBUG) {
@@ -852,7 +854,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
           currentFrame =
               pushFrame(
                   arc,
-                  BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()),
+                  Lucene40BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()),
                   targetUpto);
           // if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" +
           // currentFrame.hasTerms);
@@ -919,9 +921,9 @@ final class SegmentTermsEnum extends BaseTermsEnum {
                   + " isFloor="
                   + f.isFloor
                   + " code="
-                  + ((f.fp << BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS)
-                      + (f.hasTerms ? BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0)
-                      + (f.isFloor ? BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0))
+                  + ((f.fp << Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS)
+                      + (f.hasTerms ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0)
+                      + (f.isFloor ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0))
                   + " isLastInFloor="
                   + f.isLastInFloor
                   + " mdUpto="
@@ -949,9 +951,9 @@ final class SegmentTermsEnum extends BaseTermsEnum {
                   + " isFloor="
                   + f.isFloor
                   + " code="
-                  + ((f.fp << BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS)
-                      + (f.hasTerms ? BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0)
-                      + (f.isFloor ? BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0))
+                  + ((f.fp << Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS)
+                      + (f.hasTerms ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0)
+                      + (f.isFloor ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0))
                   + " lastSubFP="
                   + f.lastSubFP
                   + " isLastInFloor="
@@ -980,9 +982,9 @@ final class SegmentTermsEnum extends BaseTermsEnum {
                 new ByteArrayDataInput(output.bytes, output.offset, output.length);
             final long codeOrig = reader.readVLong();
             final long code =
-                (f.fp << BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS)
-                    | (f.hasTerms ? BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0)
-                    | (f.isFloor ? BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0);
+                (f.fp << Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS)
+                    | (f.hasTerms ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_HAS_TERMS : 0)
+                    | (f.isFloor ? Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR : 0);
             if (codeOrig != code) {
               out.println(
                   "      broken seek state: output code="

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.codecs.lucene90.blocktree;
 
+import java.io.IOException;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
@@ -32,8 +33,6 @@ import org.apache.lucene.util.automaton.Transition;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
-
-import java.io.IOException;
 
 /**
  * This is used to implement efficient {@link Terms#intersect} for block-tree. Note that it cannot

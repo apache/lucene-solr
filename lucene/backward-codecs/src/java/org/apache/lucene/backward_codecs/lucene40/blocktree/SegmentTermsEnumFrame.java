@@ -102,7 +102,7 @@ final class SegmentTermsEnumFrame {
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
     this.version = ste.fr.parent.version;
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+    if (version >= Lucene40BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
       suffixLengthBytes = new byte[32];
       suffixLengthsReader = new ByteArrayDataInput();
     } else {
@@ -179,7 +179,7 @@ final class SegmentTermsEnumFrame {
 
     final long startSuffixFP = ste.in.getFilePointer();
     // term suffixes:
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+    if (version >= Lucene40BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
       final long codeL = ste.in.readVLong();
       isLeafBlock = (codeL & 0x04) != 0;
       final int numSuffixBytes = (int) (codeL >>> 3);
@@ -471,7 +471,7 @@ final class SegmentTermsEnumFrame {
       // TODO: if docFreq were bulk decoded we could
       // just skipN here:
 
-      if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      if (version >= Lucene40BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
         if (statsSingletonRunLength > 0) {
           state.docFreq = 1;
           state.totalTermFreq = 1;

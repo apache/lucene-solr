@@ -24,7 +24,7 @@ import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
 import org.apache.lucene.codecs.lucene90.Lucene90PostingsWriter;
-import org.apache.lucene.codecs.lucene90.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.lucene90.blocktree.Lucene90BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
@@ -57,7 +57,7 @@ public class BlockTreeOrdsPostingsFormat extends PostingsFormat {
     super("BlockTreeOrds");
     this.minTermBlockSize = minTermBlockSize;
     this.maxTermBlockSize = maxTermBlockSize;
-    BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
+    Lucene90BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
   }
 
   @Override

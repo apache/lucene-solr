@@ -17,7 +17,7 @@
 package org.apache.lucene.backward_codecs.lucene50;
 
 import java.io.IOException;
-import org.apache.lucene.backward_codecs.lucene40.blocktree.BlockTreeTermsReader;
+import org.apache.lucene.backward_codecs.lucene40.blocktree.Lucene40BlockTreeTermsReader;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsConsumer;
@@ -386,7 +386,7 @@ public class Lucene50PostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new Lucene50PostingsReader(state);
     boolean success = false;
     try {
-      FieldsProducer ret = new BlockTreeTermsReader(postingsReader, state);
+      FieldsProducer ret = new Lucene40BlockTreeTermsReader(postingsReader, state);
       success = true;
       return ret;
     } finally {

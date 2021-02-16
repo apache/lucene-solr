@@ -37,8 +37,8 @@ import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
 import org.apache.lucene.codecs.lucene90.Lucene90PostingsWriter;
-import org.apache.lucene.codecs.lucene90.blocktree.BlockTreeTermsReader;
-import org.apache.lucene.codecs.lucene90.blocktree.BlockTreeTermsWriter;
+import org.apache.lucene.codecs.lucene90.blocktree.Lucene90BlockTreeTermsReader;
+import org.apache.lucene.codecs.lucene90.blocktree.Lucene90BlockTreeTermsWriter;
 import org.apache.lucene.codecs.memory.FSTTermsReader;
 import org.apache.lucene.codecs.memory.FSTTermsWriter;
 import org.apache.lucene.index.FieldInfo;
@@ -150,7 +150,9 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new BlockTreeTermsWriter(state, postingsWriter, minTermsInBlock, maxTermsInBlock);
+        fields =
+            new Lucene90BlockTreeTermsWriter(
+                state, postingsWriter, minTermsInBlock, maxTermsInBlock);
         success = true;
       } finally {
         if (!success) {
@@ -309,7 +311,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
 
       boolean success = false;
       try {
-        fields = new BlockTreeTermsReader(postingsReader, state);
+        fields = new Lucene90BlockTreeTermsReader(postingsReader, state);
         success = true;
       } finally {
         if (!success) {

@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.codecs.lucene90.blocktree;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.Terms;
@@ -30,10 +33,6 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.OffHeapFSTStore;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
 
 /**
  * BlockTree's implementation of {@link Terms}.
@@ -57,13 +56,13 @@ public final class FieldReader extends Terms implements Accountable {
   final BytesRef rootCode;
   final BytesRef minTerm;
   final BytesRef maxTerm;
-  final BlockTreeTermsReader parent;
+  final Lucene90BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
   // private boolean DEBUG;
 
   FieldReader(
-      BlockTreeTermsReader parent,
+      Lucene90BlockTreeTermsReader parent,
       FieldInfo fieldInfo,
       long numTerms,
       BytesRef rootCode,
@@ -93,7 +92,7 @@ public final class FieldReader extends Terms implements Accountable {
     // }
     rootBlockFP =
         (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong()
-            >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
+            >>> Lucene90BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
     // Initialize FST always off-heap.
     final IndexInput clone = indexIn.clone();
     clone.seek(indexStartFP);

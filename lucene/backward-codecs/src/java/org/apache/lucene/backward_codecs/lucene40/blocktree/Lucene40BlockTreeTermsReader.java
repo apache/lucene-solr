@@ -64,7 +64,7 @@ import org.apache.lucene.util.fst.Outputs;
  *
  * @lucene.experimental
  */
-public final class BlockTreeTermsReader extends FieldsProducer {
+public final class Lucene40BlockTreeTermsReader extends FieldsProducer {
 
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
 
@@ -124,7 +124,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state)
+  public Lucene40BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state)
       throws IOException {
     boolean success = false;
 

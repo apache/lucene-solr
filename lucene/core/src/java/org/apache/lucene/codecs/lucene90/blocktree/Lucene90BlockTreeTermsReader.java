@@ -16,6 +16,14 @@
  */
 package org.apache.lucene.codecs.lucene90.blocktree;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsReaderBase;
@@ -33,15 +41,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.Outputs;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 /**
  * A block-based terms index and dictionary that assigns terms to variable length blocks according
@@ -61,11 +60,11 @@ import java.util.Map;
  * <p>Use {@link org.apache.lucene.index.CheckIndex} with the <code>-verbose</code> option to see
  * summary statistics on the blocks in the dictionary.
  *
- * <p>See {@link BlockTreeTermsWriter}.
+ * <p>See {@link Lucene90BlockTreeTermsWriter}.
  *
  * @lucene.experimental
  */
-public final class BlockTreeTermsReader extends FieldsProducer {
+public final class Lucene90BlockTreeTermsReader extends FieldsProducer {
 
   static final Outputs<BytesRef> FST_OUTPUTS = ByteSequenceOutputs.getSingleton();
 
@@ -125,7 +124,7 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   final int version;
 
   /** Sole constructor. */
-  public BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state)
+  public Lucene90BlockTreeTermsReader(PostingsReaderBase postingsReader, SegmentReadState state)
       throws IOException {
     boolean success = false;
 

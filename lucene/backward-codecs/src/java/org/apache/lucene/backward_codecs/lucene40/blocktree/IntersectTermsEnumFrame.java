@@ -105,7 +105,7 @@ final class IntersectTermsEnumFrame {
     this.termState = ite.fr.parent.postingsReader.newTermState();
     this.termState.totalTermFreq = -1;
     this.version = ite.fr.parent.version;
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+    if (version >= Lucene40BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
       suffixLengthBytes = new byte[32];
       suffixLengthsReader = new ByteArrayDataInput();
     } else {
@@ -154,7 +154,7 @@ final class IntersectTermsEnumFrame {
       // Skip first long -- has redundant fp, hasTerms
       // flag, isFloor flag
       final long code = floorDataReader.readVLong();
-      if ((code & BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0) {
+      if ((code & Lucene40BlockTreeTermsReader.OUTPUT_FLAG_IS_FLOOR) != 0) {
         // Floor frame
         numFollowFloorBlocks = floorDataReader.readVInt();
         nextFloorLabel = floorDataReader.readByte() & 0xff;
@@ -184,7 +184,7 @@ final class IntersectTermsEnumFrame {
     isLastInFloor = (code & 1) != 0;
 
     // term suffixes:
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+    if (version >= Lucene40BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
       final long codeL = ite.in.readVLong();
       isLeafBlock = (codeL & 0x04) != 0;
       final int numSuffixBytes = (int) (codeL >>> 3);
@@ -315,14 +315,15 @@ final class IntersectTermsEnumFrame {
       // just skipN here:
 
       // stats
-      if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      if (version >= Lucene40BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
         if (statsSingletonRunLength > 0) {
           termState.docFreq = 1;
           termState.totalTermFreq = 1;
           statsSingletonRunLength--;
         } else {
           int token = statsReader.readVInt();
-          if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES && (token & 1) == 1) {
+          if (version >= Lucene40BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES
+              && (token & 1) == 1) {
             termState.docFreq = 1;
             termState.totalTermFreq = 1;
             statsSingletonRunLength = token >>> 1;

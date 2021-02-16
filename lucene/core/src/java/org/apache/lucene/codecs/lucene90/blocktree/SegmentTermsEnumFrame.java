@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.codecs.lucene90.blocktree;
 
+import java.io.IOException;
+import java.util.Arrays;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
@@ -24,9 +26,6 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.fst.FST;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 final class SegmentTermsEnumFrame {
   // Our index in stack[]:
@@ -103,7 +102,7 @@ final class SegmentTermsEnumFrame {
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
     this.version = ste.fr.parent.version;
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+    if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
       suffixLengthBytes = new byte[32];
       suffixLengthsReader = new ByteArrayDataInput();
     } else {
@@ -180,7 +179,7 @@ final class SegmentTermsEnumFrame {
 
     final long startSuffixFP = ste.in.getFilePointer();
     // term suffixes:
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+    if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
       final long codeL = ste.in.readVLong();
       isLeafBlock = (codeL & 0x04) != 0;
       final int numSuffixBytes = (int) (codeL >>> 3);
@@ -472,7 +471,7 @@ final class SegmentTermsEnumFrame {
       // TODO: if docFreq were bulk decoded we could
       // just skipN here:
 
-      if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      if (version >= Lucene90BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
         if (statsSingletonRunLength > 0) {
           state.docFreq = 1;
           state.totalTermFreq = 1;

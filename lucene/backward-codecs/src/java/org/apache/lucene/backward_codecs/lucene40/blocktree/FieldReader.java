@@ -56,13 +56,13 @@ public final class FieldReader extends Terms implements Accountable {
   final BytesRef rootCode;
   final BytesRef minTerm;
   final BytesRef maxTerm;
-  final BlockTreeTermsReader parent;
+  final Lucene40BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
   // private boolean DEBUG;
 
   FieldReader(
-      BlockTreeTermsReader parent,
+      Lucene40BlockTreeTermsReader parent,
       FieldInfo fieldInfo,
       long numTerms,
       BytesRef rootCode,
@@ -92,7 +92,7 @@ public final class FieldReader extends Terms implements Accountable {
     // }
     rootBlockFP =
         (new ByteArrayDataInput(rootCode.bytes, rootCode.offset, rootCode.length)).readVLong()
-            >>> BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
+            >>> Lucene40BlockTreeTermsReader.OUTPUT_FLAGS_NUM_BITS;
     // Initialize FST always off-heap.
     final IndexInput clone = indexIn.clone();
     clone.seek(indexStartFP);
