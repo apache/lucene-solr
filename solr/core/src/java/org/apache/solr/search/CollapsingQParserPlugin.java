@@ -148,7 +148,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   /**
    * If elevation is used in combination with the collapse query parser, we can define that we only want to return the
-   * representative and not all elevated docs.
+   * representative and not all elevated docs by setting this parameter to false (true by default).
    */
   public static String COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING = "collectElevatedDocsWhenCollapsing";
 
@@ -663,7 +663,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      if(collectElevatedDocsWhenCollapsing) {
+      if (collectElevatedDocsWhenCollapsing) {
         // Check to see if we have documents boosted by the QueryElevationComponent
         if (0 <= ord) {
           if (boostedDocsCollector.collectIfBoosted(ord, globalDoc)) return;
@@ -842,7 +842,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if (collapseValues.advanceExact(contextDoc)) {
         final int collapseValue = (int) collapseValues.longValue();
 
-        if(collectElevatedDocsWhenCollapsing) {
+        if (collectElevatedDocsWhenCollapsing) {
           // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
           if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
         }
@@ -865,7 +865,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       } else { // Null Group...
 
-        if(collectElevatedDocsWhenCollapsing){
+        if (collectElevatedDocsWhenCollapsing){
           // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         }
@@ -1077,7 +1077,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      if(collectElevatedDocsWhenCollapsing){
+      if (collectElevatedDocsWhenCollapsing){
         // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
         if (-1 == ord) {
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
@@ -1272,7 +1272,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         
       } else { // Null Group...
 
-        if(collectElevatedDocsWhenCollapsing){
+        if (collectElevatedDocsWhenCollapsing){
           // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         }

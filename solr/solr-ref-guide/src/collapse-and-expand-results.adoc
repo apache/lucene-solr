@@ -81,6 +81,10 @@ The data structures used for collapsing grow dynamically when collapsing on nume
 +
 The default is 100,000.
 
+`elevateOnlyDocsMatchingQuery`::
+By default, the component will also elevate docs that aren't part of the search result (matching the query).
+If you only want to elevate the docs that are part of the search result, set this to `true` (default is `false`).
+
 
 === Sample Usage Syntax
 

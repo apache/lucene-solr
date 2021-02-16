@@ -509,9 +509,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       rb.setQuery(new BoostQuery(elevation.includeQuery, 0f));
     } else {
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-      BooleanClause.Occur elevateDocsWithoutMatchingQ = params.getBool(QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, false) ?
+      BooleanClause.Occur queryOccurrence = params.getBool(QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, false) ?
               BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST;
-      queryBuilder.add(rb.getQuery(), elevateDocsWithoutMatchingQ);
+      queryBuilder.add(rb.getQuery(), queryOccurrence);
       queryBuilder.add(new BoostQuery(elevation.includeQuery, 0f), BooleanClause.Occur.SHOULD);
       if (elevation.excludeQueries != null) {
         if (params.getBool(QueryElevationParams.MARK_EXCLUDES, false)) {
