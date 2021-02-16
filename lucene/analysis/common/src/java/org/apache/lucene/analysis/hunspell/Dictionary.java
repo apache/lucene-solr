@@ -51,7 +51,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -60,11 +59,9 @@ import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.IntSequenceOutputs;
-import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
 /** In-memory structure for the dictionary (.dic) and affix (.aff) data of a hunspell dictionary. */
@@ -172,13 +169,7 @@ public class Dictionary {
   int maxNGramSuggestions = Integer.MAX_VALUE;
   boolean onlyMaxDiff;
   char noSuggest, subStandard;
-
-  // FSTs used for ICONV/OCONV, output ord pointing to replacement text
-  FST<CharsRef> iconv;
-  FST<CharsRef> oconv;
-
-  boolean needsInputCleaning;
-  boolean needsOutputCleaning;
+  ConvTable iconv, oconv;
 
   // true if we can strip suffixes "down to nothing"
   boolean fullStrip;
@@ -224,8 +215,6 @@ public class Dictionary {
       boolean ignoreCase)
       throws IOException, ParseException {
     this.ignoreCase = ignoreCase;
-    this.needsInputCleaning = ignoreCase;
-    this.needsOutputCleaning = false; // set if we have an OCONV
 
     try (BufferedInputStream affixStream =
         new BufferedInputStream(affix, MAX_PROLOGUE_SCAN_WINDOW) {
@@ -379,16 +368,13 @@ public class Dictionary {
       } else if ("IGNORE".equals(firstWord)) {
         ignore = singleArgument(reader, line).toCharArray();
         Arrays.sort(ignore);
-        needsInputCleaning = true;
       } else if ("ICONV".equals(firstWord) || "OCONV".equals(firstWord)) {
         int num = parseNum(reader, line);
-        FST<CharsRef> res = parseConversions(reader, num);
+        ConvTable res = parseConversions(reader, num);
         if (line.startsWith("I")) {
           iconv = res;
-          needsInputCleaning |= iconv != null;
         } else {
           oconv = res;
-          needsOutputCleaning |= oconv != null;
         }
       } else if ("FULLSTRIP".equals(firstWord)) {
         fullStrip = true;
@@ -803,9 +789,8 @@ public class Dictionary {
       affixData[dataStart + AFFIX_CONDITION] = (char) patternOrd;
       affixData[dataStart + AFFIX_APPEND] = (char) appendFlagsOrd;
 
-      if (needsInputCleaning) {
-        CharSequence cleaned = cleanInput(affixArg, sb);
-        affixArg = cleaned.toString();
+      if (needsInputCleaning(affixArg)) {
+        affixArg = cleanInput(affixArg, sb).toString();
       }
 
       if (isSuffix) {
@@ -840,9 +825,9 @@ public class Dictionary {
     return affixData(affix, AFFIX_CONDITION) >>> 1;
   }
 
-  private FST<CharsRef> parseConversions(LineNumberReader reader, int num)
+  private ConvTable parseConversions(LineNumberReader reader, int num)
       throws IOException, ParseException {
-    Map<String, String> mappings = new TreeMap<>();
+    TreeMap<String, String> mappings = new TreeMap<>();
 
     for (int i = 0; i < num; i++) {
       String[] parts = splitBySpace(reader, reader.readLine(), 3);
@@ -851,15 +836,7 @@ public class Dictionary {
       }
     }
 
-    Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
-    FSTCompiler<CharsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, outputs);
-    IntsRefBuilder scratchInts = new IntsRefBuilder();
-    for (Map.Entry<String, String> entry : mappings.entrySet()) {
-      Util.toUTF16(entry.getKey(), scratchInts);
-      fstCompiler.add(scratchInts.get(), new CharsRef(entry.getValue()));
-    }
-
-    return fstCompiler.compile();
+    return new ConvTable(mappings);
   }
 
   private static final byte[] BOM_UTF8 = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
@@ -1085,8 +1062,9 @@ public class Dictionary {
     int sep = flagSep < 0 ? morphSep : flagSep;
 
     CharSequence toWrite;
-    if (needsInputCleaning) {
-      cleanInput(line, sep, reuse);
+    String beforeSep = line.substring(0, sep);
+    if (needsInputCleaning(beforeSep)) {
+      cleanInput(beforeSep, reuse);
       reuse.append(line, sep, line.length());
       toWrite = reuse;
     } else {
@@ -1571,14 +1549,28 @@ public class Dictionary {
     return flagLookup.hasFlag(entryId, flag);
   }
 
-  CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
-    return cleanInput(input, input.length(), reuse);
+  boolean mayNeedInputCleaning() {
+    return ignoreCase || ignore != null || iconv != null;
   }
 
-  private CharSequence cleanInput(CharSequence input, int prefixLength, StringBuilder reuse) {
+  boolean needsInputCleaning(CharSequence input) {
+    if (mayNeedInputCleaning()) {
+      for (int i = 0; i < input.length(); i++) {
+        char ch = input.charAt(i);
+        if (ignore != null && Arrays.binarySearch(ignore, ch) >= 0
+            || ignoreCase && caseFold(ch) != ch
+            || iconv != null && iconv.mightReplaceChar(ch)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
     reuse.setLength(0);
 
-    for (int i = 0; i < prefixLength; i++) {
+    for (int i = 0; i < input.length(); i++) {
       char ch = input.charAt(i);
 
       if (ignore != null && Arrays.binarySearch(ignore, ch) >= 0) {
@@ -1594,11 +1586,7 @@ public class Dictionary {
     }
 
     if (iconv != null) {
-      try {
-        applyMappings(iconv, reuse);
-      } catch (IOException bogus) {
-        throw new RuntimeException(bogus);
-      }
+      iconv.applyMappings(reuse);
       if (ignoreCase) {
         for (int i = 0; i < reuse.length(); i++) {
           reuse.setCharAt(i, caseFold(reuse.charAt(i)));
@@ -1621,44 +1609,6 @@ public class Dictionary {
       }
     } else {
       return Character.toLowerCase(c);
-    }
-  }
-
-  // TODO: this could be more efficient!
-  static void applyMappings(FST<CharsRef> fst, StringBuilder sb) throws IOException {
-    final FST.BytesReader bytesReader = fst.getBytesReader();
-    final FST.Arc<CharsRef> firstArc = fst.getFirstArc(new FST.Arc<>());
-    final CharsRef NO_OUTPUT = fst.outputs.getNoOutput();
-
-    // temporary stuff
-    final FST.Arc<CharsRef> arc = new FST.Arc<>();
-    int longestMatch;
-    CharsRef longestOutput;
-
-    for (int i = 0; i < sb.length(); i++) {
-      arc.copyFrom(firstArc);
-      CharsRef output = NO_OUTPUT;
-      longestMatch = -1;
-      longestOutput = null;
-
-      for (int j = i; j < sb.length(); j++) {
-        char ch = sb.charAt(j);
-        if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
-          break;
-        } else {
-          output = fst.outputs.add(output, arc.output());
-        }
-        if (arc.isFinal()) {
-          longestOutput = fst.outputs.add(output, arc.nextFinalOutput());
-          longestMatch = j;
-        }
-      }
-
-      if (longestMatch >= 0) {
-        sb.delete(i, longestMatch + 1);
-        sb.insert(i, longestOutput);
-        i += (longestOutput.length - 1);
-      }
     }
   }
 

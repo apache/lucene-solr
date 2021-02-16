@@ -83,14 +83,16 @@ final class Stemmer {
    */
   public List<CharsRef> stem(char[] word, int length) {
 
-    if (dictionary.needsInputCleaning) {
+    if (dictionary.mayNeedInputCleaning()) {
       scratchSegment.setLength(0);
       scratchSegment.append(word, 0, length);
-      CharSequence cleaned = dictionary.cleanInput(scratchSegment, segment);
-      scratchBuffer = ArrayUtil.grow(scratchBuffer, cleaned.length());
-      length = segment.length();
-      segment.getChars(0, length, scratchBuffer, 0);
-      word = scratchBuffer;
+      if (dictionary.needsInputCleaning(scratchSegment)) {
+        CharSequence cleaned = dictionary.cleanInput(scratchSegment, segment);
+        scratchBuffer = ArrayUtil.grow(scratchBuffer, cleaned.length());
+        length = segment.length();
+        segment.getChars(0, length, scratchBuffer, 0);
+        word = scratchBuffer;
+      }
     }
 
     List<CharsRef> list = new ArrayList<>();
@@ -365,18 +367,14 @@ final class Stemmer {
   private CharsRef newStem(CharsRef stem, int morphDataId) {
     String exception = stemException(morphDataId);
 
-    if (dictionary.needsOutputCleaning) {
+    if (dictionary.oconv != null) {
       scratchSegment.setLength(0);
       if (exception != null) {
         scratchSegment.append(exception);
       } else {
         scratchSegment.append(stem.chars, stem.offset, stem.length);
       }
-      try {
-        Dictionary.applyMappings(dictionary.oconv, scratchSegment);
-      } catch (IOException bogus) {
-        throw new RuntimeException(bogus);
-      }
+      dictionary.oconv.applyMappings(scratchSegment);
       char[] cleaned = new char[scratchSegment.length()];
       scratchSegment.getChars(0, cleaned.length, cleaned, 0);
       return new CharsRef(cleaned, 0, cleaned.length);
