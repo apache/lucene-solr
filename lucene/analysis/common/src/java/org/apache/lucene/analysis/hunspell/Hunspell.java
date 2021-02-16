@@ -51,14 +51,25 @@ import org.apache.lucene.util.IntsRef;
 public class Hunspell {
   final Dictionary dictionary;
   final Stemmer stemmer;
+  private final Runnable checkCanceled;
 
   public Hunspell(Dictionary dictionary) {
+    this(dictionary, () -> {});
+  }
+
+  /**
+   * @param checkCanceled an object that's periodically called, allowing to interrupt spell-checking
+   *     or suggestion generation by throwing an exception
+   */
+  public Hunspell(Dictionary dictionary, Runnable checkCanceled) {
     this.dictionary = dictionary;
+    this.checkCanceled = checkCanceled;
     stemmer = new Stemmer(dictionary);
   }
 
   /** @return whether the given word's spelling is considered correct according to Hunspell rules */
   public boolean spell(String word) {
+    checkCanceled.run();
     if (word.isEmpty()) return true;
 
     if (dictionary.needsInputCleaning) {
@@ -148,6 +159,7 @@ public class Hunspell {
 
   private Root<CharsRef> findStem(
       char[] wordChars, int offset, int length, WordCase originalCase, WordContext context) {
+    checkCanceled.run();
     @SuppressWarnings({"rawtypes", "unchecked"})
     Root<CharsRef>[] result = new Root[1];
     stemmer.doStem(
@@ -351,6 +363,7 @@ public class Hunspell {
 
     int limit = length - dictionary.compoundMin + 1;
     for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      checkCanceled.run();
       IntsRef forms = dictionary.lookupWord(wordChars, offset, breakPos);
       if (forms != null) {
         words.add(forms);
@@ -458,6 +471,7 @@ public class Hunspell {
   }
 
   public List<String> suggest(String word) {
+    checkCanceled.run();
     if (word.length() >= 100) return Collections.emptyList();
 
     if (dictionary.needsInputCleaning) {
@@ -473,7 +487,7 @@ public class Hunspell {
     }
 
     Hunspell suggestionSpeller =
-        new Hunspell(dictionary) {
+        new Hunspell(dictionary, checkCanceled) {
           @Override
           boolean acceptsStem(int formID) {
             return !dictionary.hasFlag(formID, dictionary.noSuggest)
