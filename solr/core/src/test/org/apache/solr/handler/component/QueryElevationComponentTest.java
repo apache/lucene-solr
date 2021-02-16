@@ -37,6 +37,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.FileUtils;
 import org.junit.Before;
@@ -951,7 +952,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(
               CommonParams.Q, "YYYY",
               CommonParams.QT, "/elevate",
-              QueryElevationParams.ELEVATE_DOCS_WITHOUT_MATCHING_Q, "true",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "false",
               CommonParams.FL, "id, score, [elevated]"),
               "//*[@numFound='3']",
               "//result/doc[1]/str[@name='id'][.='1']",
@@ -966,7 +967,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(
               CommonParams.Q, "YYYY",
               CommonParams.QT, "/elevate",
-              QueryElevationParams.ELEVATE_DOCS_WITHOUT_MATCHING_Q, "false",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "true",
               CommonParams.FL, "id, score, [elevated]"),
               "//*[@numFound='2']",
               "//result/doc[1]/str[@name='id'][.='2']",
@@ -997,7 +998,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
-              QueryElevationParams.ONLY_ELEVATED_REPRESENTATIVE, "false",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "true",
               CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
               CommonParams.FL, "id, score, [elevated]"),
               "//*[@numFound='4']",
@@ -1015,7 +1016,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertQ("", req(
               CommonParams.Q, "ZZZZ",
               CommonParams.QT, "/elevate",
-              QueryElevationParams.ONLY_ELEVATED_REPRESENTATIVE, "true",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "false",
               CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
               CommonParams.FL, "id, score, [elevated]"),
               "//*[@numFound='3']",

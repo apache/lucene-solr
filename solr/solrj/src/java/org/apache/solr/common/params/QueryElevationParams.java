@@ -58,13 +58,8 @@ public interface QueryElevationParams {
 
   /**
    * By default, the component will also elevate docs that aren't part of the search result (matching the query).
-   * If you only want to elevate the docs that are part of the search result, set this to false. True by default.
+   * If you only want to elevate the docs that are part of the search result, set this to true. False by default.
    */
-  String ELEVATE_DOCS_WITHOUT_MATCHING_Q = "elevateDocsWithoutMatchingQ";
+  String ELEVATE_ONLY_DOCS_MATCHING_QUERY = "elevateOnlyDocsMatchingQuery";
 
-  /**
-   * If elevation is used in combination with the collapse query parser, we can define that we only want to return the
-   * representative and not all elevated docs.
-   */
-  String ONLY_ELEVATED_REPRESENTATIVE = "onlyElevatedRepresentative";
 }

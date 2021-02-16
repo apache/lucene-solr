@@ -101,8 +101,6 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import static org.apache.solr.common.params.QueryElevationParams.ELEVATE_DOCS_WITHOUT_MATCHING_Q;
-
 /**
  * A component to elevate some documents to the top of the result set.
  *
@@ -506,27 +504,27 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
     // Change the query to insert forced documents
     SolrParams params = rb.req.getParams();
-    if (params.getBool(ELEVATE_DOCS_WITHOUT_MATCHING_Q, true)) {
-      if (params.getBool(QueryElevationParams.EXCLUSIVE, false)) {
-        // We only want these elevated results
-        rb.setQuery(new BoostQuery(elevation.includeQuery, 0f));
-      } else {
-        BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-        queryBuilder.add(rb.getQuery(), BooleanClause.Occur.SHOULD);
-        queryBuilder.add(new BoostQuery(elevation.includeQuery, 0f), BooleanClause.Occur.SHOULD);
-        if (elevation.excludeQueries != null) {
-          if (params.getBool(QueryElevationParams.MARK_EXCLUDES, false)) {
-            // We are only going to mark items as excluded, not actually exclude them.
-            // This works with the EditorialMarkerFactory.
-            rb.req.getContext().put(EXCLUDED, elevation.excludedIds);
-          } else {
-            for (TermQuery tq : elevation.excludeQueries) {
-              queryBuilder.add(tq, BooleanClause.Occur.MUST_NOT);
-            }
+    if (params.getBool(QueryElevationParams.EXCLUSIVE, false)) {
+      // We only want these elevated results
+      rb.setQuery(new BoostQuery(elevation.includeQuery, 0f));
+    } else {
+      BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+      BooleanClause.Occur elevateDocsWithoutMatchingQ = params.getBool(QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, false) ?
+              BooleanClause.Occur.SHOULD : BooleanClause.Occur.MUST;
+      queryBuilder.add(rb.getQuery(), elevateDocsWithoutMatchingQ);
+      queryBuilder.add(new BoostQuery(elevation.includeQuery, 0f), BooleanClause.Occur.SHOULD);
+      if (elevation.excludeQueries != null) {
+        if (params.getBool(QueryElevationParams.MARK_EXCLUDES, false)) {
+          // We are only going to mark items as excluded, not actually exclude them.
+          // This works with the EditorialMarkerFactory.
+          rb.req.getContext().put(EXCLUDED, elevation.excludedIds);
+        } else {
+          for (TermQuery tq : elevation.excludeQueries) {
+            queryBuilder.add(tq, BooleanClause.Occur.MUST_NOT);
           }
         }
-        rb.setQuery(queryBuilder.build());
       }
+      rb.setQuery(queryBuilder.build());
     }
   }
 
