@@ -302,12 +302,12 @@ class ModifyingSuggester {
   }
 
   private void trySplitting(String word) {
-    for (int i = 1; i < word.length() - 1; i++) {
+    for (int i = 1; i < word.length(); i++) {
       String w1 = word.substring(0, i);
       String w2 = word.substring(i);
       if (checkSimpleWord(w1) && checkSimpleWord(w2)) {
         result.add(w1 + " " + w2);
-        if (shouldSplitByDash()) {
+        if (w1.length() > 1 && w2.length() > 1 && shouldSplitByDash()) {
           result.add(w1 + "-" + w2);
         }
       }
