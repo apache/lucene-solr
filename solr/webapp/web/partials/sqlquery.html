@@ -16,14 +16,14 @@ limitations under the License.
 -->
 
 <div id="sqlquery" class="clearfix">
-
   <div id="form">
     <form>
-      <label for="sqlexpr" title="The SQL expression string">
-        SQL Query (expr)
+      <label for="sqlexpr" title="The SQL Query">
+        SQL Query Statement
       </label>
-      <textarea name="stmt" ng-model="stmt" id="sqlexp" title="The sql expression string.">search(....)</textarea>
+      <textarea name="stmt" ng-model="stmt" id="sqlexp"></textarea>
       <button type="submit" ng-click="doQuery()">Execute</button>
+      <span><a href="https://lucene.apache.org/solr/guide/8_8/parallel-sql-interface.html" target="_out">syntax help</a></span>
     </form>
   </div>
   <div id="sql-response">
@@ -32,12 +32,4 @@ limitations under the License.
     <div ng-show="!sqlError" class="grid" ui-grid="gridOptions" id="sql-response"></div>
 
   </div>
-
-
-  <!-- <pre class="syntax language-json">
-      <code ng-bind-html="response.data | highlight:json | unsafe"></code>
-  </pre> -->
-
-
-
 </div>
