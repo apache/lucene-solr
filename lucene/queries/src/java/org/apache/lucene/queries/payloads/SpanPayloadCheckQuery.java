@@ -157,8 +157,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings)
         throws IOException {
       final PayloadChecker collector = new PayloadChecker();
-      collector.payloadMatcher =
-          PayloadMatcherFactory.createMatcherForOpAndType(payloadType, operation);
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
       return (matchSpans == null)
           ? null
@@ -204,9 +202,10 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   private class PayloadChecker implements SpanCollector {
 
-    int upto = 0;
-    boolean matches = true;
-    PayloadMatcher payloadMatcher;
+    private int upto = 0;
+    private boolean matches = true;
+    private final PayloadMatcher payloadMatcher =
+        PayloadMatcherFactory.createMatcherForOpAndType(payloadType, operation);
 
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
@@ -259,9 +258,7 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     return buffer.toString();
   }
 
-  @SuppressWarnings(
-      "EqualsWhichDoesntCheckParameterClass") // because actually it does even if ides are easily
-  // confused
+  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass") // it does but ides are easily confused
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other)

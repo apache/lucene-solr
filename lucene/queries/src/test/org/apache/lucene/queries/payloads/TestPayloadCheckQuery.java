@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
@@ -157,29 +158,33 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
 
   public void testInequalityPayloadChecks() throws Exception {
     // searching for the term five with a payload of either "pos: 0" or a payload of "pos: 1"
-    SpanQuery term1 = new SpanTermQuery(new Term("field", "five"));
-    BytesRef payloadOne = new BytesRef("pos: " + 1);
+    SpanQuery termFive = new SpanTermQuery(new Term("field", "five"));
+    SpanQuery termFifty = new SpanTermQuery(new Term("field", "fifty"));
     BytesRef payloadZero = new BytesRef("pos: " + 0);
+    BytesRef payloadOne = new BytesRef("pos: " + 1);
+    BytesRef payloadTwo = new BytesRef("pos: " + 2);
+    BytesRef payloadThree = new BytesRef("pos: " + 3);
     BytesRef payloadFour = new BytesRef("pos: " + 4);
     BytesRef payloadFive = new BytesRef("pos: " + 5);
     // Terms that equal five with a payload of "pos: 1"
     SpanQuery stringEQ1 =
         new SpanPayloadCheckQuery(
-            term1,
+            termFive,
             Collections.singletonList(payloadOne),
             SpanPayloadCheckQuery.PayloadType.STRING,
             MatchOperation.EQ);
     checkHits(stringEQ1, new int[] {25, 35, 45, 55, 65, 75, 85, 95});
+
     // These queries return the same thing
     SpanQuery stringLT =
         new SpanPayloadCheckQuery(
-            term1,
+            termFive,
             Collections.singletonList(payloadOne),
             SpanPayloadCheckQuery.PayloadType.STRING,
             MatchOperation.LT);
     SpanQuery stringLTE =
         new SpanPayloadCheckQuery(
-            term1,
+            termFive,
             Collections.singletonList(payloadZero),
             SpanPayloadCheckQuery.PayloadType.STRING,
             MatchOperation.LTE);
@@ -207,13 +212,13 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     // greater than and greater than or equal tests.
     SpanQuery stringGT =
         new SpanPayloadCheckQuery(
-            term1,
+            termFive,
             Collections.singletonList(payloadFour),
             SpanPayloadCheckQuery.PayloadType.STRING,
             MatchOperation.GT);
     SpanQuery stringGTE =
         new SpanPayloadCheckQuery(
-            term1,
+            termFive,
             Collections.singletonList(payloadFive),
             SpanPayloadCheckQuery.PayloadType.STRING,
             MatchOperation.GTE);
@@ -235,6 +240,70 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
           1675, 1685, 1695, 1725, 1735, 1745, 1755, 1765, 1775, 1785, 1795, 1825, 1835, 1845, 1855,
           1865, 1875, 1885, 1895, 1925, 1935, 1945, 1955, 1965, 1975, 1985, 1995
         });
+
+    // now a not so happy path...
+    SpanQuery stringEQ2many =
+        new SpanPayloadCheckQuery(
+            termFive,
+            Arrays.asList(payloadOne, payloadZero),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            MatchOperation.EQ);
+    // fewer terms than payloads should not match anything, one wonders if this should be an error,
+    // but it's been explicitly ignored previously, so changing it is a possible back compat issue.
+    checkHits(stringEQ2many, new int[] {});
+
+    // now some straight forward two term cases...
+    SpanQuery stringEQ2 =
+        new SpanPayloadCheckQuery(
+            new SpanNearQuery(new SpanQuery[] {termFifty, termFive}, 0, true),
+            Arrays.asList(payloadZero, payloadOne),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            MatchOperation.EQ);
+    checkHits(stringEQ2, new int[] {55});
+
+    SpanQuery stringGT2 =
+        new SpanPayloadCheckQuery(
+            new SpanNearQuery(new SpanQuery[] {termFifty, termFive}, 0, true),
+            Arrays.asList(payloadZero, payloadOne),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            MatchOperation.GT);
+    checkHits(
+        stringGT2,
+        new int[] { // spotless:off
+            55,  155,  255,  355,  455,  555,  655,  755,  855,  955,
+          1055, 1155, 1255, 1355, 1455, 1555, 1655, 1755, 1855, 1955
+        }); // spotless:on
+    SpanQuery stringGTE2 =
+        new SpanPayloadCheckQuery(
+            new SpanNearQuery(new SpanQuery[] {termFifty, termFive}, 0, true),
+            Arrays.asList(payloadZero, payloadOne),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            MatchOperation.GTE);
+    checkHits(
+        stringGTE2,
+        new int[] { // spotless:off
+            55,  155,  255,  355,  455,  555,  655,  755,  855,  955,
+          1055, 1155, 1255, 1355, 1455, 1555, 1655, 1755, 1855, 1955
+        });  // spotless:on
+
+    SpanQuery stringLT2 =
+        new SpanPayloadCheckQuery(
+            new SpanNearQuery(new SpanQuery[] {termFifty, termFive}, 0, true),
+            Arrays.asList(payloadTwo, payloadThree),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            MatchOperation.LT);
+    checkHits(stringLT2, new int[] {55});
+    SpanQuery stringLTE2 =
+        new SpanPayloadCheckQuery(
+            new SpanNearQuery(new SpanQuery[] {termFifty, termFive}, 0, true),
+            Arrays.asList(payloadTwo, payloadThree),
+            SpanPayloadCheckQuery.PayloadType.STRING,
+            MatchOperation.LTE);
+    checkHits(stringLTE2, new int[] {55, 155, 255, 355, 455, 555, 655, 755, 855, 955, 1055});
+
+    // note: I can imagine support for SpanOrQuery might be interesting but that's for some other
+    // time, currently such support is  made intractable by the fact that reset() gets called and
+    // sets "upto" back to zero between SpanOrQuery subclauses.
   }
 
   public void testUnorderedPayloadChecks() throws Exception {
