@@ -21,13 +21,16 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.expressions.Expression;
 import org.apache.lucene.expressions.SimpleBindings;
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -36,6 +39,7 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreMode;
@@ -252,28 +256,52 @@ public class TestFunctionScoreQuery extends FunctionTestSetup {
     assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.COMPLETE, DoubleValuesSource.fromDoubleField("foo"));
     assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.COMPLETE_NO_SCORES, DoubleValuesSource.fromDoubleField("foo"));
     assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.TOP_SCORES, DoubleValuesSource.fromDoubleField("foo"));
-    
+
     // Value Source needs scores
     assertInnerScoreMode(ScoreMode.COMPLETE, ScoreMode.COMPLETE, DoubleValuesSource.SCORES);
     assertInnerScoreMode(ScoreMode.COMPLETE_NO_SCORES, ScoreMode.COMPLETE_NO_SCORES, DoubleValuesSource.SCORES);
     assertInnerScoreMode(ScoreMode.COMPLETE, ScoreMode.TOP_SCORES, DoubleValuesSource.SCORES);
-    
+
   }
-  
+
   private void assertInnerScoreMode(ScoreMode expectedScoreMode, ScoreMode inputScoreMode, DoubleValuesSource valueSource) throws IOException {
     final AtomicReference<ScoreMode> scoreModeInWeight = new AtomicReference<ScoreMode>();
     Query innerQ = new TermQuery(new Term(TEXT_FIELD, "a")) {
-      
+
       @Override
       public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
         scoreModeInWeight.set(scoreMode);
         return super.createWeight(searcher, scoreMode, boost);
       }
     };
-    
+
     FunctionScoreQuery fq = new FunctionScoreQuery(innerQ, valueSource);
     fq.createWeight(searcher, inputScoreMode, 1f);
     assertEquals(expectedScoreMode, scoreModeInWeight.get());
   }
 
+  /** The FunctionScoreQuery's Scorer score() is going to be called twice for the same doc. */
+  public void testScoreCalledTwice() throws Exception {
+    try (Directory dir = newDirectory()) {
+      IndexWriterConfig conf = newIndexWriterConfig();
+      IndexWriter indexWriter = new IndexWriter(dir, conf);
+      Document doc = new Document();
+      doc.add(new TextField("ExampleText", "periodic function", Field.Store.NO));
+      doc.add(new TextField("ExampleText", "plot of the original function", Field.Store.NO));
+      indexWriter.addDocument(doc);
+      indexWriter.commit();
+      indexWriter.close();
+
+      try (DirectoryReader reader = DirectoryReader.open(dir)) {
+        Query q = new TermQuery(new Term("ExampleText", "function"));
+
+        q =
+            FunctionScoreQuery.boostByQuery(
+                q, new PhraseQuery(1, "ExampleText", "function", "plot"), 2);
+        q = FunctionScoreQuery.boostByValue(q, DoubleValuesSource.SCORES);
+
+        assertEquals(1, new IndexSearcher(reader).search(q, 10).totalHits.value);
+      }
+    }
+  }
 }
