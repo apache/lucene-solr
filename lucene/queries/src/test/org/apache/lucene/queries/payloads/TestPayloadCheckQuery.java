@@ -270,7 +270,7 @@ public class TestPayloadCheckQuery extends LuceneTestCase {
     checkHits(
         stringGT2,
         new int[] { // spotless:off
-            55,  155,  255,  355,  455,  555,  655,  755,  855,  955,
+                 155,  255,  355,  455,  555,  655,  755,  855,  955,
           1055, 1155, 1255, 1355, 1455, 1555, 1655, 1755, 1855, 1955
         }); // spotless:on
     SpanQuery stringGTE2 =
