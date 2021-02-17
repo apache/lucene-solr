@@ -50,7 +50,8 @@ public class CollectionMutator {
 
   public ZkWriteCommand createShard(final ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
+    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
+    if (!checkCollectionKeyExistence(message) || !checkKeyExistence(message,ZkStateReader.COLLECTION_CONFIG_PROP)) return ZkStateWriter.NO_OP;
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
@@ -74,7 +75,7 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
+      collection = updateSlice(collectionName, configName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
       return new ZkWriteCommand(collectionName, collection);
     } else {
       log.error("Unable to create Shard: {} because it already exists in collection: {}", shardId, collectionName);
@@ -99,7 +100,7 @@ public class CollectionMutator {
   }
 
   public ZkWriteCommand modifyCollection(final ClusterState clusterState, ZkNodeProps message) {
-    if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
+    if (!checkCollectionKeyExistence(message) || !checkKeyExistence(message, ZkStateReader.COLLECTION_CONFIG_PROP)) return ZkStateWriter.NO_OP;
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
@@ -145,7 +146,8 @@ public class CollectionMutator {
     if (!hasAnyOps) {
       return ZkStateWriter.NO_OP;
     }
-
+    if (message.containsKey(ZkStateReader.COLLECTION_CONFIG_PROP))
+      m.put(ZkStateReader.CONFIGNAME_PROP, message.get(ZkStateReader.COLLECTION_CONFIG_PROP));
     DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion());
     if (replicaOps == null){
       return new ZkWriteCommand(coll.getName(), collection);
@@ -154,7 +156,7 @@ public class CollectionMutator {
     }
   }
 
-  public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
+  public static DocCollection updateSlice(String collectionName, String configName, DocCollection collection, Slice slice) {
     DocCollection newCollection = null;
     Map<String, Slice> slices;
 
@@ -165,6 +167,7 @@ public class CollectionMutator {
       slices.put(slice.getName(), slice);
       Map<String, Object> props = new HashMap<>(1);
       props.put(DocCollection.DOC_ROUTER, Utils.makeMap(NAME, ImplicitDocRouter.NAME));
+      props.put(ZkStateReader.CONFIGNAME_PROP, configName);
       newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
     } else {
       slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy

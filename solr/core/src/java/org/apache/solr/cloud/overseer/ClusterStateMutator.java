@@ -105,6 +105,9 @@ public class ClusterStateMutator {
     }
     collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
+    if (message.containsKey(ZkStateReader.COLLECTION_CONFIG_PROP)) {
+      collectionProps.put(ZkStateReader.CONFIGNAME_PROP, message.get(ZkStateReader.COLLECTION_CONFIG_PROP));
+    }
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
     }

@@ -119,6 +119,7 @@ public class ReplicaMutator {
     }
 
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String replicaName = message.getStr(ZkStateReader.REPLICA_PROP);
     String property = message.getStr(ZkStateReader.PROPERTY_PROP).toLowerCase(Locale.ROOT);
@@ -168,7 +169,7 @@ public class ReplicaMutator {
       }
     }
     Slice newSlice = new Slice(sliceName, replicas, collection.getSlice(sliceName).shallowCopy(),collectionName);
-    DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection,
+    DocCollection newCollection = CollectionMutator.updateSlice(collectionName, configName, collection,
         newSlice);
     return new ZkWriteCommand(collectionName, newCollection);
   }
@@ -261,7 +262,7 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     boolean forceSetState = message.getBool(ZkStateReader.FORCE_SET_STATE_PROP, true);
-
+    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
     DocCollection collection = prevState.getCollectionOrNull(collectionName);
     if (!forceSetState && !CloudUtil.replicaExists(prevState, collectionName, sliceName, coreNodeName)) {
       log.info("Failed to update state because the replica does not exist, {}", message);
@@ -375,7 +376,7 @@ public class ReplicaMutator {
     replicas.put(replica.getName(), replica);
     slice = new Slice(sliceName, replicas, sliceProps, collectionName);
 
-    DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
+    DocCollection newCollection = CollectionMutator.updateSlice(collectionName, configName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
     if (collection != null && collection.isPerReplicaState()) {
       PerReplicaStates prs = PerReplicaStates.fetch(collection.getZNode(), zkClient, collection.getPerReplicaStates());

@@ -55,6 +55,7 @@ class ExclusiveSliceProperty {
   private final String property;
   private final DocCollection collection;
   private final String collectionName;
+  private final String configName;
 
   // Key structure. For each node, list all replicas on it regardless of whether they have the property or not.
   private final Map<String, List<SliceReplica>> nodesHostingReplicas = new HashMap<>();
@@ -79,6 +80,7 @@ class ExclusiveSliceProperty {
     }
     this.property = tmp.toLowerCase(Locale.ROOT);
     collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
+    this.configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
 
     if (StringUtils.isBlank(collectionName) || StringUtils.isBlank(property)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -347,7 +349,7 @@ class ExclusiveSliceProperty {
 
     balanceUnassignedReplicas();
     for (Slice newSlice : changedSlices.values()) {
-      DocCollection docCollection = CollectionMutator.updateSlice(collectionName, clusterState.getCollection(collectionName), newSlice);
+      DocCollection docCollection = CollectionMutator.updateSlice(collectionName, configName, clusterState.getCollection(collectionName), newSlice);
       clusterState = ClusterStateMutator.newState(clusterState, collectionName, docCollection);
     }
     return true;

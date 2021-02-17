@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
+import org.apache.solr.common.SolrException;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +40,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.READ_ONLY;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_CONFIG_PROP;
 import static org.apache.solr.common.util.Utils.toJSONString;
 
 /**
@@ -64,6 +67,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final String znode;
 
   private final Integer replicationFactor;
+  private final String configName;
   private final Integer numNrtReplicas;
   private final Integer numTlogReplicas;
   private final Integer numPullReplicas;
@@ -84,7 +88,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
-    super(props==null ? props = new HashMap<>() : props);
+    super(props);
+    if (props == null || props.containsKey("baseConfigSet")) {
+      props.put(CONFIGNAME_PROP, "_default");
+    }
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
@@ -119,6 +126,10 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.activeSlicesArr = activeSlices.values().toArray(new Slice[activeSlices.size()]);
     this.router = router;
     this.znode = ZkStateReader.getCollectionPath(name);
+    this.configName = String.valueOf(props.get(CONFIGNAME_PROP)) == null ? String.valueOf(props.get(COLLECTION_CONFIG_PROP)) : String.valueOf(props.get(CONFIGNAME_PROP));
+    if (this.configName == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "configName is missing");
+    }
     assert name != null && slices != null;
   }
 
@@ -288,6 +299,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   public Integer getReplicationFactor() {
     return replicationFactor;
   }
+
+  public String getConfigName() { return configName; }
 
   public String getZNode(){
     return znode;
