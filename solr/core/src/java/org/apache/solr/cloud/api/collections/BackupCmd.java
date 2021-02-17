@@ -16,19 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Optional;
-
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -44,6 +31,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.core.backup.BackupManager;
 import org.apache.solr.core.backup.BackupProperties;
 import org.apache.solr.core.backup.ShardBackupId;
@@ -52,10 +40,22 @@ import org.apache.solr.core.snapshots.CollectionSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.SnapshotStatus;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
-import org.apache.solr.core.backup.BackupFilePaths;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Optional;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -91,25 +91,25 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       // Backup location
       URI location = repository.createURI(message.getStr(CoreAdminParams.BACKUP_LOCATION));
-      final URI backupPath = createAndValidateBackupPath(repository, incremental, location, backupName, collectionName);
+      final URI backupUri = createAndValidateBackupPath(repository, incremental, location, backupName, collectionName);
 
       BackupManager backupMgr = (incremental) ?
-              BackupManager.forIncrementalBackup(repository, ocmh.zkStateReader, backupPath) :
-              BackupManager.forBackup(repository, ocmh.zkStateReader, backupPath);
+              BackupManager.forIncrementalBackup(repository, ocmh.zkStateReader, backupUri) :
+              BackupManager.forBackup(repository, ocmh.zkStateReader, backupUri);
 
       String strategy = message.getStr(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
       switch (strategy) {
         case CollectionAdminParams.COPY_FILES_STRATEGY: {
           if (incremental) {
             try {
-              incrementalCopyIndexFiles(backupPath, collectionName, message, results, backupProperties, backupMgr);
+              incrementalCopyIndexFiles(backupUri, collectionName, message, results, backupProperties, backupMgr);
             } catch (SolrException e) {
               log.error("Error happened during incremental backup for collection:{}", collectionName, e);
-              ocmh.cleanBackup(repository, backupPath, backupMgr.getBackupId());
+              ocmh.cleanBackup(repository, backupUri, backupMgr.getBackupId());
               throw e;
             }
           } else {
-            copyIndexFiles(backupPath, collectionName, message, results);
+            copyIndexFiles(backupUri, collectionName, message, results);
           }
           break;
         }
@@ -139,7 +139,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       int maxNumBackup = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
       if (incremental && maxNumBackup != -1) {
-        ocmh.deleteBackup(repository, backupPath, maxNumBackup, results);
+        ocmh.deleteBackup(repository, backupUri, maxNumBackup, results);
       }
     }
   }
@@ -204,7 +204,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     return r.get();
   }
 
-  private void incrementalCopyIndexFiles(URI backupPath, String collectionName, ZkNodeProps request,
+  private void incrementalCopyIndexFiles(URI backupUri, String collectionName, ZkNodeProps request,
                                          NamedList<Object> results, BackupProperties backupProperties,
                                          BackupManager backupManager) throws IOException {
     String backupName = request.getStr(NAME);
@@ -213,7 +213,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
 
     log.info("Starting backup of collection={} with backupName={} at location={}", collectionName, backupName,
-            backupPath);
+            backupUri);
 
     Optional<BackupProperties> previousProps = backupManager.tryReadBackupProperties();
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
@@ -227,7 +227,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       }
       String coreName = replica.getStr(CORE_NAME_PROP);
 
-      ModifiableSolrParams params = coreBackupParams(backupPath, repoName, slice, coreName, true /* incremental backup */);
+      ModifiableSolrParams params = coreBackupParams(backupUri, repoName, slice, coreName, true /* incremental backup */);
       params.set(CoreAdminParams.BACKUP_INCREMENTAL, true);
       previousProps.flatMap(bp -> bp.getShardBackupIdFor(slice.getName()))
               .ifPresent(prevBackupPoint -> params.set(CoreAdminParams.PREV_SHARD_BACKUP_ID, prevBackupPoint.getIdAsString()));

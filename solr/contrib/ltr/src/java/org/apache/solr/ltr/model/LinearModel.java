@@ -80,10 +80,10 @@ public class LinearModel extends LTRScoringModel {
 
   public void setWeights(Object weights) {
     @SuppressWarnings({"unchecked"})
-    final Map<String,Double> modelWeights = (Map<String,Double>) weights;
+    final Map<String,Number> modelWeights = (Map<String, Number>) weights;
     for (int ii = 0; ii < features.size(); ++ii) {
       final String key = features.get(ii).getName();
-      final Double val = modelWeights.get(key);
+      final Number val = modelWeights.get(key);
       featureToWeight[ii] = (val == null ? null : val.floatValue());
     }
   }

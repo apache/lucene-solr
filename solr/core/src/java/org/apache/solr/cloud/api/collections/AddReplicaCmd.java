@@ -43,6 +43,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrCloseableLatch;
@@ -197,8 +198,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
   }
 
   private ModifiableSolrParams getReplicaParams(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, String collectionName, DocCollection coll, boolean skipCreateReplicaInClusterState, String asyncId, ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-
     ZkStateReader zkStateReader = ocmh.zkStateReader;
     if (!skipCreateReplicaInClusterState) {
       ZkNodeProps props = new ZkNodeProps(
@@ -212,12 +211,19 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       if (createReplica.coreNodeName != null) {
         props = props.plus(ZkStateReader.CORE_NODE_NAME_PROP, createReplica.coreNodeName);
       }
-      try {
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica, props,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        try {
+          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Exception updating Overseer state queue", e);
+        }
       }
     }
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CoreAdminParams.CORE_NODE_NAME,
         ocmh.waitToSeeReplicasInState(collectionName, Collections.singleton(createReplica.coreName)).get(createReplica.coreName).getName());
 

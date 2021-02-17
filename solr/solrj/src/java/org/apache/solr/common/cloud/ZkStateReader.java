@@ -410,7 +410,7 @@ public class ZkStateReader implements SolrCloseable {
       if (log.isDebugEnabled()) {
         log.debug("Server older than client {}<{}", collection.getZNodeVersion(), version);
       }
-      DocCollection nu = getCollectionLive(this, coll);
+      DocCollection nu = getCollectionLive(coll);
       if (nu == null) return -1;
       if (nu.getZNodeVersion() > collection.getZNodeVersion()) {
         if (updateWatchedCollection(coll, nu)) {
@@ -680,7 +680,7 @@ public class ZkStateReader implements SolrCloseable {
           }
         }
         if (shouldFetch) {
-          cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
+          cachedDocCollection = getCollectionLive(collName);
           lastUpdateTime = System.nanoTime();
         }
       }
@@ -1193,7 +1193,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   /**
-   * Watches a single collection's format2 state.json.
+   * Watches a single collection's state.json.
    */
   class StateWatcher implements Watcher {
     private final String coll;
@@ -1446,9 +1446,9 @@ public class ZkStateReader implements SolrCloseable {
     }
   }
 
-  public static DocCollection getCollectionLive(ZkStateReader zkStateReader, String coll) {
+  public DocCollection getCollectionLive(String coll) {
     try {
-      return zkStateReader.fetchCollectionState(coll, null);
+      return fetchCollectionState(coll, null);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Could not load collection from ZK: " + coll, e);
     } catch (InterruptedException e) {
@@ -1463,7 +1463,7 @@ public class ZkStateReader implements SolrCloseable {
       ClusterState.initReplicaStateProvider(() -> {
         try {
           PerReplicaStates replicaStates = PerReplicaStates.fetch(collectionPath, zkClient, null);
-          log.info("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
+          log.debug("per-replica-state ver: {} fetched for initializing {} ", replicaStates.cversion, collectionPath);
           return replicaStates;
         } catch (Exception e) {
           //TODO

@@ -22,6 +22,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CharsRef;
@@ -108,7 +112,7 @@ public class TestDictionary extends LuceneTestCase {
   }
 
   public void testForgivableErrors() throws Exception {
-    Dictionary dictionary = loadDictionary("forgivable-errors.aff", "simple.dic");
+    Dictionary dictionary = loadDictionary("forgivable-errors.aff", "forgivable-errors.dic");
     assertEquals(1, dictionary.repTable.size());
     assertEquals(2, dictionary.compoundMax);
 
@@ -242,6 +246,35 @@ public class TestDictionary extends LuceneTestCase {
     String asAscii = new String(src.getBytes(StandardCharsets.UTF_8), Dictionary.DEFAULT_CHARSET);
     assertNotEquals(src, asAscii);
     assertEquals(src, new String(strategy.parseFlags(asAscii)));
+  }
+
+  @Test
+  public void testCustomMorphologicalData() throws IOException, ParseException {
+    Dictionary dic = loadDictionary("morphdata.aff", "morphdata.dic");
+    assertNull(dic.lookupEntries("nonexistent"));
+
+    DictEntries simpleNoun = dic.lookupEntries("simplenoun");
+    assertEquals(1, simpleNoun.size());
+    assertEquals(Collections.emptyList(), simpleNoun.getMorphologicalValues(0, "aa:"));
+    assertEquals(Collections.singletonList("42"), simpleNoun.getMorphologicalValues(0, "fr:"));
+
+    DictEntries lay = dic.lookupEntries("lay");
+    String actual =
+        IntStream.range(0, 3)
+            .mapToObj(lay::getMorphologicalData)
+            .sorted()
+            .collect(Collectors.joining("; "));
+    assertEquals("is:past_2 po:verb st:lie; is:present po:verb; po:noun", actual);
+
+    DictEntries sing = dic.lookupEntries("sing");
+    assertEquals(1, sing.size());
+    assertEquals(Arrays.asList("sang", "sung"), sing.getMorphologicalValues(0, "al:"));
+
+    assertEquals(
+        "al:abaléar po:verbo ts:transitiva",
+        dic.lookupEntries("unsupported1").getMorphologicalData(0));
+
+    assertEquals("", dic.lookupEntries("unsupported2").getMorphologicalData(0));
   }
 
   private Directory getDirectory() {

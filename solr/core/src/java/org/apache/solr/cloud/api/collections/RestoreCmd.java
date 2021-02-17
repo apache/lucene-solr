@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
-
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -59,6 +60,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -87,8 +89,8 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     try (RestoreContext restoreContext = new RestoreContext(message, ocmh)) {
       if (state.hasCollection(restoreContext.restoreCollectionName)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Restoration collection [" + restoreContext.restoreCollectionName +
-                "] must be created by the backup process and cannot exist");
+        RestoreOnExistingCollection restoreOnExistingCollection = new RestoreOnExistingCollection(restoreContext);
+        restoreOnExistingCollection.process(restoreContext, results);
       } else {
         RestoreOnANewCollection restoreOnANewCollection = new RestoreOnANewCollection(message, restoreContext.backupCollectionState);
         restoreOnANewCollection.validate(restoreContext.backupCollectionState, restoreContext.nodeList.size());
@@ -194,8 +196,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   /**
    * Restoration 'strategy' that takes responsibility for creating the collection to restore to.
    *
-   * This is currently the only supported 'strategy' for backup restoration.  Though in-place restoration has been
-   * proposed and may be added soon (see SOLR-15087)
+   * @see RestoreOnExistingCollection
    */
   private class RestoreOnANewCollection {
     private int numNrtReplicas;
@@ -343,7 +344,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         propMap.put(shard.getName(), Slice.State.CONSTRUCTION.toString());
       }
       propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollection.getName());
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, new ZkNodeProps(propMap),
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      }
     }
 
     private List<ReplicaPosition> getReplicaPositions(DocCollection restoreCollection, List<String> nodeList, ClusterState clusterState, List<String> sliceNames) throws IOException, InterruptedException {
@@ -461,7 +467,12 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       for (Slice shard : restoreCollection.getSlices()) {
         propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
       }
-      ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, new ZkNodeProps(propMap),
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
+      }
     }
 
     private void addReplicasToShards(@SuppressWarnings({"rawtypes"}) NamedList results,
@@ -539,6 +550,56 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.zkStateReader.aliasesManager
                 .applyModificationAndExportToZk(a -> a.cloneWithCollectionAlias(backupCollectionAlias, backupCollection));
       }
+    }
+  }
+
+  /**
+   * Restoration 'strategy' that ensures the collection being restored to already exists.
+   *
+   * @see RestoreOnANewCollection
+   */
+  private class RestoreOnExistingCollection {
+
+    private RestoreOnExistingCollection(RestoreContext rc) {
+      int numShardsOfBackup = rc.backupCollectionState.getSlices().size();
+      int numShards = rc.zkStateReader.getClusterState().getCollection(rc.restoreCollectionName).getSlices().size();
+
+      if (numShardsOfBackup != numShards) {
+        String msg = String.format(Locale.ROOT, "Unable to restoring since number of shards in backup " +
+                "and specified collection does not match, numShardsOfBackup:%d numShardsOfCollection:%d", numShardsOfBackup, numShards);
+        throw new SolrException(ErrorCode.BAD_REQUEST, msg);
+      }
+    }
+
+    public void process(RestoreContext rc, @SuppressWarnings({"rawtypes"}) NamedList results) throws Exception {
+      ClusterState clusterState = rc.zkStateReader.getClusterState();
+      DocCollection restoreCollection = clusterState.getCollection(rc.restoreCollectionName);
+
+      enableReadOnly(clusterState, restoreCollection);
+      try {
+        requestReplicasToRestore(results, restoreCollection, clusterState, rc.backupProperties,
+                rc.backupPath, rc.repo, rc.shardHandler, rc.asyncId);
+      } finally {
+        disableReadOnly(clusterState, restoreCollection);
+      }
+    }
+
+    private void disableReadOnly(ClusterState clusterState, DocCollection restoreCollection) throws Exception {
+      ZkNodeProps params = new ZkNodeProps(
+              Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toString(),
+              ZkStateReader.COLLECTION_PROP, restoreCollection.getName(),
+              ZkStateReader.READ_ONLY, null
+      );
+      ocmh.modifyCollection(clusterState, params, new NamedList<>());
+    }
+
+    private void enableReadOnly(ClusterState clusterState, DocCollection restoreCollection) throws Exception {
+      ZkNodeProps params = new ZkNodeProps(
+              Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toString(),
+              ZkStateReader.COLLECTION_PROP, restoreCollection.getName(),
+              ZkStateReader.READ_ONLY, "true"
+      );
+      ocmh.modifyCollection(clusterState, params, new NamedList<>());
     }
   }
 }

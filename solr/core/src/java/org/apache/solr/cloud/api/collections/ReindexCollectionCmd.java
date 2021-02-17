@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -370,7 +371,12 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
           ZkStateReader.COLLECTION_PROP, collection,
           ZkStateReader.READ_ONLY, "true");
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(cmd));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, cmd,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(cmd));
+      }
 
       TestInjection.injectReindexLatch();
 
@@ -477,14 +483,24 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
             ZkStateReader.COLLECTION_PROP, collection,
             ZkStateReader.READ_ONLY, null);
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+        if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
+              ocmh.cloudManager, ocmh.zkStateReader);
+        } else {
+          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+        }
       }
       // 9. set FINISHED state on the target and clear the state on the source
       ZkNodeProps props = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
           ZkStateReader.COLLECTION_PROP, targetCollection,
           REINDEXING_STATE, State.FINISHED.toLower());
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+      }
 
       reindexingState.put(STATE, State.FINISHED.toLower());
       reindexingState.put(PHASE, "done");
@@ -804,7 +820,12 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
         ZkStateReader.COLLECTION_PROP, collection,
         ZkStateReader.READ_ONLY, null);
-    ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+    if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
+          ocmh.cloudManager, ocmh.zkStateReader);
+    } else {
+      ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+    }
     removeReindexingState(collection);
   }
 }

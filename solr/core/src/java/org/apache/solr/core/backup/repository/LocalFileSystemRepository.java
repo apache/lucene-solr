@@ -17,6 +17,16 @@
 
 package org.apache.solr.core.backup.repository;
 
+import com.google.common.base.Preconditions;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.NoLockFactory;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.DirectoryFactory;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -32,23 +42,13 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collection;
 import java.util.Objects;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.DirectoryFactory;
-
-import com.google.common.base.Preconditions;
-
 /**
  * A concrete implementation of {@linkplain BackupRepository} interface supporting backup/restore of Solr indexes to a
  * local file-system. (Note - This can even be used for a shared file-system if it is exposed via a local file-system
  * interface e.g. NFS).
  */
 public class LocalFileSystemRepository implements BackupRepository {
+
   @SuppressWarnings("rawtypes")
   private NamedList config = null;
 
