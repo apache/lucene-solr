@@ -23,7 +23,7 @@ grant {
   // contain read access to only what we need:
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
   permission java.io.FilePermission "${common.dir}${/}-", "read";
-  permission java.io.FilePermission "${common.dir}${/}..${/}solr${/}-", "read";
+  permission java.io.FilePermission "${common.dir}${/}..${/}solr${/}-", "read,write";
   // 3rd party jar resources (where symlinks are supported)
   permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
   // system jar resources
