@@ -94,7 +94,7 @@ class CheckCompoundPattern {
   CharsRef expandReplacement(CharsRef word, int breakPos) {
     if (replacement != null && charsMatch(word, breakPos, replacement)) {
       return new CharsRef(
-          word.subSequence(0, breakPos)
+          new String(word.chars, 0, word.offset + breakPos)
               + endChars
               + beginChars
               + word.subSequence(breakPos + replacement.length(), word.length));

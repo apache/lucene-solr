@@ -171,6 +171,10 @@ public class Hunspell {
 
   private boolean checkCompounds(CharsRef word, WordCase originalCase, CompoundPart prev) {
     if (prev != null && prev.index > dictionary.compoundMax - 2) return false;
+    if (prev == null && word.offset != 0) {
+      // we check the word's beginning for FORCEUCASE and expect to find it at 0
+      throw new IllegalArgumentException();
+    }
 
     int limit = word.length - dictionary.compoundMin + 1;
     for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
@@ -231,7 +235,7 @@ public class Hunspell {
     if (lastRoot != null
         && !dictionary.hasFlag(lastRoot.entryId, dictionary.forbiddenword)
         && !(dictionary.checkCompoundDup && prev.root.equals(lastRoot))
-        && !hasForceUCaseProblem(lastRoot, originalCase)
+        && !hasForceUCaseProblem(lastRoot, originalCase, word.chars)
         && prev.mayCompound(lastRoot, remainingLength, originalCase)) {
       return true;
     }
@@ -240,8 +244,9 @@ public class Hunspell {
     return checkCompounds(tail, originalCase, prev);
   }
 
-  private boolean hasForceUCaseProblem(Root<?> root, WordCase originalCase) {
+  private boolean hasForceUCaseProblem(Root<?> root, WordCase originalCase, char[] wordChars) {
     if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
+    if (originalCase == null && Character.isUpperCase(wordChars[0])) return false;
     return dictionary.hasFlag(root.entryId, dictionary.forceUCase);
   }
 
