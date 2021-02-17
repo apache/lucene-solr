@@ -239,6 +239,9 @@ Improvements
 
 * SOLR-15101: Add "list" and "delete" APIs for managing incremental backups (Jason Gerlowski, shalin, Cao Manh Dat)
 
+* SOLR-15038: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters to query elevation.
+  (Dennis Berger, Tobias Kässmann via Bruno Roustant)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
