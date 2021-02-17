@@ -118,7 +118,7 @@ public class Lucene87Codec extends Codec {
   }
 
   @Override
-  public final PostingsFormat postingsFormat() {
+  public PostingsFormat postingsFormat() {
     return postingsFormat;
   }
 
