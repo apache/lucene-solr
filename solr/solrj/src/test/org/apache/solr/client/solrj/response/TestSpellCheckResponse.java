@@ -66,31 +66,6 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     Assert.assertEquals("samsung", response.getFirstSuggestion("samsang"));
   }
-
-  //TODO: atri
-  @Test
-  public void testSpellCheckResponse2() throws Exception {
-    getSolrClient();
-    client.deleteByQuery("*:*");
-    client.commit(true, true);
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.setField("id", "111");
-    doc.setField(field, "Samsung");
-    client.add(doc);
-    client.commit(true, true);
-
-    SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/tasks/list");
-    //query.set("spellcheck", true);
-    //query.set(SpellingParams.SPELLCHECK_Q, "samsang");
-    QueryRequest request = new QueryRequest(query);
-    QueryResponse response = request.process(client);
-
-    NamedList<String> result = response.getTasksInfo();
-    int i = 0;
-    //Assert.assertEquals("samsung", response.getFirstSuggestion("samsang"));
-  }
-
   @Test
   public void testSpellCheckResponse_Extended() throws Exception {
     getSolrClient();

@@ -73,7 +73,7 @@ public class TestCancellableCollector extends LuceneTestCase {
 
         DummyCancellableCollector dummyCancellableCollector = new DummyCancellableCollector(collector, delayStart, delayCollection);
 
-        return collector;
+        return dummyCancellableCollector;
     }
 
     private void executeSearchTest(IndexSearcher searcher, Query query,
@@ -82,7 +82,8 @@ public class TestCancellableCollector extends LuceneTestCase {
 
         searcher.search(query, cancellableCollector);
 
-        TopScoreDocCollector topScoreDocCollector = (TopScoreDocCollector) cancellableCollector.getInternalCollector();
+        CancellableCollector internalCancellableCollector = (CancellableCollector) cancellableCollector.getInternalCollector();
+        TopScoreDocCollector topScoreDocCollector = (TopScoreDocCollector) internalCancellableCollector.getInternalCollector();
 
         assertEquals(topDocs.totalHits.value, topScoreDocCollector.totalHits);
     }
@@ -147,13 +148,15 @@ public class TestCancellableCollector extends LuceneTestCase {
                 });
     }
 
-    private class DummyCancellableCollector implements Collector, CancellableTask {
+    public class DummyCancellableCollector extends CancellableCollector {
         private CancellableCollector collector;
         private boolean delayStart;
         private boolean delayCollection;
 
         public DummyCancellableCollector(CancellableCollector cancellableCollector, boolean delayStart,
                                          boolean delayCollection) {
+            super(cancellableCollector);
+
             this.collector = cancellableCollector;
             this.delayStart = delayStart;
             this.delayCollection = delayCollection;
@@ -164,7 +167,7 @@ public class TestCancellableCollector extends LuceneTestCase {
 
             if (delayStart) {
                 try {
-                    Thread.sleep(20);
+                    Thread.sleep(50);
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e.getMessage());
                 }
@@ -176,7 +179,7 @@ public class TestCancellableCollector extends LuceneTestCase {
                 public void collect(int doc) throws IOException {
                     if (delayCollection) {
                         try {
-                            Thread.sleep(20);
+                            Thread.sleep(30);
                         } catch (InterruptedException e) {
                             throw new RuntimeException(e.getMessage());
                         }
@@ -194,6 +197,7 @@ public class TestCancellableCollector extends LuceneTestCase {
 
         @Override
         public void cancelTask() {
+            collector.cancelTask();
         }
     }
 }

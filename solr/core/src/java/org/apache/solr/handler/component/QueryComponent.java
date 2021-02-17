@@ -115,6 +115,8 @@ import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.CUSTOM_QUERY_UUID;
+
 
 /**
  * TODO!
@@ -137,11 +139,13 @@ public class QueryComponent extends SearchComponent
     }
     SolrQueryResponse rsp = rb.rsp;
 
-    boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
+    if (rb.isDistrib) {
+      boolean isCancellableQuery = params.getBool(CommonParams.IS_QUERY_CANCELLABLE, false);
 
-    if (isCancellableQuery) {
-      // Generate Query ID
-      rb.queryID = generateQueryID(req);
+      if (isCancellableQuery) {
+        // Generate Query ID
+        rb.queryID = generateQueryID(req);
+      }
     }
 
     // Set field flags    
@@ -1576,7 +1580,9 @@ public class QueryComponent extends SearchComponent
 
     final String localQueryID = req.getCore().generateQueryID(req);
 
-    if (nodeName != null) {
+    boolean isCustom = req.getParams().get(CUSTOM_QUERY_UUID, null) != null;
+
+    if (!isCustom && nodeName != null) {
       return nodeName.concat(localQueryID);
     }
 

@@ -82,7 +82,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
   private SolrCore core;
 
   protected List<String> getDefaultComponents() {
-    ArrayList<String> names = new ArrayList<>(9);
+    ArrayList<String> names = new ArrayList<>(8);
     names.add(QueryComponent.COMPONENT_NAME);
     names.add(FacetComponent.COMPONENT_NAME);
     names.add(FacetModule.COMPONENT_NAME);
@@ -92,7 +92,6 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
     names.add(DebugComponent.COMPONENT_NAME);
     names.add(ExpandComponent.COMPONENT_NAME);
     names.add(TermsComponent.COMPONENT_NAME);
-    names.add(QueryCancellationComponent.COMPONENT_NAME);
 
     return names;
   }
