@@ -28,6 +28,8 @@ Improvements
 * SOLR-13608: Solr backups now support an incremental mode; repeated backups of the same collection at the same
   location will now only upload those files that have changed since the last backup (shalin, Cao Manh Dat, Jason Gerlowski)
 
+* SOLR-15101: Add "list" and "delete" APIs for managing incremental backups (Jason Gerlowski, shalin, Cao Manh Dat)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
