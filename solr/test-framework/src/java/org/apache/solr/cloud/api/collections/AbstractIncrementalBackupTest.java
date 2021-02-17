@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -137,20 +138,21 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         CollectionAdminRequest
                 .createCollection(backupCollectionName, "conf1", NUM_SHARDS, 1)
                 .process(solrClient);
-        int expectedNumDocs = indexDocs(backupCollectionName, true);
+        int totalIndexedDocs = indexDocs(backupCollectionName, true);
         String backupName = BACKUPNAME_PREFIX + testSuffix;
         try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
                 .newBackupRepository(Optional.of(BACKUP_REPO_NAME))) {
             String backupLocation = repository.getBackupLocation(getBackupLocation());
             long t = System.nanoTime();
+            int expectedDocsForFirstBackup = totalIndexedDocs;
             CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
                     .setLocation(backupLocation)
                     .setIncremental(true)
                     .setRepositoryName(BACKUP_REPO_NAME)
                     .processAndWait(cluster.getSolrClient(), 100);
             long timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
-            log.info("Created backup with {} docs, took {}ms", expectedNumDocs, timeTaken);
-            expectedNumDocs += indexDocs(backupCollectionName, true);
+            log.info("Created backup with {} docs, took {}ms", totalIndexedDocs, timeTaken);
+            totalIndexedDocs += indexDocs(backupCollectionName, true);
 
             t = System.nanoTime();
             CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
@@ -171,7 +173,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             log.info("Restored from backup, took {}ms", timeTaken);
             numFound = cluster.getSolrClient().query(restoreCollectionName,
                     new SolrQuery("*:*")).getResults().getNumFound();
-            assertEquals(expectedNumDocs, numFound);
+            assertEquals(expectedDocsForFirstBackup, numFound);
         }
     }
 
@@ -196,8 +198,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         try (BackupRepository repository = cluster.getJettySolrRunner(0).getCoreContainer()
                 .newBackupRepository(Optional.of(BACKUP_REPO_NAME))) {
             String backupLocation = repository.getBackupLocation(getBackupLocation());
-            URI uri = repository.resolve(repository.createURI(backupLocation), backupName);
-            BackupFilePaths backupPaths = new BackupFilePaths(repository, uri);
+            URI fullBackupLocationURI = repository.resolve(repository.createURI(backupLocation), backupName, getCollectionName());
+            BackupFilePaths backupPaths = new BackupFilePaths(repository, fullBackupLocationURI);
             IncrementalBackupVerifier verifier = new IncrementalBackupVerifier(repository, backupLocation, backupName, getCollectionName(), 3);
 
             backupRestoreThenCheck(solrClient, verifier);
@@ -208,12 +210,62 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             for (int i = 0; i < 15; i++) {
                 indexDocs(getCollectionName(), 5,false);
             }
-            backupRestoreThenCheck(solrClient, verifier);
 
+            backupRestoreThenCheck(solrClient, verifier);
             indexDocs(getCollectionName(), false);
             backupRestoreThenCheck(solrClient, verifier);
 
+            // test list backups
+            CollectionAdminResponse resp =
+                    CollectionAdminRequest.listBackup(backupName)
+                            .setBackupLocation(backupLocation)
+                            .setBackupRepository(BACKUP_REPO_NAME)
+                            .process(cluster.getSolrClient());
+            ArrayList backups = (ArrayList) resp.getResponse().get("backups");
+            assertEquals(3, backups.size());
+
+            // test delete backups
+            resp = CollectionAdminRequest.deleteBackupByRecency(backupName, 4)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
+                    .process(cluster.getSolrClient());
+            assertEquals(null, resp.getResponse().get("deleted"));
+
+            resp =  CollectionAdminRequest.deleteBackupByRecency(backupName, 3)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
+                    .process(cluster.getSolrClient());
+            assertEquals(null, resp.getResponse().get("deleted"));
+
+            resp = CollectionAdminRequest.deleteBackupByRecency(backupName, 2)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
+                    .process(cluster.getSolrClient());
+            assertEquals(1, resp.getResponse()._get("deleted[0]/backupId", null));
+
+            resp = CollectionAdminRequest.deleteBackupById(backupName, 3)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
+                    .process(cluster.getSolrClient());
+            assertEquals(3, resp.getResponse()._get("deleted[0]/backupId", null));
+
+
             simpleRestoreAndCheckDocCount(solrClient, backupLocation, backupName);
+
+            // test purge backups
+            // purging first since there may corrupted files were uploaded
+            resp = CollectionAdminRequest.deleteBackupPurgeUnusedFiles(backupName)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
+                    .process(cluster.getSolrClient());
+
+            addDummyFileToIndex(repository, backupPaths.getIndexDir(), "dummy-files-1");
+            addDummyFileToIndex(repository, backupPaths.getIndexDir(), "dummy-files-2");
+            resp = CollectionAdminRequest.deleteBackupPurgeUnusedFiles(backupName)
+                    .setRepositoryName(BACKUP_REPO_NAME)
+                    .setLocation(backupLocation)
+                    .process(cluster.getSolrClient());
+            assertEquals(2, ((NamedList)resp.getResponse().get("deleted")).get("numIndexFiles"));
 
             new UpdateRequest()
                     .deleteByQuery("*:*")
@@ -266,6 +318,14 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             }
         } finally {
             solrCore.close();
+        }
+    }
+
+    private void addDummyFileToIndex(BackupRepository repository, URI indexDir, String fileName) throws IOException {
+        try (OutputStream os = repository.createOutput(repository.resolve(indexDir, fileName))){
+            os.write(100);
+            os.write(101);
+            os.write(102);
         }
     }
 

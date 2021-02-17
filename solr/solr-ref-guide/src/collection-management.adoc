@@ -1286,6 +1286,109 @@ A boolean parameter allowing users to choose whether to create an incremental (`
 If unspecified, backups are done incrementally by default.
 Incremental backups are preferred in all known circumstances and snapshot backups are deprecated, so this parameter should only be used after much consideration.
 
+[[listbackup]]
+== LISTBACKUP: List Backups
+
+Lists information about each backup stored at the specified repository location.
+Basic metadata is returned about each backup including: the timestamp the backup was created, the Lucene version used to create the index, and the size of the backup both in number of files and total filesize.
+
+[NOTE]
+====
+Previous versions of Solr supported a different snapshot-based backup file structure that did not support the storage of multiple backups at the same location.
+Solr can still restore backups stored in this old format, but it is deprecated and will be removed in subsequent versions of Solr.
+The LISTBACKUP API does not support the deprecated format and attempts to use this API on a location holding an older backup will result in an error message.
+====
+
+The file structure used by Solr internally to represent backups changed in 8.9.0.
+While backups created prior to this format change can still be restored, the `LISTBACKUP` and `DELETEBACKUP` API commands are only valid on this newer format.
+Attempting to use them on a location holding an older backup will result in an error message.
+
+=== LISTBACKUP Parameters
+
+`name`::
+The name of the backups to list.
+The backup name usually corresponds to the collection-name, but isn't required to.
+This parameter is required.
+
+`location`::
+The repository location to list backups from. This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
++
+If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
+Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
+
+`repository`::
+The name of a repository to be used for accessing backup information.
+If no repository is specified then the local filesystem repository will be used automatically.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+=== LISTBACKUP Example
+
+*Input*
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listbackup]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=myBackupName&location=/path/to/my/shared/drive
+----
+====
+
+[example.tab-pane#v2listbackup]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+POST http://localhost:8983/v2/collections/backups
+{
+  "list-backups" : {
+    "name": "myBackupName",
+    "location": "/path/to/my/shared/drive"
+  }
+}
+----
+====
+--
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":4},
+  "collection":"books",
+  "backups":[{
+      "indexFileCount":0,
+      "indexSizeMB":0.0,
+      "shardBackupIds":{
+        "shard2":"md_shard2_0.json",
+        "shard1":"md_shard1_0.json"},
+      "collection.configName":"books",
+      "backupId":0,
+      "collectionAlias":"books",
+      "startTime":"2021-02-09T03:19:52.085653Z",
+      "indexVersion":"9.0.0"},
+    {
+      "indexFileCount":0,
+      "indexSizeMB":0.0,
+      "shardBackupIds":{
+        "shard2":"md_shard2_1.json",
+        "shard1":"md_shard1_1.json"},
+      "collection.configName":"books",
+      "backupId":1,
+      "collectionAlias":"books",
+      "startTime":"2021-02-09T03:19:52.268804Z",
+      "indexVersion":"9.0.0"}]}
+----
+
 [[restore]]
 == RESTORE: Restore Collection
 
@@ -1333,6 +1436,108 @@ Note: for `createNodeSet` the special value of `EMPTY` is not allowed with this 
 
 Additionally, there are several parameters that may have been set on the original collection that can be overridden when restoring the backup (described in detail in the <<create,CREATE collection>> section):
 `collection.configName`, `replicationFactor`, `nrtReplicas`, `tlogReplicas`, `pullReplicas`, `property._name_=_value_`.
+
+[[deletebackup]]
+== DELETEBACKUP: Delete backup files from the remote repository
+
+Deletes backup files stored at the specified repository location.
+
+[NOTE]
+====
+Previous versions of Solr supported a different snapshot-based backup file structure that did not support the storage of multiple backups at the same location.
+Solr can still restore backups stored in this old format, but it is deprecated and will be removed in subsequent versions of Solr.
+The DELETEBACKUP API does not support the deprecated format and attempts to use this API on a location holding an older backup will result in an error message.
+====
+
+Solr allows storing multiple backups for the same collection at any given logical "location".
+These backup points are each given an identifier (`backupId`) which can be used to delete them specifically with this API.
+Alternatively Solr can be told to keep the last `maxNumBackupPoints` backups, deleting everything else at the given location.
+Deleting backup points in these ways can orphan index files that are no longer referenced by any backup points.
+These orphaned files can be detected and deleted using the `purgeUnused` option.
+See the parameter descriptions below for more information.
+
+=== DELETEBACKUP Example
+
+*Input*
+
+The following API command deletes the the first backup (`backupId=0`) at the specified repository location.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletebackup]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=myBackupName&location=/path/to/my/shared/drive&backupId=0
+----
+====
+
+[example.tab-pane#v2deletebackup]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+POST http://localhost:8983/v2/collections/backups
+{
+  "delete-backups" : {
+    "name": "myBackupName",
+    "location": "/path/to/my/shared/drive",
+    "backupId": 0
+  }
+}
+----
+====
+--
+
+*Output*
+
+[source,json]
+----
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":940},
+  "deleted":[[
+      "startTime","2021-02-09T03:19:52.085653Z",
+      "backupId",0,
+      "size",28381,
+      "numFiles",53]],
+  "collection":"books"}
+----
+
+=== DELETEBACKUP Parameters
+
+`name`::
+The backup name to delete backup files from.  This parameter is required.
+
+`location`::
+The repository location to delete backups from. This parameter is required, unless a default location is defined on the repository configuration, or set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
++
+If the location path is on a mounted drive, the mount must be available on the node that serves as the overseer, even if the overseer node does not host a replica of the collection being backed up.
+Since any node can take the overseer role at any time, a best practice to avoid possible backup failures is to ensure the mount point is available on all nodes of the cluster.
+
+`repository`::
+The name of a repository to be used for deleting backup files. If no repository is specified then the local filesystem repository will be used automatically.
+
+`backupId`::
+Explicitly specify a single backup-ID to delete.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+
+`maxNumBackupPoints`::
+Specify how many backups should be retained, deleting all others.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+
+`purgeUnused`::
+Solr's incremental backup support can orphan files if the backups referencing them are deleted.
+The `purgeUnused` flag parameter triggers a scan to detect these orphaned files and delete them.
+Administrators doing repeated backups at the same location should plan on using this parameter sporadically to reclaim disk space.
+Only one of `backupId`, `maxNumBackupPoints`, and `purgeUnused` may be specified per DELETEBACKUP request.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 [[rebalanceleaders]]
 == REBALANCELEADERS: Rebalance Leaders

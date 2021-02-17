@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
 
 /**
- * Represents a backup[-*].properties file and the methods to read/write it.
+ * Represents a backup[-*].properties file, responsible for holding whole-collection and whole-backup metadata.
  *
  * These files live in a different location and hold different metadata depending on the backup format used.  The (now
  * deprecated) traditional 'full-snapshot' backup format places this file at $LOCATION/$NAME, while the preferred
