@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.Lucene87;
+package org.apache.lucene.backward_codecs.lucene87;
 
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
-import org.apache.lucene.backward_codecs.lucene87.Lucene87Codec;
+import org.apache.lucene.backward_codecs.lucene80.Lucene80RWNormsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.codecs.NormsFormat;
 
 /** RW impersonation of {@link Lucene87Codec}. */
 public class Lucene87RWCodec extends Lucene87Codec {
@@ -26,5 +27,10 @@ public class Lucene87RWCodec extends Lucene87Codec {
   @Override
   public final CompoundFormat compoundFormat() {
     return new Lucene50RWCompoundFormat();
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return new Lucene80RWNormsFormat();
   }
 }

@@ -14,6 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/** Components from the Lucene 8.0 index format. */
 package org.apache.lucene.backward_codecs.lucene80;
+
+import org.apache.lucene.backward_codecs.lucene87.Lucene87RWCodec;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseNormsFormatTestCase;
+
+/** Tests Lucene80NormsFormat */
+public class TestLucene80NormsFormat extends BaseNormsFormatTestCase {
+  private final Codec codec = new Lucene87RWCodec();
+
+  @Override
+  protected Codec getCodec() {
+    return codec;
+  }
+}

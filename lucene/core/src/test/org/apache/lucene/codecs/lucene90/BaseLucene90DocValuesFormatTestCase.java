@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.TestUtil;
 
 /** Tests Lucene80DocValuesFormat */
-public abstract class BaseLucene80DocValuesFormatTestCase
+public abstract class BaseLucene90DocValuesFormatTestCase
     extends BaseCompressingDocValuesFormatTestCase {
 
   // TODO: these big methods can easily blow up some of the other ram-hungry codecs...
@@ -445,7 +445,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase
 
   @Nightly
   public void testSortedSetAroundBlockSize() throws IOException {
-    final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+    final int frontier = 1 << Lucene90DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
       IndexWriter w =
@@ -499,7 +499,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase
 
   @Nightly
   public void testSortedNumericAroundBlockSize() throws IOException {
-    final int frontier = 1 << Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+    final int frontier = 1 << Lucene90DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
     for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
       final Directory dir = newDirectory();
       IndexWriter w =
@@ -613,12 +613,12 @@ public abstract class BaseLucene80DocValuesFormatTestCase
     final long mul = TestUtil.nextInt(random(), 1, 100);
     final long min = random().nextInt();
     return new LongSupplier() {
-      int i = Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE;
+      int i = Lucene90DocValuesFormat.NUMERIC_BLOCK_SIZE;
       int maxDelta;
 
       @Override
       public long getAsLong() {
-        if (i == Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE) {
+        if (i == Lucene90DocValuesFormat.NUMERIC_BLOCK_SIZE) {
           maxDelta = 1 << random().nextInt(5);
           i = 0;
         }
@@ -632,12 +632,12 @@ public abstract class BaseLucene80DocValuesFormatTestCase
       throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE));
+    conf.setMaxBufferedDocs(atLeast(Lucene90DocValuesFormat.NUMERIC_BLOCK_SIZE));
     conf.setRAMBufferSizeMB(-1);
     conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     IndexWriter writer = new IndexWriter(dir, conf);
 
-    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE * 3);
+    final int numDocs = atLeast(Lucene90DocValuesFormat.NUMERIC_BLOCK_SIZE * 3);
     final LongSupplier values = blocksOfVariousBPV();
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -691,7 +691,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase
   private void doTestSparseNumericBlocksOfVariousBitsPerValue(double density) throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE));
+    conf.setMaxBufferedDocs(atLeast(Lucene90DocValuesFormat.NUMERIC_BLOCK_SIZE));
     conf.setRAMBufferSizeMB(-1);
     conf.setMergePolicy(newLogMergePolicy(random().nextBoolean()));
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -701,7 +701,7 @@ public abstract class BaseLucene80DocValuesFormatTestCase
     doc.add(storedField);
     doc.add(dvField);
 
-    final int numDocs = atLeast(Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE * 3);
+    final int numDocs = atLeast(Lucene90DocValuesFormat.NUMERIC_BLOCK_SIZE * 3);
     final LongSupplier longs = blocksOfVariousBPV();
     for (int i = 0; i < numDocs; i++) {
       if (random().nextDouble() > density) {

@@ -14,15 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene90;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseNormsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/** Tests Lucene80NormsFormat */
-public class TestLucene80NormsFormat extends BaseNormsFormatTestCase {
-  private final Codec codec = TestUtil.getDefaultCodec();
+/** Tests Lucene80DocValuesFormat */
+public class TestBestCompressionLucene90DocValuesFormat
+    extends BaseLucene90DocValuesFormatTestCase {
+  private final Codec codec =
+      TestUtil.alwaysDocValuesFormat(
+          new Lucene90DocValuesFormat(Lucene90DocValuesFormat.Mode.BEST_COMPRESSION));
 
   @Override
   protected Codec getCodec() {

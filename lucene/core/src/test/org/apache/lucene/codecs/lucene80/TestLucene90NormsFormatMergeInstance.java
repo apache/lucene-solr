@@ -17,7 +17,7 @@
 package org.apache.lucene.codecs.lucene80;
 
 /** Test the merge instance of the Lucene80 norms format. */
-public class TestLucene80NormsFormatMergeInstance extends TestLucene80NormsFormat {
+public class TestLucene90NormsFormatMergeInstance extends TestLucene90NormsFormat {
 
   @Override
   protected boolean shouldTestMergeInstance() {

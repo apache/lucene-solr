@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene90;
 
-import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
-import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.NUMERIC_BLOCK_SHIFT;
-import static org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat.NUMERIC_BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+import static org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat.NUMERIC_BLOCK_SHIFT;
+import static org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat.NUMERIC_BLOCK_SIZE;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -61,26 +61,26 @@ import org.apache.lucene.util.compress.LZ4.FastCompressionHashTable;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 import org.apache.lucene.util.packed.DirectWriter;
 
-/** writer for {@link Lucene80DocValuesFormat} */
-final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Closeable {
+/** writer for {@link Lucene90DocValuesFormat} */
+final class Lucene90DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
-  final Lucene80DocValuesFormat.Mode mode;
+  final Lucene90DocValuesFormat.Mode mode;
   IndexOutput data, meta;
   final int maxDoc;
   private final SegmentWriteState state;
   private byte[] termsDictBuffer;
 
   /** expert: Creates a new writer */
-  public Lucene80DocValuesConsumer(
+  public Lucene90DocValuesConsumer(
       SegmentWriteState state,
       String dataCodec,
       String dataExtension,
       String metaCodec,
       String metaExtension,
-      Lucene80DocValuesFormat.Mode mode)
+      Lucene90DocValuesFormat.Mode mode)
       throws IOException {
     this.mode = mode;
-    if (Lucene80DocValuesFormat.Mode.BEST_COMPRESSION == this.mode) {
+    if (Lucene90DocValuesFormat.Mode.BEST_COMPRESSION == this.mode) {
       this.termsDictBuffer = new byte[1 << 14];
     }
     boolean success = false;
@@ -93,7 +93,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       CodecUtil.writeIndexHeader(
           data,
           dataCodec,
-          Lucene80DocValuesFormat.VERSION_CURRENT,
+          Lucene90DocValuesFormat.VERSION_CURRENT,
           state.segmentInfo.getId(),
           state.segmentSuffix);
       String metaName =
@@ -103,7 +103,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       CodecUtil.writeIndexHeader(
           meta,
           metaCodec,
-          Lucene80DocValuesFormat.VERSION_CURRENT,
+          Lucene90DocValuesFormat.VERSION_CURRENT,
           state.segmentInfo.getId(),
           state.segmentSuffix);
       maxDoc = state.segmentInfo.maxDoc();
@@ -141,7 +141,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   public void addNumericField(FieldInfo field, DocValuesProducer valuesProducer)
       throws IOException {
     meta.writeInt(field.number);
-    meta.writeByte(Lucene80DocValuesFormat.NUMERIC);
+    meta.writeByte(Lucene90DocValuesFormat.NUMERIC);
 
     writeValues(
         field,
@@ -407,7 +407,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     int uncompressedBlockLength = 0;
     int maxUncompressedBlockLength = 0;
     int numDocsInCurrentBlock = 0;
-    final int[] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK];
+    final int[] docLengths = new int[Lucene90DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK];
     byte[] block = BytesRef.EMPTY_BYTES;
     int totalChunks = 0;
     long maxPointer = 0;
@@ -423,8 +423,8 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       try {
         CodecUtil.writeHeader(
             tempBinaryOffsets,
-            Lucene80DocValuesFormat.META_CODEC + "FilePointers",
-            Lucene80DocValuesFormat.VERSION_CURRENT);
+            Lucene90DocValuesFormat.META_CODEC + "FilePointers",
+            Lucene90DocValuesFormat.VERSION_CURRENT);
         blockAddressesStart = data.getFilePointer();
         success = true;
       } finally {
@@ -440,7 +440,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       System.arraycopy(v.bytes, v.offset, block, uncompressedBlockLength, v.length);
       uncompressedBlockLength += v.length;
       numDocsInCurrentBlock++;
-      if (numDocsInCurrentBlock == Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK) {
+      if (numDocsInCurrentBlock == Lucene90DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK) {
         flushData();
       }
     }
@@ -453,7 +453,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
         // Optimisation - check if all lengths are same
         boolean allLengthsSame = true;
-        for (int i = 1; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
+        for (int i = 1; i < Lucene90DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
           if (docLengths[i] != docLengths[i - 1]) {
             allLengthsSame = false;
             break;
@@ -464,7 +464,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
           int onlyOneLength = (docLengths[0] << 1) | 1;
           data.writeVInt(onlyOneLength);
         } else {
-          for (int i = 0; i < Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
+          for (int i = 0; i < Lucene90DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK; i++) {
             if (i == 0) {
               // Write first value shifted and steal a bit to indicate other lengths are to follow
               int multipleLengths = (docLengths[0] << 1);
@@ -494,7 +494,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       meta.writeLong(startDMW);
 
       meta.writeVInt(totalChunks);
-      meta.writeVInt(Lucene80DocValuesFormat.BINARY_BLOCK_SHIFT);
+      meta.writeVInt(Lucene90DocValuesFormat.BINARY_BLOCK_SHIFT);
       meta.writeVInt(maxUncompressedBlockLength);
       meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
 
@@ -505,9 +505,9 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
           state.directory.openChecksumInput(tempBinaryOffsets.getName(), IOContext.READONCE)) {
         CodecUtil.checkHeader(
             filePointersIn,
-            Lucene80DocValuesFormat.META_CODEC + "FilePointers",
-            Lucene80DocValuesFormat.VERSION_CURRENT,
-            Lucene80DocValuesFormat.VERSION_CURRENT);
+            Lucene90DocValuesFormat.META_CODEC + "FilePointers",
+            Lucene90DocValuesFormat.VERSION_CURRENT,
+            Lucene90DocValuesFormat.VERSION_CURRENT);
         Throwable priorE = null;
         try {
           final DirectMonotonicWriter filePointers =
@@ -545,9 +545,9 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
   @Override
   public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
-    field.putAttribute(Lucene80DocValuesFormat.MODE_KEY, mode.name());
+    field.putAttribute(Lucene90DocValuesFormat.MODE_KEY, mode.name());
     meta.writeInt(field.number);
-    meta.writeByte(Lucene80DocValuesFormat.BINARY);
+    meta.writeByte(Lucene90DocValuesFormat.BINARY);
 
     switch (mode) {
       case BEST_SPEED:
@@ -682,7 +682,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   @Override
   public void addSortedField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     meta.writeInt(field.number);
-    meta.writeByte(Lucene80DocValuesFormat.SORTED);
+    meta.writeByte(Lucene90DocValuesFormat.SORTED);
     doAddSortedField(field, valuesProducer);
   }
 
@@ -743,17 +743,17 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     final long size = values.getValueCount();
     meta.writeVLong(size);
     boolean compress =
-        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION == mode
+        Lucene90DocValuesFormat.Mode.BEST_COMPRESSION == mode
             && values.getValueCount()
-                > Lucene80DocValuesFormat.TERMS_DICT_BLOCK_COMPRESSION_THRESHOLD;
+                > Lucene90DocValuesFormat.TERMS_DICT_BLOCK_COMPRESSION_THRESHOLD;
     int code, blockMask, shift;
     if (compress) {
-      code = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_CODE;
-      blockMask = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_MASK;
-      shift = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_SHIFT;
+      code = Lucene90DocValuesFormat.TERMS_DICT_BLOCK_LZ4_CODE;
+      blockMask = Lucene90DocValuesFormat.TERMS_DICT_BLOCK_LZ4_MASK;
+      shift = Lucene90DocValuesFormat.TERMS_DICT_BLOCK_LZ4_SHIFT;
     } else {
-      code = shift = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_SHIFT;
-      blockMask = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_MASK;
+      code = shift = Lucene90DocValuesFormat.TERMS_DICT_BLOCK_SHIFT;
+      blockMask = Lucene90DocValuesFormat.TERMS_DICT_BLOCK_MASK;
     }
 
     meta.writeInt(code);
@@ -862,13 +862,13 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
   private void writeTermsIndex(SortedSetDocValues values) throws IOException {
     final long size = values.getValueCount();
-    meta.writeInt(Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_SHIFT);
+    meta.writeInt(Lucene90DocValuesFormat.TERMS_DICT_REVERSE_INDEX_SHIFT);
     long start = data.getFilePointer();
 
     long numBlocks =
         1L
-            + ((size + Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK)
-                >>> Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_SHIFT);
+            + ((size + Lucene90DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK)
+                >>> Lucene90DocValuesFormat.TERMS_DICT_REVERSE_INDEX_SHIFT);
     ByteBuffersDataOutput addressBuffer = new ByteBuffersDataOutput();
     DirectMonotonicWriter writer;
     try (ByteBuffersIndexOutput addressOutput =
@@ -881,7 +881,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       long offset = 0;
       long ord = 0;
       for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-        if ((ord & Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == 0) {
+        if ((ord & Lucene90DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) == 0) {
           writer.add(offset);
           final int sortKeyLength;
           if (ord == 0) {
@@ -892,8 +892,8 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
           }
           offset += sortKeyLength;
           data.writeBytes(term.bytes, term.offset, sortKeyLength);
-        } else if ((ord & Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK)
-            == Lucene80DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) {
+        } else if ((ord & Lucene90DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK)
+            == Lucene90DocValuesFormat.TERMS_DICT_REVERSE_INDEX_MASK) {
           previous.copyBytes(term);
         }
         ++ord;
@@ -913,7 +913,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   public void addSortedNumericField(FieldInfo field, DocValuesProducer valuesProducer)
       throws IOException {
     meta.writeInt(field.number);
-    meta.writeByte(Lucene80DocValuesFormat.SORTED_NUMERIC);
+    meta.writeByte(Lucene90DocValuesFormat.SORTED_NUMERIC);
 
     long[] stats = writeValues(field, valuesProducer);
     int numDocsWithField = Math.toIntExact(stats[0]);
@@ -947,7 +947,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
   public void addSortedSetField(FieldInfo field, DocValuesProducer valuesProducer)
       throws IOException {
     meta.writeInt(field.number);
-    meta.writeByte(Lucene80DocValuesFormat.SORTED_SET);
+    meta.writeByte(Lucene90DocValuesFormat.SORTED_SET);
 
     SortedSetDocValues values = valuesProducer.getSortedSet(field);
     int numDocsWithField = 0;

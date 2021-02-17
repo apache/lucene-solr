@@ -20,7 +20,9 @@ import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWStoredFieldsFormat;
 import org.apache.lucene.backward_codecs.lucene60.Lucene60RWPointsFormat;
 import org.apache.lucene.backward_codecs.lucene70.Lucene70RWSegmentInfoFormat;
+import org.apache.lucene.backward_codecs.lucene80.Lucene80RWNormsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -41,6 +43,11 @@ public class Lucene84RWCodec extends Lucene84Codec {
   @Override
   public StoredFieldsFormat storedFieldsFormat() {
     return new Lucene50RWStoredFieldsFormat();
+  }
+
+  @Override
+  public NormsFormat normsFormat() {
+    return new Lucene80RWNormsFormat();
   }
 
   @Override

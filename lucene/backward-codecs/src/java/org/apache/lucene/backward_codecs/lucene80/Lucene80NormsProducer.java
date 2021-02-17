@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.backward_codecs.lucene80;
 
-import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
-import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_START;
+import static org.apache.lucene.backward_codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
+import static org.apache.lucene.backward_codecs.lucene80.Lucene80NormsFormat.VERSION_START;
 
 import java.io.IOException;
 import java.util.HashMap;

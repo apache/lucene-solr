@@ -14,6 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/** Components from the Lucene 8.0 index format. */
 package org.apache.lucene.backward_codecs.lucene80;
+
+/** Test the merge instance of the Lucene80 norms format. */
+public class TestLucene80NormsFormatMergeInstance extends TestLucene80NormsFormat {
+
+  @Override
+  protected boolean shouldTestMergeInstance() {
+    return true;
+  }
+}

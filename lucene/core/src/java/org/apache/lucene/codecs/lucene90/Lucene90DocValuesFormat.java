@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -137,7 +137,7 @@ import org.apache.lucene.util.packed.DirectWriter;
  *
  * @lucene.experimental
  */
-public final class Lucene80DocValuesFormat extends DocValuesFormat {
+public final class Lucene90DocValuesFormat extends DocValuesFormat {
 
   /** Configuration option for doc values. */
   public static enum Mode {
@@ -148,36 +148,36 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
   }
 
   /** Attribute key for compression mode. */
-  public static final String MODE_KEY = Lucene80DocValuesFormat.class.getSimpleName() + ".mode";
+  public static final String MODE_KEY = Lucene90DocValuesFormat.class.getSimpleName() + ".mode";
 
   private final Mode mode;
 
   /** Default constructor. */
-  public Lucene80DocValuesFormat() {
+  public Lucene90DocValuesFormat() {
     this(Mode.BEST_SPEED);
   }
 
   /** Constructor */
-  public Lucene80DocValuesFormat(Mode mode) {
-    super("Lucene80");
+  public Lucene90DocValuesFormat(Mode mode) {
+    super("Lucene90");
     this.mode = Objects.requireNonNull(mode);
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene80DocValuesConsumer(
+    return new Lucene90DocValuesConsumer(
         state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION, mode);
   }
 
   @Override
   public DocValuesProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new Lucene80DocValuesProducer(
+    return new Lucene90DocValuesProducer(
         state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION);
   }
 
-  static final String DATA_CODEC = "Lucene80DocValuesData";
+  static final String DATA_CODEC = "Lucene90DocValuesData";
   static final String DATA_EXTENSION = "dvd";
-  static final String META_CODEC = "Lucene80DocValuesMetadata";
+  static final String META_CODEC = "Lucene90DocValuesMetadata";
   static final String META_EXTENSION = "dvm";
   static final int VERSION_START = 0;
   static final int VERSION_BIN_COMPRESSED = 1;
