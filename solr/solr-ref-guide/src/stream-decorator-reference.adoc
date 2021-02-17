@@ -637,8 +637,8 @@ Users who anticipate concurrent updates, and wish to "skip" any failed deletes, 
 
 The `eval` function allows for use cases where new streaming expressions are generated on the fly and then evaluated.
 The `eval` function wraps a streaming expression and reads a single tuple from the underlying stream.
-The `eval` function then retrieves a string Streaming Expressions from the `expr_s` field of the tuple.
-The `eval` function then compiles the string Streaming Expression and emits the tuples.
+The `eval` function then retrieves a string streaming expression from the `expr_s` field of the tuple.
+The `eval` function then compiles the string streaming expression and emits the tuples.
 
 === eval Parameters
 
@@ -652,7 +652,7 @@ eval(expr)
 ----
 
 In the example above the `eval` expression reads the first tuple from the underlying expression. It then compiles and
-executes the string Streaming Expression in the expr_s field.
+executes the string streaming expression in the `expr_s` field.
 
 == executor
 
@@ -665,7 +665,7 @@ This model allows for asynchronous execution of jobs where the output is stored 
 === executor Parameters
 
 * `threads`: (Optional) The number of threads in the executors thread pool for executing expressions.
-* `StreamExpression`: (Mandatory) The stream source which contains the Streaming Expressions to execute.
+* `StreamExpression`: (Mandatory) The stream source which contains the streaming expressions to execute.
 
 === executor Syntax
 

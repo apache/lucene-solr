@@ -23,11 +23,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CharsetEncoder;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -151,6 +154,14 @@ public final class RamUsageTester {
       ArrayList<Object> stack,
       Object ob,
       Class<?> obClazz) {
+
+    // Ignore JDK objects we can't access or handle properly.
+    Predicate<Object> isIgnorable =
+        (clazz) -> (clazz instanceof CharsetEncoder) || (clazz instanceof CharsetDecoder);
+    if (isIgnorable.test(ob)) {
+      return accumulator.accumulateObject(ob, 0, Collections.emptyMap(), stack);
+    }
+
     /*
      * Consider an object. Push any references it has to the processing stack
      * and accumulate this object's shallow size.
@@ -159,10 +170,7 @@ public final class RamUsageTester {
       if (Constants.JRE_IS_MINIMUM_JAVA9) {
         long alignedShallowInstanceSize = RamUsageEstimator.shallowSizeOf(ob);
 
-        Predicate<Class<?>> isJavaModule =
-            (clazz) -> {
-              return clazz.getName().startsWith("java.");
-            };
+        Predicate<Class<?>> isJavaModule = (clazz) -> clazz.getName().startsWith("java.");
 
         // Java 9: Best guess for some known types, as we cannot precisely look into runtime
         // classes:
@@ -274,13 +282,17 @@ public final class RamUsageTester {
                           v.length())); // may not be correct with Java 9's compact strings!
               a(StringBuilder.class, v -> charArraySize(v.capacity()));
               a(StringBuffer.class, v -> charArraySize(v.capacity()));
+              // Approximate the underlying long[] buffer.
+              a(BitSet.class, v -> (v.size() / Byte.SIZE));
               // Types with large buffers:
               a(ByteArrayOutputStream.class, v -> byteArraySize(v.size()));
               // For File and Path, we just take the length of String representation as
               // approximation:
               a(File.class, v -> charArraySize(v.toString().length()));
               a(Path.class, v -> charArraySize(v.toString().length()));
-              a(ByteOrder.class, v -> 0); // Instances of ByteOrder are constants
+
+              // Ignorable JDK classes.
+              a(ByteOrder.class, v -> 0);
             }
 
             @SuppressWarnings("unchecked")

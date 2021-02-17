@@ -52,7 +52,7 @@ is equivalent to:
 
 `q={!type=dismax qf=myfield}solr rocks`
 
-If no "type" is specified (either explicitly or implicitly) then the <<the-standard-query-parser.adoc#the-standard-query-parser,lucene parser>> is used by default. Thus
+If no "type" is specified (either explicitly or implicitly) then the <<the-standard-query-parser.adoc#,lucene parser>> is used by default. Thus
 
 `fq={!df=summary}solr rocks`
 

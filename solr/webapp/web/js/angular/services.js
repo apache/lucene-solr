@@ -61,7 +61,7 @@ solrAdminServices.factory('System',
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
       "events": {params: {since:'0'}},
       "levels": {},
-      "setLevel": {}
+      "setLevel": {params: {nodes:'all'}}
       });
   }])
 .factory('Zookeeper',

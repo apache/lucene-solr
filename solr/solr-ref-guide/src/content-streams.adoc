@@ -50,7 +50,7 @@ In `solrconfig.xml`, you can enable it by changing the following `enableRemoteSt
 
 When `enableRemoteStreaming` is not specified in `solrconfig.xml`, the default behavior is to _not_ allow remote streaming (i.e., `enableRemoteStreaming="false"`).
 
-Remote streaming can also be enabled through the <<config-api.adoc#config-api,Config API>> as follows:
+Remote streaming can also be enabled through the <<config-api.adoc#,Config API>> as follows:
 
 [.dynamic-tabs]
 --
@@ -84,4 +84,4 @@ Gzip doesn't apply to `stream.body`.
 
 == Debugging Requests
 
-The implicit "dump" RequestHandler (see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>) simply outputs the contents of the Solr QueryRequest using the specified writer type `wt`. This is a useful tool to help understand what streams are available to the RequestHandlers.
+The implicit "dump" RequestHandler (see <<implicit-requesthandlers.adoc#,Implicit RequestHandlers>>) simply outputs the contents of the Solr QueryRequest using the specified writer type `wt`. This is a useful tool to help understand what streams are available to the RequestHandlers.

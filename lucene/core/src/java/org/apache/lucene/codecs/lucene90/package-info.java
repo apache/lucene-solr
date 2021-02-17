@@ -174,7 +174,7 @@
  *       loaded into main memory for fast access. Whereas stored values are generally intended for
  *       summary results from searches, per-document values are useful for things like scoring
  *       factors.
- *   <li>{@link org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat Live documents}. An
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90LiveDocsFormat Live documents}. An
  *       optional file indicating which documents are live.
  *   <li>{@link org.apache.lucene.codecs.lucene86.Lucene86PointsFormat Point values}. Optional pair
  *       of files, recording dimensionally indexed fields, to enable fast numeric range filtering
@@ -234,13 +234,13 @@
  * <td>Stores metadata about a segment</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat Compound File}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90CompoundFormat Compound File}</td>
  * <td>.cfs, .cfe</td>
  * <td>An optional "virtual" file consisting of all the other index files for
  * systems that frequently run out of file handles.</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat Fields}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90FieldInfosFormat Fields}</td>
  * <td>.fnm</td>
  * <td>Stores information about the fields</td>
  * </tr>
@@ -300,7 +300,7 @@
  * <td>Contains term vector data.</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat Live Documents}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90LiveDocsFormat Live Documents}</td>
  * <td>.liv</td>
  * <td>Info about what documents are live</td>
  * </tr>

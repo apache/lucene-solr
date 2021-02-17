@@ -434,8 +434,12 @@ public class SolrXmlConfig {
 
   private static CloudConfig fillSolrCloudSection(NamedList<Object> nl, XmlConfigFile config, String defaultZkHost) {
 
-    String hostName = required("solrcloud", "host", removeValue(nl, "host"));
     int hostPort = parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
+    if (hostPort <= 0) {
+      // Default to the port that jetty is listening on, or 8983 if that is not provided.
+      hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
+    }
+    String hostName = required("solrcloud", "host", removeValue(nl, "host"));
     String hostContext = required("solrcloud", "hostContext", removeValue(nl, "hostContext"));
 
     CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
@@ -480,6 +484,9 @@ public class SolrXmlConfig {
           break;
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
+          break;
+        case "distributedClusterStateUpdates":
+          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);

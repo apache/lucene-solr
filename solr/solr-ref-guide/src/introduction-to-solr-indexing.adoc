@@ -24,15 +24,15 @@ A Solr index can accept data from many different sources, including XML files, c
 
 Here are the three most common ways of loading data into a Solr index:
 
-* Using the <<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Solr Cell>> framework built on Apache Tika for ingesting binary files or structured files such as Office, Word, PDF, and other proprietary formats.
+* Using the <<uploading-data-with-solr-cell-using-apache-tika.adoc#,Solr Cell>> framework built on Apache Tika for ingesting binary files or structured files such as Office, Word, PDF, and other proprietary formats.
 
 * Uploading XML files by sending HTTP requests to the Solr server from any environment where such requests can be generated.
 
-* Writing a custom Java application to ingest data through Solr's Java Client API (which is described in more detail in <<client-apis.adoc#client-apis,Client APIs>>). Using the Java API may be the best choice if you're working with an application, such as a Content Management System (CMS), that offers a Java API.
+* Writing a custom Java application to ingest data through Solr's Java Client API (which is described in more detail in <<client-apis.adoc#,Client APIs>>). Using the Java API may be the best choice if you're working with an application, such as a Content Management System (CMS), that offers a Java API.
 
 Regardless of the method used to ingest data, there is a common basic data structure for data being fed into a Solr index: a _document_ containing multiple _fields,_ each with a _name_ and containing _content,_ which may be empty. One of the fields is usually designated as a unique ID field (analogous to a primary key in a database), although the use of a unique ID field is not strictly required by Solr.
 
-If the field name is defined in the Schema that is associated with the index, then the analysis steps associated with that field will be applied to its content when the content is tokenized. Fields that are not explicitly defined in the Schema will either be ignored or mapped to a dynamic field definition (see <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>), if one matching the field name exists.
+If the field name is defined in the Schema that is associated with the index, then the analysis steps associated with that field will be applied to its content when the content is tokenized. Fields that are not explicitly defined in the Schema will either be ignored or mapped to a dynamic field definition (see <<documents-fields-and-schema-design.adoc#,Documents, Fields, and Schema Design>>), if one matching the field name exists.
 
 == The Solr Example Directory
 

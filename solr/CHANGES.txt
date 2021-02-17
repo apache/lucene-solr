@@ -25,6 +25,9 @@ New Features
 
 * SOLR-15019: Replica placement API needs a way to fetch existing replica metrics. (ab, ilan)
 
+* SOLR-15055: Re-implement 'withCollection'. This also adds the placement plugin support
+  for rejecting replica / collection deletions that would violate placement constraints. (ab, ilan)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -68,6 +71,12 @@ Improvements
 
 * SOLR-14949: Docker: Ability to customize the FROM image when building.
   (Houston Putman)
+
+* SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
+when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
+
+* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax
+  escaping. It was inconsistent with other Solr options.  (David Smiley)
 
 Other Changes
 ----------------------
@@ -186,10 +195,87 @@ Other Changes
 
 * SOLR-14034: Remove deprecated min_rf references (Tim Dillon)
 
+* SOLR-14297: Replace commons-codec Base64 with JDK8 Base64 (Andras Salamon via Houston Putman)
+
+* SOLR-15113: Do not attempt to start Solr server when embedded ZK fails (Mike Drob)
+
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to it's own /contrib/scripting/ package instead
+ of shipping as part of Solr due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name. (Eric Pugh)
+
+* SOLR-15118: Switch /v2/collections APIs over to the now-preferred annotated-POJO implementation approach (Jason Gerlowski)
+
+* SOLR-14928: Allow cluster state updates to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
+
+* SOLR-15121: Move XSLT (tr param) response writer and update request handler to scripting contrib.  (Eric Pugh, David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
+
+==================  8.9.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+New Features
+---------------------
+* SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
+
+* SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
+
+
+Improvements
+---------------------
+* SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
+
+* SOLR-15085: Prevent EmbeddedSolrServer calling shutdown on a CoreContainer that was passed to it. (Tim Owen via Mike Drob)
+
+* SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
+
+* SOLR-13608: Backups are now done incrementally by default.  Multiple backups can be stored at the same location, and each
+  backup will only upload those files that are new since the last backup. (Jason Gerlowski, shalin, Cao Manh Dat)
+
+* SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consistency and clarity. (Eric Pugh)
+
+* SOLR-15101: Add "list" and "delete" APIs for managing incremental backups (Jason Gerlowski, shalin, Cao Manh Dat)
+
+* SOLR-15038: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters to query elevation.
+  (Dennis Berger, Tobias Kässmann via Bruno Roustant)
+
+Optimizations
+---------------------
+* SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
+  Used by default when field=_root_, or explicitly requested for other fields via hint=block.  (Joel Bernstein, hossman)
+
+* SOLR-15120 Reduce duplicated core creation work (Mike Drob, Mark Miller)
+
+Bug Fixes
+---------------------
+* SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
+* SOLR-15149: Better exception handling for LTR model creation errors (Alessandro Benedetti, Christine Poerschke)
+
+
+Other Changes
+---------------------
+* SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
+
+==================  8.8.1 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-15145: System property to control whether base_url is stored in state.json to enable back-compat with older SolrJ versions.
+  (Timothy Potter)
+
+* SOLR-15114: Fix bug that caused WAND optimization to be disabled in cases where the max score is requested (such as
+  multi-shard requests in SolrCloud) (Naoto Minami via Tomás Fernández Löbbe)
+
+* SOLR-15136: Reduce excessive logging introduced with Per Replica States feature (Ishan Chattopadhyaya)
+
+* SOLR-15138: Collection creation for PerReplicaStates does not scale to large collections as well as regular collections
+  (Mike Drob, Ilan Ginzburg, noble, Ishan Chattopadhyaya)
+
+* SOLR-15135: Admin UI display collections with perReplicaState=true in graph view (Timothy Potter)
 
 ==================  8.8.0 ==================
 
@@ -209,6 +295,8 @@ New Features
 
 * SOLR-14560: Add interleaving support in Learning To Rank. (Alessandro Benedetti, Christine Poerschke)
 
+* SOLR-15052: Reducing overseer bottlenecks using per-replica states (noble, Ishan Chattopadhyaya)
+
 Improvements
 ---------------------
 * SOLR-14942: Reduce leader election time on node shutdown by removing election nodes before closing cores.
@@ -227,7 +315,7 @@ Improvements
 * SOLR-14965: metrics: Adds two metrics to the SolrCloud Overseer: solr_metrics_overseer_stateUpdateQueueSize
   and solr_metrics_overseer_collectionWorkQueueSize with corresponding entries in the the Prometheus exporter's
   default/stock configuration.  (Saatchi Bhalla, Megan Carey, Andrzej Białecki, David Smiley)
-  
+
 * SOLR-14827: Refactor schema loading to not use XPath (noble)
 
 * SOLR-14987: Reuse HttpSolrClient per node vs. one per Solr core when using CloudSolrStream (Timothy Potter)
@@ -239,16 +327,30 @@ Improvements
 * SOLR-15069: [child]: the parentFilter parameter is now fully optional and perhaps obsolete.
   (David Smiley)
 
+* SOLR-14923: The use case of atomic/partial updates to child documents no longer requires that
+  _root_ be stored or have docValues, and no longer requires the _nest_path_ field.  However it
+  now requires that the client pass a _root_ field on these updates to point to the root ID.
+  (David Smiley)
+
 * SOLR-15059: Add panels to the default Grafana dashboard for query performance monitoring, includes updates
   to the Prometheus exporter to export query performance metrics, such as QPS and p95. (Timothy Potter)
 
 * SOLR-15040: Improvements to postlogs timestamp handling (Joel Bernstein)
+
+* SOLR-14155: Load all other SolrCore plugins from packages (noble)
 
 Optimizations
 ---------------------
 * SOLR-14975: Optimize CoreContainer.getAllCoreNames, getLoadedCoreNames and getCoreDescriptors. (Bruno Roustant)
 
 * SOLR-15049: Optimize same-core, same-field joins in TopLevelJoinQuery (Jason Gerlowski)
+
+* SOLR-14923: Indexing nested documents is faster, especially under concurrent indexing load.  In addition,
+  Partial updates to nested documents and Realtime Get of child documents is now more reliable.
+  (David Smiley, Thomas Wöckinger)
+
+* SOLR-15036: Automatically wrap a facet expression with a select / rollup / sort / plist when using a
+  collection alias with multiple collections and count|sum|min|max|avg metrics. (Timothy Potter)
 
 Bug Fixes
 ---------------------
@@ -313,6 +415,16 @@ Bug Fixes
 * SOLR-14514: Avoid picking 'stream' method in JSON facet when any of 'allBuckets', 'numBuckets', and 'missing' parameters are enabled
   (hossman, Munendra S N)
 
+* SOLR-12559: Fix placeholder valuesource 'FIELDNAME' not working with de-referenced values in JSON aggregator parsing.
+  (hossman, Munendra S N)
+
+* SOLR-15070: Suggester requests made with SolrJ can now use XMLResponseParser (Jason Gerlowski)
+
+* SOLR-15073: Fix ClassCastException in SystemInfoHandler.getSecurityInfo. (Nikolay Ivanov, Christine Poerschke)
+
+* SOLR-15071: Fix ArrayIndexOutOfBoundsException in contrib/ltr SolrFeatureScorer.
+  (Florin Babes, Ovidiu Mihalcea, David Smiley, Christine Poerschke)
+
 Other Changes
 ---------------------
 
@@ -328,6 +440,10 @@ Other Changes
 * SOLR-14951: Upgrade Angular JS 1.7.9 to 1.8.0 (Kevin Risden)
 
 * SOLR-15057: Avoid unnecessary object retention in FacetRangeProcessor. (Christine Poerschke)
+
+* SOLR-14999: New option for specifying the advertised Solr Port (hostPort). Still defaults to "jetty.port". (Houston Putman)
+
+* SOLR-15010: Thread dump using jattach if available and jstack is missing. (Eric Pugh)
 
 ==================  8.7.0 ==================
 
@@ -361,6 +477,8 @@ New Features
 * SOLR-14588: Introduce Circuit Breaker Infrastructure and a JVM heap usage memory tracking circuit breaker implementation (Atri Sharma)
 
 * SOLR-14615: CPU Utilization Based Circuit Breaker (Atri Sharma)
+
+* SOLR-15052: Reducing overseer bottlenecks using per-replica states (noble, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------
@@ -2440,6 +2558,50 @@ Other Changes
 * SOLR-12365: Renamed class Config to XmlConfigFile (David Smiley)
 
 * SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
+
+
+==================  7.7.3 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+
+Bug fixes
+----------------------
+
+* SOLR-13779: Use the safe fork of simple-xml for clustering contrib. (Dawid Weiss, Sachin Pattan)
+
+* SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
+
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
+  when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+
+* SOLR-13828: Improve ExecutePlanAction error handling.
+
+* SOLR-13472: Forwarded requests should skip authorization on receiving nodes (Ishan Chattopadhyaya)
+
+* SOLR-13793: HttpSolrCall now maintains internal request count (_forwardedCount) for remote queries and limits them to
+  the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can
+  bring down nodes containing the said collection (Kesharee Nandan Vishwakarma, Ishan Chattopadhyaya)
+
+* SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters. Also, removed velocity
+  response writer from _default configset. (Ishan Chattopadhyaya, Sachin Pattan)
+
+* SOLR-14025: VelocityResponseWriter has been hardened - only trusted configsets can render configset provided
+  templates and rendering templates from request parameters has been removed.
+
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
+
+* SOLR-14259: Back port javabin performance regression fixes from SOLR-14013 (noble)
+
 
 ==================  7.7.2 ==================
 

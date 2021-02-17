@@ -433,4 +433,4 @@ set SOLR_OPTS=%SOLR_OPTS% -Djute.maxbuffer=0x200000
 
 You may also want to secure the communication between ZooKeeper and Solr.
 
-To setup ACL protection of znodes, see the section <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+To setup ACL protection of znodes, see the section <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.

@@ -20,12 +20,19 @@ package org.apache.solr.cluster.placement.plugins;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.common.annotation.JsonProperty;
 
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * Configuration bean for {@link AffinityPlacementFactory}.
  */
 public class AffinityPlacementConfig implements PlacementPluginConfig {
 
-  public static final AffinityPlacementConfig DEFAULT = new AffinityPlacementConfig();
+  public static final long DEFAULT_MINIMAL_FREE_DISK_GB = 20L;
+  public static final long DEFAULT_PRIORITIZED_FREE_DISK_GB = 100L;
+
+  public static final AffinityPlacementConfig DEFAULT =
+      new AffinityPlacementConfig(DEFAULT_MINIMAL_FREE_DISK_GB, DEFAULT_PRIORITIZED_FREE_DISK_GB);
 
   /**
    * If a node has strictly less GB of free disk than this value, the node is excluded from assignment decisions.
@@ -43,14 +50,43 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
   @JsonProperty
   public long prioritizedFreeDiskGB;
 
-  // no-arg public constructor required for deserialization
+  /**
+   * This property defines an additional constraint that primary collections (keys) should be
+   * located on the same nodes as the secondary collections (values). The plugin will assume
+   * that the secondary collection replicas are already in place and ignore candidate nodes where
+   * they are not already present.
+   */
+  @JsonProperty
+  public Map<String, String> withCollection;
+
+  /**
+   * Zero-arguments public constructor required for deserialization - don't use.
+   */
   public AffinityPlacementConfig() {
-    minimalFreeDiskGB = 20L;
-    prioritizedFreeDiskGB = 100L;
+    this(DEFAULT_MINIMAL_FREE_DISK_GB, DEFAULT_PRIORITIZED_FREE_DISK_GB);
   }
 
+  /**
+   * Configuration for the {@link AffinityPlacementFactory}.
+   * @param minimalFreeDiskGB minimal free disk GB.
+   * @param prioritizedFreeDiskGB prioritized free disk GB.
+   */
   public AffinityPlacementConfig(long minimalFreeDiskGB, long prioritizedFreeDiskGB) {
+    this(minimalFreeDiskGB, prioritizedFreeDiskGB, Map.of());
+  }
+
+  /**
+   * Configuration for the {@link AffinityPlacementFactory}.
+   * @param minimalFreeDiskGB minimal free disk GB.
+   * @param prioritizedFreeDiskGB prioritized free disk GB.
+   * @param withCollection configuration of co-located collections: keys are
+   *                        primary collection names and values are secondary
+   *                        collection names.
+   */
+  public AffinityPlacementConfig(long minimalFreeDiskGB, long prioritizedFreeDiskGB, Map<String, String> withCollection) {
     this.minimalFreeDiskGB = minimalFreeDiskGB;
     this.prioritizedFreeDiskGB = prioritizedFreeDiskGB;
+    Objects.requireNonNull(withCollection);
+    this.withCollection = withCollection;
   }
 }

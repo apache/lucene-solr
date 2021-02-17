@@ -27,11 +27,11 @@ image::images/overview-of-the-solr-admin-ui/dashboard.png[image,height=400]
 
 The left-side of the screen is a menu under the Solr logo that provides the navigation through the screens of the UI.
 
-The first set of links are for system-level information and configuration and provide access to <<logging.adoc#logging,Logging>>, <<collections-core-admin.adoc#collections-core-admin,Collection/Core Administration>>, and <<java-properties.adoc#java-properties,Java Properties>>, among other things.
+The first set of links are for system-level information and configuration and provide access to <<logging.adoc#,Logging>>, <<collections-core-admin.adoc#,Collection/Core Administration>>, and <<java-properties.adoc#,Java Properties>>, among other things.
 
 At the end of this information is at least one pulldown listing Solr cores configured for this instance.
-On <<solrcloud.adoc#solrcloud,SolrCloud>> nodes, an additional pulldown list shows all collections in this cluster.
-Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a <<schema-browser-screen.adoc#schema-browser-screen,Schema Browser>>, <<files-screen.adoc#files-screen,Config Files>>, <<plugins-stats-screen.adoc#plugins-stats-screen,Plugins & Statistics>>, and an ability to perform <<query-screen.adoc#query-screen,Queries>> on indexed data.
+On <<solrcloud.adoc#,SolrCloud>> nodes, an additional pulldown list shows all collections in this cluster.
+Clicking on a collection or core name shows secondary menus of information for the specified collection or core, such as a <<schema-browser-screen.adoc#,Schema Browser>>, <<files-screen.adoc#,Config Files>>, <<plugins-stats-screen.adoc#,Plugins & Statistics>>, and an ability to perform <<query-screen.adoc#,Queries>> on indexed data.
 
 The left-side navigation appears on every screen, while the center changes to  the detail of the option selected.
 The Dashboard shows several information items in the center of the screen, including system uptime, the version being run, system-level data, JVM arguments, and the security plugins enabled (if any).
@@ -51,7 +51,7 @@ If authentication has been enabled, Solr will present a login screen to unauthen
 image::images/overview-of-the-solr-admin-ui/login.png[]
 
 This login screen currently only works with Basic Authentication.
-See the section <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>> for
+See the section <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>> for
  details on how to configure Solr to use this method of authentication.
 
 Once logged in, the left-hand navigation will show the current user with an option to logout.
@@ -77,7 +77,7 @@ These icons include the following links.
 |Issue Tracker |Navigates to the JIRA issue tracking server for the Apache Solr project. This server resides at https://issues.apache.org/jira/browse/SOLR.
 |IRC Channel |Navigates to Solr's http://en.wikipedia.org/wiki/Internet_Relay_Chat[IRC] live-chat room: http://webchat.freenode.net/?channels=#solr.
 |Community forum |Navigates to the Apache Wiki page which has further information about ways to engage in the Solr User community mailing lists: https://cwiki.apache.org/confluence/display/solr/UsingMailingLists.
-|Solr Query Syntax |Navigates to the section <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,Query Syntax and Parsing>> in this Reference Guide.
+|Solr Query Syntax |Navigates to the section <<query-syntax-and-parsing.adoc#,Query Syntax and Parsing>> in this Reference Guide.
 |===
 
 These links cannot be modified without editing the `index.html` in the `server/solr/solr-webapp` directory that contains the Admin UI files.

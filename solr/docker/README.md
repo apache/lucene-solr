@@ -76,7 +76,7 @@ If you want to persist the data, mount a volume or directory on `/var/solr`.
 Solr expects some files and directories in `/var/solr`; if you use your own directory or volume you can either pre-populate them, or let Solr docker copy them for you. See [init-var-solr](scripts/init-var-solr).
 If you want to use custom configuration, mount it in the appropriate place. See below for examples.
 
-The Solr docker distribution adds [scripts](include/scripts) in `/opt/docker-solr/scripts` to make it easier to use under Docker, for example to create cores on container startup.
+The Solr docker distribution adds [scripts](scripts) in `/opt/docker-solr/scripts` to make it easier to use under Docker, for example to create cores on container startup.
 
 ## Creating cores
 
@@ -226,8 +226,8 @@ Other ways of extending the image are to create custom Docker images that inheri
 The `jcmd`, `jmap` `jstack` tools can be useful for debugging Solr inside the container. These tools are not included with the JRE, but this image includes the [jattach](https://github.com/apangin/jattach) utility which lets you do much of the same.
 
     Usage: jattach <pid> <cmd> [args ...]
-    
-      Commands: 
+
+      Commands:
         load : load agent library
         properties : print system properties
         agentProperties : print agent properties
@@ -238,8 +238,8 @@ The `jcmd`, `jmap` `jstack` tools can be useful for debugging Solr inside the co
         setflag : modify manageable VM flag
         printflag : print VM flag
         jcmd : execute jcmd command
-    
-Example comands to do a thread dump and get heap info for PID 10:
+
+Example commands to do a thread dump and get heap info for PID 10:
 
     jattach 10 threaddump
     jattach 10 jcmd GC.heap_info

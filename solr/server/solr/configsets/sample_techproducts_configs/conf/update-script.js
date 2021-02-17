@@ -4,14 +4,14 @@
   In order for this to be executed, it must be properly wired into solrconfig.xml; by default it is commented out in
   the example solrconfig.xml and must be uncommented to be enabled.
 
-  See http://wiki.apache.org/solr/ScriptUpdateProcessor for more details.
+  See https://lucene.apache.org/solr/guide/script-update-processor.html for more details.
 */
 
 function processAdd(cmd) {
 
   doc = cmd.solrDoc;  // org.apache.solr.common.SolrInputDocument
   id = doc.getFieldValue("id");
-  logger.info("update-script#processAdd: id=" + id);
+  logger.warn("update-script#processAdd: id=" + id);  // WARN level messages will show up in Solr Admin Logging UI
 
 // Set a field value:
 //  doc.setField("foo_s", "whatever");

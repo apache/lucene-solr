@@ -84,7 +84,9 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     ApiBag apiBag;
     try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
       apiBag = new ApiBag(false);
+      final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
       apiBag.registerObject(new CollectionsAPI(collectionsHandler));
+      apiBag.registerObject(collectionsAPI.collectionsCommands);
       Collection<Api> apis = collectionsHandler.getApis();
       for (Api api : apis) apiBag.register(api, Collections.emptyMap());
 
@@ -112,7 +114,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
 
     compareOutput(apiBag, "/collections", POST,
-        "{create-alias:{name: aliasName , collections:[c1,c2] }}", null, "{operation : createalias, name: aliasName, collections:[c1,c2] }");
+        "{create-alias:{name: aliasName , collections:[c1,c2] }}", null, "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
 
     compareOutput(apiBag, "/collections", POST,
         "{delete-alias:{ name: aliasName}}", null, "{operation : deletealias, name: aliasName}");

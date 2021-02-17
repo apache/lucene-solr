@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.sandbox.search;
 
-import static org.apache.lucene.sandbox.search.BM25FQuery.FieldAndWeight;
+import static org.apache.lucene.sandbox.search.CombinedFieldQuery.FieldAndWeight;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -18,7 +18,7 @@
 
 This page explains some of the statistics that Solr exposes.
 
-There are two approaches to retrieving metrics. First, you can use the <<metrics-reporting.adoc#metrics-api,Metrics API>>, or you can enable JMX and get metrics from the <<mbean-request-handler.adoc#mbean-request-handler,MBean Request Handler>> or via an external tool such as JConsole. The below descriptions focus on retrieving the metrics using the Metrics API, but the metric names are the same if using the MBean Request Handler or an external tool.
+There are two approaches to retrieving metrics. First, you can use the <<metrics-reporting.adoc#metrics-api,Metrics API>>, or you can enable JMX and get metrics from the <<mbean-request-handler.adoc#,MBean Request Handler>> or via an external tool such as JConsole. The below descriptions focus on retrieving the metrics using the Metrics API, but the metric names are the same if using the MBean Request Handler or an external tool.
 
 These statistics are per core. When you are running in SolrCloud mode these statistics would co-relate to the performance of an individual replica.
 
@@ -220,4 +220,4 @@ When eviction by heap usage is enabled, the following additional statistics are 
 |evictionsRamUsage| Number of cache evictions for the current index searcher because heap usage exceeded maxRamMB.
 |===
 
-More information on Solr caches is available in the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>>.
+More information on Solr caches is available in the section <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>>.

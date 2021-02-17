@@ -24,7 +24,7 @@ The module also supports feature extraction inside Solr. The only thing you need
 
 === Re-Ranking
 
-Re-Ranking allows you to run a simple query for matching documents and then re-rank the top N documents using the scores from a different, more complex query. This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found on the <<query-re-ranking.adoc#query-re-ranking,Query Re-Ranking>> page.
+Re-Ranking allows you to run a simple query for matching documents and then re-rank the top N documents using the scores from a different, more complex query. This page describes the use of *LTR* complex queries, information on other rank queries included in the Solr distribution can be found on the <<query-re-ranking.adoc#,Query Re-Ranking>> page.
 
 === Learning To Rank Models
 
@@ -83,7 +83,7 @@ The LTR contrib module includes several feature classes as well as support for c
 
 ==== Feature Extraction
 
-The ltr contrib module includes a <<transforming-result-documents.adoc#transforming-result-documents,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
+The ltr contrib module includes a <<transforming-result-documents.adoc#,[features>> transformer] to support the calculation and return of feature values for https://en.wikipedia.org/wiki/Feature_extraction[feature extraction] purposes including and especially when you do not yet have an actual reranking model.
 
 ==== Feature Selection and Model Training
 
@@ -158,7 +158,7 @@ To extract features as part of a query, add `[features]` to the `fl` parameter, 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&fl=id,score,[features]
 
-The output XML will include feature values as a comma-separated list, resembling the output shown here:
+The output will include feature values as a comma-separated list, resembling the output shown here:
 
 [source,json]
 ----
@@ -223,14 +223,14 @@ To rerank the results of a query, add the `rq` parameter to your search, for exa
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score
 
-The addition of the `rq` parameter will not change the output XML of the search.
+The addition of the `rq` parameter will not change the output of the search.
 
 To obtain the feature values computed during reranking, add `[features]` to the `fl` parameter, for example:
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModel reRankDocs=100}&fl=id,score,[features]
 
-The output XML will include feature values as a comma-separated list, resembling the output shown here:
+The output will include feature values as a comma-separated list, resembling the output shown here:
 
 [source,json]
 ----
@@ -266,7 +266,7 @@ To obtain the model that interleaving picked for a search result, computed durin
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=myModelA model=myModelB reRankDocs=100}&fl=id,score,[interleaving]
 
-The output XML will include the model picked for each search result, resembling the output shown here:
+The output will include the model picked for each search result, resembling the output shown here:
 
 [source,json]
 ----
@@ -290,22 +290,22 @@ The output XML will include the model picked for each search result, resembling 
   }}
 ----
 
-=== Running a Rerank Query Interleaving a model with the original ranking
-When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking. 
+=== Running a Rerank Query Interleaving a Model with the Original Ranking
+When approaching Search Quality Evaluation with interleaving it may be useful to compare a model with the original ranking.
 To rerank the results of a query, interleaving a model with the original ranking, add the `rq` parameter to your search, passing the special inbuilt `_OriginalRanking_` model identifier as one model and your comparison model as the other model, for example:
 
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score
 
-The addition of the `rq` parameter will not change the output XML of the search.
+The addition of the `rq` parameter will not change the output of the search.
 
 To obtain the model that interleaving picked for a search result, computed during reranking, add `[interleaving]` to the `fl` parameter, for example:
 
 [source,text]
 http://localhost:8983/solr/techproducts/query?q=test&rq={!ltr model=_OriginalRanking_ model=myModel reRankDocs=100}&fl=id,score,[interleaving]
 
-The output XML will include the model picked for each search result, resembling the output shown here:
+The output will include the model picked for each search result, resembling the output shown here:
 
 [source,json]
 ----
@@ -329,7 +329,7 @@ The output XML will include the model picked for each search result, resembling 
   }}
 ----
 
-=== Running a Rerank Query with Interleaving passing a specific algorithm
+=== Running a Rerank Query with Interleaving Passing a Specific Algorithm
 To rerank the results of a query, interleaving two models using a specific algorithm, add the `interleavingAlgorithm` local parameter to the ltr query parser, for example:
 
 [source,text]
@@ -662,7 +662,7 @@ As an alternative to the above-described `DefaultWrapperModel`, it is possible t
 
 === Applying Changes
 
-The feature store and the model store are both <<managed-resources.adoc#managed-resources,Managed Resources>>. Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
+The feature store and the model store are both <<managed-resources.adoc#,Managed Resources>>. Changes made to managed resources are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
 
 === LTR Examples
 

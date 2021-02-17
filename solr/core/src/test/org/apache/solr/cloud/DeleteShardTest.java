@@ -94,13 +94,22 @@ public class DeleteShardTest extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
 
     // TODO can this be encapsulated better somewhere?
-    DistributedQueue inQueue =  cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
     propMap.put(slice, state.toString());
     propMap.put(ZkStateReader.COLLECTION_PROP, collection);
     ZkNodeProps m = new ZkNodeProps(propMap);
-    inQueue.offer(Utils.toJSON(m));
+
+    final Overseer overseer = cluster.getOpenOverseer();
+    if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      overseer.getDistributedClusterStateUpdater().doSingleStateUpdate(
+          DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, m,
+          cluster.getOpenOverseer().getSolrCloudManager(),
+          cluster.getOpenOverseer().getZkStateReader());
+    } else {
+      DistributedQueue inQueue = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
+      inQueue.offer(Utils.toJSON(m));
+    }
 
     waitForState("Expected shard " + slice + " to be in state " + state.toString(), collection, (n, c) -> {
       return c.getSlice(slice).getState() == state;

@@ -39,6 +39,11 @@ public interface CollectionAdminParams {
   String CREATE_NODE_SET_PARAM = "createNodeSet";
 
   /**
+   * The number of shards to create a particular collection with.
+   */
+  String NUM_SHARDS = "numShards";
+
+  /**
    * A parameter which specifies if the provided list of Solr nodes (via {@linkplain #CREATE_NODE_SET_PARAM})
    * should be shuffled before being used.
    */
@@ -115,4 +120,9 @@ public interface CollectionAdminParams {
    * for the add replica API. If set to true, a valid "node" should be specified.
    */
   String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
+
+  /**
+   * Prefix for arbitrary collection or replica properties.
+   */
+  String PROPERTY_PREFIX = "property.";
 }

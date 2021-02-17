@@ -29,6 +29,7 @@ import java.util.List;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,11 @@ public class SolrClientCache implements Serializable {
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
   private final HttpClient httpClient;
+  //Set the floor for timeouts to 60 seconds.
+  //Timeouts cans be increased by setting the system properties defined below.
+  private static final int conTimeout = Math.max(Integer.parseInt(System.getProperty(HttpClientUtil.PROP_CONNECTION_TIMEOUT,"60000")), 60000);
+  private static final int socketTimeout = Math.max(Integer.parseInt(System.getProperty(HttpClientUtil.PROP_SO_TIMEOUT,"60000")), 60000);
+
 
   public SolrClientCache() {
     httpClient = null;
@@ -54,6 +60,16 @@ public class SolrClientCache implements Serializable {
   }
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
+
+    //Timeouts should never be lower then 60000 but they can be set higher
+    assert(conTimeout >= 60000);
+    assert(socketTimeout >= 60000);
+
+    if(log.isDebugEnabled()) {
+      log.debug("SolrClientCache.conTimeout: {}", conTimeout);
+      log.debug("SolrClientCache.socketTimeout: {}", socketTimeout);
+    }
+
     Objects.requireNonNull(zkHost, "ZooKeeper host cannot be null!");
     CloudSolrClient client;
     if (solrClients.containsKey(zkHost)) {
@@ -61,10 +77,11 @@ public class SolrClientCache implements Serializable {
     } else {
       final List<String> hosts = new ArrayList<String>();
       hosts.add(zkHost);
-      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(30000).withConnectionTimeout(15000);
+      CloudSolrClient.Builder builder = new CloudSolrClient.Builder(hosts, Optional.empty()).withSocketTimeout(socketTimeout).withConnectionTimeout(conTimeout);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }
+
       client = builder.build();
       client.connect();
       solrClients.put(zkHost, client);
@@ -78,7 +95,7 @@ public class SolrClientCache implements Serializable {
     if (solrClients.containsKey(host)) {
       client = (HttpSolrClient) solrClients.get(host);
     } else {
-      HttpSolrClient.Builder builder = new HttpSolrClient.Builder(host);
+      HttpSolrClient.Builder builder = new HttpSolrClient.Builder(host).withSocketTimeout(socketTimeout).withConnectionTimeout(conTimeout);
       if (httpClient != null) {
         builder = builder.withHttpClient(httpClient);
       }

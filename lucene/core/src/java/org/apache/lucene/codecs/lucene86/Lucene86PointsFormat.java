@@ -35,8 +35,11 @@ import org.apache.lucene.index.SegmentWriteState;
  *   <li>A .kdm file that records metadata about the fields, such as numbers of dimensions or
  *       numbers of bytes per dimension.
  *   <li>A .kdi file that stores inner nodes of the tree.
- *   <li>A .kdm file that stores leaf nodes, where most of the data lives.
+ *   <li>A .kdd file that stores leaf nodes, where most of the data lives.
  * </ul>
+ *
+ * See <a href="https://cwiki.apache.org/confluence/pages/viewpage.action?pageId=173081898">this
+ * wiki</a> for detailed data structures of the three files.
  *
  * @lucene.experimental
  */
