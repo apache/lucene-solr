@@ -423,8 +423,10 @@ class BytesStore extends DataOutput implements Accountable {
       @Override
       public void setPosition(long pos) {
         int bufferIndex = (int) (pos >> blockBits);
-        nextBuffer = bufferIndex+1;
-        current = blocks.get(bufferIndex);
+        if (nextBuffer != bufferIndex + 1) {
+          nextBuffer = bufferIndex + 1;
+          current = blocks.get(bufferIndex);
+        }
         nextRead = (int) (pos & blockMask);
         assert getPosition() == pos;
       }
@@ -482,10 +484,12 @@ class BytesStore extends DataOutput implements Accountable {
         // bytes[0] ... but I would expect bytes[-1] (ie,
         // EOF)...?
         int bufferIndex = (int) (pos >> blockBits);
-        nextBuffer = bufferIndex-1;
-        current = blocks.get(bufferIndex);
+        if (nextBuffer != bufferIndex - 1) {
+          nextBuffer = bufferIndex - 1;
+          current = blocks.get(bufferIndex);
+        }
         nextRead = (int) (pos & blockMask);
-        assert getPosition() == pos: "pos=" + pos + " getPos()=" + getPosition();
+        assert getPosition() == pos : "pos=" + pos + " getPos()=" + getPosition();
       }
 
       @Override
