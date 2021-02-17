@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.payloads.FloatEncoder;
@@ -60,7 +61,7 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         String strOp = localParams.get("op");
         MatchOperation op = MatchOperation.EQ;
         if (strOp != null) {
-          op = MatchOperation.valueOf(strOp.toUpperCase());
+          op = MatchOperation.valueOf(strOp.toUpperCase(Locale.ROOT));
         }
 
         if (field == null) {
