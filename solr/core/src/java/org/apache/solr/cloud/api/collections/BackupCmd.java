@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -81,7 +82,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
-    String configName = ocmh.zkStateReader.readConfigName(collectionName);
+    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
 
     BackupProperties backupProperties = BackupProperties.create(backupName, collectionName,
             extCollectionName, configName);
