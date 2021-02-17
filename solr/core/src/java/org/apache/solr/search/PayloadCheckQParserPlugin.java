@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.IntegerEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.MatchOperation;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -56,7 +57,11 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         String p = localParams.get("payloads");
         // payloads and op parameter are probably mutually exclusive. we could consider making a different query
         // not a span payload check query, but something that just operates on payloads without the span?
-        String op = localParams.get("op");
+        String strOp = localParams.get("op");
+        MatchOperation op = MatchOperation.EQ;
+        if (strOp != null) {
+          op = MatchOperation.valueOf(strOp.toUpperCase());
+        }
 
         if (field == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");

@@ -46,8 +46,8 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   protected final List<BytesRef> payloadToMatch;
   protected final SpanQuery match;
-  protected String operation = null;
-  protected PayloadType payloadType = PayloadType.STRING;
+  protected final MatchOperation operation;
+  protected final PayloadType payloadType;
   /** The payload type. This specifies the decoding of the ByteRef for the payload. */
   public static enum PayloadType {
     /** INT is for a 4 byte payload that is a packed integer */
@@ -58,12 +58,26 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     STRING
   };
 
+  /** The payload type. This specifies the decoding of the ByteRef for the payload. */
+  public static enum MatchOperation {
+    /** Checks for binary equality of the byte array (default) */
+    EQ,
+    /** GT Matches if the payload value is greater than the reference */
+    GT,
+    /** GTE Matches if the payload value is greater than or equal to the reference */
+    GTE,
+    /** LT Matches if the payload value is less than the reference */
+    LT,
+    /** LTE Matches if the payload value is less than or equal to the reference */
+    LTE
+  };
+
   /**
    * @param match The underlying {@link org.apache.lucene.search.spans.SpanQuery} to check
    * @param payloadToMatch The {@link java.util.List} of payloads to match
    */
   public SpanPayloadCheckQuery(SpanQuery match, List<BytesRef> payloadToMatch) {
-    this(match, payloadToMatch, null, null);
+    this(match, payloadToMatch, PayloadType.STRING, MatchOperation.EQ);
   }
 
   /**
@@ -74,7 +88,10 @@ public class SpanPayloadCheckQuery extends SpanQuery {
    *     Float)
    */
   public SpanPayloadCheckQuery(
-      SpanQuery match, List<BytesRef> payloadToMatch, PayloadType payloadType, String operation) {
+      SpanQuery match,
+      List<BytesRef> payloadToMatch,
+      PayloadType payloadType,
+      MatchOperation operation) {
     this.match = match;
     this.payloadToMatch = payloadToMatch;
     this.payloadType = payloadType;
@@ -140,8 +157,6 @@ public class SpanPayloadCheckQuery extends SpanQuery {
     public Spans getSpans(final LeafReaderContext context, Postings requiredPostings)
         throws IOException {
       final PayloadChecker collector = new PayloadChecker();
-      collector.payloadMatcher =
-          PayloadMatcherFactory.createMatcherForOpAndType(payloadType, operation);
       Spans matchSpans = matchWeight.getSpans(context, requiredPostings.atLeast(Postings.PAYLOADS));
       return (matchSpans == null)
           ? null
@@ -187,9 +202,10 @@ public class SpanPayloadCheckQuery extends SpanQuery {
 
   private class PayloadChecker implements SpanCollector {
 
-    int upto = 0;
-    boolean matches = true;
-    PayloadMatcher payloadMatcher;
+    private int upto = 0;
+    private boolean matches = true;
+    private final PayloadMatcher payloadMatcher =
+        PayloadMatcherFactory.createMatcherForOpAndType(payloadType, operation);
 
     @Override
     public void collectLeaf(PostingsEnum postings, int position, Term term) throws IOException {
@@ -236,29 +252,20 @@ public class SpanPayloadCheckQuery extends SpanQuery {
       buffer.append(Term.toString(bytes));
       buffer.append(';');
     }
-    if (payloadType != null) {
-      buffer.append(", payloadType:").append(payloadType).append(";");
-    }
-    if (operation != null) {
-      buffer.append(", operation:").append(operation).append(";");
-    }
+    buffer.append(", payloadType:").append(payloadType).append(";");
+    buffer.append(", operation:").append(operation).append(";");
     buffer.append(")");
     return buffer.toString();
   }
 
-  @SuppressWarnings(
-      "EqualsWhichDoesntCheckParameterClass") // because actually it does even if ides are easily
-  // confused
+  @SuppressWarnings("EqualsWhichDoesntCheckParameterClass") // it does but ides are easily confused
   @Override
   public boolean equals(Object other) {
     return sameClassAs(other)
         && payloadToMatch.equals(((SpanPayloadCheckQuery) other).payloadToMatch)
         && match.equals(((SpanPayloadCheckQuery) other).match)
-        && (operation == null && (((SpanPayloadCheckQuery) other).operation == null)
-            || (operation != null && operation.equals(((SpanPayloadCheckQuery) other).operation)))
-        && (payloadType == null && (((SpanPayloadCheckQuery) other).payloadType == null)
-            || (payloadType != null
-                && payloadType.equals(((SpanPayloadCheckQuery) other).payloadType)));
+        && operation.equals(((SpanPayloadCheckQuery) other).operation)
+        && payloadType.equals(((SpanPayloadCheckQuery) other).payloadType);
   }
 
   @Override
