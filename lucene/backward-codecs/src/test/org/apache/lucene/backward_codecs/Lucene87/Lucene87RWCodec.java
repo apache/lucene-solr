@@ -28,12 +28,12 @@ public class Lucene87RWCodec extends Lucene87Codec {
 
   private final PostingsFormat defaultPF = new Lucene84RWPostingsFormat();
   private final PostingsFormat postingsFormat =
-          new PerFieldPostingsFormat() {
-            @Override
-            public PostingsFormat getPostingsFormatForField(String field) {
-              return defaultPF;
-            }
-          };
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return defaultPF;
+        }
+      };
 
   @Override
   public final CompoundFormat compoundFormat() {
