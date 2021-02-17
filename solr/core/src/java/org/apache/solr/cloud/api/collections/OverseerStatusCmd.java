@@ -36,18 +36,18 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
+public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public OverseerStatusCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public OverseerStatusCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
     String leaderNode = OverseerTaskProcessor.getLeaderNode(zkStateReader.getZkClient());
     results.add("leader", leaderNode);
     Stat stat = new Stat();
@@ -64,7 +64,7 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     // Sharing the ocmh.stats variable between the cluster state updater and the Collection API (this command) is by the way
     // about the only thing that ties the cluster state updater to the collection api message handler and that takes
     // advantage of the fact that both run on the same node (the Overseer node). (recently added PerReplicaStates also
-    // take advantage of this through method Overseer.submit()).
+    // take advantage of this through method Overseer.submit() accessed via CollectionCommandContext.submitIntraProcessMessage()).
     // When distributed updates are enabled, cluster state updates are not done by the Overseer (it doesn't even see them)
     // and therefore can't report them. The corresponding data in OVERSEERSTATUS (all data built below) is no longer returned.
     // This means top level keys "overseer_operations", "collection_operations", "overseer_queue", "overseer_internal_queue"
@@ -80,43 +80,46 @@ public class OverseerStatusCmd implements OverseerCollectionMessageHandler.Cmd {
     NamedList workQueueStats = new NamedList();
     @SuppressWarnings({"rawtypes"})
     NamedList collectionQueueStats = new NamedList();
-    Stats stats = ocmh.stats;
-    for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
-      String key = entry.getKey();
-      NamedList<Object> lst = new SimpleOrderedMap<>();
-      if (key.startsWith("collection_"))  {
-        collectionStats.add(key.substring(11), lst);
-        int successes = stats.getSuccessCount(entry.getKey());
-        int errors = stats.getErrorCount(entry.getKey());
-        lst.add("requests", successes);
-        lst.add("errors", errors);
-        List<Stats.FailedOp> failureDetails = stats.getFailureDetails(key);
-        if (failureDetails != null) {
-          List<SimpleOrderedMap<Object>> failures = new ArrayList<>();
-          for (Stats.FailedOp failedOp : failureDetails) {
-            SimpleOrderedMap<Object> fail = new SimpleOrderedMap<>();
-            fail.add("request", failedOp.req.getProperties());
-            fail.add("response", failedOp.resp.getResponse());
-            failures.add(fail);
+    // stats below do not make sense when cluster state updates are distributed. Return them empty.
+    if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      Stats stats = ccc.getOverseerStats();
+      for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
+        String key = entry.getKey();
+        NamedList<Object> lst = new SimpleOrderedMap<>();
+        if (key.startsWith("collection_")) {
+          collectionStats.add(key.substring(11), lst);
+          int successes = stats.getSuccessCount(entry.getKey());
+          int errors = stats.getErrorCount(entry.getKey());
+          lst.add("requests", successes);
+          lst.add("errors", errors);
+          List<Stats.FailedOp> failureDetails = stats.getFailureDetails(key);
+          if (failureDetails != null) {
+            List<SimpleOrderedMap<Object>> failures = new ArrayList<>();
+            for (Stats.FailedOp failedOp : failureDetails) {
+              SimpleOrderedMap<Object> fail = new SimpleOrderedMap<>();
+              fail.add("request", failedOp.req.getProperties());
+              fail.add("response", failedOp.resp.getResponse());
+              failures.add(fail);
+            }
+            lst.add("recent_failures", failures);
           }
-          lst.add("recent_failures", failures);
+        } else if (key.startsWith("/overseer/queue_")) {
+          stateUpdateQueueStats.add(key.substring(16), lst);
+        } else if (key.startsWith("/overseer/queue-work_")) {
+          workQueueStats.add(key.substring(21), lst);
+        } else if (key.startsWith("/overseer/collection-queue-work_")) {
+          collectionQueueStats.add(key.substring(32), lst);
+        } else {
+          // overseer stats
+          overseerStats.add(key, lst);
+          int successes = stats.getSuccessCount(entry.getKey());
+          int errors = stats.getErrorCount(entry.getKey());
+          lst.add("requests", successes);
+          lst.add("errors", errors);
         }
-      } else if (key.startsWith("/overseer/queue_"))  {
-        stateUpdateQueueStats.add(key.substring(16), lst);
-      } else if (key.startsWith("/overseer/queue-work_"))  {
-        workQueueStats.add(key.substring(21), lst);
-      } else if (key.startsWith("/overseer/collection-queue-work_"))  {
-        collectionQueueStats.add(key.substring(32), lst);
-      } else  {
-        // overseer stats
-        overseerStats.add(key, lst);
-        int successes = stats.getSuccessCount(entry.getKey());
-        int errors = stats.getErrorCount(entry.getKey());
-        lst.add("requests", successes);
-        lst.add("errors", errors);
+        Timer timer = entry.getValue().requestTime;
+        MetricUtils.addMetrics(lst, timer);
       }
-      Timer timer = entry.getValue().requestTime;
-      MetricUtils.addMetrics(lst, timer);
     }
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);

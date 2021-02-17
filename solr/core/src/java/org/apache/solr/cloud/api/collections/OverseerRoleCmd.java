@@ -40,17 +40,15 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
 
-public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
+public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
   private final CollectionAction operation;
   private final OverseerNodePrioritizer overseerPrioritizer;
 
-
-
-  public OverseerRoleCmd(OverseerCollectionMessageHandler ocmh, CollectionAction operation, OverseerNodePrioritizer prioritizer) {
-    this.ocmh = ocmh;
+  public OverseerRoleCmd(CollectionCommandContext ccc, CollectionAction operation, OverseerNodePrioritizer prioritizer) {
+    this.ccc = ccc;
     this.operation = operation;
     this.overseerPrioritizer = prioritizer;
   }
@@ -58,7 +56,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
     SolrZkClient zkClient = zkStateReader.getZkClient();
     Map roles = null;
     String node = message.getStr("node");
@@ -90,7 +88,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
     new Thread(() -> {
       try {
-        overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);
+        overseerPrioritizer.prioritizeOverseerNodes(ccc.getOverseerId());
       } catch (Exception e) {
         log.error("Error in prioritizing Overseer", e);
       }

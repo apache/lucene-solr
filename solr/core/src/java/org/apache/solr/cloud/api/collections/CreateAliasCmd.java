@@ -47,15 +47,15 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @SuppressWarnings("WeakerAccess")
-  public CreateAliasCmd(OverseerCollectionMessageHandler ocmh) {
-    super(ocmh);
+  public CreateAliasCmd(CollectionCommandContext ccc) {
+    super(ccc);
   }
 
   @Override
   public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results)
       throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
     // make sure we have the latest version of existing aliases
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update();
@@ -142,7 +142,7 @@ public class CreateAliasCmd extends AliasCmd {
 
   private void ensureAliasCollection(String aliasName, ZkStateReader zkStateReader, ClusterState state, Map<String, String> aliasProperties, String initialCollectionName) throws Exception {
     // Create the collection
-    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ocmh);
+    createCollectionAndWait(state, aliasName, aliasProperties, initialCollectionName, ccc);
     validateAllCollectionsExistAndNoDuplicates(Collections.singletonList(initialCollectionName), zkStateReader);
   }
 

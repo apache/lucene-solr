@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
@@ -231,14 +231,14 @@ public class Assign {
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
-        StrUtils.splitSmart((OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY.equals(createNodeSetStr) ?
+        StrUtils.splitSmart((CollectionHandlingUtils.CREATE_NODE_SET_EMPTY.equals(createNodeSetStr) ?
             "" : createNodeSetStr), ",", true);
 
     if (createNodeList != null) {
       nodeList = new ArrayList<>(createNodeList);
       nodeList.retainAll(liveNodes);
-      if (message.getBool(OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE,
-          OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT)) {
+      if (message.getBool(CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE,
+          CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE_DEFAULT)) {
         Collections.shuffle(nodeList, random);
       }
     } else {
