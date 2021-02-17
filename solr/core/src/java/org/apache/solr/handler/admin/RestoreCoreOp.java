@@ -65,9 +65,9 @@ class RestoreCoreOp implements CoreAdminHandler.CoreAdminOp {
       // this core must be the only replica in its shard otherwise
       // we cannot guarantee consistency between replicas because when we add data (or restore index) to this replica
       Slice slice = zkController.getClusterState().getCollection(cd.getCollectionName()).getSlice(cd.getShardId());
-      if (slice.getReplicas().size() != 1) {
+      if (slice.getReplicas().size() != 1 && !core.readOnly) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Failed to restore core=" + core.getName() + ", the core must be the only replica in its shard");
+                "Failed to restore core=" + core.getName() + ", the core must be the only replica in its shard or it must be read only");
       }
 
       RestoreCore restoreCore;

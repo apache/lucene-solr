@@ -1157,11 +1157,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
       final String collectionName = SolrIdentifierValidator.validateCollectionName(req.getParams().get(COLLECTION_PROP));
-      final ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-      //We always want to restore into an collection name which doesn't  exist yet.
-      if (clusterState.hasCollection(collectionName)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' exists, no action taken.");
-      }
       if (h.coreContainer.getZkController().getZkStateReader().getAliases().hasAlias(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' is an existing alias, no action taken.");
       }

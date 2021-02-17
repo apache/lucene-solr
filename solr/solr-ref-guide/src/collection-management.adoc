@@ -1392,12 +1392,14 @@ POST http://localhost:8983/v2/collections/backups
 [[restore]]
 == RESTORE: Restore Collection
 
-Restores Solr indexes and associated configurations.
+Restores Solr indexes and associated configurations to a specified collection.
 
 `/admin/collections?action=RESTORE&name=myBackupName&location=/path/to/my/shared/drive&collection=myRestoredCollectionName`
 
-The RESTORE operation will create a collection with the specified name in the collection parameter. You cannot restore into the same collection the backup was taken from. Also the target collection should not be present at the time the API is called as Solr will create it for you.
+The RESTORE operation will replace the content of a collection with files from the specified backup.
 
+If the provided `collection` value matches an existing collection, Solr will use it for restoration, assuming it is compatible (same number of shards, etc.) with the stored backup files.
+If the provided `collection` value doesn't exist, a new collection with that name is created in a way compatible with the stored backup files.
 The collection created will be have the same number of shards and replicas as the original collection, preserving routing information, etc. Optionally, you can override some parameters documented below.
 
 While restoring, if a configset with the same name exists in ZooKeeper then Solr will reuse that, or else it will upload the backed up configset in ZooKeeper and use that.
