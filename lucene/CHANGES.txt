@@ -292,6 +292,10 @@ Bug Fixes
 * LUCENE-9744: NPE on a degenerate query in MinimumShouldMatchIntervalsSource
   $MinimumMatchesIterator.getSubMatches(). (Alan Woodward)
 
+* LUCENE-9762: DoubleValuesSource.fromQuery (also used by FunctionScoreQuery.boostByQuery) could
+  throw an exception when the query implements TwoPhaseIterator and when the score is requested
+  repeatedly. (David Smiley, hossman)
+
 Other
 ---------------------
 (No changes)
