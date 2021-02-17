@@ -91,6 +91,7 @@ class GeneratingSuggester {
       IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(fst);
       IntsRefFSTEnum.InputOutput<IntsRef> mapping;
       while ((mapping = fstEnum.next()) != null) {
+        speller.checkCanceled.run();
         keyValueConsumer.accept(mapping.input, mapping.output);
       }
     } catch (IOException e) {
