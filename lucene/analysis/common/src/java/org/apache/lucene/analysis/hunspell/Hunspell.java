@@ -22,7 +22,6 @@ import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -72,7 +71,7 @@ public class Hunspell {
     checkCanceled.run();
     if (word.isEmpty()) return true;
 
-    if (dictionary.needsInputCleaning) {
+    if (dictionary.needsInputCleaning(word)) {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
@@ -479,7 +478,7 @@ public class Hunspell {
     checkCanceled.run();
     if (word.length() >= 100) return Collections.emptyList();
 
-    if (dictionary.needsInputCleaning) {
+    if (dictionary.needsInputCleaning(word)) {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
@@ -565,14 +564,10 @@ public class Hunspell {
   }
 
   private String cleanOutput(String s) {
-    if (!dictionary.needsOutputCleaning) return s;
+    if (dictionary.oconv == null) return s;
 
-    try {
-      StringBuilder sb = new StringBuilder(s);
-      Dictionary.applyMappings(dictionary.oconv, sb);
-      return sb.toString();
-    } catch (IOException bogus) {
-      throw new RuntimeException(bogus);
-    }
+    StringBuilder sb = new StringBuilder(s);
+    dictionary.oconv.applyMappings(sb);
+    return sb.toString();
   }
 }
