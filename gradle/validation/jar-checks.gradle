@@ -334,9 +334,8 @@ configure([project(":solr"), project(":lucene"),]) {
 
     doFirst {
       def allReferenced = validationTasks
-          .findAll { task ->
-            task.getEnabled()
-          }
+          // Only collect for enabled tasks: https://issues.apache.org/jira/browse/LUCENE-9780
+          .findAll { it.enabled }
           .collectMany { task ->
             task.project.jarInfos.collectMany { it.referencedFiles }
           }
