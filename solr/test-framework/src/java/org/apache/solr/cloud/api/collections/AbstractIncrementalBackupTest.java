@@ -128,11 +128,11 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
     @Test
     public void testSimple() throws Exception {
+        setTestSuffix("testbackupincsimple");
         final String backupCollectionName = getCollectionName();
         final String restoreCollectionName = backupCollectionName + "_restore";
         TrackingBackupRepository.clear();
 
-        setTestSuffix("testbackupincsimple");
         CloudSolrClient solrClient = cluster.getSolrClient();
 
         CollectionAdminRequest
@@ -182,8 +182,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     @SuppressWarnings("rawtypes")
     public void testBackupIncremental() throws Exception {
         TrackingBackupRepository.clear();
-
         setTestSuffix("testbackupinc");
+
         randomizeReplicaTypes();
         CloudSolrClient solrClient = cluster.getSolrClient();
 
