@@ -257,8 +257,9 @@ cleanIfReq() {
 #################################
 recompileIfReq() {
   if [[ "$RECOMPILE" = true ]]; then
-    pushd "$VCS_WORK"/solr
-    ant clean server create-package
+    echo "Building fresh tarball... (this may take a while)"
+    pushd "$VCS_WORK"
+    $(source gradlew clean assembleDist > build.out.txt; echo "foobar";)
     if [[ "$?" -ne 0 ]]; then
       echo "BUILD FAIL - cloud.sh stopping, see above output for details"; popd; exit 7;
     fi
@@ -280,10 +281,10 @@ copyTarball() {
       curl -o "$RC_FILE" "$SMOKE_RC_URL"
       pushd
     else
-      if [[ ! -f $(ls "$VCS_WORK"/solr/package/solr-*.tgz) ]]; then
+      if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz) ]]; then
         echo "No solr tarball found try again with -r"; popd; exit 10;
       fi
-      cp "$VCS_WORK"/solr/package/solr-*.tgz ${CLUSTER_WD}
+      cp "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz ${CLUSTER_WD}
     fi
     pushd # back into cluster wd to unpack
     tar xzvf solr-*.tgz
