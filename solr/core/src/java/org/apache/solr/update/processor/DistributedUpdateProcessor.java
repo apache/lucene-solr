@@ -184,8 +184,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     // this should always be used - see filterParams
     DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
-      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS, CommonParams.VERSION_FIELD,
-          UpdateParams.EXPUNGE_DELETES, UpdateParams.OPTIMIZE, UpdateParams.MAX_OPTIMIZE_SEGMENTS, ShardParams._ROUTE_);
+      (this.req,
+       UpdateParams.UPDATE_CHAIN,
+       TEST_DISTRIB_SKIP_SERVERS,
+       CommonParams.VERSION_FIELD,
+       UpdateParams.EXPUNGE_DELETES,
+       UpdateParams.OPTIMIZE,
+       UpdateParams.MAX_OPTIMIZE_SEGMENTS,
+       UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE,
+       ShardParams._ROUTE_);
 
     //this.rsp = reqInfo != null ? reqInfo.getRsp() : null;
   }
@@ -683,6 +690,15 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       } // in-place update failed, so fall through and re-try the same with a full atomic update
     }
 
+    // if this is an atomic update, and hasn't already been done "in-place",
+    // but the user indicated it must be done in palce, then fail with an error...
+    if (cmd.getReq().getParams().getBool(UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE, false)) {
+      throw new SolrException
+        (ErrorCode.BAD_REQUEST,
+         "Can not satisfy '" + UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE +
+         "'; Unable to update doc in-place: " + cmd.getPrintableId());
+    }
+    
     // full (non-inplace) atomic update
 
     final SolrInputDocument oldRootDocWithChildren =

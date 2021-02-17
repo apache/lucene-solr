@@ -218,6 +218,9 @@ New Features
 ---------------------
 * SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
 
+* SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
+
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
@@ -227,9 +230,11 @@ Improvements
 * SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
 
 * SOLR-13608: Backups are now done incrementally by default.  Multiple backups can be stored at the same location, and each
-  backup will only upload those files that are new since the last backup. (Jason Gerlowski, shalin , Cao Manh Dat)
+  backup will only upload those files that are new since the last backup. (Jason Gerlowski, shalin, Cao Manh Dat)
 
 * SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consistency and clarity. (Eric Pugh)
+
+* SOLR-15101: Add "list" and "delete" APIs for managing incremental backups (Jason Gerlowski, shalin, Cao Manh Dat)
 
 Optimizations
 ---------------------
@@ -263,6 +268,8 @@ Bug Fixes
 
 * SOLR-15138: Collection creation for PerReplicaStates does not scale to large collections as well as regular collections
   (Mike Drob, Ilan Ginzburg, noble, Ishan Chattopadhyaya)
+
+* SOLR-15135: Admin UI display collections with perReplicaState=true in graph view (Timothy Potter)
 
 ==================  8.8.0 ==================
 
