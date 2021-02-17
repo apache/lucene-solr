@@ -214,6 +214,8 @@ New Features
 ---------------------
 * SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
 
+* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
