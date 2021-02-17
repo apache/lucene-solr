@@ -298,7 +298,7 @@ class GeneratingSuggester {
           && result.stream().noneMatch(weighted.word::contains)
           && speller.checkWord(weighted.word)) {
         result.add(weighted.word);
-        if (result.size() > dictionary.maxNGramSuggestions) {
+        if (result.size() >= dictionary.maxNGramSuggestions) {
           break;
         }
       }
