@@ -142,23 +142,18 @@ final class Lucene90DocValuesProducer extends DocValuesProducer implements Close
       if (type == Lucene90DocValuesFormat.NUMERIC) {
         numerics.put(info.name, readNumeric(meta));
       } else if (type == Lucene90DocValuesFormat.BINARY) {
-        final boolean compressed;
-        if (version >= Lucene90DocValuesFormat.VERSION_CONFIGURABLE_COMPRESSION) {
-          String value = info.getAttribute(Lucene90DocValuesFormat.MODE_KEY);
-          if (value == null) {
-            throw new IllegalStateException(
-                "missing value for "
-                    + Lucene90DocValuesFormat.MODE_KEY
-                    + " for field: "
-                    + info.name
-                    + " in segment: "
-                    + segmentName);
-          }
-          Lucene90DocValuesFormat.Mode mode = Lucene90DocValuesFormat.Mode.valueOf(value);
-          compressed = mode == Lucene90DocValuesFormat.Mode.BEST_COMPRESSION;
-        } else {
-          compressed = version >= Lucene90DocValuesFormat.VERSION_BIN_COMPRESSED;
+        String value = info.getAttribute(Lucene90DocValuesFormat.MODE_KEY);
+        if (value == null) {
+          throw new IllegalStateException(
+              "missing value for "
+                  + Lucene90DocValuesFormat.MODE_KEY
+                  + " for field: "
+                  + info.name
+                  + " in segment: "
+                  + segmentName);
         }
+        Lucene90DocValuesFormat.Mode mode = Lucene90DocValuesFormat.Mode.valueOf(value);
+        final boolean compressed = mode == Lucene90DocValuesFormat.Mode.BEST_COMPRESSION;
         binaries.put(info.name, readBinary(meta, compressed));
       } else if (type == Lucene90DocValuesFormat.SORTED) {
         sorted.put(info.name, readSorted(meta));
