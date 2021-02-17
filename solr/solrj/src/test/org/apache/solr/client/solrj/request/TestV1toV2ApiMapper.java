@@ -17,36 +17,16 @@
 
 package org.apache.solr.client.solrj.request;
 
-import java.io.IOException;
-import java.util.Map;
-
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
-public class TestV1toV2ApiMapper extends SolrTestCase {
+import java.io.IOException;
+import java.util.Map;
 
-  @Test
-  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
-  public void testCreate() throws IOException {
-    Create cmd = CollectionAdminRequest
-        .createCollection("mycoll", "conf1", 3, 2)
-        .setProperties(ImmutableMap.<String,String>builder()
-            .put("p1","v1")
-            .put("p2","v2")
-            .build());
-    V2Request v2r = V1toV2ApiMapper.convert(cmd).build();
-    Map<?,?> m = (Map<?,?>) Utils.fromJSON(ContentStreamBase.create(new BinaryRequestWriter(), v2r).getStream());
-    assertEquals("/c", v2r.getPath());
-    assertEquals("v1", Utils.getObjectByPath(m,true,"/create/properties/p1"));
-    assertEquals("v2", Utils.getObjectByPath(m,true,"/create/properties/p2"));
-    assertEquals("3", Utils.getObjectByPath(m,true,"/create/numShards"));
-    assertEquals("2", Utils.getObjectByPath(m,true,"/create/nrtReplicas"));
-  }
+public class TestV1toV2ApiMapper extends SolrTestCase {
 
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018

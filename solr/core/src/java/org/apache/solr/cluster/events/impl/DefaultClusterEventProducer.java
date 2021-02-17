@@ -104,6 +104,7 @@ public class DefaultClusterEventProducer extends ClusterEventProducerBase {
       final Set<String> downNodes = new HashSet<>(oldNodes);
       downNodes.removeAll(newNodes);
       if (!downNodes.isEmpty()) {
+        log.debug("creating nodes down event for nodes: {}", downNodes);
         fireEvent(new NodesDownEvent() {
           @Override
           public Iterator<String> getNodeNames() {
@@ -119,6 +120,7 @@ public class DefaultClusterEventProducer extends ClusterEventProducerBase {
       final Set<String> upNodes = new HashSet<>(newNodes);
       upNodes.removeAll(oldNodes);
       if (!upNodes.isEmpty()) {
+        log.debug("creating nodes up event for nodes: {}", upNodes);
         fireEvent(new NodesUpEvent() {
           @Override
           public Iterator<String> getNodeNames() {
@@ -143,6 +145,7 @@ public class DefaultClusterEventProducer extends ClusterEventProducerBase {
       final Set<String> removed = new HashSet<>(oldCollections);
       removed.removeAll(newCollections);
       if (!removed.isEmpty()) {
+        log.debug("creating collections removed event for collections: {}", removed);
         fireEvent(new CollectionsRemovedEvent() {
           @Override
           public Iterator<String> getCollectionNames() {
@@ -158,6 +161,7 @@ public class DefaultClusterEventProducer extends ClusterEventProducerBase {
       final Set<String> added = new HashSet<>(newCollections);
       added.removeAll(oldCollections);
       if (!added.isEmpty()) {
+        log.debug("creating collections added event for collections: {}", added);
         fireEvent(new CollectionsAddedEvent() {
           @Override
           public Iterator<String> getCollectionNames() {

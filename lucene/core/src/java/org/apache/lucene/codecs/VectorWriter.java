@@ -153,13 +153,13 @@ public abstract class VectorWriter implements Closeable {
     private final DocIDMerger<VectorValuesSub> docIdMerger;
     private final int[] ordBase;
     private final int cost;
-    private final int size;
+    private int size;
 
     private int docId;
     private VectorValuesSub current;
-    // For each doc with a vector, record its ord in the segments being merged. This enables random
-    // access into the
-    // unmerged segments using the ords from the merged segment.
+    /* For each doc with a vector, record its ord in the segments being merged. This enables random
+     * access into the unmerged segments using the ords from the merged segment.
+     */
     private int[] ordMap;
     private int ord;
 
@@ -171,6 +171,10 @@ public abstract class VectorWriter implements Closeable {
         totalCost += sub.values.cost();
         totalSize += sub.values.size();
       }
+      /* This size includes deleted docs, but when we iterate over docs here (nextDoc())
+       * we skip deleted docs. So we sneakily update this size once we observe that iteration is complete.
+       * That way by the time we are asked to do random access for graph building, we have a correct size.
+       */
       cost = totalCost;
       size = totalSize;
       ordMap = new int[size];
@@ -194,6 +198,9 @@ public abstract class VectorWriter implements Closeable {
       current = docIdMerger.next();
       if (current == null) {
         docId = NO_MORE_DOCS;
+        /* update the size to reflect the number of *non-deleted* documents seen so we can support
+         * random access. */
+        size = ord;
       } else {
         docId = current.mappedDocID;
         ordMap[ord++] = ordBase[current.segmentIndex] + current.count - 1;

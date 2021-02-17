@@ -27,6 +27,8 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -58,12 +60,12 @@ public class ZkStateWriter {
   /**
    * Represents a no-op {@link ZkWriteCommand} which will result in no modification to cluster state
    */
-  public static ZkWriteCommand NO_OP = ZkWriteCommand.noop();
+  public static ZkWriteCommand NO_OP = ZkWriteCommand.NO_OP;
 
   protected final ZkStateReader reader;
   protected final Stats stats;
 
-  protected Map<String, DocCollection> updates = new HashMap<>();
+  protected Map<String, ZkWriteCommand> updates = new HashMap<>();
   private int numUpdates = 0;
   protected ClusterState clusterState = null;
   protected long lastUpdatedTime = 0;
@@ -111,15 +113,47 @@ public class ZkStateWriter {
     if (cmds.isEmpty()) return prevState;
     if (isNoOps(cmds)) return prevState;
 
+    boolean forceFlush = false;
+    if (cmds.size() == 1) {
+      //most messages result in only one command. let's deal with it right away
+      ZkWriteCommand cmd = cmds.get(0);
+      if (cmd.collection != null && cmd.collection.isPerReplicaState()) {
+        //we do not wish to batch any updates for collections with per-replica state because
+        // these changes go to individual ZK nodes and there is zero advantage to batching
+        //now check if there are any updates for the same collection already present
+        if (updates.containsKey(cmd.name)) {
+          //this should not happen
+          // but let's get those updates out anyway
+          writeUpdate(updates.remove(cmd.name));
+        }
+        //now let's write the current message
+        try {
+          return writeUpdate(cmd);
+        } finally {
+          if (callback !=null) callback.onWrite();
+        }
+      }
+    } else {
+      //there are more than one commands created as a result of this message
+      for (ZkWriteCommand cmd : cmds) {
+        if (cmd.collection != null && cmd.collection.isPerReplicaState()) {
+          // we don't try to optimize for this case. let's flush out all after this
+          forceFlush = true;
+          break;
+        }
+      }
+    }
+
+
     for (ZkWriteCommand cmd : cmds) {
       if (cmd == NO_OP) continue;
       prevState = prevState.copyWith(cmd.name, cmd.collection);
-      updates.put(cmd.name, cmd.collection);
+      updates.put(cmd.name, cmd);
       numUpdates++;
     }
     clusterState = prevState;
 
-    if (maybeFlushAfter()) {
+    if (forceFlush || maybeFlushAfter()) {
       ClusterState state = writePendingUpdates();
       if (callback != null) {
         callback.onWrite();
@@ -149,7 +183,15 @@ public class ZkStateWriter {
   public boolean hasPendingUpdates() {
     return numUpdates != 0;
   }
+  public ClusterState writeUpdate(ZkWriteCommand command) throws IllegalStateException, KeeperException, InterruptedException {
+    Map<String, ZkWriteCommand> commands = new HashMap<>();
+    commands.put(command.name, command);
+    return writePendingUpdates(commands);
+  }
+  public ClusterState writePendingUpdates() throws KeeperException, InterruptedException {
+    return writePendingUpdates(updates);
 
+  }
   /**
    * Writes all pending updates to ZooKeeper and returns the modified cluster state
    *
@@ -158,22 +200,35 @@ public class ZkStateWriter {
    * @throws KeeperException       if any ZooKeeper operation results in an error
    * @throws InterruptedException  if the current thread is interrupted
    */
-  public ClusterState writePendingUpdates() throws IllegalStateException, KeeperException, InterruptedException {
+  public ClusterState writePendingUpdates(Map<String, ZkWriteCommand> updates) throws IllegalStateException, KeeperException, InterruptedException {
     if (invalidState) {
       throw new IllegalStateException("ZkStateWriter has seen a tragic error, this instance can no longer be used");
     }
-    if (!hasPendingUpdates()) return clusterState;
+    if ((updates == this.updates)
+        && !hasPendingUpdates()) {
+      return clusterState;
+    }
     Timer.Context timerContext = stats.time("update_state");
     boolean success = false;
     try {
       if (!updates.isEmpty()) {
-        for (Map.Entry<String, DocCollection> entry : updates.entrySet()) {
+        for (Map.Entry<String, ZkWriteCommand> entry : updates.entrySet()) {
           String name = entry.getKey();
           String path = ZkStateReader.getCollectionPath(name);
-          DocCollection c = entry.getValue();
+          ZkWriteCommand cmd = entry.getValue();
+          DocCollection c = cmd.collection;
 
+          // Update the Per Replica State znodes if needed
+          if (cmd.ops != null) {
+            cmd.ops.persist(path, reader.getZkClient());
+            clusterState = clusterState.copyWith(name,
+                  cmd.collection.copyWith(PerReplicaStates.fetch(cmd.collection.getZNode(), reader.getZkClient(), null)));
+          }
+
+          // Update the state.json file if needed
+          if (!cmd.persistJsonState) continue;
           if (c == null) {
-            // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
+            // let's clean up the state.json of this collection only, the rest should be cleaned by delete collection cmd
             log.debug("going to delete state.json {}", path);
             reader.getZkClient().clean(path);
           } else {
@@ -190,6 +245,19 @@ public class ZkStateWriter {
               reader.getZkClient().create(path, data, CreateMode.PERSISTENT, true);
               DocCollection newCollection = new DocCollection(name, c.getSlicesMap(), c.getProperties(), c.getRouter(), 0);
               clusterState = clusterState.copyWith(name, newCollection);
+            }
+          }
+
+          // When dealing with a per replica collection that did not do any update to the per replica states znodes but did
+          // update state.json, we add then remove a dummy node to change the cversion of the parent znode.
+          // This is not needed by Solr, there's no code watching the children and not watching the state.json node itself.
+          // It would be useful for external code watching the collection's Zookeeper state.json node children but not the node itself.
+          if (cmd.ops == null && cmd.isPerReplicaStateCollection) {
+            PerReplicaStatesOps.touchChildren().persist(path, reader.getZkClient());
+            DocCollection currentCollState = clusterState.getCollection(cmd.name);
+            if (currentCollState != null) {
+              clusterState = clusterState.copyWith(name,
+                      currentCollState.copyWith(PerReplicaStates.fetch(currentCollState.getZNode(), reader.getZkClient(), null)));
             }
           }
         }

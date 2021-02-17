@@ -172,7 +172,6 @@ public class TestClassicSimilarity extends BaseSimilarityTestCase {
   public void testSameNormsAsBM25() {
     ClassicSimilarity sim1 = new ClassicSimilarity();
     BM25Similarity sim2 = new BM25Similarity();
-    sim2.setDiscountOverlaps(true);
     for (int iter = 0; iter < 100; ++iter) {
       final int length = TestUtil.nextInt(random(), 1, 1000);
       final int position = random().nextInt(length);

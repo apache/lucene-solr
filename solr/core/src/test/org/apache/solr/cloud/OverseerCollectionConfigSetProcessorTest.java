@@ -31,6 +31,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
@@ -106,6 +107,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   private static OverseerTaskQueue workQueueMock;
   private static OverseerTaskQueue stateUpdateQueueMock;
   private static Overseer overseerMock;
+  private static DistributedClusterStateUpdater distributedClusterStateUpdater;
+  private static DistributedClusterStateUpdater.StateChangeRecorder stateChangeRecorder;
   private static ZkController zkControllerMock;
   private static SolrCloudManager cloudDataProviderMock;
   private static ClusterStateProvider clusterStateProviderMock;
@@ -151,7 +154,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         DistributedMap completedMap,
         DistributedMap failureMap,
         SolrMetricsContext solrMetricsContext) {
-      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer.getStateUpdateQueue(), adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap, solrMetricsContext);
+      super(zkStateReader, myId, shardHandlerFactory, adminPath, new Stats(), overseer, new OverseerNodePrioritizer(zkStateReader, overseer, adminPath, shardHandlerFactory), workQueue, runningMap, completedMap, failureMap, solrMetricsContext);
     }
     
     @Override
@@ -176,6 +179,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     clusterStateMock = mock(ClusterState.class);
     solrZkClientMock = mock(SolrZkClient.class);
     overseerMock = mock(Overseer.class);
+    distributedClusterStateUpdater = mock(DistributedClusterStateUpdater.class);
+    stateChangeRecorder = mock(DistributedClusterStateUpdater.StateChangeRecorder.class);
     zkControllerMock = mock(ZkController.class);
     cloudDataProviderMock = mock(SolrCloudManager.class);
     objectCache = new ObjectCache();
@@ -203,6 +208,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     clusterStateMock = null;
     solrZkClientMock = null;
     overseerMock = null;
+    distributedClusterStateUpdater = null;
+    stateChangeRecorder = null;
     zkControllerMock = null;
     cloudDataProviderMock = null;
     clusterStateProviderMock = null;
@@ -231,6 +238,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     reset(clusterStateMock);
     reset(solrZkClientMock);
     reset(overseerMock);
+    reset(distributedClusterStateUpdater);
+    reset(stateChangeRecorder);
     reset(zkControllerMock);
     reset(cloudDataProviderMock);
     objectCache.clear();
@@ -258,7 +267,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   @SuppressWarnings("unchecked")
-  protected Set<String> commonMocks(int liveNodesCount) throws Exception {
+  protected Set<String> commonMocks(int liveNodesCount, boolean distributedClusterStateUpdates) throws Exception {
     when(shardHandlerFactoryMock.getShardHandler()).thenReturn(shardHandlerMock);
     when(workQueueMock.peekTopN(anyInt(), any(), anyLong())).thenAnswer(invocation -> {
       Object result;
@@ -303,6 +312,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(zkStateReaderMock.getZkClient()).thenReturn(solrZkClientMock);
     when(zkStateReaderMock.getClusterState()).thenReturn(clusterStateMock);
     when(zkStateReaderMock.getAliases()).thenReturn(Aliases.EMPTY);
+    doAnswer(invocation -> {
+      Predicate<DocCollection> p = invocation.getArgument(3);
+      p.test(clusterStateMock.getCollection(invocation.getArgument(0)));
+      return null;
+    }).when(zkStateReaderMock).waitForState(anyString(), anyLong(), any(), any(Predicate.class));
 
     when(clusterStateMock.getCollection(anyString())).thenAnswer(invocation -> {
       String key = invocation.getArgument(0);
@@ -373,6 +387,8 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     when(overseerMock.getZkController()).thenReturn(zkControllerMock);
     when(overseerMock.getSolrCloudManager()).thenReturn(cloudDataProviderMock);
     when(overseerMock.getCoreContainer()).thenReturn(coreContainerMock);
+    when(overseerMock.getDistributedClusterStateUpdater()).thenReturn(distributedClusterStateUpdater);
+    when(distributedClusterStateUpdater.createStateChangeRecorder(any(), anyBoolean())).thenReturn(stateChangeRecorder);
     when(coreContainerMock.getUpdateShardHandler()).thenReturn(updateShardHandlerMock);
     when(coreContainerMock.getPlacementPluginFactory()).thenReturn(placementPluginFactoryMock);
     when(updateShardHandlerMock.getDefaultHttpClient()).thenReturn(httpClientMock);
@@ -444,21 +460,45 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     
     when(overseerMock.getStateUpdateQueue(any())).thenReturn(stateUpdateQueueMock);
     when(overseerMock.getStateUpdateQueue()).thenReturn(stateUpdateQueueMock);
-    
-    Mockito.doAnswer(
-        new Answer<Void>() {
-          public Void answer(InvocationOnMock invocation) {
-            try {
-              handleCreateCollMessage(invocation.getArgument(0));
-              stateUpdateQueueMock.offer(invocation.getArgument(0));
-            } catch (KeeperException e) {
-              throw new RuntimeException(e);
-            } catch (InterruptedException e) {
-              throw new RuntimeException(e);
+
+    // Selecting the cluster state update strategy: Overseer when distributedClusterStateUpdates is false, otherwise distributed updates.
+    when(distributedClusterStateUpdater.isDistributedStateUpdate()).thenReturn(distributedClusterStateUpdates);
+
+    if (distributedClusterStateUpdates) {
+      // Mocking for state change via distributed updates. There are two types of updates done in CreateCollectionCmd:
+      // 1. Single line recording and executing a command
+      Mockito.doAnswer(
+          new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+              handleCreateCollMessageProps(invocation.getArgument(1));
+              return null;
+            }}).when(distributedClusterStateUpdater).doSingleStateUpdate(any(), any(), any(), any());
+
+      // 2. Recording a command to be executed as part of a batch of commands
+      Mockito.doAnswer(
+          new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+              handleCreateCollMessageProps(invocation.getArgument(1));
+              return null;
+            }}).when(stateChangeRecorder).record(any(), any());
+    } else {
+      // Mocking for state change via the Overseer queue
+      Mockito.doAnswer(
+          new Answer<Void>() {
+            public Void answer(InvocationOnMock invocation) {
+              try {
+                handleCreateCollMessage(invocation.getArgument(0));
+                stateUpdateQueueMock.offer(invocation.getArgument(0));
+              } catch (KeeperException e) {
+                throw new RuntimeException(e);
+              } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+              }
+              return null;
             }
-            return null;
-          }}).when(overseerMock).offerStateUpdate(any());
-    
+          }).when(overseerMock).offerStateUpdate(any());
+    }
+
     when(zkControllerMock.getZkClient()).thenReturn(solrZkClientMock);
     
     when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
@@ -514,9 +554,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
   }
 
   private void handleCreateCollMessage(byte[] bytes) {
+    handleCreateCollMessageProps(ZkNodeProps.load(bytes));
+  }
+
+  private void handleCreateCollMessageProps(ZkNodeProps props) {
     log.info("track created replicas / collections");
     try {
-      ZkNodeProps props = ZkNodeProps.load(bytes);
       if (CollectionParams.CollectionAction.CREATE.isEqual(props.getStr("operation"))) {
         String collName = props.getStr("name");
         if (collName != null) collectionsSet.put(collName, new ClusterState.CollectionRef(
@@ -726,12 +769,11 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     SEND_NULL
   }
   protected void testTemplate(Integer numberOfNodes, Integer numberOfNodesToCreateOn, CreateNodeListOptions createNodeListOption, Integer replicationFactor,
-      Integer numberOfSlices,
-      boolean collectionExceptedToBeCreated) throws Exception {
+      Integer numberOfSlices, boolean collectionExceptedToBeCreated, boolean distributedClusterStateUpdates) throws Exception {
     assertTrue("Wrong usage of testTemplate. numberOfNodesToCreateOn " + numberOfNodesToCreateOn + " is not allowed to be higher than numberOfNodes " + numberOfNodes, numberOfNodes.intValue() >= numberOfNodesToCreateOn.intValue());
     assertTrue("Wrong usage of testTemplage. createNodeListOption has to be " + CreateNodeListOptions.SEND + " when numberOfNodes and numberOfNodesToCreateOn are unequal", ((createNodeListOption == CreateNodeListOptions.SEND) || (numberOfNodes.intValue() == numberOfNodesToCreateOn.intValue())));
     
-    Set<String> liveNodes = commonMocks(numberOfNodes);
+    Set<String> liveNodes = commonMocks(numberOfNodes, distributedClusterStateUpdates);
     List<String> createNodeList = new ArrayList<>();
     int i = 0;
     for (String node : liveNodes) {
@@ -768,140 +810,250 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           createNodeList, dontShuffleCreateNodeSet);
     }
   }
-    @Test
-  public void testNoReplicationEqualNumberOfSlicesPerNode() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 1;
-    Integer numberOfSlices = 8;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
+
+  // Tests below are being run twice: once with Overseer based updates and once with distributed updates.
+  // This is done explicitly here because these tests use mocks than can be configured directly.
+  // Tests not using mocks (most other tests) but using the MiniSolrCloudCluster are randomized to sometimes use Overseer
+  // and sometimes distributed state updates (but not both for a given test and a given test seed).
+  // See the SolrCloudTestCase.Builder constructor and the rest of the Builder class.
+
   @Test
-  public void testReplicationEqualNumberOfSlicesPerNode() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 2;
-    Integer numberOfSlices = 4;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
-  @Test
-  public void testNoReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodes() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
-    Integer replicationFactor = 1;
-    Integer numberOfSlices = 8;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
-  @Test
-  public void testReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodes() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
-    Integer replicationFactor = 2;
-    Integer numberOfSlices = 4;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
-  @Test
-  public void testNoReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodes() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
-    Integer replicationFactor = 1;
-    Integer numberOfSlices = 8;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
-  @Test
-  public void testReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodes() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
-    Integer replicationFactor = 2;
-    Integer numberOfSlices = 4;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }  
-  
-  @Test
-  public void testNoReplicationUnequalNumberOfSlicesPerNode() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 1;
-    Integer numberOfSlices = 6;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
-  @Test
-  public void testReplicationUnequalNumberOfSlicesPerNode() throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 4;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
-    Integer replicationFactor = 2;
-    Integer numberOfSlices = 3;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
-  @Test
-  public void testNoReplicationLimitedNodesToCreateOn()
-      throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 2;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
-    Integer replicationFactor = 1;
-    Integer numberOfSlices = 6;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
-  }
-  
-  @Test
-  public void testReplicationLimitedNodesToCreateOn()
-      throws Exception {
-    Integer numberOfNodes = 4;
-    Integer numberOfNodesToCreateOn = 2;
-    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
-    Integer replicationFactor = 2;
-    Integer numberOfSlices = 3;
-    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        true);
+  public void testNoReplicationEqualNumberOfSlicesPerNodeOverseer() throws Exception {
+    testNoReplicationEqualNumberOfSlicesPerNodeInternal(false);
   }
 
   @Test
-  public void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimits()
-      throws Exception {
+  public void testNoReplicationEqualNumberOfSlicesPerNodeDistributedUpdates() throws Exception {
+    testNoReplicationEqualNumberOfSlicesPerNodeInternal(true);
+  }
+
+  private void testNoReplicationEqualNumberOfSlicesPerNodeInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 8;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeOverseer() throws Exception {
+    testReplicationEqualNumberOfSlicesPerNodeInternal(false);
+  }
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeDistributedUpdates() throws Exception {
+    testReplicationEqualNumberOfSlicesPerNodeInternal(true);
+  }
+
+  private void testReplicationEqualNumberOfSlicesPerNodeInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 4;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testNoReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesOverseer() throws Exception {
+    testNoReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesInternal(false);
+  }
+
+  @Test
+  public void testNoReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesDistributedUpdates() throws Exception {
+    testNoReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesInternal(true);
+  }
+
+  private void testNoReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 8;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesOverseer() throws Exception {
+    testReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesInternal(false);
+  }
+
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesDistributedUpdates() throws Exception {
+    testReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesInternal(true);
+  }
+
+  private void testReplicationEqualNumberOfSlicesPerNodeSendCreateNodesEqualToLiveNodesInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 4;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testNoReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesOverseer() throws Exception {
+    testNoReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesInternal(false);
+  }
+
+  @Test
+  public void testNoReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesDistributedUpdates() throws Exception {
+    testNoReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesInternal(true);
+  }
+
+  private void testNoReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 8;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesOverseer() throws Exception {
+    testReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesInternal(false);
+  }
+
+  @Test
+  public void testReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesDistributedUpdates() throws Exception {
+    testReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesInternal(true);
+  }
+
+  private void testReplicationEqualNumberOfSlicesPerNodeSendNullCreateNodesInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND_NULL;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 4;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testNoReplicationUnequalNumberOfSlicesPerNodeOverseer() throws Exception {
+    testNoReplicationUnequalNumberOfSlicesPerNodeInternal(false);
+  }
+
+  @Test
+  public void testNoReplicationUnequalNumberOfSlicesPerNodeDistributedUpdates() throws Exception {
+    testNoReplicationUnequalNumberOfSlicesPerNodeInternal(true);
+  }
+
+  private void testNoReplicationUnequalNumberOfSlicesPerNodeInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 6;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testReplicationUnequalNumberOfSlicesPerNodeOverseer() throws Exception {
+    testReplicationUnequalNumberOfSlicesPerNodeInternal(false);
+  }
+
+  @Test
+  public void testReplicationUnequalNumberOfSlicesPerNodeDistributedUpdates() throws Exception {
+    testReplicationUnequalNumberOfSlicesPerNodeInternal(true);
+  }
+
+  private void testReplicationUnequalNumberOfSlicesPerNodeInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 4;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.DONT_SEND;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 3;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testNoReplicationLimitedNodesToCreateOnOverseer() throws Exception {
+    testNoReplicationLimitedNodesToCreateOnInternal(false);
+  }
+
+  @Test
+  public void testNoReplicationLimitedNodesToCreateOnDistributedUpdates() throws Exception {
+    testNoReplicationLimitedNodesToCreateOnInternal(true);
+  }
+
+  private void testNoReplicationLimitedNodesToCreateOnInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 2;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 1;
+    Integer numberOfSlices = 6;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testReplicationLimitedNodesToCreateOnOverseer() throws Exception {
+    testReplicationLimitedNodesToCreateOnInternal(false);
+  }
+
+  @Test
+  public void testReplicationLimitedNodesToCreateOnDistributedUpdates() throws Exception {
+    testReplicationLimitedNodesToCreateOnInternal(true);
+  }
+
+  private void testReplicationLimitedNodesToCreateOnInternal(boolean distributedClusterStateUpdates) throws Exception {
+    Integer numberOfNodes = 4;
+    Integer numberOfNodesToCreateOn = 2;
+    CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
+    Integer replicationFactor = 2;
+    Integer numberOfSlices = 3;
+    testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
+        true, distributedClusterStateUpdates);
+  }
+
+  @Test
+  public void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsOverseer() throws Exception {
+    testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsInternal(false);
+  }
+
+  @Test
+  public void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsDistributedUpdates() throws Exception {
+    testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsInternal(true);
+  }
+
+  private void testNoReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsInternal(boolean distributedClusterStateUpdates) throws Exception {
     Integer numberOfNodes = 4;
     Integer numberOfNodesToCreateOn = 3;
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 1;
     Integer numberOfSlices = 8;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        false);
+        false, distributedClusterStateUpdates);
   }
-  
+
   @Test
-  public void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimits()
-      throws Exception {
+  public void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsOverseer() throws Exception {
+    testReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsInternal(false);
+  }
+
+  @Test
+  public void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsDistributedUpdates() throws Exception {
+    testReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsInternal(true);
+  }
+
+  private void testReplicationCollectionNotCreatedDueToMaxShardsPerNodeAndNodesToCreateOnLimitsInternal(boolean distributedClusterStateUpdates) throws Exception {
     Integer numberOfNodes = 4;
     Integer numberOfNodesToCreateOn = 3;
     CreateNodeListOptions createNodeListOptions = CreateNodeListOptions.SEND;
     Integer replicationFactor = 2;
     Integer numberOfSlices = 4;
     testTemplate(numberOfNodes, numberOfNodesToCreateOn, createNodeListOptions, replicationFactor, numberOfSlices,
-        false);
+        false, distributedClusterStateUpdates);
   }
 
 }

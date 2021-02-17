@@ -129,11 +129,12 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   }
 
   public void testExplicitNullGivesDefaults() {
+    System.setProperty("jetty.port", "8000");
     String solrXml = "<solr>" +
         "<null name=\"maxBooleanClauses\"/>" +
         "<solrcloud>" +
         "<str name=\"host\">host</str>" +
-        "<int name=\"hostPort\">8983</int>" +
+        "<int name=\"hostPort\">0</int>" +
         "<str name=\"hostContext\">solr</str>" +
         "<null name=\"leaderVoteWait\"/>" +
         "</solrcloud></solr>";
@@ -141,6 +142,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
     assertNull("maxBooleanClauses", cfg.getBooleanQueryMaxClauseCount()); // default is null
     assertEquals("leaderVoteWait", 180000, cfg.getCloudConfig().getLeaderVoteWait());
+    assertEquals("hostPort", 8000, cfg.getCloudConfig().getSolrHostPort());
   }
 
   public void testIntAsLongBad() {
@@ -313,18 +315,25 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     SolrXmlConfig.fromString(solrHome, solrXml); // return not used, only for validation
   }
 
-  public void testCloudConfigRequiresHost() {
-    expectedException.expect(SolrException.class);
-    expectedException.expectMessage("solrcloud section missing required entry 'host'");
-
-    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
-  }
-
   public void testCloudConfigRequiresHostPort() {
     expectedException.expect(SolrException.class);
     expectedException.expectMessage("solrcloud section missing required entry 'hostPort'");
 
-    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud><str name=\"host\">host</str></solrcloud></solr>");
+    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
+  }
+
+  public void testCloudConfigDefaultHostPort() {
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage("solrcloud section missing required entry 'hostPort'");
+
+    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud></solrcloud></solr>");
+  }
+
+  public void testCloudConfigRequiresHost() {
+    expectedException.expect(SolrException.class);
+    expectedException.expectMessage("solrcloud section missing required entry 'host'");
+
+    SolrXmlConfig.fromString(solrHome, "<solr><solrcloud><int name=\"hostPort\">8983</int></solrcloud></solr>");
   }
 
   public void testCloudConfigRequiresHostContext() {

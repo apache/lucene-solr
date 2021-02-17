@@ -187,6 +187,20 @@ public abstract class DataInput implements Cloneable {
   }
 
   /**
+   * Reads a specified number of floats into an array at the specified offset.
+   *
+   * @param floats the array to read bytes into
+   * @param offset the offset in the array to start storing floats
+   * @param len the number of floats to read
+   */
+  public void readLEFloats(float[] floats, int offset, int len) throws IOException {
+    Objects.checkFromIndexSize(offset, len, floats.length);
+    for (int i = 0; i < len; i++) {
+      floats[offset + i] = Float.intBitsToFloat(Integer.reverseBytes(readInt()));
+    }
+  }
+
+  /**
    * Reads a long stored in variable-length format. Reads between one and nine bytes. Smaller values
    * take fewer bytes. Negative numbers are not supported.
    *

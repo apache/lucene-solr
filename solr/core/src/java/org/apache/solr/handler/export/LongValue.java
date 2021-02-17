@@ -52,6 +52,10 @@ public class LongValue implements SortValue {
     return new LongValue(field, comp);
   }
 
+  public void toGlobalValue(SortValue previousValue) {
+
+  }
+
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.vals = DocValues.getNumeric(context.reader(), field);
     lastDocID = 0;

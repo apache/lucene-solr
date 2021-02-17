@@ -27,7 +27,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -365,10 +364,9 @@ public abstract class Feature extends Query implements Accountable {
         return in.iterator();
       }
 
-      @Override
-      public TwoPhaseIterator twoPhaseIterator() {
-        return in.twoPhaseIterator();
-      }
+      // Currently (Q1 2021) we intentionally don't delegate twoPhaseIterator()
+      // because it doesn't always work and we don't yet know why, please see
+      // SOLR-15071 for more details.
 
       @Override
       public int advanceShallow(int target) throws IOException {

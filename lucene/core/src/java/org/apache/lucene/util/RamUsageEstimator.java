@@ -20,6 +20,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.security.AccessControlException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.text.DecimalFormat;
@@ -527,14 +528,14 @@ public final class RamUsageEstimator {
     // Walk type hierarchy
     for (; clazz != null; clazz = clazz.getSuperclass()) {
       final Class<?> target = clazz;
-      final Field[] fields =
-          AccessController.doPrivileged(
-              new PrivilegedAction<Field[]>() {
-                @Override
-                public Field[] run() {
-                  return target.getDeclaredFields();
-                }
-              });
+      final Field[] fields;
+      try {
+        fields =
+            AccessController.doPrivileged((PrivilegedAction<Field[]>) target::getDeclaredFields);
+      } catch (AccessControlException e) {
+        throw new RuntimeException("Can't access fields of class: " + target, e);
+      }
+
       for (Field f : fields) {
         if (!Modifier.isStatic(f.getModifiers())) {
           size = adjustForField(size, f);

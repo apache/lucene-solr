@@ -44,7 +44,7 @@ You should also separate writable Solr files into a different directory; by defa
 
 === Create the Solr User
 
-Running Solr as `root` is not recommended for security reasons, and the <<solr-control-script-reference.adoc#solr-control-script-reference,control script>> start command will refuse to do so. Consequently, you should determine the username of a system user that will own all of the Solr files and the running Solr process. By default, the installation script will create the *solr* user, but you can override this setting using the -u option. If your organization has specific requirements for creating new user accounts, then you should create the user before running the script. The installation script will make the Solr user the owner of the `/opt/solr` and `/var/solr` directories.
+Running Solr as `root` is not recommended for security reasons, and the <<solr-control-script-reference.adoc#,control script>> start command will refuse to do so. Consequently, you should determine the username of a system user that will own all of the Solr files and the running Solr process. By default, the installation script will create the *solr* user, but you can override this setting using the -u option. If your organization has specific requirements for creating new user accounts, then you should create the user before running the script. The installation script will make the Solr user the owner of the `/opt/solr` and `/var/solr` directories.
 
 You are now ready to run the installation script.
 
@@ -91,7 +91,7 @@ We'll cover some additional configuration settings you can make to fine-tune you
 
 ==== Solr Home Directory
 
-The Solr home directory (not to be confused with the Solr installation directory) is where Solr manages core directories with index files. By default, the installation script uses `/var/solr/data`. If the `-d` option is used on the install script, then this will change to the `data` subdirectory in the location given to the -d option. Take a moment to inspect the contents of the Solr home directory on your system. If you do not <<using-zookeeper-to-manage-configuration-files.adoc#using-zookeeper-to-manage-configuration-files,store `solr.xml` in ZooKeeper>>, the home directory must contain a `solr.xml` file. When Solr starts up, the Solr Control Script passes the location of the home directory using the `-Dsolr.solr.home=...` system property.
+The Solr home directory (not to be confused with the Solr installation directory) is where Solr manages core directories with index files. By default, the installation script uses `/var/solr/data`. If the `-d` option is used on the install script, then this will change to the `data` subdirectory in the location given to the -d option. Take a moment to inspect the contents of the Solr home directory on your system. If you do not <<using-zookeeper-to-manage-configuration-files.adoc#,store `solr.xml` in ZooKeeper>>, the home directory must contain a `solr.xml` file. When Solr starts up, the Solr Control Script passes the location of the home directory using the `-Dsolr.solr.home=...` system property.
 
 ==== Environment Overrides Include File
 
@@ -103,7 +103,7 @@ SOLR_PID_DIR=/var/solr
 SOLR_HOME=/var/solr/data
 ----
 
-The `SOLR_PID_DIR` variable sets the directory where the <<solr-control-script-reference.adoc#solr-control-script-reference,control script>> will write out a file containing the Solr server’s process ID.
+The `SOLR_PID_DIR` variable sets the directory where the <<solr-control-script-reference.adoc#,control script>> will write out a file containing the Solr server’s process ID.
 
 ==== Log Settings
 
@@ -115,7 +115,7 @@ LOG4J_PROPS=/var/solr/log4j2.xml
 SOLR_LOGS_DIR=/var/solr/logs
 ----
 
-For more information about Log4J configuration, please see: <<configuring-logging.adoc#configuring-logging,Configuring Logging>>
+For more information about Log4J configuration, please see: <<configuring-logging.adoc#,Configuring Logging>>
 
 ==== init.d Script
 
@@ -185,11 +185,11 @@ SOLR_HEAP="8g"
 Do not allocate a very large Java Heap unless you know you need it. See <<jvm-settings.adoc#choosing-memory-heap-settings,Choosing Memory Heap Settings>> for details.
 ====
 
-Also, the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
+Also, the <<solr-control-script-reference.adoc#,Solr Control Script>> comes with a set of pre-configured Garbage First Garbage Collection settings that have shown to work well with Solr for a number of different workloads.
 However, these settings may not work well for your specific use of Solr. Consequently, you may need to change the GC settings, which should also be done with the `GC_TUNE` variable in the `/etc/default/solr.in.sh` include file. For more information about garbage collection settings refer to following articles:
 1. https://cwiki.apache.org/confluence/display/solr/ShawnHeisey
 2. https://www.oracle.com/technetwork/articles/java/g1gc-1984535.html
-You can also refer to <<jvm-settings.adoc#jvm-settings,JVM Settings>> for tuning your memory and garbage collection settings.
+You can also refer to <<jvm-settings.adoc#,JVM Settings>> for tuning your memory and garbage collection settings.
 
 ==== Out-of-Memory Shutdown Hook
 
@@ -215,7 +215,7 @@ If you're using a ZooKeeper instance that is shared by other systems, it's recom
 ZK_HOST=zk1,zk2,zk3/solr
 ----
 
-Before using a chroot for the first time, you need to create the root path (znode) in ZooKeeper by using the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>>. We can use the mkroot command for that:
+Before using a chroot for the first time, you need to create the root path (znode) in ZooKeeper by using the <<solr-control-script-reference.adoc#,Solr Control Script>>. We can use the mkroot command for that:
 
 [source,bash]
 ----
@@ -224,7 +224,7 @@ bin/solr zk mkroot /solr -z <ZK_node>:<ZK_PORT>
 
 [NOTE]
 ====
-If you also want to bootstrap ZooKeeper with existing `solr_home`, you can instead use the `zkcli.sh` / `zkcli.bat` `bootstrap` command, which will also create the chroot path if it does not exist. See <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>> for more info.
+If you also want to bootstrap ZooKeeper with existing `solr_home`, you can instead use the `zkcli.sh` / `zkcli.bat` `bootstrap` command, which will also create the chroot path if it does not exist. See <<command-line-utilities.adoc#,Command Line Utilities>> for more info.
 ====
 
 === Solr Hostname
@@ -240,7 +240,7 @@ Setting the hostname of the Solr server is recommended, especially when running 
 
 === Environment Banner in Admin UI
 
-To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red. Examples of valid environment configs:
+To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma-delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red. Examples of valid environment configs:
 
 * `prod`
 * `test,label=Functional+test`

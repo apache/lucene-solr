@@ -293,7 +293,7 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
     int currentSize = stats.size.intValue();
     if ((currentSize > upperWaterMark || ramBytes.sum() > ramUpperWatermark || oldestEntryNs.get() < idleCutoff) && !isCleaning) {
       if (newThreadForCleanup) {
-        new Thread(this::markAndSweep).start();
+        new Thread(this::markAndSweep, "CacheCleanupThread").start();
       } else if (cleanupThread != null){
         cleanupThread.wakeThread();
       } else {
@@ -861,20 +861,19 @@ public class ConcurrentLRUCache<K,V> implements Cache<K,V>, Accountable {
   }
 
   private static class CleanupThread extends Thread {
-    @SuppressWarnings({"rawtypes"})
-    private WeakReference<ConcurrentLRUCache> cache;
+    private final WeakReference<ConcurrentLRUCache<?,?>> cache;
 
     private boolean stop = false;
 
-    public CleanupThread(@SuppressWarnings({"rawtypes"})ConcurrentLRUCache c) {
+    public CleanupThread(ConcurrentLRUCache<?,?> c) {
+      super("CacheCleanupThread");
       cache = new WeakReference<>(c);
     }
 
     @Override
     public void run() {
       while (true) {
-        @SuppressWarnings({"rawtypes"})
-        ConcurrentLRUCache c = cache.get();
+        ConcurrentLRUCache<?,?> c = cache.get();
         if(c == null) break;
         synchronized (this) {
           if (stop) break;

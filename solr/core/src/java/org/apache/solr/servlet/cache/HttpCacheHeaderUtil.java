@@ -18,6 +18,7 @@ package org.apache.solr.servlet.cache;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -36,8 +37,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
-import org.apache.commons.codec.binary.Base64;
 
 public final class HttpCacheHeaderUtil {
   
@@ -72,7 +71,7 @@ public final class HttpCacheHeaderUtil {
       if (currentIndexVersion != indexVersionCache) {
         indexVersionCache=currentIndexVersion;
         etagCache = "\""
-            + new String(Base64.encodeBase64((Long.toHexString(Long.reverse(indexVersionCache)) + etagSeed)
+            + new String(Base64.getEncoder().encode((Long.toHexString(Long.reverse(indexVersionCache)) + etagSeed)
             .getBytes(StandardCharsets.US_ASCII)), StandardCharsets.US_ASCII) + "\"";
       }
       

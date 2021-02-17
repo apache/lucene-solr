@@ -16,18 +16,20 @@
  */
 package org.apache.solr.cluster.placement.impl;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.PlacementPluginConfig;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
+
+import java.util.concurrent.Phaser;
 
 /**
  * Helper class to support dynamic reloading of plugin implementations.
  */
 public final class DelegatingPlacementPluginFactory implements PlacementPluginFactory<PlacementPluginFactory.NoConfig> {
-
   private volatile PlacementPluginFactory<? extends PlacementPluginConfig> delegate;
   // support for tests to make sure the update is completed
-  private volatile int version;
+  private volatile Phaser phaser;
 
   @Override
   public PlacementPlugin createPluginInstance() {
@@ -38,16 +40,27 @@ public final class DelegatingPlacementPluginFactory implements PlacementPluginFa
     }
   }
 
+  /**
+   * A phaser that will advance phases every time {@link #setDelegate(PlacementPluginFactory)} is called.
+   * Useful for allowing tests to know when a new delegate is finished getting set.
+   */
+  @VisibleForTesting
+  public void setDelegationPhaser(Phaser phaser) {
+    phaser.register();
+    this.phaser = phaser;
+  }
+
   public void setDelegate(PlacementPluginFactory<? extends PlacementPluginConfig> delegate) {
     this.delegate = delegate;
-    this.version++;
+    Phaser localPhaser = phaser; // volatile read
+    if (localPhaser != null) {
+      assert localPhaser.getRegisteredParties() == 1;
+      localPhaser.arrive(); // we should be the only ones registered, so this will advance phase each time
+    }
   }
 
+  @VisibleForTesting
   public PlacementPluginFactory<? extends PlacementPluginConfig> getDelegate() {
     return delegate;
-  }
-
-  public int getVersion() {
-    return version;
   }
 }

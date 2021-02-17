@@ -20,11 +20,11 @@ In addition to the main query parsers discussed earlier, there are several other
 
 This section details the other parsers, and gives examples for how they might be used.
 
-Many of these parsers are expressed the same way as <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters in Queries>>.
+Many of these parsers are expressed the same way as <<local-parameters-in-queries.adoc#,Local Parameters in Queries>>.
 
 == Block Join Query Parsers
 
-There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
+There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#, indexed as Nested Documents>>.
 
 The example usage of the query parsers below assumes the following documents have been indexed:
 
@@ -297,7 +297,7 @@ The `CollapsingQParser` is really a _post filter_ that provides more performant 
 
 This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components. So all downstream components (faceting, highlighting, etc.) will work with the collapsed result set.
 
-Details about using the `CollapsingQParser` can be found in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
+Details about using the `CollapsingQParser` can be found in the section <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>.
 
 == Complex Phrase Query Parser
 
@@ -406,7 +406,7 @@ q=+field:text +COLOR:Red +SIZE:XL
 
 == Function Query Parser
 
-The `FunctionQParser` extends the `QParserPlugin` and creates a function query from the input value. This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
+The `FunctionQParser` extends the `QParserPlugin` and creates a function query from the input value. This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on <<function-queries.adoc#,Function Queries>>.
 
 Example:
 
@@ -484,7 +484,7 @@ Boolean that indicates if the results of the query should be filtered so that on
 
 === Graph Query Limitations
 
-The `graph` parser only works in single node Solr installations, or with <<solrcloud.adoc#solrcloud,SolrCloud>> collections that use exactly 1 shard.
+The `graph` parser only works in single node Solr installations, or with <<solrcloud.adoc#,SolrCloud>> collections that use exactly 1 shard.
 
 === Graph Query Examples
 
@@ -890,7 +890,7 @@ Example:
 {!ltr model=myModel reRankDocs=100}
 ----
 
-Details about using the `LTRQParserPlugin` can be found in the <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>> section.
+Details about using the `LTRQParserPlugin` can be found in the <<learning-to-rank.adoc#,Learning To Rank>> section.
 
 == Max Score Query Parser
 
@@ -1093,7 +1093,7 @@ http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', fu
 
 The `ReRankQParserPlugin` is a special purpose parser for Re-Ranking the top results of a simple query using a more complex ranking query.
 
-Details about using the `ReRankQParserPlugin` can be found in the <<query-re-ranking.adoc#query-re-ranking,Query Re-Ranking>> section.
+Details about using the `ReRankQParserPlugin` can be found in the <<query-re-ranking.adoc#,Query Re-Ranking>> section.
 
 == Simple Query Parser
 
@@ -1147,7 +1147,7 @@ Any errors in syntax are ignored and the query parser will interpret queries as 
 
 There are two spatial QParsers in Solr: `geofilt` and `bbox`. But there are other ways to query spatially: using the `frange` parser with a distance function, using the standard (lucene) query parser with the range syntax to pick the corners of a rectangle, or with RPT and BBoxField you can use the standard query parser but use a special syntax within quotes that allows you to pick the spatial predicate.
 
-All these options are documented further in the section <<spatial-search.adoc#spatial-search,Spatial Search>>.
+All these options are documented further in the section <<spatial-search.adoc#,Spatial Search>>.
 
 == Surround Query Parser
 
@@ -1243,7 +1243,7 @@ If no analysis or transformation is desired for any type of field, see the <<Raw
 
 `TermsQParser` functions similarly to the <<Term Query Parser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
+This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 

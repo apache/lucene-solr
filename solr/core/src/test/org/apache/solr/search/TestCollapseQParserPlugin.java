@@ -1060,24 +1060,28 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         assertU(commit());
     }
     
-    for (String collapseField : new String[] {collapseFieldInt, collapseFieldFloat, collapseFieldString}) {
-      assertQ(req(
-          "q", "{!cache=false}field_s:1",
-          "rows", "1",
-          "minExactCount", "1",
-          // this collapse will end up matching all docs
-          "fq", "{!collapse field=" + collapseField + " nullPolicy=expand}"// nullPolicy needed due to a bug when val=0
-          ),"//*[@numFoundExact='true']"
-          ,"//*[@numFound='" + (numDocs/2) + "']"
-          );
+    for (String collapseField : Arrays.asList(collapseFieldInt, collapseFieldFloat, collapseFieldString)) {
+      // all of our docs have a value in the collapse field(s) so the policy shouldn't matter...
+      for (String policy : Arrays.asList("", " nullPolicy=ignore", " nullPolicy=expand", " nullPolicy=collapse")) {
+        assertQ(req("q", "{!cache=false}field_s:1",
+                    "rows", "1",
+                    "minExactCount", "1", // collapse should force this to be ignored
+                    // this collapse will end up creating a group for each matched doc
+                    "fq", "{!collapse field=" + collapseField + policy + "}"
+                    )
+                , "//*[@numFoundExact='true']"
+                , "//*[@numFound='" + (numDocs/2) + "']"
+                );
+      }
     }
   }
 
   public void testNullGroupNumericVsStringCollapse() throws Exception {
     // NOTE: group_i and group_s will contain identical content so these need to be "numbers"...
-    // The specific numbers shouldn't matter, but until SOLR-15047 is fixed, we can't use "0"...
+    // The specific numbers shouldn't matter (and we explicitly test '0' to confirm legacy bug/behavior
+    // of treating 0 as null is no longer a problem) ...
     final String A = "-1";
-    final String B = "42"; // TODO: switch to "0" once SOLR-15047 is fixed
+    final String B = "0"; 
     final String C = "1";
 
     // Stub out our documents.  From now on assume highest "id" of each group should be group head...

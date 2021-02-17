@@ -20,15 +20,16 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.function.FieldNameValueSource;
+import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
+import org.noggit.ObjectBuilder;
+
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-
-import org.noggit.ObjectBuilder;
 
 /** Whitebox test of the various syntaxes for specifying stats in JSON Facets */
 public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
@@ -56,44 +57,47 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("custom_req_param","foo_i",
                                     "overridden_param","xxxxx_i")) {
       
-      // NOTE: we don't bother trying to test 'min(foo_i)' because of SOLR-12559
-      // ...once that bug is fixed, several assertions below will need to change
       @SuppressWarnings({"unchecked"})
       final FacetRequest fr = FacetRequest.parse
         (req, (Map<String,Object>) Utils.fromJSONString
          ("{ " +
-          "  s1:'min(field(\"foo_i\"))', " +
-          "  s2:'min($custom_req_param)', " +
-          "  s3:'min(field($custom_req_param))', " +
-          "  s4:{ func:'min($custom_req_param)' }, " +
-          "  s5:{ type:func, func:'min($custom_req_param)' }, " +
-          "  s6:{ type:func, func:'min($custom_local_param)', custom_local_param:foo_i }, " +
-          "  s7:{ type:func, func:'min($overridden_param)', overridden_param:foo_i }, " +
-          // test the test...
-          "  diff:'min(field(\"bar_i\"))'," +
-          "}"));
+             // with valuesource
+             "  f1:'min(field(\"foo_i\"))', " +
+             "  f2:'min(field($custom_req_param))', " +
+             // with fieldName and query de-reference
+             "  s1:'min(foo_i)', " +
+             "  s2:'min($custom_req_param)', " +
+             "  s3:{ func:'min($custom_req_param)' }, " +
+             "  s4:{ type:func, func:'min($custom_req_param)' }, " +
+             "  s5:{ type:func, func:'min($custom_local_param)', custom_local_param:foo_i }, " +
+             "  s6:{ type:func, func:'min($overridden_param)', overridden_param:foo_i }, " +
+             // test the test...
+             "  diff:'min(field(\"bar_i\"))'," +
+             "}"));
          
       final Map<String, AggValueSource> stats = fr.getFacetStats();
-      assertEquals(8, stats.size());
+      assertEquals(9, stats.size());
       
       for (Map.Entry<String,AggValueSource> entry : stats.entrySet()) {
         final String key = entry.getKey();
         final AggValueSource agg = entry.getValue();
         
         assertEquals("name of " + key, "min", agg.name());
-        assertThat("type of " + key, agg, instanceOf(SimpleAggValueSource.class));
+        MatcherAssert.assertThat("type of " + key, agg, instanceOf(SimpleAggValueSource.class));
         SimpleAggValueSource sagg = (SimpleAggValueSource) agg;
-        assertThat("vs of " + key, sagg.getArg(), instanceOf(IntFieldSource.class));
-        
-        if ("diff".equals(key)) {
-          assertEquals("field of " + key, "bar_i", ((IntFieldSource)sagg.getArg()).getField());
-          assertFalse("diff.equals(s1) ?!?!", agg.equals(stats.get("s1")));
-          
-        } else {
+
+        if (key.startsWith("f")) { // value source as arg to min
+          MatcherAssert.assertThat("vs of " + key, sagg.getArg(), instanceOf(IntFieldSource.class));
           assertEquals("field of " + key, "foo_i", ((IntFieldSource)sagg.getArg()).getField());
-          
+          assertEquals(key + ".equals(f1)", agg, stats.get("f1"));
+        } else if (key.startsWith("s")) { // field as arg to min
+          MatcherAssert.assertThat("vs of " + key, sagg.getArg(), instanceOf(FieldNameValueSource.class));
+          assertEquals("field of " + key, "foo_i", ((FieldNameValueSource)sagg.getArg()).getFieldName());
           assertEquals(key + ".equals(s1)", agg, stats.get("s1"));
           assertEquals("s1.equals("+key+")", stats.get("s1"), agg);
+        } else if ("diff".equals(key)) {
+          assertEquals("field of " + key, "bar_i", ((IntFieldSource)sagg.getArg()).getField());
+          assertNotEquals("diff.equals(s1) ?!?!", agg, stats.get("f1"));
         }
       }
     }
@@ -113,7 +117,7 @@ public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
       assertEquals(1, stats.size());
       AggValueSource agg = stats.get("x");
       assertNotNull(agg);
-      assertThat(agg, instanceOf(DebugAgg.class));
+      MatcherAssert.assertThat(agg, instanceOf(DebugAgg.class));
       
       DebugAgg x = (DebugAgg)agg;
       assertEquals(new String[] {"abc", "xyz"}, x.localParams.getParams("foo"));

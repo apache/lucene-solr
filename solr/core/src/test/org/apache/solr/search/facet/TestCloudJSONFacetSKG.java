@@ -45,17 +45,16 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import static org.apache.solr.search.facet.RelatednessAgg.computeRelatedness;
-import static org.apache.solr.search.facet.RelatednessAgg.roundTo5Digits;
-
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 import org.noggit.JSONWriter.Writable;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.search.facet.RelatednessAgg.computeRelatedness;
+import static org.apache.solr.search.facet.RelatednessAgg.roundTo5Digits;
 
 /** 
  * <p>
@@ -65,13 +64,13 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Note that unlike normal facet "count" verification, using a high limit + overrequest isn't a substitute 
  * for refinement in order to ensure accurate "skg" computation across shards.  For that reason, this 
- * tests forces <code>refine: true</code> (unlike {@link TestCloudJSONFacetJoinDomain}) and specifices a 
- * <code>domain: { 'query':'*:*' }</code> for every facet, in order to garuntee that all shards 
+ * tests forces <code>refine: true</code> (unlike {@link TestCloudJSONFacetJoinDomain}) and specifies a
+ * <code>domain: { 'query':'*:*' }</code> for every facet, in order to guarantee that all shards
  * participate in all facets, so that the popularity &amp; relatedness values returned can be proven 
  * with validation requests.
  * </p>
  * <p>
- * (Refinement alone is not enough. Using the '*:*' query as the facet domain is neccessary to 
+ * (Refinement alone is not enough. Using the '*:*' query as the facet domain is necessary to
  * prevent situations where a single shardX may return candidate bucket with no child-buckets due to 
  * the normal facet intersections, but when refined on other shardY(s), can produce "high scoring" 
  * SKG child-buckets, which would then be missing the foreground/background "size" contributions from 
@@ -139,6 +138,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
@@ -156,7 +156,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       SolrInputDocument doc = sdoc("id", ""+id);
       for (int fieldNum = 0; fieldNum < MAX_FIELD_NUM; fieldNum++) {
         // NOTE: we ensure every doc has at least one value in each field
-        // that way, if a term is returned for a parent there there is garunteed to be at least one
+        // that way, if a term is returned for a parent there there is guaranteed to be at least one
         // one term in the child facet as well.
         //
         // otherwise, we'd face the risk of a single shardX returning parentTermX as a top term for
@@ -226,7 +226,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
 
   /**
    * Given a (random) field number, returns a random (integer based) value for that field.
-   * NOTE: The number of unique values in each field is constant acording to {@link #UNIQUE_FIELD_VALS}
+   * NOTE: The number of unique values in each field is constant according to {@link #UNIQUE_FIELD_VALS}
    * but the precise <em>range</em> of values will vary for each unique field number, such that cross field joins 
    * will match fewer documents based on how far apart the field numbers are.
    *
@@ -279,7 +279,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
       
       // NOTE that these two queries & facets *should* effectively identical given that the
       // very large limit value is big enough no shard will ever return that may terms,
-      // but the "limit=-1" case it actaully triggers slightly different code paths
+      // but the "limit=-1" case it actually triggers slightly different code paths
       // because it causes FacetField.returnsPartial() to be "true"
       for (int limit : new int[] { 999999999, -1 }) {
         Map<String,TermFacet> facets = new LinkedHashMap<>();
@@ -769,14 +769,8 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
      *
      *
      * @return a Boolean, may be null
-     * @see <a href="https://issues.apache.org/jira/browse/SOLR-14514">SOLR-14514: allBuckets ignored by method:stream</a>
      */
     public static Boolean randomAllBucketsParam(final Random r, final String sort) {
-
-      if ("index asc".equals(sort)) {
-        return null;
-      }
-      
       switch(r.nextInt(4)) {
         case 0: return true;
         case 1: return false;

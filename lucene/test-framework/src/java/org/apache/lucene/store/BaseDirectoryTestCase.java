@@ -235,6 +235,64 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
   }
 
+  public void testAlignedFloats() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testAlignedFloats"))) {
+      try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(3f)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(Float.MAX_VALUE)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(-3f)));
+      }
+      try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
+        assertEquals(12, input.length());
+        float[] ff = new float[4];
+        input.readLEFloats(ff, 1, 3);
+        assertArrayEquals(new float[] {0, 3f, Float.MAX_VALUE, -3f}, ff, 0);
+        assertEquals(12, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testUnalignedFloats() throws Exception {
+    int padding = random().nextInt(3) + 1;
+    try (Directory dir = getDirectory(createTempDir("testUnalignedFloats"))) {
+      try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
+        for (int i = 0; i < padding; i++) {
+          out.writeByte((byte) 2);
+        }
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(3f)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(Float.MAX_VALUE)));
+        out.writeInt(Integer.reverseBytes(Float.floatToIntBits(-3f)));
+      }
+      try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
+        assertEquals(12 + padding, input.length());
+        for (int i = 0; i < padding; i++) {
+          assertEquals(2, input.readByte());
+        }
+        float[] ff = new float[4];
+        input.readLEFloats(ff, 1, 3);
+        assertArrayEquals(new float[] {0, 3f, Float.MAX_VALUE, -3f}, ff, 0);
+        assertEquals(12 + padding, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testFloatsUnderflow() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testFloatsUnderflow"))) {
+      final int offset = random().nextInt(4);
+      final int length = TestUtil.nextInt(random(), 1, 16);
+      try (IndexOutput out = dir.createOutput("Floats", newIOContext(random()))) {
+        byte[] b =
+            new byte[offset + length * Float.BYTES - TestUtil.nextInt(random(), 1, Float.BYTES)];
+        random().nextBytes(b);
+        out.writeBytes(b, b.length);
+      }
+      try (IndexInput input = dir.openInput("Floats", newIOContext(random()))) {
+        input.seek(offset);
+        expectThrows(EOFException.class, () -> input.readLEFloats(new float[length], 0, length));
+      }
+    }
+  }
+
   public void testString() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testString"))) {
       IndexOutput output = dir.createOutput("string", newIOContext(random()));
@@ -1247,8 +1305,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           });
 
       // Make sure we cannot open it for reading:
-      expectThrows(
-          NoSuchFileException.class,
+      expectThrowsAnyOf(
+          Arrays.asList(NoSuchFileException.class, FileNotFoundException.class),
           () -> {
             fsDir.openInput(fileName, IOContext.DEFAULT);
           });

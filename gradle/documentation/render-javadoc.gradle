@@ -506,12 +506,23 @@ class RenderJavadocTask extends DefaultTask {
 
     def outputFile = project.file("${getTemporaryDir()}/javadoc-output.txt")
     def result
+
     outputFile.withOutputStream { output ->
       result = project.exec {
         executable javadocCmd
 
-        standardOutput = output
-        errorOutput = output
+        // we want to capture both stdout and stderr to the same
+        // stream but gradle attempts to close these separately
+        // (it has two independent pumping threads) and it can happen
+        // that one still tries to write something when the other closed
+        // the underlying output stream.
+        def wrapped = new java.io.FilterOutputStream(output) {
+          public void close() { 
+            // no-op. we close this stream manually.
+          }
+        }
+        standardOutput = wrapped
+        errorOutput = wrapped
 
         args += [ "@${optionsFile}" ]
 

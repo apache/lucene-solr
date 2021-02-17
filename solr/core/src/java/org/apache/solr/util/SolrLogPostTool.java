@@ -503,55 +503,60 @@ public class SolrLogPostTool {
 
     private void addParams(SolrInputDocument doc,  String params) {
       String[] pairs = params.split("&");
-      for(String pair : pairs) {
+      for (String pair : pairs) {
         String[] parts = pair.split("=");
-        if(parts.length == 2 && parts[0].equals("q")) {
+        if (parts.length == 2 && parts[0].equals("q")) {
           String dq = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "q_s", dq);
           setFieldIfUnset(doc, "q_t", dq);
         }
 
-        if(parts[0].equals("rows")) {
+        if (parts[0].equals("rows")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "rows_i", dr);
         }
 
-        if(parts[0].equals("distrib")) {
+        if (parts[0].equals("start")) {
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
+          setFieldIfUnset(doc, "start_i", dr);
+        }
+
+        if (parts[0].equals("distrib")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "distrib_s", dr);
         }
 
-        if(parts[0].equals("shards")) {
+        if (parts[0].equals("shards")) {
           setFieldIfUnset(doc, "shards_s", "true");
         }
 
-        if(parts[0].equals("ids") && !isRTGRequest(doc)) {
+        if (parts[0].equals("ids") && !isRTGRequest(doc)) {
           setFieldIfUnset(doc, "ids_s", "true");
         }
 
-        if(parts[0].equals("isShard")) {
+        if (parts[0].equals("isShard")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "isShard_s", dr);
         }
 
-        if(parts[0].equals("wt")) {
+        if (parts[0].equals("wt")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "wt_s", dr);
         }
 
-        if(parts[0].equals("facet")) {
+        if (parts[0].equals("facet")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "facet_s", dr);
         }
 
-        if(parts[0].equals("shards.purpose")) {
+        if (parts[0].equals("shards.purpose")) {
           try {
             int purpose = Integer.parseInt(parts[1]);
             String[] purposes = getRequestPurposeNames(purpose);
             for (String p : purposes) {
               doc.addField("purpose_ss", p);
             }
-          } catch(Throwable e) {
+          } catch (Throwable e) {
             //We'll just sit on this for now and not interrupt the load for this one field.
           }
         }

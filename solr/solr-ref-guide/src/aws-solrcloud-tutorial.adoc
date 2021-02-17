@@ -19,7 +19,7 @@
 
 This guide is a tutorial on how to set up a multi-node SolrCloud cluster on https://aws.amazon.com/ec2[Amazon Web Services (AWS) EC2] instances for early development and design.
 
-This tutorial is not meant for production systems. For one, it uses Solr's embedded ZooKeeper instance, and for production you should have at least 3 ZooKeeper nodes in an ensemble. There are additional steps you should take for a production installation; refer to <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>> for how to deploy Solr in production.
+This tutorial is not meant for production systems. For one, it uses Solr's embedded ZooKeeper instance, and for production you should have at least 3 ZooKeeper nodes in an ensemble. There are additional steps you should take for a production installation; refer to <<taking-solr-to-production.adoc#,Taking Solr to Production>> for how to deploy Solr in production.
 
 In this guide we are going to:
 
@@ -39,7 +39,7 @@ In this guide we are going to:
 To use this guide, you must have the following:
 
 * An https://aws.amazon.com[AWS] account.
-* Familiarity with setting up a single-node SolrCloud on local machine. Refer to the <<solr-tutorial.adoc#solr-tutorial,Solr Tutorial>> if you have never used Solr before.
+* Familiarity with setting up a single-node SolrCloud on local machine. Refer to the <<solr-tutorial.adoc#,Solr Tutorial>> if you have never used Solr before.
 
 == Launch EC2 instances
 
@@ -192,7 +192,7 @@ $ sudo vim /etc/hosts
 
 === Install ZooKeeper
 
-These steps will help you install and configure a single instance of ZooKeeper on AWS. This is not sufficient for a production, use, however, where a ZooKeeper ensemble of at least three nodes is recommended. See the section <<setting-up-an-external-zookeeper-ensemble.adoc#setting-up-an-external-zookeeper-ensemble,Setting Up an External ZooKeeper Ensemble>> for information about how to change this single-instance into an ensemble.
+These steps will help you install and configure a single instance of ZooKeeper on AWS. This is not sufficient for a production, use, however, where a ZooKeeper ensemble of at least three nodes is recommended. See the section <<setting-up-an-external-zookeeper-ensemble.adoc#,Setting Up an External ZooKeeper Ensemble>> for information about how to change this single-instance into an ensemble.
 
 . Download a stable version of ZooKeeper. In this example we're using ZooKeeper v{ivy-zookeeper-version}. On the node you're using to host ZooKeeper (`zookeeper-node`), download the package and untar it:
 +
@@ -265,6 +265,6 @@ $ bin/solr start -c -p 8983 -h solr-node-1 -z zookeeper-node:2181
 ====
 As noted earlier, a single ZooKeeper node is not sufficient for a production installation. See these additional resources for more information about deploying Solr in production, which can be used once you have the EC2 instances up and running:
 
-* <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>
-* <<setting-up-an-external-zookeeper-ensemble.adoc#setting-up-an-external-zookeeper-ensemble,Setting Up an External ZooKeeper Ensemble>>
+* <<taking-solr-to-production.adoc#,Taking Solr to Production>>
+* <<setting-up-an-external-zookeeper-ensemble.adoc#,Setting Up an External ZooKeeper Ensemble>>
 ====

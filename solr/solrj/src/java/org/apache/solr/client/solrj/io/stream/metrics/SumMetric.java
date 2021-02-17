@@ -70,7 +70,7 @@ public class SumMetric extends Metric {
     } else if(o instanceof Integer) {
       Integer i = (Integer)o;
       longSum += i.longValue();
-    } else {
+    } else if (o instanceof Long) {
       Long l = (Long)o;
       longSum += l;
     }

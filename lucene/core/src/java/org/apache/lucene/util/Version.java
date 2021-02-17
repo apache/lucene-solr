@@ -134,6 +134,20 @@ public final class Version {
   @Deprecated public static final Version LUCENE_8_6_3 = new Version(8, 6, 3);
 
   /**
+   * Match settings and bugs in Lucene's 8.7.0 release.
+   *
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_8_7_0 = new Version(8, 7, 0);
+
+  /**
+   * Match settings and bugs in Lucene's 8.8.0 release.
+   *
+   * @deprecated Use latest
+   */
+  @Deprecated public static final Version LUCENE_8_8_0 = new Version(8, 8, 0);
+
+  /**
    * Match settings and bugs in Lucene's 9.0.0 release.
    *
    * <p>Use this to get the latest &amp; greatest settings, bug fixes, etc, for Lucene.
@@ -162,6 +176,12 @@ public final class Version {
    * @deprecated Use {@link #LATEST}
    */
   @Deprecated public static final Version LUCENE_CURRENT = LATEST;
+
+  /**
+   * Constant for the minimal supported major version of an index. This version is defined by the
+   * version that initially created the index.
+   */
+  public static final int MIN_SUPPORTED_MAJOR = Version.LATEST.major - 1;
 
   /**
    * Parse a version number of the form {@code "major.minor.bugfix.prerelease"}.

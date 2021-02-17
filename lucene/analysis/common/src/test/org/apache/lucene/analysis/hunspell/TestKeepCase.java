@@ -40,5 +40,11 @@ public class TestKeepCase extends StemmerTestBase {
     assertStemsTo("test", "test");
     assertStemsTo("Test");
     assertStemsTo("TEST");
+
+    assertStemsTo("baz.", "baz.");
+    assertStemsTo("Baz.");
+
+    assertStemsTo("Quux.", "Quux.");
+    assertStemsTo("QUUX.");
   }
 }

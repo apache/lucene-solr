@@ -105,7 +105,10 @@ public class FacetField extends FacetRequestSorted {
       method = FacetMethod.STREAM;
     }
     if (method == FacetMethod.STREAM && sf.indexed() && !ft.isPointField() &&
-        // wether we can use stream processing depends on wether this is a shard request, wether
+        // streaming doesn't support allBuckets, numBuckets or missing
+        // so, don't use stream processor if anyone of them is enabled
+        !(allBuckets || numBuckets || missing) &&
+        // whether we can use stream processing depends on whether this is a shard request, whether
         // re-sorting has been requested, and if the effective sort during collection is "index asc"
         ( fcontext.isShard()
           // for a shard request, the effective per-shard sort must be index asc

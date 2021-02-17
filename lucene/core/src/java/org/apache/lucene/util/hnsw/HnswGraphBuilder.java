@@ -38,15 +38,17 @@ public final class HnswGraphBuilder {
   // expose for testing.
   public static long randSeed = DEFAULT_RAND_SEED;
 
-  // These "default" hyper-parameter settings are exposed (and non-final) to enable performance
-  // testing
-  // since the indexing API doesn't provide any control over them.
+  /* These "default" hyper-parameter settings are exposed (and non-final) to enable performance
+   * testing since the indexing API doesn't provide any control over them.
+   */
 
   // default max connections per node
-  public static int DEFAULT_MAX_CONN = 16;
+  public static final int DEFAULT_MAX_CONN = 16;
+  public static String HNSW_MAX_CONN_ATTRIBUTE_KEY = "max_connections";
 
   // default candidate list size
-  public static int DEFAULT_BEAM_WIDTH = 16;
+  public static final int DEFAULT_BEAM_WIDTH = 16;
+  public static String HNSW_BEAM_WIDTH_ATTRIBUTE_KEY = "beam_width";
 
   private final int maxConn;
   private final int beamWidth;
@@ -116,6 +118,9 @@ public final class HnswGraphBuilder {
       throw new IllegalArgumentException(
           "Vectors to build must be independent of the source of vectors provided to HnswGraphBuilder()");
     }
+    if (infoStream.isEnabled(HNSW_COMPONENT)) {
+      infoStream.message(HNSW_COMPONENT, "build graph from " + vectors.size() + " vectors");
+    }
     long start = System.nanoTime(), t = start;
     // start at node 1! node 0 is added implicitly, in the constructor
     for (int node = 1; node < vectors.size(); node++) {
@@ -149,23 +154,27 @@ public final class HnswGraphBuilder {
 
     int node = hnsw.addNode();
 
-    // connect neighbors to the new node, using a diversity heuristic that chooses successive
-    // nearest neighbors that are closer to the new node than they are to the previously-selected
-    // neighbors
-    addDiverseNeighbors(node, candidates, buildVectors);
+    /* connect neighbors to the new node, using a diversity heuristic that chooses successive
+     * nearest neighbors that are closer to the new node than they are to the previously-selected
+     * neighbors
+     */
+    addDiverseNeighbors(node, candidates);
   }
 
-  private void addDiverseNeighbors(
-      int node, NeighborQueue candidates, RandomAccessVectorValues vectors) throws IOException {
-    // For each of the beamWidth nearest candidates (going from best to worst), select it only if it
-    // is closer to target
-    // than it is to any of the already-selected neighbors (ie selected in this method, since the
-    // node is new and has no
-    // prior neighbors).
+  /* TODO: we are not maintaining nodes in strict score order; the forward links
+   * are added in sorted order, but the reverse implicit ones are not. Diversity heuristic should
+   * work better if we keep the neighbor arrays sorted. Possibly we should switch back to a heap?
+   * But first we should just see if sorting makes a significant difference.
+   */
+  private void addDiverseNeighbors(int node, NeighborQueue candidates) throws IOException {
+    /* For each of the beamWidth nearest candidates (going from best to worst), select it only if it
+     * is closer to target than it is to any of the already-selected neighbors (ie selected in this method,
+     * since the node is new and has no prior neighbors).
+     */
     NeighborArray neighbors = hnsw.getNeighbors(node);
     assert neighbors.size() == 0; // new node
     popToScratch(candidates);
-    selectDiverse(neighbors, scratch, vectors);
+    selectDiverse(neighbors, scratch);
 
     // Link the selected nodes to the new node, and the new node to the selected nodes (again
     // applying diversity heuristic)
@@ -175,21 +184,20 @@ public final class HnswGraphBuilder {
       NeighborArray nbrNbr = hnsw.getNeighbors(nbr);
       nbrNbr.add(node, neighbors.score[i]);
       if (nbrNbr.size() > maxConn) {
-        diversityUpdate(nbrNbr, buildVectors);
+        diversityUpdate(nbrNbr);
       }
     }
   }
 
-  private void selectDiverse(
-      NeighborArray neighbors, NeighborArray candidates, RandomAccessVectorValues vectors)
-      throws IOException {
+  private void selectDiverse(NeighborArray neighbors, NeighborArray candidates) throws IOException {
     // Select the best maxConn neighbors of the new node, applying the diversity heuristic
     for (int i = candidates.size() - 1; neighbors.size() < maxConn && i >= 0; i--) {
       // compare each neighbor (in distance order) against the closer neighbors selected so far,
       // only adding it if it is closer to the target than to any of the other selected neighbors
       int cNode = candidates.node[i];
       float cScore = candidates.score[i];
-      if (diversityCheck(vectors.vectorValue(cNode), cScore, neighbors, buildVectors)) {
+      assert cNode < hnsw.size();
+      if (diversityCheck(vectorValues.vectorValue(cNode), cScore, neighbors, buildVectors)) {
         neighbors.add(cNode, cScore);
       }
     }
@@ -232,10 +240,9 @@ public final class HnswGraphBuilder {
     return true;
   }
 
-  private void diversityUpdate(NeighborArray neighbors, RandomAccessVectorValues vectorValues)
-      throws IOException {
+  private void diversityUpdate(NeighborArray neighbors) throws IOException {
     assert neighbors.size() == maxConn + 1;
-    int replacePoint = findNonDiverse(neighbors, vectorValues);
+    int replacePoint = findNonDiverse(neighbors);
     if (replacePoint == -1) {
       // none found; check score against worst existing neighbor
       bound.set(neighbors.score[0]);
@@ -253,8 +260,7 @@ public final class HnswGraphBuilder {
   }
 
   // scan neighbors looking for diversity violations
-  private int findNonDiverse(NeighborArray neighbors, RandomAccessVectorValues vectorValues)
-      throws IOException {
+  private int findNonDiverse(NeighborArray neighbors) throws IOException {
     for (int i = neighbors.size() - 1; i >= 0; i--) {
       // check each neighbor against its better-scoring neighbors. If it fails diversity check with
       // them, drop it
@@ -263,7 +269,7 @@ public final class HnswGraphBuilder {
       float[] nbrVector = vectorValues.vectorValue(nbrNode);
       for (int j = maxConn; j > i; j--) {
         float diversityCheck =
-            searchStrategy.compare(nbrVector, vectorValues.vectorValue(neighbors.node[j]));
+            searchStrategy.compare(nbrVector, buildVectors.vectorValue(neighbors.node[j]));
         if (bound.check(diversityCheck) == false) {
           // node j is too similar to node i given its score relative to the base node
           // replace it with the new node, which is at [maxConn]
