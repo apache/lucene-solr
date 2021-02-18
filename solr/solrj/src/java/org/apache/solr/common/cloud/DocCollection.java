@@ -88,10 +88,17 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * @param zkVersion The version of the Collection node in Zookeeper (used for conditional updates).
    */
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router, int zkVersion) {
-    super(props);
-    if (props == null || props.containsKey("baseConfigSet")) {
+    if (props == null) {
+      props = new HashMap<>();
+      props.put(CONFIGNAME_PROP, "_default");
+      propMap.putAll(props);
+    } else if (props.containsKey(COLLECTION_CONFIG_PROP)) {
+      props.put(CONFIGNAME_PROP, props.get(COLLECTION_CONFIG_PROP));
+    } else if (!props.containsKey(CONFIGNAME_PROP) || props.get(CONFIGNAME_PROP) == null) {
       props.put(CONFIGNAME_PROP, "_default");
     }
+    propMap = props;
+
     // -1 means any version in ZK CAS, so we choose Integer.MAX_VALUE instead to avoid accidental overwrites
     this.znodeVersion = zkVersion == -1 ? Integer.MAX_VALUE : zkVersion;
     this.name = name;
