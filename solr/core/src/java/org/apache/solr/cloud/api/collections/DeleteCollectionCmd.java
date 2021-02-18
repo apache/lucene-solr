@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
@@ -41,7 +42,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
@@ -63,11 +63,9 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   private static final Set<String> okayExceptions = Collections.singleton(NonExistentCoreException.class.getName());
 
   private final OverseerCollectionMessageHandler ocmh;
-  private final TimeSource timeSource;
 
   public DeleteCollectionCmd(OverseerCollectionMessageHandler ocmh) {
     this.ocmh = ocmh;
-    this.timeSource = ocmh.cloudManager.getTimeSource();
   }
 
   @Override
@@ -150,7 +148,12 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.ClusterDeleteCollection, m,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      }
 
       // wait for a while until we don't see the collection
       zkStateReader.waitForState(collection, 60, TimeUnit.SECONDS, Objects::isNull);

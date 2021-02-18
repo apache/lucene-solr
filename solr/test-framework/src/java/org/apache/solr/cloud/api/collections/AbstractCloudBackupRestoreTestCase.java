@@ -16,19 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.not;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Random;
-import java.util.TreeMap;
-
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -52,6 +39,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.TreeMap;
+
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
 
 /**
  * Used to test the traditional (now deprecated) 'full-snapshot' method of backup/restoration.
@@ -329,7 +329,8 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     int restoreReplFactor = restoreReplcationFactor + restoreTlogReplicas + restorePullReplicas;
 
     CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-        .setLocation(backupLocation).setRepositoryName(getBackupRepoName());
+        .setLocation(backupLocation)
+        .setRepositoryName(getBackupRepoName());
 
     //explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas.
     if (setExternalReplicationFactor)  {
@@ -337,19 +338,16 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       restore.setTlogReplicas(restoreTlogReplicas);
       restore.setPullReplicas(restorePullReplicas);
     }
-    int computeRestoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) cluster.getJettySolrRunners().size()));
-
-    if (rarely()) { // Try with createNodeSet configuration
-      //Always 1 as cluster.getJettySolrRunners().size()=NUM_SHARDS=2
+    int restoreNodeSetSize = cluster.getJettySolrRunners().size();
+    if (rarely()) { // Test that restore command obeys createNodeSet if provided.
       restore.setCreateNodeSet(cluster.getJettySolrRunners().get(0).getNodeName());
+      restoreNodeSetSize = 1;
     }
-
-    final int restoreMaxShardsPerNode = computeRestoreMaxShardsPerNode;
+    final int restoreMaxShardsPerNode = (int) Math.ceil((restoreReplFactor * numShards/(double) restoreNodeSetSize));
 
     Properties props = new Properties();
     props.setProperty("customKey", "customVal");
     restore.setProperties(props);
-
     if (sameConfig==false) {
       restore.setConfigName("customConfigName");
     }

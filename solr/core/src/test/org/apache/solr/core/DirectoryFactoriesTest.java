@@ -75,14 +75,14 @@ public class DirectoryFactoriesTest extends SolrTestCaseJ4 {
           file.writeInt(42);
 
           // TODO: even StandardDirectoryFactory & NRTCachingDirectoryFactory can't agree on this...
-          // ... should we consider this explicitly undefinied?
+          // ... should we consider this explicitly undefined?
           // ... or should *all* Caching DirFactories consult the cache as well as the disk itself?
           // assertFalse(path + " should still not exist until file is closed", dirFac.exists(path));
           
         } // implicitly close file...
         
         // TODO: even StandardDirectoryFactory & NRTCachingDirectoryFactory can't agree on this...
-        // ... should we consider this explicitly undefinied?
+        // ... should we consider this explicitly undefined?
         // ... or should *all* Caching DirFactories consult the cache as well as the disk itself?
         // assertTrue(path + " should exist once file is closed", dirFac.exists(path));
         

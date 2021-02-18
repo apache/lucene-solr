@@ -154,6 +154,7 @@ apply from: file('gradle/generation/util.gradle')
 apply from: file('gradle/generation/snowball.gradle')
 apply from: file('gradle/generation/kuromoji.gradle')
 apply from: file('gradle/generation/nori.gradle')
+apply from: file('gradle/generation/icu.gradle')
 
 // Shared configuration of subprojects containing native code.
 apply from: file('gradle/native/disable-native.gradle')

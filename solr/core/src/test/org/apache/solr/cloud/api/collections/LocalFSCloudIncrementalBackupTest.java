@@ -20,8 +20,9 @@ package org.apache.solr.cloud.api.collections;
 import org.junit.BeforeClass;
 
 public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackupTest {
-    public static final String SOLR_XML = "<solr>\n" +
+    private static final String SOLR_XML = "<solr>\n" +
             "\n" +
+            "  <str name=\"allowPaths\">ALLOWPATHS_TEMPLATE_VAL</str>\n" +
             "  <str name=\"shareSchema\">${shareSchema:false}</str>\n" +
             "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n" +
             "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n" +
@@ -57,17 +58,17 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
 
     @BeforeClass
     public static void setupClass() throws Exception {
-        configureCluster(NUM_SHARDS)// nodes
-                .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-                .withSolrXml(SOLR_XML)
-                .configure();
-
         boolean whitespacesInPath = random().nextBoolean();
         if (whitespacesInPath) {
             backupLocation = createTempDir("my backup").toAbsolutePath().toString();
         } else {
             backupLocation = createTempDir("mybackup").toAbsolutePath().toString();
         }
+
+        configureCluster(NUM_SHARDS)// nodes
+                .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+                .withSolrXml(SOLR_XML.replace("ALLOWPATHS_TEMPLATE_VAL", backupLocation))
+                .configure();
     }
 
     @Override

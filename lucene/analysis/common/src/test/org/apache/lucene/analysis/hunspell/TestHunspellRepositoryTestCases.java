@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 /**
- * Same as {@link SpellCheckerTest}, but checks all Hunspell's test data. The path to the checked
+ * Same as {@link TestSpellChecking}, but checks all Hunspell's test data. The path to the checked
  * out Hunspell repository should be in {@code hunspell.repo.path} system property.
  */
 @RunWith(Parameterized.class)
@@ -41,7 +41,10 @@ public class TestHunspellRepositoryTestCases {
       Set.of(
           "hu", // Hungarian is hard: a lot of its rules are hardcoded in Hunspell code, not aff/dic
           "morph", // we don't do morphological analysis yet
+          "opentaal_keepcase", // Hunspell bug: https://github.com/hunspell/hunspell/issues/712
+          "forbiddenword", // needs https://github.com/hunspell/hunspell/pull/713 PR to be merged
           "nepali", // not supported yet
+          "utf8_nonbmp", // code points not supported yet
           "phone" // not supported yet, used only for suggestions in en_ZA
           );
   private final String testName;
@@ -75,7 +78,7 @@ public class TestHunspellRepositoryTestCases {
 
   @Test
   public void test() throws Throwable {
-    ThrowingRunnable test = () -> SpellCheckerTest.checkSpellCheckerExpectations(pathPrefix);
+    ThrowingRunnable test = () -> TestSpellChecking.checkSpellCheckerExpectations(pathPrefix);
     if (EXPECTED_FAILURES.contains(testName)) {
       Assert.assertThrows(Throwable.class, test);
     } else {

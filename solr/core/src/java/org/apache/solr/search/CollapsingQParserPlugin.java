@@ -147,6 +147,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   public static final String HINT_BLOCK = "block";
 
   /**
+   * If elevation is used in combination with the collapse query parser, we can define that we only want to return the
+   * representative and not all elevated docs by setting this parameter to false (true by default).
+   */
+  public static String COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING = "collectElevatedDocsWhenCollapsing";
+
+  /**
    * @deprecated use {@link NullPolicy} instead.
    */
   @Deprecated
@@ -585,6 +591,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private int nullPolicy;
     private float nullScore = -Float.MAX_VALUE;
     private int nullDoc = -1;
+    private boolean collectElevatedDocsWhenCollapsing;
     private FloatArrayList nullScores;
 
     private final BoostedDocsCollector boostedDocsCollector;
@@ -594,9 +601,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                              DocValuesProducer collapseValuesProducer,
                              int nullPolicy,
                              IntIntHashMap boostDocsMap,
-                             IndexSearcher searcher) throws IOException {
+                             IndexSearcher searcher,
+                             boolean collectElevatedDocsWhenCollapsing) throws IOException {
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
+      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
       List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
       for(int i=0; i<con.size(); i++) {
         contexts[i] = con.get(i);
@@ -653,12 +662,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           ord = -1;
         }
       }
-      
-      // Check to see if we have documents boosted by the QueryElevationComponent
-      if (0 <= ord) {
-        if (boostedDocsCollector.collectIfBoosted(ord, globalDoc)) return;
-      } else {
-        if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
+
+      if (collectElevatedDocsWhenCollapsing) {
+        // Check to see if we have documents boosted by the QueryElevationComponent
+        if (0 <= ord) {
+          if (boostedDocsCollector.collectIfBoosted(ord, globalDoc)) return;
+        } else {
+          if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
+        }
       }
 
       if(ord > -1) {
@@ -785,6 +796,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private int nullDoc = -1;
     private FloatArrayList nullScores;
     private String field;
+    private boolean collectElevatedDocsWhenCollapsing;
 
     private final BoostedDocsCollector boostedDocsCollector;
     
@@ -794,9 +806,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                              int size,
                              String field,
                              IntIntHashMap boostDocsMap,
-                             IndexSearcher searcher) {
+                             IndexSearcher searcher,
+                             boolean collectElevatedDocsWhenCollapsing) {
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
+      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
       List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
       for(int i=0; i<con.size(); i++) {
         contexts[i] = con.get(i);
@@ -827,8 +841,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       final int globalDoc = docBase+contextDoc;
       if (collapseValues.advanceExact(contextDoc)) {
         final int collapseValue = (int) collapseValues.longValue();
-        // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
-        if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
+
+        if (collectElevatedDocsWhenCollapsing) {
+          // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
+          if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
+        }
 
         float score = scorer.score();
         final int idx;
@@ -847,9 +864,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
 
       } else { // Null Group...
-        
-        // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
-        if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
+
+        if (collectElevatedDocsWhenCollapsing){
+          // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
+          if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
+        }
 
         if(nullPolicy == NullPolicy.COLLAPSE.getCode()) {
           float score = scorer.score();
@@ -958,7 +977,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private OrdFieldValueStrategy collapseStrategy;
     private boolean needsScores4Collapsing;
     private boolean needsScores;
-    
+
+    private boolean collectElevatedDocsWhenCollapsing;
+
     private final BoostedDocsCollector boostedDocsCollector;
 
     public OrdFieldValueCollector(int maxDoc,
@@ -971,10 +992,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                   boolean needsScores,
                                   FieldType fieldType,
                                   IntIntHashMap boostDocsMap,
-                                  FunctionQuery funcQuery, IndexSearcher searcher) throws IOException{
+                                  FunctionQuery funcQuery, IndexSearcher searcher,
+                                  boolean collectElevatedDocsWhenCollapsing) throws IOException{
 
       assert ! GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type);
 
+      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
       this.maxDoc = maxDoc;
       this.contexts = new LeafReaderContext[segments];
       List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
@@ -1053,12 +1076,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           ord = segmentValues.ordValue();
         }
       }
-      
-      // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
-      if (-1 == ord) {
-        if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
-      } else {
-        if (boostedDocsCollector.collectIfBoosted(ord, globalDoc)) return;
+
+      if (collectElevatedDocsWhenCollapsing){
+        // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
+        if (-1 == ord) {
+          if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
+        } else {
+          if (boostedDocsCollector.collectIfBoosted(ord, globalDoc)) return;
+        }
       }
       
       collapseStrategy.collapse(ord, contextDoc, globalDoc);
@@ -1166,6 +1191,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private String collapseField;
     
     private final BoostedDocsCollector boostedDocsCollector;
+    private boolean collectElevatedDocsWhenCollapsing;
 
     public IntFieldValueCollector(int maxDoc,
                                   int size,
@@ -1179,7 +1205,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                   FieldType fieldType,
                                   IntIntHashMap boostDocsMap,
                                   FunctionQuery funcQuery,
-                                  IndexSearcher searcher) throws IOException{
+                                  IndexSearcher searcher,
+                                  boolean collectElevatedDocsWhenCollapsing) throws IOException{
+      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
 
       assert ! GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type);
 
@@ -1243,10 +1271,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         collapseStrategy.collapse(collapseKey, contextDoc, globalDoc);
         
       } else { // Null Group...
-        
-        // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
-        if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
 
+        if (collectElevatedDocsWhenCollapsing){
+          // Check to see if we have documents boosted by the QueryElevationComponent (skip normal strategy based collection)
+          if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
+        }
         if (NullPolicy.IGNORE.getCode() != nullPolicy) {
           collapseStrategy.collapseNullGroup(contextDoc, globalDoc);
         }
@@ -1894,20 +1923,23 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int maxDoc = searcher.maxDoc();
       int leafCount = searcher.getTopReaderContext().leaves().size();
 
+      SolrRequestInfo req = SolrRequestInfo.getRequestInfo();
+      boolean collectElevatedDocsWhenCollapsing = req != null && req.getReq().getParams().getBool(COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, true);
+
       if (GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type)) {
 
         if (collapseFieldType instanceof StrField) {
           if (blockCollapse) {
             return new BlockOrdScoreCollector(collapseField, nullPolicy, boostDocs);
           }
-          return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs, searcher);
+          return new OrdScoreCollector(maxDoc, leafCount, docValuesProducer, nullPolicy, boostDocs, searcher, collectElevatedDocsWhenCollapsing);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
           if (blockCollapse) {
             return new BlockIntScoreCollector(collapseField, nullPolicy, boostDocs);
           }
 
-          return new IntScoreCollector(maxDoc, leafCount, nullPolicy, size, collapseField, boostDocs, searcher);
+          return new IntScoreCollector(maxDoc, leafCount, nullPolicy, size, collapseField, boostDocs, searcher, collectElevatedDocsWhenCollapsing);
 
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -1937,7 +1969,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                             minMaxFieldType,
                                             boostDocs,
                                             funcQuery,
-                                            searcher);
+                                            searcher,
+                                            collectElevatedDocsWhenCollapsing);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
 
@@ -1962,7 +1995,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                                             minMaxFieldType,
                                             boostDocs,
                                             funcQuery,
-                                            searcher);
+                                            searcher,
+                                            collectElevatedDocsWhenCollapsing);
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Collapsing field should be of either String, Int or Float type");
