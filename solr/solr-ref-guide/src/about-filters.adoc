@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Like <<tokenizers.adoc#tokenizers,tokenizers>>, <<filter-descriptions.adoc#filter-descriptions,filters>> consume input and produce a stream of tokens. Filters also derive from `org.apache.lucene.analysis.TokenStream`. Unlike tokenizers, a filter's input is another TokenStream. The job of a filter is usually easier than that of a tokenizer since in most cases a filter looks at each token in the stream sequentially and decides whether to pass it along, replace it or discard it.
+Like <<tokenizers.adoc#,tokenizers>>, <<filter-descriptions.adoc#,filters>> consume input and produce a stream of tokens. Filters also derive from `org.apache.lucene.analysis.TokenStream`. Unlike tokenizers, a filter's input is another TokenStream. The job of a filter is usually easier than that of a tokenizer since in most cases a filter looks at each token in the stream sequentially and decides whether to pass it along, replace it or discard it.
 
 A filter may also do more complex analysis by looking ahead to consider multiple tokens at once, although this is less common. One hypothetical use for such a filter might be to normalize state names that would be tokenized as two words. For example, the single token "california" would be replaced with "CA", while the token pair "rhode" followed by "island" would become the single token "RI".
 
@@ -60,4 +60,4 @@ The last filter in the above example is a stemmer filter that uses the Porter st
 
 Conversely, applying a stemmer to your query terms will allow queries containing non stem terms, like "hugging", to match documents with different variations of the same stem word, such as "hugged". This works because both the indexer and the query will map to the same stem ("hug").
 
-Word stemming is, obviously, very language specific. Solr includes several language-specific stemmers created by the http://snowball.tartarus.org/[Snowball] generator that are based on the Porter stemming algorithm. The generic Snowball Porter Stemmer Filter can be used to configure any of these language stemmers. Solr also includes a convenience wrapper for the English Snowball stemmer. There are also several purpose-built stemmers for non-English languages. These stemmers are described in <<language-analysis.adoc#language-analysis,Language Analysis>>.
+Word stemming is, obviously, very language specific. Solr includes several language-specific stemmers created by the http://snowball.tartarus.org/[Snowball] generator that are based on the Porter stemming algorithm. The generic Snowball Porter Stemmer Filter can be used to configure any of these language stemmers. Solr also includes a convenience wrapper for the English Snowball stemmer. There are also several purpose-built stemmers for non-English languages. These stemmers are described in <<language-analysis.adoc#,Language Analysis>>.

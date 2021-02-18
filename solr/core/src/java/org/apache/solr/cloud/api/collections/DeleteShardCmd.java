@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -97,7 +98,19 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(sliceId, Slice.State.CONSTRUCTION.toString());
       propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
       ZkNodeProps m = new ZkNodeProps(propMap);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        // In this DeleteShardCmd.call() method there are potentially two cluster state updates. This is the first one.
+        // Even though the code of this method does not wait for it to complete, it does call the Collection API before
+        // it issues the second state change below. The collection API will be doing its own state change(s), and these will
+        // happen after this one (given it's for the same collection). Therefore we persist this state change
+        // immediately and do not group it with the one done further down.
+        // Once the Collection API is also distributed (and not only the cluster state updates), we will likely be able
+        // to batch more/all cluster state updates done by this command (DeleteShardCmd). TODO SOLR-15146
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, m,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      }
     }
 
     String asyncId = message.getStr(ASYNC);
@@ -144,7 +157,12 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
       ZkStateReader zkStateReader = ocmh.zkStateReader;
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionDeleteShard, m,
+            ocmh.cloudManager, ocmh.zkStateReader);
+      } else {
+        ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      }
 
       zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
 

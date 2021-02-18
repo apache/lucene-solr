@@ -27,19 +27,19 @@ SolrCloud is flexible distributed search and indexing, without a leader node to 
 
 In this section, we'll cover everything you need to know about using Solr in SolrCloud mode. We've split up the details into the following topics:
 
-* <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,Getting Started with SolrCloud>>
-* <<how-solrcloud-works.adoc#how-solrcloud-works,How SolrCloud Works>>
-** <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Shards and Indexing Data in SolrCloud>>
-** <<distributed-requests.adoc#distributed-requests,Distributed Requests>>
-* <<solrcloud-resilience.adoc#solrcloud-resilience,SolrCloud Resilience>>
-** <<solrcloud-recoveries-and-write-tolerance.adoc#solrcloud-recoveries-and-write-tolerance,SolrCloud Recoveries and Write Tolerance>>
-** <<solrcloud-query-routing-and-read-tolerance.adoc#solrcloud-query-routing-and-read-tolerance,SolrCloud Query Routing And Read Tolerance>>
-* <<solrcloud-configuration-and-parameters.adoc#solrcloud-configuration-and-parameters,SolrCloud Configuration and Parameters>>
-** <<setting-up-an-external-zookeeper-ensemble.adoc#setting-up-an-external-zookeeper-ensemble,Setting Up an External ZooKeeper Ensemble>>
-** <<using-zookeeper-to-manage-configuration-files.adoc#using-zookeeper-to-manage-configuration-files,Using ZooKeeper to Manage Configuration Files>>
-** <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>
-** <<collections-api.adoc#collections-api,Collections API>>
-** <<parameter-reference.adoc#parameter-reference,Parameter Reference>>
-** <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>>
-** <<solrcloud-with-legacy-configuration-files.adoc#solrcloud-with-legacy-configuration-files,SolrCloud with Legacy Configuration Files>>
-** <<configsets-api.adoc#configsets-api,Configsets API>>
+* <<getting-started-with-solrcloud.adoc#,Getting Started with SolrCloud>>
+* <<how-solrcloud-works.adoc#,How SolrCloud Works>>
+** <<shards-and-indexing-data-in-solrcloud.adoc#,Shards and Indexing Data in SolrCloud>>
+** <<distributed-requests.adoc#,Distributed Requests>>
+* <<solrcloud-resilience.adoc#,SolrCloud Resilience>>
+** <<solrcloud-recoveries-and-write-tolerance.adoc#,SolrCloud Recoveries and Write Tolerance>>
+** <<solrcloud-query-routing-and-read-tolerance.adoc#,SolrCloud Query Routing And Read Tolerance>>
+* <<solrcloud-configuration-and-parameters.adoc#,SolrCloud Configuration and Parameters>>
+** <<setting-up-an-external-zookeeper-ensemble.adoc#,Setting Up an External ZooKeeper Ensemble>>
+** <<using-zookeeper-to-manage-configuration-files.adoc#,Using ZooKeeper to Manage Configuration Files>>
+** <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>
+** <<collections-api.adoc#,Collections API>>
+** <<parameter-reference.adoc#,Parameter Reference>>
+** <<command-line-utilities.adoc#,Command Line Utilities>>
+** <<solrcloud-with-legacy-configuration-files.adoc#,SolrCloud with Legacy Configuration Files>>
+** <<configsets-api.adoc#,Configsets API>>

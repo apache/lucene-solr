@@ -94,8 +94,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
       } catch (Exception e) {
         log.error("Error in prioritizing Overseer", e);
       }
-
-    }).start();
+    }, "OverseerPrioritizationThread").start();
 
   }
 

@@ -121,7 +121,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
               .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()))
               .build();
           Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-              ocmh.overseer.getCoreContainer().getPlacementPluginFactory().createPluginInstance(),
+              ocmh.overseer.getCoreContainer(),
               clusterState, clusterState.getCollection(sourceCollection));
           targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
         }

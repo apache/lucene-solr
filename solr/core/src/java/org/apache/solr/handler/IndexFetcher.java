@@ -915,7 +915,7 @@ public class IndexFetcher {
       } finally {
         latch.countDown();
       }
-    }).start();
+    }, "CoreReload").start();
     try {
       latch.await();
     } catch (InterruptedException e) {

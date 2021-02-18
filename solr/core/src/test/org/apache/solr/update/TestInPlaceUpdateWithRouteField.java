@@ -42,9 +42,12 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.UpdateParams;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
@@ -105,6 +108,11 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
     
     UpdateRequest updateRequest = new UpdateRequest()
         .add(sdoc);
+    
+    // since this atomic update will be done in place, it shouldn't matter if we specify this param, or what it's value is
+    if (random().nextBoolean()) {
+      updateRequest.setParam(UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE, Boolean.toString(random().nextBoolean()));
+    }
     updateRequest.commit(cluster.getSolrClient(), COLLECTION);
     solrDocument = queryDoc(id);
     Long newVersion = (Long) solrDocument.get("_version_");
@@ -118,6 +126,19 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
     sdoc.addField("shardName",  map("set", "newShardName"));
     checkWrongCommandFailure(sdoc);
+
+    sdoc.setField("shardName", shardName);
+    
+    // if we now attempt an atomic update that we know can't be done in-place, this should fail...
+    sdoc.addField("title_s", map("set", "this is a string that can't be updated in place"));
+    final SolrException e = expectThrows(SolrException.class, () -> {
+        final UpdateRequest r = new UpdateRequest();
+        r.add(sdoc);
+        r.setParam(UpdateParams.REQUIRE_PARTIAL_DOC_UPDATES_INPLACE, "true");
+        r.process(cluster.getSolrClient(), COLLECTION);
+      });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertThat(e.getMessage(), containsString("Unable to update doc in-place: " + id));
   }
 
   private void checkWrongCommandFailure(SolrInputDocument sdoc) throws SolrServerException, IOException {

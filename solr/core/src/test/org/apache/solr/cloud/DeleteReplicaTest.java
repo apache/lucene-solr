@@ -77,6 +77,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     // these tests need to be isolated, so we dont share the minicluster
     configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
+        .useOtherClusterStateUpdateStrategy() // Some tests (this one) use "the other" cluster state update strategy to increase coverage
         .configure();
   }
   
@@ -231,7 +232,8 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
                                          ! r.equals(shard.getLeader())));
     
     JettySolrRunner replicaJetty = cluster.getReplicaJetty(replica);
-    ZkStateReaderAccessor accessor = new ZkStateReaderAccessor(replicaJetty.getCoreContainer().getZkController().getZkStateReader());
+    ZkController replicaZkController = replicaJetty.getCoreContainer().getZkController();
+    ZkStateReaderAccessor accessor = new ZkStateReaderAccessor(replicaZkController.getZkStateReader());
 
     final long preDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
       (accessor.getStateWatchers(collectionName));
@@ -243,7 +245,14 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.CORE_NODE_NAME_PROP, replica.getName());
 
-    cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+    if (replicaZkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      cluster.getOpenOverseer().getDistributedClusterStateUpdater().doSingleStateUpdate(
+          DistributedClusterStateUpdater.MutatingCommand.SliceRemoveReplica, m,
+          cluster.getOpenOverseer().getSolrCloudManager(),
+          cluster.getOpenOverseer().getZkStateReader());
+    } else {
+      cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+    }
 
     waitForState("Timeout waiting for replica get deleted", collectionName,
         (liveNodes, collectionState) -> collectionState.getSlice("shard1").getReplicas().size() == 2);
@@ -301,13 +310,22 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         log.info("Running delete core {}",cd);
 
         try {
+          ZkController replica1ZkController = replica1Jetty.getCoreContainer().getZkController();
           ZkNodeProps m = new ZkNodeProps(
               Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
               ZkStateReader.CORE_NAME_PROP, replica1.getCoreName(),
               ZkStateReader.NODE_NAME_PROP, replica1.getNodeName(),
               ZkStateReader.COLLECTION_PROP, collectionName,
               ZkStateReader.CORE_NODE_NAME_PROP, replica1.getName());
-          cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+
+          if (replica1ZkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+            cluster.getOpenOverseer().getDistributedClusterStateUpdater().doSingleStateUpdate(
+                DistributedClusterStateUpdater.MutatingCommand.SliceRemoveReplica, m,
+                cluster.getOpenOverseer().getSolrCloudManager(),
+                cluster.getOpenOverseer().getZkStateReader());
+          } else {
+            cluster.getOpenOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+          }
 
           boolean replicaDeleted = false;
           TimeOut timeOut = new TimeOut(20, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -345,8 +363,14 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     try {
       replica1Jetty.stop();
       waitForNodeLeave(replica1JettyNodeName);
-      waitForState("Expected replica:"+replica1+" get down", collectionName, (liveNodes, collectionState)
-          -> collectionState.getSlice("shard1").getReplica(replica1.getName()).getState() == DOWN);
+
+      // There is a race condition: the replica might be marked down before we get here, in which case we never get notified
+      // So we check before waiting... Not eliminating but significantly reducing the race window - eliminating would require
+      // deeper changes in the code where the watcher is set.
+      if (getCollectionState(collectionName).getSlice("shard1").getReplica(replica1.getName()).getState() != DOWN) {
+        waitForState("Expected replica:" + replica1 + " get down", collectionName, (liveNodes, collectionState)
+            -> collectionState.getSlice("shard1").getReplica(replica1.getName()).getState() == DOWN);
+      }
       replica1Jetty.start();
       waitingForReplicaGetDeleted.acquire();
     } finally {

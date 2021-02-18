@@ -19,11 +19,11 @@
 
 The following sections cover provide general information about how various SolrCloud features work. To understand these features, it's important to first understand a few key concepts that relate to SolrCloud.
 
-* <<shards-and-indexing-data-in-solrcloud.adoc#shards-and-indexing-data-in-solrcloud,Shards and Indexing Data in SolrCloud>>
-* <<distributed-requests.adoc#distributed-requests,Distributed Requests>>
-* <<aliases.adoc#aliases,Standard and Routed Aliases>>
+* <<shards-and-indexing-data-in-solrcloud.adoc#,Shards and Indexing Data in SolrCloud>>
+* <<distributed-requests.adoc#,Distributed Requests>>
+* <<aliases.adoc#,Standard and Routed Aliases>>
 
-If you are already familiar with SolrCloud concepts and basic functionality, you can skip to the section covering <<solrcloud-configuration-and-parameters.adoc#solrcloud-configuration-and-parameters,SolrCloud Configuration and Parameters>>.
+If you are already familiar with SolrCloud concepts and basic functionality, you can skip to the section covering <<solrcloud-configuration-and-parameters.adoc#,SolrCloud Configuration and Parameters>>.
 
 == Key SolrCloud Concepts
 

@@ -111,8 +111,8 @@ public class AdminHandlersProxy {
         log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
       }
     }
-    if (log.isInfoEnabled()) {
-      log.info("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
+    if (log.isDebugEnabled()) {
+      log.debug("Fetched response from {} nodes: {}", responses.keySet().size(), responses.keySet());
     }
     return true;
   } 

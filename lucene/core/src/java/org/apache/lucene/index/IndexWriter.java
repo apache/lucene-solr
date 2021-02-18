@@ -1009,6 +1009,14 @@ public class IndexWriter
         changed();
 
       } else if (reader != null) {
+        if (reader.segmentInfos.getIndexCreatedVersionMajor() < Version.MIN_SUPPORTED_MAJOR) {
+          // second line of defence in the case somebody tries to trick us.
+          throw new IllegalArgumentException(
+              "createdVersionMajor must be >= "
+                  + Version.MIN_SUPPORTED_MAJOR
+                  + ", got: "
+                  + reader.segmentInfos.getIndexCreatedVersionMajor());
+        }
         // Init from an existing already opened NRT or non-NRT reader:
 
         if (reader.directory() != commit.getDirectory()) {
@@ -1977,6 +1985,17 @@ public class IndexWriter
       }
     }
     return dvUpdates;
+  }
+
+  /**
+   * Return an unmodifiable set of all field names as visible from this IndexWriter, across all
+   * segments of the index.
+   *
+   * @lucene.experimental
+   */
+  public Set<String> getFieldNames() {
+    // FieldNumbers#getFieldNames() returns an unmodifiableSet
+    return globalFieldNumberMap.getFieldNames();
   }
 
   // for test purpose
@@ -5011,8 +5030,7 @@ public class IndexWriter
         // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove
         // all the 0-doc segments that we "merged":
         assert merge.info.info.maxDoc() == 0;
-        commitMerge(merge, mergeState);
-        success = true;
+        success = commitMerge(merge, mergeState);
         return 0;
       }
 

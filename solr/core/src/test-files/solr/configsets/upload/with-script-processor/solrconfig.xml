@@ -37,12 +37,7 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
-  <updateHandler class="solr.DirectUpdateHandler2">
-    <commitWithin>
-      <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
-    </commitWithin>
 
-  </updateHandler>
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -53,13 +48,10 @@
   </requestHandler>
 
   <updateRequestProcessorChain name="force-script-engine" default="true">
-    <processor class="solr.StatelessScriptUpdateProcessorFactory">
-      <str name="engine">javascript</str>
-      <str name="script">missleading.extension.updateprocessor.js.txt</str>
-    </processor>
+    <!-- Simulates a ScriptUpdateProcessorFactory for the purposes of testing configsets -->
+    <processor class="org.apache.solr.cloud.MockScriptUpdateProcessorFactory"/>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 </config>
-

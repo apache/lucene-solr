@@ -18,11 +18,9 @@
 package org.apache.solr.handler.export;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
+import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -32,10 +30,13 @@ import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.schema.FieldType;
 
 class StringFieldWriter extends FieldWriter {
-  private String field;
+  protected String field;
   private FieldType fieldType;
-  private Map<Integer, SortedDocValues> lastDocValues = new HashMap<>();
-  private CharsRefBuilder cref = new CharsRefBuilder();
+  private BytesRef lastRef;
+  private int lastOrd = -1;
+  private IntObjectHashMap<SortedDocValues> docValuesCache = new IntObjectHashMap<>();
+
+  protected CharsRefBuilder cref = new CharsRefBuilder();
   final ByteArrayUtf8CharSequence utf8 = new ByteArrayUtf8CharSequence(new byte[0], 0, 0) {
     @Override
     public String toString() {
@@ -53,48 +54,69 @@ class StringFieldWriter extends FieldWriter {
     this.fieldType = fieldType;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
-    BytesRef ref;
-    SortValue sortValue = sortDoc.getSortValue(this.field);
-    if (sortValue != null) {
-      if (sortValue.isPresent()) {
-        ref = (BytesRef) sortValue.getCurrentValue();
-      } else { //empty-value
+  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+    StringValue stringValue = (StringValue) sortDoc.getSortValue(this.field);
+    BytesRef ref = null;
+
+    if (stringValue != null) {
+      /*
+        We already have the top level ordinal used for sorting.
+        Now let's use it for caching the BytesRef so we don't have to look it up.
+        When we have long runs of repeated values do to the sort order of the docs this is a huge win.
+       */
+
+      if(stringValue.currentOrd == -1) {
+        //Null sort value
         return false;
       }
-    } else {
-      // field is not part of 'sort' param, but part of 'fl' param
-      SortedDocValues vals = lastDocValues.get(sortDoc.ord);
-      if (vals == null || vals.docID() >= sortDoc.docId) {
-        vals = DocValues.getSorted(reader, this.field);
-        lastDocValues.put(sortDoc.ord, vals);
+
+      if (this.lastOrd == stringValue.currentOrd) {
+        ref = lastRef;
       }
+
+      this.lastOrd = stringValue.currentOrd;
+    }
+
+    if (ref == null) {
+      //Reuse the last DocValues object if possible
+      int readerOrd = readerContext.ord;
+      SortedDocValues vals = null;
+      if(docValuesCache.containsKey(readerOrd)) {
+        SortedDocValues sortedDocValues = docValuesCache.get(readerOrd);
+        if(sortedDocValues.docID() < sortDoc.docId) {
+          //We have not advanced beyond the current docId so we can use this docValues.
+          vals = sortedDocValues;
+        }
+      }
+
+      if(vals == null) {
+        vals = DocValues.getSorted(readerContext.reader(), this.field);
+        docValuesCache.put(readerOrd, vals);
+      }
+
       if (vals.advance(sortDoc.docId) != sortDoc.docId) {
         return false;
       }
+
       int ord = vals.ordValue();
       ref = vals.lookupOrd(ord);
+
+      if(stringValue != null) {
+        //Don't need to set the lastRef if it's not a sort value.
+        lastRef = ref.clone();
+      }
     }
 
+    writeBytes(ew, ref, fieldType);
+    return true;
+  }
+
+  protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType) throws IOException {
     if (ew instanceof JavaBinCodec.BinEntryWriter) {
       ew.put(this.field, utf8.reset(ref.bytes, ref.offset, ref.length, null));
     } else {
-      String v = null;
-      if (sortValue != null) {
-        v = ((StringValue) sortValue).getLastString();
-        if (v == null) {
-          fieldType.indexedToReadable(ref, cref);
-          v = cref.toString();
-          ((StringValue) sortValue).setLastString(v);
-        }
-      } else {
-        fieldType.indexedToReadable(ref, cref);
-        v = cref.toString();
-      }
-
-      ew.put(this.field, v);
-
+      fieldType.indexedToReadable(ref, cref);
+      ew.put(this.field, cref.toString());
     }
-    return true;
   }
 }

@@ -512,17 +512,16 @@ public class TestSimilarityBase extends LuceneTestCase {
 
   // LUCENE-5221
   public void testDiscountOverlapsBoost() throws IOException {
-    BM25Similarity expected = new BM25Similarity();
+    BM25Similarity expected = new BM25Similarity(false);
     SimilarityBase actual =
         new DFRSimilarity(new BasicModelIne(), new AfterEffectB(), new NormalizationH2());
-    expected.setDiscountOverlaps(false);
     actual.setDiscountOverlaps(false);
     FieldInvertState state =
         new FieldInvertState(Version.LATEST.major, "foo", IndexOptions.DOCS_AND_FREQS);
     state.setLength(5);
     state.setNumOverlap(2);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));
-    expected.setDiscountOverlaps(true);
+    expected = new BM25Similarity();
     actual.setDiscountOverlaps(true);
     assertEquals(expected.computeNorm(state), actual.computeNorm(state));
   }

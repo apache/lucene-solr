@@ -29,7 +29,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -40,6 +39,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,8 +74,8 @@ class ExclusiveSliceProperty {
   ExclusiveSliceProperty(ClusterState clusterState, ZkNodeProps message) {
     this.clusterState = clusterState;
     String tmp = message.getStr(ZkStateReader.PROPERTY_PROP);
-    if (StringUtils.startsWith(tmp, OverseerCollectionMessageHandler.COLL_PROP_PREFIX) == false) {
-      tmp = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + tmp;
+    if (!StringUtils.startsWith(tmp, CollectionAdminParams.PROPERTY_PREFIX)) {
+      tmp = CollectionAdminParams.PROPERTY_PREFIX + tmp;
     }
     this.property = tmp.toLowerCase(Locale.ROOT);
     collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);

@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,7 +99,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                               List<ZkNodeProps> sourceReplicas,
                               OverseerCollectionMessageHandler ocmh,
                               String node,
-                              String async) throws InterruptedException {
+                              String async) throws IOException, InterruptedException {
     CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       String coll = sourceReplica.getStr(COLLECTION_PROP);

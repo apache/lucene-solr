@@ -42,7 +42,7 @@ When using `*`, consider adding `hl.requireFieldMatch=true`.
 +
 Note that the field(s) listed here ought to have compatible text-analysis (defined in the schema) with field(s) referenced in the query to be highlighted.
 It may be necessary to modify `hl.q` and `hl.qparser` and/or modify the text analysis.
-The following example uses the <<local-parameters-in-queries.adoc#local-parameters-in-queries,local-params>> syntax and <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,the edismax parser>> to highlight fields in `hl.fl`:
+The following example uses the <<local-parameters-in-queries.adoc#,local-params>> syntax and <<the-extended-dismax-query-parser.adoc#,the edismax parser>> to highlight fields in `hl.fl`:
 `&hl.fl=field1 field2&hl.q={!edismax qf=$hl.fl v=$q}&hl.qparser=lucene&hl.requireFieldMatch=true` (along with other applicable parameters, of course).
 +
 The default is the value of the `df` parameter which in turn has no default.
@@ -55,7 +55,7 @@ When setting this, you might also need to set `hl.qparser`.
 The default is the value of the `q` parameter (already parsed).
 
 `hl.qparser`::
-The <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,query parser>> to use for the `hl.q` query.  It only applies when `hl.q` is set.
+The <<query-syntax-and-parsing.adoc#,query parser>> to use for the `hl.q` query.  It only applies when `hl.q` is set.
 +
 The default is the value of the `defType` parameter which in turn defaults to `lucene`.
 
@@ -227,7 +227,7 @@ By default, the Unified Highlighter will usually pick the right offset source (s
 The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`, `POSTINGS_WITH_TERM_VECTORS`, or `TERM_VECTORS`.
 
 `hl.fragAlignRatio`::
-This parameter influences where the first match (i.e. highlighted text) in a passage is positioned.
+This parameter influences where the first match (i.e., highlighted text) in a passage is positioned.
 The default value of `0.5` means to align the match to the middle.
 A value of `0.0` means to align the match to the left, while `1.0` to align it to the right.
 This setting is a best-effort hint, as there are a variety of factors.

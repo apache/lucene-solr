@@ -25,7 +25,6 @@ plugins {
   id 'de.thetaphi.forbiddenapis' version '3.1' apply false
   id "de.undercouch.download" version "4.0.2" apply false
   id "net.ltgt.errorprone" version "1.2.1" apply false
-  id "com.palantir.docker" version "0.25.0" apply false
   id 'com.diffplug.spotless' version "5.8.2" apply false
 }
 
@@ -155,6 +154,7 @@ apply from: file('gradle/generation/util.gradle')
 apply from: file('gradle/generation/snowball.gradle')
 apply from: file('gradle/generation/kuromoji.gradle')
 apply from: file('gradle/generation/nori.gradle')
+apply from: file('gradle/generation/icu.gradle')
 
 // Shared configuration of subprojects containing native code.
 apply from: file('gradle/native/disable-native.gradle')

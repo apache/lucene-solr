@@ -97,6 +97,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     assertFalse("CloudCollectionsListener not triggered after registration", newResults.get(2).contains("testcollection1"));
 
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
@@ -110,6 +111,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     client.getZkStateReader().removeCloudCollectionsListener(watcher1);
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     cluster.waitForActiveCollection("testcollection2", 4, 4);
 
@@ -136,10 +138,12 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     cluster.waitForActiveCollection("testcollection1", 4, 4);
     
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     cluster.waitForActiveCollection("testcollection2", 4, 4);
 

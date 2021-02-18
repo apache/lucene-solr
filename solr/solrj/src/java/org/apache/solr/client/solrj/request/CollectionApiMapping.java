@@ -18,6 +18,13 @@
 package org.apache.solr.client.solrj.request;
 
 
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.beans.V2ApiConstants;
+import org.apache.solr.common.params.CollectionParams.CollectionAction;
+import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.Utils;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -25,26 +32,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.Utils;
-
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.CLUSTER_ALIASES;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTIONS_COMMANDS;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.COLLECTION_STATE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_COMMANDS;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_DELETE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_PER_SHARD_PER_REPLICA_DELETE;
-import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.PER_COLLECTION_SHARDS_COMMANDS;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.*;
+import static org.apache.solr.client.solrj.request.CollectionApiMapping.EndPoint.*;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
@@ -57,17 +49,6 @@ public class CollectionApiMapping {
   public enum Meta implements CommandMeta {
     GET_A_COLLECTION(COLLECTION_STATE, GET, CLUSTERSTATUS),
     LIST_ALIASES(CLUSTER_ALIASES, GET, LISTALIASES),
-    CREATE_COLLECTION(COLLECTIONS_COMMANDS,
-        POST,
-        CREATE,
-        CREATE.toLower(),
-        Utils.makeMap(
-            "collection.configName", "config",
-            "createNodeSet.shuffle", "shuffleNodes",
-            "createNodeSet", "nodeSet"
-        ),
-        Utils.makeMap("property.", "properties.")),
-
     RELOAD_COLL(PER_COLLECTION,
         POST,
         RELOAD,
@@ -91,34 +72,11 @@ public class CollectionApiMapping {
         POST,
         REBALANCELEADERS,
         "rebalance-leaders", null),
-    CREATE_ALIAS(COLLECTIONS_COMMANDS,
-        POST,
-        CREATEALIAS,
-        "create-alias",
-        CREATE_COLLECTION.paramsToAttrs.entrySet().stream().collect(Collectors.toMap(
-            entry -> "create-collection." + entry.getKey(),
-            entry -> "create-collection." + entry.getValue()
-        )),
-        CREATE_COLLECTION.prefixParamsToAttrs.entrySet().stream().collect(Collectors.toMap(
-            entry -> "create-collection." + entry.getKey(),
-            entry -> "create-collection." + entry.getValue()
-        ))),
-    DELETE_ALIAS(COLLECTIONS_COMMANDS,
-        POST,
-        DELETEALIAS,
-        "delete-alias",
-        null),
-    ALIAS_PROP(COLLECTIONS_COMMANDS,
-        POST,
-        ALIASPROP,
-        "set-alias-property",
-        null,
-        Utils.makeMap("property.", "properties.")),
     CREATE_SHARD(PER_COLLECTION_SHARDS_COMMANDS,
         POST,
         CREATESHARD,
         "create",
-        Utils.makeMap("createNodeSet", "nodeSet"),
+        Utils.makeMap("createNodeSet", V2ApiConstants.NODE_SET),
         Utils.makeMap("property.", "coreProperties.")) {
       @Override
       public String getParamSubstitute(String param) {
@@ -169,17 +127,6 @@ public class CollectionApiMapping {
             NAME, "collection",
             "propertyName", "name",
             "propertyValue", "value")),
-    BACKUP_COLLECTION(COLLECTIONS_COMMANDS,
-        POST,
-        BACKUP,
-        "backup-collection", null
-    ),
-    RESTORE_COLLECTION(COLLECTIONS_COMMANDS,
-        POST,
-        RESTORE,
-        "restore-collection",
-        null
-    ),
     FORCE_LEADER(PER_COLLECTION_PER_SHARD_COMMANDS, POST, CollectionAction.FORCELEADER, "force-leader", null),
     BALANCE_SHARD_UNIQUE(PER_COLLECTION, POST, BALANCESHARDUNIQUE,"balance-shard-unique" , null)
     ;
@@ -304,7 +251,6 @@ public class CollectionApiMapping {
 
   public enum EndPoint implements V2EndPoint {
     CLUSTER_ALIASES("cluster.aliases"),
-    COLLECTIONS_COMMANDS("collections.Commands"),
     COLLECTION_STATE("collections.collection"),
     PER_COLLECTION("collections.collection.Commands"),
     PER_COLLECTION_SHARDS_COMMANDS("collections.collection.shards.Commands"),
