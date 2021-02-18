@@ -459,7 +459,7 @@ http://localhost:8983/solr/admin/collections?action=RENAME&name=newCollection&ta
 ====
 [.tab-label]*V2 API*
 
-Umm...   We don't seem to have a v2 version!
+We do not currently have a V2 equivalent.
 
 ====
 --
@@ -651,9 +651,41 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=coll&pro
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection
 
-`/admin/collections?action=MIGRATE&collection=_name_&split.key=_key1!_&target.collection=_target_collection_&forward.timeout=60`
-
 The MIGRATE command is used to migrate all documents having a given routing key to another collection. The source collection will continue to have the same data as-is but it will start re-routing write requests to the target collection for the number of seconds specified by the `forward.timeout` parameter. It is the responsibility of the user to switch to the target collection for reads and writes after the MIGRATE action completes.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1migratecollection]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `migrate` command must be capitalized as `MIGRATE`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=newCollection&split.key=key1!&target.collection=postMigrationCollection&forward.timeout=60
+----
+====
+
+[example.tab-pane#v2migratecollection]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "migrate-docs": {
+      "target": "postMigrationCollection",
+      "splitKey": "key1!"
+    }
+  }
+'
+----
+====
+--
+
 
 The routing key specified by the `split.key` parameter may span multiple shards on both the source and the target collections. The migration is performed shard-by-shard in a single thread. One or more temporary collections may be created by this command during the ‘migrate’ process but they are cleaned up at the end automatically.
 
@@ -668,13 +700,13 @@ Please note that the MIGRATE API does not perform any de-duplication on the docu
 `collection`::
 The name of the source collection from which documents will be split. This parameter is required.
 
-`target.collection`::
+`target.collection` (V1), `target` (V2)::
 The name of the target collection to which documents will be migrated. This parameter is required.
 
-`split.key`::
+`split.key` (V1), `splitKey` (V2)::
 The routing key prefix. For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`. This parameter is required.
 
-`forward.timeout`::
+`forward.timeout` (V1), `forwardTimeout` (V2)::
 The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
 
 `property._name_=_value_`::
@@ -845,10 +877,32 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
 [[reindexcollection]]
 == REINDEXCOLLECTION: Re-Index a Collection
 
-`/admin/collections?action=REINDEXCOLLECTION&name=_name_`
-
 The REINDEXCOLLECTION command reindexes a collection using existing data from the
 source collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1reindexcollection]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `reindexcommand` command must be capitalized as `REINDEXCOLLECTION`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCollection
+----
+====
+
+[example.tab-pane#v2reindexcollection]
+====
+[.tab-label]*V2 API*
+
+We do not currently have a V2 equivalent.
+
+====
+--
+
 
 NOTE: Reindexing is potentially a lossy operation - some of the existing indexed data that is not
 available as stored fields may be lost, so users should use this command
@@ -965,7 +1019,34 @@ was already an alias to `.rx_newCollection_1`, which was likely a result of a pr
 == COLSTATUS: Detailed Status of a Collection's Indexes
 
 The COLSTATUS command provides a detailed description of the collection status, including low-level index
-information about segments and field data.
+information about segments and field data.  There isn't a good equivalent V2 API that supports all the parameters below.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1collectionstatus]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `colstatus` command must be capitalized as `COLSTATUS`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=newCollection&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true
+----
+====
+
+[example.tab-pane#v2collectionstatus]
+====
+[.tab-label]*V2 API*
+
+The closest V2 API is this one, but doesn't support all the features of the V1 equivalent.
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections/newCollection?omitHeader=true
+----
+====
+--
 
 This command also checks the compliance of Lucene index field types with the current Solr collection
 schema and indicates the names of non-compliant fields, i.e., Lucene fields with field types incompatible
@@ -973,7 +1054,7 @@ schema and indicates the names of non-compliant fields, i.e., Lucene fields with
 result from incompatible schema changes or after migration of
 data to a different major Solr release.
 
-`/admin/collections?action=COLSTATUS&collection=coll&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true`
+
 
 === COLSTATUS Parameters
 
