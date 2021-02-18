@@ -200,6 +200,10 @@ public class TestSpellChecking extends StemmerTestBase {
     doTest("sug2");
   }
 
+  public void testMaxNGramSugsDefaultIsNotUnlimited() throws Exception {
+    doTest("maxNGramSugsDefault");
+  }
+
   public void testMixedCaseSuggestionHeuristics() throws Exception {
     doTest("i58202");
   }

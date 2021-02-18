@@ -166,7 +166,7 @@ public class Dictionary {
   List<RepEntry> repTable = new ArrayList<>();
   List<List<String>> mapTable = new ArrayList<>();
   int maxDiff = 5;
-  int maxNGramSuggestions = Integer.MAX_VALUE;
+  int maxNGramSuggestions = 4;
   boolean onlyMaxDiff;
   char noSuggest, subStandard;
   ConvTable iconv, oconv;
