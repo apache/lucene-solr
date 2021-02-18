@@ -5,14 +5,20 @@ from previous versions and gives guidelines for making format changes.
 
 ## Compatibility strategy
 
-Lucene supports the ability to read segments created in older versions by
-maintaining old codec classes along with their formats. When making a change
-to a file format, we create a fresh format class and copy the existing one
-into the backwards-codecs package.
+Codecs and file formats are versioned according to the minor version in which
+they were created. For example Lucene87Codec represents the codec used for
+creating Lucene 8.7 indices, and potentially later index versions too. Each
+segment records the codec version that was used to write it.
 
-These older formats are tested in two ways:
+Lucene supports the ability to read segments created in older versions by
+maintaining old codec classes. These older codecs live in the backwards-codecs
+package along with their file formats. When making a change to a file format,
+we create a fresh copies of the codec and format, and move the existing ones
+into backwards-codecs.
+
+Older codecs are tested in two ways:
 * Through unit tests like TestLucene80NormsFormat, which checks we can write
-then read data using the old format
+then read data using each old format
 * Through TestBackwardsCompatibility, which loads indices created in previous
 versions and checks that we can search them
 
@@ -33,7 +39,10 @@ class like Lucene80RWNormsFormat to support unit tests. Note that most formats
 only need read logic, but a small set including DocValuesFormat and
 FieldInfosFormat will need to retain write logic since can be used to update
 old segments.
-3. Make a change to the new format!
+3. Update the current codec, for example Lucene90Codec, to use the new file
+format. If this new codec doesn't exist yet, then create it first and move the
+existing one to backwards-codecs.
+4. Make a change to the new format!
 
 ## Internal format versions
 
