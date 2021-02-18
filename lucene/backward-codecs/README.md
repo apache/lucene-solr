@@ -13,7 +13,7 @@ segment records the codec version that was used to write it.
 Lucene supports the ability to read segments created in older versions by
 maintaining old codec classes. These older codecs live in the backwards-codecs
 package along with their file formats. When making a change to a file format,
-we create a fresh copies of the codec and format, and move the existing ones
+we create fresh copies of the codec and format, and move the existing ones
 into backwards-codecs.
 
 Older codecs are tested in two ways:
@@ -37,8 +37,8 @@ helper classes to the backwards-codecs package. If the format will only be
 used for reading, then delete the write-side logic and move it to a test-only
 class like Lucene80RWNormsFormat to support unit tests. Note that most formats
 only need read logic, but a small set including DocValuesFormat and
-FieldInfosFormat will need to retain write logic since can be used to update
-old segments.
+FieldInfosFormat will need to retain write logic since they can be used to
+update old segments.
 3. Update the current codec, for example Lucene90Codec, to use the new file
 format. If this new codec doesn't exist yet, then create it first and move the
 existing one to backwards-codecs.
