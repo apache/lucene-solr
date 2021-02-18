@@ -28,6 +28,8 @@ New Features
 * SOLR-15055: Re-implement 'withCollection'. This also adds the placement plugin support
   for rejecting replica / collection deletions that would violate placement constraints. (ab, ilan)
 
+* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)  
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -222,8 +224,6 @@ New Features
 * SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
 
 * SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
-
-* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)
 
 Improvements
 ---------------------
