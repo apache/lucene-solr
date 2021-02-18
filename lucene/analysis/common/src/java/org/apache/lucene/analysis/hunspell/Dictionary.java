@@ -161,7 +161,7 @@ public class Dictionary {
   private char[] ignore;
 
   String tryChars = "";
-  String[] neighborKeyGroups = new String[0];
+  String[] neighborKeyGroups = {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
   boolean enableSplitSuggestions = true;
   List<RepEntry> repTable = new ArrayList<>();
   List<List<String>> mapTable = new ArrayList<>();
