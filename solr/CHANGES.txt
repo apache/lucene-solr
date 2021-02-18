@@ -223,6 +223,7 @@ New Features
 
 * SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
 
+* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)
 
 Improvements
 ---------------------

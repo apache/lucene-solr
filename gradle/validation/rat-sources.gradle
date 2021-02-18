@@ -207,6 +207,8 @@ class RatTask extends DefaultTask {
             substringMatcher(licenseFamilyCategory: "MIT  ", licenseFamilyName:"Modified BSD License") {
                 // ICU license
                 pattern(substring: "Permission is hereby granted, free of charge, to any person obtaining a copy")
+                // ui-grid
+                pattern(substring: " ; License: MIT")                
             }
 
             // Apache
