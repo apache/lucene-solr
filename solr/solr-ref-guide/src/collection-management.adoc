@@ -22,7 +22,42 @@ A collection is a single logical index that uses a single Solr configuration fil
 [[create]]
 == CREATE: Create a Collection
 
-`/admin/collections?action=CREATE&name=_name_`
+The CREATE action is used to create new collection of data.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1createcollection]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `create` command must be capitalized as `CREATE`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection
+
+----
+====
+
+[example.tab-pane#v2createcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `create` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "create": {
+      "name": "newCollection",
+      "numShards": 1
+    }
+  }
+'
+----
+====
+--
 
 === CREATE Parameters
 
@@ -156,14 +191,62 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
 [[reload]]
 == RELOAD: Reload a Collection
 
-`/admin/collections?action=RELOAD&name=_name_`
+The RELOAD action is used when you have changed a configuration file in ZooKeeper, like uploading a new `schema.xml`.
+Solr automatically reloads collections when certain files, monitored via a watch in ZooKeeper are changed,
+such as `security.json`.  However, for changes to files in configsets, like uploading a new `schema.xml`, you
+will need to manually trigger the RELOAD.
 
-The RELOAD action is used when you have changed a configuration in ZooKeeper.
+[.dynamic-tabs]
+--
+[example.tab-pane#v1reloadcollection]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `reload` command must be capitalized as `RELOAD`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection
+
+----
+====
+
+[example.tab-pane#v2reloadcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `reload` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "reload": {}
+  }
+'
+----
+
+Additional parameters can be passed in via the the `reload` key:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "reload": {
+      "async": "reload1"
+    }
+  }
+'
+----
+====
+--
+
+
 
 === RELOAD Parameters
 
 `name`::
-The name of the collection to reload. This parameter is required.
+The name of the collection to reload. This parameter is required by the V1 API.
 
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
@@ -210,11 +293,45 @@ http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt
 [[modifycollection]]
 == MODIFYCOLLECTION: Modify Attributes of a Collection
 
-`/admin/collections?action=MODIFYCOLLECTION&collection=_<collection-name>_&__<attribute-name>__=__<attribute-value>__&__<another-attribute-name>__=__<another-value>__&__<yet_another_attribute_name>__=`
-
-It's possible to edit multiple attributes at a time. Changing these values only updates the z-node on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
+It's possible to edit multiple attributes at a time. Changing these values only updates the znode on ZooKeeper, they do not change the topology of the collection. For instance, increasing `replicationFactor` will _not_ automatically add more replicas to the collection but _will_ allow more ADDREPLICA commands to succeed.
 
 An attribute can be deleted by passing an empty value. For example, `yet_another_attribute_name=` (with no value) will delete the `yet_another_attribute_name` parameter from the collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1modifycollection]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `modifycollection` command must be capitalized as `MODIFYCOLLECTION`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=newCollection&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
+
+----
+====
+
+[example.tab-pane#v2modifycollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `modify` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "modify": {
+      "replicationFactor": 2
+    }
+  }
+'
+----
+====
+--
+
+
 
 === MODIFYCOLLECTION Parameters
 
