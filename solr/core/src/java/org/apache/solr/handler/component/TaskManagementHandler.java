@@ -52,6 +52,11 @@ public abstract class TaskManagementHandler extends RequestHandlerBase implement
         this.shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
     }
 
+    /**
+     * Process the actual request.
+     * extraParams is required for allowing sub handlers to pass in custom parameters to be put in the
+     * outgoing shard request
+     */
     protected void processRequest(SolrQueryRequest req, ResponseBuilder rb, Map<String, String> extraParams) throws IOException {
         ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
         List<SearchComponent> components = rb.components;

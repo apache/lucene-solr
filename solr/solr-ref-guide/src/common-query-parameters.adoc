@@ -84,6 +84,18 @@ You can use the `rows` parameter to paginate results from a query. The parameter
 
 The default value is `10`. That is, by default, Solr returns 10 documents at a time in response to a query.
 
+== canCancel Parameter
+
+This parameter defines if this query is cancellable i.e. can be cancelled during execution using the
+task management interface.
+
+== queryUUID Parameter
+
+For cancellable queries, this allows specifying a custom UUID to identify the query with. If `canCancel` is specified and `queryUUID` is not set, an auto generated UUID will be assigned to the query.
+
+If `queryUUID` is specified, this UUID will be used for identifying the query. Note that if using `queryUUID`, the responsibility of ensuring uniqueness of the UUID lies with the caller.
+
+
 == fq (Filter Query) Parameter
 
 The `fq` parameter defines a query that can be used to restrict the superset of documents that can be returned, without influencing score. It can be very useful for speeding up complex queries, since the queries specified with `fq` are cached independently of the main query. When a later query uses the same filter, there's a cache hit, and filter results are returned quickly from the cache.

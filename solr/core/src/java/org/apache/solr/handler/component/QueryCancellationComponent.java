@@ -57,6 +57,7 @@ public class QueryCancellationComponent extends SearchComponent {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
         if (!shouldProcess) {
             return;

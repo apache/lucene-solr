@@ -58,6 +58,7 @@ public class QueryCancellationHandler extends TaskManagementHandler {
             extraParams.put(QUERY_CANCELLATION_UUID, cancellationUUID);
         }
 
+        // Let this be visible to handleResponses in the handling component
         rb.setCancellationUUID(cancellationUUID);
 
         processRequest(req, rb, extraParams);

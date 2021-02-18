@@ -1,0 +1,73 @@
+= Task Management
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr allows users to control their running tasks by monitoring them, specifying tasks as cancellation enabled and allowing
+cancellation of the same.
+
+This is achieved using the task management interface. Currently, this is supported for queries.
+
+=== Types of Operations
+Task management interface (TMI) supports the following types of operations:
+
+1. List all currently running cancellable tasks.
+2. Cancel a specific task.
+3. Query the status of a specific task.
+
+=== Listing All Active Cancellable Tasks
+To list all the active cancellable tasks currently running, please use the following syntax:
+
+`\http://localhost:8983/solr/tasks/list`
+
+==== Sample Response
+
+`{responseHeader={status=0, QTime=11370}, taskList={0=q=*%3A*&canCancel=true&queryUUID=0&_stateVer_=collection1%3A4&wt=javabin&version=2, 5=q=*%3A*&canCancel=true&queryUUID=5&_stateVer_=collection1%3A4&wt=javabin&version=2, 7=q=*%3A*&canCancel=true&queryUUID=7&_stateVer_=collection1%3A4&wt=javabin&version=2}`
+
+=== Cancelling An Active Cancellable Task
+To cancel an active task, please use the following syntax:
+
+`\http://localhost:8983/solr/tasks/cancel?cancelUUID=foobar`
+
+==== cancelUUID Parameter
+This parameter is used to specify the UUID of the task to be cancelled.
+
+==== Sample Response
+===== If the task UUID was found and successfully cancelled:
+
+`{responseHeader={status=0, QTime=39}, status=Query with queryID 85 cancelled successfully}`
+
+===== If the task UUID was not found
+
+`{responseHeader={status=0, QTime=39}, status=Query with queryID 85 not found}`
+
+===== If the cancellation failed
+
+`{responseHeader={status=0, QTime=39}, status=Query with queryID 85 could not be cancelled successfully}`
+
+=== Check Status of a Specific Task
+To check the status of a specific task, please use the following syntax:
+
+`\http://localhost:8983/solr/tasks/list?taskUUID=foobar`
+
+==== taskUUID Parameter
+`taskUUID` parameter can be used to specify a task UUID whose status can be checked.
+
+==== Sample Response
+`{responseHeader={status=0, QTime=6128}, taskStatus=foobar:true}`
+
+
+

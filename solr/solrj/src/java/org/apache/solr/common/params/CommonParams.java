@@ -176,6 +176,11 @@ public interface CommonParams {
   String QUERY_CANCELLATION_UUID = "cancelUUID";
 
   /**
+   * UUID of the task whose status is to be checked
+   */
+  String TASK_CHECK_UUID = "taskUUID";
+
+  /**
    * The number of hits that need to be counted accurately. If more than {@link #MIN_EXACT_COUNT} documents
    * match a query, then the value in "numFound" may be an estimate to speedup search.
    */

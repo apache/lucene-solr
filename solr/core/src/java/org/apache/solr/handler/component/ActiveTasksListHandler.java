@@ -25,7 +25,12 @@ import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static org.apache.solr.common.params.CommonParams.QUERY_CANCELLATION_UUID;
+import static org.apache.solr.common.params.CommonParams.TASK_CHECK_UUID;
 
 /**
  * Handles request for listing all active cancellable tasks
@@ -37,11 +42,25 @@ public class ActiveTasksListHandler extends TaskManagementHandler {
 
     @Override
     public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+        Map<String, String> extraParams = null;
         ResponseBuilder rb = buildResponseBuilder(req, rsp, getComponentsList());
 
+        String taskStatusCheckUUID = req.getParams().get(TASK_CHECK_UUID, null);
+
+        if (taskStatusCheckUUID != null) {
+            if (rb.isDistrib) {
+                extraParams = new HashMap<>();
+
+                extraParams.put(TASK_CHECK_UUID, taskStatusCheckUUID);
+            }
+
+            rb.setTaskStatusCheckUUID(taskStatusCheckUUID);
+        }
+
+        // Let this be visible to handleResponses in the handling component
         rb.setTaskListRequest(true);
 
-        processRequest(req, rb, null /*extraParams*/);
+        processRequest(req, rb, extraParams);
     }
 
     @Override

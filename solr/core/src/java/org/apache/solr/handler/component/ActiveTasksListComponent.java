@@ -41,6 +41,13 @@ public class ActiveTasksListComponent extends SearchComponent {
             return;
         }
 
+        if (rb.getTaskStatusCheckUUID() != null) {
+            boolean isActiveOnThisShard = rb.req.getCore().isQueryIdActive(rb.getTaskStatusCheckUUID());
+
+            rb.rsp.add("taskStatus", isActiveOnThisShard);
+            return;
+        }
+
         NamedList<String> temp = new NamedList<>();
 
         Iterator<Map.Entry<String, String>> iterator = rb.req.getCore().getActiveQueriesGenerated();
@@ -54,6 +61,7 @@ public class ActiveTasksListComponent extends SearchComponent {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
         if (!shouldProcess) {
             return;
@@ -62,6 +70,17 @@ public class ActiveTasksListComponent extends SearchComponent {
         NamedList<String> resultList = new NamedList<>();
 
         for (ShardResponse r : sreq.responses) {
+
+            if (rb.getTaskStatusCheckUUID() != null) {
+                boolean isTaskActiveOnShard = (boolean) r.getSolrResponse().getResponse().get("taskStatus");
+
+                if (isTaskActiveOnShard == true) {
+                    rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + isTaskActiveOnShard);
+                    return;
+                } else {
+                    continue;
+                }
+            }
 
             NamedList<String> result = (NamedList<String>) r.getSolrResponse()
                     .getResponse().get("taskList");
@@ -73,6 +92,13 @@ public class ActiveTasksListComponent extends SearchComponent {
 
                 resultList.add(entry.getKey(), entry.getValue());
             }
+        }
+
+        if (rb.getTaskStatusCheckUUID() != null) {
+            // We got here with the specific taskID check being specified -- this means that the taskID was not
+            // found in active tasks on any shard
+            rb.rsp.getValues().add("taskStatus", rb.getTaskStatusCheckUUID() + ":" + false);
+            return;
         }
 
         rb.rsp.getValues().add("taskList", resultList);

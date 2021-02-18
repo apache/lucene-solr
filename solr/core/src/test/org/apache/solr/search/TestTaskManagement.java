@@ -16,13 +16,8 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -30,16 +25,12 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.junit.*;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TestTaskManagement extends SolrCloudTestCase {
     private static final String COLLECTION_NAME = "collection1";
@@ -53,6 +44,11 @@ public class TestTaskManagement extends SolrCloudTestCase {
         configureCluster(4)
                 .addConfig("conf", configset("sql"))
                 .configure();
+    }
+
+    @AfterClass
+    public static void tearDownCluster() throws Exception {
+        shutdownCluster();
     }
 
     @Before
@@ -109,18 +105,30 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
     @Test
     public void testCancellationQuery() throws Exception {
-        ModifiableSolrParams params = new ModifiableSolrParams();
+        ConcurrentHashSet<Integer> queryIdsSet = new ConcurrentHashSet<>();
+        ConcurrentHashSet<Integer> notFoundIdsSet = new ConcurrentHashSet<>();
 
-        params.set("q", "*:*");
-        params.set("canCancel", "true");
-        params.set("queryUUID", "foobar1");
+        List<CompletableFuture<Void>> queryFutures = new ArrayList<>();
 
-        @SuppressWarnings({"rawtypes"})
-        SolrRequest request = new QueryRequest(params);
+        for (int i = 0; i < 100; i++) {
+            CompletableFuture<Void> future = executeQueryAsync(Integer.toString(i));
 
-        cancelQuery("foobar1", 3900);
+            queryFutures.add(future);
+        }
 
-        cluster.getSolrClient().request(request);
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        for (int i = 0; i < 90; i++) {
+            CompletableFuture<Void> future = cancelQuery(Integer.toString(i), 4000, queryIdsSet, notFoundIdsSet);
+
+            futures.add(future);
+        }
+
+        futures.forEach(CompletableFuture::join);
+
+        queryFutures.forEach(CompletableFuture::join);
+
+        assertTrue(queryIdsSet.size() + notFoundIdsSet.size() == 90);
     }
 
     @Test
@@ -131,7 +139,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
         SolrRequest request = new QueryRequest(params);
         request.setPath("/tasks/list");
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 50; i++) {
             executeQueryAsync(Integer.toString(i));
         }
 
@@ -139,6 +147,7 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
         queryResponse = cluster.getSolrClient().request(request);
 
+        @SuppressWarnings({"unchecked"})
         NamedList<String> result = (NamedList<String>) queryResponse.get("taskList");
 
         Iterator<Map.Entry<String, String>> iterator = result.iterator();
@@ -151,19 +160,60 @@ public class TestTaskManagement extends SolrCloudTestCase {
             presentQueryIDs.add(Integer.parseInt(entry.getKey()));
         }
 
-        assertTrue(presentQueryIDs.size() > 0 && presentQueryIDs.size() <= 10);
+        assertTrue(presentQueryIDs.size() > 0 && presentQueryIDs.size() <= 50);
 
         Iterator<Integer> integerIterator = presentQueryIDs.iterator();
 
         while (integerIterator.hasNext()) {
             int value = integerIterator.next();
 
-            assertTrue (value >= 0 && value < 10);
+            assertTrue (value >= 0 && value < 50);
         }
     }
 
-    private void cancelQuery(final String queryID, final int sleepTime) {
-        CompletableFuture.runAsync(() -> {
+    @Test
+    public void testCheckSpecificQueryStatus() throws Exception {
+        ModifiableSolrParams params = new ModifiableSolrParams();
+
+        params.set("taskUUID", "1");
+
+        @SuppressWarnings({"rawtypes"})
+        SolrRequest request = new QueryRequest(params);
+        request.setPath("/tasks/list");
+
+        for (int i = 0; i < 5; i++) {
+            executeQueryAsync(Integer.toString(i));
+        }
+
+        NamedList<Object> queryResponse = null;
+
+        queryResponse = cluster.getSolrClient().request(request);
+
+        @SuppressWarnings({"unchecked"})
+        String result = (String) queryResponse.get("taskStatus");
+
+        assertTrue(result.contains("true"));
+
+        params = new ModifiableSolrParams();
+
+        params.set("taskUUID", "25");
+
+        @SuppressWarnings({"rawtypes"})
+        SolrRequest request2 = new QueryRequest(params);
+
+        request2.setPath("/tasks/list");
+
+        queryResponse = cluster.getSolrClient().request(request2);
+
+        @SuppressWarnings({"unchecked"})
+        String result2 = (String) queryResponse.get("taskStatus");
+
+        assertFalse(result2.contains("true"));
+    }
+
+    private CompletableFuture<Void> cancelQuery(final String queryID, final int sleepTime, Set<Integer> cancelledQueryIdsSet,
+                                          Set<Integer> notFoundQueryIdSet) {
+        return CompletableFuture.runAsync(() -> {
             ModifiableSolrParams params = new ModifiableSolrParams();
 
             params.set("cancelUUID", queryID);
@@ -182,7 +232,12 @@ public class TestTaskManagement extends SolrCloudTestCase {
 
                     queryResponse = cluster.getSolrClient().request(request);
 
-                    assertEquals("Query with queryID " + queryID + " cancelled successfully", queryResponse.get("status"));
+                    String cancellationResult = (String) queryResponse.get("status");
+                    if (cancellationResult.contains("cancelled successfully")) {
+                        cancelledQueryIdsSet.add(Integer.parseInt(queryID));
+                    } else if (cancellationResult.contains("not found")) {
+                        notFoundQueryIdSet.add(Integer.parseInt(queryID));
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException(e.getMessage());
                 }
@@ -208,36 +263,13 @@ public class TestTaskManagement extends SolrCloudTestCase {
         cluster.getSolrClient().request(request);
     }
 
-    public void executeQueryAsync(String queryId) {
-        CompletableFuture.runAsync(() -> {
+    public CompletableFuture<Void> executeQueryAsync(String queryId) {
+        return CompletableFuture.runAsync(() -> {
             try {
                 executeQuery(queryId);
             } catch (Exception e) {
                 throw new RuntimeException(e.getMessage());
             }
         });
-    }
-
-    private class BlockingCollector implements Collector {
-        public AtomicBoolean shouldBlock;
-
-        public BlockingCollector() {
-            this.shouldBlock = new AtomicBoolean();
-        }
-
-        @Override
-        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-            while (shouldBlock.compareAndSet(true, true)) {
-            }
-
-            // This collector is never supposed to actually execute
-            return null;
-        }
-
-        @Override
-        public ScoreMode scoreMode() {
-            return null;
-        }
-
     }
 }

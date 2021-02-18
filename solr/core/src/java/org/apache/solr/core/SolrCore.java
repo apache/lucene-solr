@@ -3289,6 +3289,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     activeQueriesGenerated.remove(inputQueryID);
   }
 
+  public boolean isQueryIdActive(String queryID) {
+    return activeQueriesGenerated.containsKey(queryID);
+  }
+
   public void addShardLevelActiveQuery(String queryID, CancellableCollector collector) {
     if (queryID == null) {
       return;
