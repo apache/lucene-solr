@@ -586,6 +586,7 @@ final class IndexingChain implements Accountable {
   void processDocument(int docID, Iterable<? extends IndexableField> document) throws IOException {
     int fieldCount =
         0; // How many field names we've seen (collapses multiple field instances by the same name)
+    int indexedFieldCount = 0; // number of unique fields indexed with postings
     long fieldGen = nextFieldGen++;
     int docFieldIdx = 0;
 
@@ -604,7 +605,7 @@ final class IndexingChain implements Accountable {
         }
         if (docFieldIdx >= docFields.length) oversizeDocFields();
         docFields[docFieldIdx++] = pf;
-        updateDocFieldSchema(pf.schema, fieldType);
+        updateDocFieldSchema(field.name(), pf.schema, fieldType);
       }
       // for each field verify that its schema within the current doc matches its schema in the
       // index
@@ -618,18 +619,20 @@ final class IndexingChain implements Accountable {
       }
 
       // 2nd pass over doc fields – index each field
+      // also count the number of unique fields indexed with postings
       docFieldIdx = 0;
       for (IndexableField field : document) {
-        processField(docID, field, docFields[docFieldIdx++]);
+        if (processField(docID, field, docFields[docFieldIdx])) {
+          fields[indexedFieldCount] = docFields[docFieldIdx];
+          indexedFieldCount++;
+        }
+        docFieldIdx++;
       }
     } finally {
       if (hasHitAbortingException == false) {
         // Finish each indexed field name seen in the document:
-        for (int i = 0; i < fieldCount; i++) {
-          PerField pf = fields[i];
-          if (pf.fieldInfo != null && pf.fieldInfo.getIndexOptions() != IndexOptions.NONE) {
-            pf.finish(docID);
-          }
+        for (int i = 0; i < indexedFieldCount; i++) {
+          fields[i].finish(docID);
         }
         finishStoredFields();
       }
@@ -667,6 +670,7 @@ final class IndexingChain implements Accountable {
             pf.fieldName,
             s.storeTermVector,
             s.omitNorms,
+            false,
             s.indexOptions,
             s.docValuesType,
             s.dvGen,
@@ -714,14 +718,17 @@ final class IndexingChain implements Accountable {
     }
   }
 
-  private void processField(int docID, IndexableField field, PerField pf) throws IOException {
+  /** Index each field Returns {@code true}, if we are indexing a unique field with postings */
+  private boolean processField(int docID, IndexableField field, PerField pf) throws IOException {
     IndexableFieldType fieldType = field.fieldType();
+    boolean indexedField = false;
 
     // Invert indexed fields
     if (fieldType.indexOptions() != IndexOptions.NONE) {
       if (pf.first) {
         pf.invert(docID, field, true);
         pf.first = false;
+        indexedField = true;
       } else {
         pf.invert(docID, field, false);
       }
@@ -756,6 +763,7 @@ final class IndexingChain implements Accountable {
     if (fieldType.vectorDimension() != 0) {
       pf.vectorValuesWriter.addValue(docID, ((VectorField) field).vectorValue());
     }
+    return indexedField;
   }
 
   /**
@@ -802,10 +810,14 @@ final class IndexingChain implements Accountable {
   }
 
   // update schema for field as seen in a particular document
-  private static void updateDocFieldSchema(FieldSchema schema, IndexableFieldType fieldType) {
+  private static void updateDocFieldSchema(
+      String fieldName, FieldSchema schema, IndexableFieldType fieldType) {
     if (fieldType.indexOptions() != IndexOptions.NONE) {
       schema.setIndexOptions(
           fieldType.indexOptions(), fieldType.omitNorms(), fieldType.storeTermVectors());
+    } else {
+      // TODO: should this be checked when a fieldType is created?
+      verifyUnIndexedFieldType(fieldName, fieldType);
     }
     if (fieldType.docValuesType() != DocValuesType.NONE) {
       schema.setDocValues(fieldType.docValuesType(), -1);
@@ -818,6 +830,37 @@ final class IndexingChain implements Accountable {
     }
     if (fieldType.vectorDimension() != 0) {
       schema.setVectors(fieldType.vectorSearchStrategy(), fieldType.vectorDimension());
+    }
+  }
+
+  private static void verifyUnIndexedFieldType(String name, IndexableFieldType ft) {
+    if (ft.storeTermVectors()) {
+      throw new IllegalArgumentException(
+          "cannot store term vectors "
+              + "for a field that is not indexed (field=\""
+              + name
+              + "\")");
+    }
+    if (ft.storeTermVectorPositions()) {
+      throw new IllegalArgumentException(
+          "cannot store term vector positions "
+              + "for a field that is not indexed (field=\""
+              + name
+              + "\")");
+    }
+    if (ft.storeTermVectorOffsets()) {
+      throw new IllegalArgumentException(
+          "cannot store term vector offsets "
+              + "for a field that is not indexed (field=\""
+              + name
+              + "\")");
+    }
+    if (ft.storeTermVectorPayloads()) {
+      throw new IllegalArgumentException(
+          "cannot store term vector payloads "
+              + "for a field that is not indexed (field=\""
+              + name
+              + "\")");
     }
   }
 
@@ -953,7 +996,7 @@ final class IndexingChain implements Accountable {
   private PerField getPerField(String name) {
     final int hashPos = name.hashCode() & hashMask;
     PerField fp = fieldHash[hashPos];
-    while (fp != null && !fp.fieldInfo.name.equals(name)) {
+    while (fp != null && !fp.fieldName.equals(name)) {
       fp = fp.next;
     }
     return fp;

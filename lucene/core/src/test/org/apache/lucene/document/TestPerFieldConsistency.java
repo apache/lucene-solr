@@ -24,6 +24,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -122,8 +123,9 @@ public class TestPerFieldConsistency extends LuceneTestCase {
 
       writer.flush();
       try (IndexReader reader = DirectoryReader.open(writer)) {
-        assertEquals(1, reader.numDocs());
-        assertEquals(1, reader.numDeletedDocs());
+        LeafReader lr1 = reader.leaves().get(0).reader();
+        assertEquals(1, lr1.numDocs());
+        assertEquals(1, lr1.numDeletedDocs());
       }
 
       // diff segment, same index: indexing a field with extra field indexing options returns error
@@ -137,8 +139,9 @@ public class TestPerFieldConsistency extends LuceneTestCase {
 
       writer.flush();
       try (IndexReader reader = DirectoryReader.open(writer)) {
-        assertEquals(2, reader.numDocs());
-        assertEquals(2, reader.numDeletedDocs());
+        LeafReader lr2 = reader.leaves().get(1).reader();
+        assertEquals(1, lr2.numDocs());
+        assertEquals(1, lr2.numDeletedDocs());
       }
     }
   }

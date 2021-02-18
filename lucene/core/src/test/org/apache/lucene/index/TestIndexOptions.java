@@ -51,10 +51,9 @@ public class TestIndexOptions extends LuceneTestCase {
           expectThrows(
               IllegalArgumentException.class,
               () -> w.addDocument(Collections.singleton(new Field("foo", "bar", ft2))));
-      assertTrue(
-          e.getMessage().contains("cannot change field \"foo\" from index options=")
-              || e.getMessage()
-                  .contains("Inconsistency of field indexing options across documents"));
+      assertEquals(
+          "Inconsistency of field data structures across documents for field [foo] of doc [1].",
+          e.getMessage());
     }
     w.close();
     dir.close();
@@ -83,7 +82,7 @@ public class TestIndexOptions extends LuceneTestCase {
     w2.addDocument(Collections.singleton(new Field("foo", "bar", ft2)));
 
     try (CodecReader cr = (CodecReader) getOnlyLeafReader(DirectoryReader.open(w2))) {
-      if (from == IndexOptions.NONE || to == IndexOptions.NONE || from == to) {
+      if (from == to) {
         w1.addIndexes(cr); // no exception
         w1.forceMerge(1);
         try (LeafReader r = getOnlyLeafReader(DirectoryReader.open(w1))) {
@@ -128,7 +127,7 @@ public class TestIndexOptions extends LuceneTestCase {
     w2.addDocument(Collections.singleton(new Field("foo", "bar", ft2)));
     w2.close();
 
-    if (from == IndexOptions.NONE || to == IndexOptions.NONE || from == to) {
+    if (from == to) {
       w1.addIndexes(dir2); // no exception
       w1.forceMerge(1);
       try (LeafReader r = getOnlyLeafReader(DirectoryReader.open(w1))) {

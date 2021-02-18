@@ -361,7 +361,7 @@ used in multi level applications
 ### Require consistency between data-structures on a per-field basis
 
 A field must be indexed with the same index options and data-structures across 
-all documents within a segment. Thus, for example, it is not allowed to have 
-one document in a segment where a certain field is indexed with doc values 
+all documents within an index. Thus, for example, it is not allowed to have 
+one document in a index where a certain field is indexed with doc values 
 and points, and another document where the same field is indexed only with 
 points.

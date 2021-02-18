@@ -52,22 +52,6 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
     doc.add(new VectorField("v2", randomVector(30), VectorValues.SearchStrategy.NONE));
   }
 
-  // Suddenly add vectors to an existing field:
-  public void testUpgradeFieldToVectors() throws Exception {
-    try (Directory dir = newDirectory()) {
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
-        Document doc = new Document();
-        doc.add(newStringField("f", "foo", Field.Store.NO));
-        w.addDocument(doc);
-      }
-      try (IndexWriter w = new IndexWriter(dir, newIndexWriterConfig())) {
-        Document doc = new Document();
-        doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
-        w.addDocument(doc);
-      }
-    }
-  }
-
   public void testFieldConstructor() {
     float[] v = new float[1];
     VectorField field = new VectorField("f", v);
@@ -131,7 +115,8 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
-      if (random().nextBoolean()) {
+      boolean rb = random().nextBoolean();
+      if (rb) {
         // sometimes test with two segments
         w.commit();
       }
@@ -140,8 +125,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
       doc2.add(new VectorField("f", new float[3], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       IllegalArgumentException expected =
           expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc2));
-      assertEquals(
-          "cannot change vector dimension from 4 to 3 for field=\"f\"", expected.getMessage());
+      String errMsg =
+          rb
+              ? "cannot change field \"f\" from vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW "
+                  + "to inconsistent vector dimension=3, vector search strategy=DOT_PRODUCT_HNSW"
+              : "Inconsistency of field data structures across documents for field [f] of doc [1].";
+      assertEquals(errMsg, expected.getMessage());
     }
   }
 
@@ -151,7 +140,8 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
       Document doc = new Document();
       doc.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.DOT_PRODUCT_HNSW));
       w.addDocument(doc);
-      if (random().nextBoolean()) {
+      boolean rb = random().nextBoolean();
+      if (rb) {
         // sometimes test with two segments
         w.commit();
       }
@@ -160,9 +150,12 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
       doc2.add(new VectorField("f", new float[4], VectorValues.SearchStrategy.EUCLIDEAN_HNSW));
       IllegalArgumentException expected =
           expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc2));
-      assertEquals(
-          "cannot change vector search strategy from DOT_PRODUCT_HNSW to EUCLIDEAN_HNSW for field=\"f\"",
-          expected.getMessage());
+      String errMsg =
+          rb
+              ? "cannot change field \"f\" from vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW "
+                  + "to inconsistent vector dimension=4, vector search strategy=EUCLIDEAN_HNSW"
+              : "Inconsistency of field data structures across documents for field [f] of doc [1].";
+      assertEquals(errMsg, expected.getMessage());
     }
   }
 
@@ -180,7 +173,9 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         IllegalArgumentException expected =
             expectThrows(IllegalArgumentException.class, () -> w2.addDocument(doc2));
         assertEquals(
-            "cannot change vector dimension from 4 to 1 for field=\"f\"", expected.getMessage());
+            "cannot change field \"f\" from vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW "
+                + "to inconsistent vector dimension=1, vector search strategy=DOT_PRODUCT_HNSW",
+            expected.getMessage());
       }
     }
   }
@@ -199,7 +194,8 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         IllegalArgumentException expected =
             expectThrows(IllegalArgumentException.class, () -> w2.addDocument(doc2));
         assertEquals(
-            "cannot change vector search strategy from DOT_PRODUCT_HNSW to EUCLIDEAN_HNSW for field=\"f\"",
+            "cannot change field \"f\" from vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW "
+                + "to inconsistent vector dimension=4, vector search strategy=EUCLIDEAN_HNSW",
             expected.getMessage());
       }
     }
@@ -299,7 +295,9 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
             expectThrows(
                 IllegalArgumentException.class, () -> w2.addIndexes(new Directory[] {dir}));
         assertEquals(
-            "cannot change vector dimension from 5 to 4 for field=\"f\"", expected.getMessage());
+            "cannot change field \"f\" from vector dimension=5, vector search strategy=DOT_PRODUCT_HNSW "
+                + "to inconsistent vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW",
+            expected.getMessage());
       }
     }
   }
@@ -319,7 +317,8 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
         IllegalArgumentException expected =
             expectThrows(IllegalArgumentException.class, () -> w2.addIndexes(dir));
         assertEquals(
-            "cannot change vector search strategy from EUCLIDEAN_HNSW to DOT_PRODUCT_HNSW for field=\"f\"",
+            "cannot change field \"f\" from vector dimension=4, vector search strategy=EUCLIDEAN_HNSW "
+                + "to inconsistent vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW",
             expected.getMessage());
       }
     }
@@ -343,7 +342,9 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
                   IllegalArgumentException.class,
                   () -> w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)}));
           assertEquals(
-              "cannot change vector dimension from 5 to 4 for field=\"f\"", expected.getMessage());
+              "cannot change field \"f\" from vector dimension=5, vector search strategy=DOT_PRODUCT_HNSW "
+                  + "to inconsistent vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW",
+              expected.getMessage());
         }
       }
     }
@@ -367,7 +368,8 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
                   IllegalArgumentException.class,
                   () -> w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)}));
           assertEquals(
-              "cannot change vector search strategy from EUCLIDEAN_HNSW to DOT_PRODUCT_HNSW for field=\"f\"",
+              "cannot change field \"f\" from vector dimension=4, vector search strategy=EUCLIDEAN_HNSW "
+                  + "to inconsistent vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW",
               expected.getMessage());
         }
       }
@@ -390,7 +392,9 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
           IllegalArgumentException expected =
               expectThrows(IllegalArgumentException.class, () -> TestUtil.addIndexesSlowly(w2, r));
           assertEquals(
-              "cannot change vector dimension from 5 to 4 for field=\"f\"", expected.getMessage());
+              "cannot change field \"f\" from vector dimension=5, vector search strategy=DOT_PRODUCT_HNSW "
+                  + "to inconsistent vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW",
+              expected.getMessage());
         }
       }
     }
@@ -412,7 +416,8 @@ public abstract class BaseVectorFormatTestCase extends BaseIndexFileFormatTestCa
           IllegalArgumentException expected =
               expectThrows(IllegalArgumentException.class, () -> TestUtil.addIndexesSlowly(w2, r));
           assertEquals(
-              "cannot change vector search strategy from EUCLIDEAN_HNSW to DOT_PRODUCT_HNSW for field=\"f\"",
+              "cannot change field \"f\" from vector dimension=4, vector search strategy=EUCLIDEAN_HNSW "
+                  + "to inconsistent vector dimension=4, vector search strategy=DOT_PRODUCT_HNSW",
               expected.getMessage());
         }
       }

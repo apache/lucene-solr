@@ -1174,8 +1174,11 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
 
     Document doc = new Document();
     doc.add(new IntPoint("id", 0));
-    w.addDocument(doc);
-    // now we write another segment where the id field does have points:
+    IllegalArgumentException ex =
+        expectThrows(IllegalArgumentException.class, () -> w.addDocument(doc));
+    assertEquals(
+        "cannot change field \"id\" from index options=DOCS to inconsistent index options=NONE",
+        ex.getMessage());
 
     w.forceMerge(1);
     IOUtils.close(w, dir);

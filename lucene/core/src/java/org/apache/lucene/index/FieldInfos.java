@@ -466,6 +466,46 @@ public class FieldInfos implements Iterable<FieldInfo> {
       }
     }
 
+    /**
+     * Construct a new FieldInfo based on the options in global field numbers This method is not
+     * synchronized as all the options it uses are not modifiable.
+     *
+     * @param fieldName name of the field
+     * @param dvType doc values type
+     * @param newFieldNumber a new field number
+     * @return {@code null} if {@code fieldName} doesn't exist in the map or is not of the same
+     *     {@code dvType} returns a new FieldInfo based based on the options in global field numbers
+     */
+    FieldInfo constructFieldInfo(String fieldName, DocValuesType dvType, int newFieldNumber) {
+      Integer fieldNumber;
+      synchronized (this) {
+        fieldNumber = nameToNumber.get(fieldName);
+      }
+      if (fieldNumber == null) return null;
+      DocValuesType dvType0 = docValuesType.get(fieldName);
+      if (dvType != dvType0) return null;
+
+      boolean isSoftDeletesField = fieldName.equals(softDeletesFieldName);
+      FieldDimensions dims = dimensions.get(fieldName);
+      FieldVectorProperties vectors = vectorProps.get(fieldName);
+      return new FieldInfo(
+          fieldName,
+          newFieldNumber,
+          false,
+          false,
+          false,
+          indexOptions.get(fieldName),
+          dvType,
+          -1,
+          new HashMap<>(),
+          dims.dimensionCount,
+          dims.indexDimensionCount,
+          dims.dimensionNumBytes,
+          vectors.numDimensions,
+          vectors.searchStrategy,
+          isSoftDeletesField);
+    }
+
     synchronized Set<String> getFieldNames() {
       return Set.copyOf(nameToNumber.keySet());
     }
@@ -553,18 +593,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
             fi.getVectorSearchStrategy(),
             fi.isSoftDeletesField());
       } else {
-        curFi.verifySameSchema(
-            fi.getIndexOptions(),
-            fi.hasVectors(),
-            fi.omitsNorms(),
-            fi.hasPayloads(),
-            fi.getDocValuesType(),
-            dvGen,
-            fi.getPointDimensionCount(),
-            fi.getPointIndexDimensionCount(),
-            fi.getPointNumBytes(),
-            fi.getVectorDimension(),
-            fi.getVectorSearchStrategy());
+        curFi.verifySameSchema(fi, dvGen);
         if (fi.attributes() != null) {
           fi.attributes().forEach((k, v) -> curFi.putAttribute(k, v));
         }
@@ -576,6 +605,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         String name,
         boolean storeTermVector,
         boolean omitNorms,
+        boolean storePayloads,
         IndexOptions indexOptions,
         DocValuesType docValuesType,
         long dvGen,
@@ -585,9 +615,6 @@ public class FieldInfos implements Iterable<FieldInfo> {
         int dimensionNumBytes,
         int vectorDimension,
         VectorValues.SearchStrategy vectorSearchStrategy) {
-      boolean storePayloads =
-          indexOptions != IndexOptions.NONE
-              && indexOptions.compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
       return addField(
           name,
           -1,

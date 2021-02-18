@@ -16,6 +16,9 @@
  */
 package org.apache.lucene.index;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.startsWith;
+
 import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
@@ -35,6 +38,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.hamcrest.MatcherAssert;
 
 /** tests for writing term vectors */
 public class TestTermVectorsWriter extends LuceneTestCase {
@@ -655,12 +659,13 @@ public class TestTermVectorsWriter extends LuceneTestCase {
               iw.addDocument(doc);
             });
     assertNotNull(expected.getMessage());
-    assertTrue(
-        expected
-            .getMessage()
-            .startsWith(
-                "all instances of a given field name must have the same term vectors settings"));
-
+    MatcherAssert.assertThat(
+        expected.getMessage(),
+        anyOf(
+            startsWith(
+                "all instances of a given field name must have the same term vectors settings"),
+            startsWith(
+                "Inconsistency of field data structures across documents for field [field]")));
     // ensure good docs are still ok
     IndexReader ir = iw.getReader();
     assertEquals(3, ir.numDocs());

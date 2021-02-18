@@ -602,10 +602,8 @@ final class ReadersAndUpdates {
         }
 
         // create new fields with the right DV type
-        FieldInfos.Builder builder = new FieldInfos.Builder(fieldNumbers);
         for (List<DocValuesFieldUpdates> updates : pendingDVUpdates.values()) {
           DocValuesFieldUpdates update = updates.get(0);
-
           if (byName.containsKey(update.field)) {
             // the field already exists in this segment
             FieldInfo fi = byName.get(update.field);
@@ -613,9 +611,10 @@ final class ReadersAndUpdates {
           } else {
             // the field is not present in this segment so we clone the global field
             // (which is guaranteed to exist) and remaps its field number locally.
-            assert fieldNumbers.contains(update.field, update.type);
-            FieldInfo fi = cloneFieldInfo(builder.getOrAdd(update.field), ++maxFieldNumber);
-            fi.setDocValuesType(update.type);
+            FieldInfo fi =
+                fieldNumbers.constructFieldInfo(update.field, update.type, maxFieldNumber + 1);
+            assert fi != null;
+            maxFieldNumber++;
             byName.put(fi.name, fi);
           }
         }

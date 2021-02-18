@@ -241,45 +241,28 @@ public final class FieldInfo {
     return true;
   }
 
-  void verifySameSchema(
-      IndexOptions indexOptions,
-      boolean omitNorms,
-      boolean storePayloads,
-      boolean storeTermVector,
-      DocValuesType docValuesType,
-      long dvGen,
-      int dimensionCount,
-      int indexDimensionCount,
-      int dimensionNumBytes,
-      int vectorDimension,
-      VectorValues.SearchStrategy searchStrategy) {
-    verifySameIndexOptions(this.name, this.indexOptions, indexOptions);
+  void verifySameSchema(FieldInfo o, long dvGen) {
+    verifySameIndexOptions(this.name, this.indexOptions, o.getIndexOptions());
     if (this.indexOptions != IndexOptions.NONE) {
       verifySamePostingsOptions(
-          this.name,
-          this.storeTermVector,
-          this.omitNorms,
-          this.storePayloads,
-          storeTermVector,
-          omitNorms,
-          storePayloads);
+          this.name, this.storeTermVector, this.omitNorms, o.storeTermVector, o.omitNorms);
     }
-    verifySameDocValuesType(this.name, this.docValuesType, docValuesType);
+    verifySameDocValuesType(this.name, this.docValuesType, o.docValuesType);
     verifySameDVGen(this.name, this.dvGen, dvGen);
     verifySamePointsOptions(
         this.name,
         this.pointDimensionCount,
         this.pointIndexDimensionCount,
         this.pointNumBytes,
-        dimensionCount,
-        indexDimensionCount,
-        dimensionNumBytes);
+        o.pointDimensionCount,
+        o.pointIndexDimensionCount,
+        o.pointNumBytes);
     verifySameVectorOptions(
         this.name,
         this.vectorDimension,
         this.vectorSearchStrategy,
-        vectorDimension,
-        searchStrategy);
+        o.vectorDimension,
+        o.vectorSearchStrategy);
   }
 
   /**
@@ -340,14 +323,8 @@ public final class FieldInfo {
    * @throws IllegalArgumentException if they are not the same
    */
   public static void verifySamePostingsOptions(
-      String fieldName,
-      boolean stv1,
-      boolean on1,
-      boolean sp1,
-      boolean stv2,
-      boolean on2,
-      boolean sp2) {
-    if (stv1 != stv2 || on1 != on2 || sp1 != sp2) {
+      String fieldName, boolean stv1, boolean on1, boolean stv2, boolean on2) {
+    if (stv1 != stv2 || on1 != on2) {
       throw new IllegalArgumentException(
           "cannot change field \""
               + fieldName
@@ -355,14 +332,10 @@ public final class FieldInfo {
               + stv1
               + ", omitNorms="
               + on1
-              + ", storePayloads="
-              + sp1
               + " to inconsistent storeTermVector="
               + stv2
               + ", omitNorms="
-              + on2
-              + ", storePayloads="
-              + sp2);
+              + on2);
     }
   }
 

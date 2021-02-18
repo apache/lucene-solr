@@ -74,7 +74,8 @@ public class TestPointValues extends LuceneTestCase {
               w.addDocument(doc);
             });
     assertEquals(
-        "cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+        "Inconsistency of field data structures across documents for field [dim] of doc [0].",
+        expected.getMessage());
     w.close();
     dir.close();
   }
@@ -96,8 +97,8 @@ public class TestPointValues extends LuceneTestCase {
               w.addDocument(doc2);
             });
     assertEquals(
-        "cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
-
+        "Inconsistency of field data structures across documents for field [dim] of doc [1].",
+        expected.getMessage());
     w.close();
     dir.close();
   }
@@ -120,8 +121,9 @@ public class TestPointValues extends LuceneTestCase {
               w.addDocument(doc2);
             });
     assertEquals(
-        "cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=1, indexDimensionCount=1, numBytes=4 "
+            + "to inconsistent dimensionCount=2, indexDimensionCount=2, numBytes=4",
+        expected.getMessage());
     w.close();
     dir.close();
   }
@@ -146,8 +148,9 @@ public class TestPointValues extends LuceneTestCase {
               w2.addDocument(doc2);
             });
     assertEquals(
-        "cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=1, indexDimensionCount=1, numBytes=4 "
+            + "to inconsistent dimensionCount=2, indexDimensionCount=2, numBytes=4",
+        expected.getMessage());
     w2.close();
     dir.close();
   }
@@ -172,9 +175,11 @@ public class TestPointValues extends LuceneTestCase {
             () -> {
               w2.addIndexes(new Directory[] {dir});
             });
-    assertEquals(
-        "cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
+    assertEquals(
+        "cannot change field \"dim\" from points dimensionCount=2, indexDimensionCount=2, numBytes=4 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=4",
+        expected.getMessage());
     IOUtils.close(w2, dir, dir2);
   }
 
@@ -200,8 +205,9 @@ public class TestPointValues extends LuceneTestCase {
               w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)});
             });
     assertEquals(
-        "cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=2, indexDimensionCount=2, numBytes=4 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=4",
+        expected.getMessage());
     IOUtils.close(r, w2, dir, dir2);
   }
 
@@ -228,8 +234,9 @@ public class TestPointValues extends LuceneTestCase {
               TestUtil.addIndexesSlowly(w2, r);
             });
     assertEquals(
-        "cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=2, indexDimensionCount=2, numBytes=4 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=4",
+        expected.getMessage());
     IOUtils.close(r, w2, dir, dir2);
   }
 
@@ -247,8 +254,8 @@ public class TestPointValues extends LuceneTestCase {
               w.addDocument(doc);
             });
     assertEquals(
-        "cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
-
+        "Inconsistency of field data structures across documents for field [dim] of doc [0].",
+        expected.getMessage());
     w.close();
     dir.close();
   }
@@ -270,8 +277,8 @@ public class TestPointValues extends LuceneTestCase {
               w.addDocument(doc2);
             });
     assertEquals(
-        "cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
-
+        "Inconsistency of field data structures across documents for field [dim] of doc [1].",
+        expected.getMessage());
     w.close();
     dir.close();
   }
@@ -294,8 +301,9 @@ public class TestPointValues extends LuceneTestCase {
               w.addDocument(doc2);
             });
     assertEquals(
-        "cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=1, indexDimensionCount=1, numBytes=4 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=6",
+        expected.getMessage());
     w.close();
     dir.close();
   }
@@ -321,8 +329,9 @@ public class TestPointValues extends LuceneTestCase {
               w2.addDocument(doc2);
             });
     assertEquals(
-        "cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=1, indexDimensionCount=1, numBytes=4 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=6",
+        expected.getMessage());
     w2.close();
     dir.close();
   }
@@ -349,8 +358,9 @@ public class TestPointValues extends LuceneTestCase {
               w2.addIndexes(new Directory[] {dir});
             });
     assertEquals(
-        "cannot change point numBytes from 6 to 4 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=1, indexDimensionCount=1, numBytes=6 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=4",
+        expected.getMessage());
     IOUtils.close(w2, dir, dir2);
   }
 
@@ -377,8 +387,9 @@ public class TestPointValues extends LuceneTestCase {
               w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)});
             });
     assertEquals(
-        "cannot change point numBytes from 6 to 4 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=1, indexDimensionCount=1, numBytes=6 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=4",
+        expected.getMessage());
     IOUtils.close(r, w2, dir, dir2);
   }
 
@@ -405,8 +416,9 @@ public class TestPointValues extends LuceneTestCase {
               TestUtil.addIndexesSlowly(w2, r);
             });
     assertEquals(
-        "cannot change point numBytes from 6 to 4 for field=\"dim\"", expected.getMessage());
-
+        "cannot change field \"dim\" from points dimensionCount=1, indexDimensionCount=1, numBytes=6 "
+            + "to inconsistent dimensionCount=1, indexDimensionCount=1, numBytes=4",
+        expected.getMessage());
     IOUtils.close(r, w2, dir, dir2);
   }
 

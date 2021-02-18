@@ -953,27 +953,33 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.commit();
 
     // second segment with no BDV
-    doc = new Document();
-    doc.add(new StringField("id", "doc1", Store.NO));
-    doc.add(new StringField("bdv", "mock-value", Store.NO));
-    writer.addDocument(doc);
-    writer.commit();
+    Document doc2 = new Document();
+    doc2.add(new StringField("id", "doc1", Store.NO));
+    doc2.add(new StringField("bdv", "mock-value", Store.NO));
+    IllegalArgumentException exception =
+        expectThrows(IllegalArgumentException.class, () -> writer.addDocument(doc2));
+    String expectedErrMsg =
+        "cannot change field \"bdv\" from doc values type=BINARY to inconsistent doc values type=NONE";
+    assertEquals(expectedErrMsg, exception.getMessage());
 
+    doc2.add(new BinaryDocValuesField("bdv", toBytes(10L)));
+    writer.addDocument(doc2);
     // update document in the second segment
     writer.updateBinaryDocValue(new Term("id", "doc1"), "bdv", toBytes(5L));
+    writer.commit();
     writer.close();
 
     DirectoryReader reader = DirectoryReader.open(dir);
-    for (LeafReaderContext context : reader.leaves()) {
-      LeafReader r = context.reader();
-      BinaryDocValues bdv = r.getBinaryDocValues("bdv");
-      for (int i = 0; i < r.maxDoc(); i++) {
-        assertEquals(i, bdv.nextDoc());
-        assertEquals(5L, getValue(bdv));
-      }
-    }
-    reader.close();
+    LeafReader r1 = reader.leaves().get(0).reader();
+    BinaryDocValues bdv1 = r1.getBinaryDocValues("bdv");
+    assertEquals(0, bdv1.nextDoc());
+    assertEquals(5L, getValue(bdv1));
+    LeafReader r2 = reader.leaves().get(1).reader();
+    BinaryDocValues bdv2 = r2.getBinaryDocValues("bdv");
+    assertEquals(1, bdv2.nextDoc());
+    assertEquals(5L, getValue(bdv2));
 
+    reader.close();
     dir.close();
   }
 
