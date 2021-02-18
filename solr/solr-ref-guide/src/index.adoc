@@ -127,6 +127,8 @@ The *<<getting-started.adoc#,Getting Started>>* section guides you through the i
 *<<circuit-breakers.adoc#,Circuit Breakers>>*: This section talks about circuit breakers, a way of allowing a higher stability of Solr nodes and increased service level guarantees of requests that are accepted by Solr.
 
 *<<rate-limiters.adoc#,Request Rate Limiters>>*: This section talks about request rate limiters, a way of guaranteeing throughput per request type and dedicating resource quotas by resource type. Rate limiter configurations are per instance/JVM and applied to the entire JVM, not at a core/collection level.
+
+*<<task-management.adoc#,Task Management>>*: This section talks about task management interface, which can be used to control cancellable tasks.
 ****
 
 .Advanced Configuration
