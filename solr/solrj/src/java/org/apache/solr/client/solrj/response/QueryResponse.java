@@ -57,6 +57,7 @@ public class QueryResponse extends SolrResponseBase
   private NamedList<SolrDocumentList> _moreLikeThisInfo = null;
   private NamedList<String> _tasksInfo = null;
   private String _cancellationInfo = null;
+  private String _taskStatusCheckInfo = null;
   private String _cursorMarkNext = null;
 
   // Grouping response
@@ -191,6 +192,9 @@ public class QueryResponse extends SolrResponseBase
       }
       else if ("cancellationResult".equals (n)) {
         _cancellationInfo = (String) res.getVal( i );
+      }
+      else if ("taskResult".equals (n)) {
+        _taskStatusCheckInfo = (String) res.getVal( i );
       }
       else if ( CursorMarkParams.CURSOR_MARK_NEXT.equals( n ) ) {
         _cursorMarkNext = (String) res.getVal( i );
@@ -606,6 +610,10 @@ public class QueryResponse extends SolrResponseBase
 
   public String getCancellationInfo() {
     return _cancellationInfo;
+  }
+
+  public String getTaskStatusCheckInfo() {
+    return _taskStatusCheckInfo;
   }
   
   /**

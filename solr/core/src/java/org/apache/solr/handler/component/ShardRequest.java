@@ -42,8 +42,6 @@ public class ShardRequest {
   public final static int PURPOSE_REFINE_PIVOT_FACETS =0x2000;
   public final static int PURPOSE_SET_TERM_STATS  =0x4000;
   public final static int PURPOSE_GET_TERM_STATS  = 0x8000;
-  public final static int PURPOSE_CANCEL_TASK = 0x10000;
-  public final static int PURPOSE_LIST_TASKS = 0x20000;
 
   public int purpose;  // the purpose of this request
 

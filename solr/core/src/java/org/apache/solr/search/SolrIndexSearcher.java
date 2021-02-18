@@ -213,10 +213,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       core.addShardLevelActiveQuery(cmd.getQueryID(), (CancellableCollector) collector);
     }
 
-    //Collector collector1 = new CancellableCollector(collector);
-
-    //collector = new TimeLimitingCollector(collector, TimeLimitingCollector.getGlobalCounter(), 1000);
-
     try {
       super.search(query, collector);
     } catch (TimeLimitingCollector.TimeExceededException | ExitableDirectoryReader.ExitingReaderException |

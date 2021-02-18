@@ -16,8 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import java.util.List;
-
+import junit.framework.Assert;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -26,11 +25,10 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
-import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import junit.framework.Assert;
+import java.util.List;
 
 /**
  * Test for SpellCheckComponent's response in Solrj
@@ -66,6 +64,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     Assert.assertEquals("samsung", response.getFirstSuggestion("samsang"));
   }
+
   @Test
   public void testSpellCheckResponse_Extended() throws Exception {
     getSolrClient();
