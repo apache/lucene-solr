@@ -381,16 +381,33 @@ processing of updates and reloads the collection.
 
 Fetch the names of the collections in the cluster.
 
-`/admin/collections?action=LIST`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1listcollection]
+====
+[.tab-label]*V1 API*
 
-=== Examples using LIST
+With the v1 API, the `list` command must be capitalized as `LIST`:
 
-*Input*
-
-[source,text]
+[source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LIST
 ----
+====
+
+[example.tab-pane#v2listcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `modify` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/collections?omitHeader=true
+----
+====
+--
+
 
 *Output*
 
@@ -408,8 +425,6 @@ http://localhost:8983/solr/admin/collections?action=LIST
 [[rename]]
 == RENAME: Rename a Collection
 
-`/admin/collections?action=RENAME&name=_existingName_&target=_targetName_`
-
 Renaming a collection sets up a standard alias that points to the underlying collection, so
 that the same (unmodified) collection can now be referred to in query, index and admin operations
 using the new name.
@@ -425,6 +440,30 @@ The following limitations apply:
 Aliases that refer to more than 1 collection are not supported.
 * the existing name must not be a Routed Alias.
 * the target name must not be an existing alias.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1renamecollection]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `rename` command must be capitalized as `RENAME`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=RENAME&name=newCollection&target=renamedCollection
+----
+====
+
+[example.tab-pane#v2renamecollection]
+====
+[.tab-label]*V2 API*
+
+Umm...   We don't seem to have a v2 version!
+
+====
+--
+
 
 === RENAME Command Parameters
 
@@ -467,7 +506,33 @@ update commands, which are directed now to `collection2`.
 [[delete]]
 == DELETE: Delete a Collection
 
-`/admin/collections?action=DELETE&name=_collection_`
+The DELETE action is used to delete a collection.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletecollection]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `delete` command must be capitalized as `DELETE`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection
+----
+====
+
+[example.tab-pane#v2deletecollection]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X DELETE http://localhost:8983/api/collections/newCollection?omitHeader=true
+----
+====
+--
 
 === DELETE Parameters
 
@@ -475,22 +540,11 @@ update commands, which are directed now to `collection2`.
 The name of the collection to delete. This parameter is required.
 
 `async`::
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>> and is a V1 API only parameter.
 
 === DELETE Response
 
 The response will include the status of the request and the cores that were deleted. If the status is anything other than "success", an error message will explain why the request failed.
-
-=== Examples using DELETE
-
-*Input*
-
-Delete the collection named "newCollection".
-
-[source,text]
-----
-http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection&wt=xml
-----
 
 *Output*
 
@@ -523,17 +577,50 @@ http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection&wt
 
 Add, edit or delete a collection property.
 
-`/admin/collections?action=COLLECTIONPROP&name=_collectionName_&propertyName=_propertyName_&propertyValue=_propertyValue_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1collectionproperty]
+====
+[.tab-label]*V1 API*
+
+With the v1 API, the `collectionprop` command must be capitalized as `COLLECTIONPROP`:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=newCollection&propertyName=propertyName&propertyValue=propertyValue
+----
+====
+
+[example.tab-pane#v2collectionproperty]
+====
+[.tab-label]*V2 API*
+
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "set-collection-property": {
+      "name": "foo",
+      "value": "bar"
+    }
+  }
+'
+----
+====
+--
+
+
 
 === COLLECTIONPROP Parameters
 
 `name`::
 The name of the collection for which the property would be set.
 
-`propertyName`::
+`propertyName` (V1), `name` (V2)::
 The name of the property.
 
-`propertyValue`::
+`propertyValue` (V1), `value` (V2)::
 The value of the property. When not provided, the property is deleted.
 
 === COLLECTIONPROP Response
