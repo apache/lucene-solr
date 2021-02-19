@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import org.apache.lucene.util.CharsRef;
 
 /**
  * A simple class that stores key Strings as char[]'s in a hash table. Note that this is not a
@@ -266,20 +267,17 @@ public class CharArrayMap<V> extends AbstractMap<Object, V> {
 
   private int getHashCode(char[] text, int offset, int len) {
     if (text == null) throw new NullPointerException();
-    int code = 0;
-    final int stop = offset + len;
     if (ignoreCase) {
+      int stop = offset + len;
+      int code = 0;
       for (int i = offset; i < stop; ) {
         final int codePointAt = Character.codePointAt(text, i, stop);
         code = code * 31 + Character.toLowerCase(codePointAt);
         i += Character.charCount(codePointAt);
       }
-    } else {
-      for (int i = offset; i < stop; i++) {
-        code = code * 31 + text[i];
-      }
+      return code;
     }
-    return code;
+    return CharsRef.stringHashCode(text, offset, len);
   }
 
   private int getHashCode(CharSequence text) {
