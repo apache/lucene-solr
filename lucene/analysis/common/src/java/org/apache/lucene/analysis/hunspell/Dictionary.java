@@ -51,6 +51,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -97,6 +99,9 @@ public class Dictionary {
    * for flagLookup.
    */
   FST<IntsRef> words;
+
+  /** A Bloom filter over {@link #words} to avoid unnecessary expensive FST traversals */
+  FixedBitSet wordHashes;
 
   /**
    * The list of unique flagsets (wordforms). theoretically huge, but practically small (for Polish
@@ -249,7 +254,9 @@ public class Dictionary {
       readAffixFile(affixStream, decoder, flagEnumerator);
 
       // read dictionary entries
-      IndexOutput unsorted = mergeDictionaries(tempDir, tempFileNamePrefix, dictionaries, decoder);
+      IndexOutput unsorted = tempDir.createTempOutput(tempFileNamePrefix, "dat", IOContext.DEFAULT);
+      int wordCount = mergeDictionaries(dictionaries, decoder, unsorted);
+      wordHashes = new FixedBitSet(Integer.highestOneBit(wordCount * 10));
       String sortedFile = sortWordsOffline(tempDir, tempFileNamePrefix, unsorted);
       words = readSortedDictionaries(tempDir, sortedFile, flagEnumerator);
       flagLookup = flagEnumerator.finish();
@@ -264,6 +271,11 @@ public class Dictionary {
 
   /** Looks up Hunspell word forms from the dictionary */
   IntsRef lookupWord(char[] word, int offset, int length) {
+    int hash = CharsRef.stringHashCode(word, offset, length);
+    if (!wordHashes.get(Math.abs(hash) % wordHashes.length())) {
+      return null;
+    }
+
     return lookup(words, word, offset, length);
   }
 
@@ -1015,15 +1027,12 @@ public class Dictionary {
     }
   }
 
-  private IndexOutput mergeDictionaries(
-      Directory tempDir,
-      String tempFileNamePrefix,
-      List<InputStream> dictionaries,
-      CharsetDecoder decoder)
+  private int mergeDictionaries(
+      List<InputStream> dictionaries, CharsetDecoder decoder, IndexOutput output)
       throws IOException {
     StringBuilder sb = new StringBuilder();
-    IndexOutput unsorted = tempDir.createTempOutput(tempFileNamePrefix, "dat", IOContext.DEFAULT);
-    try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
+    int wordCount = 0;
+    try (ByteSequencesWriter writer = new ByteSequencesWriter(output)) {
       for (InputStream dictionary : dictionaries) {
         BufferedReader lines = new BufferedReader(new InputStreamReader(dictionary, decoder));
         lines.readLine(); // first line is number of entries (approximately, sometimes)
@@ -1045,16 +1054,17 @@ public class Dictionary {
             }
           }
 
-          writeNormalizedWordEntry(sb, writer, line);
+          wordCount += writeNormalizedWordEntry(sb, writer, line);
         }
       }
-      CodecUtil.writeFooter(unsorted);
+      CodecUtil.writeFooter(output);
     }
-    return unsorted;
+    return wordCount;
   }
 
-  private void writeNormalizedWordEntry(
-      StringBuilder reuse, ByteSequencesWriter writer, String line) throws IOException {
+  /** @return the number of word entries written */
+  private int writeNormalizedWordEntry(StringBuilder reuse, ByteSequencesWriter writer, String line)
+      throws IOException {
     int flagSep = line.indexOf(FLAG_SEPARATOR);
     int morphSep = line.indexOf(MORPH_SEPARATOR);
     assert morphSep > 0;
@@ -1078,7 +1088,9 @@ public class Dictionary {
     WordCase wordCase = WordCase.caseOf(written, sep);
     if (wordCase == WordCase.MIXED || wordCase == WordCase.UPPER && flagSep > 0) {
       addHiddenCapitalizedWord(reuse, writer, written.substring(0, sep), written.substring(sep));
+      return 2;
     }
+    return 1;
   }
 
   private void addHiddenCapitalizedWord(
@@ -1221,6 +1233,7 @@ public class Dictionary {
           }
         }
 
+        wordHashes.set(Math.abs(entry.hashCode()) % wordHashes.length());
         grouper.add(entry, wordForm, morphDataID);
       }
 
