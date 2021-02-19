@@ -20,6 +20,7 @@ import static org.apache.lucene.analysis.hunspell.Dictionary.FLAG_UNSET;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_BEGIN;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_RULE_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
 import java.util.ArrayList;
@@ -397,8 +398,7 @@ public class Hunspell {
       if (forms != null) {
         words.add(forms);
 
-        if (dictionary.compoundRules != null
-            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words))) {
+        if (dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words))) {
           if (checkLastCompoundPart(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
@@ -417,13 +417,17 @@ public class Hunspell {
 
   private boolean checkLastCompoundPart(
       char[] wordChars, int start, int length, List<IntsRef> words) {
-    IntsRef forms = dictionary.lookupWord(wordChars, start, length);
-    if (forms == null) return false;
+    IntsRef ref = new IntsRef(new int[1], 0, 1);
+    words.add(ref);
 
-    words.add(forms);
-    boolean result = dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words));
+    Stemmer.RootProcessor stopOnMatching =
+        (stem, formID, morphDataId) -> {
+          ref.ints[0] = formID;
+          return dictionary.compoundRules.stream().noneMatch(r -> r.fullyMatches(words));
+        };
+    boolean found = !stemmer.doStem(wordChars, start, length, COMPOUND_RULE_END, stopOnMatching);
     words.remove(words.size() - 1);
-    return result;
+    return found;
   }
 
   private static boolean isNumber(String s) {
