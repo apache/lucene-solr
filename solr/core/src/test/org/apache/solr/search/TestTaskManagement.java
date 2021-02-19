@@ -175,40 +175,19 @@ public class TestTaskManagement extends SolrCloudTestCase {
     public void testCheckSpecificQueryStatus() throws Exception {
         ModifiableSolrParams params = new ModifiableSolrParams();
 
-        params.set("taskUUID", "1");
+        params.set("taskUUID", "25");
 
         @SuppressWarnings({"rawtypes"})
         SolrRequest request = new QueryRequest(params);
+
         request.setPath("/tasks/list");
 
-        for (int i = 0; i < 5; i++) {
-            executeQueryAsync(Integer.toString(i));
-        }
-
-        NamedList<Object> queryResponse = null;
-
-        queryResponse = cluster.getSolrClient().request(request);
+        NamedList<Object> queryResponse = cluster.getSolrClient().request(request);
 
         @SuppressWarnings({"unchecked"})
         String result = (String) queryResponse.get("taskStatus");
 
-        assertTrue(result.contains("true"));
-
-        params = new ModifiableSolrParams();
-
-        params.set("taskUUID", "25");
-
-        @SuppressWarnings({"rawtypes"})
-        SolrRequest request2 = new QueryRequest(params);
-
-        request2.setPath("/tasks/list");
-
-        queryResponse = cluster.getSolrClient().request(request2);
-
-        @SuppressWarnings({"unchecked"})
-        String result2 = (String) queryResponse.get("taskStatus");
-
-        assertFalse(result2.contains("true"));
+        assertFalse(result.contains("true"));
     }
 
     private CompletableFuture<Void> cancelQuery(final String queryID, final int sleepTime, Set<Integer> cancelledQueryIdsSet,

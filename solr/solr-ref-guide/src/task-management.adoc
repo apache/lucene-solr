@@ -21,14 +21,14 @@ cancellation of the same.
 
 This is achieved using the task management interface. Currently, this is supported for queries.
 
-=== Types of Operations
+== Types of Operations
 Task management interface (TMI) supports the following types of operations:
 
 1. List all currently running cancellable tasks.
 2. Cancel a specific task.
 3. Query the status of a specific task.
 
-=== Listing All Active Cancellable Tasks
+== Listing All Active Cancellable Tasks
 To list all the active cancellable tasks currently running, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/list`
@@ -37,7 +37,7 @@ To list all the active cancellable tasks currently running, please use the follo
 
 `{responseHeader={status=0, QTime=11370}, taskList={0=q=*%3A*&canCancel=true&queryUUID=0&_stateVer_=collection1%3A4&wt=javabin&version=2, 5=q=*%3A*&canCancel=true&queryUUID=5&_stateVer_=collection1%3A4&wt=javabin&version=2, 7=q=*%3A*&canCancel=true&queryUUID=7&_stateVer_=collection1%3A4&wt=javabin&version=2}`
 
-=== Cancelling An Active Cancellable Task
+== Cancelling An Active Cancellable Task
 To cancel an active task, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/cancel?cancelUUID=foobar`
@@ -58,7 +58,7 @@ This parameter is used to specify the UUID of the task to be cancelled.
 
 `{responseHeader={status=0, QTime=39}, status=Query with queryID 85 could not be cancelled successfully}`
 
-=== Check Status of a Specific Task
+== Check Status of a Specific Task
 To check the status of a specific task, please use the following syntax:
 
 `\http://localhost:8983/solr/tasks/list?taskUUID=foobar`

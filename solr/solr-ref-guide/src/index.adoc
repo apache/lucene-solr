@@ -12,6 +12,7 @@
     legacy-scaling-and-distribution, \
     circuit-breakers, \
     rate-limiters, \
+    task-management, \
     solr-plugins, \
     the-well-configured-solr-instance, \
     monitoring-solr, \
