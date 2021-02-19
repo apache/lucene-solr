@@ -14,7 +14,10 @@ import org.apache.lucene.util.NamedThreadFactory;
 
 import java.io.IOException;
 import java.util.Random;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 public class TestCancellableCollector extends LuceneTestCase {
     Directory dir;
