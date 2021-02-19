@@ -1569,8 +1569,6 @@ public class QueryComponent extends SearchComponent
 
   private static String generateQueryID(SolrQueryRequest req) {
     ZkController zkController = req.getCore().getCoreContainer().getZkController();
-
-    //TODO: Is this default correct?
     String nodeName = req.getCore().getCoreContainer().getHostName();
 
     if (zkController != null) {
