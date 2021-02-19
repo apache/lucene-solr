@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -57,13 +57,13 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
+public class BackupCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public BackupCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public BackupCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
@@ -74,19 +74,19 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
     if (followAliases) {
-      collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+      collectionName = ccc.getSolrCloudManager().getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     } else {
       collectionName = extCollectionName;
     }
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
-    String configName = ocmh.zkStateReader.readConfigName(collectionName);
+    String configName = ccc.getZkStateReader().readConfigName(collectionName);
 
     BackupProperties backupProperties = BackupProperties.create(backupName, collectionName,
             extCollectionName, configName);
 
-    CoreContainer cc = ocmh.overseer.getCoreContainer();
+    CoreContainer cc = ccc.getCoreContainer();
     try (BackupRepository repository = cc.newBackupRepository(repo)) {
 
       // Backup location
@@ -94,8 +94,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       final URI backupUri = createAndValidateBackupPath(repository, incremental, location, backupName, collectionName);
 
       BackupManager backupMgr = (incremental) ?
-              BackupManager.forIncrementalBackup(repository, ocmh.zkStateReader, backupUri) :
-              BackupManager.forBackup(repository, ocmh.zkStateReader, backupUri);
+              BackupManager.forIncrementalBackup(repository, ccc.getZkStateReader(), backupUri) :
+              BackupManager.forBackup(repository, ccc.getZkStateReader(), backupUri);
 
       String strategy = message.getStr(CollectionAdminParams.INDEX_BACKUP_STRATEGY, CollectionAdminParams.COPY_FILES_STRATEGY);
       switch (strategy) {
@@ -105,7 +105,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
               incrementalCopyIndexFiles(backupUri, collectionName, message, results, backupProperties, backupMgr);
             } catch (SolrException e) {
               log.error("Error happened during incremental backup for collection:{}", collectionName, e);
-              ocmh.cleanBackup(repository, backupUri, backupMgr.getBackupId());
+              CollectionHandlingUtils.cleanBackup(repository, backupUri, backupMgr.getBackupId(), ccc);
               throw e;
             }
           } else {
@@ -125,7 +125,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
       //Since we don't want to distinguish we extract the state and back it up as a separate json
-      DocCollection collectionState = ocmh.zkStateReader.getClusterState().getCollection(collectionName);
+      DocCollection collectionState = ccc.getZkStateReader().getClusterState().getCollection(collectionName);
       backupMgr.writeCollectionState(collectionName, collectionState);
       backupMgr.downloadCollectionProperties(collectionName);
 
@@ -139,7 +139,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
 
       int maxNumBackup = message.getInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS, -1);
       if (incremental && maxNumBackup != -1) {
-        ocmh.deleteBackup(repository, backupUri, maxNumBackup, results);
+        CollectionHandlingUtils.deleteBackup(repository, backupUri, maxNumBackup, results, ccc);
       }
     }
   }
@@ -210,15 +210,15 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ccc.getShardHandler();
 
     log.info("Starting backup of collection={} with backupName={} at location={}", collectionName, backupName,
             backupUri);
 
     Optional<BackupProperties> previousProps = backupManager.tryReadBackupProperties();
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
 
-    Collection<Slice> slices = ocmh.zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices();
+    Collection<Slice> slices = ccc.getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices();
     for (Slice slice : slices) {
       // Note - Actually this can return a null value when there is no leader for this shard.
       Replica replica = slice.getLeader();
@@ -293,12 +293,12 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String backupName = request.getStr(NAME);
     String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ccc.getShardHandler();
 
     String commitName = request.getStr(CoreAdminParams.COMMIT_NAME);
     Optional<CollectionSnapshotMetaData> snapshotMeta = Optional.empty();
     if (commitName != null) {
-      SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
+      SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
       snapshotMeta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
       if (!snapshotMeta.isPresent()) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Snapshot with name " + commitName
@@ -318,8 +318,8 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
       shardsToConsider = snapshotMeta.get().getShards();
     }
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
-    for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices()) {
+    final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+    for (Slice slice : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices()) {
       Replica replica = null;
 
       if (snapshotMeta.isPresent()) {
