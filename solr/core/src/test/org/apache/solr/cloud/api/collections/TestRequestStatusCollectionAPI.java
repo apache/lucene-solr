@@ -43,6 +43,8 @@ public class TestRequestStatusCollectionAPI extends SolrCloudBridgeTestCase {
 
   public TestRequestStatusCollectionAPI() {
     schemaString = "schema15.xml";      // we need a string id
+    solrconfigString = "solrconfig.xml";
+    uploadSelectCollection1Config = true;
     System.setProperty("solr.enableMetrics", "true");
   }
 

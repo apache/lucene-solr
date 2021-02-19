@@ -41,6 +41,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
@@ -72,6 +73,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void proxySystemInfoHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
@@ -85,6 +87,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore
   public void proxyMetricsHandlerAllNodes() throws IOException, SolrServerException, TimeoutException, InterruptedException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params);
@@ -101,6 +104,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
 
   @Test(expected = SolrException.class)
+  @Ignore
   public void proxySystemInfoHandlerNonExistingNode() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "example.com:1234_solr"));
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/info/system", params);
@@ -108,6 +112,7 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
   
   @Test
+  @Ignore
   public void proxySystemInfoHandlerOneNode() {
     Set<String> nodes = solrClient.getClusterStateProvider().getLiveNodes();
     assertEquals(2, nodes.size());

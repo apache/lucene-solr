@@ -1803,9 +1803,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     TimeOut timeout = new TimeOut(timeouts, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     int cnt = 0;
     while (!canBeClosed() || refCount.get() != -1) {
-//      if (cnt >= 2 && !closing) {
-//        throw new IllegalStateException();
-//      }
+      if (cnt >= 2 && !closing) {
+        IllegalStateException exp = new IllegalStateException("CoreContainer is closed and SolrCore still has references out");
+        try {
+          doClose();
+        } catch (Exception e) {
+          exp.addSuppressed(e);
+        }
+        throw exp;
+      }
       if (refCount.get() == 0 && !closing) {
         doClose();
         break;

@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
@@ -221,36 +222,40 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
   @LuceneTestCase.Nightly // non nightly changes this
   public void testCompressionModeDefault()
       throws IOException, XPathExpressionException {
-    assertEquals("Default Solr compression mode changed. Is this expected?", 
-        SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE, Mode.valueOf("BEST_SPEED"));
+    assertEquals("Default Solr compression mode changed. Is this expected?", SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE, Mode.valueOf("BEST_SPEED"));
 
     String previousCoreName = h.coreName;
     String newCoreName = "core_with_default_compression";
     SolrCore c = null;
-    
+
     SolrConfig config = TestHarness.createConfig(testSolrHome, previousCoreName, "solrconfig_codec2.xml", loader);
     assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
     String path = IndexSchema.normalize("codecFactory", config.getPrefix());
-    assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
-        config.getNode(h.getXpath().compile(path), path, false).children().iterator().next());
+    LuceneTestCase.expectThrows(NoSuchElementException.class, () -> config.getNode(h.getXpath().compile(path), path, false).children().iterator().next());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();
-    
-    try {
-      CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName), coreContainer);
-      c = new SolrCore(coreContainer, cd,
-          new ConfigSet("fakeConfigset", config, schema, null, true));
-      assertNull(coreContainer.registerCore(cd, c, false));
-      h.coreName = newCoreName;
-      assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());
+
+
+    CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName), coreContainer);
+    c = new SolrCore(coreContainer, cd, new ConfigSet("fakeConfigset", config, schema, null, true));
+    c.start();
+    assertNull(coreContainer.registerCore(cd, c, false));
+    h.coreName = newCoreName;
+
+    try (SolrCore core = h.getCore()) {
+      assertEquals("We are not using the correct core", "solrconfig_codec2.xml", core.getConfigResource());
       assertU(add(doc("string_f", "foo")));
       assertU(commit());
-      assertCompressionMode(SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE.name(), h.getCore());
+
+
+      assertCompressionMode(SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE.name(), core);
+
     } finally {
+      c.close();
       h.coreName = previousCoreName;
       coreContainer.unload(newCoreName);
     }
-    
+
   }
 }

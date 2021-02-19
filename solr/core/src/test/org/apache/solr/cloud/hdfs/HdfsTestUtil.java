@@ -40,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.lucene.util.LuceneTestCase.TEST_NIGHTLY;
+import static org.apache.lucene.util.LuceneTestCase.assumeTrue;
 import static org.apache.lucene.util.LuceneTestCase.random;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
@@ -80,6 +81,7 @@ public class HdfsTestUtil {
 
   public static void checkAssumptions() {
     LuceneTestCase.assumeTrue("Only run hdfs tests under Nightly", TEST_NIGHTLY);
+    assumeTrue("@Ignore // MRM TODO: HDFS shared location in separate zk node.", false);
     ensureHadoopHomeNotSet();
     checkHadoopWindows();
     checkOverriddenHadoopClasses();

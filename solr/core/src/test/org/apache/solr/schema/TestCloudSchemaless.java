@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.BaseTestHarness;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -120,7 +121,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
           fail(msg);
         }
       } catch (Exception ex) {
-        fail("Caught exception: " + ex);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Caught exception: " + ex.getMessage(), ex);
       }
     });
 

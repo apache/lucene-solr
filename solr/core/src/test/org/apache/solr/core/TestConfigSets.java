@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.SolrTestUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,9 +39,14 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public String solrxml = "<solr><str name=\"configSetBaseDir\">${configsets:configsets}</str></solr>";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestConfigSets() throws Exception {
     useFactory(null);
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTestConfigSets() throws Exception {
+    deleteCore();
   }
 
   public CoreContainer setupContainer(String configSetsBaseDir) {

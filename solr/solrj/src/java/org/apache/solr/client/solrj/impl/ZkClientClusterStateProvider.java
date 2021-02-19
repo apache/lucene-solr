@@ -234,6 +234,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
 
   @Override
   public String getBaseUrlForNodeName(final String nodeName) {
+    if (nodeName == null) throw new NullPointerException("The nodeName cannot be null");
     return Utils.getBaseUrlForNodeName(nodeName,
         getClusterProperty(ZkStateReader. URL_SCHEME, "http"));
   }

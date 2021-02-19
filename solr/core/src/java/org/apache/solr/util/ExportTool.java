@@ -58,7 +58,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.ParWork;
@@ -519,7 +519,7 @@ public class ExportTool extends SolrCLI.ToolBase {
 
       boolean exportDocsFromCore()
           throws IOException, SolrServerException {
-        HttpSolrClient client = new HttpSolrClient.Builder(baseurl).markInternalRequest().build();
+        Http2SolrClient client = new Http2SolrClient.Builder(baseurl).markInternalRequest().build();
         try {
           expectedDocs = getDocCount(replica.getName(), client);
           GenericSolrRequest request;
@@ -579,7 +579,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   }
 
 
-  static long getDocCount(String coreName, HttpSolrClient client) throws SolrServerException, IOException {
+  static long getDocCount(String coreName, Http2SolrClient client) throws SolrServerException, IOException {
     SolrQuery q = new SolrQuery("*:*");
     q.setRows(0);
     q.add("distrib", "false");

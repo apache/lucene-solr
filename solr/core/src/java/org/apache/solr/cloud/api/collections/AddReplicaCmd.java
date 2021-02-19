@@ -399,12 +399,6 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     if (positions == null)  {
-      assert node != null;
-      if (node == null) {
-        // in case asserts are disabled
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "A node should have been identified to add replica but wasn't. Please inform solr developers at SOLR-9317");
-      }
       // it is unlikely that multiple replicas have been requested to be created on
       // the same node, but we've got to accommodate.
       positions = new ArrayList<>(totalReplicas);

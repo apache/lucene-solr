@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -58,7 +59,9 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
@@ -819,10 +822,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     // use an executor service to invoke schema zk version requests in parallel with a max wait time
     int poolSize = Math.min(concurrentTasks.size(), 10);
+    ExecutorService parallelExecutor = ParWork.getExecutorService(poolSize, false, false);
 
     try {
       List<Future<Boolean>> results =
-          ParWork.getRootSharedExecutor().invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
+          parallelExecutor.invokeAll(concurrentTasks, maxWaitSecs, TimeUnit.SECONDS);
 
       // determine whether all replicas have the update
       List<String> failedList = null; // lazily init'd
@@ -852,8 +856,12 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 failedList.size(), concurrentTasks.size() + 1, prop, expectedVersion, maxWaitSecs, failedList));
 
     } catch (InterruptedException ie) {
-      ParWork.propagateInterrupt(ie);
-      throw new AlreadyClosedException(ie);
+      log.warn(formatString(
+          "Core  was interrupted . trying to set the property {1} to version {2} to propagate to {3} replicas for collection {4}",
+          prop, expectedVersion, concurrentTasks.size(), collection));
+      Thread.currentThread().interrupt();
+    } finally {
+      ExecutorUtil.shutdownAndAwaitTermination(parallelExecutor);
     }
 
     if (log.isInfoEnabled()) {

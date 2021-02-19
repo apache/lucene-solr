@@ -25,9 +25,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Nightly
+@Ignore // MRM TODO: HDFS shared location in separate zk node.
 public class HdfsBackupRepositoryTest extends SolrTestCase {
 
   @Test(expected = NullPointerException.class)

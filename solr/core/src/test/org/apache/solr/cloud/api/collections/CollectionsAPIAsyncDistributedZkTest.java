@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -214,7 +215,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
     int j = 0;
     for (JettySolrRunner r:cluster.getJettySolrRunners()) {
-      clients[j++] = new HttpSolrClient.Builder(r.getBaseUrl().toString()).build();
+      clients[j++] = new Http2SolrClient.Builder(r.getBaseUrl().toString()).build();
     }
     RequestStatusState state = CollectionAdminRequest.createCollection("testAsyncIdRaceCondition","conf1",1,1)
         .setRouterName("implicit")

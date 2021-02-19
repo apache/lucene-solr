@@ -217,9 +217,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
    // System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
 
-    System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
-    System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
-
     startTrackingSearchers();
     ignoreException("ignore_exception");
     if (LuceneTestCase.TEST_NIGHTLY) {

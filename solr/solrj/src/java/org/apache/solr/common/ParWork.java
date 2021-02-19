@@ -421,14 +421,16 @@ public class ParWork implements Closeable {
 
       if (exception.get() != null) {
         Throwable exp = exception.get();
-        exp.fillInStackTrace();
+
         if (exp instanceof Error) {
           throw (Error) exp;
         }
         if (exp instanceof RuntimeException) {
           throw (RuntimeException) exp;
         }
-        throw new RuntimeException(exp);
+        RuntimeException rte = new RuntimeException(exp);
+        rte.fillInStackTrace();
+        throw rte;
       }
     }
   }

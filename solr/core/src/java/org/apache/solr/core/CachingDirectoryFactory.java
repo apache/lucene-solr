@@ -193,6 +193,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
       Set<CacheValue> closedDirs = new HashSet<>();
       for (CacheValue val : values) {
         try {
+          if (val.refCnt > 0) continue;
           for (CacheValue v : val.closeEntries) {
             if (log.isDebugEnabled()) log.debug("Closing directory when closing factory: " + v.path);
             boolean cl = closeCacheValue(v);
@@ -388,7 +389,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 
       if (directory == null) {
         directory = create(fullPath, createLockFactory(rawLockType), dirContext);
-        assert ObjectReleaseTracker.track(directory);
+        assert !directory.getClass().getSimpleName().equals("MockDirectoryWrapper") ? ObjectReleaseTracker.track(directory) : true;
         boolean success = false;
         try {
           CacheValue newCacheValue = new CacheValue(fullPath, directory);
@@ -547,7 +548,8 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
     synchronized (this) {
       CacheValue val = byDirectoryCache.get(dir);
       if (val == null) {
-        throw new IllegalArgumentException("Unknown directory " + dir);
+        log.warn("Unknown directory path={}", dir);
+        return;
       }
       val.setDeleteOnClose(true, deleteAfterCoreClose);
     }

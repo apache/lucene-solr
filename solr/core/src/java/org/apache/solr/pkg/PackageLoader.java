@@ -133,13 +133,12 @@ public class PackageLoader implements Closeable {
     Package p = packageClassLoaders.get(pkg);
     if (p != null) {
       List<Package> l = Collections.singletonList(p);
-      try (ParWork work = new ParWork(this)) {
+      try (ParWork work = new ParWork(this, false, false)) {
         for (SolrCore core : coreContainer.getCores()) {
           work.collect("packageListeners", () -> {
             core.getPackageListeners().packagesUpdated(l);
           });
         }
-        work.collect("packageListeners");
       }
     }
   }

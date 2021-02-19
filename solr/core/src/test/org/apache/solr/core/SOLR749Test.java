@@ -19,6 +19,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.FooQParserPlugin;
 import org.apache.solr.search.ValueSourceParser;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 
@@ -32,8 +33,14 @@ import org.junit.BeforeClass;
  */
 public class SOLR749Test extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSOLR749Test() throws Exception {
+    useFactory(null);
     initCore("solrconfig-SOLR-749.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterSOLR749Test() {
+    deleteCore();
   }
 
   public void testConstruction() throws Exception {

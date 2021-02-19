@@ -496,9 +496,15 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       for (ReplicaPosition replicaPosition : replicaPositions) {
         String sliceName = replicaPosition.shard;
         String subShardNodeName = replicaPosition.node;
+
+        if (subShardNodeName == null) {
+          log.error("Got null sub shard node name replicaPosition={}", replicaPosition);
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Got null sub shard node name replicaPosition=" + replicaPosition);
+        }
+
         String solrCoreName = Assign.buildSolrCoreName(collection, sliceName, replicaPosition.type);
 
-        log.debug("Creating replica shard {} as part of slice {} of collection {} on {}"
+        if (log.isDebugEnabled()) log.debug("Creating replica shard {} as part of slice {} of collection {} on {}"
             , solrCoreName, sliceName, collectionName, subShardNodeName);
 
         // we first create all replicas in DOWN state without actually creating their cores in order to
@@ -612,7 +618,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       List<Future> replicaFutures = new ArrayList<>();
       Set<OverseerCollectionMessageHandler.Finalize> replicaRunAfters = ConcurrentHashMap.newKeySet();
       for (Map<String, Object> replica : replicas) {
-        ocmh.addReplica(clusterState, new ZkNodeProps(replica), results);
+        new AddReplicaCmd(ocmh, true).call(clusterState, new ZkNodeProps(replica), results);
       }
 
       // now actually create replica cores on sub shard nodes

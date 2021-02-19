@@ -66,8 +66,11 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.apache.solr.SolrTestCaseJ4.randomizeNumericTypesProperties;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
@@ -79,8 +82,15 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
-@LuceneTestCase.Nightly // nocommit debug - can be slow
+@LuceneTestCase.Nightly
+@Ignore // MRM-Test TODO: debug, can be slow but was working in isloation
 public class TestPackages extends SolrCloudTestCase {
+
+  @BeforeClass
+  public static void beforeTestPackages() throws Exception {
+    useFactory(null);
+    randomizeNumericTypesProperties();
+  }
 
   @Before
   public void setup() {
@@ -141,7 +151,6 @@ public class TestPackages extends SolrCloudTestCase {
           .createCollection(COLLECTION_NAME, "conf", 2, 2)
           .setMaxShardsPerNode(100)
           .process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
       TestDistribPackageStore.assertResponseValues(10,
           () -> new V2Request.Builder("/cluster/package").
@@ -431,11 +440,11 @@ public class TestPackages extends SolrCloudTestCase {
       //we create a new node. This node does not have the packages. But it should download it from another node
       JettySolrRunner jetty = cluster.startJettySolrRunner();
       //create a new replica for this collection. it should end up
-      CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "shard1")
+      CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "s1")
           .setNrtReplicas(1)
           .setNode(jetty.getNodeName())
           .process(cluster.getSolrClient());
-      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 5);
+
       waitForAllNodesHaveFile(cluster,FILE3,
           Utils.makeMap(":files:" + FILE3 + ":name", "runtimelibs_v3.jar"),
           false);

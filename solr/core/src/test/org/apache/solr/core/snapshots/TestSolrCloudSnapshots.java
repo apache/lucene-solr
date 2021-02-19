@@ -38,6 +38,7 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.BackupRestoreUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +54,8 @@ import java.util.stream.Collectors;
 
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
- @LuceneTestCase.Nightly
+@LuceneTestCase.Nightly
+@Ignore // MRM TODO: vet snapshots
 public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static long docsSeed; // see indexDocs()
@@ -81,7 +83,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   public void testSnapshots() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName = "SolrCloudSnapshots";
-    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, NUM_REPLICAS);
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "_default", NUM_SHARDS, NUM_REPLICAS);
     create.process(solrClient);
     cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * NUM_REPLICAS);
 

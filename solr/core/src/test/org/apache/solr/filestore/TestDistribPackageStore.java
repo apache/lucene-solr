@@ -32,6 +32,8 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
@@ -54,6 +56,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
@@ -171,6 +174,28 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
   }
 
   public static void waitForAllNodesHaveFile(MiniSolrCloudCluster cluster, String path, Map expected , boolean verifyContent) throws Exception {
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+        try {
+          String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+          String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
+          assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+
+          if (verifyContent) {
+            try (Http2SolrClient solrClient = (Http2SolrClient) jettySolrRunner.newHttp2Client()) {
+              ByteBuffer buf = Utils.executeGET(solrClient, baseUrl + "/node/files" + path, Utils.newBytesConsumer(Integer.MAX_VALUE));
+              assertEquals("d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420", DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
+
+            }
+          }
+        } catch (AssertionError error) {
+          continue;
+        }
+      }
+      break;
+    }
+
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
       String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
@@ -187,7 +212,6 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
         }
       }
-
     }
   }
 

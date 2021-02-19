@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudBridgeTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -46,12 +46,12 @@ public class TestCloudManagedSchema extends SolrCloudBridgeTestCase {
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/cores");
     int which = random().nextInt(clients.size());
-    HttpSolrClient client = (HttpSolrClient)clients.get(which);
+    Http2SolrClient client = (Http2SolrClient)clients.get(which);
     String previousBaseURL = client.getBaseURL();
     // Strip /collection1 step from baseURL - requests fail otherwise
-    client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
+    client.setBaseUrl(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
     NamedList namedListResponse = client.request(request);
-    client.setBaseURL(previousBaseURL); // Restore baseURL
+    client.setBaseUrl(previousBaseURL); // Restore baseURL
     NamedList status = (NamedList)namedListResponse.get("status");
     // nocommit
 //    NamedList collectionStatus = (NamedList)status.getVal(0);

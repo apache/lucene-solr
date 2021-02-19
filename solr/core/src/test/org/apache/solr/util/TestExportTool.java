@@ -33,6 +33,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -45,10 +46,18 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.JsonRecordReader;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
+
+import static org.apache.solr.SolrTestCaseJ4.randomizeNumericTypesProperties;
 
 @SolrTestCaseJ4.SuppressSSL
 public class TestExportTool extends SolrCloudTestCase {
+
+  @BeforeClass
+  public static void beforeTestPackages() throws Exception {
+    randomizeNumericTypesProperties();
+  }
 
   @Ignore // nocommit debug
   public void testBasic() throws Exception {
@@ -125,6 +134,7 @@ public class TestExportTool extends SolrCloudTestCase {
   }
 
   @LuceneTestCase.Nightly
+  @Ignore // MRM-Test TODO: debug
   public void testVeryLargeCluster() throws Exception {
     String COLLECTION_NAME = "veryLargeColl";
     configureCluster(4)
@@ -164,7 +174,7 @@ public class TestExportTool extends SolrCloudTestCase {
       long totalDocsFromCores = 0;
       for (Slice slice : coll.getSlices()) {
         Replica replica = slice.getLeader();
-        try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getBaseUrl()).build()) {
+        try (Http2SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).build()) {
           long count = ExportTool.getDocCount(replica.getName(), client);
           docCounts.put(replica.getName(), count);
           totalDocsFromCores += count;

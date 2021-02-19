@@ -307,30 +307,28 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     return sb.toString();
   }
   
-  public HttpSolrClient getClient(int i) {
+  public Http2SolrClient getClient(int i) {
     return getClient(DEFAULT_COLLECTION, i);
   }
   
-  public HttpSolrClient getClient(String collection, int i) {
+  public Http2SolrClient getClient(String collection, int i) {
     String baseUrl = cluster.getJettySolrRunner(i).getBaseUrl().toString() + "/" + collection;
-    HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
-        .withConnectionTimeout(15000)
-        .withSocketTimeout(Integer.getInteger("socketTimeout", 30000))
+    Http2SolrClient client = new Http2SolrClient.Builder(baseUrl)
+        .idleTimeout(Integer.getInteger("socketTimeout", 30000))
         .build();
     newClients.add(client);
     return client;
   }
 
-  public HttpSolrClient getClientByNode(String collection, String node) {
+  public Http2SolrClient getClientByNode(String collection, String node) {
     ClusterState cs = cluster.getSolrClient().getZkStateReader().getClusterState();
     DocCollection coll = cs.getCollection(collection);
     List<Replica> replicas = coll.getReplicas();
     for (Replica replica : replicas) {
       if (replica.getNodeName().equals(node)) {
         String baseUrl = replica.getBaseUrl() + "/" + collection;
-        HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
-            .withConnectionTimeout(15000)
-            .withSocketTimeout(Integer.getInteger("socketTimeout", 30000))
+        Http2SolrClient client = new Http2SolrClient.Builder(baseUrl)
+            .idleTimeout(Integer.getInteger("socketTimeout", 30000))
             .build();
         newClients.add(client);
         return client;
@@ -340,14 +338,13 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     throw new IllegalArgumentException("Could not find replica with nodename=" + node);
   }
 
-  public HttpSolrClient getClient(String collection, String url) {
+  public Http2SolrClient getClient(String collection, String url) {
     return getClient(url + "/" + collection);
   }
 
-  public HttpSolrClient getClient(String baseUrl) {
-    HttpSolrClient client = new HttpSolrClient.Builder(baseUrl)
-        .withConnectionTimeout(15000)
-        .withSocketTimeout(Integer.getInteger("socketTimeout", 30000))
+  public Http2SolrClient getClient(String baseUrl) {
+    Http2SolrClient client = new Http2SolrClient.Builder(baseUrl)
+        .idleTimeout(Integer.getInteger("socketTimeout", 30000))
         .build();
     newClients.add(client);
     return client;
@@ -812,7 +809,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   
   protected void setupRestTestHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient) client).getBaseURL(), cluster.getSolrClient().getHttpClient(), cluster.getJettySolrRunners().get(0).getCoreContainer()
+      RestTestHarness harness = new RestTestHarness(() -> ((Http2SolrClient) client).getBaseURL(), cluster.getSolrClient().getHttpClient(), cluster.getJettySolrRunners().get(0).getCoreContainer()
           .getResourceLoader());
       restTestHarnesses.add(harness);
     }

@@ -303,7 +303,11 @@ public class SolrTestCase extends Assert {
     }
 
     System.setProperty("useCompoundFile", "false");
+    System.setProperty("solr.tests.maxBufferedDocs", "200");
 
+
+    System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
+    System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
 
     System.setProperty("solr.createCollectionTimeout", "10000");
     System.setProperty("solr.enablePublicKeyHandler", "true");
@@ -315,6 +319,18 @@ public class SolrTestCase extends Assert {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("zookeeper.nio.directBufferBytes", Integer.toString(32 * 1024 * 2));
+
+    // we need something as a default, at least these are fast
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
+    System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.TrieIntField");
+    System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.TrieFloatField");
+    System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.TrieLongField");
+    System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.TrieDoubleField");
+    System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.TrieDateField");
+    System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
+    System.setProperty("solr.tests.numeric.dv", "true");
+
+    System.setProperty("solr.tests.ramBufferSizeMB", "100");
     //enableReuseOfCryptoKeys();
 
     if (!LuceneTestCase.TEST_NIGHTLY) {

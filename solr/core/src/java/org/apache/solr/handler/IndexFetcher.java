@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import com.google.common.base.Strings;
+import org.apache.jute.Index;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexCommit;
@@ -1296,8 +1297,7 @@ public class IndexFetcher {
    *  File.exists) throws IOException if there's some
    *  unexpected error. */
   private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
-    try {
-      dir.openInput(fileName, IOContext.READONCE).close();
+    try (IndexInput input = dir.openInput(fileName, IOContext.READONCE)) {
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       return false;

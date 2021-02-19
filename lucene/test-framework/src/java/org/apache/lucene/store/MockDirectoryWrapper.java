@@ -97,7 +97,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   // use this for tracking files for crash.
   // additionally: provides debugging information in case you leave one open
-  private Map<Closeable,Exception> openFileHandles = Collections.synchronizedMap(new IdentityHashMap<Closeable,Exception>());
+  private Map<Closeable,Exception>  openFileHandles = Collections.synchronizedMap(new IdentityHashMap<Closeable,Exception>());
 
   // NOTE: we cannot initialize the Map here due to the
   // order in which our constructor actually does this
@@ -783,128 +783,132 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   @Override
   public synchronized void close() throws IOException {
-    if (isOpen) {
-      isOpen = false;
-    } else {
-      in.close(); // but call it again on our wrapped dir
-      return;
-    }
-
-    boolean success = false;
     try {
-      // files that we tried to delete, but couldn't because readers were open.
-      // all that matters is that we tried! (they will eventually go away)
-      //   still open when we tried to delete
-      maybeYield();
-      if (openFiles == null) {
-        openFiles = new HashMap<>();
-        openFilesDeleted = new HashSet<>();
-      }
-      if (openFiles.size() > 0) {
-        // print the first one as it's very verbose otherwise
-        Exception cause = null;
-        Iterator<Exception> stacktraces = openFileHandles.values().iterator();
-        if (stacktraces.hasNext()) {
-          cause = stacktraces.next();
-        }
-        // RuntimeException instead of IOException because
-        // super() does not throw IOException currently:
-        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still " + openFiles.size() + " open files: " + openFiles, cause);
-      }
-      if (openLocks.size() > 0) {
-        Exception cause = null;
-        Iterator<RuntimeException> stacktraces = openLocks.values().iterator();
-        if (stacktraces.hasNext()) {
-          cause = stacktraces.next();
-        }
-        throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
-      }
-      randomIOExceptionRate = 0.0;
-      randomIOExceptionRateOnOpen = 0.0;
-
-      if ((getCheckIndexOnClose() || assertNoUnreferencedFilesOnClose) && DirectoryReader.indexExists(this)) {
-        if (getCheckIndexOnClose()) {
-
-          if (LuceneTestCase.VERBOSE) {
-            System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
-          }
-          crash(); // corrupt any unsynced-files
-          if (LuceneTestCase.VERBOSE) {
-            System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
-          } 
-          // MRM TODO: - rips through heap?
-          if (LuceneTestCase.TEST_NIGHTLY) TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true, null);
-        }
-          
-        // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
-        if (assertNoUnreferencedFilesOnClose) {
-          if (LuceneTestCase.VERBOSE) {
-            System.out.println("MDW: now assert no unref'd files at close");
-          }
-          // now look for unreferenced files: discount ones that we tried to delete but could not
-          Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
-          String[] startFiles = allFiles.toArray(new String[0]);
-          IndexWriterConfig iwc = new IndexWriterConfig(null);
-          iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
-
-          // We must do this before opening writer otherwise writer will be angry if there are pending deletions:
-          TestUtil.disableVirusChecker(in);
-
-          new IndexWriter(in, iwc).rollback();
-          String[] endFiles = in.listAll();
-            
-          Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
-          Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
-            
-          startFiles = startSet.toArray(new String[0]);
-          endFiles = endSet.toArray(new String[0]);
-            
-          if (!Arrays.equals(startFiles, endFiles)) {
-            List<String> removed = new ArrayList<>();
-            for(String fileName : startFiles) {
-              if (!endSet.contains(fileName)) {
-                removed.add(fileName);
-              }
-            }
-              
-            List<String> added = new ArrayList<>();
-            for(String fileName : endFiles) {
-              if (!startSet.contains(fileName)) {
-                added.add(fileName);
-              }
-            }
-              
-            String extras;
-            if (removed.size() != 0) {
-              extras = "\n\nThese files were removed: " + removed;
-            } else {
-              extras = "";
-            }
-              
-            if (added.size() != 0) {
-              extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
-            }
-              
-            throw new RuntimeException("unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras);
-          }
-            
-          DirectoryReader ir1 = DirectoryReader.open(this);
-          int numDocs1 = ir1.numDocs();
-          ir1.close();
-          new IndexWriter(this, new IndexWriterConfig(null)).close();
-          DirectoryReader ir2 = DirectoryReader.open(this);
-          int numDocs2 = ir2.numDocs();
-          ir2.close();
-          assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
-        }
-      }
-      success = true;
-    } finally {
-      if (success) {
-        IOUtils.close(in);
+      if (isOpen) {
+        isOpen = false;
       } else {
-        IOUtils.closeWhileHandlingException(in);
+        in.close(); // but call it again on our wrapped dir
+        return;
       }
+
+      boolean success = false;
+      try {
+        // files that we tried to delete, but couldn't because readers were open.
+        // all that matters is that we tried! (they will eventually go away)
+        //   still open when we tried to delete
+        maybeYield();
+        if (openFiles == null) {
+          openFiles = new HashMap<>();
+          openFilesDeleted = new HashSet<>();
+        }
+        if (openFiles.size() > 0) {
+          // print the first one as it's very verbose otherwise
+          Exception cause = null;
+          Iterator<Exception> stacktraces = openFileHandles.values().iterator();
+          if (stacktraces.hasNext()) {
+            cause = stacktraces.next();
+          }
+          // RuntimeException instead of IOException because
+          // super() does not throw IOException currently:
+          throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still " + openFiles.size() + " open files: " + openFiles, cause);
+        }
+        if (openLocks.size() > 0) {
+          Exception cause = null;
+          Iterator<RuntimeException> stacktraces = openLocks.values().iterator();
+          if (stacktraces.hasNext()) {
+            cause = stacktraces.next();
+          }
+          throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
+        }
+        randomIOExceptionRate = 0.0;
+        randomIOExceptionRateOnOpen = 0.0;
+
+        if ((getCheckIndexOnClose() || assertNoUnreferencedFilesOnClose) && DirectoryReader.indexExists(this)) {
+          if (getCheckIndexOnClose()) {
+
+            if (LuceneTestCase.VERBOSE) {
+              System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
+            }
+            crash(); // corrupt any unsynced-files
+            if (LuceneTestCase.VERBOSE) {
+              System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
+            }
+            // MRM TODO: - rips through heap?
+            if (LuceneTestCase.TEST_NIGHTLY) TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true, null);
+          }
+
+          // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
+          if (assertNoUnreferencedFilesOnClose) {
+            if (LuceneTestCase.VERBOSE) {
+              System.out.println("MDW: now assert no unref'd files at close");
+            }
+            // now look for unreferenced files: discount ones that we tried to delete but could not
+            Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
+            String[] startFiles = allFiles.toArray(new String[0]);
+            IndexWriterConfig iwc = new IndexWriterConfig(null);
+            iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+
+            // We must do this before opening writer otherwise writer will be angry if there are pending deletions:
+            TestUtil.disableVirusChecker(in);
+
+            new IndexWriter(in, iwc).rollback();
+            String[] endFiles = in.listAll();
+
+            Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
+            Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
+
+            startFiles = startSet.toArray(new String[0]);
+            endFiles = endSet.toArray(new String[0]);
+
+            if (!Arrays.equals(startFiles, endFiles)) {
+              List<String> removed = new ArrayList<>();
+              for (String fileName : startFiles) {
+                if (!endSet.contains(fileName)) {
+                  removed.add(fileName);
+                }
+              }
+
+              List<String> added = new ArrayList<>();
+              for (String fileName : endFiles) {
+                if (!startSet.contains(fileName)) {
+                  added.add(fileName);
+                }
+              }
+
+              String extras;
+              if (removed.size() != 0) {
+                extras = "\n\nThese files were removed: " + removed;
+              } else {
+                extras = "";
+              }
+
+              if (added.size() != 0) {
+                extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
+              }
+
+              throw new RuntimeException("unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras);
+            }
+
+            DirectoryReader ir1 = DirectoryReader.open(this);
+            int numDocs1 = ir1.numDocs();
+            ir1.close();
+            new IndexWriter(this, new IndexWriterConfig(null)).close();
+            DirectoryReader ir2 = DirectoryReader.open(this);
+            int numDocs2 = ir2.numDocs();
+            ir2.close();
+            assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
+          }
+        }
+        success = true;
+      } finally {
+        if (success) {
+          IOUtils.close(in);
+        } else {
+          IOUtils.closeWhileHandlingException(in);
+        }
+      }
+    } finally {
+      super.close();
     }
   }
 
