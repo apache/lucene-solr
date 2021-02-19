@@ -120,6 +120,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     String fileName =
         IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
+    // nocommit should the openInput call be put in try-finally as well for IOException handling?
     IndexInput in = state.directory.openInput(fileName, state.context);
     try {
       int versionVectorData =
