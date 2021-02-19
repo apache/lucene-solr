@@ -206,8 +206,9 @@ public class DirectIODirectory extends FilterDirectory {
      * Creates a new instance of DirectIOIndexOutput for writing index output with direct IO
      * bypassing OS buffer
      *
-     * @throws UnsupportedOperationException if the operating system, file system or JDK does not
-     *     support Direct I/O or a sufficient equivalent.
+     * @throws UnsupportedOperationException if the JDK does not support Direct I/O
+     * @throws IOException if the operating system or filesystem does not support support Direct I/O
+     *     or a sufficient equivalent.
      */
     public DirectIOIndexOutput(Path path, String name, int blockSize, int bufferSize)
         throws IOException {
@@ -300,8 +301,9 @@ public class DirectIODirectory extends FilterDirectory {
      * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing
      * OS buffer
      *
-     * @throws UnsupportedOperationException if the operating system, file system or JDK does not
-     *     support Direct I/O or a sufficient equivalent.
+     * @throws UnsupportedOperationException if the JDK does not support Direct I/O
+     * @throws IOException if the operating system or filesystem does not support support Direct I/O
+     *     or a sufficient equivalent.
      */
     public DirectIOIndexInput(Path path, int blockSize, int bufferSize) throws IOException {
       super("DirectIOIndexInput(path=\"" + path + "\")");
