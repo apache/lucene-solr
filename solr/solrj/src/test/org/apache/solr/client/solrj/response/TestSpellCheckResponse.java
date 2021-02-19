@@ -31,7 +31,6 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-
 /**
  * Test for SpellCheckComponent's response in Solrj
  *
