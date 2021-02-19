@@ -375,9 +375,9 @@ public class DebugComponent extends SearchComponent
   ////////////////////////////////////////////
 
   @Override
-    public String getDescription() {
-      return "Debug Information";
-    }
+  public String getDescription() {
+    return "Debug Information";
+  }
 
   @Override
   public Category getCategory() {

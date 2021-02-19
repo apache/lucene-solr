@@ -16,6 +16,13 @@
  */
 package org.apache.solr.handler;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
+
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -30,9 +37,6 @@ import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.Test;
-
-import java.util.*;
-import java.util.function.Predicate;
 
 import static java.util.Arrays.asList;
 
