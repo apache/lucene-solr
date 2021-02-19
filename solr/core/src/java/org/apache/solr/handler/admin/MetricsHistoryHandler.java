@@ -239,6 +239,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   // check that .system exists
   public void checkSystemCollection() {
+    if (this.overseer == null) {
+      return;
+    }
     if (cloudManager != null) {
       try {
         if (cloudManager.isClosed() || Thread.interrupted()) {
@@ -312,7 +315,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
 
   private void collectMetrics() {
-    log.debug("-- collectMetrics");
+    if (log.isDebugEnabled()) log.debug("-- collectMetrics");
     // Make sure we are a solr server thread, so we can use PKI auth, SOLR-12860
     // This is a workaround since we could not instrument the ScheduledThreadPoolExecutor in ExecutorUtils
     ExecutorUtil.setServerThreadFlag(true);
@@ -342,7 +345,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
       if (Thread.interrupted()) {
         return;
       }
-      log.debug("--  collecting local {}...", group);
+      if (log.isDebugEnabled()) log.debug("--  collecting local {}...", group);
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add(MetricsHandler.GROUP_PARAM, group.toString());
       params.add(MetricsHandler.COMPACT_PARAM, "true");
@@ -357,7 +360,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         });
         NamedList nl = (NamedList)result.get();
         if (nl != null) {
-          try (ParWork worker = new ParWork(this)) {
+          try (ParWork worker = new ParWork(this, false, false)) {
             for (Iterator<Map.Entry<String, Object>> it = nl.iterator(); it.hasNext(); ) {
               Map.Entry<String, Object> entry = it.next();
               String key = entry.getKey();
@@ -416,7 +419,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
   }
 
   private void collectGlobalMetrics() {
-    if (overseer != null && overseer.isClosed()) {
+    if (overseer == null || !overseer.getCoreContainer().getZkController().isOverseerLeader()) {
       return;
     }
     Set<String> nodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
@@ -752,14 +755,14 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     }
     // when using in-memory DBs non-overseer node has no access to overseer DBs - in this case
     // forward the request to Overseer leader if available
-//    if (!factory.isPersistent()) {
-//      String leader = getOverseerLeader();
-//      if (leader != null && !amIOverseerLeader(leader)) {
-//        // get & merge remote response
-//        NamedList<Object> remoteRes = handleRemoteRequest(leader, req);
-//        mergeRemoteRes(rsp, remoteRes);
-//      }
-//    }
+    //    if (!factory.isPersistent()) {
+    //      String leader = getOverseerLeader();
+    //      if (leader != null && !amIOverseerLeader(leader)) {
+    //        // get & merge remote response
+    //        NamedList<Object> remoteRes = handleRemoteRequest(leader, req);
+    //        mergeRemoteRes(rsp, remoteRes);
+    //      }
+    //    }
     SimpleOrderedMap<Object> apiState = new SimpleOrderedMap<>();
     apiState.add("enableReplicas", enableReplicas);
     apiState.add("enableNodes", enableNodes);

@@ -274,8 +274,9 @@ copyTarball() {
     echo "baz"
     pushd # back to original dir to properly resolve vcs working dir
     echo "foobar:"$(pwd)
-    if [[ ! -f $(ls "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz) ]]; then
-      echo "No solr tarball found try again with -r"; popd; exit 10;
+    tarball=$(ls "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz)
+    if [[ ! -f "${tarball}" ]]; then
+      echo "No solr tarball found try again with -r location=${tarball}"; popd; exit 10;
     fi
     cp "$VCS_WORK"/solr/packaging/build/distributions/solr-*.tgz ${CLUSTER_WD}
     pushd # back into cluster wd to unpack

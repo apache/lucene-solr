@@ -22,8 +22,8 @@ import javax.management.MBeanServerFactory;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -32,6 +32,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -46,7 +47,6 @@ import org.rrd4j.core.RrdDb;
  *
  */
 @LogLevel("org.apache.solr.cloud=DEBUG")
-@LuceneTestCase.Nightly
 public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   private volatile static SolrCloudManager cloudManager;
@@ -64,15 +64,18 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
+    System.setProperty("solr.enableMetrics", "true");
+
     TEST_MBEAN_SERVER = MBeanServerFactory.createMBeanServer();
     simulated = TEST_NIGHTLY ? random().nextBoolean() : true;
     Map<String, Object> args = new HashMap<>();
     args.put(MetricsHistoryHandler.SYNC_PERIOD_PROP, 1);
     args.put(MetricsHistoryHandler.COLLECT_PERIOD_PROP, 1);
+    args.put(MetricsHistoryHandler.ENABLE_NODES_PROP, "true");
     configureCluster(1)
         .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
-    
+
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     metricManager = cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager();
     solrClient = cluster.getSolrClient();
@@ -81,6 +84,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
         null);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrInfoBean.Group.node.toString(), "");
     handler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
+    solrMetricsContext.getMetricsSnapshot();
     SPEED = 1;
     timeSource = cloudManager.getTimeSource();
 
@@ -109,10 +113,18 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   @Test
   //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 15-Sep-2018
   public void testBasic() throws Exception {
-    timeSource.sleep(10000);
     List<Pair<String, Long>> list = handler.getFactory().list(100);
+
+    if (list.size() == 0) {
+      TimeOut timeout = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      while (!timeout.hasTimedOut() && list.size() == 0) {
+        Thread.sleep(10);
+        list = handler.getFactory().list(100);
+      }
+    }
     // solr.jvm, solr.node, solr.collection..system
-    assertEquals(list.toString(), 3, list.size());
+    // Ahem - replicas are disabled by default, nodes too, though I enabled - solr.jvm is not populated, we make this request handler ourselves.
+    assertEquals(list.toString(), 1, list.size());
     for (Pair<String, Long> p : list) {
       RrdDb db = RrdDb.getBuilder().setPath(MetricsHistoryHandler.URI_PREFIX + p.first()).setReadOnly(true).setBackendFactory( handler.getFactory()).setUsePool(true).build();
       int dsCount = db.getDsCount();
