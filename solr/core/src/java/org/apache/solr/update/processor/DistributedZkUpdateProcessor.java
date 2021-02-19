@@ -703,7 +703,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
       leaderReplica = clusterState.getCollection(collection).getSlice(shardId).getLeader();
-      isLeader = leaderReplica.getName().equals(desc.getName());
+      isLeader = leaderReplica != null && leaderReplica.getName().equals(desc.getName());
       if (log.isTraceEnabled()) log.trace("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);

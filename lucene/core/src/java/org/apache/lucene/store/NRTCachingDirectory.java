@@ -220,6 +220,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
         },
         cacheDirectory,
         in);
+    super.close();
   }
 
   /** Subclass can override this to customize logic; return
