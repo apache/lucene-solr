@@ -1055,7 +1055,10 @@ public class Http2SolrClient extends SolrClient {
       }
     }
 
-    public void waitForComplete() {
+    public synchronized void waitForComplete() {
+      if (phaser.getRegisteredParties() == 1) {
+        return;
+      }
       if (log.isTraceEnabled()) log.trace("Before wait for outstanding requests registered: {} arrived: {}, {} {}", phaser.getRegisteredParties(), phaser.getArrivedParties(), phaser.getUnarrivedParties(), phaser);
       try {
         phaser.awaitAdvanceInterruptibly(phaser.arrive(), idleTimeout, TimeUnit.MILLISECONDS);
@@ -1065,7 +1068,7 @@ public class Http2SolrClient extends SolrClient {
         ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (TimeoutException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for outstanding async requests", e);
       }
 
       if (log.isTraceEnabled()) log.trace("After wait for outstanding requests {}", phaser);

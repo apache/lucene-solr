@@ -342,7 +342,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (log.isDebugEnabled()) log.debug("Using nodes {}", nodes);
     if (nodes != null && nodes.size() > 0) {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      params.set(DISTRIB_UPDATE_PARAM, (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString() : DistribPhase.TOLEADER.toString()));
+      if (forwardToLeader) {
+        params.set(DISTRIB_UPDATE_PARAM,  DistribPhase.TOLEADER.toString());
+      } else {
+        params.set(DISTRIB_UPDATE_PARAM, (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString() : DistribPhase.TOLEADER.toString()));
+      }
       params.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
 
       if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {

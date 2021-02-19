@@ -787,6 +787,9 @@ public class SolrZkClient implements Closeable {
 
   public void delete(Collection<String> paths, boolean wait) throws KeeperException {
     if (log.isDebugEnabled()) log.debug("delete paths {} wait={}", paths, wait);
+    if (paths.size() == 0) {
+      return;
+    }
     CountDownLatch latch = null;
     if (wait) {
       latch = new CountDownLatch(paths.size());

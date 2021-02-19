@@ -116,15 +116,15 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
     List<Pair<String, Long>> list = handler.getFactory().list(100);
 
     if (list.size() == 0) {
-      TimeOut timeout = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-      while (!timeout.hasTimedOut() && list.size() == 0) {
+      TimeOut timeout = new TimeOut(3000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      while (!timeout.hasTimedOut() && list.size() <= 1) {
         Thread.sleep(10);
         list = handler.getFactory().list(100);
       }
     }
     // solr.jvm, solr.node, solr.collection..system
-    // Ahem - replicas are disabled by default, nodes too, though I enabled - solr.jvm is not populated, we make this request handler ourselves.
-    assertEquals(list.toString(), 1, list.size());
+
+    assertEquals(list.toString(), 2, list.size());
     for (Pair<String, Long> p : list) {
       RrdDb db = RrdDb.getBuilder().setPath(MetricsHistoryHandler.URI_PREFIX + p.first()).setReadOnly(true).setBackendFactory( handler.getFactory()).setUsePool(true).build();
       int dsCount = db.getDsCount();

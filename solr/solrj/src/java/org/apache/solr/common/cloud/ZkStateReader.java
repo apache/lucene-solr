@@ -2147,27 +2147,19 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       throws InterruptedException, TimeoutException {
 
     DocCollection coll = clusterState.getCollectionOrNull(collection);
-    if (predicate.matches(liveNodes, coll)) {
+    if (predicate.matches(getLiveNodes(), coll)) {
       return;
     }
     final CountDownLatch latch = new CountDownLatch(1);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
-    org.apache.solr.common.cloud.CollectionStateWatcher watcher = (n, c) -> {
-      // if (isClosed()) return true;
-      docCollection.set(c);
-      boolean matches = predicate.matches(this.liveNodes, c);
-      if (matches)
-        latch.countDown();
-
-      return matches;
-    };
+    org.apache.solr.common.cloud.CollectionStateWatcher watcher = new PredicateMatcher(predicate, latch, docCollection).invoke();
     registerCollectionStateWatcher(collection, watcher);
     try {
 
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit)) {
         coll = clusterState.getCollectionOrNull(collection);
-        if (predicate.matches(liveNodes, coll)) {
+        if (predicate.matches(getLiveNodes(), coll)) {
           return;
         }
 
@@ -3061,6 +3053,30 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       } catch (Exception e) {
         log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
       }
+    }
+  }
+
+  private class PredicateMatcher {
+    private CollectionStatePredicate predicate;
+    private CountDownLatch latch;
+    private AtomicReference<DocCollection> docCollection;
+
+    public PredicateMatcher(CollectionStatePredicate predicate, CountDownLatch latch, AtomicReference<DocCollection> docCollection) {
+      this.predicate = predicate;
+      this.latch = latch;
+      this.docCollection = docCollection;
+    }
+
+    public org.apache.solr.common.cloud.CollectionStateWatcher invoke() {
+      return (n, c) -> {
+        // if (isClosed()) return true;
+        docCollection.set(c);
+        boolean matches = predicate.matches(getLiveNodes(), c);
+        if (matches)
+          latch.countDown();
+
+        return matches;
+      };
     }
   }
 }

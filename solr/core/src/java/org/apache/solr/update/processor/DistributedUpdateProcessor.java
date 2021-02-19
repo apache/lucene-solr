@@ -373,7 +373,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // realtime-get to work reliably.
     // TODO: if versions aren't stored, do we need to set on the cmd anyway for some reason?
     // there may be other reasons in the future for a version on the commands
-    boolean nodist = noDistrib();
+
     AddUpdateCommand cloneCmd = null;
     if (versionsStored) {
 
@@ -513,7 +513,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
 
     AddUpdateCommand finalCloneCmd;
-    if (!nodist) {
+    if (forwardToLeader || getNodes() != null && getNodes().size() > 0) {
 
       if (cloneCmd != null) {
         finalCloneCmd = cloneCmd;

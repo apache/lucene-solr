@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
-@LuceneTestCase.Nightly // nocommit flakey
+@LuceneTestCase.Nightly // nocommit flakey + using testConcurrentIndexing as custom test
 public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicInteger NAME_COUNTER = new AtomicInteger(1);
@@ -496,7 +496,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     cluster.stopJettyRunners();
     cluster.startJettyRunners();
 
-    cluster.waitForActiveCollection(collectionName, 3, 9);
+ //   cluster.waitForActiveCollection(collectionName, 2, 4);
 
     cluster.getSolrClient().getZkStateReader().checkShardConsistency(collectionName, false, true);
     //checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));
