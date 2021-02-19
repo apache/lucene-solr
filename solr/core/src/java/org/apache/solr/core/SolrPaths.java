@@ -71,7 +71,7 @@ public final class SolrPaths {
     }
     if (!path.isAbsolute()) return; // All relative paths are accepted
     if (allowPaths.contains(Paths.get("_ALL_"))) return; // Catch-all path "*"/"_ALL_" will allow all other paths
-    if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString())))) {
+    if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString()).normalize()))) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
     }
