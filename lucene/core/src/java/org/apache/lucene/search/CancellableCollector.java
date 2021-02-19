@@ -16,61 +16,60 @@
  */
 package org.apache.lucene.search;
 
-import org.apache.lucene.index.LeafReaderContext;
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.lucene.index.LeafReaderContext;
 
 /** Allows a query to be cancelled */
 public class CancellableCollector implements Collector, CancellableTask {
 
-    /** Thrown when a query gets cancelled */
-    public static class QueryCancelledException extends RuntimeException {
+  /** Thrown when a query gets cancelled */
+  public static class QueryCancelledException extends RuntimeException {}
+
+  private Collector collector;
+  private AtomicBoolean isQueryCancelled;
+
+  public CancellableCollector(Collector collector) {
+    if (collector == null) {
+      throw new IllegalStateException(
+          "Internal collector not provided but wrapper collector accessed");
     }
 
-    private Collector collector;
-    private AtomicBoolean isQueryCancelled;
+    this.collector = collector;
+    this.isQueryCancelled = new AtomicBoolean();
+  }
 
-    public CancellableCollector(Collector collector) {
-        if (collector == null) {
-            throw new IllegalStateException("Internal collector not provided but wrapper collector accessed");
-        }
+  @Override
+  public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
 
-        this.collector = collector;
-        this.isQueryCancelled = new AtomicBoolean();
+    if (isQueryCancelled.compareAndSet(true, false)) {
+      throw new QueryCancelledException();
     }
 
-    @Override
-    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+    return new FilterLeafCollector(collector.getLeafCollector(context)) {
 
+      @Override
+      public void collect(int doc) throws IOException {
         if (isQueryCancelled.compareAndSet(true, false)) {
-            throw new QueryCancelledException();
+          throw new QueryCancelledException();
         }
 
-        return new FilterLeafCollector(collector.getLeafCollector(context)) {
+        in.collect(doc);
+      }
+    };
+  }
 
-            @Override
-            public void collect(int doc) throws IOException {
-                if (isQueryCancelled.compareAndSet(true, false)) {
-                    throw new QueryCancelledException();
-                }
+  @Override
+  public ScoreMode scoreMode() {
+    return collector.scoreMode();
+  }
 
-                in.collect(doc);
-            }
-        };
-    }
+  @Override
+  public void cancelTask() {
+    isQueryCancelled.compareAndSet(false, true);
+  }
 
-    @Override
-    public ScoreMode scoreMode() {
-        return collector.scoreMode();
-    }
-
-    @Override
-    public void cancelTask() {
-        isQueryCancelled.compareAndSet(false, true);
-    }
-
-    public Collector getInternalCollector() {
-        return collector;
-    }
+  public Collector getInternalCollector() {
+    return collector;
+  }
 }
