@@ -14,6 +14,9 @@ New Features
 
 * SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
 
+* SOLR-15087: SolrCloud backups can now be restored to compatible existing collections, instead of requiring a new collection
+  for each restore. (Jason Gerlowski, shalin, Cao Manh Dat)
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
