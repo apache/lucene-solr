@@ -297,8 +297,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(collections.get(COLLECTION_NAME));
       assertEquals(1, collections.size());
       Map<String, Object> collection = (Map<String, Object>) collections.get(COLLECTION_NAME);
-      Map<String, Object> shardStatus = (Map<String, Object>) collection.get("shards");
-      assertEquals(1, shardStatus.size());
+      assertNotNull(collections.toString(), collection);
+      Map<String, Object> shardStatus = (Map<String,Object>) collection.get("shards");
+      assertNotNull(collection.toString(), shardStatus);
+      assertEquals(collection.toString(), 1, shardStatus.size());
       Map<String, Object> selectedShardStatus = (Map<String, Object>) shardStatus.get(SHARD1);
       assertNotNull(selectedShardStatus);
 

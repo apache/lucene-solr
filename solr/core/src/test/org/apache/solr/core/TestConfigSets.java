@@ -79,6 +79,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
       SolrCore core1 = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));
       assertThat(Paths.get(core1.getDataDir()).toString(), is(solrHome.resolve("core1").resolve("data").toString()));
+      core1.close();
     }
     finally {
       if (container != null)
@@ -124,6 +125,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
         new File(new File(configSetsDir, "configset-2/conf"), "solrconfig.xml"));
     container.reload("core1");
 
+    core.close();
     core = container.getCore("core1");
     assertThat("A /dump handler should be defined in the reloaded configuration",
         core.getRequestHandler("/dump"), is(notNullValue()));

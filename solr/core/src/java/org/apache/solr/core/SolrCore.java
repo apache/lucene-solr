@@ -1054,13 +1054,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       restManager = initRestManager(cd);
       initRestManager.done();
 
+      // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(solrConfig);
-
-      newSearcherCounter = coreMetricManager.getSolrMetricsContext().counter("new", Category.SEARCHER.toString());
-      newSearcherTimer = coreMetricManager.getSolrMetricsContext().timer("time", Category.SEARCHER.toString(), "new");
-      newSearcherWarmupTimer = coreMetricManager.getSolrMetricsContext().timer("warmup", Category.SEARCHER.toString(), "new");
-      newSearcherMaxReachedCounter = coreMetricManager.getSolrMetricsContext().counter("maxReached", Category.SEARCHER.toString(), "new");
-      newSearcherOtherErrorsCounter = coreMetricManager.getSolrMetricsContext().counter("errors", Category.SEARCHER.toString(), "new");
+      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
 
       StopWatch loadReporters = StopWatch.getStopWatch(this + "-loadReporters");
       this.coreMetricManager.loadReporters();
@@ -1092,9 +1088,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       timeVerInSchema.done();
 
+      // initialize core metrics
+      initializeMetrics(solrMetricsContext, null);
+
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
+      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
@@ -1392,6 +1392,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
+    newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter = parentContext.counter("maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter = parentContext.counter("errors", Category.SEARCHER.toString(), "new");
+
     parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
     parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
     parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
@@ -1442,21 +1448,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
-    if (solrMetricsContext == null) {
-      // Initialize the metrics manager
-
-      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
-      // initialize core metrics
-      initializeMetrics(solrMetricsContext, null);
-      SolrFieldCacheBean solrFieldCacheBean = (SolrFieldCacheBean) infoRegistry.get("fieldcache");
-      if (solrFieldCacheBean != null) {
-        solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
-      }
-      // Allow the directory factory to report metrics
-      if (directoryFactory instanceof SolrMetricProducer) {
-        ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
-      }
-    }
     return solrMetricsContext;
   }
 

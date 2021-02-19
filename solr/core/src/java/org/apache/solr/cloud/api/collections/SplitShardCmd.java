@@ -150,7 +150,9 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     RTimerTree t = timings.sub("checkDiskSpace");
-    if (Boolean.getBoolean("solr.enableMetrics")) {
+
+    boolean enableMetrics = Boolean.parseBoolean(System.getProperty("solr.enableMetrics", "true"));
+    if (enableMetrics) {
       checkDiskSpace(collectionName, slice.get(), parentShardLeader, splitMethod, ocmh.cloudManager);
     }
     t.stop();

@@ -2222,6 +2222,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return Category.CORE;
   }
 
+  /**
+   * Implementations should return the context used in
+   * {@link #initializeMetrics(SolrMetricsContext, String)} to ensure pr
+   * at the end of the life-cycle of this component. This should be the initialize context
+   * or null if the parent context was used.
+   */
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;

@@ -44,7 +44,7 @@ public class MDCLoggingContext {
 
   public static void setTracerId(String traceId) {
     if (!StringUtils.isEmpty(traceId)) {
-      MDC.put(TRACE_ID, "t=" + traceId);
+      MDC.put(TRACE_ID, traceId);
     } else {
       MDC.remove(TRACE_ID);
     }
@@ -52,7 +52,7 @@ public class MDCLoggingContext {
   
   public static void setCoreName(String core) {
     if (core != null) {
-      MDC.put(CORE_NAME_PROP, "c=" + core);
+      MDC.put(CORE_NAME_PROP, core);
     } else {
       MDC.remove(CORE_NAME_PROP);
     }
@@ -69,7 +69,7 @@ public class MDCLoggingContext {
   
   private static void setNodeName(String node) {
     if (node != null) {
-      MDC.put(NODE_NAME_PROP, "n=" + node);
+      MDC.put(NODE_NAME_PROP, node);
     } else {
       MDC.remove(NODE_NAME_PROP);
     }

@@ -35,7 +35,7 @@ apply from: file('gradle/defaults.gradle')
 // Calculate project version:
 version = {
   // Release manager: update base version here after release:
-  String baseVersion = '9.0.0'
+  String baseVersion = '10.0.0'
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z

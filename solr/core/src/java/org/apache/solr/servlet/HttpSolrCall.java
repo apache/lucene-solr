@@ -294,6 +294,10 @@ public class HttpSolrCall {
 
         boolean isPreferLeader = (path.endsWith("/update") || path.contains("/update/"));
 
+        if (SYSTEM_COLL.equals(collectionName)) {
+          autoCreateSystemColl(collectionName);
+        }
+
         core = getCoreByCollection(collectionName, isPreferLeader); // find a local replica/core for the collection
         if (core != null) {
           if (idx > 0) {
@@ -320,7 +324,7 @@ public class HttpSolrCall {
             }
           }
           //core is not available locally or remotely
-          autoCreateSystemColl(collectionName);
+
           if (action != null) return;
       }
     }

@@ -22,6 +22,7 @@ import java.util.Collection;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
+import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -68,7 +69,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private Meter numTimeouts = new Meter();
   private Counter requests = new Counter();
  // private final Map<String, Counter> shardPurposes = new ConcurrentHashMap<>();
-//  private Timer requestTimes = new Timer();
+  private Timer requestTimes = new Timer();
 //  private Timer distribRequestTimes = new Timer();
 //  private Timer localRequestTimes = new Timer();
   private Counter totalTime = new Counter();
@@ -157,10 +158,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     numClientErrors = solrMetricsContext.meter("clientErrors", getCategory().toString(), scope);
     numTimeouts = solrMetricsContext.meter("timeouts", getCategory().toString(), scope);
     requests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
+    // MRM TODO:
 //    MetricsMap metricsMap = new MetricsMap((detail, map) ->
 //        shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
     //solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
-//    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
+    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
 //    distribRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "distrib");
 //    localRequestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, "local");
     totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
@@ -203,7 +205,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
           //        }
         }
       }
-      //   Timer.Context timer = requestTimes.time();
+      Timer.Context timer = requestTimes.time();
       //  @SuppressWarnings("resource")
       //  Timer.Context dTimer = distrib ? distribRequestTimes.time() : localRequestTimes.time();
       try {
@@ -267,8 +269,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
         }
       } finally {
         //dTimer.stop();
-        //long elapsed = timer.stop();
-        //totalTime.inc(elapsed);
+        long elapsed = timer.stop();
+        totalTime.inc(elapsed);
         if (distrib) {
           //distribTotalTime.inc(elapsed);
         } else {

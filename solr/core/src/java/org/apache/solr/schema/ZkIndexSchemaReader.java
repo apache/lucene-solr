@@ -105,7 +105,7 @@ public class ZkIndexSchemaReader implements OnReconnect, Closeable {
     @Override
     public void close() throws IOException {
       try {
-        schemaReader.zkClient.getSolrZooKeeper().removeWatches(schemaReader.managedSchemaPath, this, WatcherType.Any, true);
+        schemaReader.zkClient.removeWatches(schemaReader.managedSchemaPath, this, WatcherType.Any, true);
       } catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {

@@ -157,7 +157,7 @@ public class ZkSolrClientTest extends SolrTestCaseJ4 {
       // simulate session expiration
       
       // one option
-      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+      long sessionId = zkClient.getSessionId();
       server.expire(sessionId);
       
       // another option

@@ -75,6 +75,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   public static void createCluster() throws Exception {
 
     SolrTestCaseJ4.randomizeNumericTypesProperties();
+    System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP, "true");
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
         .addConfig("conf1", SolrTestUtil.configset("cloud-managed"))

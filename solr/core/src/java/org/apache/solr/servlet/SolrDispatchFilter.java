@@ -83,6 +83,7 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
+import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
@@ -129,7 +130,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   private final boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
-  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
+  private final String metricTag = "solr.jvm"; //SolrMetricProducer.getUniqueMetricTag(this, null);
   private volatile SolrMetricManager metricManager;
   private volatile String registryName;
   private volatile boolean closeOnDestroy = true;
@@ -217,12 +218,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         final Path solrHomePath = solrHome == null ? SolrPaths.locateSolrHome() : Paths.get(solrHome);
         coresInit = createCoreContainer(solrHomePath, extraProperties);
 
-        CoreContainer finalCoresInit = coresInit;
 //        stopRunnable = new StopRunnable(coresInit);
 //        SolrLifcycleListener.registerStopped(stopRunnable);
 
         SolrPaths.ensureUserFilesDataDir(solrHomePath);
-        setupJvmMetrics(coresInit);
+        CoreContainer finalCoresInit1 = coresInit;
+        ParWork.getRootSharedExecutor().submit(()-> setupJvmMetrics(finalCoresInit1));
+
         if (log.isDebugEnabled()) {
           log.debug("user.dir={}", System.getProperty("user.dir"));
         }
@@ -261,13 +263,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.jvm);
     final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
     try {
-      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), true, "buffers");
-      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), true, "classes");
+      metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), false, "buffers");
+      metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), false, "classes");
       // nocommit - this still appears fairly costly
-      // metricManager.registerAll(registryName, new OperatingSystemMetricSet(), true, "os");
-      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), true, "gc");
-      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), true, "memory");
-      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), true, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
+      metricManager.registerAll(registryName, new OperatingSystemMetricSet(), false, "os");
+      metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), false, "gc");
+      metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), false, "memory");
+      metricManager.registerAll(registryName, new ThreadStatesGaugeSet(), false, "threads"); // todo should we use CachedThreadStatesGaugeSet instead?
       MetricsMap sysprops = new MetricsMap((detailed, map) -> {
         System.getProperties().forEach((k, v) -> {
           if (!hiddenSysProps.contains(k)) {
@@ -286,16 +288,13 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is the only one
     // that's so ugly so far.
     if (log.isInfoEnabled()) {
-      log.info(" ___      _       Welcome to Apache Solr™ version {}", solrVersion());
-    }
-    if (log.isInfoEnabled()) {
-      log.info("/ __| ___| |_ _   Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
-    }
-    if (log.isInfoEnabled()) {
-      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
-    }
-    if (log.isInfoEnabled()) {
-      log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
+      log.info("  ___ _       _ _            ___     _            Welcome to Apache Solr™ version {}", solrVersion());
+
+      log.info(" / __| |_ ___| | |__ _ _ _  / __|___| |_ _        Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
+
+      log.info(" \\__ \\  _/ -_) | / _` | '_| \\__ \\ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
+
+      log.info(" |___/\\__\\___|_|_\\__,_|_|   |___\\___/_|_|     Start time: {}", Instant.now());
     }
   }
 
@@ -403,17 +402,17 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     CoreContainer cc = cores;
 
     try {
-//      if (metricManager != null) {
-//        try {
-//          metricManager.unregisterGauges(registryName, metricTag);
-//        } catch (NullPointerException e) {
-//          // okay
-//        } catch (Exception e) {
-//          log.warn("Exception closing FileCleaningTracker", e);
-//        } finally {
-//          metricManager = null;
-//        }
-//      }
+      if (metricManager != null) {
+        try {
+          metricManager.unregisterGauges(registryName, metricTag);
+        } catch (NullPointerException e) {
+          // okay
+        } catch (Exception e) {
+          log.warn("Exception closing FileCleaningTracker", e);
+        } finally {
+          metricManager = null;
+        }
+      }
     } finally {
      // if (!cc.isShutDown()) {
         log.info("CoreContainer is not yet shutdown during filter destroy, shutting down now {}", cc);

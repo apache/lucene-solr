@@ -107,7 +107,11 @@ allprojects {
       minHeapSize = propertyOrDefault("tests.minheapsize", "512m")
       maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
 
-      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:-UseBiasedLocking -Djava.net.preferIPv4Stack=true -Dzookeeper.jmx.log4j.disable=true -Dlog4j2.disable.jmx=true -DconfigurationFile=log4j2.xml -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault"));
+      jvmArgs Commandline.translateCommandline(propertyOrDefault(
+              "tests.jvmargs", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:-UseBiasedLocking -Djava.net.preferIPv4Stack=true" +
+              " -Dlog4j2.is.webapp=false -Dlog4j2.garbagefreeThreadContextMap=true -Dlog4j2.enableDirectEncoders=true -Dlog4j2.enable.threadlocals=true" +
+              " -Dzookeeper.jmx.log4j.disable=true -Dlog4j2.disable.jmx=true -DconfigurationFile=log4j2.xml" +
+              " -Dorg.apache.xml.dtm.DTMManager=org.apache.xml.dtm.ref.DTMManagerDefault"));
 
       ignoreFailures = resolvedTestOption("tests.haltonfailure").toBoolean() == false
 

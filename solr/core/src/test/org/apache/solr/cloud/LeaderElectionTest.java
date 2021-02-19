@@ -515,7 +515,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             try {
               threads.get(j).es.zkClient.getSolrZooKeeper().closeCnxn();
               if (random().nextBoolean()) {
-                long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+                long sessionId = zkClient.getSessionId();
                 server.expire(sessionId);
               }
             } catch (Exception e) {

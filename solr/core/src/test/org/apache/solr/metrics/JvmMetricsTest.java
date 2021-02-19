@@ -19,10 +19,13 @@ package org.apache.solr.metrics;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Properties;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestUtil;
@@ -54,6 +57,17 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   @Before
   public void beforeTest() throws Exception {
     System.setProperty("solr.enableMetrics", "true");
+    Path coresDir = SolrTestUtil.createTempDir().resolve("cores");
+
+    Properties props = new Properties();
+    props.setProperty("name", ".system");
+    props.setProperty("configSet", "collection1");
+    props.setProperty("config", "${solrconfig:solrconfig.xml}");
+    props.setProperty("schema", "${schema:schema.xml}");
+
+    writeCoreProperties(coresDir.resolve("core"), props, ".system");
+
+
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 

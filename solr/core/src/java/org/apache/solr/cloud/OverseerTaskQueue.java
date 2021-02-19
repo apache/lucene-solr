@@ -225,7 +225,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     public void close() throws IOException {
       this.closed = true;
       try {
-        zkClient.getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
+        zkClient.removeWatches(path, this, WatcherType.Data, true);
       }  catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {

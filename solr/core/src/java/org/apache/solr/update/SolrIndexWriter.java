@@ -226,6 +226,7 @@ public class SolrIndexWriter extends IndexWriter {
         }
       }
     } catch (Exception e) {
+      log.error("Exception creating " + this.getClass().getName(), e);
       directoryFactory.release(getDirectory());
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error creating IndexWriter");
     }

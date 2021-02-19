@@ -770,7 +770,7 @@ public class MiniSolrCloudCluster {
     if (cores != null) {
       SolrZkClient zkClient = cores.getZkController().getZkClient();
       zkClient.getSolrZooKeeper().closeCnxn();
-      long sessionId = zkClient.getSolrZooKeeper().getSessionId();
+      long sessionId = zkClient.getSessionId();
       zkServer.expire(sessionId);
       if (log.isInfoEnabled()) {
         log.info("Expired zookeeper session {} from node {}", sessionId, jetty.getBaseUrl());

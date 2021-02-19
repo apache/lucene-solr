@@ -905,7 +905,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
         if (log.isDebugEnabled()) log.debug("created watch for response {}", requestId);
         boolean success = false;
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 15; i++) {
           success = latch.await(3, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
           if (success) {
             if (log.isDebugEnabled()) log.debug("latch was triggered {}", requestId);
@@ -1228,9 +1228,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     @Override
     public void close() throws IOException {
       this.closed = true;
-      SolrZooKeeper zk = zkClient.getSolrZooKeeper();
       try {
-        zk.removeWatches(watchPath, this, WatcherType.Any, true);
+        zkClient.removeWatches(watchPath, this, WatcherType.Any, true);
       } catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {

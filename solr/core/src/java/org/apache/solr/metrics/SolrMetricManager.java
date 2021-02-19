@@ -17,6 +17,7 @@
 package org.apache.solr.metrics;
 
 import java.lang.invoke.MethodHandles;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,6 +51,7 @@ import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginInfo;
@@ -102,10 +104,11 @@ public class SolrMetricManager {
    */
   public static final String JVM_REGISTRY = REGISTRY_NAME_PREFIX + SolrInfoBean.Group.jvm.toString();
   public static final PluginInfo[] PLUGIN_INFOS_EMPTY = new PluginInfo[0];
+  public static final String[] EMPTY_STRINGS = new String[0];
 
-  private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>(32);
+  private final ConcurrentMap<String, MetricRegistry> registries = new ConcurrentHashMap<>(12, 0.75f,1);
 
-  private static final ConcurrentMap<String, MetricRegistry> REGISTRIES = new ConcurrentHashMap<>(32);
+  private static final ConcurrentMap<String, MetricRegistry> REGISTRIES = new ConcurrentHashMap<>(12, 0.75f, 1);
 
   private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>(32);
 
@@ -371,11 +374,8 @@ public class SolrMetricManager {
    */
   public Set<String> registryNames() {
     Set<String> set = new HashSet<>();
-
     set.addAll(registries.keySet());
-
-    set.addAll(SharedMetricRegistries.names());
-
+    set.addAll(REGISTRIES.keySet());
     return set;
   }
 
@@ -576,11 +576,13 @@ public class SolrMetricManager {
           try {
             metricRegistry.register(fullName, entry.getValue());
           } catch (IllegalArgumentException e) {
-            metricRegistry.remove(fullName);
-            try {
-              metricRegistry.register(fullName, entry.getValue());
-            } catch (IllegalArgumentException e2) {
-              log.warn("Metric already registered: " + fullName);
+            if (force) {
+              metricRegistry.remove(fullName);
+              try {
+                metricRegistry.register(fullName, entry.getValue());
+              } catch (IllegalArgumentException e2) {
+                log.warn("Metric already registered: " + fullName);
+              }
             }
           }
         });
@@ -746,17 +748,17 @@ public class SolrMetricManager {
    * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
    */
   public static class GaugeWrapper<T> implements Gauge<T> {
-    private final Gauge<T> gauge;
+    private final WeakReference<Gauge<T>> gauge;
     private final String tag;
 
     public GaugeWrapper(Gauge<T> gauge, String tag) {
-      this.gauge = gauge;
+      this.gauge = new WeakReference<>(gauge);
       this.tag = tag;
     }
 
     @Override
     public T getValue() {
-      return gauge.getValue();
+      return gauge.get().getValue();
     }
 
     public String getTag() {
@@ -764,22 +766,27 @@ public class SolrMetricManager {
     }
 
     public Gauge<T> getGauge() {
-      return gauge;
+      return gauge.get();
     }
   }
 
   public String registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
-    Set<String> names = tags.get(tag);
-    if (names == null) {
-      names = ConcurrentHashMap.newKeySet();
-      Set<String> race = tags.putIfAbsent(tag, names);
-      if (race != null) {
-        names = race;
+    Set<String> names = null;
+    if (tag != null) {
+      names = tags.get(tag);
+      if (names == null) {
+        names = ConcurrentHashMap.newKeySet();
+        Set<String> race = tags.putIfAbsent(tag, names);
+        if (race != null) {
+          names = race;
+        }
       }
     }
 
     String path = registerMetric(context, registry, gauge, force, metricName, metricPath);
-    names.add(path);
+    if (names != null) {
+      names.add(path);
+    }
     return path;
   }
 
@@ -1055,8 +1062,7 @@ public class SolrMetricManager {
     registry = enforcePrefix(registry);
     SolrMetricReporter reporter = loader.newInstance(
         pluginInfo.className,
-        SolrMetricReporter.class,
-        new String[0],
+        SolrMetricReporter.class, EMPTY_STRINGS,
         new Class[]{SolrMetricManager.class, String.class},
         new Object[]{this, registry}
     );
@@ -1095,7 +1101,7 @@ public class SolrMetricManager {
     try {
       Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry == null) {
-        perRegistry = new HashMap<>(32);
+        perRegistry = new HashMap<>();
         reporters.put(registry, perRegistry);
       }
       if (tag != null && !tag.isEmpty()) {

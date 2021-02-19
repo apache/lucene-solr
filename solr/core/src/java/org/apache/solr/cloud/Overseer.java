@@ -842,7 +842,7 @@ public class Overseer implements SolrCloseable {
 
     private void closeWatcher() {
       try {
-        zkController.getZkClient().getSolrZooKeeper().removeWatches(path, this, WatcherType.Data, true);
+        zkController.getZkClient().removeWatches(path, this, WatcherType.Data, true);
       } catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {

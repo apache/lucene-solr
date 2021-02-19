@@ -246,11 +246,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
           return false;
         }
 
-        List<Replica> replicas = collectionState.getReplicas();
         int found = 0;
         for (String name : coreNames) {
-          for (Replica replica : replicas) {
-            if (replica.getName().equals(name) && replica.getState().equals(Replica.State.ACTIVE)) {
+          Replica replica = collectionState.getReplica(name);
+          if (replica != null) {
+            if (replica.getState().equals(Replica.State.ACTIVE)) {
               found++;
             }
           }

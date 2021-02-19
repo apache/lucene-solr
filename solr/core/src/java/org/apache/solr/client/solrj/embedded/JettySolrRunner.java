@@ -964,7 +964,7 @@ public class JettySolrRunner implements Closeable {
     @Override
     public void close() throws IOException {
       try {
-        zkClient.getSolrZooKeeper().removeWatches(ZkStateReader.COLLECTIONS_ZKNODE, this, WatcherType.Any, true);
+        zkClient.removeWatches(ZkStateReader.COLLECTIONS_ZKNODE, this, WatcherType.Any, true);
       } catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {

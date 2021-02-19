@@ -1233,11 +1233,10 @@ public class ZkController implements Closeable, Runnable {
   private void createLiveNodeImpl(String nodePath) {
     try {
       try {
-        zkClient.getSolrZooKeeper().create(nodePath, null, zkClient.getZkACLProvider().getACLsToAdd(nodePath), CreateMode.EPHEMERAL);
-        zkClient.setData(ZkStateReader.LIVE_NODES_ZKNODE, (byte[]) null, true);
+        zkClient.create(nodePath, (byte[]) null, CreateMode.EPHEMERAL, true);
       } catch (KeeperException.NodeExistsException e) {
         log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown? ... {}", nodePath);
-        // TODO nocommit wait for expiration properly and try again?
+        // TODO nocommit
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     } catch (Exception e) {
@@ -1279,6 +1278,10 @@ public class ZkController implements Closeable, Runnable {
 
   public String register(String coreName, final CoreDescriptor desc) throws Exception {
      return register(coreName, desc, false);
+  }
+
+  public boolean isOverseerLeader() {
+    return overseerElector != null && overseerElector.isLeader();
   }
 
   /**
@@ -2109,7 +2112,7 @@ public class ZkController implements Closeable, Runnable {
     if (confListeners.confDirListeners.isEmpty()) {
       // no more listeners for this confDir, remove it from the map
       if (log.isDebugEnabled()) log.debug("No more listeners for config directory [{}]", confDir);
-      zkClient.getSolrZooKeeper().removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true, (rc, path, ctx) -> {
+      zkClient.removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
           if (!(ex instanceof KeeperException.NoWatcherException)) {
@@ -2229,7 +2232,7 @@ public class ZkController implements Closeable, Runnable {
 
   private static void setConfWatcher(String zkDir, Watcher watcher, Stat stat, CoreContainer cc, Map<String, ConfListeners> confDirectoryListeners, SolrZkClient zkClient) {
     try {
-      zkClient.getSolrZooKeeper().addWatch(zkDir, watcher, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
+      zkClient.addWatch(zkDir, watcher, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
           log.error("Exception creating watch for " + path, ex);

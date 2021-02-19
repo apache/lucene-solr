@@ -24,6 +24,7 @@ import java.util.Set;
  */
 public class MetricsConfig {
 
+  public static final PluginInfo[] EMPTY_PLUGIN_INFOS = new PluginInfo[0];
   private final PluginInfo[] metricReporters;
   private final Set<String> hiddenSysProps;
   private final PluginInfo counterSupplier;
@@ -74,7 +75,7 @@ public class MetricsConfig {
   }
 
   public static class MetricsConfigBuilder {
-    private PluginInfo[] metricReporterPlugins = new PluginInfo[0];
+    private PluginInfo[] metricReporterPlugins = EMPTY_PLUGIN_INFOS;
     private Set<String> hiddenSysProps = new HashSet<>();
     private PluginInfo counterSupplier;
     private PluginInfo meterSupplier;
@@ -95,7 +96,7 @@ public class MetricsConfig {
     }
 
     public MetricsConfigBuilder setMetricReporterPlugins(PluginInfo[] metricReporterPlugins) {
-      this.metricReporterPlugins = metricReporterPlugins != null ? metricReporterPlugins : new PluginInfo[0];
+      this.metricReporterPlugins = metricReporterPlugins != null ? metricReporterPlugins : EMPTY_PLUGIN_INFOS;
       return this;
     }
 

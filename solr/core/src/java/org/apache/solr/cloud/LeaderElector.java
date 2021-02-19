@@ -382,7 +382,7 @@ public class LeaderElector implements Closeable {
 
     while (true) {
       try {
-        sessionId = zkClient.getSolrZooKeeper().getSessionId();
+        sessionId = zkClient.getSessionId();
         id = sessionId + "-" + context.id;
         if (joinAtHead){
           if (log.isDebugEnabled()) log.debug("Node {} trying to join election at the head", id);
@@ -579,9 +579,8 @@ public class LeaderElector implements Closeable {
     @Override
     public void close() throws IOException {
       this.closed = true;
-      SolrZooKeeper zk = zkClient.getSolrZooKeeper();
       try {
-        zk.removeWatches(watchedNode, this, WatcherType.Any, true);
+        zkClient.removeWatches(watchedNode, this, WatcherType.Any, true);
       } catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {

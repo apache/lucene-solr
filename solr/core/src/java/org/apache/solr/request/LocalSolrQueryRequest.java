@@ -27,7 +27,6 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.SolrCore;
 
 // With the addition of SolrParams, this class isn't needed for much anymore... it's currently
@@ -72,9 +71,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   }
 
   public LocalSolrQueryRequest(SolrCore core, NamedList args, boolean closeCore) {
-    super(core, args.toSolrParams());
-    this.closeCore = closeCore;
-    assert ObjectReleaseTracker.track(this);
+    this(core, args.toSolrParams(), closeCore);
   }
 
   public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args) {
@@ -82,8 +79,7 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
   }
 
   public LocalSolrQueryRequest(SolrCore core, Map<String,String[]> args, boolean closeCore) {
-    super(core, new MultiMapSolrParams(args));
-    this.closeCore = closeCore;
+    this(core, new MultiMapSolrParams(args), closeCore);
   }
   
   public LocalSolrQueryRequest(SolrCore core, SolrParams args) {
@@ -101,7 +97,6 @@ public class LocalSolrQueryRequest extends SolrQueryRequestBase {
     if (closeCore) {
       IOUtils.closeQuietly(core);
     }
-    assert ObjectReleaseTracker.release(this);
   }
 
   @Override public Principal getUserPrincipal() {

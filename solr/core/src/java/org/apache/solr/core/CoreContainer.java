@@ -758,7 +758,7 @@ public class CoreContainer implements Closeable {
 
       try (ParWork work = new ParWork(this, false, false)) {
 
-        boolean enableMetrics = Boolean.getBoolean("solr.enableMetrics");
+        boolean enableMetrics = Boolean.parseBoolean(System.getProperty("solr.enableMetrics", "true"));
         if (enableMetrics) {
           work.collect("", () -> {
             // metricsHistoryHandler uses metricsHandler, so create it first

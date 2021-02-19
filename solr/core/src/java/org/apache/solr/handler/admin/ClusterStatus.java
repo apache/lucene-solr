@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -73,11 +74,15 @@ public class ClusterStatus {
 
     @SuppressWarnings({"rawtypes"})
     Map roles = null;
-    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES)) {
-      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null));
+    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
+      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
     }
 
     ClusterState clusterState = zkStateReader.getClusterState();
+
+    // convert cluster state into a map of writable types
+    byte[] bytes = Utils.toJSON(clusterState);
+    Map<String, Object> stateMap = (Map<String,Object>) Utils.fromJSON(bytes);
 
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
@@ -86,7 +91,7 @@ public class ClusterStatus {
     if (collection == null) {
       collectionsMap = clusterState.getCollectionsMap();
     } else  {
-      collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection, true));
+      collectionsMap = Collections.singletonMap(collection, clusterState.getCollectionOrNull(collection));
     }
 
     boolean isAlias = aliasVsCollections.containsKey(collection);
@@ -130,9 +135,13 @@ public class ClusterStatus {
         requestedShards.addAll(Arrays.asList(paramShards));
       }
 
-        byte[] bytes = Utils.toJSON(clusterStateCollection);
+      if (clusterStateCollection.getStateFormat() > 1) {
+        bytes = Utils.toJSON(clusterStateCollection);
         Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
         collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
+      } else {
+        collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, requestedShards);
+      }
 
       collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
@@ -223,17 +232,19 @@ public class ClusterStatus {
 
   @SuppressWarnings("unchecked")
   protected void crossCheckReplicaStateWithLiveNodes(List<String> liveNodes, NamedList<Object> collectionProps) {
-    for (Map.Entry<String, Object> next : collectionProps) {
-      Map<String, Object> collMap = (Map<String, Object>) next.getValue();
-      Map<String, Object> shards = (Map<String, Object>) collMap.get("shards");
+    Iterator<Map.Entry<String,Object>> colls = collectionProps.iterator();
+    while (colls.hasNext()) {
+      Map.Entry<String,Object> next = colls.next();
+      Map<String,Object> collMap = (Map<String,Object>)next.getValue();
+      Map<String,Object> shards = (Map<String,Object>)collMap.get("shards");
       for (Object nextShard : shards.values()) {
-        Map<String, Object> shardMap = (Map<String, Object>) nextShard;
-        Map<String, Object> replicas = (Map<String, Object>) shardMap.get("replicas");
+        Map<String,Object> shardMap = (Map<String,Object>)nextShard;
+        Map<String,Object> replicas = (Map<String,Object>)shardMap.get("replicas");
         for (Object nextReplica : replicas.values()) {
-          Map<String, Object> replicaMap = (Map<String, Object>) nextReplica;
+          Map<String,Object> replicaMap = (Map<String,Object>)nextReplica;
           if (Replica.State.getState((String) replicaMap.get(ZkStateReader.STATE_PROP)) != Replica.State.DOWN) {
             // not down, so verify the node is live
-            String node_name = (String) replicaMap.get(ZkStateReader.NODE_NAME_PROP);
+            String node_name = (String)replicaMap.get(ZkStateReader.NODE_NAME_PROP);
             if (!liveNodes.contains(node_name)) {
               // node is not live, so this replica is actually down
               replicaMap.put(ZkStateReader.STATE_PROP, Replica.State.DOWN.toString());

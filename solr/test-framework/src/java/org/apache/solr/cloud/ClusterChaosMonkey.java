@@ -132,8 +132,7 @@ public class ClusterChaosMonkey {
     if (cores != null) {
       monkeyLog("expire session for " + jetty.getLocalPort() + " !");
       causeConnectionLoss(jetty);
-      long sessionId = cores.getZkController().getZkClient()
-          .getSolrZooKeeper().getSessionId();
+      long sessionId = cores.getZkController().getZkClient().getSessionId();
       zkServer.expire(sessionId);
     }
 
