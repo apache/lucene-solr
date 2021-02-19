@@ -26,6 +26,7 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
@@ -59,7 +60,7 @@ class GeneratingSuggester {
 
   private List<Weighted<Root<String>>> findSimilarDictionaryEntries(
       String word, WordCase originalCase) {
-    TreeSet<Weighted<Root<String>>> roots = new TreeSet<>();
+    PriorityQueue<Weighted<Root<String>>> roots = new PriorityQueue<>();
     processFST(
         dictionary.words,
         (key, forms) -> {
@@ -80,9 +81,16 @@ class GeneratingSuggester {
               ngram(3, word, lower, EnumSet.of(NGramOptions.LONGER_WORSE))
                   + commonPrefix(word, root);
 
+          if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
+            return;
+          }
+
           entries.forEach(e -> roots.add(new Weighted<>(e, sc)));
+          while (roots.size() > MAX_ROOTS) {
+            roots.poll();
+          }
         });
-    return roots.stream().limit(MAX_ROOTS).collect(Collectors.toList());
+    return roots.stream().sorted().collect(Collectors.toList());
   }
 
   private void processFST(FST<IntsRef> fst, BiConsumer<IntsRef, IntsRef> keyValueConsumer) {
