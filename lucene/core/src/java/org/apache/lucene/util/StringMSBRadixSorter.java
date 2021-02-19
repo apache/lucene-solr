@@ -70,7 +70,8 @@ abstract class StringMSBRadixSorter extends MSBRadixSorter {
       }
 
       private final BytesRef pivot = new BytesRef(),
-          scratch1 = new BytesRef(), scratch2 = new BytesRef();
+          scratch1 = new BytesRef(),
+          scratch2 = new BytesRef();
     };
   }
 }

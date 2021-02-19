@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Provides various convenience classes for creating payloads on Tokens.
- */
+/** Provides various convenience classes for creating payloads on Tokens. */
 package org.apache.lucene.analysis.payloads;

@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.Collection;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -27,9 +25,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests the Terms.docCount statistic
- */
+/** Tests the Terms.docCount statistic */
 public class TestDocCount extends LuceneTestCase {
   public void testSimple() throws Exception {
     Directory dir = newDirectory();
@@ -48,16 +44,20 @@ public class TestDocCount extends LuceneTestCase {
     iw.close();
     dir.close();
   }
-  
+
   private Document doc() {
     Document doc = new Document();
     int numFields = TestUtil.nextInt(random(), 1, 10);
     for (int i = 0; i < numFields; i++) {
-      doc.add(newStringField("" + TestUtil.nextInt(random(), 'a', 'z'), "" + TestUtil.nextInt(random(), 'a', 'z'), Field.Store.NO));
+      doc.add(
+          newStringField(
+              "" + TestUtil.nextInt(random(), 'a', 'z'),
+              "" + TestUtil.nextInt(random(), 'a', 'z'),
+              Field.Store.NO));
     }
     return doc;
   }
-  
+
   private void verifyCount(IndexReader ir) throws Exception {
     final Collection<String> fields = FieldInfos.getIndexedFields(ir);
     for (String field : fields) {

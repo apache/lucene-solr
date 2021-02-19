@@ -60,63 +60,189 @@ configure(rootProject) {
         ":solr:core",
         ":solr:solrj",
         ":solr:contrib:analysis-extras",
-        ":solr:contrib:dataimporthandler",
-        ":solr:contrib:dataimporthandler-extras",
         ":solr:contrib:analytics",
         ":solr:contrib:clustering",
         ":solr:contrib:extraction",
         ":solr:contrib:langid",
         ":solr:contrib:jaegertracer-configurator",
         ":solr:contrib:prometheus-exporter",
-        ":solr:contrib:velocity",
+        ":solr:contrib:scripting",
         ":solr:test-framework",
     ]
+
+    apacheNexusSnapshots = "https://repository.apache.org/content/repositories/snapshots"
+  }
+}
+
+configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
+  apply plugin: 'maven-publish'
+  apply plugin: 'signing'
+
+  publishing {
+    repositories {
+      maven {
+        name = "ApacheSnapshots"
+        url = apacheNexusSnapshots
+
+        credentials {
+          def nexusUserName = rootProject.propertyOrDefault('asfNexusUsername', null)
+          def nexusPwd = rootProject.propertyOrDefault('asfNexusPassword', null)
+          if (nexusUserName && nexusPwd) {
+            username nexusUserName
+            password nexusPwd
+          }
+        }
+      }
+    }
   }
 
-  configure(subprojects.findAll { it.path in rootProject.published }) {
-    apply plugin: 'maven-publish'
-    apply plugin: 'signing'
+  // Do not generate gradle metadata files.
+  tasks.withType(GenerateModuleMetadata) {
+    enabled = false
+  }
 
-    publishing {
-      // TODO: Add publishing repository details.
+  plugins.withType(JavaPlugin) {
+    task sourcesJar(type: Jar, dependsOn: classes) {
+      archiveClassifier = 'sources'
+      from sourceSets.main.allJava
     }
 
-    plugins.withType(JavaPlugin) {
-      task sourcesJar(type: Jar, dependsOn: classes) {
-        archiveClassifier = 'sources'
-        from sourceSets.main.allJava
-      }
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+      archiveClassifier = 'javadoc'
+      from javadoc.destinationDir
+    }
 
-      task javadocJar(type: Jar, dependsOn: javadoc) {
-        archiveClassifier = 'javadoc'
-        from javadoc.destinationDir
-      }
-
+    // This moves publishing configuration after all the scripts of all projects
+    // have been evaluated. This is required because we set artifact groups
+    // and archivesBaseName in other scripts (artifact-naming.gradle) and
+    // maven pom does not accept lazy property providers (so everything must
+    // be in its final form).
+    //
+    // In theory project.afterEvaluate closure should also work but for some reason
+    // it fired earlier than artifact-naming.gradle; don't know whether it's a bug
+    // in gradle or just complex relationships between lazy collection hooks.
+    gradle.projectsEvaluated {
       publishing {
-        def configurePom = {
-          name = "Apache Solr/Lucene (${project.name})"
-          licenses {
-            license {
-              name = 'Apache 2'
-              url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+        def configurePom;
+        if (project.path.startsWith(":lucene")) {
+          configurePom = {
+            name = "Apache Lucene (module: ${project.name})"
+            description = name
+            url = 'https://lucene.apache.org/'
+
+            licenses {
+              license {
+                name = 'Apache 2'
+                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+              }
+            }
+
+            inceptionYear = "2000"
+
+            issueManagement {
+              system = "JIRA"
+              url = "https://issues.apache.org/jira/browse/LUCENE"
+            }
+
+            ciManagement {
+              system = "Jenkins"
+              url = "https://builds.apache.org/job/Lucene/"
+            }
+
+            mailingLists {
+              mailingList {
+                name = "General List"
+                subscribe = "general-subscribe@lucene.apache.org"
+                unsubscribe = "general-unsubscribe@lucene.apache.org"
+                archive = "https://mail-archives.apache.org/mod_mbox/lucene-general/"
+              }
+
+              mailingList {
+                name = "Java User List"
+                subscribe = "java-user-subscribe@lucene.apache.org"
+                unsubscribe = "java-user-unsubscribe@lucene.apache.org"
+                archive = "https://mail-archives.apache.org/mod_mbox/lucene-java-user/"
+              }
+
+              mailingList {
+                name = "Java Developer List"
+                subscribe = "dev-subscribe@lucene.apache.org"
+                unsubscribe = "dev-unsubscribe@lucene.apache.org"
+                archive = "https://mail-archives.apache.org/mod_mbox/lucene-dev/"
+              }
+
+              mailingList {
+                name = "Java Commits List"
+                subscribe = "commits-subscribe@lucene.apache.org"
+                unsubscribe = "commits-unsubscribe@lucene.apache.org"
+                archive = "https://mail-archives.apache.org/mod_mbox/lucene-java-commits/"
+              }
+            }
+
+            scm {
+              connection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
+              developerConnection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
+              url = 'https://gitbox.apache.org/repos/asf?p=lucene-solr.git'
+            }
+          }
+        } else {
+          configurePom = {
+            name = "Apache Solr (module: ${project.name})"
+            description = name
+            url = 'https://lucene.apache.org/solr/'
+
+            licenses {
+              license {
+                name = 'Apache 2'
+                url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+              }
+            }
+
+            inceptionYear = "2006"
+
+            issueManagement {
+              system = "JIRA"
+              url = "https://issues.apache.org/jira/browse/SOLR"
+            }
+
+            ciManagement {
+              system = "Jenkins"
+              url = "https://builds.apache.org/job/Lucene/"
+            }
+
+            mailingLists {
+              mailingList {
+                name = "Solr User List"
+                subscribe = "solr-user-subscribe@lucene.apache.org"
+                unsubscribe = "solr-user-unsubscribe@lucene.apache.org"
+                archive = "https://mail-archives.apache.org/mod_mbox/solr-user/"
+              }
+
+              mailingList {
+                name = "Java Developer List"
+                subscribe = "dev-subscribe@lucene.apache.org"
+                unsubscribe = "dev-unsubscribe@lucene.apache.org"
+                archive = "https://mail-archives.apache.org/mod_mbox/lucene-dev/"
+              }
+
+              mailingList {
+                name = "Java Commits List"
+                subscribe = "commits-subscribe@lucene.apache.org"
+                unsubscribe = "commits-unsubscribe@lucene.apache.org"
+                archive = "https://mail-archives.apache.org/mod_mbox/lucene-java-commits/"
+              }
+            }
+
+            scm {
+              connection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
+              developerConnection = 'scm:git:https://gitbox.apache.org/repos/asf/lucene-solr.git'
+              url = 'https://gitbox.apache.org/repos/asf?p=lucene-solr.git'
             }
           }
         }
 
         publications {
-          // JARS and sources, no javadocs (for local inspection only).
           jars(MavenPublication) {
-            from components.java
-            groupId = project.group
-            artifactId = project.archivesBaseName
-
-            artifact sourcesJar
-
-            pom(configurePom)
-          }
-
-          // Full set of signed artifacts.
-          signed(MavenPublication) {
             from components.java
             groupId = project.group
             artifactId = project.archivesBaseName
@@ -125,12 +251,32 @@ configure(rootProject) {
             artifact javadocJar
 
             pom(configurePom)
+
+            pom({
+              // LUCENE-9561:
+              // Remove dependencyManagement section created by a combination of
+              // Palantir and the publishing plugin.
+              //
+              // https://github.com/palantir/gradle-consistent-versions/issues/550
+              withXml {
+                asNode().dependencyManagement.replaceNode {}
+              }
+            })
           }
         }
       }
 
+      // Add aliases of convention tasks with shorter names.
+      task mavenToApacheSnapshots() {
+        group "Publishing"
+        description "Publish Maven JARs and POMs to Apache Snapshots repository: ${apacheNexusSnapshots}"
+
+        dependsOn "publishJarsPublicationToApacheSnapshotsRepository"
+      }
+
       signing {
-        sign publishing.publications.signed
+        required { !version.endsWith("SNAPSHOT") }
+        sign publishing.publications.jars
       }
     }
   }

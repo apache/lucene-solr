@@ -58,10 +58,16 @@ public class JsonSchemaCreator {
   private static Map<String, Object> createSchemaFromType(java.lang.reflect.Type t, Map<String, Object> map) {
     if (natives.containsKey(t)) {
       map.put("type", natives.get(t));
-    } else if (t instanceof ParameterizedType && ((ParameterizedType) t).getRawType() == List.class) {
-      Type typ = ((ParameterizedType) t).getActualTypeArguments()[0];
-      map.put("type", "array");
-      map.put("items", getSchema(typ));
+    } else if (t instanceof ParameterizedType) {
+      if (((ParameterizedType) t).getRawType() == List.class) {
+        Type typ = ((ParameterizedType) t).getActualTypeArguments()[0];
+        map.put("type", "array");
+        map.put("items", getSchema(typ));
+      } else if (((ParameterizedType) t).getRawType() == Map.class) {
+        Type typ = ((ParameterizedType) t).getActualTypeArguments()[0];
+        map.put("type", "object");
+        map.put("additionalProperties", true);
+      }
     } else {
       createObjectSchema((Class) t, map);
     }
@@ -81,6 +87,7 @@ public class JsonSchemaCreator {
       if(p.required()) required.add(name);
     }
     if(!required.isEmpty()) map.put("required", new ArrayList<>(required));
+     map.put("additionalProperties", true);
 
   }
 }

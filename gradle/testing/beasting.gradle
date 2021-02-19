@@ -1,0 +1,92 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This adds 'beast' task which clones tests a given number of times (preferably
+// constrained with a filtering pattern passed via '--tests').
+
+// TODO: subtasks are not run in parallel (sigh, gradle removed this capability for intra-project tasks).
+// TODO: maybe it would be better to take a deeper approach and just feed the task
+//       runner duplicated suite names (much like https://github.com/gradle/test-retry-gradle-plugin)
+// TODO: this is a somewhat related issue: https://github.com/gradle/test-retry-gradle-plugin/issues/29
+
+def beastingMode = gradle.startParameter.taskNames.any{ name -> name == 'beast' || name.endsWith(':beast') }
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    ext {
+      testOptions += [
+          [propName: 'tests.dups', value: 0, description: "Reiterate runs of entire test suites ('beast' task)."]
+      ]
+    }
+  }
+}
+
+if (beastingMode) {
+  if (rootProject.rootSeedUserProvided) {
+    logger.warn("Root randomization seed is externally provided, all duplicated runs will use the same starting seed.")
+  }
+
+  allprojects {
+    plugins.withType(JavaPlugin) {
+      task beast(type: BeastTask) {
+        description "Run a test suite (or a set of tests) many times over (duplicate 'test' task)."
+        group "Verification"
+      }
+
+      def dups = Integer.parseInt(resolvedTestOption("tests.dups") as String)
+      if (dups <= 0) {
+        throw new GradleException("Specify -Ptests.dups=[count] for beast task.")
+      }
+
+      // generate N test tasks and attach them to the beasting task for this project;
+      // the test filter will be applied by the beast task once it is received from
+      // command line.
+      def subtasks = (1..dups).collect { value ->
+        return tasks.create(name: "test_${value}", type: Test, {
+          failFast = true
+          doFirst {
+            // If there is a global root seed, use it (all duplicated tasks will run
+            // from the same starting seed). Otherwise pick a sequential derivative.
+            if (!rootProject.rootSeedUserProvided) {
+              systemProperty("tests.seed",
+                  String.format("%08X", new Random(rootProject.rootSeedLong + value).nextLong()))
+            }
+          }
+        })
+      }
+
+      beast.dependsOn subtasks
+    }
+  }
+}
+
+/**
+ * We have to declare a dummy task here to be able to reuse the same syntax for 'test' task
+ * filter option.
+ */
+class BeastTask extends DefaultTask {
+  @Option(option = "tests", description = "Sets test class or method name to be included, '*' is supported.")
+  public void setTestNamePatterns(List<String> patterns) {
+    taskDependencies.getDependencies(this).each { subtask ->
+      subtask.filter.setCommandLineIncludePatterns(patterns)
+    }
+  }
+
+  @TaskAction
+  void run() {
+  }
+}

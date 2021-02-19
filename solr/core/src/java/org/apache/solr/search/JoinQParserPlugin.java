@@ -16,11 +16,13 @@
  */
 package org.apache.solr.search;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -67,20 +69,47 @@ public class JoinQParserPlugin extends QParserPlugin {
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
         return q;
       }
+
+      @Override
+      Query makeJoinDirectFromParams(JoinParams jParams) {
+        return new JoinQuery(jParams.fromField, jParams.toField, null, jParams.fromQuery);
+      }
     },
     dvWithScore {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
       }
+
+      @Override
+      Query makeJoinDirectFromParams(JoinParams jParams) {
+        return ScoreJoinQParserPlugin.createJoinQuery(jParams.fromQuery, jParams.fromField, jParams.toField, ScoreMode.None);
+      }
     },
     topLevelDV {
       @Override
       Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
-        final JoinQuery q = new TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+        final JoinQuery q = createTopLevelJoin(jParams);
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
         return q;
+      }
+
+      @Override
+      Query makeJoinDirectFromParams(JoinParams jParams) {
+        return new TopLevelJoinQuery(jParams.fromField, jParams.toField, null, jParams.fromQuery);
+      }
+
+      private JoinQuery createTopLevelJoin(JoinParams jParams) {
+        if (isSelfJoin(jParams)) {
+          return new TopLevelJoinQuery.SelfJoin(jParams.fromField, jParams.fromQuery);
+        }
+        return new TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+      }
+
+      private boolean isSelfJoin(JoinParams jparams) {
+        return jparams.fromCore == null &&
+                (jparams.fromField != null && jparams.fromField.equals(jparams.toField));
       }
     },
     crossCollection {
@@ -92,6 +121,10 @@ public class JoinQParserPlugin extends QParserPlugin {
     };
 
     abstract Query makeFilter(QParser qparser, JoinQParserPlugin plugin) throws SyntaxError;
+
+    Query makeJoinDirectFromParams(JoinParams jParams) {
+      throw new IllegalStateException("Join method [" + name() + "] doesn't support qparser-less creation");
+    }
 
     JoinParams parseJoin(QParser qparser) throws SyntaxError {
       final String fromField = qparser.getParam("from");
@@ -176,15 +209,40 @@ public class JoinQParserPlugin extends QParserPlugin {
     };
   }
 
+  private static final EnumSet<Method> JOIN_METHOD_WHITELIST = EnumSet.of(Method.index, Method.topLevelDV, Method.dvWithScore);
   /**
    * A helper method for other plugins to create (non-scoring) JoinQueries wrapped around arbitrary queries against the same core.
    * 
    * @param subQuery the query to define the starting set of documents on the "left side" of the join
    * @param fromField "left side" field name to use in the join
    * @param toField "right side" field name to use in the join
+   * @param method indicates which implementation should be used to process the join.  Currently only 'index',
+   *               'dvWithScore', and 'topLevelDV' are supported.
    */
-  public static Query createJoinQuery(Query subQuery, String fromField, String toField) {
-    return new JoinQuery(fromField, toField, null, subQuery);
+  public static Query createJoinQuery(Query subQuery, String fromField, String toField, String method) {
+    // no method defaults to 'index' for back compatibility
+    if ( method == null ) {
+      return new JoinQuery(fromField, toField, null, subQuery);
+    }
+
+
+    final Method joinMethod = parseMethodString(method);
+    if (! JOIN_METHOD_WHITELIST.contains(joinMethod)) {
+      // TODO Throw something that the callers here (FacetRequest) can catch and produce a more domain-appropriate error message for?
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Join method " + method + " not supported for non-scoring, same-core joins");
+    }
+
+    final JoinParams jParams = new JoinParams(fromField, null, subQuery, 0L, toField);
+    return joinMethod.makeJoinDirectFromParams(jParams);
+  }
+
+  private static Method parseMethodString(String method) {
+    try {
+      return Method.valueOf(method);
+    } catch (IllegalArgumentException iae) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Provided join method '" + method + "' not supported");
+    }
   }
   
 }

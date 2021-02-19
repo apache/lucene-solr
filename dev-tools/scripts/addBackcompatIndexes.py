@@ -53,7 +53,7 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
   
   print('  creating %s...' % filename, end='', flush=True)
   module = 'backward-codecs'
-  index_dir = os.path.join('lucene', module, 'src/test/org/apache/lucene/index')
+  index_dir = os.path.join('lucene', module, 'src/test/org/apache/lucene/backward_index')
   test_file = os.path.join(index_dir, filename)
   if os.path.exists(os.path.join(index_dir, filename)):
     print('uptodate')
@@ -98,13 +98,13 @@ def create_and_add_index(source, indextype, index_version, current_version, temp
 def update_backcompat_tests(types, index_version, current_version):
   print('  adding new indexes %s to backcompat tests...' % types, end='', flush=True)
   module = 'lucene/backward-codecs'
-  filename = '%s/src/test/org/apache/lucene/index/TestBackwardsCompatibility.java' % module
+  filename = '%s/src/test/org/apache/lucene/backward_index/TestBackwardsCompatibility.java' % module
   if not current_version.is_back_compat_with(index_version):
     matcher = re.compile(r'final String\[\] unsupportedNames = {|};')
   elif 'sorted' in types:
-    matcher = re.compile(r'final static String\[\] oldSortedNames = {|};')
+    matcher = re.compile(r'static final String\[\] oldSortedNames = {|};')
   else:
-    matcher = re.compile(r'final static String\[\] oldNames = {|};')
+    matcher = re.compile(r'static final String\[\] oldNames = {|};')
 
   strip_dash_suffix_re = re.compile(r'-.*')
 
@@ -164,10 +164,7 @@ def update_backcompat_tests(types, index_version, current_version):
 
 def check_backcompat_tests():
   print('  checking backcompat tests...', end='', flush=True)
-  olddir = os.getcwd()
-  os.chdir('lucene/backward-codecs')
-  scriptutil.run('ant test -Dtestcase=TestBackwardsCompatibility')
-  os.chdir(olddir)
+  scriptutil.run('./gradlew -p lucene/backward-codecs test --tests TestBackwardsCompatibility')
   print('ok')
 
 def download_from_mirror(version, remotename, localname):

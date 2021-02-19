@@ -23,6 +23,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,9 +32,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.Cmd;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.cloud.api.collections.CollApiCmds.CollectionApiCommand;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -52,17 +54,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class DeleteReplicaCmd implements Cmd {
+public class DeleteReplicaCmd implements CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public DeleteReplicaCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public DeleteReplicaCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
   @SuppressWarnings("unchecked")
-
   public void call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     deleteReplica(clusterState, message, results,null);
   }
@@ -70,7 +71,7 @@ public class DeleteReplicaCmd implements Cmd {
 
   @SuppressWarnings("unchecked")
   void deleteReplica(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete)
-          throws KeeperException, InterruptedException {
+          throws KeeperException, IOException, InterruptedException {
     if (log.isDebugEnabled()) {
       log.debug("deleteReplica() : {}", Utils.toJSONString(message));
     }
@@ -83,7 +84,7 @@ public class DeleteReplicaCmd implements Cmd {
     }
 
 
-    ocmh.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP);
+    CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP);
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
     String replicaName = message.getStr(REPLICA_PROP);
@@ -91,7 +92,7 @@ public class DeleteReplicaCmd implements Cmd {
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
     if (followAliases) {
-      collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+      collectionName = ccc.getSolrCloudManager().getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     } else {
       collectionName = extCollectionName;
     }
@@ -102,9 +103,7 @@ public class DeleteReplicaCmd implements Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Invalid shard name : " +  shard + " in collection : " +  collectionName);
     }
-
-    deleteCore(slice, collectionName, replicaName, message, shard, results, onComplete,  parallel);
-
+    deleteCore(clusterState, coll, shard, replicaName, message, results, onComplete, parallel, true);
   }
 
 
@@ -118,8 +117,8 @@ public class DeleteReplicaCmd implements Cmd {
                                  @SuppressWarnings({"rawtypes"})NamedList results,
                                  Runnable onComplete,
                                  boolean parallel)
-          throws KeeperException, InterruptedException {
-    ocmh.checkRequired(message, COLLECTION_PROP, COUNT_PROP);
+          throws KeeperException, IOException, InterruptedException {
+    CollectionHandlingUtils.checkRequired(message, COLLECTION_PROP, COUNT_PROP);
     int count = Integer.parseInt(message.getStr(COUNT_PROP));
     String collectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
@@ -148,6 +147,17 @@ public class DeleteReplicaCmd implements Cmd {
       }
     }
 
+    // verify that all replicas can be deleted
+    Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer(), clusterState, coll);
+    for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
+      Slice shardSlice = entry.getKey();
+      String shardId = shardSlice.getName();
+      Set<String> replicaNames = entry.getValue();
+      Set<Replica> replicas = replicaNames.stream()
+          .map(name -> shardSlice.getReplica(name)).collect(Collectors.toSet());
+      assignStrategy.verifyDeleteReplicas(ccc.getSolrCloudManager(), coll, shardId, replicas);
+    }
+
     for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
       Slice shardSlice = entry.getKey();
       String shardId = shardSlice.getName();
@@ -155,7 +165,8 @@ public class DeleteReplicaCmd implements Cmd {
       //callDeleteReplica on all replicas
       for (String replica: replicas) {
         log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
-        deleteCore(shardSlice, collectionName, replica, message, shard, results, onComplete, parallel);
+        // don't verify with the placement plugin - we already did it
+        deleteCore(clusterState, coll, shardId, replica, message, results, onComplete, parallel, false);
       }
       results.add("shard_id", shardId);
       results.add("replicas_deleted", replicas);
@@ -213,26 +224,40 @@ public class DeleteReplicaCmd implements Cmd {
   }
 
   @SuppressWarnings({"unchecked"})
-  void deleteCore(Slice slice, String collectionName, String replicaName,ZkNodeProps message, String shard, @SuppressWarnings({"rawtypes"})NamedList results, Runnable onComplete, boolean parallel) throws KeeperException, InterruptedException {
+  void deleteCore(ClusterState clusterState, DocCollection coll,
+                  String shardId,
+                  String replicaName,
+                  ZkNodeProps message,
+                  @SuppressWarnings({"rawtypes"})NamedList results,
+                  Runnable onComplete,
+                  boolean parallel,
+                  boolean verifyPlacement) throws KeeperException, IOException, InterruptedException {
 
+    Slice slice = coll.getSlice(shardId);
     Replica replica = slice.getReplica(replicaName);
     if (replica == null) {
       ArrayList<String> l = new ArrayList<>();
       for (Replica r : slice.getReplicas())
         l.add(r.getName());
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid replica : " +  replicaName + " in shard/collection : " +
-              shard  + "/" + collectionName + " available replicas are " +  StrUtils.join(l, ','));
+              shardId  + "/" + coll.getName() + " available replicas are " +  StrUtils.join(l, ','));
     }
 
     // If users are being safe and only want to remove a shard if it is down, they can specify onlyIfDown=true
     // on the command.
-    if (Boolean.parseBoolean(message.getStr(OverseerCollectionMessageHandler.ONLY_IF_DOWN)) && replica.getState() != Replica.State.DOWN) {
+    if (Boolean.parseBoolean(message.getStr(CollectionHandlingUtils.ONLY_IF_DOWN)) && replica.getState() != Replica.State.DOWN) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Attempted to remove replica : " + collectionName + "/"  + shard + "/" + replicaName +
+              "Attempted to remove replica : " + coll.getName() + "/"  + shardId + "/" + replicaName +
               " with onlyIfDown='true', but state is '" + replica.getStr(ZkStateReader.STATE_PROP) + "'");
     }
 
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    // verify that we are allowed to delete this replica
+    if (verifyPlacement) {
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer(), clusterState, coll);
+      assignStrategy.verifyDeleteReplicas(ccc.getSolrCloudManager(), coll, shardId, Set.of(replica));
+    }
+
+    ShardHandler shardHandler = ccc.getShardHandler();
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
     String asyncId = message.getStr(ASYNC);
 
@@ -245,8 +270,8 @@ public class DeleteReplicaCmd implements Cmd {
     params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
     params.set(CoreAdminParams.DELETE_METRICS_HISTORY, message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true));
 
-    boolean isLive = ocmh.zkStateReader.getClusterState().getLiveNodes().contains(replica.getNodeName());
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    boolean isLive = ccc.getZkStateReader().getClusterState().getLiveNodes().contains(replica.getNodeName());
+    final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     if (isLive) {
       shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
     }
@@ -257,12 +282,12 @@ public class DeleteReplicaCmd implements Cmd {
           shardRequestTracker.processResponses(results, shardHandler, false, null);
 
           //check if the core unload removed the corenode zk entry
-          if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return Boolean.TRUE;
+          if (CollectionHandlingUtils.waitForCoreNodeGone(coll.getName(), shardId, replicaName, 30000, ccc.getZkStateReader())) return Boolean.TRUE;
         }
 
         // try and ensure core info is removed from cluster state
-        ocmh.deleteCoreNode(collectionName, replicaName, replica, core);
-        if (ocmh.waitForCoreNodeGone(collectionName, shard, replicaName, 30000)) return Boolean.TRUE;
+        CollectionHandlingUtils.deleteCoreNode(coll.getName(), replicaName, replica, core, ccc);
+        if (CollectionHandlingUtils.waitForCoreNodeGone(coll.getName(), shardId, replicaName, 30000, ccc.getZkStateReader())) return Boolean.TRUE;
         return Boolean.FALSE;
       } catch (Exception e) {
         results.add("failure", "Could not complete delete " + e.getMessage());
@@ -276,7 +301,7 @@ public class DeleteReplicaCmd implements Cmd {
       try {
         if (!callable.call())
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Could not remove replica : " + collectionName + "/" + shard + "/" + replicaName);
+                  "Could not remove replica : " + coll.getName() + "/" + shardId + "/" + replicaName);
       } catch (InterruptedException | KeeperException e) {
         throw e;
       } catch (Exception ex) {
@@ -284,7 +309,7 @@ public class DeleteReplicaCmd implements Cmd {
       }
 
     } else {
-      ocmh.tpe.submit(callable);
+      ccc.getExecutorService().submit(callable);
     }
 
   }

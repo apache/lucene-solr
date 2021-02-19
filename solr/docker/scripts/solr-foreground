@@ -1,0 +1,12 @@
+#!/bin/bash
+#
+# Run the initdb, then start solr in the foreground
+set -e
+
+if [[ "$VERBOSE" == "yes" ]]; then
+    set -x
+fi
+
+. /opt/docker-solr/scripts/run-initdb
+
+exec solr-fg "$@"

@@ -17,17 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
-import javax.swing.BorderFactory;
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -52,7 +41,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
+import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JTextField;
 import org.apache.lucene.luke.app.desktop.MessageBroker;
 import org.apache.lucene.luke.app.desktop.components.AnalysisTabOperator;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
@@ -91,7 +90,7 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
 
   private final JLabel loadJarLbl = new JLabel();
 
-  private final JList<String> selectedCfList = new JList<>(new String[]{});
+  private final JList<String> selectedCfList = new JList<>(new String[] {});
 
   private final JButton cfEditBtn = new JButton();
 
@@ -103,7 +102,7 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
 
   private final JComboBox<String> tokFactoryCombo = new JComboBox<>();
 
-  private final JList<String> selectedTfList = new JList<>(new String[]{});
+  private final JList<String> selectedTfList = new JList<>(new String[] {});
 
   private final JButton tfEditBtn = new JButton();
 
@@ -156,23 +155,28 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     confDirTF.setColumns(30);
     confDirTF.setPreferredSize(new Dimension(200, 30));
     panel.add(confDirTF);
-    confDirBtn.setText(FontUtils.elegantIconHtml("&#x6e;", MessageUtils.getLocalizedMessage("analysis.button.browse")));
+    confDirBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#x6e;", MessageUtils.getLocalizedMessage("analysis.button.browse")));
     confDirBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     confDirBtn.setMargin(new Insets(3, 3, 3, 3));
     confDirBtn.addActionListener(listeners::chooseConfigDir);
     panel.add(confDirBtn);
-    buildBtn.setText(FontUtils.elegantIconHtml("&#xe102;", MessageUtils.getLocalizedMessage("analysis.button.build_analyzser")));
+    buildBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#xe102;", MessageUtils.getLocalizedMessage("analysis.button.build_analyzser")));
     buildBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     buildBtn.setMargin(new Insets(3, 3, 3, 3));
     buildBtn.addActionListener(listeners::buildAnalyzer);
     panel.add(buildBtn);
     loadJarLbl.setText(MessageUtils.getLocalizedMessage("analysis.hyperlink.load_jars"));
-    loadJarLbl.addMouseListener(new MouseAdapter() {
-      @Override
-      public void mouseClicked(MouseEvent e) {
-        listeners.loadExternalJars(e);
-      }
-    });
+    loadJarLbl.addMouseListener(
+        new MouseAdapter() {
+          @Override
+          public void mouseClicked(MouseEvent e) {
+            listeners.loadExternalJars(e);
+          }
+        });
     panel.add(FontUtils.toLinkText(loadJarLbl));
 
     return panel;
@@ -202,7 +206,8 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     sepc.gridwidth = GridBagConstraints.REMAINDER;
 
     // char filters
-    JLabel cfLbl = new JLabel(MessageUtils.getLocalizedMessage("analysis_custom.label.charfilters"));
+    JLabel cfLbl =
+        new JLabel(MessageUtils.getLocalizedMessage("analysis_custom.label.charfilters"));
     cfLbl.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 3));
     c.gridx = 0;
     c.gridy = 0;
@@ -234,7 +239,9 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     c.anchor = GridBagConstraints.LINE_END;
     panel.add(selectedPanel, c);
 
-    cfEditBtn.setText(FontUtils.elegantIconHtml("&#x6a;", MessageUtils.getLocalizedMessage("analysis_custom.label.edit")));
+    cfEditBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#x6a;", MessageUtils.getLocalizedMessage("analysis_custom.label.edit")));
     cfEditBtn.setMargin(new Insets(2, 4, 2, 4));
     cfEditBtn.setEnabled(false);
     cfEditBtn.addActionListener(listeners::editCharFilters);
@@ -248,7 +255,10 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     c.anchor = GridBagConstraints.CENTER;
     panel.add(cfEditBtn, c);
 
-    JLabel cfAddLabel = new JLabel(FontUtils.elegantIconHtml("&#x4c;", MessageUtils.getLocalizedMessage("analysis_custom.label.add")));
+    JLabel cfAddLabel =
+        new JLabel(
+            FontUtils.elegantIconHtml(
+                "&#x4c;", MessageUtils.getLocalizedMessage("analysis_custom.label.add")));
     cfAddLabel.setHorizontalAlignment(JLabel.LEFT);
     c.fill = GridBagConstraints.HORIZONTAL;
     c.gridx = 1;
@@ -276,7 +286,8 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     panel.add(new JSeparator(JSeparator.HORIZONTAL), sepc);
 
     // tokenizer
-    JLabel tokLabel = new JLabel(MessageUtils.getLocalizedMessage("analysis_custom.label.tokenizer"));
+    JLabel tokLabel =
+        new JLabel(MessageUtils.getLocalizedMessage("analysis_custom.label.tokenizer"));
     tokLabel.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 3));
     c.gridx = 0;
     c.gridy = 4;
@@ -310,7 +321,9 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     c.anchor = GridBagConstraints.LINE_END;
     panel.add(selectedTokTF, c);
 
-    tokEditBtn.setText(FontUtils.elegantIconHtml("&#x6a;", MessageUtils.getLocalizedMessage("analysis_custom.label.edit")));
+    tokEditBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#x6a;", MessageUtils.getLocalizedMessage("analysis_custom.label.edit")));
     tokEditBtn.setMargin(new Insets(2, 4, 2, 4));
     tokEditBtn.addActionListener(listeners::editTokenizer);
     c.fill = GridBagConstraints.NONE;
@@ -323,7 +336,10 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     c.anchor = GridBagConstraints.CENTER;
     panel.add(tokEditBtn, c);
 
-    JLabel setTokLabel = new JLabel(FontUtils.elegantIconHtml("&#xe01e;", MessageUtils.getLocalizedMessage("analysis_custom.label.set")));
+    JLabel setTokLabel =
+        new JLabel(
+            FontUtils.elegantIconHtml(
+                "&#xe01e;", MessageUtils.getLocalizedMessage("analysis_custom.label.set")));
     setTokLabel.setHorizontalAlignment(JLabel.LEFT);
     c.fill = GridBagConstraints.HORIZONTAL;
     c.gridx = 1;
@@ -351,7 +367,8 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     panel.add(new JSeparator(JSeparator.HORIZONTAL), sepc);
 
     // token filters
-    JLabel tfLbl = new JLabel(MessageUtils.getLocalizedMessage("analysis_custom.label.tokenfilters"));
+    JLabel tfLbl =
+        new JLabel(MessageUtils.getLocalizedMessage("analysis_custom.label.tokenfilters"));
     tfLbl.setBorder(BorderFactory.createEmptyBorder(3, 10, 3, 3));
     c.gridx = 0;
     c.gridy = 8;
@@ -383,7 +400,9 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     c.anchor = GridBagConstraints.LINE_END;
     panel.add(selectedTfPanel, c);
 
-    tfEditBtn.setText(FontUtils.elegantIconHtml("&#x6a;", MessageUtils.getLocalizedMessage("analysis_custom.label.edit")));
+    tfEditBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#x6a;", MessageUtils.getLocalizedMessage("analysis_custom.label.edit")));
     tfEditBtn.setMargin(new Insets(2, 4, 2, 4));
     tfEditBtn.setEnabled(false);
     tfEditBtn.addActionListener(listeners::editTokenFilters);
@@ -397,7 +416,10 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     c.anchor = GridBagConstraints.CENTER;
     panel.add(tfEditBtn, c);
 
-    JLabel tfAddLabel = new JLabel(FontUtils.elegantIconHtml("&#x4c;", MessageUtils.getLocalizedMessage("analysis_custom.label.add")));
+    JLabel tfAddLabel =
+        new JLabel(
+            FontUtils.elegantIconHtml(
+                "&#x4c;", MessageUtils.getLocalizedMessage("analysis_custom.label.add")));
     tfAddLabel.setHorizontalAlignment(JLabel.LEFT);
     c.fill = GridBagConstraints.HORIZONTAL;
     c.gridx = 1;
@@ -442,14 +464,14 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     int ret = fileChooser.showOpenDialog(containerPanel);
     if (ret == JFileChooser.APPROVE_OPTION) {
       File[] files = fileChooser.getSelectedFiles();
-      analysisModel.addExternalJars(Arrays.stream(files).map(File::getAbsolutePath).collect(Collectors.toList()));
-      operatorRegistry.get(CustomAnalyzerPanelOperator.class).ifPresent(operator ->
-          operator.resetAnalysisComponents()
-      );
+      analysisModel.addExternalJars(
+          Arrays.stream(files).map(File::getAbsolutePath).collect(Collectors.toList()));
+      operatorRegistry
+          .get(CustomAnalyzerPanelOperator.class)
+          .ifPresent(operator -> operator.resetAnalysisComponents());
       messageBroker.showStatusMessage("External jars were added.");
     }
   }
-
 
   private void buildAnalyzer() {
     List<String> charFilters = ListUtils.getAllItems(selectedCfList);
@@ -461,24 +483,26 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     String tokenizerName = selectedTokTF.getText();
     CustomAnalyzerConfig.Builder builder =
         new CustomAnalyzerConfig.Builder(tokenizerName, tokParams).configDir(confDirTF.getText());
-    IntStream.range(0, charFilters.size()).forEach(i ->
-        builder.addCharFilterConfig(charFilters.get(i), cfParamsList.get(i))
-    );
-    IntStream.range(0, tokenFilters.size()).forEach(i ->
-        builder.addTokenFilterConfig(tokenFilters.get(i), tfParamsList.get(i))
-    );
+    IntStream.range(0, charFilters.size())
+        .forEach(i -> builder.addCharFilterConfig(charFilters.get(i), cfParamsList.get(i)));
+    IntStream.range(0, tokenFilters.size())
+        .forEach(i -> builder.addTokenFilterConfig(tokenFilters.get(i), tfParamsList.get(i)));
     CustomAnalyzerConfig config = builder.build();
 
-    operatorRegistry.get(AnalysisTabOperator.class).ifPresent(operator -> {
-      operator.setAnalyzerByCustomConfiguration(config);
-      messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("analysis.message.build_success"));
-      buildBtn.setEnabled(false);
-    });
-
+    operatorRegistry
+        .get(AnalysisTabOperator.class)
+        .ifPresent(
+            operator -> {
+              operator.setAnalyzerByCustomConfiguration(config);
+              messageBroker.showStatusMessage(
+                  MessageUtils.getLocalizedMessage("analysis.message.build_success"));
+              buildBtn.setEnabled(false);
+            });
   }
 
   private void addCharFilter() {
-    if (Objects.isNull(cfFactoryCombo.getSelectedItem()) || cfFactoryCombo.getSelectedItem() == "") {
+    if (Objects.isNull(cfFactoryCombo.getSelectedItem())
+        || cfFactoryCombo.getSelectedItem() == "") {
       return;
     }
 
@@ -490,8 +514,12 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
 
     assert selectedCfList.getModel().getSize() == cfParamsList.size();
 
-    showEditParamsDialog(MessageUtils.getLocalizedMessage("analysis.dialog.title.char_filter_params"),
-        EditParamsMode.CHARFILTER, targetIndex, selectedItem, cfParamsList.get(cfParamsList.size() - 1),
+    showEditParamsDialog(
+        MessageUtils.getLocalizedMessage("analysis.dialog.title.char_filter_params"),
+        EditParamsMode.CHARFILTER,
+        targetIndex,
+        selectedItem,
+        cfParamsList.get(cfParamsList.size() - 1),
         () -> {
           selectedCfList.setModel(new DefaultComboBoxModel<>(updatedList.toArray(new String[0])));
           cfFactoryCombo.setSelectedItem("");
@@ -501,13 +529,18 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
   }
 
   private void setTokenizer() {
-    if (Objects.isNull(tokFactoryCombo.getSelectedItem()) || tokFactoryCombo.getSelectedItem() == "") {
+    if (Objects.isNull(tokFactoryCombo.getSelectedItem())
+        || tokFactoryCombo.getSelectedItem() == "") {
       return;
     }
 
     String selectedItem = (String) tokFactoryCombo.getSelectedItem();
-    showEditParamsDialog(MessageUtils.getLocalizedMessage("analysis.dialog.title.tokenizer_params"),
-        EditParamsMode.TOKENIZER, -1, selectedItem, Collections.emptyMap(),
+    showEditParamsDialog(
+        MessageUtils.getLocalizedMessage("analysis.dialog.title.tokenizer_params"),
+        EditParamsMode.TOKENIZER,
+        -1,
+        selectedItem,
+        Collections.emptyMap(),
         () -> {
           selectedTokTF.setText(selectedItem);
           tokFactoryCombo.setSelectedItem("");
@@ -516,7 +549,8 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
   }
 
   private void addTokenFilter() {
-    if (Objects.isNull(tfFactoryCombo.getSelectedItem()) || tfFactoryCombo.getSelectedItem() == "") {
+    if (Objects.isNull(tfFactoryCombo.getSelectedItem())
+        || tfFactoryCombo.getSelectedItem() == "") {
       return;
     }
 
@@ -528,30 +562,47 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
 
     assert selectedTfList.getModel().getSize() == tfParamsList.size();
 
-    showEditParamsDialog(MessageUtils.getLocalizedMessage("analysis.dialog.title.token_filter_params"),
-        EditParamsMode.TOKENFILTER, targetIndex, selectedItem, tfParamsList.get(tfParamsList.size() - 1),
+    showEditParamsDialog(
+        MessageUtils.getLocalizedMessage("analysis.dialog.title.token_filter_params"),
+        EditParamsMode.TOKENFILTER,
+        targetIndex,
+        selectedItem,
+        tfParamsList.get(tfParamsList.size() - 1),
         () -> {
-          selectedTfList.setModel(new DefaultComboBoxModel<>(updatedList.toArray(new String[updatedList.size()])));
+          selectedTfList.setModel(
+              new DefaultComboBoxModel<>(updatedList.toArray(new String[updatedList.size()])));
           tfFactoryCombo.setSelectedItem("");
           tfEditBtn.setEnabled(true);
           buildBtn.setEnabled(true);
         });
   }
 
-  private void showEditParamsDialog(String title, EditParamsMode mode, int targetIndex, String selectedItem, Map<String, String> params, Callable callback) {
-    new DialogOpener<>(editParamsDialogFactory).open(title, 400, 300,
-        (factory) -> {
-          factory.setMode(mode);
-          factory.setTargetIndex(targetIndex);
-          factory.setTarget(selectedItem);
-          factory.setParams(params);
-          factory.setCallback(callback);
-        });
+  private void showEditParamsDialog(
+      String title,
+      EditParamsMode mode,
+      int targetIndex,
+      String selectedItem,
+      Map<String, String> params,
+      Callable callback) {
+    new DialogOpener<>(editParamsDialogFactory)
+        .open(
+            title,
+            400,
+            300,
+            (factory) -> {
+              factory.setMode(mode);
+              factory.setTargetIndex(targetIndex);
+              factory.setTarget(selectedItem);
+              factory.setParams(params);
+              factory.setCallback(callback);
+            });
   }
 
   private void editCharFilters() {
     List<String> filters = ListUtils.getAllItems(selectedCfList);
-    showEditFiltersDialog(EditFiltersMode.CHARFILTER, filters,
+    showEditFiltersDialog(
+        EditFiltersMode.CHARFILTER,
+        filters,
         () -> {
           cfEditBtn.setEnabled(selectedCfList.getModel().getSize() > 0);
           buildBtn.setEnabled(true);
@@ -560,31 +611,44 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
 
   private void editTokenizer() {
     String selectedItem = selectedTokTF.getText();
-    showEditParamsDialog(MessageUtils.getLocalizedMessage("analysis.dialog.title.tokenizer_params"),
-        EditParamsMode.TOKENIZER, -1, selectedItem, tokParams, () -> {
+    showEditParamsDialog(
+        MessageUtils.getLocalizedMessage("analysis.dialog.title.tokenizer_params"),
+        EditParamsMode.TOKENIZER,
+        -1,
+        selectedItem,
+        tokParams,
+        () -> {
           buildBtn.setEnabled(true);
         });
   }
 
   private void editTokenFilters() {
     List<String> filters = ListUtils.getAllItems(selectedTfList);
-    showEditFiltersDialog(EditFiltersMode.TOKENFILTER, filters,
+    showEditFiltersDialog(
+        EditFiltersMode.TOKENFILTER,
+        filters,
         () -> {
           tfEditBtn.setEnabled(selectedTfList.getModel().getSize() > 0);
           buildBtn.setEnabled(true);
         });
   }
 
-  private void showEditFiltersDialog(EditFiltersMode mode, List<String> selectedFilters, Callable callback) {
-    String title = (mode == EditFiltersMode.CHARFILTER) ?
-        MessageUtils.getLocalizedMessage("analysis.dialog.title.selected_char_filter") :
-        MessageUtils.getLocalizedMessage("analysis.dialog.title.selected_token_filter");
-    new DialogOpener<>(editFiltersDialogFactory).open(title, 400, 300,
-        (factory) -> {
-          factory.setMode(mode);
-          factory.setSelectedFilters(selectedFilters);
-          factory.setCallback(callback);
-        });
+  private void showEditFiltersDialog(
+      EditFiltersMode mode, List<String> selectedFilters, Callable callback) {
+    String title =
+        (mode == EditFiltersMode.CHARFILTER)
+            ? MessageUtils.getLocalizedMessage("analysis.dialog.title.selected_char_filter")
+            : MessageUtils.getLocalizedMessage("analysis.dialog.title.selected_token_filter");
+    new DialogOpener<>(editFiltersDialogFactory)
+        .open(
+            title,
+            400,
+            300,
+            (factory) -> {
+              factory.setMode(mode);
+              factory.setSelectedFilters(selectedFilters);
+              factory.setCallback(callback);
+            });
   }
 
   @Override
@@ -620,7 +684,8 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     Collection<String> tokenFilters = analysisModel.getAvailableTokenFilters();
     String[] tokenFilterNames = new String[tokenFilters.size() + 1];
     tokenFilterNames[0] = "";
-    System.arraycopy(tokenFilters.toArray(new String[0]), 0, tokenFilterNames, 1, tokenFilters.size());
+    System.arraycopy(
+        tokenFilters.toArray(new String[0]), 0, tokenFilterNames, 1, tokenFilters.size());
     tfFactoryCombo.setModel(new DefaultComboBoxModel<>(tokenFilterNames));
   }
 
@@ -628,16 +693,18 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
   public void updateCharFilters(List<Integer> deletedIndexes) {
     // update filters
     List<String> filters = ListUtils.getAllItems(selectedCfList);
-    String[] updatedFilters = IntStream.range(0, filters.size())
-        .filter(i -> !deletedIndexes.contains(i))
-        .mapToObj(filters::get)
-        .toArray(String[]::new);
+    String[] updatedFilters =
+        IntStream.range(0, filters.size())
+            .filter(i -> !deletedIndexes.contains(i))
+            .mapToObj(filters::get)
+            .toArray(String[]::new);
     selectedCfList.setModel(new DefaultComboBoxModel<>(updatedFilters));
     // update parameters map for each filter
-    List<Map<String, String>> updatedParamList = IntStream.range(0, cfParamsList.size())
-        .filter(i -> !deletedIndexes.contains(i))
-        .mapToObj(cfParamsList::get)
-        .collect(Collectors.toList());
+    List<Map<String, String>> updatedParamList =
+        IntStream.range(0, cfParamsList.size())
+            .filter(i -> !deletedIndexes.contains(i))
+            .mapToObj(cfParamsList::get)
+            .collect(Collectors.toList());
     cfParamsList.clear();
     cfParamsList.addAll(updatedParamList);
     assert selectedCfList.getModel().getSize() == cfParamsList.size();
@@ -647,16 +714,18 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
   public void updateTokenFilters(List<Integer> deletedIndexes) {
     // update filters
     List<String> filters = ListUtils.getAllItems(selectedTfList);
-    String[] updatedFilters = IntStream.range(0, filters.size())
-        .filter(i -> !deletedIndexes.contains(i))
-        .mapToObj(filters::get)
-        .toArray(String[]::new);
+    String[] updatedFilters =
+        IntStream.range(0, filters.size())
+            .filter(i -> !deletedIndexes.contains(i))
+            .mapToObj(filters::get)
+            .toArray(String[]::new);
     selectedTfList.setModel(new DefaultComboBoxModel<>(updatedFilters));
     // update parameters map for each filter
-    List<Map<String, String>> updatedParamList = IntStream.range(0, tfParamsList.size())
-        .filter(i -> !deletedIndexes.contains(i))
-        .mapToObj(tfParamsList::get)
-        .collect(Collectors.toList());
+    List<Map<String, String>> updatedParamList =
+        IntStream.range(0, tfParamsList.size())
+            .filter(i -> !deletedIndexes.contains(i))
+            .mapToObj(tfParamsList::get)
+            .collect(Collectors.toList());
     tfParamsList.clear();
     tfParamsList.addAll(updatedParamList);
     assert selectedTfList.getModel().getSize() == tfParamsList.size();
@@ -745,7 +814,5 @@ public final class CustomAnalyzerPanelProvider implements CustomAnalyzerPanelOpe
     void editTokenFilters(ActionEvent e) {
       CustomAnalyzerPanelProvider.this.editTokenFilters();
     }
-
   }
-
 }

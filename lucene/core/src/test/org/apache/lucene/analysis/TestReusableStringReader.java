@@ -17,18 +17,17 @@
 package org.apache.lucene.analysis;
 
 import java.nio.CharBuffer;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestReusableStringReader extends LuceneTestCase {
-  
+
   public void test() throws Exception {
     ReusableStringReader reader = new ReusableStringReader();
     assertEquals(-1, reader.read());
     assertEquals(-1, reader.read(new char[1]));
     assertEquals(-1, reader.read(new char[2], 1, 1));
     assertEquals(-1, reader.read(CharBuffer.wrap(new char[2])));
-    
+
     reader.setValue("foobar");
     char[] buf = new char[4];
     assertEquals(4, reader.read(buf));
@@ -55,7 +54,6 @@ public class TestReusableStringReader extends LuceneTestCase {
       sb.append((char) ch);
     }
     reader.close();
-    assertEquals("foobar", sb.toString());    
+    assertEquals("foobar", sb.toString());
   }
-  
 }

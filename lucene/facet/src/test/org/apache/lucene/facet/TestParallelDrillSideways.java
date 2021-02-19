@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -44,17 +43,18 @@ public class TestParallelDrillSideways extends TestDrillSideways {
     executor = null;
   }
 
-  protected DrillSideways getNewDrillSideways(IndexSearcher searcher, FacetsConfig config,
-          SortedSetDocValuesReaderState state) {
+  protected DrillSideways getNewDrillSideways(
+      IndexSearcher searcher, FacetsConfig config, SortedSetDocValuesReaderState state) {
     return new DrillSideways(searcher, config, null, state, executor);
   }
 
-  protected DrillSideways getNewDrillSideways(IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader) {
+  protected DrillSideways getNewDrillSideways(
+      IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader) {
     return new DrillSideways(searcher, config, taxoReader, null, executor);
   }
 
-  protected DrillSideways getNewDrillSidewaysScoreSubdocsAtOnce(IndexSearcher searcher, FacetsConfig config,
-          TaxonomyReader taxoReader) {
+  protected DrillSideways getNewDrillSidewaysScoreSubdocsAtOnce(
+      IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader) {
     return new DrillSideways(searcher, config, taxoReader, null, executor) {
       @Override
       protected boolean scoreSubDocsAtOnce() {
@@ -63,17 +63,19 @@ public class TestParallelDrillSideways extends TestDrillSideways {
     };
   }
 
-  protected DrillSideways getNewDrillSidewaysBuildFacetsResult(IndexSearcher searcher, FacetsConfig config,
-          TaxonomyReader taxoReader) {
+  protected DrillSideways getNewDrillSidewaysBuildFacetsResult(
+      IndexSearcher searcher, FacetsConfig config, TaxonomyReader taxoReader) {
     return new DrillSideways(searcher, config, taxoReader, null, executor) {
       @Override
-      protected Facets buildFacetsResult(FacetsCollector drillDowns, FacetsCollector[] drillSideways,
-              String[] drillSidewaysDims) throws IOException {
+      protected Facets buildFacetsResult(
+          FacetsCollector drillDowns, FacetsCollector[] drillSideways, String[] drillSidewaysDims)
+          throws IOException {
         Map<String, Facets> drillSidewaysFacets = new HashMap<>();
         Facets drillDownFacets = getTaxonomyFacetCounts(taxoReader, config, drillDowns);
         if (drillSideways != null) {
           for (int i = 0; i < drillSideways.length; i++) {
-            drillSidewaysFacets.put(drillSidewaysDims[i], getTaxonomyFacetCounts(taxoReader, config, drillSideways[i]));
+            drillSidewaysFacets.put(
+                drillSidewaysDims[i], getTaxonomyFacetCounts(taxoReader, config, drillSideways[i]));
           }
         }
 
@@ -82,9 +84,7 @@ public class TestParallelDrillSideways extends TestDrillSideways {
         } else {
           return new MultiFacets(drillSidewaysFacets, drillDownFacets);
         }
-
       }
     };
   }
-
 }

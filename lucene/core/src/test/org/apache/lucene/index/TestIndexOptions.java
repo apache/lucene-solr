@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntPoint;
@@ -32,8 +31,8 @@ public class TestIndexOptions extends LuceneTestCase {
   public void testChangeIndexOptionsViaAddDocument() throws IOException {
     for (IndexOptions from : IndexOptions.values()) {
       for (IndexOptions to : IndexOptions.values()) {
-        for (boolean preExisting : new boolean[] { false, true }) {
-          for (boolean onNewSegment : new boolean[] { false, true }) {
+        for (boolean preExisting : new boolean[] {false, true}) {
+          for (boolean onNewSegment : new boolean[] {false, true}) {
             doTestChangeIndexOptionsViaAddDocument(preExisting, onNewSegment, from, to);
           }
         }
@@ -41,7 +40,9 @@ public class TestIndexOptions extends LuceneTestCase {
     }
   }
 
-  private void doTestChangeIndexOptionsViaAddDocument(boolean preExistingField, boolean onNewSegment, IndexOptions from, IndexOptions to) throws IOException {
+  private void doTestChangeIndexOptionsViaAddDocument(
+      boolean preExistingField, boolean onNewSegment, IndexOptions from, IndexOptions to)
+      throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     if (preExistingField) {
@@ -66,10 +67,16 @@ public class TestIndexOptions extends LuceneTestCase {
         assertEquals(expected, r.getFieldInfos().fieldInfo("foo").getIndexOptions());
       }
     } else {
-      IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
-          () -> w.addDocument(Collections.singleton(new Field("foo", "bar", ft2))));
-      assertEquals("cannot change field \"foo\" from index options=" + from +
-          " to inconsistent index options=" + to, e.getMessage());
+      IllegalArgumentException e =
+          expectThrows(
+              IllegalArgumentException.class,
+              () -> w.addDocument(Collections.singleton(new Field("foo", "bar", ft2))));
+      assertEquals(
+          "cannot change field \"foo\" from index options="
+              + from
+              + " to inconsistent index options="
+              + to,
+          e.getMessage());
     }
     w.close();
     dir.close();
@@ -83,7 +90,8 @@ public class TestIndexOptions extends LuceneTestCase {
     }
   }
 
-  private void doTestChangeIndexOptionsAddIndexesCodecReader(IndexOptions from, IndexOptions to) throws IOException {
+  private void doTestChangeIndexOptionsAddIndexesCodecReader(IndexOptions from, IndexOptions to)
+      throws IOException {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig());
     FieldType ft1 = new FieldType(TextField.TYPE_STORED);
@@ -105,10 +113,14 @@ public class TestIndexOptions extends LuceneTestCase {
           assertEquals(expected, r.getFieldInfos().fieldInfo("foo").getIndexOptions());
         }
       } else {
-        IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
-            () -> w1.addIndexes(cr));
-        assertEquals("cannot change field \"foo\" from index options=" + from +
-            " to inconsistent index options=" + to, e.getMessage());
+        IllegalArgumentException e =
+            expectThrows(IllegalArgumentException.class, () -> w1.addIndexes(cr));
+        assertEquals(
+            "cannot change field \"foo\" from index options="
+                + from
+                + " to inconsistent index options="
+                + to,
+            e.getMessage());
       }
     }
 
@@ -123,7 +135,8 @@ public class TestIndexOptions extends LuceneTestCase {
     }
   }
 
-  private void doTestChangeIndexOptionsAddIndexesDirectory(IndexOptions from, IndexOptions to) throws IOException {
+  private void doTestChangeIndexOptionsAddIndexesDirectory(IndexOptions from, IndexOptions to)
+      throws IOException {
     Directory dir1 = newDirectory();
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig());
     FieldType ft1 = new FieldType(TextField.TYPE_STORED);
@@ -145,10 +158,14 @@ public class TestIndexOptions extends LuceneTestCase {
         assertEquals(expected, r.getFieldInfos().fieldInfo("foo").getIndexOptions());
       }
     } else {
-      IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
-          () -> w1.addIndexes(dir2));
-      assertEquals("cannot change field \"foo\" from index options=" + from +
-          " to inconsistent index options=" + to, e.getMessage());
+      IllegalArgumentException e =
+          expectThrows(IllegalArgumentException.class, () -> w1.addIndexes(dir2));
+      assertEquals(
+          "cannot change field \"foo\" from index options="
+              + from
+              + " to inconsistent index options="
+              + to,
+          e.getMessage());
     }
 
     IOUtils.close(w1, dir1, dir2);

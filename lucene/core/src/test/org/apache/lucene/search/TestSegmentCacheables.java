@@ -18,7 +18,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -36,8 +35,7 @@ public class TestSegmentCacheables extends LuceneTestCase {
 
   private static boolean isCacheable(LeafReaderContext ctx, SegmentCacheable... ss) {
     for (SegmentCacheable s : ss) {
-      if (s.isCacheable(ctx) == false)
-        return false;
+      if (s.isCacheable(ctx) == false) return false;
     }
     return true;
   }
@@ -60,7 +58,6 @@ public class TestSegmentCacheables extends LuceneTestCase {
 
     SegmentCacheable dv1_dv3 = (ctx) -> isCacheable(ctx, dv1, dv3);
     SegmentCacheable dv12_dv1_dv3 = (ctx) -> isCacheable(ctx, dv12, dv1_dv3);
-
 
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
@@ -97,7 +94,5 @@ public class TestSegmentCacheables extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
-
   }
-
 }

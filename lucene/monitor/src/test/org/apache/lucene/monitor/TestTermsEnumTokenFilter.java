@@ -18,7 +18,6 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -48,19 +47,18 @@ public class TestTermsEnumTokenFilter extends LuceneTestCase {
     final BytesRef foo = new BytesRef("foo");
     final BytesRef bar = new BytesRef("bar");
 
-    BytesRefIterator terms = new BytesRefIterator() {
+    BytesRefIterator terms =
+        new BytesRefIterator() {
 
-      long count = 1000;
+          long count = 1000;
 
-      @Override
-      public BytesRef next() throws IOException {
-        if (count-- > 100)
-          return foo;
-        if (count-- > 0)
-          return bar;
-        return null;
-      }
-    };
+          @Override
+          public BytesRef next() throws IOException {
+            if (count-- > 100) return foo;
+            if (count-- > 0) return bar;
+            return null;
+          }
+        };
 
     try (TokenStream ts = new LeapfrogTokenFilter(new TermsEnumTokenStream(terms))) {
       while (ts.incrementToken()) {
@@ -69,5 +67,4 @@ public class TestTermsEnumTokenFilter extends LuceneTestCase {
       }
     }
   }
-
 }

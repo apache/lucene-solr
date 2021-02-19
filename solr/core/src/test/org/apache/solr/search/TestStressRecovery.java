@@ -51,7 +51,6 @@ public class TestStressRecovery extends TestRTGBase {
 
   @Before
   public void beforeClass() throws Exception {
-    randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
   

@@ -16,9 +16,11 @@
  */
 package org.apache.lucene.facet.range;
 
-/** Base class for a single labeled range.
+/**
+ * Base class for a single labeled range.
  *
- *  @lucene.experimental */
+ * @lucene.experimental
+ */
 public abstract class Range {
 
   /** Label that identifies this range. */

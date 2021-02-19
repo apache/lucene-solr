@@ -132,6 +132,53 @@ public class PackageStoreAPI {
     static final String TMP_ZK_NODE = "/packageStoreWriteInProgress";
 
     @EndPoint(
+            path = "/cluster/files/*",
+            method = SolrRequest.METHOD.DELETE,
+            permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+    public void delete(SolrQueryRequest req, SolrQueryResponse rsp) {
+      if (!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
+        throw new RuntimeException(PackageAPI.ERR_MSG);
+      }
+
+      try {
+        coreContainer.getZkController().getZkClient().create(TMP_ZK_NODE, "true".getBytes(UTF_8),
+                CreateMode.EPHEMERAL, true);
+        String path = req.getPathTemplateValues().get("*");
+        validateName(path, true);
+        if(coreContainer.getPackageLoader().getPackageAPI().isJarInuse(path)) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "jar in use, can't delete");
+        }
+        PackageStore.FileType type = packageStore.getType(path, true);
+        if(type == PackageStore.FileType.NOFILE) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path does not exist: " + path);
+        }
+        packageStore.delete(path);
+      } catch (SolrException e){
+        throw e;
+      } catch (Exception e) {
+        log.error("Unknown error",e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }  finally {
+        try {
+          coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        } catch (Exception e) {
+          log.error("Unexpected error  ", e);
+        }
+
+      }
+    }
+
+    @EndPoint(
+            path = "/node/files/*",
+            method = SolrRequest.METHOD.DELETE,
+            permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
+    public void deleteLocal(SolrQueryRequest req, SolrQueryResponse rsp) {
+      String path = req.getPathTemplateValues().get("*");
+      validateName(path, true);
+      packageStore.deleteLocal(path);
+    }
+
+    @EndPoint(
         path = "/cluster/files/*",
         method = SolrRequest.METHOD.PUT,
         permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)

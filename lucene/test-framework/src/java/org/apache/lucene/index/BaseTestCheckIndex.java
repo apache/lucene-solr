@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
@@ -33,26 +32,25 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Base class for CheckIndex tests.
- */
+/** Base class for CheckIndex tests. */
 public class BaseTestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs(Directory dir) throws IOException {
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                 .setMaxBufferedDocs(2));
-    for(int i=0;i<19;i++) {
+    IndexWriter writer =
+        new IndexWriter(
+            dir, newIndexWriterConfig(new MockAnalyzer(random())).setMaxBufferedDocs(2));
+    for (int i = 0; i < 19; i++) {
       Document doc = new Document();
       FieldType customType = new FieldType(TextField.TYPE_STORED);
       customType.setStoreTermVectors(true);
       customType.setStoreTermVectorPositions(true);
       customType.setStoreTermVectorOffsets(true);
-      doc.add(newField("field", "aaa"+i, customType));
+      doc.add(newField("field", "aaa" + i, customType));
       writer.addDocument(doc);
     }
     writer.forceMerge(1);
     writer.commit();
-    writer.deleteDocuments(new Term("field","aaa5"));
+    writer.deleteDocuments(new Term("field", "aaa5"));
     writer.close();
 
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
@@ -65,12 +63,12 @@ public class BaseTestCheckIndex extends LuceneTestCase {
       System.out.println(bos.toString(IOUtils.UTF_8));
       fail();
     }
-    
+
     final CheckIndex.Status.SegmentInfoStatus seg = indexStatus.segmentInfos.get(0);
     assertTrue(seg.openReaderPassed);
 
     assertNotNull(seg.diagnostics);
-    
+
     assertNotNull(seg.fieldNormStatus);
     assertNull(seg.fieldNormStatus.error);
     assertEquals(1, seg.fieldNormStatus.totFields);
@@ -97,11 +95,11 @@ public class BaseTestCheckIndex extends LuceneTestCase {
     assertTrue(seg.diagnostics.size() > 0);
     final List<String> onlySegments = new ArrayList<>();
     onlySegments.add("_0");
-    
+
     assertTrue(checker.checkIndex(onlySegments).clean == true);
     checker.close();
   }
-  
+
   public void testChecksumsOnly(Directory dir) throws IOException {
     LineFileDocs lf = new LineFileDocs(random());
     MockAnalyzer analyzer = new MockAnalyzer(random());
@@ -114,7 +112,7 @@ public class BaseTestCheckIndex extends LuceneTestCase {
     iw.commit();
     iw.close();
     lf.close();
-    
+
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
@@ -124,7 +122,7 @@ public class BaseTestCheckIndex extends LuceneTestCase {
     checker.close();
     analyzer.close();
   }
-  
+
   public void testChecksumsOnlyVerbose(Directory dir) throws IOException {
     LineFileDocs lf = new LineFileDocs(random());
     MockAnalyzer analyzer = new MockAnalyzer(random());
@@ -137,7 +135,7 @@ public class BaseTestCheckIndex extends LuceneTestCase {
     iw.commit();
     iw.close();
     lf.close();
-    
+
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setInfoStream(new PrintStream(bos, true, IOUtils.UTF_8));
@@ -147,17 +145,19 @@ public class BaseTestCheckIndex extends LuceneTestCase {
     checker.close();
     analyzer.close();
   }
-  
+
   public void testObtainsLock(Directory dir) throws IOException {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     iw.addDocument(new Document());
     iw.commit();
-    
+
     // keep IW open... should not be able to obtain write lock
-    expectThrows(LockObtainFailedException.class, () -> {
-      new CheckIndex(dir);
-    });
-    
+    expectThrows(
+        LockObtainFailedException.class,
+        () -> {
+          new CheckIndex(dir);
+        });
+
     iw.close();
   }
 }

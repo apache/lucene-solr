@@ -16,16 +16,13 @@
  */
 package org.apache.lucene.queries.function.valuesource;
 
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 
-import java.io.IOException;
-import java.util.Map;
-
-/**
- * Function that returns a constant double value for every document.
- */
+/** Function that returns a constant double value for every document. */
 public class DoubleConstValueSource extends ConstNumberSource {
   final double constant;
   private final float fv;
@@ -33,8 +30,8 @@ public class DoubleConstValueSource extends ConstNumberSource {
 
   public DoubleConstValueSource(double constant) {
     this.constant = constant;
-    this.fv = (float)constant;
-    this.lv = (long)constant;
+    this.fv = (float) constant;
+    this.lv = (long) constant;
   }
 
   @Override
@@ -43,7 +40,8 @@ public class DoubleConstValueSource extends ConstNumberSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
     return new DoubleDocValues(this) {
       @Override
       public float floatVal(int doc) {
@@ -85,7 +83,7 @@ public class DoubleConstValueSource extends ConstNumberSource {
   @Override
   public int hashCode() {
     long bits = Double.doubleToRawLongBits(constant);
-    return (int)(bits ^ (bits >>> 32));
+    return (int) (bits ^ (bits >>> 32));
   }
 
   @Override
@@ -97,7 +95,7 @@ public class DoubleConstValueSource extends ConstNumberSource {
 
   @Override
   public int getInt() {
-    return (int)lv;
+    return (int) lv;
   }
 
   @Override

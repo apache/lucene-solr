@@ -16,7 +16,8 @@
  */
 package org.apache.lucene.codecs;
 
-
+import java.io.Closeable;
+import java.io.IOException;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentWriteState;
@@ -26,13 +27,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 /**
- * Class that plugs into term dictionaries, such as {@link
- * BlockTreeTermsWriter}, and handles writing postings.
- * 
+ * Class that plugs into term dictionaries, such as {@link BlockTreeTermsWriter}, and handles
+ * writing postings.
+ *
  * @see PostingsReaderBase
  * @lucene.experimental
  */
@@ -41,38 +39,37 @@ import java.io.IOException;
 // TermsDict + PostingsReader/WriterBase == FieldsProducer/Consumer
 public abstract class PostingsWriterBase implements Closeable {
 
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected PostingsWriterBase() {
-  }
-
-  /** Called once after startup, before any terms have been
-   *  added.  Implementations typically write a header to
-   *  the provided {@code termsOut}. */
-  public abstract void init(IndexOutput termsOut, SegmentWriteState state) throws IOException;
-
-  /** Write all postings for one term; use the provided
-   *  {@link TermsEnum} to pull a {@link org.apache.lucene.index.PostingsEnum}.
-   *  This method should not
-   *  re-position the {@code TermsEnum}!  It is already
-   *  positioned on the term that should be written.  This
-   *  method must set the bit in the provided {@link
-   *  FixedBitSet} for every docID written.  If no docs
-   *  were written, this method should return null, and the
-   *  terms dict will skip the term. */
-  public abstract BlockTermState writeTerm(BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen, NormsProducer norms) throws IOException;
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  protected PostingsWriterBase() {}
 
   /**
-   * Encode metadata as long[] and byte[]. {@code absolute} controls whether 
-   * current term is delta encoded according to latest term. 
-   * Usually elements in {@code longs} are file pointers, so each one always 
-   * increases when a new term is consumed. {@code out} is used to write generic
-   * bytes, which are not monotonic.
+   * Called once after startup, before any terms have been added. Implementations typically write a
+   * header to the provided {@code termsOut}.
    */
-  public abstract void encodeTerm(DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute) throws IOException;
+  public abstract void init(IndexOutput termsOut, SegmentWriteState state) throws IOException;
 
-  /** 
-   * Sets the current field for writing. */
+  /**
+   * Write all postings for one term; use the provided {@link TermsEnum} to pull a {@link
+   * org.apache.lucene.index.PostingsEnum}. This method should not re-position the {@code
+   * TermsEnum}! It is already positioned on the term that should be written. This method must set
+   * the bit in the provided {@link FixedBitSet} for every docID written. If no docs were written,
+   * this method should return null, and the terms dict will skip the term.
+   */
+  public abstract BlockTermState writeTerm(
+      BytesRef term, TermsEnum termsEnum, FixedBitSet docsSeen, NormsProducer norms)
+      throws IOException;
+
+  /**
+   * Encode metadata as long[] and byte[]. {@code absolute} controls whether current term is delta
+   * encoded according to latest term. Usually elements in {@code longs} are file pointers, so each
+   * one always increases when a new term is consumed. {@code out} is used to write generic bytes,
+   * which are not monotonic.
+   */
+  public abstract void encodeTerm(
+      DataOutput out, FieldInfo fieldInfo, BlockTermState state, boolean absolute)
+      throws IOException;
+
+  /** Sets the current field for writing. */
   public abstract void setField(FieldInfo fieldInfo);
 
   @Override

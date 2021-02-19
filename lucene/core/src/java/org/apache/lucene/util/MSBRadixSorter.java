@@ -18,11 +18,13 @@ package org.apache.lucene.util;
 
 import java.util.Arrays;
 
-/** Radix sorter for variable-length strings. This class sorts based on the most
- *  significant byte first and falls back to {@link IntroSorter} when the size
- *  of the buckets to sort becomes small. It is <b>NOT</b> stable.
- *  Worst-case memory usage is about {@code 2.3 KB}.
- *  @lucene.internal */
+/**
+ * Radix sorter for variable-length strings. This class sorts based on the most significant byte
+ * first and falls back to {@link IntroSorter} when the size of the buckets to sort becomes small.
+ * It is <b>NOT</b> stable. Worst-case memory usage is about {@code 2.3 KB}.
+ *
+ * @lucene.internal
+ */
 public abstract class MSBRadixSorter extends Sorter {
 
   // after that many levels of recursion we fall back to introsort anyway
@@ -44,6 +46,7 @@ public abstract class MSBRadixSorter extends Sorter {
 
   /**
    * Sole constructor.
+   *
    * @param maxLength the maximum length of keys, pass {@link Integer#MAX_VALUE} if unknown.
    */
   protected MSBRadixSorter(int maxLength) {
@@ -51,13 +54,17 @@ public abstract class MSBRadixSorter extends Sorter {
     this.commonPrefix = new int[Math.min(24, maxLength)];
   }
 
-  /** Return the k-th byte of the entry at index {@code i}, or {@code -1} if
-   * its length is less than or equal to {@code k}. This may only be called
-   * with a value of {@code i} between {@code 0} included and
-   * {@code maxLength} excluded. */
+  /**
+   * Return the k-th byte of the entry at index {@code i}, or {@code -1} if its length is less than
+   * or equal to {@code k}. This may only be called with a value of {@code i} between {@code 0}
+   * included and {@code maxLength} excluded.
+   */
   protected abstract int byteAt(int i, int k);
 
-  /** Get a fall-back sorter which may assume that the first k bytes of all compared strings are equal. */
+  /**
+   * Get a fall-back sorter which may assume that the first k bytes of all compared strings are
+   * equal.
+   */
   protected Sorter getFallbackSorter(int k) {
     return new IntroSorter() {
       @Override
@@ -145,13 +152,13 @@ public abstract class MSBRadixSorter extends Sorter {
       Arrays.fill(histogram, 0);
     }
 
-    final int commonPrefixLength = computeCommonPrefixLengthAndBuildHistogram(from, to, k, histogram);
+    final int commonPrefixLength =
+        computeCommonPrefixLengthAndBuildHistogram(from, to, k, histogram);
     if (commonPrefixLength > 0) {
       // if there are no more chars to compare or if all entries fell into the
       // first bucket (which means strings are shorter than k) then we are done
       // otherwise recurse
-      if (k + commonPrefixLength < maxLength
-          && histogram[0] < to - from) {
+      if (k + commonPrefixLength < maxLength && histogram[0] < to - from) {
         radixSort(from, to, k + commonPrefixLength, l);
       }
       return;
@@ -199,9 +206,12 @@ public abstract class MSBRadixSorter extends Sorter {
     return byteAt(i, k) + 1;
   }
 
-  /** Build a histogram of the number of values per {@link #getBucket(int, int) bucket}
-   *  and return a common prefix length for all visited values.
-   *  @see #buildHistogram */
+  /**
+   * Build a histogram of the number of values per {@link #getBucket(int, int) bucket} and return a
+   * common prefix length for all visited values.
+   *
+   * @see #buildHistogram
+   */
   private int computeCommonPrefixLengthAndBuildHistogram(int from, int to, int k, int[] histogram) {
     final int[] commonPrefix = this.commonPrefix;
     int commonPrefixLength = Math.min(commonPrefix.length, maxLength - k);
@@ -215,7 +225,8 @@ public abstract class MSBRadixSorter extends Sorter {
     }
 
     int i;
-    outer: for (i = from + 1; i < to; ++i) {
+    outer:
+    for (i = from + 1; i < to; ++i) {
       for (int j = 0; j < commonPrefixLength; ++j) {
         final int b = byteAt(i, k + j);
         if (b != commonPrefix[j]) {
@@ -242,16 +253,20 @@ public abstract class MSBRadixSorter extends Sorter {
     return commonPrefixLength;
   }
 
-  /** Build an histogram of the k-th characters of values occurring between
-   *  offsets {@code from} and {@code to}, using {@link #getBucket}. */
+  /**
+   * Build an histogram of the k-th characters of values occurring between offsets {@code from} and
+   * {@code to}, using {@link #getBucket}.
+   */
   private void buildHistogram(int from, int to, int k, int[] histogram) {
     for (int i = from; i < to; ++i) {
       histogram[getBucket(i, k)]++;
     }
   }
 
-  /** Accumulate values of the histogram so that it does not store counts but
-   *  start offsets. {@code endOffsets} will store the end offsets. */
+  /**
+   * Accumulate values of the histogram so that it does not store counts but start offsets. {@code
+   * endOffsets} will store the end offsets.
+   */
   private static void sumHistogram(int[] histogram, int[] endOffsets) {
     int accum = 0;
     for (int i = 0; i < HISTOGRAM_SIZE; ++i) {
@@ -263,8 +278,9 @@ public abstract class MSBRadixSorter extends Sorter {
   }
 
   /**
-   * Reorder based on start/end offsets for each bucket. When this method
-   * returns, startOffsets and endOffsets are equal.
+   * Reorder based on start/end offsets for each bucket. When this method returns, startOffsets and
+   * endOffsets are equal.
+   *
    * @param startOffsets start offsets per bucket
    * @param endOffsets end offsets per bucket
    */

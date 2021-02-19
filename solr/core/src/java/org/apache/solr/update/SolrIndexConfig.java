@@ -68,6 +68,19 @@ public class SolrIndexConfig implements MapSerializable {
 
   public final double ramBufferSizeMB;
   public final int ramPerThreadHardLimitMB;
+  /**
+   * <p>
+   * When using a custom merge policy that allows triggering synchronous merges on commit
+   * (see {@link MergePolicy#findFullFlushMerges(org.apache.lucene.index.MergeTrigger, org.apache.lucene.index.SegmentInfos, org.apache.lucene.index.MergePolicy.MergeContext)}),
+   * a timeout (in milliseconds) can be set for those merges to finish. Use {@code <maxCommitMergeWaitTime>1000</maxCommitMergeWaitTime>} in the {@code <indexConfig>} section.
+   * See {@link IndexWriterConfig#setMaxFullFlushMergeWaitMillis(long)}.
+   * </p>
+   * <p>
+   * Note that as of Solr 8.6, no {@code MergePolicy} shipped with Lucene/Solr make use of
+   * {@code MergePolicy.findFullFlushMerges}, which means this setting has no effect unless a custom {@code MergePolicy} is used.
+   * </p> 
+   */
+  public final int maxCommitMergeWaitMillis;
 
   public final int writeLockTimeout;
   public final String lockType;
@@ -87,6 +100,7 @@ public class SolrIndexConfig implements MapSerializable {
     maxBufferedDocs = -1;
     ramBufferSizeMB = 100;
     ramPerThreadHardLimitMB = -1;
+    maxCommitMergeWaitMillis = -1;
     writeLockTimeout = -1;
     lockType = DirectoryFactory.LOCK_TYPE_NATIVE;
     mergePolicyFactoryInfo = null;
@@ -129,8 +143,9 @@ public class SolrIndexConfig implements MapSerializable {
         true);
 
     useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
-    maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
+    maxBufferedDocs = solrConfig.getInt(prefix+"/maxBufferedDocs", def.maxBufferedDocs);
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
+    maxCommitMergeWaitMillis = solrConfig.getInt(prefix+"/maxCommitMergeWaitTime", def.maxCommitMergeWaitMillis);
 
     // how do we validate the value??
     ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
@@ -185,6 +200,7 @@ public class SolrIndexConfig implements MapSerializable {
         "maxBufferedDocs", maxBufferedDocs,
         "ramBufferSizeMB", ramBufferSizeMB,
         "ramPerThreadHardLimitMB", ramPerThreadHardLimitMB,
+        "maxCommitMergeWaitTime", maxCommitMergeWaitMillis,
         "writeLockTimeout", writeLockTimeout,
         "lockType", lockType,
         "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
@@ -229,6 +245,10 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (ramPerThreadHardLimitMB != -1) {
       iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+    }
+    
+    if (maxCommitMergeWaitMillis > 0) {
+      iwc.setMaxFullFlushMergeWaitMillis(maxCommitMergeWaitMillis);
     }
 
     iwc.setSimilarity(schema.getSimilarity());

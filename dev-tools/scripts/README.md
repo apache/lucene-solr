@@ -115,7 +115,7 @@ of the other tools in this folder.
 
     usage: addVersion.py [-h] version
     
-    Add a new version to CHANGES, to Version.java, lucene/version.properties and
+    Add a new version to CHANGES, to Version.java, build.gradle and
     solrconfig.xml files
     
     positional arguments:

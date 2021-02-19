@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -34,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongPoint;
@@ -49,8 +47,8 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -61,37 +59,37 @@ import org.apache.lucene.util.Version;
 // TODO:
 //   - old parallel indices are only pruned on commit/close; can we do it on refresh?
 
-/** Simple example showing how to use ParallelLeafReader to index new
- *  stuff (postings, DVs, etc.) from previously stored fields, on the
- *  fly (during NRT reader reopen), after the  initial indexing.  The
- *  test indexes just a single stored field with text "content X" (X is
- *  a number embedded in the text).
+/**
+ * Simple example showing how to use ParallelLeafReader to index new stuff (postings, DVs, etc.)
+ * from previously stored fields, on the fly (during NRT reader reopen), after the initial indexing.
+ * The test indexes just a single stored field with text "content X" (X is a number embedded in the
+ * text).
  *
- *  Then, on reopen, for any newly created segments (flush or merge), it
- *  builds a new parallel segment by loading all stored docs, parsing
- *  out that X, and adding it as DV and numeric indexed (trie) field.
+ * <p>Then, on reopen, for any newly created segments (flush or merge), it builds a new parallel
+ * segment by loading all stored docs, parsing out that X, and adding it as DV and numeric indexed
+ * (trie) field.
  *
- *  Finally, for searching, it builds a top-level MultiReader, with
- *  ParallelLeafReader for each segment, and then tests that random
- *  numeric range queries, and sorting by the new DV field, work
- *  correctly.
+ * <p>Finally, for searching, it builds a top-level MultiReader, with ParallelLeafReader for each
+ * segment, and then tests that random numeric range queries, and sorting by the new DV field, work
+ * correctly.
  *
- *  Each per-segment index lives in a private directory next to the main
- *  index, and they are deleted once their segments are removed from the
- *  index.  They are "volatile", meaning if e.g. the index is replicated to
- *  another machine, it's OK to not copy parallel segments indices,
- *  since they will just be regnerated (at a cost though). */
+ * <p>Each per-segment index lives in a private directory next to the main index, and they are
+ * deleted once their segments are removed from the index. They are "volatile", meaning if e.g. the
+ * index is replicated to another machine, it's OK to not copy parallel segments indices, since they
+ * will just be regnerated (at a cost though).
+ */
 
 // @SuppressSysoutChecks(bugUrl="we print stuff")
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestDemoParallelLeafReader extends LuceneTestCase {
 
   static final boolean DEBUG = false;
 
-  static abstract class ReindexingReader implements Closeable {
+  abstract static class ReindexingReader implements Closeable {
 
     /** Key used to store the current schema gen in the SegmentInfo diagnostics */
-    public final static String SCHEMA_GEN_KEY = "schema_gen";
+    public static final String SCHEMA_GEN_KEY = "schema_gen";
 
     public final IndexWriter w;
     public final ReaderManager mgr;
@@ -101,15 +99,22 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     private final Path segsPath;
 
     /** Which segments have been closed, but their parallel index is not yet not removed. */
-    private final Set<SegmentIDAndGen> closedSegments = Collections.newSetFromMap(new ConcurrentHashMap<SegmentIDAndGen,Boolean>());
+    private final Set<SegmentIDAndGen> closedSegments =
+        Collections.newSetFromMap(new ConcurrentHashMap<SegmentIDAndGen, Boolean>());
 
     /** Holds currently open parallel readers for each segment. */
-    private final Map<SegmentIDAndGen,LeafReader> parallelReaders = new ConcurrentHashMap<>();
+    private final Map<SegmentIDAndGen, LeafReader> parallelReaders = new ConcurrentHashMap<>();
 
     void printRefCounts() {
       System.out.println("All refCounts:");
-      for(Map.Entry<SegmentIDAndGen,LeafReader> ent : parallelReaders.entrySet()) {
-        System.out.println("  " + ent.getKey() + " " + ent.getValue() + " refCount=" + ent.getValue().getRefCount());
+      for (Map.Entry<SegmentIDAndGen, LeafReader> ent : parallelReaders.entrySet()) {
+        System.out.println(
+            "  "
+                + ent.getKey()
+                + " "
+                + ent.getValue()
+                + " refCount="
+                + ent.getValue().getRefCount());
       }
     }
 
@@ -130,14 +135,20 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
       w = new IndexWriter(indexDir, iwc);
 
-      w.getConfig().setMergedSegmentWarmer((reader) -> {
-        // This will build the parallel index for the merged segment before the merge becomes visible, so reopen delay is only due to
-        // newly flushed segments:
-        if (DEBUG) System.out.println(Thread.currentThread().getName() +": TEST: now warm " + reader);
-        // TODO: it's not great that we pass false here; it means we close the reader & reopen again for NRT reader; still we did "warm" by
-        // building the parallel index, if necessary
-        getParallelLeafReader(reader, false, getCurrentSchemaGen());
-      });
+      w.getConfig()
+          .setMergedSegmentWarmer(
+              (reader) -> {
+                // This will build the parallel index for the merged segment before the merge
+                // becomes visible, so reopen delay is only due to
+                // newly flushed segments:
+                if (DEBUG)
+                  System.out.println(
+                      Thread.currentThread().getName() + ": TEST: now warm " + reader);
+                // TODO: it's not great that we pass false here; it means we close the reader &
+                // reopen again for NRT reader; still we did "warm" by
+                // building the parallel index, if necessary
+                getParallelLeafReader(reader, false, getCurrentSchemaGen());
+              });
 
       // start with empty commit:
       w.commit();
@@ -146,9 +157,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     protected abstract IndexWriterConfig getIndexWriterConfig() throws IOException;
 
-    /** Optional method to validate that the provided parallell reader in fact reflects the changes in schemaGen. */
-    protected void checkParallelReader(LeafReader reader, LeafReader parallelReader, long schemaGen) throws IOException {
-    }
+    /**
+     * Optional method to validate that the provided parallell reader in fact reflects the changes
+     * in schemaGen.
+     */
+    protected void checkParallelReader(LeafReader reader, LeafReader parallelReader, long schemaGen)
+        throws IOException {}
 
     /** Override to customize Directory impl. */
     protected Directory openDirectory(Path path) throws IOException {
@@ -158,7 +172,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     public void commit() throws IOException {
       w.commit();
     }
-    
+
     LeafReader getCurrentReader(LeafReader reader, long schemaGen) throws IOException {
       LeafReader parallelReader = getParallelLeafReader(reader, true, schemaGen);
       if (parallelReader != null) {
@@ -167,18 +181,21 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         assertFalse(parallelReader instanceof ParallelLeafReader);
         assertFalse(reader instanceof ParallelLeafReader);
 
-        // NOTE: important that parallelReader is first, so if there are field name overlaps, because changes to the schema
+        // NOTE: important that parallelReader is first, so if there are field name overlaps,
+        // because changes to the schema
         // overwrote existing field names, it wins:
-        LeafReader newReader = new ParallelLeafReader(false, parallelReader, reader) {
-          @Override
-          public Bits getLiveDocs() {
-            return getParallelReaders()[1].getLiveDocs();
-          }
-          @Override
-          public int numDocs() {
-            return getParallelReaders()[1].numDocs();
-          }
-        };
+        LeafReader newReader =
+            new ParallelLeafReader(false, parallelReader, reader) {
+              @Override
+              public Bits getLiveDocs() {
+                return getParallelReaders()[1].getLiveDocs();
+              }
+
+              @Override
+              public int numDocs() {
+                return getParallelReaders()[1].numDocs();
+              }
+            };
 
         // Because ParallelLeafReader does its own (extra) incRef:
         parallelReader.decRef();
@@ -193,18 +210,21 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     private class ParallelLeafDirectoryReader extends FilterDirectoryReader {
       public ParallelLeafDirectoryReader(DirectoryReader in) throws IOException {
-        super(in, new FilterDirectoryReader.SubReaderWrapper() {
-            final long currentSchemaGen = getCurrentSchemaGen();
-            @Override
-            public LeafReader wrap(LeafReader reader) {
-              try {
-                return getCurrentReader(reader, currentSchemaGen);
-              } catch (IOException ioe) {
-                // TODO: must close on exc here:
-                throw new RuntimeException(ioe);
+        super(
+            in,
+            new FilterDirectoryReader.SubReaderWrapper() {
+              final long currentSchemaGen = getCurrentSchemaGen();
+
+              @Override
+              public LeafReader wrap(LeafReader reader) {
+                try {
+                  return getCurrentReader(reader, currentSchemaGen);
+                } catch (IOException ioe) {
+                  // TODO: must close on exc here:
+                  throw new RuntimeException(ioe);
+                }
               }
-            }
-          });
+            });
       }
 
       @Override
@@ -235,7 +255,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             firstExc = t;
           }
         }
-        
+
         // throw the first exception
         if (firstExc != null) {
           throw IOUtils.rethrowAlways(firstExc);
@@ -251,7 +271,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     @Override
     public void close() throws IOException {
       w.close();
-      if (DEBUG) System.out.println("TEST: after close writer index=" + SegmentInfos.readLatestCommit(indexDir));
+      if (DEBUG)
+        System.out.println(
+            "TEST: after close writer index=" + SegmentInfos.readLatestCommit(indexDir));
 
       /*
       DirectoryReader r = mgr.acquire();
@@ -267,24 +289,28 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       indexDir.close();
     }
 
-    // Make sure we deleted all parallel indices for segments that are no longer in the main index: 
+    // Make sure we deleted all parallel indices for segments that are no longer in the main index:
     private void assertNoExtraSegments() throws IOException {
       Set<String> liveIDs = new HashSet<String>();
-      for(SegmentCommitInfo info : SegmentInfos.readLatestCommit(indexDir)) {
+      for (SegmentCommitInfo info : SegmentInfos.readLatestCommit(indexDir)) {
         String idString = StringHelper.idToString(info.info.getId());
         liveIDs.add(idString);
       }
 
       // At this point (closing) the only segments in closedSegments should be the still-live ones:
-      for(SegmentIDAndGen segIDGen : closedSegments) {
+      for (SegmentIDAndGen segIDGen : closedSegments) {
         assertTrue(liveIDs.contains(segIDGen.segID));
       }
 
       boolean fail = false;
-      for(Path path : segSubDirs(segsPath)) {
+      for (Path path : segSubDirs(segsPath)) {
         SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
         if (liveIDs.contains(segIDGen.segID) == false) {
-          if (DEBUG) System.out.println("TEST: fail seg=" + path.getFileName() + " is not live but still has a parallel index");
+          if (DEBUG)
+            System.out.println(
+                "TEST: fail seg="
+                    + path.getFileName()
+                    + " is not live but still has a parallel index");
           fail = true;
         }
       }
@@ -344,8 +370,14 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       public void onClose(IndexReader.CacheKey ignored) {
         try {
           // TODO: make this sync finer, i.e. just the segment + schemaGen
-          synchronized(ReindexingReader.this) {
-            if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: now close parallel parLeafReader dir=" + dir + " segIDGen=" + segIDGen);
+          synchronized (ReindexingReader.this) {
+            if (DEBUG)
+              System.out.println(
+                  Thread.currentThread().getName()
+                      + ": TEST: now close parallel parLeafReader dir="
+                      + dir
+                      + " segIDGen="
+                      + segIDGen);
             parallelReaders.remove(segIDGen);
             dir.close();
             closedSegments.add(segIDGen);
@@ -359,24 +391,46 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
 
     // Returns a ref
-    LeafReader getParallelLeafReader(final LeafReader leaf, boolean doCache, long schemaGen) throws IOException {
+    LeafReader getParallelLeafReader(final LeafReader leaf, boolean doCache, long schemaGen)
+        throws IOException {
       assert leaf instanceof SegmentReader;
       SegmentInfo info = ((SegmentReader) leaf).getSegmentInfo().info;
 
       long infoSchemaGen = getSchemaGen(info);
 
-      if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: getParallelLeafReader: " + leaf + " infoSchemaGen=" + infoSchemaGen + " vs schemaGen=" + schemaGen + " doCache=" + doCache);
+      if (DEBUG)
+        System.out.println(
+            Thread.currentThread().getName()
+                + ": TEST: getParallelLeafReader: "
+                + leaf
+                + " infoSchemaGen="
+                + infoSchemaGen
+                + " vs schemaGen="
+                + schemaGen
+                + " doCache="
+                + doCache);
 
       if (infoSchemaGen == schemaGen) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName()+ ": TEST: segment is already current schemaGen=" + schemaGen + "; skipping");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName()
+                  + ": TEST: segment is already current schemaGen="
+                  + schemaGen
+                  + "; skipping");
         return null;
       }
 
       if (infoSchemaGen > schemaGen) {
-        throw new IllegalStateException("segment infoSchemaGen (" + infoSchemaGen + ") cannot be greater than requested schemaGen (" + schemaGen + ")");
+        throw new IllegalStateException(
+            "segment infoSchemaGen ("
+                + infoSchemaGen
+                + ") cannot be greater than requested schemaGen ("
+                + schemaGen
+                + ")");
       }
 
-      final SegmentIDAndGen segIDGen = new SegmentIDAndGen(StringHelper.idToString(info.getId()), schemaGen);
+      final SegmentIDAndGen segIDGen =
+          new SegmentIDAndGen(StringHelper.idToString(info.getId()), schemaGen);
 
       // While loop because the parallel reader may be closed out from under us, so we must retry:
       while (true) {
@@ -384,7 +438,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         // TODO: make this sync finer, i.e. just the segment + schemaGen
         synchronized (this) {
           LeafReader parReader = parallelReaders.get(segIDGen);
-      
+
           assert doCache || parReader == null;
 
           if (parReader == null) {
@@ -394,50 +448,88 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
             final Directory dir = openDirectory(leafIndex);
 
             if (slowFileExists(dir, "done") == false) {
-              if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: build segment index for " + leaf + " " + segIDGen + " (source: " + info.getDiagnostics().get("source") + ") dir=" + leafIndex);
+              if (DEBUG)
+                System.out.println(
+                    Thread.currentThread().getName()
+                        + ": TEST: build segment index for "
+                        + leaf
+                        + " "
+                        + segIDGen
+                        + " (source: "
+                        + info.getDiagnostics().get("source")
+                        + ") dir="
+                        + leafIndex);
 
               if (dir.listAll().length != 0) {
                 // It crashed before finishing last time:
-                if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: remove old incomplete index files: " + leafIndex);
+                if (DEBUG)
+                  System.out.println(
+                      Thread.currentThread().getName()
+                          + ": TEST: remove old incomplete index files: "
+                          + leafIndex);
                 IOUtils.rm(leafIndex);
               }
 
               reindex(infoSchemaGen, schemaGen, leaf, dir);
 
-              // Marker file, telling us this index is in fact done.  This way if we crash while doing the reindexing for a given segment, we will
+              // Marker file, telling us this index is in fact done.  This way if we crash while
+              // doing the reindexing for a given segment, we will
               // later try again:
               dir.createOutput("done", IOContext.DEFAULT).close();
             } else {
-              if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: segment index already exists for " + leaf + " " + segIDGen + " (source: " + info.getDiagnostics().get("source") + ") dir=" + leafIndex);
+              if (DEBUG)
+                System.out.println(
+                    Thread.currentThread().getName()
+                        + ": TEST: segment index already exists for "
+                        + leaf
+                        + " "
+                        + segIDGen
+                        + " (source: "
+                        + info.getDiagnostics().get("source")
+                        + ") dir="
+                        + leafIndex);
             }
 
-            if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: now check index " + dir);
-            //TestUtil.checkIndex(dir);
+            if (DEBUG)
+              System.out.println(
+                  Thread.currentThread().getName() + ": TEST: now check index " + dir);
+            // TestUtil.checkIndex(dir);
 
             SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
             assert infos.size() == 1;
-            final LeafReader parLeafReader = new SegmentReader(infos.info(0), Version.LATEST.major, IOContext.DEFAULT);
+            final LeafReader parLeafReader =
+                new SegmentReader(infos.info(0), Version.LATEST.major, IOContext.DEFAULT);
 
-            //checkParallelReader(leaf, parLeafReader, schemaGen);
+            // checkParallelReader(leaf, parLeafReader, schemaGen);
 
-            if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: opened parallel reader: " + parLeafReader);
+            if (DEBUG)
+              System.out.println(
+                  Thread.currentThread().getName()
+                      + ": TEST: opened parallel reader: "
+                      + parLeafReader);
             if (doCache) {
               parallelReaders.put(segIDGen, parLeafReader);
 
-              // Our id+gen could have been previously closed, e.g. if it was a merged segment that was warmed, so we must clear this else
+              // Our id+gen could have been previously closed, e.g. if it was a merged segment that
+              // was warmed, so we must clear this else
               // the pruning may remove our directory:
               closedSegments.remove(segIDGen);
 
-              parLeafReader.getReaderCacheHelper().addClosedListener(new ParallelReaderClosed(segIDGen, dir));
+              parLeafReader
+                  .getReaderCacheHelper()
+                  .addClosedListener(new ParallelReaderClosed(segIDGen, dir));
 
             } else {
               // Used only for merged segment warming:
               // Messy: we close this reader now, instead of leaving open for reuse:
-              if (DEBUG) System.out.println("TEST: now decRef non cached refCount=" + parLeafReader.getRefCount());
+              if (DEBUG)
+                System.out.println(
+                    "TEST: now decRef non cached refCount=" + parLeafReader.getRefCount());
               parLeafReader.decRef();
               dir.close();
 
-              // Must do this after dir is closed, else another thread could "rm -rf" while we are closing (which makes MDW.close's
+              // Must do this after dir is closed, else another thread could "rm -rf" while we are
+              // closing (which makes MDW.close's
               // checkIndex angry):
               closedSegments.add(segIDGen);
               parReader = null;
@@ -446,14 +538,26 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
           } else {
             if (parReader.tryIncRef() == false) {
-              // We failed: this reader just got closed by another thread, e.g. refresh thread opening a new reader, so this reader is now
+              // We failed: this reader just got closed by another thread, e.g. refresh thread
+              // opening a new reader, so this reader is now
               // closed and we must try again.
-              if (DEBUG) System.out.println(Thread.currentThread().getName()+ ": TEST: tryIncRef failed for " + parReader + "; retry");
+              if (DEBUG)
+                System.out.println(
+                    Thread.currentThread().getName()
+                        + ": TEST: tryIncRef failed for "
+                        + parReader
+                        + "; retry");
               parReader = null;
               continue;
             }
-            if (DEBUG) System.out.println(Thread.currentThread().getName()+ ": TEST: use existing already opened parReader=" + parReader + " refCount=" + parReader.getRefCount());
-            //checkParallelReader(leaf, parReader, schemaGen);
+            if (DEBUG)
+              System.out.println(
+                  Thread.currentThread().getName()
+                      + ": TEST: use existing already opened parReader="
+                      + parReader
+                      + " refCount="
+                      + parReader.getRefCount());
+            // checkParallelReader(leaf, parReader, schemaGen);
           }
 
           // We return the new reference to caller
@@ -463,25 +567,31 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
 
     // TODO: we could pass a writer already opened...?
-    protected abstract void reindex(long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir) throws IOException;
+    protected abstract void reindex(
+        long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir)
+        throws IOException;
 
     /** Returns the gen for the current schema. */
     protected abstract long getCurrentSchemaGen();
 
-    /** Returns the gen that should be merged, meaning those changes will be folded back into the main index. */
+    /**
+     * Returns the gen that should be merged, meaning those changes will be folded back into the
+     * main index.
+     */
     protected long getMergingSchemaGen() {
       return getCurrentSchemaGen();
     }
 
-    /** Removes the parallel index that are no longer in the last commit point.  We can't
-     *  remove this when the parallel reader is closed because it may still be referenced by
-     *  the last commit. */
+    /**
+     * Removes the parallel index that are no longer in the last commit point. We can't remove this
+     * when the parallel reader is closed because it may still be referenced by the last commit.
+     */
     private void pruneOldSegments(boolean removeOldGens) throws IOException {
       SegmentInfos lastCommit = SegmentInfos.readLatestCommit(indexDir);
       if (DEBUG) System.out.println("TEST: prune");
 
       Set<String> liveIDs = new HashSet<String>();
-      for(SegmentCommitInfo info : lastCommit) {
+      for (SegmentCommitInfo info : lastCommit) {
         String idString = StringHelper.idToString(info.info.getId());
         liveIDs.add(idString);
       }
@@ -493,7 +603,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           if (Files.isDirectory(path)) {
             SegmentIDAndGen segIDGen = new SegmentIDAndGen(path.getFileName().toString());
             assert segIDGen.schemaGen <= currentSchemaGen;
-            if (liveIDs.contains(segIDGen.segID) == false && (closedSegments.contains(segIDGen) || (removeOldGens && segIDGen.schemaGen < currentSchemaGen))) {
+            if (liveIDs.contains(segIDGen.segID) == false
+                && (closedSegments.contains(segIDGen)
+                    || (removeOldGens && segIDGen.schemaGen < currentSchemaGen))) {
               if (DEBUG) System.out.println("TEST: remove " + segIDGen);
               try {
                 IOUtils.rm(path);
@@ -508,7 +620,10 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
     }
 
-    /** Just replaces the sub-readers with parallel readers, so reindexed fields are merged into new segments. */
+    /**
+     * Just replaces the sub-readers with parallel readers, so reindexed fields are merged into new
+     * segments.
+     */
     private class ReindexingMergePolicy extends FilterMergePolicy {
 
       class ReindexingOneMerge extends OneMerge {
@@ -518,13 +633,19 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
         ReindexingOneMerge(List<SegmentCommitInfo> segments) {
           super(segments);
-          // Commit up front to which schemaGen we will merge; we don't want a schema change sneaking in for some of our leaf readers but not others:
+          // Commit up front to which schemaGen we will merge; we don't want a schema change
+          // sneaking in for some of our leaf readers but not others:
           schemaGen = getMergingSchemaGen();
           long currentSchemaGen = getCurrentSchemaGen();
 
           // Defensive sanity check:
           if (schemaGen > currentSchemaGen) {
-            throw new IllegalStateException("currentSchemaGen (" + currentSchemaGen + ") must always be >= mergingSchemaGen (" + schemaGen + ")");
+            throw new IllegalStateException(
+                "currentSchemaGen ("
+                    + currentSchemaGen
+                    + ") must always be >= mergingSchemaGen ("
+                    + schemaGen
+                    + ")");
           }
         }
 
@@ -564,7 +685,6 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           info.info.setDiagnostics(copy);
           super.setMergeInfo(info);
         }
-
       }
 
       class ReindexingMergeSpecification extends MergeSpecification {
@@ -596,28 +716,35 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      public MergeSpecification findMerges(MergeTrigger mergeTrigger,
-                                           SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+      public MergeSpecification findMerges(
+          MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+          throws IOException {
         return wrap(in.findMerges(mergeTrigger, segmentInfos, mergeContext));
       }
 
       @Override
-      public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-                                                 int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext)
-        throws IOException {
-        // TODO: do we need to force-force this?  Ie, wrapped MP may think index is already optimized, yet maybe its schemaGen is old?  need test!
-        return wrap(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext));
+      public MergeSpecification findForcedMerges(
+          SegmentInfos segmentInfos,
+          int maxSegmentCount,
+          Map<SegmentCommitInfo, Boolean> segmentsToMerge,
+          MergeContext mergeContext)
+          throws IOException {
+        // TODO: do we need to force-force this?  Ie, wrapped MP may think index is already
+        // optimized, yet maybe its schemaGen is old?  need test!
+        return wrap(
+            in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext));
       }
 
       @Override
-      public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
-        throws IOException {
+      public MergeSpecification findForcedDeletesMerges(
+          SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
         return wrap(in.findForcedDeletesMerges(segmentInfos, mergeContext));
       }
 
       @Override
-      public boolean useCompoundFile(SegmentInfos segments,
-                                     SegmentCommitInfo newSegment, MergeContext mergeContext) throws IOException {
+      public boolean useCompoundFile(
+          SegmentInfos segments, SegmentCommitInfo newSegment, MergeContext mergeContext)
+          throws IOException {
         return in.useCompoundFile(segments, newSegment, mergeContext);
       }
 
@@ -658,7 +785,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      protected void reindex(long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir) throws IOException {
+      protected void reindex(
+          long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir)
+          throws IOException {
         IndexWriterConfig iwc = newIndexWriterConfig();
 
         // The order of our docIDs must precisely matching incoming reader:
@@ -667,7 +796,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         int maxDoc = reader.maxDoc();
 
         // Slowly parse the stored field into a new doc values field:
-        for(int i=0;i<maxDoc;i++) {
+        for (int i = 0; i < maxDoc; i++) {
           // TODO: is this still O(blockSize^2)?
           Document oldDoc = reader.document(i);
           Document newDoc = new Document();
@@ -690,7 +819,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
   }
 
   /** Schema change by adding a new number_<schemaGen> DV field each time. */
-  private ReindexingReader getReindexerNewDVFields(Path root, final AtomicLong currentSchemaGen) throws IOException {
+  private ReindexingReader getReindexerNewDVFields(Path root, final AtomicLong currentSchemaGen)
+      throws IOException {
     return new ReindexingReader(root) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
@@ -711,7 +841,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      protected void reindex(long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir) throws IOException {
+      protected void reindex(
+          long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir)
+          throws IOException {
         IndexWriterConfig iwc = newIndexWriterConfig();
 
         // The order of our docIDs must precisely matching incoming reader:
@@ -721,7 +853,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
         if (oldSchemaGen <= 0) {
           // Must slowly parse the stored field into a new doc values field:
-          for(int i=0;i<maxDoc;i++) {
+          for (int i = 0; i < maxDoc; i++) {
             // TODO: is this still O(blockSize^2)?
             Document oldDoc = reader.document(i);
             Document newDoc = new Document();
@@ -734,7 +866,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           // Just carry over doc values from previous field:
           NumericDocValues oldValues = reader.getNumericDocValues("number_" + oldSchemaGen);
           assertNotNull("oldSchemaGen=" + oldSchemaGen, oldValues);
-          for(int i=0;i<maxDoc;i++) {
+          for (int i = 0; i < maxDoc; i++) {
             // TODO: is this still O(blockSize^2)?
             assertEquals(i, oldValues.nextDoc());
             Document oldDoc = reader.document(i);
@@ -755,24 +887,53 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      protected void checkParallelReader(LeafReader r, LeafReader parR, long schemaGen) throws IOException {
+      protected void checkParallelReader(LeafReader r, LeafReader parR, long schemaGen)
+          throws IOException {
         String fieldName = "number_" + schemaGen;
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: now check parallel number DVs field=" + fieldName + " r=" + r + " parR=" + parR);
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName()
+                  + ": TEST: now check parallel number DVs field="
+                  + fieldName
+                  + " r="
+                  + r
+                  + " parR="
+                  + parR);
         NumericDocValues numbers = parR.getNumericDocValues(fieldName);
         if (numbers == null) {
           return;
         }
         int maxDoc = r.maxDoc();
         boolean failed = false;
-        for(int i=0;i<maxDoc;i++) {
+        for (int i = 0; i < maxDoc; i++) {
           Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
           assertEquals(i, numbers.nextDoc());
           if (value != numbers.longValue()) {
-            if (DEBUG) System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue() + " numbers=" + numbers);
+            if (DEBUG)
+              System.out.println(
+                  "FAIL: docID="
+                      + i
+                      + " "
+                      + oldDoc
+                      + " value="
+                      + value
+                      + " number="
+                      + numbers.longValue()
+                      + " numbers="
+                      + numbers);
             failed = true;
           } else if (failed) {
-            if (DEBUG) System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue());
+            if (DEBUG)
+              System.out.println(
+                  "OK: docID="
+                      + i
+                      + " "
+                      + oldDoc
+                      + " value="
+                      + value
+                      + " number="
+                      + numbers.longValue());
           }
         }
         assertFalse("FAILED field=" + fieldName + " r=" + r, failed);
@@ -781,7 +942,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
   }
 
   /** Schema change by adding changing how the same "number" DV field is indexed. */
-  private ReindexingReader getReindexerSameDVField(Path root, final AtomicLong currentSchemaGen, final AtomicLong mergingSchemaGen) throws IOException {
+  private ReindexingReader getReindexerSameDVField(
+      Path root, final AtomicLong currentSchemaGen, final AtomicLong mergingSchemaGen)
+      throws IOException {
     return new ReindexingReader(root) {
       @Override
       protected IndexWriterConfig getIndexWriterConfig() throws IOException {
@@ -806,7 +969,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      protected void reindex(long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir) throws IOException {
+      protected void reindex(
+          long oldSchemaGen, long newSchemaGen, LeafReader reader, Directory parallelDir)
+          throws IOException {
         IndexWriterConfig iwc = newIndexWriterConfig();
 
         // The order of our docIDs must precisely matching incoming reader:
@@ -816,12 +981,12 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
         if (oldSchemaGen <= 0) {
           // Must slowly parse the stored field into a new doc values field:
-          for(int i=0;i<maxDoc;i++) {
+          for (int i = 0; i < maxDoc; i++) {
             // TODO: is this still O(blockSize^2)?
             Document oldDoc = reader.document(i);
             Document newDoc = new Document();
             long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
-            newDoc.add(new NumericDocValuesField("number", newSchemaGen*value));
+            newDoc.add(new NumericDocValuesField("number", newSchemaGen * value));
             newDoc.add(new LongPoint("number", value));
             w.addDocument(newDoc);
           }
@@ -829,12 +994,14 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           // Just carry over doc values from previous field:
           NumericDocValues oldValues = reader.getNumericDocValues("number");
           assertNotNull("oldSchemaGen=" + oldSchemaGen, oldValues);
-          for(int i=0;i<maxDoc;i++) {
+          for (int i = 0; i < maxDoc; i++) {
             // TODO: is this still O(blockSize^2)?
             Document oldDoc = reader.document(i);
             Document newDoc = new Document();
             assertEquals(i, oldValues.nextDoc());
-            newDoc.add(new NumericDocValuesField("number", newSchemaGen*(oldValues.longValue()/oldSchemaGen)));
+            newDoc.add(
+                new NumericDocValuesField(
+                    "number", newSchemaGen * (oldValues.longValue() / oldSchemaGen)));
             w.addDocument(newDoc);
           }
         }
@@ -855,24 +1022,49 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       @Override
-      protected void checkParallelReader(LeafReader r, LeafReader parR, long schemaGen) throws IOException {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: now check parallel number DVs r=" + r + " parR=" + parR);
+      protected void checkParallelReader(LeafReader r, LeafReader parR, long schemaGen)
+          throws IOException {
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName()
+                  + ": TEST: now check parallel number DVs r="
+                  + r
+                  + " parR="
+                  + parR);
         NumericDocValues numbers = parR.getNumericDocValues("numbers");
         if (numbers == null) {
           return;
         }
         int maxDoc = r.maxDoc();
         boolean failed = false;
-        for(int i=0;i<maxDoc;i++) {
+        for (int i = 0; i < maxDoc; i++) {
           Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
           value *= schemaGen;
           assertEquals(i, numbers.nextDoc());
           if (value != numbers.longValue()) {
-            System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue() + " numbers=" + numbers);
+            System.out.println(
+                "FAIL: docID="
+                    + i
+                    + " "
+                    + oldDoc
+                    + " value="
+                    + value
+                    + " number="
+                    + numbers.longValue()
+                    + " numbers="
+                    + numbers);
             failed = true;
           } else if (failed) {
-            System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue());
+            System.out.println(
+                "OK: docID="
+                    + i
+                    + " "
+                    + oldDoc
+                    + " value="
+                    + value
+                    + " number="
+                    + numbers.longValue());
           }
         }
         assertFalse("FAILED r=" + r, failed);
@@ -902,7 +1094,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     } finally {
       reindexer.mgr.release(r);
     }
-    //reindexer.printRefCounts();
+    // reindexer.printRefCounts();
 
     currentSchemaGen.incrementAndGet();
 
@@ -916,7 +1108,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     if (DEBUG) System.out.println("TEST: refresh @ 2 docs");
     reindexer.mgr.maybeRefresh();
-    //reindexer.printRefCounts();
+    // reindexer.printRefCounts();
     r = reindexer.mgr.acquire();
     if (DEBUG) System.out.println("TEST: got reader=" + r);
     try {
@@ -958,7 +1150,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     Path root = createTempDir();
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;
-    for(int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       if (reindexer == null) {
         reindexer = getReindexerNewDVFields(root, currentSchemaGen);
       }
@@ -974,7 +1166,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         id = "" + (maxID++);
         updateID = null;
       }
-        
+
       doc.add(newStringField("id", id, Field.Store.NO));
       doc.add(newTextField("text", "number " + random().nextLong(), Field.Store.YES));
       if (updateID == null) {
@@ -983,11 +1175,14 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         reindexer.w.updateDocument(new Term("id", updateID), doc);
       }
       if (random().nextInt(refreshEveryNumDocs) == 17) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: refresh @ " + (i+1) + " docs");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName() + ": TEST TOP: refresh @ " + (i + 1) + " docs");
         reindexer.mgr.maybeRefresh();
 
         DirectoryReader r = reindexer.mgr.acquire();
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: got reader=" + r);
+        if (DEBUG)
+          System.out.println(Thread.currentThread().getName() + ": TEST TOP: got reader=" + r);
         try {
           checkAllNumberDVs(r, "number_" + currentSchemaGen.get(), true, 1);
         } finally {
@@ -999,24 +1194,32 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
       if (random().nextInt(500) == 17) {
         currentSchemaGen.incrementAndGet();
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: advance schemaGen to " + currentSchemaGen);
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName()
+                  + ": TEST TOP: advance schemaGen to "
+                  + currentSchemaGen);
       }
 
       if (i > 0 && random().nextInt(10) == 7) {
         // Random delete:
-        reindexer.w.deleteDocuments(new Term("id", ""+random().nextInt(i)));
+        reindexer.w.deleteDocuments(new Term("id", "" + random().nextInt(i)));
       }
 
       if (random().nextInt(commitCloseNumDocs) == 17) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: commit @ " + (i+1) + " docs");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName() + ": TEST TOP: commit @ " + (i + 1) + " docs");
         reindexer.commit();
-        //reindexer.printRefCounts();
+        // reindexer.printRefCounts();
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
 
       // Sometimes close & reopen writer/manager, to confirm the parallel segments persist:
       if (random().nextInt(commitCloseNumDocs) == 17) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: close writer @ " + (i+1) + " docs");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName() + ": TEST TOP: close writer @ " + (i + 1) + " docs");
         reindexer.close();
         reindexer = null;
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
@@ -1028,8 +1231,10 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
   }
 
-  /** First schema change creates a new "number" DV field off the stored field; subsequent changes just change the value of that number
-   *  field for all docs. */
+  /**
+   * First schema change creates a new "number" DV field off the stored field; subsequent changes
+   * just change the value of that number field for all docs.
+   */
   public void testRandomMultipleSchemaGensSameField() throws Exception {
 
     AtomicLong currentSchemaGen = new AtomicLong();
@@ -1044,9 +1249,11 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;
 
-    for(int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       if (reindexer == null) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: open new reader/writer");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName() + ": TEST TOP: open new reader/writer");
         reindexer = getReindexerSameDVField(root, currentSchemaGen, mergingSchemaGen);
       }
 
@@ -1061,19 +1268,24 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         id = "" + (maxID++);
         updateID = null;
       }
-        
+
       doc.add(newStringField("id", id, Field.Store.NO));
-      doc.add(newTextField("text", "number " + TestUtil.nextInt(random(), -10000, 10000), Field.Store.YES));
+      doc.add(
+          newTextField(
+              "text", "number " + TestUtil.nextInt(random(), -10000, 10000), Field.Store.YES));
       if (updateID == null) {
         reindexer.w.addDocument(doc);
       } else {
         reindexer.w.updateDocument(new Term("id", updateID), doc);
       }
       if (random().nextInt(refreshEveryNumDocs) == 17) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: refresh @ " + (i+1) + " docs");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName() + ": TEST TOP: refresh @ " + (i + 1) + " docs");
         reindexer.mgr.maybeRefresh();
         DirectoryReader r = reindexer.mgr.acquire();
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: got reader=" + r);
+        if (DEBUG)
+          System.out.println(Thread.currentThread().getName() + ": TEST TOP: got reader=" + r);
         try {
           checkAllNumberDVs(r, "number", true, (int) currentSchemaGen.get());
         } finally {
@@ -1085,28 +1297,40 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
       if (random().nextInt(500) == 17) {
         currentSchemaGen.incrementAndGet();
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: advance schemaGen to " + currentSchemaGen);
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName()
+                  + ": TEST TOP: advance schemaGen to "
+                  + currentSchemaGen);
         if (random().nextBoolean()) {
           mergingSchemaGen.incrementAndGet();
-          if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: advance mergingSchemaGen to " + mergingSchemaGen);
+          if (DEBUG)
+            System.out.println(
+                Thread.currentThread().getName()
+                    + ": TEST TOP: advance mergingSchemaGen to "
+                    + mergingSchemaGen);
         }
       }
 
       if (i > 0 && random().nextInt(10) == 7) {
         // Random delete:
-        reindexer.w.deleteDocuments(new Term("id", ""+random().nextInt(i)));
+        reindexer.w.deleteDocuments(new Term("id", "" + random().nextInt(i)));
       }
 
       if (random().nextInt(commitCloseNumDocs) == 17) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: commit @ " + (i+1) + " docs");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName() + ": TEST TOP: commit @ " + (i + 1) + " docs");
         reindexer.commit();
-        //reindexer.printRefCounts();
+        // reindexer.printRefCounts();
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
 
       // Sometimes close & reopen writer/manager, to confirm the parallel segments persist:
       if (random().nextInt(commitCloseNumDocs) == 17) {
-        if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST TOP: close writer @ " + (i+1) + " docs");
+        if (DEBUG)
+          System.out.println(
+              Thread.currentThread().getName() + ": TEST TOP: close writer @ " + (i + 1) + " docs");
         reindexer.close();
         reindexer = null;
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
@@ -1119,27 +1343,27 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     // Verify main index never reflects schema changes beyond mergingSchemaGen:
     try (Directory dir = newFSDirectory(root.resolve("index"));
-         IndexReader r = DirectoryReader.open(dir)) {
-        for (LeafReaderContext ctx : r.leaves()) {
-          LeafReader leaf = ctx.reader();
-          NumericDocValues numbers = leaf.getNumericDocValues("number");
-          if (numbers != null) {
-            int maxDoc = leaf.maxDoc();
-            for(int i=0;i<maxDoc;i++) {
-              Document doc = leaf.document(i);
-              long value = Long.parseLong(doc.get("text").split(" ")[1]);
-              assertEquals(i, numbers.nextDoc());
-              long dvValue = numbers.longValue();
-              if (value == 0) {
-                assertEquals(0, dvValue);
-              } else {
-                assertTrue(dvValue % value == 0);
-                assertTrue(dvValue / value <= mergingSchemaGen.get());
-              }
+        IndexReader r = DirectoryReader.open(dir)) {
+      for (LeafReaderContext ctx : r.leaves()) {
+        LeafReader leaf = ctx.reader();
+        NumericDocValues numbers = leaf.getNumericDocValues("number");
+        if (numbers != null) {
+          int maxDoc = leaf.maxDoc();
+          for (int i = 0; i < maxDoc; i++) {
+            Document doc = leaf.document(i);
+            long value = Long.parseLong(doc.get("text").split(" ")[1]);
+            assertEquals(i, numbers.nextDoc());
+            long dvValue = numbers.longValue();
+            if (value == 0) {
+              assertEquals(0, dvValue);
+            } else {
+              assertTrue(dvValue % value == 0);
+              assertTrue(dvValue / value <= mergingSchemaGen.get());
             }
           }
         }
       }
+    }
   }
 
   public void testBasic() throws Exception {
@@ -1165,7 +1389,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     } finally {
       reindexer.mgr.release(r);
     }
-    //reindexer.printRefCounts();
+    // reindexer.printRefCounts();
 
     if (DEBUG) System.out.println("TEST: commit");
     reindexer.commit();
@@ -1176,7 +1400,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
     if (DEBUG) System.out.println("TEST: refresh @ 2 docs");
     reindexer.mgr.maybeRefresh();
-    //reindexer.printRefCounts();
+    // reindexer.printRefCounts();
     r = reindexer.mgr.acquire();
     if (DEBUG) System.out.println("TEST: got reader=" + r);
     try {
@@ -1220,7 +1444,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     int maxID = 0;
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;
-    for(int i=0;i<numDocs;i++) {
+    for (int i = 0; i < numDocs; i++) {
       if (reindexer == null) {
         reindexer = getReindexer(root);
       }
@@ -1236,7 +1460,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         id = "" + (maxID++);
         updateID = null;
       }
-        
+
       doc.add(newStringField("id", id, Field.Store.NO));
       doc.add(newTextField("text", "number " + random().nextLong(), Field.Store.YES));
       if (updateID == null) {
@@ -1246,7 +1470,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       if (random().nextInt(refreshEveryNumDocs) == 17) {
-        if (DEBUG) System.out.println("TEST: refresh @ " + (i+1) + " docs");
+        if (DEBUG) System.out.println("TEST: refresh @ " + (i + 1) + " docs");
         reindexer.mgr.maybeRefresh();
         DirectoryReader r = reindexer.mgr.acquire();
         if (DEBUG) System.out.println("TEST: got reader=" + r);
@@ -1263,18 +1487,18 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
       if (i > 0 && random().nextInt(10) == 7) {
         // Random delete:
-        reindexer.w.deleteDocuments(new Term("id", ""+random().nextInt(i)));
+        reindexer.w.deleteDocuments(new Term("id", "" + random().nextInt(i)));
       }
 
       if (random().nextInt(commitCloseNumDocs) == 17) {
-        if (DEBUG) System.out.println("TEST: commit @ " + (i+1) + " docs");
+        if (DEBUG) System.out.println("TEST: commit @ " + (i + 1) + " docs");
         reindexer.commit();
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
       }
 
       // Sometimes close & reopen writer/manager, to confirm the parallel segments persist:
       if (random().nextInt(commitCloseNumDocs) == 17) {
-        if (DEBUG) System.out.println("TEST: close writer @ " + (i+1) + " docs");
+        if (DEBUG) System.out.println("TEST: close writer @ " + (i + 1) + " docs");
         reindexer.close();
         reindexer = null;
         commitCloseNumDocs = (int) (1.25 * commitCloseNumDocs);
@@ -1289,26 +1513,38 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     checkAllNumberDVs(r, "number", true, 1);
   }
 
-  private static void checkAllNumberDVs(IndexReader r, String fieldName, boolean doThrow, int multiplier) throws IOException {
+  private static void checkAllNumberDVs(
+      IndexReader r, String fieldName, boolean doThrow, int multiplier) throws IOException {
     NumericDocValues numbers = MultiDocValues.getNumericValues(r, fieldName);
     int maxDoc = r.maxDoc();
     boolean failed = false;
     long t0 = System.currentTimeMillis();
-    for(int i=0;i<maxDoc;i++) {
+    for (int i = 0; i < maxDoc; i++) {
       Document oldDoc = r.document(i);
       long value = multiplier * Long.parseLong(oldDoc.get("text").split(" ")[1]);
       assertEquals(i, numbers.nextDoc());
       if (value != numbers.longValue()) {
-        System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue() + " numbers=" + numbers);
+        System.out.println(
+            "FAIL: docID="
+                + i
+                + " "
+                + oldDoc
+                + " value="
+                + value
+                + " number="
+                + numbers.longValue()
+                + " numbers="
+                + numbers);
         failed = true;
       } else if (failed) {
-        System.out.println("OK: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.longValue());
+        System.out.println(
+            "OK: docID=" + i + " " + oldDoc + " value=" + value + " number=" + numbers.longValue());
       }
     }
     if (failed) {
       if (r instanceof LeafReader == false) {
         System.out.println("TEST FAILED; check leaves");
-        for(LeafReaderContext ctx : r.leaves()) {
+        for (LeafReaderContext ctx : r.leaves()) {
           System.out.println("CHECK LEAF=" + ctx.reader());
           checkAllNumberDVs(ctx.reader(), fieldName, false, 1);
         }
@@ -1323,9 +1559,11 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
   private static void testNumericDVSort(IndexSearcher s) throws IOException {
     // Confirm we can sort by the new DV field:
-    TopDocs hits = s.search(new MatchAllDocsQuery(), 100, new Sort(new SortField("number", SortField.Type.LONG)));
+    TopDocs hits =
+        s.search(
+            new MatchAllDocsQuery(), 100, new Sort(new SortField("number", SortField.Type.LONG)));
     long last = Long.MIN_VALUE;
-    for(ScoreDoc scoreDoc : hits.scoreDocs) {
+    for (ScoreDoc scoreDoc : hits.scoreDocs) {
       long value = Long.parseLong(s.doc(scoreDoc.doc).get("text").split(" ")[1]);
       assertTrue(value >= last);
       assertEquals(value, ((Long) ((FieldDoc) scoreDoc).fields[0]).longValue());
@@ -1334,7 +1572,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
   }
 
   private static void testPointRangeQuery(IndexSearcher s) throws IOException {
-    for(int i=0;i<100;i++) {
+    for (int i = 0; i < 100; i++) {
       // Confirm we can range search by the new indexed (numeric) field:
       long min = random().nextLong();
       long max = random().nextLong();
@@ -1345,22 +1583,23 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
       }
 
       TopDocs hits = s.search(LongPoint.newRangeQuery("number", min, max), 100);
-      for(ScoreDoc scoreDoc : hits.scoreDocs) {
+      for (ScoreDoc scoreDoc : hits.scoreDocs) {
         long value = Long.parseLong(s.doc(scoreDoc.doc).get("text").split(" ")[1]);
         assertTrue(value >= min);
         assertTrue(value <= max);
       }
 
-      Arrays.sort(hits.scoreDocs,
-                  new Comparator<ScoreDoc>() {
-                    @Override
-                    public int compare(ScoreDoc a, ScoreDoc b) {
-                      return a.doc - b.doc;
-                    }
-                  });
+      Arrays.sort(
+          hits.scoreDocs,
+          new Comparator<ScoreDoc>() {
+            @Override
+            public int compare(ScoreDoc a, ScoreDoc b) {
+              return a.doc - b.doc;
+            }
+          });
 
       NumericDocValues numbers = MultiDocValues.getNumericValues(s.getIndexReader(), "number");
-      for(ScoreDoc hit : hits.scoreDocs) {
+      for (ScoreDoc hit : hits.scoreDocs) {
         if (numbers.docID() < hit.doc) {
           numbers.advance(hit.doc);
         }
@@ -1379,7 +1618,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(segsPath)) {
       for (Path path : stream) {
         // Must be form <segIDString>_<longGen>
-        if (Files.isDirectory(path) && SEG_GEN_SUB_DIR_PATTERN.matcher(path.getFileName().toString()).matches()) {
+        if (Files.isDirectory(path)
+            && SEG_GEN_SUB_DIR_PATTERN.matcher(path.getFileName().toString()).matches()) {
           result.add(path);
         }
       }

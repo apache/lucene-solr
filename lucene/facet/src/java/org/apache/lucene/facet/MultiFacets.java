@@ -21,20 +21,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/** Maps specified dims to provided Facets impls; else, uses
- *  the default Facets impl. */
+/** Maps specified dims to provided Facets impls; else, uses the default Facets impl. */
 public class MultiFacets extends Facets {
-  private final Map<String,Facets> dimToFacets;
+  private final Map<String, Facets> dimToFacets;
   private final Facets defaultFacets;
 
   /** Create this, with no default {@link Facets}. */
-  public MultiFacets(Map<String,Facets> dimToFacets) {
+  public MultiFacets(Map<String, Facets> dimToFacets) {
     this(dimToFacets, null);
   }
 
-  /** Create this, with the specified default {@link Facets}
-   *  for fields not included in {@code dimToFacets}. */
-  public MultiFacets(Map<String,Facets> dimToFacets, Facets defaultFacets) {
+  /**
+   * Create this, with the specified default {@link Facets} for fields not included in {@code
+   * dimToFacets}.
+   */
+  public MultiFacets(Map<String, Facets> dimToFacets, Facets defaultFacets) {
     this.dimToFacets = dimToFacets;
     this.defaultFacets = defaultFacets;
   }
@@ -69,7 +70,7 @@ public class MultiFacets extends Facets {
     List<FacetResult> results = new ArrayList<FacetResult>();
 
     // First add the specific dim's facets:
-    for(Map.Entry<String,Facets> ent : dimToFacets.entrySet()) {
+    for (Map.Entry<String, Facets> ent : dimToFacets.entrySet()) {
       results.add(ent.getValue().getTopChildren(topN, ent.getKey()));
     }
 
@@ -77,7 +78,7 @@ public class MultiFacets extends Facets {
 
       // Then add all default facets as long as we didn't
       // already add that dim:
-      for(FacetResult result : defaultFacets.getAllDims(topN)) {
+      for (FacetResult result : defaultFacets.getAllDims(topN)) {
         if (dimToFacets.containsKey(result.dim) == false) {
           results.add(result);
         }

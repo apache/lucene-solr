@@ -54,6 +54,20 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
+  public enum SolrRequestType {
+    QUERY,
+    UPDATE,
+    SECURITY,
+    ADMIN,
+    STREAMING,
+    UNSPECIFIED
+  };
+
+  public enum SolrClientContext {
+    CLIENT,
+    SERVER
+  };
+
   public static final Set<String> SUPPORTED_METHODS = Set.of(
       METHOD.GET.toString(),
       METHOD.POST.toString(),
@@ -167,6 +181,11 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
   public void setQueryParams(Set<String> queryParams) {
     this.queryParams = queryParams;
   }
+
+  /**
+   * This method defines the type of this Solr request.
+   */
+  public abstract String getRequestType();
 
   public abstract SolrParams getParams();
 

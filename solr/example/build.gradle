@@ -24,13 +24,10 @@ description = 'Solr examples'
 configurations {
   packaging
   postJar
-  dih
 }
 
 dependencies {
   postJar project(path: ":solr:core", configuration: "postJar")
-  dih 'org.hsqldb:hsqldb'
-  dih 'org.apache.derby:derby'
 }
 
 ext {
@@ -39,7 +36,6 @@ ext {
 
 task assemblePackaging(type: Sync) {
   from(projectDir, {
-    include "example-DIH/**"
     include "exampledocs/**"
     include "files/**"
     include "films/**"
@@ -49,10 +45,6 @@ task assemblePackaging(type: Sync) {
 
   from(configurations.postJar, {
     into "exampledocs/"
-  })
-
-  from(configurations.dih, {
-    into "example-DIH/solr/db/lib"
   })
 
   into packagingDir

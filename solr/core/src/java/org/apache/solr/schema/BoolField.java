@@ -169,7 +169,7 @@ public class BoolField extends PrimitiveFieldType {
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-    writer.writeBool(name, f.stringValue().charAt(0) == 'T');
+    writer.writeBool(name, toObject(f));
   }
 
   @Override

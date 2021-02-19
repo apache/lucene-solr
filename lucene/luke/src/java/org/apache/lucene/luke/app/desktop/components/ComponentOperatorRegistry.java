@@ -44,7 +44,5 @@ public class ComponentOperatorRegistry {
   }
 
   /** marker interface for operators */
-  public interface ComponentOperator {
-  }
-
+  public interface ComponentOperator {}
 }

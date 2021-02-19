@@ -16,13 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -46,9 +39,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
+import org.apache.solr.core.backup.BackupId;
+import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -56,7 +50,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
     SolrIgnoredThreadsFilter.class,
@@ -179,26 +178,28 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
     assertEquals(1, shard.getReplicas().size());
     Replica replica = shard.getReplicas().iterator().next();
 
-    String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-    String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
+    String coreName = replica.getCoreName();
     String backupName = TestUtil.randomSimpleString(random(), 1, 5);
 
     boolean testViaReplicationHandler = random().nextBoolean();
     String baseUrl = cluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    final String shardBackupId = new ShardBackupId("standalone", BackupId.zero()).getIdAsString();
 
-    try (HttpSolrClient masterClient = getHttpSolrClient(replicaBaseUrl)) {
+    try (HttpSolrClient leaderClient = getHttpSolrClient(replicaBaseUrl)) {
       // Create a backup.
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");
         BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
         final BackupStatusChecker backupStatus
-          = new BackupStatusChecker(masterClient, "/" + coreName + "/replication");
+          = new BackupStatusChecker(leaderClient, "/" + coreName + "/replication");
         backupStatus.waitForBackupSuccess(backupName, 30);
       } else {
         log.info("Running Backup via core admin api");
         Map<String,String> params = new HashMap<>();
         params.put("name", backupName);
         params.put(CoreAdminParams.BACKUP_REPOSITORY, "hdfs");
+        params.put(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId);
         BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
       }
 
@@ -209,9 +210,9 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           //Delete a few docs
           int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
           for(int i=0; i<numDeletes; i++) {
-            masterClient.deleteByQuery(collectionName, "id:" + i);
+            leaderClient.deleteByQuery(collectionName, "id:" + i);
           }
-          masterClient.commit(collectionName);
+          leaderClient.commit(collectionName);
 
           //Add a few more
           int moreAdds = TestUtil.nextInt(random(), 1, 100);
@@ -219,11 +220,11 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
             SolrInputDocument doc = new SolrInputDocument();
             doc.addField("id", i + nDocs);
             doc.addField("name", "name = " + (i + nDocs));
-            masterClient.add(collectionName, doc);
+            leaderClient.add(collectionName, doc);
           }
           //Purposely not calling commit once in a while. There can be some docs which are not committed
           if (usually()) {
-            masterClient.commit(collectionName);
+            leaderClient.commit(collectionName);
           }
         }
         // Snapshooter prefixes "snapshot." to the backup name.
@@ -239,17 +240,23 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
           Map<String,String> params = new HashMap<>();
           params.put("name", "snapshot." + backupName);
           params.put(CoreAdminParams.BACKUP_REPOSITORY, "hdfs");
+          params.put(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId);
           BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.RESTORECORE.toString(), params);
         }
         //See if restore was successful by checking if all the docs are present again
-        BackupRestoreUtils.verifyDocs(nDocs, masterClient, coreName);
+        BackupRestoreUtils.verifyDocs(nDocs, leaderClient, coreName);
 
-        // Verify the permissions for the backup folder.
-        FileStatus status = fs.getFileStatus(new org.apache.hadoop.fs.Path("/backup/snapshot."+backupName));
+        // Verify the permissions on the backup folder.
+        final String backupPath = (testViaReplicationHandler) ?
+                "/backup/snapshot."+ backupName :
+                "/backup/shard_backup_metadata";
+        final FsAction expectedPerms = (testViaReplicationHandler) ? FsAction.ALL : FsAction.READ_EXECUTE;
+
+        FileStatus status = fs.getFileStatus(new org.apache.hadoop.fs.Path(backupPath));
         FsPermission perm = status.getPermission();
         assertEquals(FsAction.ALL, perm.getUserAction());
-        assertEquals(FsAction.ALL, perm.getGroupAction());
-        assertEquals(FsAction.ALL, perm.getOtherAction());
+        assertEquals(expectedPerms, perm.getGroupAction());
+        assertEquals(expectedPerms, perm.getOtherAction());
       }
     }
   }

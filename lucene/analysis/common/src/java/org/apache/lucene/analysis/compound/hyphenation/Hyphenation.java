@@ -18,30 +18,25 @@ package org.apache.lucene.analysis.compound.hyphenation;
 
 /**
  * This class represents a hyphenated word.
- * 
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified.
+ *
+ * <p>This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/).
+ * They have been slightly modified.
  */
 public class Hyphenation {
 
   private int[] hyphenPoints;
 
-  /**
-   * rawWord as made of alternating strings and {@link Hyphen Hyphen} instances
-   */
+  /** rawWord as made of alternating strings and {@link Hyphen Hyphen} instances */
   Hyphenation(int[] points) {
     hyphenPoints = points;
   }
 
-  /**
-   * @return the number of hyphenation points in the word
-   */
+  /** @return the number of hyphenation points in the word */
   public int length() {
     return hyphenPoints.length;
   }
 
-  /**
-   * @return the hyphenation points
-   */
+  /** @return the hyphenation points */
   public int[] getHyphenationPoints() {
     return hyphenPoints;
   }

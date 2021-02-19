@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -33,15 +32,12 @@ import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * Utilities for testing automata.
- * <p>
- * Capable of generating random regular expressions,
- * and automata, and also provides a number of very
- * basic unoptimized implementations (*slow) for testing.
+ *
+ * <p>Capable of generating random regular expressions, and automata, and also provides a number of
+ * very basic unoptimized implementations (*slow) for testing.
  */
 public class AutomatonTestUtil {
-  /**
-   * Default maximum number of states that {@link Operations#determinize} should create.
-   */
+  /** Default maximum number of states that {@link Operations#determinize} should create. */
   public static final int DEFAULT_MAX_DETERMINIZED_STATES = 1000000;
 
   /** Returns random string, including full unicode range. */
@@ -49,12 +45,12 @@ public class AutomatonTestUtil {
     while (true) {
       String regexp = randomRegexpString(r);
       // we will also generate some undefined unicode queries
-      if (!UnicodeUtil.validUTF16String(regexp))
-        continue;
+      if (!UnicodeUtil.validUTF16String(regexp)) continue;
       try {
         new RegExp(regexp, RegExp.NONE);
         return regexp;
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
     }
   }
 
@@ -73,8 +69,7 @@ public class AutomatonTestUtil {
         buffer[i++] = (char) TestUtil.nextInt(r, 0xd800, 0xdbff);
         // Low surrogate
         buffer[i] = (char) TestUtil.nextInt(r, 0xdc00, 0xdfff);
-      }
-      else if (t <= 1) buffer[i] = (char) r.nextInt(0x80);
+      } else if (t <= 1) buffer[i] = (char) r.nextInt(0x80);
       else if (2 == t) buffer[i] = (char) TestUtil.nextInt(r, 0x80, 0x800);
       else if (3 == t) buffer[i] = (char) TestUtil.nextInt(r, 0x800, 0xd7ff);
       else if (4 == t) buffer[i] = (char) TestUtil.nextInt(r, 0xe000, 0xffff);
@@ -91,35 +86,37 @@ public class AutomatonTestUtil {
     }
     return new String(buffer, 0, end);
   }
-  
-  /** picks a random int code point, avoiding surrogates;
-   * throws IllegalArgumentException if this transition only
-   * accepts surrogates */
+
+  /**
+   * picks a random int code point, avoiding surrogates; throws IllegalArgumentException if this
+   * transition only accepts surrogates
+   */
   private static int getRandomCodePoint(final Random r, int min, int max) {
     final int code;
-    if (max < UnicodeUtil.UNI_SUR_HIGH_START ||
-        min > UnicodeUtil.UNI_SUR_HIGH_END) {
+    if (max < UnicodeUtil.UNI_SUR_HIGH_START || min > UnicodeUtil.UNI_SUR_HIGH_END) {
       // easy: entire range is before or after surrogates
-      code = min+r.nextInt(max-min+1);
+      code = min + r.nextInt(max - min + 1);
     } else if (min >= UnicodeUtil.UNI_SUR_HIGH_START) {
       if (max > UnicodeUtil.UNI_SUR_LOW_END) {
         // after surrogates
-        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(max-UnicodeUtil.UNI_SUR_LOW_END);
+        code = 1 + UnicodeUtil.UNI_SUR_LOW_END + r.nextInt(max - UnicodeUtil.UNI_SUR_LOW_END);
       } else {
-        throw new IllegalArgumentException("transition accepts only surrogates: min=" + min + " max=" + max);
+        throw new IllegalArgumentException(
+            "transition accepts only surrogates: min=" + min + " max=" + max);
       }
     } else if (max <= UnicodeUtil.UNI_SUR_LOW_END) {
       if (min < UnicodeUtil.UNI_SUR_HIGH_START) {
         // before surrogates
         code = min + r.nextInt(UnicodeUtil.UNI_SUR_HIGH_START - min);
       } else {
-        throw new IllegalArgumentException("transition accepts only surrogates: min=" + min + " max=" + max);
+        throw new IllegalArgumentException(
+            "transition accepts only surrogates: min=" + min + " max=" + max);
       }
     } else {
       // range includes all surrogates
       int gap1 = UnicodeUtil.UNI_SUR_HIGH_START - min;
       int gap2 = max - UnicodeUtil.UNI_SUR_LOW_END;
-      int c = r.nextInt(gap1+gap2);
+      int c = r.nextInt(gap1 + gap2);
       if (c < gap1) {
         code = min + c;
       } else {
@@ -127,21 +124,22 @@ public class AutomatonTestUtil {
       }
     }
 
-    assert code >= min && code <= max && (code < UnicodeUtil.UNI_SUR_HIGH_START || code > UnicodeUtil.UNI_SUR_LOW_END):
-      "code=" + code + " min=" + min + " max=" + max;
+    assert code >= min
+            && code <= max
+            && (code < UnicodeUtil.UNI_SUR_HIGH_START || code > UnicodeUtil.UNI_SUR_LOW_END)
+        : "code=" + code + " min=" + min + " max=" + max;
     return code;
   }
 
   /**
-   * Lets you retrieve random strings accepted
-   * by an Automaton.
-   * <p>
-   * Once created, call {@link #getRandomAcceptedString(Random)}
-   * to get a new string (in UTF-32 codepoints).
+   * Lets you retrieve random strings accepted by an Automaton.
+   *
+   * <p>Once created, call {@link #getRandomAcceptedString(Random)} to get a new string (in UTF-32
+   * codepoints).
    */
   public static class RandomAcceptedStrings {
 
-    private final Map<Transition,Boolean> leadsToAccept;
+    private final Map<Transition, Boolean> leadsToAccept;
     private final Automaton a;
     private final Transition[][] transitions;
 
@@ -163,7 +161,7 @@ public class AutomatonTestUtil {
       this.transitions = a.getSortedTransitions();
 
       leadsToAccept = new HashMap<>();
-      final Map<Integer,List<ArrivingTransition>> allArriving = new HashMap<>();
+      final Map<Integer, List<ArrivingTransition>> allArriving = new HashMap<>();
 
       final LinkedList<Integer> q = new LinkedList<>();
       final Set<Integer> seen = new HashSet<>();
@@ -171,8 +169,8 @@ public class AutomatonTestUtil {
       // reverse map the transitions, so we can quickly look
       // up all arriving transitions to a given state
       int numStates = a.getNumStates();
-      for(int s=0;s<numStates;s++) {
-        for(Transition t : transitions[s]) {
+      for (int s = 0; s < numStates; s++) {
+        for (Transition t : transitions[s]) {
           List<ArrivingTransition> tl = allArriving.get(t.dest);
           if (tl == null) {
             tl = new ArrayList<>();
@@ -192,7 +190,7 @@ public class AutomatonTestUtil {
         final int s = q.removeFirst();
         List<ArrivingTransition> arriving = allArriving.get(s);
         if (arriving != null) {
-          for(ArrivingTransition at : arriving) {
+          for (ArrivingTransition at : arriving) {
             final int from = at.from;
             if (!seen.contains(from)) {
               q.add(from);
@@ -210,8 +208,8 @@ public class AutomatonTestUtil {
 
       int s = 0;
 
-      while(true) {
-      
+      while (true) {
+
         if (a.isAccept(s)) {
           if (a.getNumTransitions(s) == 0) {
             // stop now
@@ -234,7 +232,7 @@ public class AutomatonTestUtil {
           // pick a transition that we know is the fastest
           // path to an accept state
           List<Transition> toAccept = new ArrayList<>();
-          for(Transition t0 : transitions[s]) {
+          for (Transition t0 : transitions[s]) {
             if (leadsToAccept.containsKey(t0)) {
               toAccept.add(t0);
             }
@@ -259,7 +257,8 @@ public class AutomatonTestUtil {
   private static Automaton randomSingleAutomaton(Random random) {
     while (true) {
       try {
-        Automaton a1 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
+        Automaton a1 =
+            new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
         if (random.nextBoolean()) {
           a1 = Operations.complement(a1, DEFAULT_MAX_DETERMINIZED_STATES);
         }
@@ -269,7 +268,7 @@ public class AutomatonTestUtil {
       }
     }
   }
-  
+
   /** return a random NFA/DFA for testing */
   public static Automaton randomAutomaton(Random random) {
     // get two random Automata from regexps
@@ -278,24 +277,28 @@ public class AutomatonTestUtil {
 
     // combine them in random ways
     switch (random.nextInt(4)) {
-      case 0: return Operations.concatenate(a1, a2);
-      case 1: return Operations.union(a1, a2);
-      case 2: return Operations.intersection(a1, a2);
-      default: return Operations.minus(a1, a2, DEFAULT_MAX_DETERMINIZED_STATES);
+      case 0:
+        return Operations.concatenate(a1, a2);
+      case 1:
+        return Operations.union(a1, a2);
+      case 2:
+        return Operations.intersection(a1, a2);
+      default:
+        return Operations.minus(a1, a2, DEFAULT_MAX_DETERMINIZED_STATES);
     }
   }
-  
-  /** 
-   * below are original, unoptimized implementations of DFA operations for testing.
-   * These are from brics automaton, full license (BSD) below:
+
+  /**
+   * below are original, unoptimized implementations of DFA operations for testing. These are from
+   * brics automaton, full license (BSD) below:
    */
-  
+
   /*
    * dk.brics.automaton
-   * 
+   *
    * Copyright (c) 2001-2009 Anders Moeller
    * All rights reserved.
-   * 
+   *
    * Redistribution and use in source and binary forms, with or without
    * modification, are permitted provided that the following conditions
    * are met:
@@ -306,7 +309,7 @@ public class AutomatonTestUtil {
    *    documentation and/or other materials provided with the distribution.
    * 3. The name of the author may not be used to endorse or promote products
    *    derived from this software without specific prior written permission.
-   * 
+   *
    * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
    * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
    * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
@@ -319,9 +322,7 @@ public class AutomatonTestUtil {
    * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    */
 
-  /**
-   * Simple, original brics implementation of Brzozowski minimize()
-   */
+  /** Simple, original brics implementation of Brzozowski minimize() */
   public static Automaton minimizeSimple(Automaton a) {
     Set<Integer> initialSet = new HashSet<Integer>();
     a = determinizeSimple(Operations.reverse(a, initialSet), initialSet);
@@ -329,19 +330,17 @@ public class AutomatonTestUtil {
     a = determinizeSimple(Operations.reverse(a, initialSet), initialSet);
     return a;
   }
-  
-  /**
-   * Simple, original brics implementation of determinize()
-   */
+
+  /** Simple, original brics implementation of determinize() */
   public static Automaton determinizeSimple(Automaton a) {
     Set<Integer> initialset = new HashSet<>();
     initialset.add(0);
     return determinizeSimple(a, initialset);
   }
 
-  /** 
-   * Simple, original brics implementation of determinize()
-   * Determinizes the given automaton using the given set of initial states. 
+  /**
+   * Simple, original brics implementation of determinize() Determinizes the given automaton using
+   * the given set of initial states.
    */
   public static Automaton determinizeSimple(Automaton a, Set<Integer> initialset) {
     if (a.getNumStates() == 0) {
@@ -371,7 +370,7 @@ public class AutomatonTestUtil {
         Set<Integer> p = new HashSet<>();
         for (int q : s) {
           int count = a.initTransition(q, t);
-          for(int i=0;i<count;i++) {
+          for (int i = 0; i < count; i++) {
             a.getNextTransition(t);
             if (t.min <= points[n] && points[n] <= t.max) {
               p.add(t.dest);
@@ -402,14 +401,12 @@ public class AutomatonTestUtil {
   /**
    * Simple, original implementation of getFiniteStrings.
    *
-   * <p>Returns the set of accepted strings, assuming that at most
-   * <code>limit</code> strings are accepted. If more than <code>limit</code> 
-   * strings are accepted, the first limit strings found are returned. If <code>limit</code>&lt;0, then 
-   * the limit is infinite.
+   * <p>Returns the set of accepted strings, assuming that at most <code>limit</code> strings are
+   * accepted. If more than <code>limit</code> strings are accepted, the first limit strings found
+   * are returned. If <code>limit</code>&lt;0, then the limit is infinite.
    *
-   * <p>This implementation is recursive: it uses one stack
-   * frame for each digit in the returned strings (ie, max
-   * is the max length returned string).
+   * <p>This implementation is recursive: it uses one stack frame for each digit in the returned
+   * strings (ie, max is the max length returned string).
    */
   public static Set<IntsRef> getFiniteStringsRecursive(Automaton a, int limit) {
     HashSet<IntsRef> strings = new HashSet<>();
@@ -420,16 +417,20 @@ public class AutomatonTestUtil {
   }
 
   /**
-   * Returns the strings that can be produced from the given state, or
-   * false if more than <code>limit</code> strings are found. 
-   * <code>limit</code>&lt;0 means "infinite".
+   * Returns the strings that can be produced from the given state, or false if more than <code>
+   * limit</code> strings are found. <code>limit</code>&lt;0 means "infinite".
    */
-  private static boolean getFiniteStrings(Automaton a, int s, HashSet<Integer> pathstates, 
-      HashSet<IntsRef> strings, IntsRefBuilder path, int limit) {
+  private static boolean getFiniteStrings(
+      Automaton a,
+      int s,
+      HashSet<Integer> pathstates,
+      HashSet<IntsRef> strings,
+      IntsRefBuilder path,
+      int limit) {
     pathstates.add(s);
     Transition t = new Transition();
     int count = a.initTransition(s, t);
-    for (int i=0;i<count;i++) {
+    for (int i = 0; i < count; i++) {
       a.getNextTransition(t);
       if (pathstates.contains(t.dest)) {
         return false;
@@ -454,9 +455,9 @@ public class AutomatonTestUtil {
 
   /**
    * Returns true if the language of this automaton is finite.
-   * <p>
-   * WARNING: this method is slow, it will blow up if the automaton is large.
-   * this is only used to test the correctness of our faster implementation.
+   *
+   * <p>WARNING: this method is slow, it will blow up if the automaton is large. this is only used
+   * to test the correctness of our faster implementation.
    */
   public static boolean isFiniteSlow(Automaton a) {
     if (a.getNumStates() == 0) {
@@ -464,10 +465,10 @@ public class AutomatonTestUtil {
     }
     return isFiniteSlow(a, 0, new HashSet<Integer>());
   }
-  
+
   /**
-   * Checks whether there is a loop containing s. (This is sufficient since
-   * there are never transitions to dead states.)
+   * Checks whether there is a loop containing s. (This is sufficient since there are never
+   * transitions to dead states.)
    */
   // TODO: not great that this is recursive... in theory a
   // large automata could exceed java's stack
@@ -475,7 +476,7 @@ public class AutomatonTestUtil {
     path.add(s);
     Transition t = new Transition();
     int count = a.initTransition(s, t);
-    for (int i=0;i<count;i++) {
+    for (int i = 0; i < count; i++) {
       a.getNextTransition(t);
       if (path.contains(t.dest) || !isFiniteSlow(a, t.dest, path)) {
         return false;
@@ -484,24 +485,24 @@ public class AutomatonTestUtil {
     path.remove(s);
     return true;
   }
-  
+
   /**
-   * Checks that an automaton has no detached states that are unreachable
-   * from the initial state.
+   * Checks that an automaton has no detached states that are unreachable from the initial state.
    */
   public static void assertNoDetachedStates(Automaton a) {
     Automaton a2 = Operations.removeDeadStates(a);
-    assert a.getNumStates() == a2.getNumStates() : "automaton has " + (a.getNumStates() - a2.getNumStates()) + " detached states";
+    assert a.getNumStates() == a2.getNumStates()
+        : "automaton has " + (a.getNumStates() - a2.getNumStates()) + " detached states";
   }
 
   /** Returns true if the automaton is deterministic. */
   public static boolean isDeterministicSlow(Automaton a) {
     Transition t = new Transition();
     int numStates = a.getNumStates();
-    for(int s=0;s<numStates;s++) {
+    for (int s = 0; s < numStates; s++) {
       int count = a.initTransition(s, t);
       int lastMax = -1;
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         a.getNextTransition(t);
         if (t.min <= lastMax) {
           assert a.isDeterministic() == false;
@@ -514,5 +515,4 @@ public class AutomatonTestUtil {
     assert a.isDeterministic() == true;
     return true;
   }
-  
 }

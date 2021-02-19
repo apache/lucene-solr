@@ -15,8 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Codec PostingsFormat for fast access to low-frequency terms 
- * such as primary key fields.
- */
+/** Codec PostingsFormat for fast access to low-frequency terms such as primary key fields. */
 package org.apache.lucene.codecs.bloom;

@@ -16,19 +16,14 @@
  */
 package org.apache.lucene.analysis.fa;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 
-/**
- * Test the Persian Normalization Filter
- * 
- */
+/** Test the Persian Normalization Filter */
 public class TestPersianNormalizationFilter extends BaseTokenStreamTestCase {
 
   public void testFarsiYeh() throws IOException {
@@ -57,21 +52,20 @@ public class TestPersianNormalizationFilter extends BaseTokenStreamTestCase {
 
   private void check(final String input, final String expected) throws IOException {
     MockTokenizer tokenStream = whitespaceMockTokenizer(input);
-    PersianNormalizationFilter filter = new PersianNormalizationFilter(
-        tokenStream);
-    assertTokenStreamContents(filter, new String[]{expected});
+    PersianNormalizationFilter filter = new PersianNormalizationFilter(tokenStream);
+    assertTokenStreamContents(filter, new String[] {expected});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new PersianNormalizationFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new PersianNormalizationFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }
-
 }

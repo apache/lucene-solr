@@ -16,18 +16,16 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery; // javadocs
-import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
-/**
- * Base class for building {@link SpanQuery}s
- */
+
+/** Base class for building {@link SpanQuery}s */
 public abstract class SpanBuilderBase implements SpanQueryBuilder {
-  
+
   @Override
   public Query getQuery(Element e) throws ParserException {
     return getSpanQuery(e);
   }
-
 }

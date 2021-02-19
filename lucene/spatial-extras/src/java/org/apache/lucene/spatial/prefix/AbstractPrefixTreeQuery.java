@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -40,16 +39,19 @@ import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * Base class for Lucene Queries on SpatialPrefixTree fields.
+ *
  * @lucene.internal
  */
 public abstract class AbstractPrefixTreeQuery extends Query {
 
   protected final Shape queryShape;
   protected final String fieldName;
-  protected final SpatialPrefixTree grid;//not in equals/hashCode since it's implied for a specific field
+  protected final SpatialPrefixTree
+      grid; // not in equals/hashCode since it's implied for a specific field
   protected final int detailLevel;
 
-  public AbstractPrefixTreeQuery(Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel) {
+  public AbstractPrefixTreeQuery(
+      Shape queryShape, String fieldName, SpatialPrefixTree grid, int detailLevel) {
     this.queryShape = queryShape;
     this.fieldName = fieldName;
     this.grid = grid;
@@ -58,14 +60,13 @@ public abstract class AbstractPrefixTreeQuery extends Query {
 
   @Override
   public boolean equals(Object o) {
-    return sameClassAs(o) &&
-           equalsTo(getClass().cast(o));
+    return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
 
   private boolean equalsTo(AbstractPrefixTreeQuery other) {
-    return detailLevel == other.detailLevel &&
-           fieldName.equals(other.fieldName) &&
-           queryShape.equals(other.queryShape);
+    return detailLevel == other.detailLevel
+        && fieldName.equals(other.fieldName)
+        && queryShape.equals(other.queryShape);
   }
 
   @Override
@@ -85,7 +86,8 @@ public abstract class AbstractPrefixTreeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
@@ -109,16 +111,18 @@ public abstract class AbstractPrefixTreeQuery extends Query {
 
   protected abstract DocIdSet getDocIdSet(LeafReaderContext context) throws IOException;
 
-  /** Holds transient state and docid collecting utility methods as part of
-   * traversing a {@link TermsEnum} for a {@link org.apache.lucene.index.LeafReaderContext}. */
-  public abstract class BaseTermsEnumTraverser {//TODO rename to LeafTermsEnumTraverser ?
-    //note: only 'fieldName' (accessed in constructor) keeps this from being a static inner class
+  /**
+   * Holds transient state and docid collecting utility methods as part of traversing a {@link
+   * TermsEnum} for a {@link org.apache.lucene.index.LeafReaderContext}.
+   */
+  public abstract class BaseTermsEnumTraverser { // TODO rename to LeafTermsEnumTraverser ?
+    // note: only 'fieldName' (accessed in constructor) keeps this from being a static inner class
 
     protected final LeafReaderContext context;
     protected final int maxDoc;
 
     protected final Terms terms; // maybe null
-    protected final TermsEnum termsEnum;//remember to check for null!
+    protected final TermsEnum termsEnum; // remember to check for null!
     protected PostingsEnum postingsEnum;
 
     public BaseTermsEnumTraverser(LeafReaderContext context) throws IOException {
@@ -145,5 +149,4 @@ public abstract class AbstractPrefixTreeQuery extends Query {
       docSetBuilder.add(postingsEnum);
     }
   }
-
 }

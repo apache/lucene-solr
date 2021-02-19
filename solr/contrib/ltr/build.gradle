@@ -27,7 +27,6 @@ dependencies {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
   testImplementation ('org.objenesis:objenesis')
-  testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
 
   testImplementation project(':solr:test-framework')
 }

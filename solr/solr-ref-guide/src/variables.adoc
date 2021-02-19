@@ -17,13 +17,16 @@
 // under the License.
 
 
+This section of the user guide describes how to assign and visualize
+variables with math expressions.
+
 == The Let Expression
 
 The `let` expression sets variables and returns
 the value of the last variable by default. The output of any streaming expression or math expression can be set to a variable.
 
-Below is a simple example setting three variables *`a`*, *`b`*
-and *`c`*. Variables *`a`* and *`b`* are set to arrays. The variable *`c`* is set
+Below is a simple example setting three variables `a`, `b`,
+and `c`. Variables `a` and `b` are set to arrays. The variable `c` is set
 to the output of the `ebeAdd` function which performs element-by-element
 addition of the two arrays.
 
@@ -34,7 +37,7 @@ let(a=array(1, 2, 3),
     c=ebeAdd(a, b))
 ----
 
-In the response, notice that the last variable, *`c`*, is returned:
+In the response, notice that the last variable, `c`, is returned:
 
 [source,json]
 ----
@@ -103,7 +106,7 @@ responds with:
 }
 ----
 
-A specific set of variables can be echoed by providing a comma delimited list of variables to the echo parameter.
+A specific set of variables can be echoed by providing a comma-delimited list of variables to the `echo` parameter.
 Because variables have been provided, the `true` value is assumed.
 
 [source,text]
@@ -142,6 +145,60 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+== Visualizing Variables
+
+The `let` expression can also include a `zplot` expression that can be used to visualize the
+variables.
+
+In the example below the variables `a` and `b` are set to arrays. The `zplot` function
+outputs the variables as `x` and `y` fields in the output.
+
+[source,text]
+----
+let(a=array(1, 2, 3),
+    b=array(10, 20, 30),
+    zplot(x=a, y=b))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "x": 1,
+        "y": 10
+      },
+      {
+        "x": 2,
+        "y": 20
+      },
+      {
+        "x": 3,
+        "y": 30
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Using this approach variables can by visualized using Zeppelin-Solr. In the example below
+the arrays are shown in table format.
+
+image::images/math-expressions/variables.png[]
+
+Once in table format we can plot the variables using one of the plotting or charting
+visualizations. The example below shows variables plotted on a line chart:
+
+image::images/math-expressions/variables1.png[]
+
+
 == Caching Variables
 
 Variables can be cached in-memory on the Solr node where the math expression
@@ -151,10 +208,10 @@ be cached in-memory for future use.
 
 The `putCache` function adds a variable to the cache.
 
-In the example below an array is cached in the `workspace` "workspace1"
-and bound to the `key` "key1". The workspace allows different users to cache
-objects in their own workspace. The `putCache` function returns
-the variable that was added to the cache.
+In the example below an array is cached in the workspace `workspace1`
+and bound to the key `key1`.
+The workspace allows different users to cache objects in their own workspace.
+The `putCache` function returns the variable that was added to the cache.
 
 [source,text]
 ----
@@ -189,7 +246,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 The `getCache` function retrieves an object from the cache by its workspace and key.
 
-In the example below the `getCache` function retrieves the array that was cached above and assigns it to variable *`a`*.
+In the example below the `getCache` function retrieves the array that was cached above and assigns it to variable `a`.
 
 [source,text]
 ----
@@ -228,8 +285,7 @@ In the example below `listCache` returns all the workspaces in the cache as an a
 let(a=listCache())
 ----
 
-When this expression is sent to the `/stream` handler it
-responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----

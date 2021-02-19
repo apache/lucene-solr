@@ -25,27 +25,21 @@ import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryBui
 import org.apache.lucene.search.spans.SpanQuery;
 
 /**
- * Sets up a query tree builder to build a span query tree from a query node
- * tree.<br>
+ * Sets up a query tree builder to build a span query tree from a query node tree.<br>
  * <br>
- * 
  * The defined map is:<br>
  * - every BooleanQueryNode instance is delegated to the SpanOrQueryNodeBuilder<br>
  * - every FieldQueryNode instance is delegated to the SpanTermQueryNodeBuilder <br>
- * 
  */
-public class SpansQueryTreeBuilder extends QueryTreeBuilder implements
-    StandardQueryBuilder {
+public class SpansQueryTreeBuilder extends QueryTreeBuilder implements StandardQueryBuilder {
 
   public SpansQueryTreeBuilder() {
     setBuilder(BooleanQueryNode.class, new SpanOrQueryNodeBuilder());
     setBuilder(FieldQueryNode.class, new SpanTermQueryNodeBuilder());
-
   }
 
   @Override
   public SpanQuery build(QueryNode queryTree) throws QueryNodeException {
     return (SpanQuery) super.build(queryTree);
   }
-
 }

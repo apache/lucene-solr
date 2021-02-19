@@ -20,7 +20,8 @@ import java.text.BreakIterator;
 import java.text.CharacterIterator;
 
 /**
- * A {@link BreakIterator} that breaks the text whenever a certain separator, provided as a constructor argument, is found.
+ * A {@link BreakIterator} that breaks the text whenever a certain separator, provided as a
+ * constructor argument, is found.
  */
 public final class CustomSeparatorBreakIterator extends BreakIterator {
 
@@ -74,7 +75,8 @@ public final class CustomSeparatorBreakIterator extends BreakIterator {
     if (pos < text.getBeginIndex() || pos > text.getEndIndex()) {
       throw new IllegalArgumentException("offset out of bounds");
     } else if (pos == text.getEndIndex()) {
-      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
+      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in
+      // something)
       // https://bugs.openjdk.java.net/browse/JDK-8015110
       text.setIndex(text.getEndIndex());
       current = text.getIndex();
@@ -111,7 +113,8 @@ public final class CustomSeparatorBreakIterator extends BreakIterator {
     if (pos < text.getBeginIndex() || pos > text.getEndIndex()) {
       throw new IllegalArgumentException("offset out of bounds");
     } else if (pos == text.getBeginIndex()) {
-      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in something)
+      // this conflicts with the javadocs, but matches actual behavior (Oracle has a bug in
+      // something)
       // https://bugs.openjdk.java.net/browse/JDK-8015110
       text.setIndex(text.getBeginIndex());
       current = text.getIndex();

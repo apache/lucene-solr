@@ -20,7 +20,7 @@ if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) { 'use strict';
   if (search instanceof RegExp) {
     throw TypeError('first argument must not be a RegExp');
-  } 
+  }
   if (start === undefined) { start = 0; }
     return this.indexOf(search, start) !== -1;
   };
@@ -52,7 +52,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngtimeago",
   "solrAdminServices",
   "localytics.directives",
-  "ab-base64"
+  "ab-base64",
+  "ui.grid"
 ]);
 
 solrAdminApp.config([
@@ -130,14 +131,6 @@ solrAdminApp.config([
         templateUrl: 'partials/analysis.html',
         controller: 'AnalysisController'
       }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
       when('/:core/documents', {
         templateUrl: 'partials/documents.html',
         controller: 'DocumentsController'
@@ -164,17 +157,13 @@ solrAdminApp.config([
         templateUrl: 'partials/stream.html',
         controller: 'StreamController'
       }).
+      when('/:core/sqlquery', {
+        templateUrl: 'partials/sqlquery.html',
+        controller: 'SQLQueryController'
+      }).
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
         controller: 'ReplicationController'
-      }).
-      when('/:core/dataimport', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
-      }).
-      when('/:core/dataimport/:handler*', {
-        templateUrl: 'partials/dataimport.html',
-        controller: 'DataImportController'
       }).
       when('/:core/schema', {
         templateUrl: 'partials/schema.html',
@@ -331,12 +320,17 @@ solrAdminApp.config([
                   var treeConfig = {
                     'core' : {
                       'animation' : 0,
-                      'data': scope.data,
                       'worker': false
                     }
                   };
 
                   var tree = $(element).jstree(treeConfig);
+
+                  // This is done to ensure that the data can be refreshed if it is updated behind the scenes.
+                  // Putting the data in the treeConfig makes it stack and doesn't update.
+                  $(element).jstree(true).settings.core.data = scope.data;
+                  $(element).jstree(true).refresh();
+
                   $(element).jstree('open_node','li:first');
                   if (tree) {
                       element.bind("select_node.jstree", function (event, data) {

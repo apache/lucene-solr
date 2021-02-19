@@ -187,26 +187,6 @@ public class XMLWriter extends TextResponseWriter {
 
     incLevel();
   }
-  
-  @Override
-  @Deprecated
-  public void writeStartDocumentList(String name,
-      long start, int size, long numFound, Float maxScore) throws IOException
-  {
-    if (doIndent) indent();
-
-    writer.write("<result");
-    writeAttr(NAME, name);
-    writeAttr("numFound",Long.toString(numFound));
-    writeAttr("start",Long.toString(start));
-    if(maxScore!=null) {
-      writeAttr("maxScore",Float.toString(maxScore));
-    }
-    writer.write(">");
-
-    incLevel();
-  }
-
 
   /**
    * The SolrDocument should already have multivalued fields implemented as

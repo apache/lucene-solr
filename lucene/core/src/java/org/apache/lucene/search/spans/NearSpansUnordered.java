@@ -18,22 +18,19 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.apache.lucene.util.PriorityQueue;
 
 /**
  * Similar to {@link NearSpansOrdered}, but for the unordered case.
  *
- * Expert:
- * Only public for subclassing.  Most implementations should not need this class
+ * <p>Expert: Only public for subclassing. Most implementations should not need this class
  */
 public class NearSpansUnordered extends ConjunctionSpans {
 
   private final int allowedSlop;
   private SpanTotalLengthEndPositionWindow spanWindow;
 
-  public NearSpansUnordered(int allowedSlop, List<Spans> subSpans)
-  throws IOException {
+  public NearSpansUnordered(int allowedSlop, List<Spans> subSpans) throws IOException {
     super(subSpans);
 
     this.allowedSlop = allowedSlop;
@@ -96,14 +93,15 @@ public class NearSpansUnordered extends ConjunctionSpans {
     }
   }
 
-
-  /** Check whether two Spans in the same document are ordered with possible overlap.
-   * @return true iff spans1 starts before spans2
-   *              or the spans start at the same position,
-   *              and spans1 ends before spans2.
+  /**
+   * Check whether two Spans in the same document are ordered with possible overlap.
+   *
+   * @return true iff spans1 starts before spans2 or the spans start at the same position, and
+   *     spans1 ends before spans2.
    */
   static boolean positionsOrdered(Spans spans1, Spans spans2) {
-    assert spans1.docID() == spans2.docID() : "doc1 " + spans1.docID() + " != doc2 " + spans2.docID();
+    assert spans1.docID() == spans2.docID()
+        : "doc1 " + spans1.docID() + " != doc2 " + spans2.docID();
     int start1 = spans1.startPosition();
     int start2 = spans2.startPosition();
     return (start1 == start2) ? (spans1.endPosition() < spans2.endPosition()) : (start1 < start2);
@@ -119,7 +117,7 @@ public class NearSpansUnordered extends ConjunctionSpans {
         oneExhaustedInCurrentDoc = false;
         return true;
       }
-      if (! spanWindow.nextPosition()) {
+      if (!spanWindow.nextPosition()) {
         return false;
       }
     }
@@ -134,7 +132,7 @@ public class NearSpansUnordered extends ConjunctionSpans {
     assert spanWindow.top().startPosition() != -1;
     assert spanWindow.top().startPosition() != NO_MORE_POSITIONS;
     while (true) {
-      if (! spanWindow.nextPosition()) {
+      if (!spanWindow.nextPosition()) {
         oneExhaustedInCurrentDoc = true;
         return NO_MORE_POSITIONS;
       }
@@ -147,22 +145,21 @@ public class NearSpansUnordered extends ConjunctionSpans {
   @Override
   public int startPosition() {
     assert spanWindow.top() != null;
-    return atFirstInCurrentDoc ? -1
-          : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
-          : spanWindow.top().startPosition();
+    return atFirstInCurrentDoc
+        ? -1
+        : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS : spanWindow.top().startPosition();
   }
 
   @Override
   public int endPosition() {
-    return atFirstInCurrentDoc ? -1
-          : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS
-          : spanWindow.maxEndPosition;
+    return atFirstInCurrentDoc
+        ? -1
+        : oneExhaustedInCurrentDoc ? NO_MORE_POSITIONS : spanWindow.maxEndPosition;
   }
 
   @Override
   public int width() {
-    return spanWindow.maxEndPosition
-         - spanWindow.top().startPosition();
+    return spanWindow.maxEndPosition - spanWindow.top().startPosition();
   }
 
   @Override
@@ -171,5 +168,4 @@ public class NearSpansUnordered extends ConjunctionSpans {
       spans.collect(collector);
     }
   }
-
 }

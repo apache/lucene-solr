@@ -23,6 +23,7 @@ public class TestFieldTermFilteredPresearcher extends FieldFilterPresearcherComp
 
   @Override
   protected Presearcher createPresearcher() {
-    return new TermFilteredPresearcher(TermWeightor.DEFAULT, Collections.emptyList(), Collections.singleton("language"));
+    return new TermFilteredPresearcher(
+        TermWeightor.DEFAULT, Collections.emptyList(), Collections.singleton("language"));
   }
 }

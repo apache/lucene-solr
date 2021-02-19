@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.index;
 
-
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -40,14 +39,12 @@ import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Monster;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
-
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 // NOTE: SimpleText codec will consume very large amounts of
 // disk (but, should run successfully).  Best to run w/
@@ -55,17 +52,17 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 //
 //   ant test -Dtests.monster=true -Dtests.heapsize=8g -Dtests.codec=Lucene62 -Dtestcase=Test2BTerms
 //
-@SuppressCodecs({ "SimpleText", "Direct" })
+@SuppressCodecs({"SimpleText", "Direct"})
 @Monster("very slow, use 5g minimum heap")
 @TimeoutSuite(millis = 80 * TimeUnits.HOUR) // effectively no limit
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed")
 public class Test2BTerms extends LuceneTestCase {
 
-  private final static int TOKEN_LEN = 5;
+  private static final int TOKEN_LEN = 5;
 
-  private final static BytesRef bytes = new BytesRef(TOKEN_LEN);
+  private static final BytesRef bytes = new BytesRef(TOKEN_LEN);
 
-  private final static class MyTokenStream extends TokenStream {
+  private static final class MyTokenStream extends TokenStream {
 
     private final int tokensPerDoc;
     private int tokenCount;
@@ -82,7 +79,7 @@ public class Test2BTerms extends LuceneTestCase {
       this.random = random;
       nextSave = TestUtil.nextInt(random, 500000, 1000000);
     }
-    
+
     @Override
     public boolean incrementToken() {
       clearAttributes();
@@ -90,7 +87,7 @@ public class Test2BTerms extends LuceneTestCase {
         return false;
       }
       int shift = 32;
-      for(int i=0;i<5;i++) {
+      for (int i = 0; i < 5; i++) {
         bytes.bytes[i] = (byte) ((termCounter >> shift) & 0xFF);
         shift -= 8;
       }
@@ -109,21 +106,21 @@ public class Test2BTerms extends LuceneTestCase {
       tokenCount = 0;
     }
 
-    private final static class MyTermAttributeImpl extends AttributeImpl implements TermToBytesRefAttribute {
+    private static final class MyTermAttributeImpl extends AttributeImpl
+        implements TermToBytesRefAttribute {
       @Override
       public BytesRef getBytesRef() {
         return bytes;
       }
 
       @Override
-      public void clear() {
-      }
+      public void clear() {}
 
       @Override
       public void copyTo(AttributeImpl target) {
         throw new UnsupportedOperationException();
       }
-    
+
       @Override
       public MyTermAttributeImpl clone() {
         throw new UnsupportedOperationException();
@@ -141,11 +138,10 @@ public class Test2BTerms extends LuceneTestCase {
       public MyAttributeFactory(AttributeFactory delegate) {
         this.delegate = delegate;
       }
-  
+
       @Override
       public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
-        if (attClass == TermToBytesRefAttribute.class)
-          return new MyTermAttributeImpl();
+        if (attClass == TermToBytesRefAttribute.class) return new MyTermAttributeImpl();
         if (CharTermAttribute.class.isAssignableFrom(attClass))
           throw new IllegalArgumentException("no");
         return delegate.createAttributeInstance(attClass);
@@ -163,27 +159,29 @@ public class Test2BTerms extends LuceneTestCase {
     List<BytesRef> savedTerms = null;
 
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BTerms"));
-    //MockDirectoryWrapper dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
+    // MockDirectoryWrapper dir = newFSDirectory(new File("/p/lucene/indices/2bindex"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
     dir.setCheckIndexOnClose(false); // don't double-checkindex
 
     if (true) {
 
-      IndexWriter w = new IndexWriter(dir,
-                                      new IndexWriterConfig(new MockAnalyzer(random()))
-                                      .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-                                      .setRAMBufferSizeMB(256.0)
-                                      .setMergeScheduler(new ConcurrentMergeScheduler())
-                                      .setMergePolicy(newLogMergePolicy(false, 10))
-                                      .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
-                                      .setCodec(TestUtil.getDefaultCodec()));
+      IndexWriter w =
+          new IndexWriter(
+              dir,
+              new IndexWriterConfig(new MockAnalyzer(random()))
+                  .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                  .setRAMBufferSizeMB(256.0)
+                  .setMergeScheduler(new ConcurrentMergeScheduler())
+                  .setMergePolicy(newLogMergePolicy(false, 10))
+                  .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                  .setCodec(TestUtil.getDefaultCodec()));
 
       MergePolicy mp = w.getConfig().getMergePolicy();
       if (mp instanceof LogByteSizeMergePolicy) {
         // 1 petabyte:
-        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
+        ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024 * 1024 * 1024);
       }
 
       Document doc = new Document();
@@ -194,16 +192,17 @@ public class Test2BTerms extends LuceneTestCase {
       customType.setOmitNorms(true);
       Field field = new Field("field", ts, customType);
       doc.add(field);
-      //w.setInfoStream(System.out);
-      final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);
+      // w.setInfoStream(System.out);
+      final int numDocs = (int) (TERM_COUNT / TERMS_PER_DOC);
 
       System.out.println("TERMS_PER_DOC=" + TERMS_PER_DOC);
       System.out.println("numDocs=" + numDocs);
 
-      for(int i=0;i<numDocs;i++) {
+      for (int i = 0; i < numDocs; i++) {
         final long t0 = System.currentTimeMillis();
         w.addDocument(doc);
-        System.out.println(i + " of " + numDocs + " " + (System.currentTimeMillis()-t0) + " msec");
+        System.out.println(
+            i + " of " + numDocs + " " + (System.currentTimeMillis() - t0) + " msec");
       }
       savedTerms = ts.savedTerms;
 
@@ -219,7 +218,8 @@ public class Test2BTerms extends LuceneTestCase {
       savedTerms = findTerms(r);
     }
     final int numSavedTerms = savedTerms.size();
-    final List<BytesRef> bigOrdTerms = new ArrayList<>(savedTerms.subList(numSavedTerms-10, numSavedTerms));
+    final List<BytesRef> bigOrdTerms =
+        new ArrayList<>(savedTerms.subList(numSavedTerms - 10, numSavedTerms));
     System.out.println("TEST: test big ord terms...");
     testSavedTerms(r, bigOrdTerms);
     System.out.println("TEST: test all saved terms...");
@@ -241,7 +241,7 @@ public class Test2BTerms extends LuceneTestCase {
     final List<BytesRef> savedTerms = new ArrayList<>();
     int nextSave = TestUtil.nextInt(random(), 500000, 1000000);
     BytesRef term;
-    while((term = termsEnum.next()) != null) {
+    while ((term = termsEnum.next()) != null) {
       if (--nextSave == 0) {
         savedTerms.add(BytesRef.deepCopyOf(term));
         System.out.println("TEST: add " + term);
@@ -257,7 +257,7 @@ public class Test2BTerms extends LuceneTestCase {
     Collections.shuffle(terms, random());
     TermsEnum termsEnum = MultiTerms.getTerms(r, "field").iterator();
     boolean failed = false;
-    for(int iter=0;iter<10*terms.size();iter++) {
+    for (int iter = 0; iter < 10 * terms.size(); iter++) {
       final BytesRef term = terms.get(random().nextInt(terms.size()));
       System.out.println("TEST: search " + term);
       final long t0 = System.currentTimeMillis();
@@ -267,7 +267,7 @@ public class Test2BTerms extends LuceneTestCase {
         failed = true;
       }
       final long t1 = System.currentTimeMillis();
-      System.out.println("  took " + (t1-t0) + " millis");
+      System.out.println("  took " + (t1 - t0) + " millis");
 
       TermsEnum.SeekStatus result = termsEnum.seekCeil(term);
       if (result != TermsEnum.SeekStatus.FOUND) {

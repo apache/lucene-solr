@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/** 
- * Support for Autocomplete/Autosuggest
- */
+/** Support for Autocomplete/Autosuggest */
 package org.apache.lucene.search.suggest;

@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -58,7 +57,7 @@ public abstract class OverviewTestBase extends LuceneTestCase {
 
     Directory dir = newFSDirectory(indexDir);
     IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random()));
-    config.setMergePolicy(NoMergePolicy.INSTANCE);  // see LUCENE-8998
+    config.setMergePolicy(NoMergePolicy.INSTANCE); // see LUCENE-8998
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
 
     Document doc1 = new Document();
@@ -95,5 +94,4 @@ public abstract class OverviewTestBase extends LuceneTestCase {
     reader.close();
     dir.close();
   }
-
 }

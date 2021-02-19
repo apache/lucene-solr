@@ -39,6 +39,11 @@ public interface CollectionAdminParams {
   String CREATE_NODE_SET_PARAM = "createNodeSet";
 
   /**
+   * The number of shards to create a particular collection with.
+   */
+  String NUM_SHARDS = "numShards";
+
+  /**
    * A parameter which specifies if the provided list of Solr nodes (via {@linkplain #CREATE_NODE_SET_PARAM})
    * should be shuffled before being used.
    */
@@ -81,17 +86,6 @@ public interface CollectionAdminParams {
   String COLL_CONF = "collection.configName";
 
   /**
-   * The name of the collection with which a collection is to be co-located
-   */
-  String WITH_COLLECTION = "withCollection";
-
-  /**
-   * The reverse-link to WITH_COLLECTION flag. It is stored in the cluster state of the `withCollection`
-   * and points to the collection on which the `withCollection` was specified.
-   */
-  String COLOCATED_WITH = "COLOCATED_WITH";
-
-  /**
    * Used by cluster properties API as a wrapper key to provide defaults for collection, cluster etc.
    *
    * e.g. {defaults:{collection:{replicationFactor:2}}}
@@ -126,4 +120,9 @@ public interface CollectionAdminParams {
    * for the add replica API. If set to true, a valid "node" should be specified.
    */
   String SKIP_NODE_ASSIGNMENT = "skipNodeAssignment";
+
+  /**
+   * Prefix for arbitrary collection or replica properties.
+   */
+  String PROPERTY_PREFIX = "property.";
 }

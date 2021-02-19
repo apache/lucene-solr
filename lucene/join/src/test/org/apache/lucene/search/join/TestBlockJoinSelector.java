@@ -22,7 +22,6 @@ import static org.apache.lucene.search.join.BlockJoinSelector.toIter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
@@ -67,45 +66,47 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     assertFalse(docsWithValue.get(19));
   }
 
-  static void assertNoMoreDoc(DocIdSetIterator sdv, int maxDoc) throws IOException{
+  static void assertNoMoreDoc(DocIdSetIterator sdv, int maxDoc) throws IOException {
     Random r = random();
-    if(r.nextBoolean()){
+    if (r.nextBoolean()) {
       assertEquals(NO_MORE_DOCS, sdv.nextDoc());
     } else {
       if (r.nextBoolean()) {
-        assertEquals(NO_MORE_DOCS,  sdv.advance(sdv.docID()+random().nextInt(maxDoc-sdv.docID())));
+        assertEquals(
+            NO_MORE_DOCS, sdv.advance(sdv.docID() + random().nextInt(maxDoc - sdv.docID())));
       } else {
-        final int noMatchDoc = sdv.docID()+random().nextInt(maxDoc-sdv.docID()-1)+1;
-        assertFalse(advanceExact(sdv,noMatchDoc));
+        final int noMatchDoc = sdv.docID() + random().nextInt(maxDoc - sdv.docID() - 1) + 1;
+        assertFalse(advanceExact(sdv, noMatchDoc));
         assertEquals(noMatchDoc, sdv.docID());
-        if (r.nextBoolean()){
+        if (r.nextBoolean()) {
           assertEquals(NO_MORE_DOCS, sdv.nextDoc());
         }
       }
     }
   }
-  
-  static int nextDoc(DocIdSetIterator sdv, int docId) throws IOException{
+
+  static int nextDoc(DocIdSetIterator sdv, int docId) throws IOException {
     Random r = random();
-    if(r.nextBoolean()){
+    if (r.nextBoolean()) {
       return sdv.nextDoc();
     } else {
       if (r.nextBoolean()) {
-        return sdv.advance(sdv.docID()+random().nextInt(docId-sdv.docID()-1)+1);
+        return sdv.advance(sdv.docID() + random().nextInt(docId - sdv.docID() - 1) + 1);
       } else {
-        if (r.nextBoolean()){
-          final int noMatchDoc = sdv.docID()+random().nextInt(docId-sdv.docID()-1)+1;
-          assertFalse(advanceExact(sdv,noMatchDoc));
+        if (r.nextBoolean()) {
+          final int noMatchDoc = sdv.docID() + random().nextInt(docId - sdv.docID() - 1) + 1;
+          assertFalse(advanceExact(sdv, noMatchDoc));
           assertEquals(noMatchDoc, sdv.docID());
         }
-        assertTrue(advanceExact(sdv,docId));
+        assertTrue(advanceExact(sdv, docId));
         return sdv.docID();
       }
     }
   }
-  
+
   private static boolean advanceExact(DocIdSetIterator sdv, int target) throws IOException {
-    return sdv instanceof SortedDocValues ? ((SortedDocValues) sdv).advanceExact(target)
+    return sdv instanceof SortedDocValues
+        ? ((SortedDocValues) sdv).advanceExact(target)
         : ((NumericDocValues) sdv).advanceExact(target);
   }
 
@@ -133,19 +134,29 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     ords[12] = 10;
     ords[18] = 10;
 
-    final SortedDocValues mins = BlockJoinSelector.wrap(DocValues.singleton(new CannedSortedDocValues(ords)), BlockJoinSelector.Type.MIN, parents, toIter(children));
-    assertEquals(5, nextDoc(mins,5));
+    final SortedDocValues mins =
+        BlockJoinSelector.wrap(
+            DocValues.singleton(new CannedSortedDocValues(ords)),
+            BlockJoinSelector.Type.MIN,
+            parents,
+            toIter(children));
+    assertEquals(5, nextDoc(mins, 5));
     assertEquals(3, mins.ordValue());
-    assertEquals(15, nextDoc(mins,15));
+    assertEquals(15, nextDoc(mins, 15));
     assertEquals(10, mins.ordValue());
     assertNoMoreDoc(mins, 20);
 
-    final SortedDocValues maxs = BlockJoinSelector.wrap(DocValues.singleton(new CannedSortedDocValues(ords)), BlockJoinSelector.Type.MAX, parents, toIter(children));
-    assertEquals(5, nextDoc(maxs,5));
+    final SortedDocValues maxs =
+        BlockJoinSelector.wrap(
+            DocValues.singleton(new CannedSortedDocValues(ords)),
+            BlockJoinSelector.Type.MAX,
+            parents,
+            toIter(children));
+    assertEquals(5, nextDoc(maxs, 5));
     assertEquals(7, maxs.ordValue());
-    assertEquals(15, nextDoc(maxs,15));
+    assertEquals(15, nextDoc(maxs, 15));
     assertEquals(10, maxs.ordValue());
-    assertNoMoreDoc( maxs,20);
+    assertNoMoreDoc(maxs, 20);
   }
 
   private static class CannedSortedDocValues extends SortedDocValues {
@@ -155,7 +166,6 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     public CannedSortedDocValues(int[] ords) {
       this.ords = ords;
     }
-
 
     @Override
     public int docID() {
@@ -206,7 +216,7 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     public long cost() {
       return 5;
     }
-        
+
     @Override
     public BytesRef lookupOrd(int ord) {
       throw new UnsupportedOperationException();
@@ -247,14 +257,24 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     docsWithValue.set(18);
     longs[18] = 10;
 
-    final NumericDocValues mins = BlockJoinSelector.wrap(DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)), BlockJoinSelector.Type.MIN, parents, toIter(children));
-    assertEquals(5, nextDoc(mins,5));
+    final NumericDocValues mins =
+        BlockJoinSelector.wrap(
+            DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)),
+            BlockJoinSelector.Type.MIN,
+            parents,
+            toIter(children));
+    assertEquals(5, nextDoc(mins, 5));
     assertEquals(3, mins.longValue());
-    assertEquals(15, nextDoc(mins,15));
+    assertEquals(15, nextDoc(mins, 15));
     assertEquals(10, mins.longValue());
     assertNoMoreDoc(mins, 20);
 
-    final NumericDocValues maxs = BlockJoinSelector.wrap(DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)), BlockJoinSelector.Type.MAX, parents, toIter(children));
+    final NumericDocValues maxs =
+        BlockJoinSelector.wrap(
+            DocValues.singleton(new CannedNumericDocValues(longs, docsWithValue)),
+            BlockJoinSelector.Type.MAX,
+            parents,
+            toIter(children));
     assertEquals(5, nextDoc(maxs, 5));
     assertEquals(7, maxs.longValue());
     assertEquals(15, nextDoc(maxs, 15));

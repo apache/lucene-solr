@@ -63,8 +63,9 @@ class NonOverlappingIntervalsSource extends DifferenceIntervalsSource {
 
     @Override
     public int nextInterval() throws IOException {
-      if (bpos == false)
+      if (bpos == false) {
         return a.nextInterval();
+      }
       while (a.nextInterval() != NO_MORE_INTERVALS) {
         while (b.end() < a.start()) {
           if (b.nextInterval() == NO_MORE_INTERVALS) {
@@ -72,8 +73,9 @@ class NonOverlappingIntervalsSource extends DifferenceIntervalsSource {
             return a.start();
           }
         }
-        if (b.start() > a.end())
+        if (b.start() > a.end()) {
           return a.start();
+        }
       }
       return NO_MORE_INTERVALS;
     }

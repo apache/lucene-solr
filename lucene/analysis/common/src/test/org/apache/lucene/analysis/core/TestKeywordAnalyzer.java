@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.analysis.core;
 
-
 import java.io.StringReader;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,10 +26,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -40,7 +38,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
-  
+
   private Directory directory;
   private IndexReader reader;
   private Analyzer analyzer;
@@ -61,7 +59,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
     reader = DirectoryReader.open(directory);
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     IOUtils.close(analyzer, reader, directory);
@@ -96,19 +94,9 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     IndexReader reader = DirectoryReader.open(dir);
-    PostingsEnum td = TestUtil.docs(random(),
-        reader,
-        "partnum",
-        new BytesRef("Q36"),
-        null,
-        0);
+    PostingsEnum td = TestUtil.docs(random(), reader, "partnum", new BytesRef("Q36"), null, 0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
-    td = TestUtil.docs(random(),
-        reader,
-        "partnum",
-        new BytesRef("Q37"),
-        null,
-        0);
+    td = TestUtil.docs(random(), reader, "partnum", new BytesRef("Q37"), null, 0);
     assertTrue(td.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     analyzer.close();
   }
@@ -116,7 +104,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   // LUCENE-1441
   public void testOffsets() throws Exception {
     try (Analyzer analyzer = new KeywordAnalyzer();
-         TokenStream stream = analyzer.tokenStream("field", new StringReader("abcd"))) {
+        TokenStream stream = analyzer.tokenStream("field", new StringReader("abcd"))) {
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
       stream.reset();
       assertTrue(stream.incrementToken());
@@ -126,7 +114,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
       stream.end();
     }
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer analyzer = new KeywordAnalyzer();

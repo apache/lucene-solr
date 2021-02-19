@@ -101,6 +101,7 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -160,6 +161,7 @@ import org.xml.sax.SAXException;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
+import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
@@ -284,7 +286,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("enable.update.log", usually() ? "true" : "false");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
     System.setProperty("solr.clustering.enabled", "false");
-    System.setProperty("solr.peerSync.useRangeVersions", String.valueOf(random().nextBoolean()));
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
@@ -301,7 +302,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
-      System.setProperty("urlScheme", "https");
+      System.setProperty(URL_SCHEME, UrlScheme.HTTPS);
+      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTPS);
+    } else {
+      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
     }
   }
 
@@ -341,8 +345,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("tests.shardhandler.randomSeed");
       System.clearProperty("enable.update.log");
       System.clearProperty("useCompoundFile");
-      System.clearProperty("urlScheme");
-      System.clearProperty("solr.peerSync.useRangeVersions");
+      System.clearProperty(URL_SCHEME);
+      UrlScheme.INSTANCE.setUrlScheme(UrlScheme.HTTP);
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       System.clearProperty(ZK_WHITELIST_PROPERTY);
@@ -814,6 +818,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static CoreContainer createCoreContainer(Path solrHome, String solrXML) {
     testSolrHome = requireNonNull(solrHome);
+    System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h = new TestHarness(solrHome, solrXML);
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
@@ -836,6 +841,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   public static CoreContainer createDefaultCoreContainer(Path solrHome) {
     testSolrHome = requireNonNull(solrHome);
+    System.setProperty("solr.solr.home", solrHome.toAbsolutePath().toString());
     h = new TestHarness("collection1", initAndGetDataDir().getAbsolutePath(), "solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();
@@ -2984,20 +2990,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String NUMERIC_DOCVALUES_SYSPROP = "solr.tests.numeric.dv";
 
   public static final String UPDATELOG_SYSPROP = "solr.tests.ulog";
-
-  /**
-   * randomizes the updateLog between different update log implementations for better test coverage
-   */
-  public static void randomizeUpdateLogImpl() {
-    if (random().nextBoolean()) {
-      System.setProperty(UPDATELOG_SYSPROP, "solr.CdcrUpdateLog");
-    } else {
-      System.setProperty(UPDATELOG_SYSPROP,"solr.UpdateLog");
-    }
-    if (log.isInfoEnabled()) {
-      log.info("updateLog impl={}", System.getProperty(UPDATELOG_SYSPROP));
-    }
-  }
 
   /**
    * Sets various sys props related to user specified or randomized choices regarding the types 

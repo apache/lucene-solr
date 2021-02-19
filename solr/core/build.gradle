@@ -95,9 +95,7 @@ dependencies {
   implementation 'org.codehaus.janino:commons-compiler'
   implementation 'org.codehaus.janino:janino'
 
-  api 'org.restlet.jee:org.restlet'
   implementation 'org.rrd4j:rrd4j'
-  implementation 'org.restlet.jee:org.restlet.ext.servlet'
 
   implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
   implementation ('org.apache.calcite:calcite-core') { transitive = false }

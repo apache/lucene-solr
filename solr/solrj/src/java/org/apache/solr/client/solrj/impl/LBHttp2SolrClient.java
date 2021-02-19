@@ -40,8 +40,8 @@ import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
  * {@link Http2SolrClient}. This is useful when you
  * have multiple Solr servers and the requests need to be Load Balanced among them.
  *
- * Do <b>NOT</b> use this class for indexing in master/slave scenarios since documents must be sent to the
- * correct master; no inter-node routing is done.
+ * Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be sent to the
+ * correct leader; no inter-node routing is done.
  *
  * In SolrCloud (leader/replica) scenarios, it is usually better to use
  * {@link CloudSolrClient}, but this class may be used

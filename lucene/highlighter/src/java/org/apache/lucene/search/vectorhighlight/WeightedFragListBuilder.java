@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search.vectorhighlight;
 
-/**
- * A weighted implementation of {@link FragListBuilder}.
- */
+/** A weighted implementation of {@link FragListBuilder}. */
 public class WeightedFragListBuilder extends BaseFragListBuilder {
 
   public WeightedFragListBuilder() {
@@ -31,10 +29,10 @@ public class WeightedFragListBuilder extends BaseFragListBuilder {
 
   /* (non-Javadoc)
    * @see org.apache.lucene.search.vectorhighlight.FragListBuilder#createFieldFragList(FieldPhraseList fieldPhraseList, int fragCharSize)
-   */ 
+   */
   @Override
-  public FieldFragList createFieldFragList( FieldPhraseList fieldPhraseList, int fragCharSize ){
-    return createFieldFragList( fieldPhraseList, new WeightedFieldFragList( fragCharSize ), fragCharSize );
+  public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList, int fragCharSize) {
+    return createFieldFragList(
+        fieldPhraseList, new WeightedFieldFragList(fragCharSize), fragCharSize);
   }
-  
 }

@@ -58,6 +58,7 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("metricsEnabled", "true");
     Map<String, Object> args = new HashMap<>();
     args.put(MetricsHistoryHandler.SYNC_PERIOD_PROP, 1);
     args.put(MetricsHistoryHandler.COLLECT_PERIOD_PROP, 1);
@@ -77,7 +78,8 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
 
     // create .system collection
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL,
-        "conf", 1, 1);
+        "conf", 1, 1)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE);
     create.process(solrClient);
     CloudUtil.waitForState(cloudManager, "failed to create " + CollectionAdminParams.SYSTEM_COLL,
         CollectionAdminParams.SYSTEM_COLL, CloudUtil.clusterShape(1, 1));

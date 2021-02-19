@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -60,15 +61,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -77,7 +79,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -251,25 +252,28 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             String componentName = req.getParams().get("componentName");
             if (componentName != null) {
               @SuppressWarnings({"rawtypes"})
-              Map map = (Map) val.get(parts.get(1));
-              if (map != null) {
-                Object o = map.get(componentName);
-                val.put(parts.get(1), makeMap(componentName, o));
+              Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
+              if (pluginNameVsPluginInfo != null) {
+                @SuppressWarnings({"rawtypes"})
+                Object o = pluginNameVsPluginInfo instanceof MapSerializable ?
+                       pluginNameVsPluginInfo:
+                        pluginNameVsPluginInfo.get(componentName);
+                @SuppressWarnings({"rawtypes"})
+                Map pluginInfo = o instanceof  MapSerializable? ((MapSerializable) o).toMap(new LinkedHashMap<>()): (Map) o;
+                val.put(parts.get(1),pluginNameVsPluginInfo instanceof PluginInfo? pluginInfo :  makeMap(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
                   // meta=true is asking for the package info of the plugin
                   // We go through all the listeners and see if there is one registered for this plugin
                   List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
                   for (PackageListeners.Listener listener :
                       listeners) {
-                    PluginInfo info = listener.pluginInfo();
-                    if(info == null) continue;
-                    if (info.type.equals(parts.get(1)) && info.name.equals(componentName)) {
-                      if (o instanceof Map) {
-                        @SuppressWarnings({"rawtypes"})
-                        Map m1 = (Map) o;
-                        m1.put("_packageinfo_", listener.getPackageVersion(info.cName));
+                    Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
+                    if(infos == null || infos.isEmpty()) continue;
+                    infos.forEach((s, mapWriter) -> {
+                      if(s.equals(pluginInfo.get("class"))) {
+                        (pluginInfo).put("_packageinfo_", mapWriter);
                       }
-                    }
+                    });
                   }
                 }
               }
@@ -548,7 +552,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName());
+        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
@@ -572,21 +576,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
-      if (info.clazz == PluginBag.RuntimeLib.class) {
-        if (!PluginBag.RuntimeLib.isEnabled()) {
-          op.addError("Solr not started with -Denable.runtime.lib=true");
-          return overlay;
-        }
-        try {
-          try (PluginBag.RuntimeLib rtl = new PluginBag.RuntimeLib(req.getCore())) {
-            rtl.init(new PluginInfo(info.tag, op.getDataMap()));
-          }
-        } catch (Exception e) {
-          op.addError(e.getMessage());
-          log.error("can't load this plugin ", e);
-          return overlay;
-        }
-      }
       if (!verifyClass(op, clz, info.clazz)) return overlay;
       if (pluginExists(info, overlay, name)) {
         if (isCeate) {
@@ -614,26 +603,23 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @SuppressWarnings({"unchecked"})
     private boolean verifyClass(CommandOperation op, String clz, @SuppressWarnings({"rawtypes"})Class expected) {
       if (clz == null) return true;
-      if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
-        PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
-        //this is not dynamically loaded so we can verify the class right away
-        try {
-          if(expected == Expressible.class) {
-            @SuppressWarnings("resource")
-            SolrResourceLoader resourceLoader = info.pkgName == null ?
-                req.getCore().getResourceLoader() :
-                req.getCore().getResourceLoader(info.pkgName);
-            resourceLoader.findClass(info.className, expected);
-          } else {
-            req.getCore().createInitInstance(info, expected, clz, "");
-          }
-        } catch (Exception e) {
-          log.error("Error checking plugin : ", e);
-          op.addError(e.getMessage());
-          return false;
+      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
+      try {
+        if (expected == Expressible.class) {
+          @SuppressWarnings("resource")
+          SolrResourceLoader resourceLoader = info.pkgName == null ?
+              req.getCore().getResourceLoader() :
+              req.getCore().getResourceLoader(info.pkgName);
+          resourceLoader.findClass(info.className, expected);
+        } else {
+          req.getCore().createInitInstance(info, expected, clz, "");
         }
-
+      } catch (Exception e) {
+        log.error("Error checking plugin : ", e);
+        op.addError(e.getMessage());
+        return false;
       }
+
       return true;
     }
 
@@ -960,6 +946,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @Override
     protected SolrResponse createResponse(SolrClient client) {
       return null;
+    }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
     }
   }
 

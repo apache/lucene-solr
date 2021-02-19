@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Sorani Kurdish.
- */
+/** Analyzer for Sorani Kurdish. */
 package org.apache.lucene.analysis.ckb;

@@ -48,6 +48,7 @@ public class SolrException extends RuntimeException {
     NOT_FOUND( 404 ),
     CONFLICT( 409 ),
     UNSUPPORTED_MEDIA_TYPE( 415 ),
+    TOO_MANY_REQUESTS(429),
     SERVER_ERROR( 500 ),
     SERVICE_UNAVAILABLE( 503 ),
     INVALID_STATE( 510 ),

@@ -230,7 +230,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         } catch (TikaException e) {
           if(ignoreTikaException)
             log.warn(new StringBuilder("skip extracting text due to ").append(e.getLocalizedMessage())
-                .append(". metadata=").append(metadata.toString()).toString()); // logOk
+                .append(". metadata=").append(metadata.toString()).toString()); // nowarn
           else
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }

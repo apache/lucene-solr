@@ -21,7 +21,7 @@
 
 The `search` function searches a SolrCloud collection and emits a stream of tuples that match the query. This is very similar to a standard Solr query, and uses many of the same parameters.
 
-This expression allows you to specify a request hander using the `qt` parameter. By default, the `/select` handler is used. The `/select` handler can be used for simple rapid prototyping of expressions. For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets. The `/export` handler is not used by default because it has stricter requirements then the `/select` handler so it's not as easy to get started working with. To read more about the `/export` handler requirements review the section <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>>.
+This expression allows you to specify a request hander using the `qt` parameter. By default, the `/select` handler is used. The `/select` handler can be used for simple rapid prototyping of expressions. For production, however, you will most likely want to use the `/export` handler which is designed to `sort` and `export` entire result sets. The `/export` handler is not used by default because it has stricter requirements then the `/select` handler so it's not as easy to get started working with. To read more about the `/export` handler requirements review the section <<exporting-result-sets.adoc#,Exporting Result Sets>>.
 
 === search Parameters
 
@@ -110,11 +110,11 @@ jdbc(
 
 == drill
 
-The `drill` function is designed to support efficient high cardinality aggregation. The `drill`
-function sends a request to the `export` handler in a specific collection which includes a Streaming
-Expression that the `export` handler applies to the sorted result set. The `export` handler then emits the aggregated tuples.
-The `drill` function reads and emits the aggregated tuples fromn each shard maintaining the sort order,
-but does not merge the aggregations. Streaming Expression functions can be wrapped around the `drill` function to
+The `drill` function is designed to support efficient high cardinality aggregation.
+The `drill` function sends a request to the `export` handler in a specific collection which includes a streaming expression that the `export` handler applies to the sorted result set.
+The `export` handler then emits the aggregated tuples.
+The `drill` function reads and emits the aggregated tuples from each shard maintaining the sort order, but does not merge the aggregations.
+Streaming expression functions can be wrapped around the `drill` function to
 merge the aggregates.
 
 === drill Parameters
@@ -154,8 +154,8 @@ rollup(drill(articles,
 
 == echo
 
-The `echo` function returns a single Tuple echoing its text parameter. `Echo` is the simplest stream source designed to provide text
-to a text analyzing stream decorator.
+The `echo` function returns a single tuple echoing its text parameter.
+`Echo` is the simplest stream source designed to provide text to a text analyzing stream decorator.
 
 === echo Syntax
 
@@ -181,6 +181,7 @@ The `facet` function provides aggregations that are rolled up over buckets. Unde
 * `bucketSizeLimit`: Sets the absolute number of rows to fetch. This is incompatible with rows, offset and overfetch. This value is applied to each dimension. '-1' will fetch all the buckets.
 * `metrics`: List of metrics to compute for the buckets. Currently supported metrics are `sum(col)`, `avg(col)`, `min(col)`, `max(col)`, `count(*)`, `per(col, 50)`. The `per` metric calculates a percentile
 for a numeric column and can be specified multiple times in the same facet function.
+* `tiered`: (Default true) Flag governing whether the `facet` stream should parallelize JSON Facet requests to multiple Solr collections using a `plist` expression; this option only applies if the `collection` is an alias backed by multiple collections. If `tiered` is enabled, then a `rollup` expression is used internally to aggregate the metrics from multiple `facet` expressions into a single result; only `count`, `min`, `max`, `sum`, and `avg` metrics are supported. Client applications can disable this globally by setting the `solr.facet.stream.tiered=false` system property.
 
 === facet Syntax
 
@@ -293,7 +294,7 @@ cat("authors.txt,fiction/scifi/", maxLines=500)
 
 == nodes
 
-The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
+The `nodes` function provides breadth-first graph traversal. For details, see the section <<graph-traversal.adoc#,Graph Traversal>>.
 
 == knnSearch
 
@@ -554,7 +555,7 @@ With each iteration the `train` function emits a tuple with the model. The model
 
 * `collection`: (Mandatory) Collection that holds the training set
 * `q`: (Mandatory) The query that defines the training set. The IDF for the features will be generated on the
-* `name`: (Mandatory) The name of model. This can be used to retrieve the model if they stored in a Solr Cloud collection.
+* `name`: (Mandatory) The name of model. This can be used to retrieve the model if they stored in a SolrCloud collection.
 * `field`: (Mandatory) The text field to extract the features from.
 * `outcome`: (Mandatory) The field that defines the class, positive or negative
 * `maxIterations`: (Mandatory) How many training iterations to perform.
@@ -605,10 +606,12 @@ topic(checkpointCollection,
 
 == tuple
 
-The `tuple` function emits a single Tuple with name/value pairs. The values can be set to variables assigned in a `let` expression, literals, Stream Evaluators or
-Stream Expressions. In the case of Stream Evaluators the tuple will output the return value from the evaluator.
-This could be a numeric, list or map. If a value is set to a Stream Expression, the `tuple` function will flatten
-the tuple stream from the Stream Expression into a list of Tuples.
+The `tuple` function emits a single tuple with name/value pairs.
+The values can be set to variables assigned in a `let` expression, literals, stream evaluators or stream expressions.
+In the case of stream evaluators the tuple will output the return value from the evaluator.
+This could be a numeric, list, or map.
+If a value is set to a stream expression, the `tuple` function will flatten
+the tuple stream from the stream expression into a list of tuples.
 
 === tuple Parameters
 

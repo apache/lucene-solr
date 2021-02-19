@@ -87,6 +87,11 @@ public class FieldAnalysisRequest extends SolrRequest<FieldAnalysisResponse> {
     return params;
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.QUERY.toString();
+  }
+
   //================================================ Helper Methods ==================================================
 
   /**

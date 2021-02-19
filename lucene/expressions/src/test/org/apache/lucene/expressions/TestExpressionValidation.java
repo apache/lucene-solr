@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.expressions;
 
-
 import org.apache.lucene.expressions.js.JavascriptCompiler;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.util.LuceneTestCase;
@@ -37,77 +36,98 @@ public class TestExpressionValidation extends LuceneTestCase {
     bindings.add("valide2", JavascriptCompiler.compile("valide0 * valide1"));
     bindings.validate();
   }
-  
+
   public void testInvalidExternal() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("valid", DoubleValuesSource.fromIntField("valid"));
     bindings.add("invalid", JavascriptCompiler.compile("badreference"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      bindings.validate();
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              bindings.validate();
+            });
     assertTrue(expected.getMessage().contains("Invalid reference"));
   }
-  
+
   public void testInvalidExternal2() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("valid", DoubleValuesSource.fromIntField("valid"));
     bindings.add("invalid", JavascriptCompiler.compile("valid + badreference"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      bindings.validate();
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              bindings.validate();
+            });
     assertTrue(expected.getMessage().contains("Invalid reference"));
   }
-  
+
   public void testSelfRecursion() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("cycle0", JavascriptCompiler.compile("cycle0"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      bindings.validate();
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              bindings.validate();
+            });
     assertTrue(expected.getMessage().contains("Cycle detected"));
   }
-  
+
   public void testCoRecursion() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("cycle0", JavascriptCompiler.compile("cycle1"));
     bindings.add("cycle1", JavascriptCompiler.compile("cycle0"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      bindings.validate();
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              bindings.validate();
+            });
     assertTrue(expected.getMessage().contains("Cycle detected"));
   }
-  
+
   public void testCoRecursion2() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("cycle0", JavascriptCompiler.compile("cycle1"));
     bindings.add("cycle1", JavascriptCompiler.compile("cycle2"));
     bindings.add("cycle2", JavascriptCompiler.compile("cycle0"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      bindings.validate();
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              bindings.validate();
+            });
     assertTrue(expected.getMessage().contains("Cycle detected"));
   }
-  
+
   public void testCoRecursion3() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("cycle0", JavascriptCompiler.compile("100"));
     bindings.add("cycle1", JavascriptCompiler.compile("cycle0 + cycle2"));
     bindings.add("cycle2", JavascriptCompiler.compile("cycle0 + cycle1"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      bindings.validate();
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              bindings.validate();
+            });
     assertTrue(expected.getMessage().contains("Cycle detected"));
   }
-  
+
   public void testCoRecursion4() throws Exception {
     SimpleBindings bindings = new SimpleBindings();
     bindings.add("cycle0", JavascriptCompiler.compile("100"));
     bindings.add("cycle1", JavascriptCompiler.compile("100"));
     bindings.add("cycle2", JavascriptCompiler.compile("cycle1 + cycle0 + cycle3"));
     bindings.add("cycle3", JavascriptCompiler.compile("cycle0 + cycle1 + cycle2"));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      bindings.validate();
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              bindings.validate();
+            });
     assertTrue(expected.getMessage().contains("Cycle detected"));
   }
 }

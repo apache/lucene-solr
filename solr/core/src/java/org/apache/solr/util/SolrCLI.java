@@ -104,6 +104,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.UrlScheme;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -235,13 +236,13 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
+          .desc("Address of the ZooKeeper ensemble; defaults to: "+ ZK_HOST + '.')
           .build(),
       Option.builder("c")
           .argName("COLLECTION")
           .hasArg()
           .required(false)
-          .desc("Name of collection; no default")
+          .desc("Name of collection; no default.")
           .longOpt("collection")
           .build(),
       Option.builder("verbose")
@@ -427,6 +428,7 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
     formatter.printHelp("export", getToolOptions(new ExportTool()));
+    formatter.printHelp("package", getToolOptions(new PackageTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -854,7 +856,7 @@ public class SolrCLI implements CLIO {
               .argName("URL")
               .hasArg()
               .required(false)
-              .desc("Address of the Solr Web application, defaults to: "+DEFAULT_SOLR_URL)
+              .desc("Address of the Solr Web application, defaults to: "+ DEFAULT_SOLR_URL + '.')
               .build(),
           Option.builder("maxWaitSecs")
               .argName("SECS")
@@ -1003,7 +1005,7 @@ public class SolrCLI implements CLIO {
               .argName("URL")
               .hasArg()
               .required(false)
-              .desc("Send a GET request to a Solr API endpoint")
+              .desc("Send a GET request to a Solr API endpoint.")
               .build()
       };
     }
@@ -1309,13 +1311,13 @@ public class SolrCLI implements CLIO {
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+          .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
           .build(),
       Option.builder("solrUrl")
           .argName("HOST")
           .hasArg()
           .required(false)
-          .desc("Base Solr URL, which can be used to determine the zkHost if that's not known")
+          .desc("Base Solr URL, which can be used to determine the zkHost if that's not known.")
           .build(),
       Option.builder(NAME)
           .argName("NAME")
@@ -1327,25 +1329,25 @@ public class SolrCLI implements CLIO {
           .argName("#")
           .hasArg()
           .required(false)
-          .desc("Number of shards; default is 1")
+          .desc("Number of shards; default is 1.")
           .build(),
       Option.builder("replicationFactor")
           .argName("#")
           .hasArg()
           .required(false)
-          .desc("Number of copies of each document across the collection (replicas per shard); default is 1")
+          .desc("Number of copies of each document across the collection (replicas per shard); default is 1.")
           .build(),
       Option.builder("confdir")
           .argName("NAME")
           .hasArg()
           .required(false)
-          .desc("Configuration directory to copy when creating the new collection; default is "+DEFAULT_CONFIG_SET)
+          .desc("Configuration directory to copy when creating the new collection; default is "+ DEFAULT_CONFIG_SET + '.')
           .build(),
       Option.builder("confname")
           .argName("NAME")
           .hasArg()
           .required(false)
-          .desc("Configuration name; default is the collection name")
+          .desc("Configuration name; default is the collection name.")
           .build(),
       Option.builder("configsetsDir")
           .argName("DIR")
@@ -1613,7 +1615,7 @@ public class SolrCLI implements CLIO {
               .argName("URL")
               .hasArg()
               .required(false)
-              .desc("Base Solr URL, default is " + DEFAULT_SOLR_URL)
+              .desc("Base Solr URL, default is " + DEFAULT_SOLR_URL + '.')
               .build(),
           Option.builder(NAME)
               .argName("NAME")
@@ -1625,7 +1627,7 @@ public class SolrCLI implements CLIO {
               .argName("CONFIG")
               .hasArg()
               .required(false)
-              .desc("Configuration directory to copy when creating the new core; default is "+DEFAULT_CONFIG_SET)
+              .desc("Configuration directory to copy when creating the new core; default is "+ DEFAULT_CONFIG_SET + '.')
               .build(),
           Option.builder("configsetsDir")
               .argName("DIR")
@@ -1666,7 +1668,7 @@ public class SolrCLI implements CLIO {
 
       String systemInfoUrl = solrUrl+"admin/info/system";
       CloseableHttpClient httpClient = getHttpClient();
-      String solrHome = null;
+      String coreRootDirectory = null; //usually same as solr home, but not always
       try {
         Map<String,Object> systemInfo = getJson(httpClient, systemInfoUrl, 2, true);
         if ("solrcloud".equals(systemInfo.get("mode"))) {
@@ -1675,9 +1677,11 @@ public class SolrCLI implements CLIO {
         }
 
         // convert raw JSON into user-friendly output
-        solrHome = (String)systemInfo.get("solr_home");
-        if (solrHome == null)
-          solrHome = configsetsDir.getParentFile().getAbsolutePath();
+        coreRootDirectory = (String)systemInfo.get("core_root");
+
+        //Fall back to solr_home, in case we are running against older server that does not return the property
+        if (coreRootDirectory == null)  coreRootDirectory = (String)systemInfo.get("solr_home");
+        if (coreRootDirectory == null)  coreRootDirectory = configsetsDir.getParentFile().getAbsolutePath();
 
       } finally {
         closeHttpClient(httpClient);
@@ -1689,7 +1693,7 @@ public class SolrCLI implements CLIO {
             "' already exists!\nChecked core existence using Core API command:\n"+coreStatusUrl);
       }
 
-      File coreInstanceDir = new File(solrHome, coreName);
+      File coreInstanceDir = new File(coreRootDirectory, coreName);
       File confDir = new File(configSetDir,"conf");
       if (!coreInstanceDir.isDirectory()) {
         coreInstanceDir.mkdirs();
@@ -1791,25 +1795,25 @@ public class SolrCLI implements CLIO {
               .argName("confname") // Comes out in help message
               .hasArg() // Has one sub-argument
               .required(true) // confname argument must be present
-              .desc("Configset name on Zookeeper")
+              .desc("Configset name in ZooKeeper.")
               .build(), // passed as -confname value
           Option.builder("confdir")
               .argName("confdir")
               .hasArg()
               .required(true)
-              .desc("Local directory with configs")
+              .desc("Local directory with configs.")
               .build(),
           Option.builder("configsetsDir")
               .argName("configsetsDir")
               .hasArg()
               .required(false)
-              .desc("Parent directory of example configsets")
+              .desc("Parent directory of example configsets.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -1863,19 +1867,19 @@ public class SolrCLI implements CLIO {
               .argName("confname")
               .hasArg()
               .required(true)
-              .desc("Configset name on Zookeeper")
+              .desc("Configset name in ZooKeeper.")
               .build(),
           Option.builder("confdir")
               .argName("confdir")
               .hasArg()
               .required(true)
-              .desc("Local directory with configs")
+              .desc("Local directory with configs.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -1938,19 +1942,19 @@ public class SolrCLI implements CLIO {
               .argName("path")
               .hasArg()
               .required(true)
-              .desc("Path to remove")
+              .desc("Path to remove.")
               .build(),
           Option.builder("recurse")
               .argName("recurse")
               .hasArg()
               .required(false)
-              .desc("Recurse (true|false, default is false)")
+              .desc("Recurse (true|false), default is false.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -1984,9 +1988,9 @@ public class SolrCLI implements CLIO {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
       try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
         if (recurse == false && zkClient.getChildren(znode, null, true).size() != 0) {
-          throw new SolrServerException("Zookeeper node " + znode + " has children and recurse has NOT been specified");
+          throw new SolrServerException("ZooKeeper node " + znode + " has children and recurse has NOT been specified.");
         }
-        echo("Removing Zookeeper node " + znode + " from ZooKeeper at " + zkHost +
+        echo("Removing ZooKeeper node " + znode + " from ZooKeeper at " + zkHost +
             " recurse: " + Boolean.toString(recurse));
         zkClient.clean(znode);
       } catch (Exception e) {
@@ -2014,19 +2018,19 @@ public class SolrCLI implements CLIO {
               .argName("path")
               .hasArg()
               .required(true)
-              .desc("Path to list")
+              .desc("Path to list.")
               .build(),
           Option.builder("recurse")
               .argName("recurse")
               .hasArg()
               .required(false)
-              .desc("Recurse (true|false, default is false)")
+              .desc("Recurse (true|false), default is false.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2054,7 +2058,7 @@ public class SolrCLI implements CLIO {
 
         String znode = cli.getOptionValue("path");
         Boolean recurse = Boolean.parseBoolean(cli.getOptionValue("recurse"));
-        echoIfVerbose("Getting listing for Zookeeper node " + znode + " from ZooKeeper at " + zkHost +
+        echoIfVerbose("Getting listing for ZooKeeper node " + znode + " from ZooKeeper at " + zkHost +
             " recurse: " + Boolean.toString(recurse), cli);
         stdout.print(zkClient.listZnode(znode, recurse));
       } catch (Exception e) {
@@ -2081,13 +2085,13 @@ public class SolrCLI implements CLIO {
               .argName("path")
               .hasArg()
               .required(true)
-              .desc("Path to create")
+              .desc("Path to create.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2114,7 +2118,7 @@ public class SolrCLI implements CLIO {
         echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...", cli);
 
         String znode = cli.getOptionValue("path");
-        echo("Creating Zookeeper path " + znode + " on ZooKeeper at " + zkHost);
+        echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
         zkClient.makePath(znode, true);
       } catch (Exception e) {
         log.error("Could not complete mkroot operation for reason: ", e);
@@ -2142,7 +2146,7 @@ public class SolrCLI implements CLIO {
               .argName("src")
               .hasArg()
               .required(true)
-              .desc("Source file or directory, may be local or a Znode")
+              .desc("Source file or directory, may be local or a Znode.")
               .build(),
           Option.builder("dst")
               .argName("dst")
@@ -2154,13 +2158,13 @@ public class SolrCLI implements CLIO {
               .argName("recurse")
               .hasArg()
               .required(false)
-              .desc("Recurse (true|false, default is false)")
+              .desc("Recurse (true|false), default is false.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2231,7 +2235,7 @@ public class SolrCLI implements CLIO {
               .argName("src")
               .hasArg()
               .required(true)
-              .desc("Source Znode to movej from.")
+              .desc("Source Znode to move from.")
               .build(),
           Option.builder("dst")
               .argName("dst")
@@ -2243,7 +2247,7 @@ public class SolrCLI implements CLIO {
               .argName("HOST")
               .hasArg()
               .required(true)
-              .desc("Address of the Zookeeper ensemble; defaults to: " + ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: " + ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2310,7 +2314,7 @@ public class SolrCLI implements CLIO {
               .argName("URL")
               .hasArg()
               .required(false)
-              .desc("Base Solr URL, default is " + DEFAULT_SOLR_URL)
+              .desc("Base Solr URL, default is " + DEFAULT_SOLR_URL + '.')
               .build(),
           Option.builder(NAME)
               .argName("NAME")
@@ -2322,17 +2326,17 @@ public class SolrCLI implements CLIO {
               .argName("true|false")
               .hasArg()
               .required(false)
-              .desc("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true")
+              .desc("Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
               .build(),
           Option.builder("forceDeleteConfig")
               .required(false)
-              .desc("Skip safety checks when deleting the configuration directory used by a collection")
+              .desc("Skip safety checks when deleting the configuration directory used by a collection.")
               .build(),
           Option.builder("zkHost")
               .argName("HOST")
               .hasArg()
               .required(false)
-              .desc("Address of the Zookeeper ensemble; defaults to: "+ZK_HOST)
+              .desc("Address of the ZooKeeper ensemble; defaults to: "+ ZK_HOST + '.')
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -2494,45 +2498,45 @@ public class SolrCLI implements CLIO {
               .argName("ACTION")
               .hasArg()
               .required(false)
-              .desc("Config API action, one of: set-property, unset-property; default is set-property")
+              .desc("Config API action, one of: set-property, unset-property; default is 'set-property'.")
               .build(),
           Option.builder("property")
               .argName("PROP")
               .hasArg()
               .required(true)
-              .desc("Name of the Config API property to apply the action to, such as: updateHandler.autoSoftCommit.maxTime")
+              .desc("Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
               .build(),
           Option.builder("value")
               .argName("VALUE")
               .hasArg()
               .required(false)
-              .desc("Set the property to this value; accepts JSON objects and strings")
+              .desc("Set the property to this value; accepts JSON objects and strings.")
               .build(),
           Option.builder("solrUrl")
               .argName("HOST")
               .hasArg()
               .required(false)
-              .desc("Base Solr URL, which can be used to determine the zkHost if that's not known")
+              .desc("Base Solr URL, which can be used to determine the zkHost if that's not known.")
               .build(),
           Option.builder("z")
               .argName("HOST")
               .hasArg()
               .required(false)
-              .desc("Address of the Zookeeper ensemble")
+              .desc("Address of the ZooKeeper ensemble.")
               .longOpt("zkHost")
               .build(),
           Option.builder("p")
               .argName("PORT")
               .hasArg()
               .required(false)
-              .desc("The port of the Solr node to use when applying configuration change")
+              .desc("The port of the Solr node to use when applying configuration change.")
               .longOpt("port")
               .build(),
           Option.builder("s")
               .argName("SCHEME")
               .hasArg()
               .required(false)
-              .desc("The scheme for accessing Solr.  Accepted values: http or https.  Default: http")
+              .desc("The scheme for accessing Solr.  Accepted values: http or https.  Default is 'http'")
               .longOpt("scheme")
               .build()
       };
@@ -2631,20 +2635,20 @@ public class SolrCLI implements CLIO {
       return new Option[] {
           Option.builder("noprompt")
               .required(false)
-              .desc("Don't prompt for input; accept all defaults when running examples that accept user input")
+              .desc("Don't prompt for input; accept all defaults when running examples that accept user input.")
               .build(),
           Option.builder("e")
               .argName("NAME")
               .hasArg()
               .required(true)
-              .desc("Name of the example to launch, one of: cloud, techproducts, dih, schemaless")
+              .desc("Name of the example to launch, one of: cloud, techproducts, schemaless.")
               .longOpt("example")
               .build(),
           Option.builder("script")
               .argName("PATH")
               .hasArg()
               .required(false)
-              .desc("Path to the bin/solr script")
+              .desc("Path to the bin/solr script.")
               .build(),
           Option.builder("d")
               .argName("DIR")
@@ -2655,7 +2659,7 @@ public class SolrCLI implements CLIO {
               .build(),
           Option.builder("force")
               .argName("FORCE")
-              .desc("Force option in case Solr is run as root")
+              .desc("Force option in case Solr is run as root.")
               .build(),
           Option.builder("exampleDir")
               .argName("DIR")
@@ -2667,46 +2671,46 @@ public class SolrCLI implements CLIO {
               .argName("SCHEME")
               .hasArg()
               .required(false)
-              .desc("Solr URL scheme: http or https, defaults to http if not specified")
+              .desc("Solr URL scheme: http or https, defaults to http if not specified.")
               .build(),
           Option.builder("p")
               .argName("PORT")
               .hasArg()
               .required(false)
-              .desc("Specify the port to start the Solr HTTP listener on; default is 8983")
+              .desc("Specify the port to start the Solr HTTP listener on; default is 8983.")
               .longOpt("port")
               .build(),
           Option.builder("h")
               .argName("HOSTNAME")
               .hasArg()
               .required(false)
-              .desc("Specify the hostname for this Solr instance")
+              .desc("Specify the hostname for this Solr instance.")
               .longOpt("host")
               .build(),
           Option.builder("z")
               .argName("ZKHOST")
               .hasArg()
               .required(false)
-              .desc("ZooKeeper connection string; only used when running in SolrCloud mode using -c")
+              .desc("ZooKeeper connection string; only used when running in SolrCloud mode using -c.")
               .longOpt("zkhost")
               .build(),
           Option.builder("c")
               .required(false)
-              .desc("Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983")
+              .desc("Start Solr in SolrCloud mode; if -z not supplied, an embedded ZooKeeper instance is started on Solr port+1000, such as 9983 if Solr is bound to 8983.")
               .longOpt("cloud")
               .build(),
           Option.builder("m")
               .argName("MEM")
               .hasArg()
               .required(false)
-              .desc("Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m")
+              .desc("Sets the min (-Xms) and max (-Xmx) heap size for the JVM, such as: -m 4g results in: -Xms4g -Xmx4g; by default, this script sets the heap size to 512m.")
               .longOpt("memory")
               .build(),
           Option.builder("a")
               .argName("OPTS")
               .hasArg()
               .required(false)
-              .desc("Additional options to be passed to the JVM when starting example Solr server(s)")
+              .desc("Additional options to be passed to the JVM when starting example Solr server(s).")
               .longOpt("addlopts")
               .build()
       };
@@ -2714,6 +2718,7 @@ public class SolrCLI implements CLIO {
 
     protected void runImpl(CommandLine cli) throws Exception {
       this.urlScheme = cli.getOptionValue("urlScheme", "http");
+      UrlScheme.INSTANCE.setUrlScheme(this.urlScheme);
 
       serverDir = new File(cli.getOptionValue("serverDir"));
       if (!serverDir.isDirectory())
@@ -2753,32 +2758,12 @@ public class SolrCLI implements CLIO {
       String exampleType = cli.getOptionValue("example");
       if ("cloud".equals(exampleType)) {
         runCloudExample(cli);
-      } else if ("dih".equals(exampleType)) {
-        runDihExample(cli);
       } else if ("techproducts".equals(exampleType) || "schemaless".equals(exampleType)) {
         runExample(cli, exampleType);
       } else {
         throw new IllegalArgumentException("Unsupported example "+exampleType+
-            "! Please choose one of: cloud, dih, schemaless, or techproducts");
+            "! Please choose one of: cloud, schemaless, or techproducts");
       }
-    }
-
-    protected void runDihExample(CommandLine cli) throws Exception {
-      File dihSolrHome = new File(exampleDir, "example-DIH/solr");
-      if (!dihSolrHome.isDirectory()) {
-        dihSolrHome = new File(serverDir.getParentFile(), "example/example-DIH/solr");
-        if (!dihSolrHome.isDirectory()) {
-          throw new Exception("example/example-DIH/solr directory not found");
-        }
-      }
-
-      boolean isCloudMode = cli.hasOption('c');
-      String zkHost = cli.getOptionValue('z');
-      int port = Integer.parseInt(cli.getOptionValue('p', "8983"));
-
-      Map<String,Object> nodeStatus = startSolr(dihSolrHome, isCloudMode, cli, port, zkHost, 30);
-      String solrUrl = (String)nodeStatus.get("baseUrl");
-      echo("\nSolr dih example launched successfully. Direct your Web browser to "+solrUrl+" to visit the Solr Admin UI");
     }
 
     protected void runExample(CommandLine cli, String exampleName) throws Exception {
@@ -3395,39 +3380,39 @@ public class SolrCLI implements CLIO {
     public Option[] getOptions() {
       return new Option[] {
           Option.builder("R")
-              .desc("Asserts that we are NOT the root user")
+              .desc("Asserts that we are NOT the root user.")
               .longOpt("not-root")
               .build(),
           Option.builder("r")
-              .desc("Asserts that we are the root user")
+              .desc("Asserts that we are the root user.")
               .longOpt("root")
               .build(),
           Option.builder("S")
-              .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms")
+              .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
               .longOpt("not-started")
               .hasArg(true)
               .argName("url")
               .build(),
           Option.builder("s")
-              .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms")
+              .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
               .longOpt("started")
               .hasArg(true)
               .argName("url")
               .build(),
           Option.builder("u")
-              .desc("Asserts that we run as same user that owns <directory>")
+              .desc("Asserts that we run as same user that owns <directory>.")
               .longOpt("same-user")
               .hasArg(true)
               .argName("directory")
               .build(),
           Option.builder("x")
-              .desc("Asserts that directory <directory> exists")
+              .desc("Asserts that directory <directory> exists.")
               .longOpt("exists")
               .hasArg(true)
               .argName("directory")
               .build(),
           Option.builder("X")
-              .desc("Asserts that directory <directory> does NOT exist")
+              .desc("Asserts that directory <directory> does NOT exist.")
               .longOpt("not-exists")
               .hasArg(true)
               .argName("directory")
@@ -3445,13 +3430,13 @@ public class SolrCLI implements CLIO {
               .argName("url")
               .build(),
           Option.builder("m")
-              .desc("Exception message to be used in place of the default error message")
+              .desc("Exception message to be used in place of the default error message.")
               .longOpt("message")
               .hasArg(true)
               .argName("message")
               .build(),
           Option.builder("t")
-              .desc("Timeout in ms for commands supporting a timeout")
+              .desc("Timeout in ms for commands supporting a timeout.")
               .longOpt("timeout")
               .hasArg(true)
               .type(Long.class)
@@ -3729,27 +3714,27 @@ public class SolrCLI implements CLIO {
           Option.builder("prompt")
               .argName("prompt")
               .hasArg()
-              .desc("Prompts the user to provide the credentials. Use either -credentials or -prompt, not both")
+              .desc("Prompts the user to provide the credentials. Use either -credentials or -prompt, not both.")
               .build(),
           Option.builder("config")
               .argName("config")
               .hasArgs()
-              .desc("Configuration parameters (Solr startup parameters). Required for Kerberos authentication")
+              .desc("Configuration parameters (Solr startup parameters). Required for Kerberos authentication.")
               .build(),
           Option.builder("blockUnknown")
               .argName("blockUnknown")
-              .desc("Blocks all access for unknown users (requires authentication for all endpoints)")
+              .desc("Blocks all access for unknown users (requires authentication for all endpoints).")
               .hasArg()
               .build(),
           Option.builder("solrIncludeFile")
               .argName("solrIncludeFile")
               .hasArg()
-              .desc("The Solr include file which contains overridable environment variables for configuring Solr configurations")
+              .desc("The Solr include file which contains overridable environment variables for configuring Solr configurations.")
               .build(),
           Option.builder("updateIncludeFileOnly")
               .argName("updateIncludeFileOnly")
               .desc("Only update the solr.in.sh or solr.in.cmd file, and skip actual enabling/disabling"
-                  + " authentication (i.e. don't update security.json)")
+                  + " authentication (i.e. don't update security.json).")
               .hasArg()
               .build(),
           Option.builder("authConfDir")
@@ -3761,12 +3746,12 @@ public class SolrCLI implements CLIO {
           Option.builder("solrUrl")
               .argName("solrUrl")
               .hasArg()
-              .desc("Solr URL")
+              .desc("Solr URL.")
               .build(),
           Option.builder("zkHost")
               .argName("zkHost")
               .hasArg()
-              .desc("ZooKeeper host")
+              .desc("ZooKeeper host to connect to.")
               .build(),
           Option.builder("verbose")
               .required(false)
@@ -3901,7 +3886,7 @@ public class SolrCLI implements CLIO {
           if (!updateIncludeFileOnly) {
             zkHost = getZkHost(cli);
             if (zkHost == null) {
-              stdout.print("ZK Host not found. Solr should be running in cloud mode");
+              stdout.print("ZK Host not found. Solr should be running in cloud mode.");
               exit(1);
             }
 
@@ -3925,7 +3910,7 @@ public class SolrCLI implements CLIO {
           return 0;
 
         default:
-          CLIO.out("Valid auth commands are: enable, disable");
+          CLIO.out("Valid auth commands are: enable, disable.");
           exit(1);
       }
 
@@ -4051,7 +4036,7 @@ public class SolrCLI implements CLIO {
           if (!updateIncludeFileOnly) {
             zkHost = getZkHost(cli);
             if (zkHost == null) {
-              stdout.print("ZK Host not found. Solr should be running in cloud mode");
+              stdout.print("ZK Host not found. Solr should be running in cloud mode.");
               exit(1);
             }
 
@@ -4075,7 +4060,7 @@ public class SolrCLI implements CLIO {
           return 0;
 
         default:
-          CLIO.out("Valid auth commands are: enable, disable");
+          CLIO.out("Valid auth commands are: enable, disable.");
           exit(1);
       }
 
@@ -4197,33 +4182,33 @@ public class SolrCLI implements CLIO {
           Option.builder("s")
               .argName("path")
               .hasArg()
-              .desc("Path to server dir. Required if logs path is relative")
+              .desc("Path to server dir. Required if logs path is relative.")
               .build(),
           Option.builder("l")
               .argName("path")
               .hasArg()
-              .desc("Path to logs dir. If relative, also provide server dir with -s")
+              .desc("Path to logs dir. If relative, also provide server dir with -s.")
               .build(),
           Option.builder("q")
-              .desc("Be quiet, don't print to stdout, only return exit codes")
+              .desc("Be quiet, don't print to stdout, only return exit codes.")
               .build(),
           Option.builder("remove_old_solr_logs")
               .argName("daysToKeep")
               .hasArg()
               .type(Integer.class)
-              .desc("Path to logs directory")
+              .desc("Path to logs directory.")
               .build(),
           Option.builder("rotate_solr_logs")
               .argName("generations")
               .hasArg()
               .type(Integer.class)
-              .desc("Rotate solr.log to solr.log.1 etc")
+              .desc("Rotate solr.log to solr.log.1 etc.")
               .build(),
           Option.builder("archive_gc_logs")
-              .desc("Archive old garbage collection logs into archive/")
+              .desc("Archive old garbage collection logs into archive/.")
               .build(),
           Option.builder("archive_console_logs")
-              .desc("Archive old console logs into archive/")
+              .desc("Archive old console logs into archive/.")
               .build()
       };
     }
@@ -4332,7 +4317,7 @@ public class SolrCLI implements CLIO {
     public int rotateSolrLogs(int generations) throws Exception {
       prepareLogsPath();
       if (logsPath.toFile().exists() && logsPath.resolve("solr.log").toFile().exists()) {
-        out("Rotating solr logs, keeping a max of "+generations+" generations");
+        out("Rotating solr logs, keeping a max of "+generations+" generations.");
         try (Stream<Path> files = Files.find(logsPath, 1,
             (f, a) -> a.isRegularFile() && String.valueOf(f.getFileName()).startsWith("solr.log."))
             .sorted((b,a) -> Integer.valueOf(a.getFileName().toString().substring(9))
@@ -4399,7 +4384,7 @@ public class SolrCLI implements CLIO {
         if (serverPath != null && serverPath.isAbsolute() && Files.exists(serverPath)) {
           logsPath = serverPath.resolve(logsPath);
         } else {
-          throw new Exception("Logs directory must be an absolute path, or -s must be supplied");
+          throw new Exception("Logs directory must be an absolute path, or -s must be supplied.");
         }
       }
     }

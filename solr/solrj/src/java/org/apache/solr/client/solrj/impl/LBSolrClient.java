@@ -213,7 +213,8 @@ public abstract class LBSolrClient extends SolrClient {
       if (previousEx == null) {
         suffix = ":" + zombieServers.keySet();
       }
-      if (isTimeExceeded(timeAllowedNano, timeOutTime)) {
+      // Skipping check time exceeded for the first request
+      if (numServersTried > 0 && isTimeExceeded(timeAllowedNano, timeOutTime)) {
         throw new SolrServerException("Time allowed to handle this request exceeded"+suffix, previousEx);
       }
       if (serverStr == null) {

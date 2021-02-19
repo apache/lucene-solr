@@ -233,7 +233,7 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
       log.info("----------HTTP Request---------");
       if (log.isInfoEnabled()) {
         log.info("{} : {}", request.getMethod(), request.getRequestURI());
-        log.info("Query : {}", request.getQueryString()); // logOk
+        log.info("Query : {}", request.getQueryString()); // nowarn
       }
       log.info("Headers :");
       Enumeration<String> headers = request.getHeaderNames();

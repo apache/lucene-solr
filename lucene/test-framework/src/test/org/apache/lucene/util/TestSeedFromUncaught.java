@@ -22,20 +22,18 @@ import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-/**
- * Check that uncaught exceptions result in seed info being dumped to
- * console. 
- */
+/** Check that uncaught exceptions result in seed info being dumped to console. */
 public class TestSeedFromUncaught extends WithNestedTests {
   public static class ThrowInUncaught extends AbstractNestedTest {
     @Test
     public void testFoo() throws Exception {
-      Thread t = new Thread() {
-        @Override
-        public void run() {
-          throw new RuntimeException("foobar");
-        }
-      };
+      Thread t =
+          new Thread() {
+            @Override
+            public void run() {
+              throw new RuntimeException("foobar");
+            }
+          };
       t.start();
       t.join();
     }
@@ -45,9 +43,7 @@ public class TestSeedFromUncaught extends WithNestedTests {
     super(/* suppress normal output. */ true);
   }
 
-  /**
-   * Verify super method calls on {@link LuceneTestCase#setUp()}.
-   */
+  /** Verify super method calls on {@link LuceneTestCase#setUp()}. */
   @Test
   public void testUncaughtDumpsSeed() {
     Result result = JUnitCore.runClasses(ThrowInUncaught.class);

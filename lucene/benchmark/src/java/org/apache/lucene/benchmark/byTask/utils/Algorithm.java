@@ -16,44 +16,39 @@
  */
 package org.apache.lucene.benchmark.byTask.utils;
 
-
 import java.io.StreamTokenizer;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 import org.apache.lucene.benchmark.byTask.tasks.RepSumByPrefTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 
-/**
- * Test algorithm, as read from file
- */
+/** Test algorithm, as read from file */
 @SuppressWarnings("try")
 public class Algorithm implements AutoCloseable {
-  
+
   private TaskSequence sequence;
   private final String[] taskPackages;
-  
+
   /**
-   * Read algorithm from file
-   * Property examined: alt.tasks.packages == comma separated list of 
-   * alternate package names where tasks would be searched for, when not found 
-   * in the default package (that of {@link PerfTask}{@link #getClass()}).
-   * If the same task class appears in more than one package, the package 
-   * indicated first in this list will be used.
+   * Read algorithm from file Property examined: alt.tasks.packages == comma separated list of
+   * alternate package names where tasks would be searched for, when not found in the default
+   * package (that of {@link PerfTask}{@link #getClass()}). If the same task class appears in more
+   * than one package, the package indicated first in this list will be used.
+   *
    * @param runData perf-run-data used at running the tasks.
-   * @throws Exception if errors while parsing the algorithm 
+   * @throws Exception if errors while parsing the algorithm
    */
   @SuppressWarnings("fallthrough")
-  public Algorithm (PerfRunData runData) throws Exception {
+  public Algorithm(PerfRunData runData) throws Exception {
     Config config = runData.getConfig();
     taskPackages = initTasksPackages(config);
     String algTxt = config.getAlgorithmText();
-    sequence = new TaskSequence(runData,null,null,false);
+    sequence = new TaskSequence(runData, null, null, false);
     TaskSequence currSequence = sequence;
     PerfTask prevTask = null;
     StreamTokenizer stok = new StreamTokenizer(new StringReader(algTxt));
@@ -67,14 +62,13 @@ public class Algorithm implements AutoCloseable {
     boolean colonOk = false;
     boolean isDisableCountNextTask = false; // only for primitive tasks
     currSequence.setDepth(0);
-    
-    while (stok.nextToken() != StreamTokenizer.TT_EOF) { 
-      switch(stok.ttype) {
-  
+
+    while (stok.nextToken() != StreamTokenizer.TT_EOF) {
+      switch (stok.ttype) {
         case StreamTokenizer.TT_WORD:
           String s = stok.sval;
-          Constructor<? extends PerfTask> cnstr = taskClass(config,s)
-            .asSubclass(PerfTask.class).getConstructor(PerfRunData.class);
+          Constructor<? extends PerfTask> cnstr =
+              taskClass(config, s).asSubclass(PerfTask.class).getConstructor(PerfRunData.class);
           PerfTask task = cnstr.newInstance(runData);
           task.setAlgLineNum(stok.lineno());
           task.setDisableCounting(isDisableCountNextTask);
@@ -83,89 +77,98 @@ public class Algorithm implements AutoCloseable {
           if (task instanceof RepSumByPrefTask) {
             stok.nextToken();
             String prefix = stok.sval;
-            if (prefix==null || prefix.length()==0) { 
-              throw new Exception("named report prefix problem - "+stok.toString()); 
+            if (prefix == null || prefix.length() == 0) {
+              throw new Exception("named report prefix problem - " + stok.toString());
             }
             ((RepSumByPrefTask) task).setPrefix(prefix);
           }
           // check for task param: '(' someParam ')'
           stok.nextToken();
-          if (stok.ttype!='(') {
+          if (stok.ttype != '(') {
             stok.pushBack();
           } else {
             // get params, for tasks that supports them - allow recursive parenthetical expressions
-            stok.eolIsSignificant(true);  // Allow params tokenizer to keep track of line number
+            stok.eolIsSignificant(true); // Allow params tokenizer to keep track of line number
             StringBuilder params = new StringBuilder();
             stok.nextToken();
             if (stok.ttype != ')') {
               int count = 1;
-              BALANCED_PARENS: while (true) {
+              BALANCED_PARENS:
+              while (true) {
                 switch (stok.ttype) {
-                  case StreamTokenizer.TT_NUMBER: {
-                    params.append(stok.nval);
-                    break;
-                  }
-                  case StreamTokenizer.TT_WORD: {
-                    params.append(stok.sval);
-                    break;
-                  }
-                  case StreamTokenizer.TT_EOF: {
-                    throw new RuntimeException("Unexpexted EOF: - "+stok.toString());
-                  }
-                  case '"':
-                  case '\'': {
-                    params.append((char)stok.ttype);
-                    // re-escape delimiters, if any
-                    params.append(stok.sval.replaceAll("" + (char)stok.ttype, "\\\\" + (char)stok.ttype));
-                    params.append((char)stok.ttype);
-                    break;
-                  }
-                  case '(': {
-                    params.append((char)stok.ttype);
-                    ++count;
-                    break;
-                  }
-                  case ')': {
-                    if (--count >= 1) {  // exclude final closing parenthesis
-                      params.append((char)stok.ttype);
-                    } else {
-                      break BALANCED_PARENS;
+                  case StreamTokenizer.TT_NUMBER:
+                    {
+                      params.append(stok.nval);
+                      break;
                     }
-                    break;
-                  }
-                  default: {
-                    params.append((char)stok.ttype);
-                  }
+                  case StreamTokenizer.TT_WORD:
+                    {
+                      params.append(stok.sval);
+                      break;
+                    }
+                  case StreamTokenizer.TT_EOF:
+                    {
+                      throw new RuntimeException("Unexpexted EOF: - " + stok.toString());
+                    }
+                  case '"':
+                  case '\'':
+                    {
+                      params.append((char) stok.ttype);
+                      // re-escape delimiters, if any
+                      params.append(
+                          stok.sval.replaceAll("" + (char) stok.ttype, "\\\\" + (char) stok.ttype));
+                      params.append((char) stok.ttype);
+                      break;
+                    }
+                  case '(':
+                    {
+                      params.append((char) stok.ttype);
+                      ++count;
+                      break;
+                    }
+                  case ')':
+                    {
+                      if (--count >= 1) { // exclude final closing parenthesis
+                        params.append((char) stok.ttype);
+                      } else {
+                        break BALANCED_PARENS;
+                      }
+                      break;
+                    }
+                  default:
+                    {
+                      params.append((char) stok.ttype);
+                    }
                 }
                 stok.nextToken();
               }
             }
             stok.eolIsSignificant(false);
             String prm = params.toString().trim();
-            if (prm.length()>0) {
+            if (prm.length() > 0) {
               task.setParams(prm);
             }
           }
 
           // ---------------------------------------
-          colonOk = false; prevTask = task;
+          colonOk = false;
+          prevTask = task;
           break;
-  
+
         default:
-          char c = (char)stok.ttype;
-          
-          switch(c) {
-          
-            case ':' :
-              if (!colonOk) throw new Exception("colon unexpexted: - "+stok.toString());
+          char c = (char) stok.ttype;
+
+          switch (c) {
+            case ':':
+              if (!colonOk) throw new Exception("colon unexpexted: - " + stok.toString());
               colonOk = false;
               // get repetitions number
               stok.nextToken();
-              if ((char)stok.ttype == '*') {
-                ((TaskSequence)prevTask).setRepetitions(TaskSequence.REPEAT_EXHAUST);
+              if ((char) stok.ttype == '*') {
+                ((TaskSequence) prevTask).setRepetitions(TaskSequence.REPEAT_EXHAUST);
               } else {
-                if (stok.ttype!=StreamTokenizer.TT_NUMBER)  {
-                  throw new Exception("expected repetitions number or XXXs: - "+stok.toString());
+                if (stok.ttype != StreamTokenizer.TT_NUMBER) {
+                  throw new Exception("expected repetitions number or XXXs: - " + stok.toString());
                 } else {
                   double num = stok.nval;
                   stok.nextToken();
@@ -179,55 +182,57 @@ public class Algorithm implements AutoCloseable {
               }
               // check for rate specification (ops/min)
               stok.nextToken();
-              if (stok.ttype!=':') {
+              if (stok.ttype != ':') {
                 stok.pushBack();
               } else {
                 // get rate number
                 stok.nextToken();
-                if (stok.ttype!=StreamTokenizer.TT_NUMBER) throw new Exception("expected rate number: - "+stok.toString());
+                if (stok.ttype != StreamTokenizer.TT_NUMBER)
+                  throw new Exception("expected rate number: - " + stok.toString());
                 // check for unit - min or sec, sec is default
                 stok.nextToken();
-                if (stok.ttype!='/') {
+                if (stok.ttype != '/') {
                   stok.pushBack();
-                  ((TaskSequence)prevTask).setRate((int)stok.nval,false); // set rate per sec
+                  ((TaskSequence) prevTask).setRate((int) stok.nval, false); // set rate per sec
                 } else {
                   stok.nextToken();
-                  if (stok.ttype!=StreamTokenizer.TT_WORD) throw new Exception("expected rate unit: 'min' or 'sec' - "+stok.toString());
+                  if (stok.ttype != StreamTokenizer.TT_WORD)
+                    throw new Exception("expected rate unit: 'min' or 'sec' - " + stok.toString());
                   String unit = stok.sval.toLowerCase(Locale.ROOT);
                   if ("min".equals(unit)) {
-                    ((TaskSequence)prevTask).setRate((int)stok.nval,true); // set rate per min
+                    ((TaskSequence) prevTask).setRate((int) stok.nval, true); // set rate per min
                   } else if ("sec".equals(unit)) {
-                    ((TaskSequence)prevTask).setRate((int)stok.nval,false); // set rate per sec
+                    ((TaskSequence) prevTask).setRate((int) stok.nval, false); // set rate per sec
                   } else {
-                    throw new Exception("expected rate unit: 'min' or 'sec' - "+stok.toString());
+                    throw new Exception("expected rate unit: 'min' or 'sec' - " + stok.toString());
                   }
                 }
               }
               colonOk = false;
               break;
-    
-            case '{' : 
-            case '[' :  
+
+            case '{':
+            case '[':
               // a sequence
               // check for sequence name
               String name = null;
               stok.nextToken();
-              if (stok.ttype!='"') {
+              if (stok.ttype != '"') {
                 stok.pushBack();
               } else {
                 name = stok.sval;
-                if (stok.ttype!='"' || name==null || name.length()==0) {
-                  throw new Exception("sequence name problem - "+stok.toString()); 
+                if (stok.ttype != '"' || name == null || name.length() == 0) {
+                  throw new Exception("sequence name problem - " + stok.toString());
                 }
               }
               // start the sequence
-              TaskSequence seq2 = new TaskSequence(runData, name, currSequence, c=='[');
+              TaskSequence seq2 = new TaskSequence(runData, name, currSequence, c == '[');
               currSequence.addTask(seq2);
               currSequence = seq2;
               colonOk = false;
               break;
 
-            case '&' :
+            case '&':
               if (currSequence.isParallel()) {
                 throw new Exception("Can only create background tasks within a serial task");
               }
@@ -249,35 +254,33 @@ public class Algorithm implements AutoCloseable {
                 prevTask.setRunInBackground(deltaPri);
               }
               break;
-    
-            case '>' :
+
+            case '>':
               currSequence.setNoChildReport(); /* intentional fallthrough */
-            case '}' : 
-            case ']' : 
+            case '}':
+            case ']':
               // end sequence
-              colonOk = true; prevTask = currSequence;
+              colonOk = true;
+              prevTask = currSequence;
               currSequence = currSequence.getParent();
               break;
-          
-            case '-' :
+
+            case '-':
               isDisableCountNextTask = true;
               break;
-              
-          } //switch(c)
+          } // switch(c)
           break;
-          
-      } //switch(stok.ttype)
-      
+      } // switch(stok.ttype)
     }
-    
+
     if (sequence != currSequence) {
       throw new Exception("Unmatched sequences");
     }
-    
+
     // remove redundant top level enclosing sequences
-    while (sequence.isCollapsable() && sequence.getRepetitions()==1 && sequence.getRate()==0) {
+    while (sequence.isCollapsable() && sequence.getRepetitions() == 1 && sequence.getRate() == 0) {
       ArrayList<PerfTask> t = sequence.getTasks();
-      if (t!=null && t.size()==1) {
+      if (t != null && t.size() == 1) {
         PerfTask p = t.get(0);
         if (p instanceof TaskSequence) {
           sequence = (TaskSequence) p;
@@ -291,8 +294,8 @@ public class Algorithm implements AutoCloseable {
   private String[] initTasksPackages(Config config) {
     String alts = config.get("alt.tasks.packages", null);
     String dfltPkg = PerfTask.class.getPackage().getName();
-    if (alts==null) {
-      return new String[]{ dfltPkg };
+    if (alts == null) {
+      return new String[] {dfltPkg};
     }
     ArrayList<String> pkgs = new ArrayList<>();
     pkgs.add(dfltPkg);
@@ -302,17 +305,17 @@ public class Algorithm implements AutoCloseable {
     return pkgs.toArray(new String[0]);
   }
 
-  private Class<?> taskClass(Config config, String taskName)
-      throws ClassNotFoundException {
+  private Class<?> taskClass(Config config, String taskName) throws ClassNotFoundException {
     for (String pkg : taskPackages) {
       try {
-        return Class.forName(pkg+'.'+taskName+"Task");
+        return Class.forName(pkg + '.' + taskName + "Task");
       } catch (ClassNotFoundException e) {
-        // failed in this package, might succeed in the next one... 
+        // failed in this package, might succeed in the next one...
       }
     }
     // can only get here if failed to instantiate
-    throw new ClassNotFoundException(taskName+" not found in packages "+Arrays.toString(taskPackages));
+    throw new ClassNotFoundException(
+        taskName + " not found in packages " + Arrays.toString(taskPackages));
   }
 
   @Override
@@ -324,9 +327,7 @@ public class Algorithm implements AutoCloseable {
     return sb.toString();
   }
 
-  /**
-   * Execute this algorithm
-   */
+  /** Execute this algorithm */
   public void execute() throws Exception {
     try {
       sequence.runAndMaybeStats(true);
@@ -337,6 +338,7 @@ public class Algorithm implements AutoCloseable {
 
   /**
    * Expert: for test purposes, return all tasks participating in this algorithm.
+   *
    * @return all tasks participating in this algorithm.
    */
   public ArrayList<PerfTask> extractTasks() {
@@ -344,16 +346,15 @@ public class Algorithm implements AutoCloseable {
     extractTasks(res, sequence);
     return res;
   }
-  private void extractTasks (ArrayList<PerfTask> extrct, TaskSequence seq) {
-    if (seq==null) 
-      return;
+
+  private void extractTasks(ArrayList<PerfTask> extrct, TaskSequence seq) {
+    if (seq == null) return;
     extrct.add(seq);
     ArrayList<PerfTask> t = sequence.getTasks();
-    if (t==null) 
-      return;
+    if (t == null) return;
     for (final PerfTask p : t) {
       if (p instanceof TaskSequence) {
-        extractTasks(extrct, (TaskSequence)p);
+        extractTasks(extrct, (TaskSequence) p);
       } else {
         extrct.add(p);
       }
@@ -364,6 +365,4 @@ public class Algorithm implements AutoCloseable {
   public void close() throws Exception {
     sequence.close();
   }
-  
 }
-

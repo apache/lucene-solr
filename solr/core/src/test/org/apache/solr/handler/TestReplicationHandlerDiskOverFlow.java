@@ -59,9 +59,9 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   Function<String, Long> originalDiskSpaceprovider = null;
   BooleanSupplier originalTestWait = null;
   
-  JettySolrRunner masterJetty, slaveJetty;
-  SolrClient masterClient, slaveClient;
-  TestReplicationHandler.SolrInstance master = null, slave = null;
+  JettySolrRunner leaderJetty, followerJetty;
+  SolrClient leaderClient, followerClient;
+  TestReplicationHandler.SolrInstance leader = null, follower = null;
 
   static String context = "/solr";
 
@@ -74,15 +74,15 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     String factory = random().nextInt(100) < 75 ? "solr.NRTCachingDirectoryFactory" : "solr.StandardDirectoryFactory"; // test the default most of the time
     System.setProperty("solr.directoryFactory", factory);
-    master = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "master", null);
-    master.setUp();
-    masterJetty = createAndStartJetty(master);
-    masterClient = createNewSolrClient(masterJetty.getLocalPort());
+    leader = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "leader", null);
+    leader.setUp();
+    leaderJetty = createAndStartJetty(leader);
+    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
 
-    slave = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "slave", masterJetty.getLocalPort());
-    slave.setUp();
-    slaveJetty = createAndStartJetty(slave);
-    slaveClient = createNewSolrClient(slaveJetty.getLocalPort());
+    follower = new TestReplicationHandler.SolrInstance(createTempDir("solr-instance").toFile(), "follower", leaderJetty.getLocalPort());
+    follower.setUp();
+    followerJetty = createAndStartJetty(follower);
+    followerClient = createNewSolrClient(followerJetty.getLocalPort());
 
     System.setProperty("solr.indexfetcher.sotimeout2", "45000");
   }
@@ -91,22 +91,22 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    if (null != masterJetty) {
-      masterJetty.stop();
-      masterJetty = null;
+    if (null != leaderJetty) {
+      leaderJetty.stop();
+      leaderJetty = null;
     }
-    if (null != slaveJetty) {
-      slaveJetty.stop();
-       slaveJetty = null;
+    if (null != followerJetty) {
+      followerJetty.stop();
+       followerJetty = null;
     }
-    master = slave = null;
-    if (null != masterClient) {
-      masterClient.close();
-      masterClient = null;
+    leader = follower = null;
+    if (null != leaderClient) {
+      leaderClient.close();
+      leaderClient = null;
     }
-    if (null != slaveClient) {
-      slaveClient.close();
-      slaveClient = null;
+    if (null != followerClient) {
+      followerClient.close();
+      followerClient = null;
     }
     System.clearProperty("solr.indexfetcher.sotimeout");
     
@@ -116,18 +116,18 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
 
   @Test
   public void testDiskOverFlow() throws Exception {
-    invokeReplicationCommand(slaveJetty.getLocalPort(), "disablepoll");
+    invokeReplicationCommand(followerJetty.getLocalPort(), "disablepoll");
     //index docs
-    log.info("Indexing to MASTER");
-    int docsInMaster = 1000;
-    long szMaster = indexDocs(masterClient, docsInMaster, 0);
-    log.info("Indexing to SLAVE");
-    long szSlave = indexDocs(slaveClient, 1200, 1000);
+    log.info("Indexing to LEADER");
+    int docsInLeader = 1000;
+    long szLeader = indexDocs(leaderClient, docsInLeader, 0);
+    log.info("Indexing to FOLLOWER");
+    long szFollower = indexDocs(followerClient, 1200, 1000);
 
     IndexFetcher.usableDiskSpaceProvider = new Function<String, Long>() {
       @Override
       public Long apply(String s) {
-        return szMaster;
+        return szLeader;
       }
     };
 
@@ -161,7 +161,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
             assertNotNull("why is query thread still looping if barrier has already been cleared?",
                           barrier);
             try {
-              QueryResponse rsp = slaveClient.query(new SolrQuery()
+              QueryResponse rsp = followerClient.query(new SolrQuery()
                                                     .setQuery("*:*")
                                                     .setRows(0));
               Thread.sleep(200);
@@ -187,7 +187,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
         }
       }).start();
 
-    QueryResponse response = slaveClient.query(new SolrQuery()
+    QueryResponse response = followerClient.query(new SolrQuery()
                                                .add("qt", "/replication")
                                                .add("command", CMD_FETCH_INDEX)
                                                .add("wait", "true")
@@ -198,18 +198,18 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     assertEquals("threads encountered failures (see logs for when)",
                  Collections.emptyList(), threadFailures);
 
-    response = slaveClient.query(new SolrQuery().setQuery("*:*").setRows(0));
-    assertEquals("docs in slave", docsInMaster, response.getResults().getNumFound());
+    response = followerClient.query(new SolrQuery().setQuery("*:*").setRows(0));
+    assertEquals("docs in follower", docsInLeader, response.getResults().getNumFound());
 
-    response = slaveClient.query(new SolrQuery()
+    response = followerClient.query(new SolrQuery()
         .add("qt", "/replication")
         .add("command", ReplicationHandler.CMD_DETAILS)
     );
     if (log.isInfoEnabled()) {
       log.info("DETAILS {}", Utils.writeJson(response, new StringWriter(), true).toString());
     }
-    assertEquals("slave's clearedLocalIndexFirst (from rep details)",
-                 "true", response._getStr("details/slave/clearedLocalIndexFirst", null));
+    assertEquals("follower's clearedLocalIndexFirst (from rep details)",
+                 "true", response._getStr("details/follower/clearedLocalIndexFirst", null));
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})

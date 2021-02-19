@@ -76,7 +76,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   public void beforeTest() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
-    randomizeUpdateLogImpl();
     initCore("solrconfig-tlog.xml","schema15.xml");
     
     // validate that the schema was not changed to an unexpected state

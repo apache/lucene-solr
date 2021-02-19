@@ -76,11 +76,12 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.XmlConfigFile;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.ElevatedMarkerFactory;
 import org.apache.solr.response.transform.ExcludedMarkerFactory;
@@ -90,7 +91,6 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.grouping.GroupingSpecification;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.VersionedFile;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -509,7 +509,10 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       rb.setQuery(new BoostQuery(elevation.includeQuery, 0f));
     } else {
       BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-      queryBuilder.add(rb.getQuery(), BooleanClause.Occur.SHOULD);
+      BooleanClause.Occur queryOccurrence =
+              params.getBool(QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, false) ?
+                      BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+      queryBuilder.add(rb.getQuery(), queryOccurrence);
       queryBuilder.add(new BoostQuery(elevation.includeQuery, 0f), BooleanClause.Occur.SHOULD);
       if (elevation.excludeQueries != null) {
         if (params.getBool(QueryElevationParams.MARK_EXCLUDES, false)) {

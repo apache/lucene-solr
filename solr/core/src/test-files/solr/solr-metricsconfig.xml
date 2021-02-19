@@ -17,7 +17,7 @@
 -->
 
 <solr>
- <metrics>
+ <metrics enabled="${metricsEnabled:true}">
   <suppliers>
     <counter class="${counter.class:}">
       <str name="foo">bar</str>

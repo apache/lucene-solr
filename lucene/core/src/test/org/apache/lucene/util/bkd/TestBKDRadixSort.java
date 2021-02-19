@@ -19,7 +19,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -28,43 +27,34 @@ import org.apache.lucene.util.TestUtil;
 public class TestBKDRadixSort extends LuceneTestCase {
 
   public void testRandom() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    int indexDimensions = TestUtil.nextInt(random(), 1, 8);
-    int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
-    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
-    int packedBytesLength = dataDimensions * bytesPerDim;
-    HeapPointWriter points = new HeapPointWriter(numPoints, packedBytesLength);
-    byte[] value = new byte[packedBytesLength];
+    BKDConfig config = getRandomConfig();
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    HeapPointWriter points = new HeapPointWriter(config, numPoints);
+    byte[] value = new byte[config.packedBytesLength];
     for (int i = 0; i < numPoints; i++) {
       random().nextBytes(value);
       points.append(value, i);
     }
-    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDim);
+    verifySort(config, points, 0, numPoints);
   }
 
   public void testRandomAllEquals() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    int indexDimensions = TestUtil.nextInt(random(), 1, 8);
-    int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
-    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
-    int packedBytesLength = dataDimensions * bytesPerDim;
-    HeapPointWriter points = new HeapPointWriter(numPoints, packedBytesLength);
-    byte[] value = new byte[packedBytesLength];
+    BKDConfig config = getRandomConfig();
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    HeapPointWriter points = new HeapPointWriter(config, numPoints);
+    byte[] value = new byte[config.packedBytesLength];
     random().nextBytes(value);
     for (int i = 0; i < numPoints; i++) {
       points.append(value, random().nextInt(numPoints));
     }
-    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDim);
+    verifySort(config, points, 0, numPoints);
   }
 
   public void testRandomLastByteTwoValues() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    int indexDimensions = TestUtil.nextInt(random(), 1, 8);
-    int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
-    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
-    int packedBytesLength = dataDimensions * bytesPerDim;
-    HeapPointWriter points = new HeapPointWriter(numPoints, packedBytesLength);
-    byte[] value = new byte[packedBytesLength];
+    BKDConfig config = getRandomConfig();
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    HeapPointWriter points = new HeapPointWriter(config, numPoints);
+    byte[] value = new byte[config.packedBytesLength];
     random().nextBytes(value);
     for (int i = 0; i < numPoints; i++) {
       if (random().nextBoolean()) {
@@ -73,71 +63,89 @@ public class TestBKDRadixSort extends LuceneTestCase {
         points.append(value, 2);
       }
     }
-    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDim);
+    verifySort(config, points, 0, numPoints);
   }
 
   public void testRandomFewDifferentValues() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    int indexDimensions = TestUtil.nextInt(random(), 1, 8);
-    int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
-    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
-    int packedBytesLength = dataDimensions * bytesPerDim;
-    HeapPointWriter points = new HeapPointWriter(numPoints, packedBytesLength);
+    BKDConfig config = getRandomConfig();
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    HeapPointWriter points = new HeapPointWriter(config, numPoints);
     int numberValues = random().nextInt(8) + 2;
-    byte[][] differentValues = new byte[numberValues][packedBytesLength];
+    byte[][] differentValues = new byte[numberValues][config.packedBytesLength];
     for (int i = 0; i < numberValues; i++) {
       random().nextBytes(differentValues[i]);
     }
     for (int i = 0; i < numPoints; i++) {
       points.append(differentValues[random().nextInt(numberValues)], i);
     }
-    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDim);
+    verifySort(config, points, 0, numPoints);
   }
 
   public void testRandomDataDimDifferent() throws IOException {
-    int numPoints = TestUtil.nextInt(random(), 1, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
-    int indexDimensions = TestUtil.nextInt(random(), 1, 8);
-    int dataDimensions = TestUtil.nextInt(random(), indexDimensions, 8);
-    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
-    int packedBytesLength = dataDimensions * bytesPerDim;
-    HeapPointWriter points = new HeapPointWriter(numPoints, packedBytesLength);
-    byte[] value = new byte[packedBytesLength];
-    int totalDataDimension = dataDimensions - indexDimensions;
-    byte[] dataDimensionValues = new byte[totalDataDimension * bytesPerDim];
+    BKDConfig config = getRandomConfig();
+    int numPoints = TestUtil.nextInt(random(), 1, BKDConfig.DEFAULT_MAX_POINTS_IN_LEAF_NODE);
+    HeapPointWriter points = new HeapPointWriter(config, numPoints);
+    byte[] value = new byte[config.packedBytesLength];
+    int totalDataDimension = config.numDims - config.numIndexDims;
+    byte[] dataDimensionValues = new byte[totalDataDimension * config.bytesPerDim];
     random().nextBytes(value);
     for (int i = 0; i < numPoints; i++) {
       random().nextBytes(dataDimensionValues);
-      System.arraycopy(dataDimensionValues, 0, value, indexDimensions * bytesPerDim, totalDataDimension * bytesPerDim);
+      System.arraycopy(
+          dataDimensionValues,
+          0,
+          value,
+          config.packedIndexBytesLength,
+          totalDataDimension * config.bytesPerDim);
       points.append(value, random().nextInt(numPoints));
     }
-    verifySort(points, dataDimensions, indexDimensions, 0, numPoints, bytesPerDim);
+    verifySort(config, points, 0, numPoints);
   }
 
-  private void verifySort(HeapPointWriter points, int dataDimensions, int indexDimensions, int start, int end, int bytesPerDim) throws IOException{
-    int packedBytesLength = dataDimensions * bytesPerDim;
+  private void verifySort(BKDConfig config, HeapPointWriter points, int start, int end)
+      throws IOException {
     Directory dir = newDirectory();
-    BKDRadixSelector radixSelector = new BKDRadixSelector(dataDimensions, indexDimensions, bytesPerDim, 1000, dir, "test");
+    BKDRadixSelector radixSelector = new BKDRadixSelector(config, 1000, dir, "test");
     // we check for each dimension
-    for (int splitDim = 0; splitDim < dataDimensions; splitDim++) {
-      radixSelector.heapRadixSort(points, start, end, splitDim, getRandomCommonPrefix(points, start, end, bytesPerDim, splitDim));
-      byte[] previous = new byte[bytesPerDim * dataDimensions];
+    for (int splitDim = 0; splitDim < config.numDims; splitDim++) {
+      radixSelector.heapRadixSort(
+          points,
+          start,
+          end,
+          splitDim,
+          getRandomCommonPrefix(config, points, start, end, splitDim));
+      byte[] previous = new byte[config.packedBytesLength];
       int previousDocId = -1;
       Arrays.fill(previous, (byte) 0);
-      int dimOffset = splitDim * bytesPerDim;
+      int dimOffset = splitDim * config.bytesPerDim;
       for (int j = start; j < end; j++) {
         PointValue pointValue = points.getPackedValueSlice(j);
         BytesRef value = pointValue.packedValue();
-        int cmp = Arrays.compareUnsigned(value.bytes, value.offset + dimOffset, value.offset + dimOffset + bytesPerDim, previous, dimOffset, dimOffset + bytesPerDim);
+        int cmp =
+            Arrays.compareUnsigned(
+                value.bytes,
+                value.offset + dimOffset,
+                value.offset + dimOffset + config.bytesPerDim,
+                previous,
+                dimOffset,
+                dimOffset + config.bytesPerDim);
         assertTrue(cmp >= 0);
         if (cmp == 0) {
-          int dataOffset = indexDimensions * bytesPerDim;
-          cmp = Arrays.compareUnsigned(value.bytes, value.offset + dataOffset, value.offset + packedBytesLength, previous, dataOffset, packedBytesLength);
+          int dataOffset = config.numIndexDims * config.bytesPerDim;
+          cmp =
+              Arrays.compareUnsigned(
+                  value.bytes,
+                  value.offset + dataOffset,
+                  value.offset + config.packedBytesLength,
+                  previous,
+                  dataOffset,
+                  config.packedBytesLength);
           assertTrue(cmp >= 0);
         }
         if (cmp == 0) {
           assertTrue(pointValue.docID() >= previousDocId);
         }
-        System.arraycopy(value.bytes, value.offset, previous, 0, packedBytesLength);
+        System.arraycopy(value.bytes, value.offset, previous, 0, config.packedBytesLength);
         previousDocId = pointValue.docID();
       }
     }
@@ -145,17 +153,25 @@ public class TestBKDRadixSort extends LuceneTestCase {
   }
 
   /** returns a common prefix length equal or lower than the current one */
-  private int getRandomCommonPrefix(HeapPointWriter points, int start, int end, int bytesPerDimension, int sortDim)  {
-    int commonPrefixLength = bytesPerDimension;
+  private int getRandomCommonPrefix(
+      BKDConfig config, HeapPointWriter points, int start, int end, int sortDim) {
+    int commonPrefixLength = config.bytesPerDim;
     PointValue value = points.getPackedValueSlice(start);
     BytesRef bytesRef = value.packedValue();
-    byte[] firstValue = new byte[bytesPerDimension];
-    int offset = sortDim * bytesPerDimension;
-    System.arraycopy(bytesRef.bytes, bytesRef.offset + offset, firstValue, 0, bytesPerDimension);
+    byte[] firstValue = new byte[config.bytesPerDim];
+    int offset = sortDim * config.bytesPerDim;
+    System.arraycopy(bytesRef.bytes, bytesRef.offset + offset, firstValue, 0, config.bytesPerDim);
     for (int i = start + 1; i < end; i++) {
       value = points.getPackedValueSlice(i);
       bytesRef = value.packedValue();
-      int diff = Arrays.mismatch(bytesRef.bytes, bytesRef.offset + offset, bytesRef.offset + offset + bytesPerDimension, firstValue, 0, bytesPerDimension);
+      int diff =
+          Arrays.mismatch(
+              bytesRef.bytes,
+              bytesRef.offset + offset,
+              bytesRef.offset + offset + config.bytesPerDim,
+              firstValue,
+              0,
+              config.bytesPerDim);
       if (diff != -1 && commonPrefixLength > diff) {
         if (diff == 0) {
           return diff;
@@ -164,5 +180,13 @@ public class TestBKDRadixSort extends LuceneTestCase {
       }
     }
     return (random().nextBoolean()) ? commonPrefixLength : random().nextInt(commonPrefixLength);
+  }
+
+  private BKDConfig getRandomConfig() {
+    int numIndexDims = TestUtil.nextInt(random(), 1, BKDConfig.MAX_INDEX_DIMS);
+    int numDims = TestUtil.nextInt(random(), numIndexDims, BKDConfig.MAX_DIMS);
+    int bytesPerDim = TestUtil.nextInt(random(), 2, 30);
+    int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 2000);
+    return new BKDConfig(numDims, numIndexDims, bytesPerDim, maxPointsInLeafNode);
   }
 }

@@ -19,146 +19,19 @@ package org.apache.solr.rest;
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Locale;
-import java.util.Set;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.schema.analysis.ManagedWordSetResource;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.restlet.Request;
-import org.restlet.data.Reference;
 
 /**
  * Tests {@link RestManager} functionality, including resource registration,
  * and REST API requests and responses.
  */
 public class TestRestManager extends SolrRestletTestBase {
-  
-  private class BogusManagedResource extends ManagedResource {
-
-    protected BogusManagedResource(String resourceId,
-        SolrResourceLoader loader, StorageIO storageIO) throws SolrException {
-      super(resourceId, loader, storageIO);
-    }
-
-    @Override
-    protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs, Object managedData)
-        throws SolrException {}
-
-    @Override
-    protected Object applyUpdatesToManagedData(Object updates) {
-      return null;
-    }
-
-    @Override
-    public void doDeleteChild(BaseSolrResource endpoint, String childId) {}
-
-    @Override
-    public void doGet(BaseSolrResource endpoint, String childId) {}
-    
-  }
-  
-  private static class MockAnalysisComponent implements ManagedResourceObserver {
-
-    @Override
-    public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
-        throws SolrException {
-      assertTrue(res instanceof ManagedWordSetResource);      
-    }
-  }
-  
-  /**
-   * Test RestManager initialization and handling of registered ManagedResources. 
-   */
-  @Test
-  @Ignore
-  public void testManagedResourceRegistrationAndInitialization() throws Exception {
-    // first, we need to register some ManagedResources, which is done with the registry
-    // provided by the SolrResourceLoader
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("./"));
-    
-    RestManager.Registry registry = loader.getManagedResourceRegistry();
-    assertNotNull("Expected a non-null RestManager.Registry from the SolrResourceLoader!", registry);
-    
-    String resourceId = "/config/test/foo";
-    registry.registerManagedResource(resourceId, 
-                                     ManagedWordSetResource.class, 
-                                     new MockAnalysisComponent());
-    
-    // verify the two different components can register the same ManagedResource in the registry
-    registry.registerManagedResource(resourceId, 
-                                     ManagedWordSetResource.class, 
-                                     new MockAnalysisComponent());
-    
-    // verify we can register another resource under a different resourceId
-    registry.registerManagedResource("/config/test/foo2", 
-                                     ManagedWordSetResource.class, 
-                                     new MockAnalysisComponent());
-
-    ignoreException("REST API path .* already registered to instances of ");
-
-    String failureMessage = "Should not be able to register a different"
-                          + " ManagedResource implementation for {}";
-
-    // verify that some other hooligan cannot register another type
-    // of ManagedResource implementation under the same resourceId
-    try {
-      registry.registerManagedResource(resourceId, 
-                                       BogusManagedResource.class, 
-                                       new MockAnalysisComponent());
-      fail(String.format(Locale.ROOT, failureMessage, resourceId));
-    } catch (SolrException solrExc) {
-      // expected output
-    }
-
-    resetExceptionIgnores();
-
-    ignoreException("is a reserved endpoint used by the Solr REST API!");
-
-    failureMessage = "Should not be able to register reserved endpoint {}";
-
-    // verify that already-spoken-for REST API endpoints can't be registered
-    Set<String> reservedEndpoints = registry.getReservedEndpoints();
-    assertTrue(reservedEndpoints.size() > 2);
-    assertTrue(reservedEndpoints.contains(RestManager.SCHEMA_BASE_PATH + RestManager.MANAGED_ENDPOINT));
-    for (String endpoint : reservedEndpoints) {
-
-      try {
-        registry.registerManagedResource
-            (endpoint, BogusManagedResource.class, new MockAnalysisComponent());
-        fail(String.format(Locale.ROOT, failureMessage, endpoint));
-      } catch (SolrException solrExc) {
-        // expected output
-      }
-
-      // also try to register already-spoken-for REST API endpoints with a child segment
-      endpoint += "/kid";
-      try {
-        registry.registerManagedResource
-            (endpoint, BogusManagedResource.class, new MockAnalysisComponent());
-        fail(String.format(Locale.ROOT, failureMessage, endpoint));
-      } catch (SolrException solrExc) {
-        // expected output
-      }
-    }
-
-    resetExceptionIgnores();
-    
-    NamedList<String> initArgs = new NamedList<>();
-    RestManager restManager = new RestManager();
-    restManager.init(loader, initArgs, new ManagedResourceStorage.InMemoryStorageIO());
-    
-    ManagedResource res = restManager.getManagedResource(resourceId);
-    assertTrue(res instanceof ManagedWordSetResource);    
-    assertEquals(res.getResourceId(), resourceId);
-    
-    restManager.getManagedResource("/config/test/foo2"); // exception if it isn't registered
-  }
 
   /**
    * Tests {@link RestManager}'s responses to REST API requests on /config/managed
@@ -255,27 +128,15 @@ public class TestRestManager extends SolrRestletTestBase {
 
   @Test
   public void testResolveResourceId () throws Exception {
-    Request testRequest = new Request();
-    Reference rootRef = new Reference("http://solr.apache.org/");
-    testRequest.setRootRef(rootRef);
-
-    Reference resourceRef = new Reference("http://solr.apache.org/schema/analysis/synonyms/de");
-    testRequest.setResourceRef(resourceRef);
-
-    String resourceId = RestManager.ManagedEndpoint.resolveResourceId(testRequest);
+    String path = "http://solr.apache.org/schema/analysis/synonyms/de";
+    String resourceId = RestManager.ManagedEndpoint.resolveResourceId(path);
     assertEquals(resourceId, "/schema/analysis/synonyms/de");
   }
 
   @Test
   public void testResolveResourceIdDecodeUrlEntities () throws Exception {
-    Request testRequest = new Request();
-    Reference rootRef = new Reference("http://solr.apache.org/");
-    testRequest.setRootRef(rootRef);
-
-    Reference resourceRef = new Reference("http://solr.apache.org/schema/analysis/synonyms/de/%C3%84ndern");
-    testRequest.setResourceRef(resourceRef);
-
-    String resourceId = RestManager.ManagedEndpoint.resolveResourceId(testRequest);
+    String path = "http://solr.apache.org/schema/analysis/synonyms/de/%C3%84ndern";
+    String resourceId = RestManager.ManagedEndpoint.resolveResourceId(path);
     assertEquals(resourceId, "/schema/analysis/synonyms/de/Ändern");
   }
 }

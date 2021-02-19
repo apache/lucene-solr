@@ -24,7 +24,7 @@
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <requestHandler name="/select" class="solr.SearchHandler" />
-  
+
   <query>
     <!-- Maximum number of clauses in a boolean query... can affect
         range or wildcard queries that expand to big boolean
@@ -54,16 +54,16 @@
       autowarmCount="0"/>
 
     <cache
-      name="user_definied_cache_XXX"
-      enabled="${user_definied_cache_XXX.enabled:false}"  
+      name="user_defined_cache_XXX"
+      enabled="${user_defined_cache_XXX.enabled:false}"
       />
     <cache
-      name="user_definied_cache_ZZZ"
-      enabled="${user_definied_cache_ZZZ.enabled:false}"  
+      name="user_defined_cache_ZZZ"
+      enabled="${user_defined_cache_ZZZ.enabled:false}"
       />
 
 
-    
+
     <!-- If true, stored fields that are not requested will be loaded lazily.
     -->
     <enableLazyFieldLoading>true</enableLazyFieldLoading>
@@ -85,6 +85,3 @@
   </initParams>
 
 </config>
-
-
-

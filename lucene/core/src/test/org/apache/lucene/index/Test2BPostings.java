@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -26,16 +26,16 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TimeUnits;
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 /**
  * Test indexes ~82M docs with 26 terms each, so you get &gt; Integer.MAX_VALUE terms/docs pairs
+ *
  * @lucene.experimental
  */
-@SuppressCodecs({ "SimpleText", "Direct", "Compressing" })
+@SuppressCodecs({"SimpleText", "Direct", "Compressing"})
 @TimeoutSuite(millis = 4 * TimeUnits.HOUR)
 public class Test2BPostings extends LuceneTestCase {
 
@@ -43,22 +43,23 @@ public class Test2BPostings extends LuceneTestCase {
   public void test() throws Exception {
     BaseDirectoryWrapper dir = newFSDirectory(createTempDir("2BPostings"));
     if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
+      ((MockDirectoryWrapper) dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
 
-    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(256.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
-    
+    IndexWriterConfig iwc =
+        new IndexWriterConfig(new MockAnalyzer(random()))
+            .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+            .setRAMBufferSizeMB(256.0)
+            .setMergeScheduler(new ConcurrentMergeScheduler())
+            .setMergePolicy(newLogMergePolicy(false, 10))
+            .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+
     IndexWriter w = new IndexWriter(dir, iwc);
 
     MergePolicy mp = w.getConfig().getMergePolicy();
     if (mp instanceof LogByteSizeMergePolicy) {
-     // 1 petabyte:
-     ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024*1024*1024);
+      // 1 petabyte:
+      ((LogByteSizeMergePolicy) mp).setMaxMergeMB(1024 * 1024 * 1024);
     }
 
     Document doc = new Document();
@@ -67,7 +68,7 @@ public class Test2BPostings extends LuceneTestCase {
     ft.setIndexOptions(IndexOptions.DOCS);
     Field field = new Field("field", new MyTokenStream(), ft);
     doc.add(field);
-    
+
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;
     for (int i = 0; i < numDocs; i++) {
       w.addDocument(doc);
@@ -79,7 +80,7 @@ public class Test2BPostings extends LuceneTestCase {
     w.close();
     dir.close();
   }
-  
+
   public static final class MyTokenStream extends TokenStream {
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     int index;
@@ -94,7 +95,7 @@ public class Test2BPostings extends LuceneTestCase {
       }
       return false;
     }
-    
+
     @Override
     public void reset() {
       index = 'a';

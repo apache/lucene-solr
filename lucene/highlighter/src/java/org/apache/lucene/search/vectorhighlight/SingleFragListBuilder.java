@@ -19,14 +19,14 @@ package org.apache.lucene.search.vectorhighlight;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
 
 /**
- * An implementation class of {@link FragListBuilder} that generates one {@link WeightedFragInfo} object.
- * Typical use case of this class is that you can get an entire field contents
- * by using both of this class and {@link SimpleFragmentsBuilder}.<br>
+ * An implementation class of {@link FragListBuilder} that generates one {@link WeightedFragInfo}
+ * object. Typical use case of this class is that you can get an entire field contents by using both
+ * of this class and {@link SimpleFragmentsBuilder}.
+ *
  * <pre class="prettyprint">
  * FastVectorHighlighter h = new FastVectorHighlighter( true, true,
  *   new SingleFragListBuilder(), new SimpleFragmentsBuilder() );
@@ -35,24 +35,21 @@ import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseIn
 public class SingleFragListBuilder implements FragListBuilder {
 
   @Override
-  public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList,
-      int fragCharSize) {
+  public FieldFragList createFieldFragList(FieldPhraseList fieldPhraseList, int fragCharSize) {
 
-    FieldFragList ffl = new SimpleFieldFragList( fragCharSize );
+    FieldFragList ffl = new SimpleFieldFragList(fragCharSize);
 
     List<WeightedPhraseInfo> wpil = new ArrayList<>();
     Iterator<WeightedPhraseInfo> ite = fieldPhraseList.phraseList.iterator();
     WeightedPhraseInfo phraseInfo = null;
-    while( true ){
-      if( !ite.hasNext() ) break;
+    while (true) {
+      if (!ite.hasNext()) break;
       phraseInfo = ite.next();
-      if( phraseInfo == null ) break;
+      if (phraseInfo == null) break;
 
-      wpil.add( phraseInfo );
+      wpil.add(phraseInfo);
     }
-    if( wpil.size() > 0 )
-      ffl.add( 0, Integer.MAX_VALUE, wpil );
+    if (wpil.size() > 0) ffl.add(0, Integer.MAX_VALUE, wpil);
     return ffl;
   }
-
 }

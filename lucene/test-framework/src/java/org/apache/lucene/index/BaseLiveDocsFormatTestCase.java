@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collections;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.store.Directory;
@@ -30,10 +29,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
-/**
- * Abstract class that performs basic testing of a codec's
- * {@link LiveDocsFormat}.
- */
+/** Abstract class that performs basic testing of a codec's {@link LiveDocsFormat}. */
 public abstract class BaseLiveDocsFormatTestCase extends LuceneTestCase {
 
   /** Returns the codec to run tests against */
@@ -78,7 +74,8 @@ public abstract class BaseLiveDocsFormatTestCase extends LuceneTestCase {
     testSerialization(IndexWriter.MAX_DOCS, IndexWriter.MAX_DOCS - 7, false);
   }
 
-  private void testSerialization(int maxDoc, int numLiveDocs, boolean fixedBitSet) throws IOException {
+  private void testSerialization(int maxDoc, int numLiveDocs, boolean fixedBitSet)
+      throws IOException {
     final Codec codec = Codec.getDefault();
     final LiveDocsFormat format = codec.liveDocsFormat();
 
@@ -107,24 +104,35 @@ public abstract class BaseLiveDocsFormatTestCase extends LuceneTestCase {
       bits = liveDocs;
     } else {
       // Make sure the impl doesn't only work with a FixedBitSet
-      bits = new Bits() {
+      bits =
+          new Bits() {
 
-        @Override
-        public boolean get(int index) {
-          return liveDocs.get(index);
-        }
+            @Override
+            public boolean get(int index) {
+              return liveDocs.get(index);
+            }
 
-        @Override
-        public int length() {
-          return liveDocs.length();
-        }
-
-      };
+            @Override
+            public int length() {
+              return liveDocs.length();
+            }
+          };
     }
 
     final Directory dir = newDirectory();
-    final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "foo", maxDoc, random().nextBoolean(),
-        codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), null);
+    final SegmentInfo si =
+        new SegmentInfo(
+            dir,
+            Version.LATEST,
+            Version.LATEST,
+            "foo",
+            maxDoc,
+            random().nextBoolean(),
+            codec,
+            Collections.emptyMap(),
+            StringHelper.randomId(),
+            Collections.emptyMap(),
+            null);
     SegmentCommitInfo sci = new SegmentCommitInfo(si, 0, 0, 0, -1, -1, StringHelper.randomId());
     format.writeLiveDocs(bits, dir, sci, maxDoc - numLiveDocs, IOContext.DEFAULT);
 

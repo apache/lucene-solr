@@ -33,7 +33,7 @@ In Rule-Based Authorization, administrators define a series of roles based on th
 
 === Users
 
-The users that RBAP sees come from whatever authentication plugin has been configured.  RBAP is compatible with all of the authentication plugins that Solr ships with out of the box.  It is also compatible with any custom authentication plugins users might write, provided that the plugin sets a user principal on the HttpServletRequest it receives.  The user value seen by RBAP in each case depends on the authentication plugin being used: the Kerberos principal if the <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>> is being used, the "sub" JWT claim if the <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>> is being used, etc.
+The users that RBAP sees come from whatever authentication plugin has been configured.  RBAP is compatible with all of the authentication plugins that Solr ships with out of the box.  It is also compatible with any custom authentication plugins users might write, provided that the plugin sets a user principal on the HttpServletRequest it receives.  The user value seen by RBAP in each case depends on the authentication plugin being used: the Kerberos principal if the <<kerberos-authentication-plugin.adoc#,Kerberos Authentication Plugin>> is being used, the "sub" JWT claim if the <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>> is being used, etc.
 
 === Roles
 
@@ -89,7 +89,7 @@ This setting is optional and defaults to `false` if unset.
 
 === Example for RuleBasedAuthorizationPlugin and BasicAuth
 
-This example `security.json` shows how the <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic authentication plugin>> can work with the `RuleBasedAuthorizationPlugin` plugin:
+This example `security.json` shows how the <<basic-authentication-plugin.adoc#,Basic authentication plugin>> can work with the `RuleBasedAuthorizationPlugin` plugin:
 
 [source,json]
 ----
@@ -126,7 +126,7 @@ Altogether, this example carves out two restricted areas.  Only `admin-user` can
 
 === Example for External Role RuleBasedAuthorizationPlugin with JWT auth
 
-This example `security.json` shows how the <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT authentication plugin>>, which pulls user and user roles from JWT claims, can work with the `ExternalRoleRuleBasedAuthorizationPlugin` plugin:
+This example `security.json` shows how the <<jwt-authentication-plugin.adoc#,JWT authentication plugin>>, which pulls user and user roles from JWT claims, can work with the `ExternalRoleRuleBasedAuthorizationPlugin` plugin:
 
 [source,json]
 ----
@@ -208,15 +208,15 @@ The predefined permission names (and their effects) are:
 
 * *security-edit:* this permission is allowed to edit the security configuration, meaning any update action that modifies `security.json` through the APIs will be allowed.
 * *security-read*: this permission is allowed to read the security configuration, meaning any action that reads `security.json` settings through the APIs will be allowed.
-* *schema-edit*: this permission is allowed to edit a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
-* *schema-read*: this permission is allowed to read a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
-* *config-edit*: this permission is allowed to edit a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
-* *config-read*: this permission is allowed to read a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
+* *schema-edit*: this permission is allowed to edit a collection's schema using the <<schema-api.adoc#,Schema API>>. Note that this allows schema edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
+* *schema-read*: this permission is allowed to read a collection's schema using the <<schema-api.adoc#,Schema API>>. Note that this allows schema read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
+* *config-edit*: this permission is allowed to edit a collection's configuration using the <<config-api.adoc#,Config API>>, the <<request-parameters-api.adoc#,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
+* *config-read*: this permission is allowed to read a collection's configuration using the <<config-api.adoc#,Config API>>, the <<request-parameters-api.adoc#,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
 * *metrics-read*: this permission allows access to Solr's <<metrics-reporting.adoc#metrics-api,Metrics API>>
 * *metrics-history-read*: this permission allows access to Solr's <<metrics-history.adoc#metrics-history-api,Metrics History API>>, which provides long-term history for a select set of key Solr metrics.
 * *core-admin-edit*: Core admin commands that can mutate the system state.
 * *core-admin-read*: Read operations on the core admin API
-* *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the <<collections-api.adoc#collections-api,Collections API>>. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
+* *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the <<collections-api.adoc#,Collections API>>. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
 ** CREATE
 ** RELOAD
 ** SPLITSHARD
@@ -235,13 +235,13 @@ The predefined permission names (and their effects) are:
 ** DELETEREPLICAPROP
 ** BALANCESHARDUNIQUE
 ** REBALANCELEADERS
-* *collection-admin-read*: this permission is allowed to read a collection's configuration using the <<collections-api.adoc#collections-api,Collections API>>. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
+* *collection-admin-read*: this permission is allowed to read a collection's configuration using the <<collections-api.adoc#,Collections API>>. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
 ** LIST
 ** OVERSEERSTATUS
 ** CLUSTERSTATUS
 ** REQUESTSTATUS
-* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#updaterequesthandlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
-* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
+* *update*: this permission is allowed to perform any update action on any collection. This includes sending documents for indexing (using an <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#update-request-handlers,update request handler>>). This applies to all collections by default (`collection:"*"`).
+* *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#search-handlers,request handlers>>) such as `/select`, `/get`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
 * *all*: Any requests coming to Solr.
 
 === Permission Ordering and Resolution

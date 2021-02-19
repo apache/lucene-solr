@@ -68,4 +68,10 @@ public interface UpdateParams
 
   /** Return versions of updates? */
   public static final String VERSIONS = "versions";
+
+  /**
+   * If set to true, then Solr must fail to process any Atomic Update which can not 
+   * be done "In-Place" with out re-indexing the entire document.
+   */
+  public static final String REQUIRE_PARTIAL_DOC_UPDATES_INPLACE = "update.partial.requireInPlace";
 }

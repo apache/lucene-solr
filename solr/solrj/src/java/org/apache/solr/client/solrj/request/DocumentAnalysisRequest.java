@@ -209,4 +209,9 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
     return showMatch;
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.QUERY.toString();
+  }
+
 }

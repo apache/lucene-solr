@@ -17,8 +17,6 @@
 
 package org.apache.solr.util.circuitbreaker;
 
-import org.apache.solr.core.SolrConfig;
-
 /**
  * Default class to define circuit breakers for Solr.
  * <p>
@@ -27,21 +25,24 @@ import org.apache.solr.core.SolrConfig;
  *  2. Use the circuit breaker in a specific code path(s).
  *
  * TODO: This class should be grown as the scope of circuit breakers grow.
+ *
+ * The class and its derivatives raise a standard exception when a circuit breaker is triggered.
+ * We should make it into a dedicated exception (https://issues.apache.org/jira/browse/SOLR-14755)
  * </p>
  */
 public abstract class CircuitBreaker {
   public static final String NAME = "circuitbreaker";
 
-  protected final SolrConfig solrConfig;
+  protected final CircuitBreakerConfig config;
 
-  public CircuitBreaker(SolrConfig solrConfig) {
-    this.solrConfig = solrConfig;
+  public CircuitBreaker(CircuitBreakerConfig config) {
+    this.config = config;
   }
 
   // Global config for all circuit breakers. For specific circuit breaker configs, define
   // your own config.
   protected boolean isEnabled() {
-    return solrConfig.useCircuitBreakers;
+    return config.isEnabled();
   }
 
   /**
@@ -53,4 +54,46 @@ public abstract class CircuitBreaker {
    * Get debug useful info.
    */
   public abstract String getDebugInfo();
+
+  /**
+   * Get error message when the circuit breaker triggers
+   */
+  public abstract String getErrorMessage();
+
+  public static class CircuitBreakerConfig {
+    private final boolean enabled;
+    private final boolean memCBEnabled;
+    private final int memCBThreshold;
+    private final boolean cpuCBEnabled;
+    private final int cpuCBThreshold;
+
+    public CircuitBreakerConfig(final boolean enabled, final boolean memCBEnabled, final int memCBThreshold,
+                                  final boolean cpuCBEnabled, final int cpuCBThreshold) {
+      this.enabled = enabled;
+      this.memCBEnabled = memCBEnabled;
+      this.memCBThreshold = memCBThreshold;
+      this.cpuCBEnabled = cpuCBEnabled;
+      this.cpuCBThreshold = cpuCBThreshold;
+    }
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public boolean getMemCBEnabled() {
+      return memCBEnabled;
+    }
+
+    public int getMemCBThreshold() {
+      return memCBThreshold;
+    }
+
+    public boolean getCpuCBEnabled() {
+      return cpuCBEnabled;
+    }
+
+    public int getCpuCBThreshold() {
+      return cpuCBThreshold;
+    }
+  }
 }

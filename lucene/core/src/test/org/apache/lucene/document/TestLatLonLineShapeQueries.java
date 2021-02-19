@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.document;
 
-
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
-import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Rectangle;
 
 /** random bounding box, line, and polygon query tests for random generated {@link Line} types */
 @SuppressWarnings("SimpleText")
@@ -37,8 +34,9 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
   @Override
   protected Line randomQueryLine(Object... shapes) {
     if (random().nextInt(100) == 42) {
-      // we want to ensure some cross, so randomly generate lines that share vertices with the indexed point set
-      int maxBound = (int)Math.floor(shapes.length * 0.1d);
+      // we want to ensure some cross, so randomly generate lines that share vertices with the
+      // indexed point set
+      int maxBound = (int) Math.floor(shapes.length * 0.1d);
       if (maxBound < 2) {
         maxBound = shapes.length;
       }
@@ -62,7 +60,7 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
 
   @Override
   protected Field[] createIndexableFields(String field, Object line) {
-    return LatLonShape.createIndexableFields(field, (Line)line);
+    return LatLonShape.createIndexableFields(field, (Line) line);
   }
 
   @Override
@@ -76,16 +74,11 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Component2D rectangle2D = LatLonGeometry.create(new Rectangle(minLat, maxLat, minLon, maxLon));
-      return testComponentQuery(rectangle2D, shape);
-    }
-
-    @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       Line line = (Line) shape;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", line)) == Component2D.WithinRelation.CANDIDATE;
+        return testWithinQuery(query, LatLonShape.createIndexableFields("dummy", line))
+            == Component2D.WithinRelation.CANDIDATE;
       }
       return testComponentQuery(query, LatLonShape.createIndexableFields("dummy", line));
     }

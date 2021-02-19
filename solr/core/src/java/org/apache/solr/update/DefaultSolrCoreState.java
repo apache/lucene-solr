@@ -18,12 +18,10 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -78,14 +76,6 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   private RefCounted<IndexWriter> refCntWriter;
   
   protected final ReentrantLock commitLock = new ReentrantLock();
-
-
-  private AtomicBoolean cdcrRunning = new AtomicBoolean();
-
-  private volatile Future<Boolean> cdcrBootstrapFuture;
-
-  @SuppressWarnings({"rawtypes"})
-  private volatile Callable cdcrBootstrapCallable;
 
   @Deprecated
   public DefaultSolrCoreState(DirectoryFactory directoryFactory) {
@@ -426,36 +416,5 @@ public final class DefaultSolrCoreState extends SolrCoreState implements Recover
   @Override
   public Lock getRecoveryLock() {
     return recoveryLock;
-  }
-
-  @Override
-  public boolean getCdcrBootstrapRunning() {
-    return cdcrRunning.get();
-  }
-
-  @Override
-  public void setCdcrBootstrapRunning(boolean cdcrRunning) {
-    this.cdcrRunning.set(cdcrRunning);
-  }
-
-  @Override
-  public Future<Boolean> getCdcrBootstrapFuture() {
-    return cdcrBootstrapFuture;
-  }
-
-  @Override
-  public void setCdcrBootstrapFuture(Future<Boolean> cdcrBootstrapFuture) {
-    this.cdcrBootstrapFuture = cdcrBootstrapFuture;
-  }
-
-  @Override
-  @SuppressWarnings({"rawtypes"})
-  public Callable getCdcrBootstrapCallable() {
-    return cdcrBootstrapCallable;
-  }
-
-  @Override
-  public void setCdcrBootstrapCallable(@SuppressWarnings({"rawtypes"})Callable cdcrBootstrapCallable) {
-    this.cdcrBootstrapCallable = cdcrBootstrapCallable;
   }
 }

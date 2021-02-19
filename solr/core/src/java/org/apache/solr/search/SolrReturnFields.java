@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -121,6 +122,34 @@ public class SolrReturnFields extends ReturnFields {
 
   public SolrReturnFields(String[] fl, SolrQueryRequest req) {
     parseFieldList(fl, req);
+  }
+
+  /**
+   * For pre-parsed simple field list with optional transformer.
+   * Does not support globs or the score.
+   * This constructor is more for internal use; not for parsing user input.
+   *
+   * @param plainFields simple field list; nothing special. If null, equivalent to all-fields.
+   * @param docTransformer optional transformer.
+   */
+  public SolrReturnFields(Collection<String> plainFields, DocTransformer docTransformer) {
+    if (plainFields != null) {
+      _wantsAllFields = false;
+      for (String field : plainFields) {
+        assert field.indexOf('*') == -1 && !field.equals(SCORE);
+        addField(field, null, null, false);
+      }
+    } else {
+      _wantsAllFields = true;
+    }
+    if (docTransformer != null) {
+      transformer = docTransformer;
+      // doc transformer can request extra fields.
+      String[] extraRequestFields = docTransformer.getExtraRequestFields();
+      if (extraRequestFields != null) {
+        Collections.addAll(fields, extraRequestFields); // do NOT call addField
+      }
+    }
   }
 
   public RetrieveFieldsOptimizer getFetchOptimizer(Supplier<RetrieveFieldsOptimizer> supplier) {

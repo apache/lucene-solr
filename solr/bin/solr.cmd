@@ -42,6 +42,31 @@ IF EXIST "%SOLR_INCLUDE%" CALL "%SOLR_INCLUDE%"
 
 set "DEFAULT_SERVER_DIR=%SOLR_TIP%\server"
 
+
+REM Verify Java is available
+IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
+REM Try to detect JAVA_HOME from the registry
+IF NOT DEFINED JAVA_HOME (
+  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment" /v CurrentVersion') DO set CurVer=%%B
+  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment\!CurVer!" /v JavaHome') DO (
+    set "JAVA_HOME=%%B"
+  )
+)
+IF NOT DEFINED JAVA_HOME goto need_java_home
+set JAVA_HOME=%JAVA_HOME:"=%
+IF %JAVA_HOME:~-1%==\ SET JAVA_HOME=%JAVA_HOME:~0,-1%
+IF NOT EXIST "%JAVA_HOME%\bin\java.exe" (
+  set "SCRIPT_ERROR=java.exe not found in %JAVA_HOME%\bin. Please set JAVA_HOME to a valid JRE / JDK directory."
+  goto err
+)
+set "JAVA=%JAVA_HOME%\bin\java"
+CALL :resolve_java_info
+IF !JAVA_MAJOR_VERSION! LSS 8 (
+  set "SCRIPT_ERROR=Java 1.8 or later is required to run Solr. Current Java version is: !JAVA_VERSION_INFO! (detected major: !JAVA_MAJOR_VERSION!)"
+  goto err
+)
+
+
 REM Select HTTP OR HTTPS related configurations
 set SOLR_URL_SCHEME=http
 set "SOLR_JETTY_CONFIG=--module=http"
@@ -183,29 +208,6 @@ IF NOT "%SOLR_HOST%"=="" (
 )
 IF "%SOLR_JETTY_HOST%"=="" (
   set "SOLR_JETTY_HOST=127.0.0.1"
-)
-
-REM Verify Java is available
-IF DEFINED SOLR_JAVA_HOME set "JAVA_HOME=%SOLR_JAVA_HOME%"
-REM Try to detect JAVA_HOME from the registry
-IF NOT DEFINED JAVA_HOME (
-  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment" /v CurrentVersion') DO set CurVer=%%B
-  FOR /F "skip=2 tokens=2*" %%A IN ('REG QUERY "HKLM\Software\JavaSoft\Java Runtime Environment\!CurVer!" /v JavaHome') DO (
-    set "JAVA_HOME=%%B"
-  )
-)
-IF NOT DEFINED JAVA_HOME goto need_java_home
-set JAVA_HOME=%JAVA_HOME:"=%
-IF %JAVA_HOME:~-1%==\ SET JAVA_HOME=%JAVA_HOME:~0,-1%
-IF NOT EXIST "%JAVA_HOME%\bin\java.exe" (
-  set "SCRIPT_ERROR=java.exe not found in %JAVA_HOME%\bin. Please set JAVA_HOME to a valid JRE / JDK directory."
-  goto err
-)
-set "JAVA=%JAVA_HOME%\bin\java"
-CALL :resolve_java_info
-IF !JAVA_MAJOR_VERSION! LSS 8 (
-  set "SCRIPT_ERROR=Java 1.8 or later is required to run Solr. Current Java version is: !JAVA_VERSION_INFO! (detected major: !JAVA_MAJOR_VERSION!)"
-  goto err
 )
 
 set FIRST_ARG=%1
@@ -360,7 +362,6 @@ goto done
 @echo   -e example    Name of the example to run; available examples:
 @echo       cloud:          SolrCloud example
 @echo       techproducts:   Comprehensive example illustrating many of Solr's core capabilities
-@echo       dih:            Data Import Handler
 @echo       schemaless:     Schema-less example
 @echo.
 @echo   -a opts       Additional parameters to pass to the JVM when starting Solr, such as to setup
@@ -407,13 +408,13 @@ goto done
 
 :healthcheck_usage
 @echo.
-@echo Usage: solr healthcheck [-c collection] [-z zkHost] [-V] 
+@echo Usage: solr healthcheck [-c collection] [-z zkHost] [-V]
 @echo.
 @echo Can be run from remote (non-Solr^) hosts, as long as a proper ZooKeeper connection is provided
 @echo.
 @echo   -c collection  Collection to run healthcheck against.
 @echo.
-@echo   -z zkHost      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.cmd; 
+@echo   -z zkHost      Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.cmd;
 @echo                    otherwise, default is localhost:9983
 @echo.
 @echo   -V             Enable more verbose output
@@ -551,7 +552,7 @@ echo                             'upconfig' or downloaded to for 'downconfig'. I
 echo                             ...solr/server/solr/configsets' then the configs will be copied from/to
 echo                             that directory. Otherwise it is interpreted as a simple local path.
 echo.
-echo         cp copies files or folders to/from Zookeeper or Zokeeper -^> Zookeeper
+echo         cp copies files or folders to/from Zookeeper or Zookeeper -^> Zookeeper
 echo             -r              Recursively copy ^<src^> to ^<dst^>. Command will fail if ^<src^> has children and
 echo                             -r is not specified. Optional
 echo.
@@ -559,8 +560,8 @@ echo.             ^<src^>, ^<dest^> : [file:][/]path/to/local/file or zk:/path/t
 echo                              NOTE: ^<src^> and ^<dest^> may both be Zookeeper resources prefixed by 'zk:'
 echo             When ^<src^> is a zk resource, ^<dest^> may be '.'
 echo             If ^<dest^> ends with '/', then ^<dest^> will be a local folder or parent znode and the last
-echo             element of the ^<src^> path will be appended unless ^<src^> also ends in a slash. 
-echo             ^<dest^> may be zk:, which may be useful when using the cp -r form to backup/restore 
+echo             element of the ^<src^> path will be appended unless ^<src^> also ends in a slash.
+echo             ^<dest^> may be zk:, which may be useful when using the cp -r form to backup/restore
 echo             the entire zk state.
 echo             You must enclose local paths that end in a wildcard in quotes or just
 echo             end the local path in a slash. That is,
@@ -1087,6 +1088,10 @@ IF "!IS_RESTART!"=="1" set SCRIPT_CMD=start
 IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
 IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
 
+IF DEFINED SOLR_PORT_ADVERTISE (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.port.advertise=%SOLR_PORT_ADVERTISE%"
+)
+
 IF DEFINED SOLR_JETTY_HOST (
   set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
 )
@@ -1142,9 +1147,13 @@ IF [%SOLR_LOG_PRESTART_ROTATION%] == [true] (
 IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
-  IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=15000"
+  IF "%ZK_CLIENT_TIMEOUT%"=="" set "ZK_CLIENT_TIMEOUT=30000"
 
   set "CLOUD_MODE_OPTS=-DzkClientTimeout=!ZK_CLIENT_TIMEOUT!"
+
+  IF NOT "%SOLR_WAIT_FOR_ZK%"=="" (
+    set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DwaitForZk=%SOLR_WAIT_FOR_ZK%"
+  )
 
   IF NOT "%ZK_HOST%"=="" (
     set "CLOUD_MODE_OPTS=!CLOUD_MODE_OPTS! -DzkHost=%ZK_HOST%"
@@ -2047,8 +2056,10 @@ FOR /f "usebackq tokens=3" %%a IN (`^""%JAVA%" -version 2^>^&1 ^| findstr "versi
   REM Remove surrounding quotes
   set JAVA_VERSION_INFO=!JAVA_VERSION_INFO:"=!
 
+  echo "java version info is !JAVA_VERSION_INFO!"
   REM Extract the major Java version, e.g. 7, 8, 9, 10 ...
   for /f "tokens=1,2 delims=._-" %%a in ("!JAVA_VERSION_INFO!") do (
+    echo "Extracted major version is %%a"
     if %%a GEQ 9 (
       set JAVA_MAJOR_VERSION=%%a
     ) else (

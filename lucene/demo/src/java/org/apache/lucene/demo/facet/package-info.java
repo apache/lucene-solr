@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Facets example code.
- */
+/** Facets example code. */
 package org.apache.lucene.demo.facet;

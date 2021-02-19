@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.perfield;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +23,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
@@ -58,18 +56,16 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Basic tests of PerFieldDocValuesFormat
- */
+/** Basic tests of PerFieldDocValuesFormat */
 public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   private Codec codec;
-  
+
   @Override
   public void setUp() throws Exception {
     codec = new RandomCodec(new Random(random().nextLong()), Collections.emptySet());
     super.setUp();
   }
-  
+
   @Override
   protected Codec getCodec() {
     return codec;
@@ -79,7 +75,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   protected boolean codecAcceptsHugeBinaryValues(String field) {
     return TestUtil.fieldSupportsHugeBinaryDocValues(field);
   }
-  
+
   // just a simple trivial test
   // TODO: we should come up with a test that somehow checks that segment suffix
   // is respected by all codec apis (not just docvalues and postings)
@@ -91,26 +87,30 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     final DocValuesFormat fast = TestUtil.getDefaultDocValuesFormat();
     final DocValuesFormat slow = DocValuesFormat.forName("Asserting");
-    iwc.setCodec(new AssertingCodec() {
-      @Override
-      public DocValuesFormat getDocValuesFormatForField(String field) {
-        if ("dv1".equals(field)) {
-          return fast;
-        } else {
-          return slow;
-        }
-      }
-    });
+    iwc.setCodec(
+        new AssertingCodec() {
+          @Override
+          public DocValuesFormat getDocValuesFormatForField(String field) {
+            if ("dv1".equals(field)) {
+              return fast;
+            } else {
+              return slow;
+            }
+          }
+        });
     IndexWriter iwriter = new IndexWriter(directory, iwc);
     Document doc = new Document();
-    String longTerm = "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm";
+    String longTerm =
+        "longtermlongtermlongtermlongtermlongtermlongtermlongtermlongterm"
+            + "longtermlongtermlongtermlongtermlongtermlongtermlong"
+            + "termlongtermlongtermlongterm";
     String text = "This is the text to be indexed. " + longTerm;
     doc.add(newTextField("fieldname", text, Field.Store.YES));
     doc.add(new NumericDocValuesField("dv1", 5));
     doc.add(new BinaryDocValuesField("dv2", new BytesRef("hello world")));
     iwriter.addDocument(doc);
     iwriter.close();
-    
+
     // Now search the index:
     IndexReader ireader = DirectoryReader.open(directory); // read-only=true
     IndexSearcher isearcher = newSearcher(ireader);
@@ -128,7 +128,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
       assertEquals(hitDocID, dv.advance(hitDocID));
       assertEquals(5, dv.longValue());
-      
+
       BinaryDocValues dv2 = ireader.leaves().get(0).reader().getBinaryDocValues("dv2");
       assertEquals(hitDocID, dv2.advance(hitDocID));
       final BytesRef term = dv2.binaryValue();
@@ -140,26 +140,29 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   }
 
   public void testMergeCalledOnTwoFormats() throws IOException {
-    MergeRecordingDocValueFormatWrapper dvf1 = new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
-    MergeRecordingDocValueFormatWrapper dvf2 = new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
+    MergeRecordingDocValueFormatWrapper dvf1 =
+        new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
+    MergeRecordingDocValueFormatWrapper dvf2 =
+        new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
 
     IndexWriterConfig iwc = new IndexWriterConfig();
-    iwc.setCodec(new AssertingCodec() {
-      @Override
-      public DocValuesFormat getDocValuesFormatForField(String field) {
-        switch (field) {
-          case "dv1":
-          case "dv2":
-            return dvf1;
+    iwc.setCodec(
+        new AssertingCodec() {
+          @Override
+          public DocValuesFormat getDocValuesFormatForField(String field) {
+            switch (field) {
+              case "dv1":
+              case "dv2":
+                return dvf1;
 
-          case "dv3":
-            return dvf2;
+              case "dv3":
+                return dvf2;
 
-          default:
-            return super.getDocValuesFormatForField(field);
-        }
-      }
-    });
+              default:
+                return super.getDocValuesFormatForField(field);
+            }
+          }
+        });
 
     Directory directory = newDirectory();
 
@@ -191,15 +194,17 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
   }
 
   public void testDocValuesMergeWithIndexedFields() throws IOException {
-    MergeRecordingDocValueFormatWrapper docValuesFormat = new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
+    MergeRecordingDocValueFormatWrapper docValuesFormat =
+        new MergeRecordingDocValueFormatWrapper(TestUtil.getDefaultDocValuesFormat());
 
     IndexWriterConfig iwc = new IndexWriterConfig();
-    iwc.setCodec(new AssertingCodec() {
-      @Override
-      public DocValuesFormat getDocValuesFormatForField(String field) {
-        return docValuesFormat;
-      }
-    });
+    iwc.setCodec(
+        new AssertingCodec() {
+          @Override
+          public DocValuesFormat getDocValuesFormatForField(String field) {
+            return docValuesFormat;
+          }
+        });
 
     Directory directory = newDirectory();
 
@@ -216,7 +221,6 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     doc.add(new TextField("normalField", "my document without doc values", Field.Store.NO));
     iwriter.addDocument(doc);
     iwriter.commit();
-
 
     iwriter.forceMerge(1, true);
     iwriter.close();
@@ -257,12 +261,14 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
         }
 
         @Override
-        public void addSortedNumericField(FieldInfo field, DocValuesProducer values) throws IOException {
+        public void addSortedNumericField(FieldInfo field, DocValuesProducer values)
+            throws IOException {
           consumer.addSortedNumericField(field, values);
         }
 
         @Override
-        public void addSortedSetField(FieldInfo field, DocValuesProducer values) throws IOException {
+        public void addSortedSetField(FieldInfo field, DocValuesProducer values)
+            throws IOException {
           consumer.addSortedSetField(field, values);
         }
 

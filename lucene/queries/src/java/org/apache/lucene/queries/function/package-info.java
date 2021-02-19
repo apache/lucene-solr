@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Queries that compute score based upon a function.
- */
+/** Queries that compute score based upon a function. */
 package org.apache.lucene.queries.function;

@@ -19,29 +19,39 @@ import org.apache.lucene.gradle.ProfileResults;
 
 def recordings = files()
 
-if (Boolean.parseBoolean(propertyOrDefault("tests.profile", "false"))) {
-  allprojects {
-    tasks.withType(Test) {
-      jvmArgs("-XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings=" + rootProject.file("gradle/testing/profiling.jfc"),
+allprojects {
+  plugins.withType(JavaPlugin) {
+    ext {
+      testOptions += [
+          [propName: 'tests.profile', value: false, description: "Enable java flight recorder profiling."]
+      ]
+    }
+
+    if (resolvedTestOption("tests.profile").toBoolean()) {
+      allprojects {
+        tasks.withType(Test) {
+          jvmArgs("-XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings=" + rootProject.file("gradle/testing/profiling.jfc"),
               "-XX:+UnlockDiagnosticVMOptions",
               "-XX:+DebugNonSafepoints")
-      // delete any previous profile results
-      doFirst {
-        project.delete fileTree(dir: workingDir, include: '*.jfr')
+          // delete any previous profile results
+          doFirst {
+            project.delete fileTree(dir: workingDir, include: '*.jfr')
+          }
+          doLast {
+            recordings = recordings.plus fileTree(dir: workingDir, include: '*.jfr')
+          }
+        }
       }
-      doLast {
-        recordings = recordings.plus fileTree(dir: workingDir, include: '*.jfr')
-      }
-    }
-  }
 
-  gradle.buildFinished {
-    if (!recordings.isEmpty()) {
-      ProfileResults.printReport(recordings.getFiles().collect { it.toString() },
-                                 propertyOrDefault(ProfileResults.MODE_KEY, ProfileResults.MODE_DEFAULT) as String,
-                                 Integer.parseInt(propertyOrDefault(ProfileResults.STACKSIZE_KEY, ProfileResults.STACKSIZE_DEFAULT)),
-                                 Integer.parseInt(propertyOrDefault(ProfileResults.COUNT_KEY, ProfileResults.COUNT_DEFAULT)),
-                                 Boolean.parseBoolean(propertyOrDefault(ProfileResults.LINENUMBERS_KEY, ProfileResults.LINENUMBERS_DEFAULT)))
+      gradle.buildFinished {
+        if (!recordings.isEmpty()) {
+          ProfileResults.printReport(recordings.getFiles().collect { it.toString() },
+              propertyOrDefault(ProfileResults.MODE_KEY, ProfileResults.MODE_DEFAULT) as String,
+              Integer.parseInt(propertyOrDefault(ProfileResults.STACKSIZE_KEY, ProfileResults.STACKSIZE_DEFAULT)),
+              Integer.parseInt(propertyOrDefault(ProfileResults.COUNT_KEY, ProfileResults.COUNT_DEFAULT)),
+              Boolean.parseBoolean(propertyOrDefault(ProfileResults.LINENUMBERS_KEY, ProfileResults.LINENUMBERS_DEFAULT)))
+        }
+      }
     }
   }
 }

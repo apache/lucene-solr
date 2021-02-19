@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
@@ -34,11 +32,9 @@ import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Test that a plain default detects index file truncation early (on opening a reader).
- */
+/** Test that a plain default detects index file truncation early (on opening a reader). */
 @SuppressFileSystems("ExtrasFS")
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-9409")
+@AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-9409")
 public class TestAllFilesDetectTruncation extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
@@ -46,7 +42,8 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(TestUtil.getDefaultCodec());
 
-    // Disable CFS 80% of the time so we can truncate individual files, but the other 20% of the time we test truncation of .cfs/.cfe too:
+    // Disable CFS 80% of the time so we can truncate individual files, but the other 20% of the
+    // time we test truncation of .cfs/.cfe too:
     if (random().nextInt(5) != 1) {
       conf.setUseCompoundFile(false);
       conf.getMergePolicy().setNoCFSRatio(0.0);
@@ -65,7 +62,8 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
         riw.deleteDocuments(new Term("docid", Integer.toString(i)));
       }
       if (random().nextInt(15) == 0) {
-        riw.updateNumericDocValue(new Term("docid", Integer.toString(i)), "docid_intDV", Long.valueOf(i));
+        riw.updateNumericDocValue(
+            new Term("docid", Integer.toString(i)), "docid_intDV", Long.valueOf(i));
       }
     }
     if (TEST_NIGHTLY == false) {
@@ -75,15 +73,15 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
     checkTruncation(dir);
     dir.close();
   }
-  
+
   private void checkTruncation(Directory dir) throws IOException {
-    for(String name : dir.listAll()) {
+    for (String name : dir.listAll()) {
       if (name.equals(IndexWriter.WRITE_LOCK_NAME) == false) {
         truncateOneFile(dir, name);
       }
     }
   }
-  
+
   private void truncateOneFile(Directory dir, String victim) throws IOException {
     try (BaseDirectoryWrapper dirCopy = newDirectory()) {
       dirCopy.setCheckIndexOnClose(false);
@@ -92,30 +90,38 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
       assert victimLength > 0;
 
       if (VERBOSE) {
-        System.out.println("TEST: now truncate file " + victim + " by removing " + lostBytes + " of " + victimLength + " bytes");
+        System.out.println(
+            "TEST: now truncate file "
+                + victim
+                + " by removing "
+                + lostBytes
+                + " of "
+                + victimLength
+                + " bytes");
       }
 
-      for(String name : dir.listAll()) {
+      for (String name : dir.listAll()) {
         if (name.equals(victim) == false) {
           dirCopy.copyFrom(dir, name, name, IOContext.DEFAULT);
         } else {
-          try(IndexOutput out = dirCopy.createOutput(name, IOContext.DEFAULT);
+          try (IndexOutput out = dirCopy.createOutput(name, IOContext.DEFAULT);
               IndexInput in = dir.openInput(name, IOContext.DEFAULT)) {
-              out.copyBytes(in, victimLength - lostBytes);
-            }
+            out.copyBytes(in, victimLength - lostBytes);
+          }
         }
         dirCopy.sync(Collections.singleton(name));
       }
 
-      // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class),
-          () -> DirectoryReader.open(dirCopy).close()
-      );
+      // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all
+      // these confusing errors about open files:
+      expectThrowsAnyOf(
+          Arrays.asList(CorruptIndexException.class, EOFException.class),
+          () -> DirectoryReader.open(dirCopy).close());
 
       // CheckIndex should also fail:
-      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class),
-          () -> TestUtil.checkIndex(dirCopy, true, true, null)
-      );
+      expectThrowsAnyOf(
+          Arrays.asList(CorruptIndexException.class, EOFException.class),
+          () -> TestUtil.checkIndex(dirCopy, true, true, null));
     }
   }
 }

@@ -67,11 +67,6 @@ public interface JsonTextWriter extends TextWriter {
   }
 
   default void writeStr(String name, String val, boolean needsEscaping) throws IOException {
-    if (val == null) {
-      writeNull(name);
-      return;
-    }
-
     // it might be more efficient to use a stringbuilder or write substrings
     // if writing chars to the stream is slow.
     if (needsEscaping) {

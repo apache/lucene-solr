@@ -214,13 +214,6 @@ class ArrayOfNameTypeValueJSONWriter extends JSONWriter {
     ifNeededWriteTypeAndValueKey("doc");
     super.writeSolrDocument(name, doc, returnFields, idx);
   }
-
-  @Deprecated
-  @Override
-  public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore) throws IOException {
-    ifNeededWriteTypeAndValueKey("doclist");
-    super.writeStartDocumentList(name, start, size, numFound, maxScore);
-  }
   
   @Override
   public void writeStartDocumentList(String name, long start, int size, long numFound, Float maxScore, Boolean numFoundExact) throws IOException {

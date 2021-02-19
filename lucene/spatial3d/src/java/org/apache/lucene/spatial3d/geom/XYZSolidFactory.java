@@ -22,11 +22,11 @@ package org.apache.lucene.spatial3d.geom;
  * @lucene.experimental
  */
 public class XYZSolidFactory {
-  private XYZSolidFactory() {
-  }
+  private XYZSolidFactory() {}
 
   /**
    * Create a XYZSolid of the right kind given (x,y,z) bounds.
+   *
    * @param planetModel is the planet model
    * @param minX is the min X boundary
    * @param maxX is the max X boundary
@@ -35,45 +35,57 @@ public class XYZSolidFactory {
    * @param minZ is the min Z boundary
    * @param maxZ is the max Z boundary
    */
-  public static XYZSolid makeXYZSolid(final PlanetModel planetModel, final double minX, final double maxX, final double minY, final double maxY, final double minZ, final double maxZ) {
+  public static XYZSolid makeXYZSolid(
+      final PlanetModel planetModel,
+      final double minX,
+      final double maxX,
+      final double minY,
+      final double maxY,
+      final double minZ,
+      final double maxZ) {
     if (Math.abs(maxX - minX) < Vector.MINIMUM_RESOLUTION) {
       if (Math.abs(maxY - minY) < Vector.MINIMUM_RESOLUTION) {
         if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-          return new dXdYdZSolid(planetModel, (minX+maxX) * 0.5, (minY+maxY) * 0.5, minZ);
+          return new dXdYdZSolid(planetModel, (minX + maxX) * 0.5, (minY + maxY) * 0.5, minZ);
         } else {
-          return new dXdYZSolid(planetModel, (minX+maxX) * 0.5, (minY+maxY) * 0.5, minZ, maxZ);
+          return new dXdYZSolid(planetModel, (minX + maxX) * 0.5, (minY + maxY) * 0.5, minZ, maxZ);
         }
       } else {
         if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-          return new dXYdZSolid(planetModel, (minX+maxX) * 0.5, minY, maxY, (minZ+maxZ) * 0.5);
+          return new dXYdZSolid(planetModel, (minX + maxX) * 0.5, minY, maxY, (minZ + maxZ) * 0.5);
         } else {
-          return new dXYZSolid(planetModel, (minX+maxX) * 0.5, minY, maxY, minZ, maxZ);
+          return new dXYZSolid(planetModel, (minX + maxX) * 0.5, minY, maxY, minZ, maxZ);
         }
       }
     }
     if (Math.abs(maxY - minY) < Vector.MINIMUM_RESOLUTION) {
       if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-        return new XdYdZSolid(planetModel, minX, maxX, (minY+maxY) * 0.5, (minZ+maxZ) * 0.5);
+        return new XdYdZSolid(planetModel, minX, maxX, (minY + maxY) * 0.5, (minZ + maxZ) * 0.5);
       } else {
-        return new XdYZSolid(planetModel, minX, maxX, (minY+maxY) * 0.5, minZ, maxZ);
+        return new XdYZSolid(planetModel, minX, maxX, (minY + maxY) * 0.5, minZ, maxZ);
       }
     }
     if (Math.abs(maxZ - minZ) < Vector.MINIMUM_RESOLUTION) {
-      return new XYdZSolid(planetModel, minX, maxX, minY, maxY, (minZ+maxZ) * 0.5);
+      return new XYdZSolid(planetModel, minX, maxX, minY, maxY, (minZ + maxZ) * 0.5);
     }
     return new StandardXYZSolid(planetModel, minX, maxX, minY, maxY, minZ, maxZ);
   }
-  
+
   /**
    * Create a XYZSolid of the right kind given (x,y,z) bounds.
+   *
    * @param planetModel is the planet model
    * @param bounds is the XYZ bounds object.
    * @return the solid.
    */
   public static XYZSolid makeXYZSolid(final PlanetModel planetModel, final XYZBounds bounds) {
-    return makeXYZSolid(planetModel, bounds.getMinimumX(), bounds.getMaximumX(),
-      bounds.getMinimumY(), bounds.getMaximumY(),
-      bounds.getMinimumZ(), bounds.getMaximumZ());
+    return makeXYZSolid(
+        planetModel,
+        bounds.getMinimumX(),
+        bounds.getMaximumX(),
+        bounds.getMinimumY(),
+        bounds.getMaximumY(),
+        bounds.getMinimumZ(),
+        bounds.getMaximumZ());
   }
-
 }

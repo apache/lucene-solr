@@ -17,11 +17,8 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * Membership shapes have capabilities of both geohashing and membership
- * determination.
+ * Membership shapes have capabilities of both geohashing and membership determination.
  *
  * @lucene.experimental
  */
-public interface GeoMembershipShape extends GeoShape, GeoOutsideDistance, Membership {
-
-}
+public interface GeoMembershipShape extends GeoShape, GeoOutsideDistance, Membership {}

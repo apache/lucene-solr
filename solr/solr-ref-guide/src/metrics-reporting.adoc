@@ -26,6 +26,10 @@ Internally this feature uses the http://metrics.dropwizard.io[Dropwizard Metrics
 * *timers* - measure the number and duration of events. They provide a count and histogram of timings.
 * *gauges* - offer instantaneous reading of a current value, e.g., current queue depth, current number of active connections, free heap size.
 
+Some of these meters may be missing or empty for any number of valid reasons.
+In these cases, missing values of any type will be returned as `null` by default so empty values won't impact averages or histograms.
+This is configurable for several types of missing values; see the <<The <metrics> <missingValues> Element>> section below.
+
 Each group of related metrics with unique names is managed in a *metric registry*. Solr maintains several such registries, each corresponding to a high-level group such as: `jvm`, `jetty`, `node`, and `core` (see <<Metric Registries>> below).
 
 For each group (and/or for each registry) there can be several *reporters*, which are components responsible for communication of metrics from selected registries to external systems. Currently implemented reporters support emitting metrics via JMX, Ganglia, Graphite and SLF4J.
@@ -52,6 +56,12 @@ This registry is returned at `solr.jvm` and includes the following information. 
 * number of threads, their states and deadlocks
 * System properties such as Java information, various installation directory paths, ports, and similar information. You can control what appears here by modifying `solr.xml`.
 // TODO for 7.0 fix this
+
+=== Overseer Registry
+
+This registry is returned at `solr.overseer` when run in SolrCloud mode and includes the following information. When making requests with the <<Metrics API>>, you can specify `&group=overseer` to limit to only these metrics.
+
+* size of the Overseer queues (collection work queue and cluster state update queue)
 
 === Node / CoreContainer Registry
 
@@ -85,7 +95,22 @@ In the future, metrics will be added for shard leaders and cluster nodes, includ
 
 The metrics available in your system can be customized by modifying the `<metrics>` element in `solr.xml`.
 
-TIP: See also the section <<format-of-solr-xml.adoc#format-of-solr-xml,Format of Solr.xml>> for more information about the `solr.xml` file, where to find it, and how to edit it.
+TIP: See also the section <<format-of-solr-xml.adoc#,Format of Solr.xml>> for more information about the `solr.xml` file, where to find it, and how to edit it.
+
+=== Disabling the Metrics Collection
+The `<metrics>` element in `solr.xml` supports one attribute `enabled`, which takes a boolean value,
+for example `<metrics enabled="true">`.
+
+The default value of this attribute is `true`, meaning that metrics are being collected, processed and
+reported by Solr according to the configured metric reporters. They are also available from the
+metrics and metrics history APIs.
+
+The `false` value of this attribute (`<metrics enabled="false">`) turns off metrics collection, processing,
+and the collection of metrics history. Internally, all metrics suppliers are replaced by singleton no-op
+implementations, which effectively removes nearly all overheads related to metrics collection.
+All reporter configurations are skipped, and the metrics
+and metrics history APIs stop reporting any metrics and only return an `<error>`
+element in their responses.
 
 === The <metrics> <hiddenSysProps> Element
 
@@ -147,6 +172,45 @@ As an example of a section of `solr.xml` that defines some of these custom param
   </suppliers>
 </metrics>
 ----
+
+=== The <metrics> <missingValues> Element
+Long-lived metrics values are still reported when the underlying value is unavailable (e.g., "INDEX.sizeInBytes" when
+IndexReader is closed). Short-lived transient metrics (such as cache entries) that are properties of complex gauges
+(internally represented as `MetricsMap`) are simply skipped when not available, and neither their names nor values
+appear in registries (or in `/admin/metrics` reports).
+
+When a missing value is encountered by default it's reported as null value, regardless of the metrics type.
+This can be configured in the `solr.xml:/solr/metrics/missingValues` element, which recognizes the following child elements
+(for string elements a JSON payload is supported):
+
+`nullNumber`::
+The value to use when a missing (null) numeric metrics value is encountered.
+
+`notANumber`::
+The value to use when an invalid numeric value is encountered.
+
+`nullString`::
+The value to use when a missing (null) string metrics is encountered.
+
+`nullObject`::
+The value to use when a missing (null) complex object is encountered.
+
+Example configuration that returns null for missing numbers, -1 for
+invalid numeric values, empty string for missing strings, and a Map for missing
+complex objects:
+
+[source,xml]
+----
+<metrics>
+  <missingValues>
+    <null name="nullNumber"/>
+    <int name="notANumber">-1</int>
+    <str name="nullString"></str>
+    <str name="nullObject">{"value":"missing"}</str>
+  </missingValues>
+</metrics>
+----
+
 
 == Reporters
 
@@ -534,7 +598,9 @@ These metrics are available only on a per-core basis. Metrics can be aggregated 
 
 These metrics are collected in respective registries for each core (e.g., `solr.core.collection1....`), under the `INDEX` category.
 
-Basic metrics are always collected - collection of additional metrics can be turned on using boolean parameters in the `/config/indexConfig/metrics` section of `solrconfig.xml`:
+Metrics collection is controlled by boolean parameters in the `<metrics>` section of `solrconfig.xml`:
+
+Basic metrics:
 
 [source,xml]
 ----
@@ -542,7 +608,24 @@ Basic metrics are always collected - collection of additional metrics can be tur
   ...
   <indexConfig>
     <metrics>
-      <majorMergeDocs>524288</majorMergeDocs>
+      <long name="majorMergeDocs">524288</long>
+      <bool name="merge">true</bool>
+    </metrics>
+    ...
+  </indexConfig>
+...
+</config>
+----
+
+Detailed metrics:
+
+[source,xml]
+----
+<config>
+  ...
+  <indexConfig>
+    <metrics>
+      <long name="majorMergeDocs">524288</long>
       <bool name="mergeDetails">true</bool>
     </metrics>
     ...

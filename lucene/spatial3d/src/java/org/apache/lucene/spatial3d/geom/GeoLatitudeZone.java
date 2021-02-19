@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
  * This GeoBBox represents an area rectangle limited only in latitude.
@@ -41,11 +41,12 @@ class GeoLatitudeZone extends GeoBaseBBox {
   /** An interior point */
   protected final GeoPoint interiorPoint;
   /** Notable points (none) */
-  protected final static GeoPoint[] planePoints = new GeoPoint[0];
+  protected static final GeoPoint[] planePoints = new GeoPoint[0];
 
-  // We need two additional points because a latitude zone's boundaries don't intersect.  This is a very
+  // We need two additional points because a latitude zone's boundaries don't intersect.  This is a
+  // very
   // special case that most GeoBBox's do not have.
-  
+
   /** Top boundary point */
   protected final GeoPoint topBoundaryPoint;
   /** Bottom boundary point */
@@ -53,12 +54,15 @@ class GeoLatitudeZone extends GeoBaseBBox {
   /** A point on each distinct edge */
   protected final GeoPoint[] edgePoints;
 
-  /** Constructor.
-   *@param planetModel is the planet model to use.
-   *@param topLat is the top latitude.
-   *@param bottomLat is the bottom latitude.
+  /**
+   * Constructor.
+   *
+   * @param planetModel is the planet model to use.
+   * @param topLat is the top latitude.
+   * @param bottomLat is the bottom latitude.
    */
-  public GeoLatitudeZone(final PlanetModel planetModel, final double topLat, final double bottomLat) {
+  public GeoLatitudeZone(
+      final PlanetModel planetModel, final double topLat, final double bottomLat) {
     super(planetModel);
     this.topLat = topLat;
     this.bottomLat = bottomLat;
@@ -71,23 +75,33 @@ class GeoLatitudeZone extends GeoBaseBBox {
     // Compute an interior point.  Pick one whose lat is between top and bottom.
     final double middleLat = (topLat + bottomLat) * 0.5;
     final double sinMiddleLat = Math.sin(middleLat);
-    this.interiorPoint = new GeoPoint(planetModel, sinMiddleLat, 0.0, Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat), 1.0);
-    this.topBoundaryPoint = new GeoPoint(planetModel, sinTopLat, 0.0, Math.sqrt(1.0 - sinTopLat * sinTopLat), 1.0);
-    this.bottomBoundaryPoint = new GeoPoint(planetModel, sinBottomLat, 0.0, Math.sqrt(1.0 - sinBottomLat * sinBottomLat), 1.0);
+    this.interiorPoint =
+        new GeoPoint(
+            planetModel, sinMiddleLat, 0.0, Math.sqrt(1.0 - sinMiddleLat * sinMiddleLat), 1.0);
+    this.topBoundaryPoint =
+        new GeoPoint(planetModel, sinTopLat, 0.0, Math.sqrt(1.0 - sinTopLat * sinTopLat), 1.0);
+    this.bottomBoundaryPoint =
+        new GeoPoint(
+            planetModel, sinBottomLat, 0.0, Math.sqrt(1.0 - sinBottomLat * sinBottomLat), 1.0);
 
     this.topPlane = new SidedPlane(interiorPoint, planetModel, sinTopLat);
     this.bottomPlane = new SidedPlane(interiorPoint, planetModel, sinBottomLat);
 
-    this.edgePoints = new GeoPoint[]{topBoundaryPoint, bottomBoundaryPoint};
+    this.edgePoints = new GeoPoint[] {topBoundaryPoint, bottomBoundaryPoint};
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoLatitudeZone(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  public GeoLatitudeZone(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
+    this(
+        planetModel,
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream));
   }
 
   @Override
@@ -105,19 +119,20 @@ class GeoLatitudeZone extends GeoBaseBBox {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return topPlane.isWithin(x, y, z) &&
-        bottomPlane.isWithin(x, y, z);
+    return topPlane.isWithin(x, y, z) && bottomPlane.isWithin(x, y, z);
   }
 
   @Override
   public double getRadius() {
     // This is a bit tricky.  I guess we should interpret this as meaning the angle of a circle that
     // would contain all the bounding box points, when starting in the "center".
-    if (topLat > 0.0 && bottomLat < 0.0)
+    if (topLat > 0.0 && bottomLat < 0.0) {
       return Math.PI;
+    }
     double maxCosLat = cosTopLat;
-    if (maxCosLat < cosBottomLat)
+    if (maxCosLat < cosBottomLat) {
       maxCosLat = cosBottomLat;
+    }
     return maxCosLat * Math.PI;
   }
 
@@ -133,39 +148,47 @@ class GeoLatitudeZone extends GeoBaseBBox {
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    return p.intersects(planetModel, topPlane, notablePoints, planePoints, bounds, bottomPlane) ||
-        p.intersects(planetModel, bottomPlane, notablePoints, planePoints, bounds, topPlane);
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+    return p.intersects(planetModel, topPlane, notablePoints, planePoints, bounds, bottomPlane)
+        || p.intersects(planetModel, bottomPlane, notablePoints, planePoints, bounds, topPlane);
   }
 
   @Override
   public boolean intersects(final GeoShape geoShape) {
-    return geoShape.intersects(topPlane, planePoints, bottomPlane) ||
-        geoShape.intersects(bottomPlane, planePoints, topPlane);
+    return geoShape.intersects(topPlane, planePoints, bottomPlane)
+        || geoShape.intersects(bottomPlane, planePoints, topPlane);
   }
 
   @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
-    bounds.noLongitudeBound()
-      .addHorizontalPlane(planetModel, topLat, topPlane)
-      .addHorizontalPlane(planetModel, bottomLat, bottomPlane);
+    bounds
+        .noLongitudeBound()
+        .addHorizontalPlane(planetModel, topLat, topPlane)
+        .addHorizontalPlane(planetModel, bottomLat, bottomPlane);
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    final double topDistance = distanceStyle.computeDistance(planetModel, topPlane, x,y,z, bottomPlane);
-    final double bottomDistance = distanceStyle.computeDistance(planetModel, bottomPlane, x,y,z, topPlane);
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double topDistance =
+        distanceStyle.computeDistance(planetModel, topPlane, x, y, z, bottomPlane);
+    final double bottomDistance =
+        distanceStyle.computeDistance(planetModel, bottomPlane, x, y, z, topPlane);
 
     return Math.min(topDistance, bottomDistance);
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoLatitudeZone))
+    if (!(o instanceof GeoLatitudeZone)) {
       return false;
+    }
     GeoLatitudeZone other = (GeoLatitudeZone) o;
-    return super.equals(other) && other.topBoundaryPoint.equals(topBoundaryPoint) && other.bottomBoundaryPoint.equals(bottomBoundaryPoint);
+    return super.equals(other)
+        && other.topBoundaryPoint.equals(topBoundaryPoint)
+        && other.bottomBoundaryPoint.equals(bottomBoundaryPoint);
   }
 
   @Override
@@ -178,6 +201,16 @@ class GeoLatitudeZone extends GeoBaseBBox {
 
   @Override
   public String toString() {
-    return "GeoLatitudeZone: {planetmodel="+planetModel+", toplat=" + topLat + "(" + topLat * 180.0 / Math.PI + "), bottomlat=" + bottomLat + "(" + bottomLat * 180.0 / Math.PI + ")}";
+    return "GeoLatitudeZone: {planetmodel="
+        + planetModel
+        + ", toplat="
+        + topLat
+        + "("
+        + topLat * 180.0 / Math.PI
+        + "), bottomlat="
+        + bottomLat
+        + "("
+        + bottomLat * 180.0 / Math.PI
+        + ")}";
   }
 }

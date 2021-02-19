@@ -20,23 +20,22 @@ package org.apache.lucene.luke.models.commits;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.luke.models.LukeException;
 
-/**
- * A dedicated interface for Luke's Commits tab.
- */
+/** A dedicated interface for Luke's Commits tab. */
 public interface Commits {
 
   /**
    * Returns commits that exists in this Directory.
+   *
    * @throws LukeException - if an internal error occurs when accessing index
    */
   List<Commit> listCommits();
 
   /**
    * Returns a commit of the specified generation.
+   *
    * @param commitGen - generation
    * @throws LukeException - if an internal error occurs when accessing index
    */
@@ -44,6 +43,7 @@ public interface Commits {
 
   /**
    * Returns index files for the specified generation.
+   *
    * @param commitGen - generation
    * @throws LukeException - if an internal error occurs when accessing index
    */
@@ -51,6 +51,7 @@ public interface Commits {
 
   /**
    * Returns segments for the specified generation.
+   *
    * @param commitGen - generation
    * @throws LukeException - if an internal error occurs when accessing index
    */
@@ -58,6 +59,7 @@ public interface Commits {
 
   /**
    * Returns internal codec attributes map for the specified segment.
+   *
    * @param commitGen - generation
    * @param name - segment name
    * @throws LukeException - if an internal error occurs when accessing index
@@ -66,6 +68,7 @@ public interface Commits {
 
   /**
    * Returns diagnotics for the specified segment.
+   *
    * @param commitGen - generation
    * @param name - segment name
    * @throws LukeException - if an internal error occurs when accessing index
@@ -74,6 +77,7 @@ public interface Commits {
 
   /**
    * Returns codec for the specified segment.
+   *
    * @param commitGen - generation
    * @param name - segment name
    * @throws LukeException - if an internal error occurs when accessing index

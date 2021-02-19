@@ -16,18 +16,14 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.FIELDS_INDEX_EXTENSION_SUFFIX;
-import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.FIELDS_META_EXTENSION_SUFFIX;
 import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.compressing.FieldsIndexWriter.VERSION_START;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -37,7 +33,8 @@ import org.apache.lucene.util.packed.DirectMonotonicReader;
 
 final class FieldsIndexReader extends FieldsIndex {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FieldsIndexReader.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(FieldsIndexReader.class);
 
   private final int maxDoc;
   private final int blockShift;
@@ -45,33 +42,38 @@ final class FieldsIndexReader extends FieldsIndex {
   private final DirectMonotonicReader.Meta docsMeta;
   private final DirectMonotonicReader.Meta startPointersMeta;
   private final IndexInput indexInput;
-  private final long docsStartPointer, docsEndPointer, startPointersStartPointer, startPointersEndPointer;
+  private final long docsStartPointer,
+      docsEndPointer,
+      startPointersStartPointer,
+      startPointersEndPointer;
   private final DirectMonotonicReader docs, startPointers;
   private final long maxPointer;
 
-  FieldsIndexReader(Directory dir, String name, String suffix, String extensionPrefix, String codecName, byte[] id) throws IOException {
-    try (ChecksumIndexInput metaIn = dir.openChecksumInput(IndexFileNames.segmentFileName(name, suffix, extensionPrefix + FIELDS_META_EXTENSION_SUFFIX), IOContext.READONCE)) {
-      Throwable priorE = null;
-      try {
-        CodecUtil.checkIndexHeader(metaIn, codecName + "Meta", VERSION_START, VERSION_CURRENT, id, suffix);
-        maxDoc = metaIn.readInt();
-        blockShift = metaIn.readInt();
-        numChunks = metaIn.readInt();
-        docsStartPointer = metaIn.readLong();
-        docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-        docsEndPointer = startPointersStartPointer = metaIn.readLong();
-        startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
-        startPointersEndPointer = metaIn.readLong();
-        maxPointer = metaIn.readLong();
-      } finally {
-        CodecUtil.checkFooter(metaIn, priorE);
-      }
-    }
+  FieldsIndexReader(
+      Directory dir,
+      String name,
+      String suffix,
+      String extension,
+      String codecName,
+      byte[] id,
+      IndexInput metaIn)
+      throws IOException {
+    maxDoc = metaIn.readInt();
+    blockShift = metaIn.readInt();
+    numChunks = metaIn.readInt();
+    docsStartPointer = metaIn.readLong();
+    docsMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+    docsEndPointer = startPointersStartPointer = metaIn.readLong();
+    startPointersMeta = DirectMonotonicReader.loadMeta(metaIn, numChunks, blockShift);
+    startPointersEndPointer = metaIn.readLong();
+    maxPointer = metaIn.readLong();
 
-    indexInput = dir.openInput(IndexFileNames.segmentFileName(name, suffix, extensionPrefix + FIELDS_INDEX_EXTENSION_SUFFIX), IOContext.READ);
+    indexInput =
+        dir.openInput(IndexFileNames.segmentFileName(name, suffix, extension), IOContext.READ);
     boolean success = false;
     try {
-      CodecUtil.checkIndexHeader(indexInput, codecName + "Idx", VERSION_START, VERSION_CURRENT, id, suffix);
+      CodecUtil.checkIndexHeader(
+          indexInput, codecName + "Idx", VERSION_START, VERSION_CURRENT, id, suffix);
       CodecUtil.retrieveChecksum(indexInput);
       success = true;
     } finally {
@@ -79,8 +81,11 @@ final class FieldsIndexReader extends FieldsIndex {
         indexInput.close();
       }
     }
-    final RandomAccessInput docsSlice = indexInput.randomAccessSlice(docsStartPointer, docsEndPointer - docsStartPointer);
-    final RandomAccessInput startPointersSlice = indexInput.randomAccessSlice(startPointersStartPointer, startPointersEndPointer - startPointersStartPointer);
+    final RandomAccessInput docsSlice =
+        indexInput.randomAccessSlice(docsStartPointer, docsEndPointer - docsStartPointer);
+    final RandomAccessInput startPointersSlice =
+        indexInput.randomAccessSlice(
+            startPointersStartPointer, startPointersEndPointer - startPointersStartPointer);
     docs = DirectMonotonicReader.getInstance(docsMeta, docsSlice);
     startPointers = DirectMonotonicReader.getInstance(startPointersMeta, startPointersSlice);
   }
@@ -97,16 +102,22 @@ final class FieldsIndexReader extends FieldsIndex {
     startPointersStartPointer = other.startPointersStartPointer;
     startPointersEndPointer = other.startPointersEndPointer;
     maxPointer = other.maxPointer;
-    final RandomAccessInput docsSlice = indexInput.randomAccessSlice(docsStartPointer, docsEndPointer - docsStartPointer);
-    final RandomAccessInput startPointersSlice = indexInput.randomAccessSlice(startPointersStartPointer, startPointersEndPointer - startPointersStartPointer);
+    final RandomAccessInput docsSlice =
+        indexInput.randomAccessSlice(docsStartPointer, docsEndPointer - docsStartPointer);
+    final RandomAccessInput startPointersSlice =
+        indexInput.randomAccessSlice(
+            startPointersStartPointer, startPointersEndPointer - startPointersStartPointer);
     docs = DirectMonotonicReader.getInstance(docsMeta, docsSlice);
     startPointers = DirectMonotonicReader.getInstance(startPointersMeta, startPointersSlice);
   }
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED + docsMeta.ramBytesUsed() + startPointersMeta.ramBytesUsed() +
-        docs.ramBytesUsed() + startPointers.ramBytesUsed();
+    return BASE_RAM_BYTES_USED
+        + docsMeta.ramBytesUsed()
+        + startPointersMeta.ramBytesUsed()
+        + docs.ramBytesUsed()
+        + startPointers.ramBytesUsed();
   }
 
   @Override

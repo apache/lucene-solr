@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -51,7 +49,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w2.addDocument(new Document());
     assertEquals(2, w2.getDocStats().maxDoc);
     w2.close();
-    
+
     IndexReader r2 = DirectoryReader.open(dir);
     assertEquals(2, r2.maxDoc());
     r2.close();
@@ -78,7 +76,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w2.addDocument(new Document());
     assertEquals(2, w2.getDocStats().maxDoc);
     w2.close();
-    
+
     IndexReader r2 = DirectoryReader.open(dir);
     assertEquals(2, r2.maxDoc());
     r2.close();
@@ -96,11 +94,16 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
 
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new IndexWriter(dir, iwc);
-    });
-    assertEquals("cannot use IndexWriterConfig.setIndexCommit() when index has no commit", expected.getMessage());
-      
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new IndexWriter(dir, iwc);
+            });
+    assertEquals(
+        "cannot use IndexWriterConfig.setIndexCommit() when index has no commit",
+        expected.getMessage());
+
     r.close();
     dir.close();
   }
@@ -120,10 +123,14 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
 
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new IndexWriter(dir, iwc);
-    });
-    assertTrue(expected.getMessage().contains("the provided reader is stale: its prior commit file"));
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new IndexWriter(dir, iwc);
+            });
+    assertTrue(
+        expected.getMessage().contains("the provided reader is stale: its prior commit file"));
 
     r.close();
     dir.close();
@@ -146,10 +153,14 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new IndexWriter(dir, iwc);
-    });
-    assertTrue(expected.getMessage().contains("the provided reader is stale: its prior commit file"));      
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new IndexWriter(dir, iwc);
+            });
+    assertTrue(
+        expected.getMessage().contains("the provided reader is stale: its prior commit file"));
 
     r.close();
     dir.close();
@@ -175,111 +186,128 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     Set<Integer> liveIDs = new HashSet<>();
     Set<Integer> nrtLiveIDs = new HashSet<>();
 
-    for(int op=0;op<numOps;op++) {
+    for (int op = 0; op < numOps; op++) {
       if (VERBOSE) {
-        System.out.println("\nITER op=" + op + " nrtReaderNumDocs=" + nrtReaderNumDocs + " writerNumDocs=" + writerNumDocs + " r=" + r + " r.numDocs()=" + r.numDocs());
+        System.out.println(
+            "\nITER op="
+                + op
+                + " nrtReaderNumDocs="
+                + nrtReaderNumDocs
+                + " writerNumDocs="
+                + writerNumDocs
+                + " r="
+                + r
+                + " r.numDocs()="
+                + r.numDocs());
       }
 
       assertEquals(nrtReaderNumDocs, r.numDocs());
       int x = random().nextInt(5);
 
-      switch(x) {
-
-      case 0:
-        if (VERBOSE) {
-          System.out.println("  add doc id=" + op);
-        }
-        // add doc
-        Document doc = new Document();
-        doc.add(newStringField("id", ""+op, Field.Store.NO));
-        w.addDocument(doc);
-        liveIDs.add(op);
-        writerNumDocs++;
-        break;
-
-      case 1:
-        if (VERBOSE) {
-          System.out.println("  delete doc");
-        }
-        // delete docs
-        if (liveIDs.size() > 0) {
-          int id = random().nextInt(op);
+      switch (x) {
+        case 0:
           if (VERBOSE) {
-            System.out.println("    id=" + id);
+            System.out.println("  add doc id=" + op);
           }
-          w.deleteDocuments(new Term("id", ""+id));
-          if (liveIDs.remove(id)) {
+          // add doc
+          Document doc = new Document();
+          doc.add(newStringField("id", "" + op, Field.Store.NO));
+          w.addDocument(doc);
+          liveIDs.add(op);
+          writerNumDocs++;
+          break;
+
+        case 1:
+          if (VERBOSE) {
+            System.out.println("  delete doc");
+          }
+          // delete docs
+          if (liveIDs.size() > 0) {
+            int id = random().nextInt(op);
             if (VERBOSE) {
-              System.out.println("    really deleted");
+              System.out.println("    id=" + id);
             }
-            writerNumDocs--;
-          }
-        } else {
-          if (VERBOSE) {
-            System.out.println("    nothing to delete yet");
-          }
-        }
-        break;
-
-      case 2:
-        // reopen NRT reader
-        if (VERBOSE) {
-          System.out.println("  reopen NRT reader");
-        }
-        DirectoryReader r2 = DirectoryReader.openIfChanged(r);
-        if (r2 != null) {
-          r.close();
-          r = r2;
-          if (VERBOSE) {
-            System.out.println("    got new reader oldNumDocs=" + nrtReaderNumDocs + " newNumDocs=" + writerNumDocs);
-          }
-          nrtReaderNumDocs = writerNumDocs;
-          nrtLiveIDs = new HashSet<>(liveIDs);
-        } else {
-          if (VERBOSE) {
-            System.out.println("    reader is unchanged");
-          }
-          assertEquals(nrtReaderNumDocs, r.numDocs());
-        }
-        commitAfterNRT = false;
-        break;
-
-      case 3:
-        if (commitAfterNRT == false) {
-          // rollback writer to last nrt reader
-          if (random().nextBoolean()) {
+            w.deleteDocuments(new Term("id", "" + id));
+            if (liveIDs.remove(id)) {
+              if (VERBOSE) {
+                System.out.println("    really deleted");
+              }
+              writerNumDocs--;
+            }
+          } else {
             if (VERBOSE) {
-              System.out.println("  close writer and open new writer from non-NRT reader numDocs=" + w.getDocStats().numDocs);
+              System.out.println("    nothing to delete yet");
             }
-            w.close();
+          }
+          break;
+
+        case 2:
+          // reopen NRT reader
+          if (VERBOSE) {
+            System.out.println("  reopen NRT reader");
+          }
+          DirectoryReader r2 = DirectoryReader.openIfChanged(r);
+          if (r2 != null) {
             r.close();
-            r = DirectoryReader.open(dir);
-            assertEquals(writerNumDocs, r.numDocs());
+            r = r2;
+            if (VERBOSE) {
+              System.out.println(
+                  "    got new reader oldNumDocs="
+                      + nrtReaderNumDocs
+                      + " newNumDocs="
+                      + writerNumDocs);
+            }
             nrtReaderNumDocs = writerNumDocs;
             nrtLiveIDs = new HashSet<>(liveIDs);
           } else {
             if (VERBOSE) {
-              System.out.println("  rollback writer and open new writer from NRT reader numDocs=" + w.getDocStats().numDocs);
+              System.out.println("    reader is unchanged");
             }
-            w.rollback();
+            assertEquals(nrtReaderNumDocs, r.numDocs());
           }
-          IndexWriterConfig iwc = newIndexWriterConfig();
-          iwc.setIndexCommit(r.getIndexCommit());
-          w = new IndexWriter(dir, iwc);
-          writerNumDocs = nrtReaderNumDocs;
-          liveIDs = new HashSet<>(nrtLiveIDs);
-          r.close();
-          r = DirectoryReader.open(w);
-        }
-        break;
+          commitAfterNRT = false;
+          break;
 
-      case 4:
-        if (VERBOSE) {
-          System.out.println("    commit");
-        }
-        w.commit();
-        commitAfterNRT = true;
-        break;
+        case 3:
+          if (commitAfterNRT == false) {
+            // rollback writer to last nrt reader
+            if (random().nextBoolean()) {
+              if (VERBOSE) {
+                System.out.println(
+                    "  close writer and open new writer from non-NRT reader numDocs="
+                        + w.getDocStats().numDocs);
+              }
+              w.close();
+              r.close();
+              r = DirectoryReader.open(dir);
+              assertEquals(writerNumDocs, r.numDocs());
+              nrtReaderNumDocs = writerNumDocs;
+              nrtLiveIDs = new HashSet<>(liveIDs);
+            } else {
+              if (VERBOSE) {
+                System.out.println(
+                    "  rollback writer and open new writer from NRT reader numDocs="
+                        + w.getDocStats().numDocs);
+              }
+              w.rollback();
+            }
+            IndexWriterConfig iwc = newIndexWriterConfig();
+            iwc.setIndexCommit(r.getIndexCommit());
+            w = new IndexWriter(dir, iwc);
+            writerNumDocs = nrtReaderNumDocs;
+            liveIDs = new HashSet<>(nrtLiveIDs);
+            r.close();
+            r = DirectoryReader.open(w);
+          }
+          break;
+
+        case 4:
+          if (VERBOSE) {
+            System.out.println("    commit");
+          }
+          w.commit();
+          commitAfterNRT = true;
+          break;
       }
     }
 
@@ -336,10 +364,15 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     iwc.setIndexCommit(r.getIndexCommit());
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new IndexWriter(dir, iwc);
-    });
-    assertEquals("cannot use IndexWriterConfig.setIndexCommit() with OpenMode.CREATE", expected.getMessage());
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new IndexWriter(dir, iwc);
+            });
+    assertEquals(
+        "cannot use IndexWriterConfig.setIndexCommit() with OpenMode.CREATE",
+        expected.getMessage());
 
     IOUtils.close(r, dir);
   }
@@ -358,9 +391,11 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(commit);
-    expectThrows(AlreadyClosedException.class, () -> {
-      new IndexWriter(dir, iwc);
-    });
+    expectThrows(
+        AlreadyClosedException.class,
+        () -> {
+          new IndexWriter(dir, iwc);
+        });
 
     IOUtils.close(r, dir);
   }
@@ -388,7 +423,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     r.close();
     DirectoryReader r3 = DirectoryReader.open(w);
     assertEquals(1, r3.numDocs());
-    
+
     w.addDocument(new Document());
     DirectoryReader r4 = DirectoryReader.openIfChanged(r3);
     r3.close();
@@ -429,15 +464,14 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
 
     // Keep all commits:
-    iwc.setIndexDeletionPolicy(new IndexDeletionPolicy() {
-        @Override
-        public void onInit(List<? extends IndexCommit> commits) {
-        }
+    iwc.setIndexDeletionPolicy(
+        new IndexDeletionPolicy() {
+          @Override
+          public void onInit(List<? extends IndexCommit> commits) {}
 
-        @Override
-        public void onCommit(List<? extends IndexCommit> commits) {
-        }
-      });
+          @Override
+          public void onCommit(List<? extends IndexCommit> commits) {}
+        });
 
     IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
@@ -452,7 +486,8 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     assertEquals(3, r2.maxDoc());
     IOUtils.close(r2, w);
 
-    // r is not stale because, even though we've committed the original writer since it was open, we are keeping all commit points:
+    // r is not stale because, even though we've committed the original writer since it was open, we
+    // are keeping all commit points:
     iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
     IndexWriter w2 = new IndexWriter(dir, iwc);

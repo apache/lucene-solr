@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -43,11 +41,11 @@ import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.ThreadInterruptedException;
 
-@SuppressCodecs({ "SimpleText", "Direct" })
+@SuppressCodecs({"SimpleText", "Direct"})
 public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearchingTestCase {
 
   // Not guaranteed to reflect deletes:
@@ -69,7 +67,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   }
 
   @Override
-  protected IndexSearcher getFinalSearcher() throws Exception  {
+  protected IndexSearcher getFinalSearcher() throws Exception {
     if (VERBOSE) {
       System.out.println("TEST: finalSearcher maxGen=" + maxGen);
     }
@@ -92,13 +90,19 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   }
 
   @Override
-  protected void updateDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
+  protected void updateDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs)
+      throws Exception {
     final long gen = genWriter.updateDocuments(id, docs);
 
     // Randomly verify the update "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify updateDocuments " + id + " gen=" + gen);
+        System.out.println(
+            Thread.currentThread().getName()
+                + ": nrt: verify updateDocuments "
+                + id
+                + " gen="
+                + gen);
       }
       nrtDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtDeletesThread.getSearchingGen());
@@ -107,22 +111,25 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         System.out.println(Thread.currentThread().getName() + ": nrt: got deletes searcher=" + s);
       }
       try {
-        assertEquals("generation: " + gen, docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
+        assertEquals(
+            "generation: " + gen, docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
       } finally {
         nrtDeletes.release(s);
       }
     }
-    
+
     lastGens.set(gen);
   }
 
   @Override
-  protected void addDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
+  protected void addDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs)
+      throws Exception {
     final long gen = genWriter.addDocuments(docs);
     // Randomly verify the add "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify addDocuments " + id + " gen=" + gen);
+        System.out.println(
+            Thread.currentThread().getName() + ": nrt: verify addDocuments " + id + " gen=" + gen);
       }
       nrtNoDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtNoDeletesThread.getSearchingGen());
@@ -131,7 +138,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         System.out.println(Thread.currentThread().getName() + ": nrt: got noDeletes searcher=" + s);
       }
       try {
-        assertEquals("generation: " + gen, docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
+        assertEquals(
+            "generation: " + gen, docs.size(), s.search(new TermQuery(id), 10).totalHits.value);
       } finally {
         nrtNoDeletes.release(s);
       }
@@ -146,7 +154,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // Randomly verify the add "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify addDocument " + id + " gen=" + gen);
+        System.out.println(
+            Thread.currentThread().getName() + ": nrt: verify addDocument " + id + " gen=" + gen);
       }
       nrtNoDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtNoDeletesThread.getSearchingGen());
@@ -169,7 +178,12 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // Randomly verify the udpate "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify updateDocument " + id + " gen=" + gen);
+        System.out.println(
+            Thread.currentThread().getName()
+                + ": nrt: verify updateDocument "
+                + id
+                + " gen="
+                + gen);
       }
       nrtDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtDeletesThread.getSearchingGen());
@@ -192,7 +206,12 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // randomly verify the delete "took":
     if (random().nextInt(20) == 7) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify deleteDocuments " + id + " gen=" + gen);
+        System.out.println(
+            Thread.currentThread().getName()
+                + ": nrt: verify deleteDocuments "
+                + id
+                + " gen="
+                + gen);
       }
       nrtDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtDeletesThread.getSearchingGen());
@@ -215,33 +234,42 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     final double maxReopenSec = minReopenSec * (1.0 + 10 * random().nextDouble());
 
     if (VERBOSE) {
-      System.out.println("TEST: make SearcherManager maxReopenSec=" + maxReopenSec + " minReopenSec=" + minReopenSec);
+      System.out.println(
+          "TEST: make SearcherManager maxReopenSec="
+              + maxReopenSec
+              + " minReopenSec="
+              + minReopenSec);
     }
 
     genWriter = writer;
 
-    final SearcherFactory sf = new SearcherFactory() {
-        @Override
-        public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
-          TestControlledRealTimeReopenThread.this.warmCalled = true;
-          IndexSearcher s = new IndexSearcher(r, es);
-          s.search(new TermQuery(new Term("body", "united")), 10);
-          return s;
-        }
-      };
+    final SearcherFactory sf =
+        new SearcherFactory() {
+          @Override
+          public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
+            TestControlledRealTimeReopenThread.this.warmCalled = true;
+            IndexSearcher s = new IndexSearcher(r, es);
+            s.search(new TermQuery(new Term("body", "united")), 10);
+            return s;
+          }
+        };
 
     nrtNoDeletes = new SearcherManager(writer, false, false, sf);
     nrtDeletes = new SearcherManager(writer, sf);
-                         
-    nrtDeletesThread = new ControlledRealTimeReopenThread<>(genWriter, nrtDeletes, maxReopenSec, minReopenSec);
+
+    nrtDeletesThread =
+        new ControlledRealTimeReopenThread<>(genWriter, nrtDeletes, maxReopenSec, minReopenSec);
     nrtDeletesThread.setName("NRTDeletes Reopen Thread");
-    nrtDeletesThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
+    nrtDeletesThread.setPriority(
+        Math.min(Thread.currentThread().getPriority() + 2, Thread.MAX_PRIORITY));
     nrtDeletesThread.setDaemon(true);
     nrtDeletesThread.start();
 
-    nrtNoDeletesThread = new ControlledRealTimeReopenThread<>(genWriter, nrtNoDeletes, maxReopenSec, minReopenSec);
+    nrtNoDeletesThread =
+        new ControlledRealTimeReopenThread<>(genWriter, nrtNoDeletes, maxReopenSec, minReopenSec);
     nrtNoDeletesThread.setName("NRTNoDeletes Reopen Thread");
-    nrtNoDeletesThread.setPriority(Math.min(Thread.currentThread().getPriority()+2, Thread.MAX_PRIORITY));
+    nrtNoDeletesThread.setPriority(
+        Math.min(Thread.currentThread().getPriority() + 2, Thread.MAX_PRIORITY));
     nrtNoDeletesThread.setDaemon(true);
     nrtNoDeletesThread.start();
   }
@@ -299,9 +327,9 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     nrtNoDeletesThread.close();
     nrtNoDeletes.close();
   }
-  
+
   /*
-   * LUCENE-3528 - NRTManager hangs in certain situations 
+   * LUCENE-3528 - NRTManager hangs in certain situations
    */
   public void testThreadStarvationNoDeleteNRTReader() throws IOException, InterruptedException {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -316,54 +344,60 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     doc.add(newTextField("test", "test", Field.Store.YES));
     writer.addDocument(doc);
     manager.maybeRefresh();
-    Thread t = new Thread() {
-      @Override
-      public void run() {
-        try {
-          signal.await();
-          manager.maybeRefresh();
-          writer.deleteDocuments(new TermQuery(new Term("foo", "barista")));
-          manager.maybeRefresh(); // kick off another reopen so we inc. the internal gen
-        } catch (Exception e) {
-          e.printStackTrace();
-        } finally {
-          latch.countDown(); // let the add below finish
-        }
-      }
-    };
+    Thread t =
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              signal.await();
+              manager.maybeRefresh();
+              writer.deleteDocuments(new TermQuery(new Term("foo", "barista")));
+              manager.maybeRefresh(); // kick off another reopen so we inc. the internal gen
+            } catch (Exception e) {
+              e.printStackTrace();
+            } finally {
+              latch.countDown(); // let the add below finish
+            }
+          }
+        };
     t.start();
     writer.waitAfterUpdate = true; // wait in addDocument to let some reopens go through
 
-    final long lastGen = writer.updateDocument(new Term("foo", "bar"), doc); // once this returns the doc is already reflected in the last reopen
+    final long lastGen =
+        writer.updateDocument(
+            new Term("foo", "bar"),
+            doc); // once this returns the doc is already reflected in the last reopen
 
     // We now eagerly resolve deletes so the manager should see it after update:
     assertTrue(manager.isSearcherCurrent());
-    
+
     IndexSearcher searcher = manager.acquire();
     try {
       assertEquals(2, searcher.getIndexReader().numDocs());
     } finally {
       manager.release(searcher);
     }
-    final ControlledRealTimeReopenThread<IndexSearcher> thread = new ControlledRealTimeReopenThread<>(writer, manager, 0.01, 0.01);
+    final ControlledRealTimeReopenThread<IndexSearcher> thread =
+        new ControlledRealTimeReopenThread<>(writer, manager, 0.01, 0.01);
     thread.start(); // start reopening
     if (VERBOSE) {
       System.out.println("waiting now for generation " + lastGen);
     }
-    
+
     final AtomicBoolean finished = new AtomicBoolean(false);
-    Thread waiter = new Thread() {
-      @Override
-      public void run() {
-        try {
-          thread.waitForGeneration(lastGen);
-        } catch (InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException(ie);
-        }
-        finished.set(true);
-      }
-    };
+    Thread waiter =
+        new Thread() {
+          @Override
+          public void run() {
+            try {
+              thread.waitForGeneration(lastGen);
+            } catch (InterruptedException ie) {
+              Thread.currentThread().interrupt();
+              throw new RuntimeException(ie);
+            }
+            finished.set(true);
+          }
+        };
     waiter.start();
     manager.maybeRefresh();
     waiter.join(1000);
@@ -376,15 +410,15 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     writer.close();
     IOUtils.close(manager, d);
   }
-  
+
   public static class LatchedIndexWriter extends IndexWriter {
 
     private CountDownLatch latch;
     boolean waitAfterUpdate = false;
     private CountDownLatch signal;
 
-    public LatchedIndexWriter(Directory d, IndexWriterConfig conf,
-        CountDownLatch latch, CountDownLatch signal)
+    public LatchedIndexWriter(
+        Directory d, IndexWriterConfig conf, CountDownLatch latch, CountDownLatch signal)
         throws IOException {
       super(d, conf);
       this.latch = latch;
@@ -392,8 +426,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     }
 
     @Override
-    public long updateDocument(Term term,
-        Iterable<? extends IndexableField> doc)
+    public long updateDocument(Term term, Iterable<? extends IndexableField> doc)
         throws IOException {
       long result = super.updateDocument(term, doc);
       try {
@@ -415,16 +448,19 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     final IndexReader other = DirectoryReader.open(dir);
 
-    final SearcherFactory theEvilOne = new SearcherFactory() {
-      @Override
-      public IndexSearcher newSearcher(IndexReader ignored, IndexReader previous) {
-        return LuceneTestCase.newSearcher(other);
-      }
-      };
+    final SearcherFactory theEvilOne =
+        new SearcherFactory() {
+          @Override
+          public IndexSearcher newSearcher(IndexReader ignored, IndexReader previous) {
+            return LuceneTestCase.newSearcher(other);
+          }
+        };
 
-    expectThrows(IllegalStateException.class, () -> {
-      new SearcherManager(w.w, false, false, theEvilOne);
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          new SearcherManager(w.w, false, false, theEvilOne);
+        });
 
     w.close();
     other.close();
@@ -436,17 +472,18 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
     SearcherManager sm = new SearcherManager(iw, new SearcherFactory());
-    sm.addListener(new ReferenceManager.RefreshListener() {
-      @Override
-      public void beforeRefresh() {
-      }
-      @Override
-      public void afterRefresh(boolean didRefresh) {
-        if (didRefresh) {
-          afterRefreshCalled.set(true);
-        }
-      }
-    });
+    sm.addListener(
+        new ReferenceManager.RefreshListener() {
+          @Override
+          public void beforeRefresh() {}
+
+          @Override
+          public void afterRefresh(boolean didRefresh) {
+            if (didRefresh) {
+              afterRefreshCalled.set(true);
+            }
+          }
+        });
     iw.addDocument(new Document());
     iw.commit();
     assertFalse(afterRefreshCalled.get());
@@ -461,12 +498,12 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-5737")
   // LUCENE-5461
   public void testCRTReopen() throws Exception {
-    //test behaving badly
+    // test behaving badly
 
-    //should be high enough
+    // should be high enough
     int maxStaleSecs = 20;
 
-    //build crap data just to store it.
+    // build crap data just to store it.
     String s = "        abcdefghijklmnopqrstuvwxyz     ";
     char[] chars = s.toCharArray();
     StringBuilder builder = new StringBuilder(2048);
@@ -475,7 +512,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     }
     String content = builder.toString();
 
-    final SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    final SnapshotDeletionPolicy sdp =
+        new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     final Directory dir = new NRTCachingDirectory(newFSDirectory(createTempDir("nrt")), 5, 128);
     IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random()));
     config.setCommitOnClose(true);
@@ -484,7 +522,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     final IndexWriter iw = new IndexWriter(dir, config);
     SearcherManager sm = new SearcherManager(iw, new SearcherFactory());
     ControlledRealTimeReopenThread<IndexSearcher> controlledRealTimeReopenThread =
-      new ControlledRealTimeReopenThread<>(iw, sm, maxStaleSecs, 0);
+        new ControlledRealTimeReopenThread<>(iw, sm, maxStaleSecs, 0);
 
     controlledRealTimeReopenThread.setDaemon(true);
     controlledRealTimeReopenThread.start();
@@ -493,22 +531,24 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     for (int i = 0; i < 500; i++) {
       if (i > 0 && i % 50 == 0) {
-        Thread commitThread =  new Thread(new Runnable() {
-            @Override
-            public void run() {
-              try {
-                iw.commit();
-                IndexCommit ic = sdp.snapshot();
-                for (String name : ic.getFileNames()) {
-                  //distribute, and backup
-                  //System.out.println(names);
-                  assertTrue(slowFileExists(dir, name));
-                }
-              } catch (Exception e) {
-                throw new RuntimeException(e);
-              }
-            }
-          });
+        Thread commitThread =
+            new Thread(
+                new Runnable() {
+                  @Override
+                  public void run() {
+                    try {
+                      iw.commit();
+                      IndexCommit ic = sdp.snapshot();
+                      for (String name : ic.getFileNames()) {
+                        // distribute, and backup
+                        // System.out.println(names);
+                        assertTrue(slowFileExists(dir, name));
+                      }
+                    } catch (Exception e) {
+                      throw new RuntimeException(e);
+                    }
+                  }
+                });
         commitThread.start();
         commitThreads.add(commitThread);
       }
@@ -519,15 +559,14 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       long l = iw.addDocument(d);
       controlledRealTimeReopenThread.waitForGeneration(l);
       long wait = System.currentTimeMillis() - start;
-      assertTrue("waited too long for generation " + wait,
-                 wait < (maxStaleSecs *1000));
+      assertTrue("waited too long for generation " + wait, wait < (maxStaleSecs * 1000));
       IndexSearcher searcher = sm.acquire();
       TopDocs td = searcher.search(new TermQuery(new Term("count", i + "")), 10);
       sm.release(searcher);
       assertEquals(1, td.totalHits.value);
     }
 
-    for(Thread commitThread : commitThreads) {
+    for (Thread commitThread : commitThreads) {
       commitThread.join();
     }
 

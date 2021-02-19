@@ -538,7 +538,7 @@ This command will stop a specific daemon function and remove it from memory.
 
 === Continuous Pull Streaming
 
-The {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming. Sample code:
+The {solr-javadocs}/solrj/org/apache/solr/client/solrj/io/stream/DaemonStream.html[DaemonStream] java class (part of the SolrJ libraries) can also be embedded in a java application to provide continuous pull streaming. Sample code:
 
 [source,java]
 ----
@@ -603,7 +603,7 @@ This is similar to the `<<#update,update()>>` function described below.
 === delete Parameters
 
 * `destinationCollection`: (Mandatory) The collection where the tuples will deleted.
-* `batchSize`: (Mandatory) The indexing batch size.
+* `batchSize`: (Optional, defaults to `250`) The delete batch size.
 * `pruneVersionField`: (Optional, defaults to `false`) Whether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)
 
@@ -629,7 +629,7 @@ Unlike the `update()` function, `delete()` defaults to `pruneVersionField=false`
 
 Users who wish to ignore concurrent updates and delete all matched documents should set `pruneVersionField=true` (or ensure that the inner stream tuples do not include any `\_version_` values).
 
-Users who anticipate concurrent updates, and wish to "skip" any failed deletes, should consider configuring the {solr-javadocs}/solr-core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`]
+Users who anticipate concurrent updates, and wish to "skip" any failed deletes, should consider configuring the {solr-javadocs}/core/org/apache/solr/update/processor/TolerantUpdateProcessorFactory.html[`TolerantUpdateProcessorFactory`]
 ====
 
 
@@ -637,8 +637,8 @@ Users who anticipate concurrent updates, and wish to "skip" any failed deletes, 
 
 The `eval` function allows for use cases where new streaming expressions are generated on the fly and then evaluated.
 The `eval` function wraps a streaming expression and reads a single tuple from the underlying stream.
-The `eval` function then retrieves a string Streaming Expressions from the `expr_s` field of the tuple.
-The `eval` function then compiles the string Streaming Expression and emits the tuples.
+The `eval` function then retrieves a string streaming expression from the `expr_s` field of the tuple.
+The `eval` function then compiles the string streaming expression and emits the tuples.
 
 === eval Parameters
 
@@ -652,7 +652,7 @@ eval(expr)
 ----
 
 In the example above the `eval` expression reads the first tuple from the underlying expression. It then compiles and
-executes the string Streaming Expression in the expr_s field.
+executes the string streaming expression in the `expr_s` field.
 
 == executor
 
@@ -665,7 +665,7 @@ This model allows for asynchronous execution of jobs where the output is stored 
 === executor Parameters
 
 * `threads`: (Optional) The number of threads in the executors thread pool for executing expressions.
-* `StreamExpression`: (Mandatory) The stream source which contains the Streaming Expressions to execute.
+* `StreamExpression`: (Mandatory) The stream source which contains the streaming expressions to execute.
 
 === executor Syntax
 
@@ -1316,8 +1316,8 @@ The `update` function wraps another functions and sends the tuples to a SolrClou
 === update Parameters
 
 * `destinationCollection`: (Mandatory) The collection where the tuples will indexed.
-* `batchSize`: (Mandatory) The indexing batch size.
-* `pruneVersionField`: (Optional, defaults to `true`) Wether to prune `\_version_` values from tuples
+* `batchSize`: (Optional, defaults to `250`) The indexing batch size.
+* `pruneVersionField`: (Optional, defaults to `true`) Whether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)
 
 === update Syntax

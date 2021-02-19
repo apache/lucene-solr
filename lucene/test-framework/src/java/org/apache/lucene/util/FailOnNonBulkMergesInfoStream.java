@@ -23,9 +23,8 @@ import java.io.IOException;
 public class FailOnNonBulkMergesInfoStream extends InfoStream {
 
   @Override
-  public void close() throws IOException {   
-  }
-  
+  public void close() throws IOException {}
+
   @Override
   public boolean isEnabled(String component) {
     return true;

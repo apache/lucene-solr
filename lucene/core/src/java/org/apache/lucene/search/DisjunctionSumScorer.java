@@ -16,19 +16,20 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.List;
 
-/** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>.
- */
+/** A Scorer for OR like queries, counterpart of <code>ConjunctionScorer</code>. */
 final class DisjunctionSumScorer extends DisjunctionScorer {
 
-  /** Construct a <code>DisjunctionScorer</code>.
+  /**
+   * Construct a <code>DisjunctionScorer</code>.
+   *
    * @param weight The weight to be used.
    * @param subScorers Array of at least two subscorers.
    */
-  DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, ScoreMode scoreMode) throws IOException {
+  DisjunctionSumScorer(Weight weight, List<Scorer> subScorers, ScoreMode scoreMode)
+      throws IOException {
     super(weight, subScorers, scoreMode);
   }
 
@@ -39,7 +40,7 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
     for (DisiWrapper w = topList; w != null; w = w.next) {
       score += w.scorer.score();
     }
-    return (float)score;
+    return (float) score;
   }
 
   @Override
@@ -48,5 +49,4 @@ final class DisjunctionSumScorer extends DisjunctionScorer {
     // we actually care about block scores.
     return Float.MAX_VALUE;
   }
-
 }

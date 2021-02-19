@@ -16,12 +16,15 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.SysGlobals;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Assert;
@@ -34,27 +37,20 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.SysGlobals;
-import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
-
 /**
- * An abstract test class that prepares nested test classes to run.
- * A nested test class will assume it's executed under control of this
- * class and be ignored otherwise. 
- * 
- * <p>The purpose of this is so that nested test suites don't run from
- * IDEs like Eclipse (where they are automatically detected).
- * 
- * <p>This class cannot extend {@link LuceneTestCase} because in case
- * there's a nested {@link LuceneTestCase} afterclass hooks run twice and
- * cause havoc (static fields).
+ * An abstract test class that prepares nested test classes to run. A nested test class will assume
+ * it's executed under control of this class and be ignored otherwise.
+ *
+ * <p>The purpose of this is so that nested test suites don't run from IDEs like Eclipse (where they
+ * are automatically detected).
+ *
+ * <p>This class cannot extend {@link LuceneTestCase} because in case there's a nested {@link
+ * LuceneTestCase} afterclass hooks run twice and cause havoc (static fields).
  */
 public abstract class WithNestedTests {
   @SuppressSysoutChecks(bugUrl = "WithNestedTests has its own stream capture.")
-  public static abstract class AbstractNestedTest extends LuceneTestCase 
-    implements TestRuleIgnoreTestSuites.NestedTestSuite {
+  public abstract static class AbstractNestedTest extends LuceneTestCase
+      implements TestRuleIgnoreTestSuites.NestedTestSuite {
     protected static boolean isRunningNested() {
       return TestRuleIgnoreTestSuites.isRunningNested();
     }
@@ -65,68 +61,72 @@ public abstract class WithNestedTests {
   protected WithNestedTests(boolean suppressOutputStreams) {
     this.suppressOutputStreams = suppressOutputStreams;
   }
-  
+
   protected PrintStream prevSysErr;
   protected PrintStream prevSysOut;
   private ByteArrayOutputStream sysout;
   private ByteArrayOutputStream syserr;
 
   @ClassRule
-  public static final TestRule classRules = RuleChain.outerRule(new TestRuleAdapter() {
-    private TestRuleIgnoreAfterMaxFailures prevRule;
+  public static final TestRule classRules =
+      RuleChain.outerRule(
+          new TestRuleAdapter() {
+            private TestRuleIgnoreAfterMaxFailures prevRule;
 
-    protected void before() throws Throwable {
-      if (!isPropertyEmpty(SysGlobals.SYSPROP_TESTFILTER()) ||
-          !isPropertyEmpty(SysGlobals.SYSPROP_TESTCLASS())  ||
-          !isPropertyEmpty(SysGlobals.SYSPROP_TESTMETHOD()) ||
-          !isPropertyEmpty(SysGlobals.SYSPROP_ITERATIONS())) {
-        // We're running with a complex test filter that is properly handled by classes
-        // which are executed by RandomizedRunner. The "outer" classes testing LuceneTestCase
-        // itself are executed by the default JUnit runner and would be always executed.
-        // We thus always skip execution if any filtering is detected.
-        Assume.assumeTrue(false);
-      }
-      
-      // Check zombie threads from previous suites. Don't run if zombies are around.
-      RandomizedTest.assumeFalse(RandomizedRunner.hasZombieThreads());
+            protected void before() throws Throwable {
+              if (!isPropertyEmpty(SysGlobals.SYSPROP_TESTFILTER())
+                  || !isPropertyEmpty(SysGlobals.SYSPROP_TESTCLASS())
+                  || !isPropertyEmpty(SysGlobals.SYSPROP_TESTMETHOD())
+                  || !isPropertyEmpty(SysGlobals.SYSPROP_ITERATIONS())) {
+                // We're running with a complex test filter that is properly handled by classes
+                // which are executed by RandomizedRunner. The "outer" classes testing
+                // LuceneTestCase
+                // itself are executed by the default JUnit runner and would be always executed.
+                // We thus always skip execution if any filtering is detected.
+                Assume.assumeTrue(false);
+              }
 
-      TestRuleIgnoreAfterMaxFailures newRule = new TestRuleIgnoreAfterMaxFailures(Integer.MAX_VALUE);
-      prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
-      RandomizedTest.assumeFalse(FailureMarker.hadFailures());
-    }
+              // Check zombie threads from previous suites. Don't run if zombies are around.
+              RandomizedTest.assumeFalse(RandomizedRunner.hasZombieThreads());
 
-    protected void afterAlways(List<Throwable> errors) throws Throwable {
-      if (prevRule != null) {
-        LuceneTestCase.replaceMaxFailureRule(prevRule);
-      }
-      FailureMarker.resetFailures();
-    }
+              TestRuleIgnoreAfterMaxFailures newRule =
+                  new TestRuleIgnoreAfterMaxFailures(Integer.MAX_VALUE);
+              prevRule = LuceneTestCase.replaceMaxFailureRule(newRule);
+              RandomizedTest.assumeFalse(FailureMarker.hadFailures());
+            }
 
-    private boolean isPropertyEmpty(String propertyName) {
-      String value = System.getProperty(propertyName);
-      return value == null || value.trim().isEmpty();
-    }    
-  }); 
+            protected void afterAlways(List<Throwable> errors) throws Throwable {
+              if (prevRule != null) {
+                LuceneTestCase.replaceMaxFailureRule(prevRule);
+              }
+              FailureMarker.resetFailures();
+            }
 
-  /**
-   * Restore properties after test.
-   */
-  @Rule
-  public final TestRule rules;
+            private boolean isPropertyEmpty(String propertyName) {
+              String value = System.getProperty(propertyName);
+              return value == null || value.trim().isEmpty();
+            }
+          });
+
+  /** Restore properties after test. */
+  @Rule public final TestRule rules;
+
   {
     final TestRuleMarkFailure marker = new TestRuleMarkFailure();
-    rules = RuleChain
-      .outerRule(new TestRuleRestoreSystemProperties(TestRuleIgnoreTestSuites.PROPERTY_RUN_NESTED))
-      .around(new TestRuleAdapter() {
-        @Override
-        protected void afterAlways(List<Throwable> errors) throws Throwable {
-          if (marker.hadFailures() && suppressOutputStreams) {
-            System.out.println("sysout from nested test: " + getSysOut() + "\n");
-            System.out.println("syserr from nested test: " + getSysErr());
-          }
-        }
-      })
-      .around(marker);
+    rules =
+        RuleChain.outerRule(
+                new TestRuleRestoreSystemProperties(TestRuleIgnoreTestSuites.PROPERTY_RUN_NESTED))
+            .around(
+                new TestRuleAdapter() {
+                  @Override
+                  protected void afterAlways(List<Throwable> errors) throws Throwable {
+                    if (marker.hadFailures() && suppressOutputStreams) {
+                      System.out.println("sysout from nested test: " + getSysOut() + "\n");
+                      System.out.println("syserr from nested test: " + getSysErr());
+                    }
+                  }
+                })
+            .around(marker);
   }
 
   @Before
@@ -169,8 +169,14 @@ public abstract class WithNestedTests {
         b.append("\n");
         b.append(f.getTrace());
       }
-      Assert.assertFalse("Expected failures: " + expected + " but was " + 
-          result.getFailureCount() + ", failures below: " + b.toString(), true);
+      Assert.assertFalse(
+          "Expected failures: "
+              + expected
+              + " but was "
+              + result.getFailureCount()
+              + ", failures below: "
+              + b.toString(),
+          true);
     }
   }
 
@@ -184,5 +190,5 @@ public abstract class WithNestedTests {
     Assert.assertTrue(suppressOutputStreams);
     System.err.flush();
     return new String(syserr.toByteArray(), StandardCharsets.UTF_8);
-  }  
+  }
 }

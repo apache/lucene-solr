@@ -28,45 +28,45 @@ public final class Explanation {
 
   /**
    * Create a new explanation for a match.
-   * @param value       the contribution to the score of the document
+   *
+   * @param value the contribution to the score of the document
    * @param description how {@code value} was computed
-   * @param details     sub explanations that contributed to this explanation
+   * @param details sub explanations that contributed to this explanation
    */
-  public static Explanation match(Number value, String description, Collection<Explanation> details) {
+  public static Explanation match(
+      Number value, String description, Collection<Explanation> details) {
     return new Explanation(true, value, description, details);
   }
 
   /**
    * Create a new explanation for a match.
-   * @param value       the contribution to the score of the document
+   *
+   * @param value the contribution to the score of the document
    * @param description how {@code value} was computed
-   * @param details     sub explanations that contributed to this explanation
+   * @param details sub explanations that contributed to this explanation
    */
   public static Explanation match(Number value, String description, Explanation... details) {
     return new Explanation(true, value, description, Arrays.asList(details));
   }
 
-  /**
-   * Create a new explanation for a document which does not match.
-   */
+  /** Create a new explanation for a document which does not match. */
   public static Explanation noMatch(String description, Collection<Explanation> details) {
     return new Explanation(false, 0f, description, details);
   }
 
-  /**
-   * Create a new explanation for a document which does not match.
-   */
+  /** Create a new explanation for a document which does not match. */
   public static Explanation noMatch(String description, Explanation... details) {
     return new Explanation(false, 0f, description, Arrays.asList(details));
   }
 
-  private final boolean match;                          // whether the document matched
-  private final Number value;                            // the value of this node
-  private final String description;                     // what it represents
-  private final List<Explanation> details;              // sub-explanations
+  private final boolean match; // whether the document matched
+  private final Number value; // the value of this node
+  private final String description; // what it represents
+  private final List<Explanation> details; // sub-explanations
 
-  /** Create a new explanation  */
-  private Explanation(boolean match, Number value, String description, Collection<Explanation> details) {
+  /** Create a new explanation */
+  private Explanation(
+      boolean match, Number value, String description, Collection<Explanation> details) {
     this.match = match;
     this.value = Objects.requireNonNull(value);
     this.description = Objects.requireNonNull(description);
@@ -76,23 +76,25 @@ public final class Explanation {
     }
   }
 
-  /**
-   * Indicates whether or not this Explanation models a match.
-   */
+  /** Indicates whether or not this Explanation models a match. */
   public boolean isMatch() {
     return match;
   }
-  
+
   /** The value assigned to this explanation node. */
-  public Number getValue() { return value; }
+  public Number getValue() {
+    return value;
+  }
 
   /** A description of this explanation node. */
-  public String getDescription() { return description; }
+  public String getDescription() {
+    return description;
+  }
 
   private String getSummary() {
     return getValue() + " = " + getDescription();
   }
-  
+
   /** The sub-nodes of this explanation node. */
   public Explanation[] getDetails() {
     return details.toArray(new Explanation[0]);
@@ -113,8 +115,8 @@ public final class Explanation {
     buffer.append("\n");
 
     Explanation[] details = getDetails();
-    for (int i = 0 ; i < details.length; i++) {
-      buffer.append(details[i].toString(depth+1));
+    for (int i = 0; i < details.length; i++) {
+      buffer.append(details[i].toString(depth + 1));
     }
 
     return buffer.toString();
@@ -125,15 +127,14 @@ public final class Explanation {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Explanation that = (Explanation) o;
-    return match == that.match &&
-        Objects.equals(value, that.value) &&
-        Objects.equals(description, that.description) &&
-        Objects.equals(details, that.details);
+    return match == that.match
+        && Objects.equals(value, that.value)
+        && Objects.equals(description, that.description)
+        && Objects.equals(details, that.details);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(match, value, description, details);
   }
-
 }

@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.codecs.simpletext;
 
-
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
 import org.apache.lucene.util.Version;
 
-/**
- * Tests SimpleTextSegmentInfoFormat
- */
+/** Tests SimpleTextSegmentInfoFormat */
 public class TestSimpleTextSegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
   private final Codec codec = new SimpleTextCodec();
-  
+
   @Override
   protected Version[] getVersions() {
-    return new Version[] { Version.LATEST };
+    return new Version[] {Version.LATEST};
   }
 
   @Override

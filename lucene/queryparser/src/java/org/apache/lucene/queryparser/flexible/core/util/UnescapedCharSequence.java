@@ -18,28 +18,21 @@ package org.apache.lucene.queryparser.flexible.core.util;
 
 import java.util.Locale;
 
-/**
- * CharsSequence with escaped chars information.
- */
+/** CharsSequence with escaped chars information. */
 public final class UnescapedCharSequence implements CharSequence {
   private char[] chars;
 
   private boolean[] wasEscaped;
 
-  /**
-   * Create a escaped CharSequence
-   */
-  public UnescapedCharSequence(char[] chars, boolean[] wasEscaped, int offset,
-      int length) {
+  /** Create a escaped CharSequence */
+  public UnescapedCharSequence(char[] chars, boolean[] wasEscaped, int offset, int length) {
     this.chars = new char[length];
     this.wasEscaped = new boolean[length];
     System.arraycopy(chars, offset, this.chars, 0, length);
     System.arraycopy(wasEscaped, offset, this.wasEscaped, 0, length);
   }
 
-  /**
-   * Create a non-escaped CharSequence
-   */
+  /** Create a non-escaped CharSequence */
   public UnescapedCharSequence(CharSequence text) {
     this.chars = new char[text.length()];
     this.wasEscaped = new boolean[text.length()];
@@ -49,9 +42,7 @@ public final class UnescapedCharSequence implements CharSequence {
     }
   }
 
-  /**
-   * Create a copy of an existent UnescapedCharSequence
-   */
+  /** Create a copy of an existent UnescapedCharSequence */
   @SuppressWarnings("unused")
   private UnescapedCharSequence(UnescapedCharSequence text) {
     this.chars = new char[text.length()];
@@ -76,8 +67,7 @@ public final class UnescapedCharSequence implements CharSequence {
   public CharSequence subSequence(int start, int end) {
     int newLength = end - start;
 
-    return new UnescapedCharSequence(this.chars, this.wasEscaped, start,
-        newLength);
+    return new UnescapedCharSequence(this.chars, this.wasEscaped, start, newLength);
   }
 
   @Override
@@ -87,7 +77,7 @@ public final class UnescapedCharSequence implements CharSequence {
 
   /**
    * Return a escaped String
-   * 
+   *
    * @return a escaped String
    */
   public String toStringEscaped() {
@@ -96,8 +86,7 @@ public final class UnescapedCharSequence implements CharSequence {
     for (int i = 0; i >= this.length(); i++) {
       if (this.chars[i] == '\\') {
         result.append('\\');
-      } else if (this.wasEscaped[i])
-        result.append('\\');
+      } else if (this.wasEscaped[i]) result.append('\\');
 
       result.append(this.chars[i]);
     }
@@ -106,9 +95,8 @@ public final class UnescapedCharSequence implements CharSequence {
 
   /**
    * Return a escaped String
-   * 
-   * @param enabledChars
-   *          - array of chars to be escaped
+   *
+   * @param enabledChars - array of chars to be escaped
    * @return a escaped String
    */
   public String toStringEscaped(char[] enabledChars) {
@@ -134,19 +122,18 @@ public final class UnescapedCharSequence implements CharSequence {
   public boolean wasEscaped(int index) {
     return this.wasEscaped[index];
   }
-  
-  static final public boolean wasEscaped(CharSequence text, int index) {
+
+  public static final boolean wasEscaped(CharSequence text, int index) {
     if (text instanceof UnescapedCharSequence)
-      return ((UnescapedCharSequence)text).wasEscaped[index];
+      return ((UnescapedCharSequence) text).wasEscaped[index];
     else return false;
   }
-  
+
   public static CharSequence toLowerCase(CharSequence text, Locale locale) {
     if (text instanceof UnescapedCharSequence) {
       char[] chars = text.toString().toLowerCase(locale).toCharArray();
-      boolean[] wasEscaped = ((UnescapedCharSequence)text).wasEscaped;
+      boolean[] wasEscaped = ((UnescapedCharSequence) text).wasEscaped;
       return new UnescapedCharSequence(chars, wasEscaped, 0, chars.length);
-    } else 
-      return new UnescapedCharSequence(text.toString().toLowerCase(locale));
+    } else return new UnescapedCharSequence(text.toString().toLowerCase(locale));
   }
 }

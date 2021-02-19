@@ -139,8 +139,11 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
     }
-    if (cc != null)
-      rsp.add( "solr_home", cc.getSolrHome());
+    if (cc != null) {
+      rsp.add("solr_home", cc.getSolrHome());
+      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+    }
+
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "security", getSecurityInfo(req) );
@@ -341,7 +344,7 @@ public class SystemInfoHandler extends RequestHandlerBase
       // Mapped roles for this principal
       @SuppressWarnings("resource")
       AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
-      if (auth != null) {
+      if (auth instanceof RuleBasedAuthorizationPluginBase) {
         RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);

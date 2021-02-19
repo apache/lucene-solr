@@ -18,14 +18,12 @@ package org.apache.lucene.util;
 
 import org.apache.lucene.util.IntBlockPool.Allocator;
 
-
 /**
- * A {@link Allocator} implementation that recycles unused int
- * blocks in a buffer and reuses them in subsequent calls to
- * {@link #getIntBlock()}.
- * <p>
- * Note: This class is not thread-safe
- * </p>
+ * A {@link Allocator} implementation that recycles unused int blocks in a buffer and reuses them in
+ * subsequent calls to {@link #getIntBlock()}.
+ *
+ * <p>Note: This class is not thread-safe
+ *
  * @lucene.internal
  */
 public final class RecyclingIntBlockAllocator extends Allocator {
@@ -37,16 +35,12 @@ public final class RecyclingIntBlockAllocator extends Allocator {
 
   /**
    * Creates a new {@link RecyclingIntBlockAllocator}
-   * 
-   * @param blockSize
-   *          the block size in bytes
-   * @param maxBufferedBlocks
-   *          maximum number of buffered int block
-   * @param bytesUsed
-   *          {@link Counter} reference counting internally allocated bytes
+   *
+   * @param blockSize the block size in bytes
+   * @param maxBufferedBlocks maximum number of buffered int block
+   * @param bytesUsed {@link Counter} reference counting internally allocated bytes
    */
-  public RecyclingIntBlockAllocator(int blockSize, int maxBufferedBlocks,
-      Counter bytesUsed) {
+  public RecyclingIntBlockAllocator(int blockSize, int maxBufferedBlocks, Counter bytesUsed) {
     super(blockSize);
     freeByteBlocks = new int[maxBufferedBlocks][];
     this.maxBufferedBlocks = maxBufferedBlocks;
@@ -55,21 +49,18 @@ public final class RecyclingIntBlockAllocator extends Allocator {
 
   /**
    * Creates a new {@link RecyclingIntBlockAllocator}.
-   * 
-   * @param blockSize
-   *          the size of each block returned by this allocator
-   * @param maxBufferedBlocks
-   *          maximum number of buffered int blocks
+   *
+   * @param blockSize the size of each block returned by this allocator
+   * @param maxBufferedBlocks maximum number of buffered int blocks
    */
   public RecyclingIntBlockAllocator(int blockSize, int maxBufferedBlocks) {
     this(blockSize, maxBufferedBlocks, Counter.newCounter(false));
   }
 
   /**
-   * Creates a new {@link RecyclingIntBlockAllocator} with a block size of
-   * {@link IntBlockPool#INT_BLOCK_SIZE}, upper buffered docs limit of
-   * {@link #DEFAULT_BUFFERED_BLOCKS} ({@value #DEFAULT_BUFFERED_BLOCKS}).
-   * 
+   * Creates a new {@link RecyclingIntBlockAllocator} with a block size of {@link
+   * IntBlockPool#INT_BLOCK_SIZE}, upper buffered docs limit of {@link #DEFAULT_BUFFERED_BLOCKS}
+   * ({@value #DEFAULT_BUFFERED_BLOCKS}).
    */
   public RecyclingIntBlockAllocator() {
     this(IntBlockPool.INT_BLOCK_SIZE, 64, Counter.newCounter(false));
@@ -78,7 +69,7 @@ public final class RecyclingIntBlockAllocator extends Allocator {
   @Override
   public int[] getIntBlock() {
     if (freeBlocks == 0) {
-      bytesUsed.addAndGet(blockSize*Integer.BYTES);
+      bytesUsed.addAndGet(blockSize * Integer.BYTES);
       return new int[blockSize];
     }
     final int[] b = freeByteBlocks[--freeBlocks];
@@ -91,8 +82,8 @@ public final class RecyclingIntBlockAllocator extends Allocator {
     final int numBlocks = Math.min(maxBufferedBlocks - freeBlocks, end - start);
     final int size = freeBlocks + numBlocks;
     if (size >= freeByteBlocks.length) {
-      final int[][] newBlocks = new int[ArrayUtil.oversize(size,
-          RamUsageEstimator.NUM_BYTES_OBJECT_REF)][];
+      final int[][] newBlocks =
+          new int[ArrayUtil.oversize(size, RamUsageEstimator.NUM_BYTES_OBJECT_REF)][];
       System.arraycopy(freeByteBlocks, 0, newBlocks, 0, freeBlocks);
       freeByteBlocks = newBlocks;
     }
@@ -108,36 +99,29 @@ public final class RecyclingIntBlockAllocator extends Allocator {
     assert bytesUsed.get() >= 0;
   }
 
-  /**
-   * @return the number of currently buffered blocks
-   */
+  /** @return the number of currently buffered blocks */
   public int numBufferedBlocks() {
     return freeBlocks;
   }
 
-  /**
-   * @return the number of bytes currently allocated by this {@link Allocator}
-   */
+  /** @return the number of bytes currently allocated by this {@link Allocator} */
   public long bytesUsed() {
     return bytesUsed.get();
   }
 
-  /**
-   * @return the maximum number of buffered byte blocks
-   */
+  /** @return the maximum number of buffered byte blocks */
   public int maxBufferedBlocks() {
     return maxBufferedBlocks;
   }
 
   /**
    * Removes the given number of int blocks from the buffer if possible.
-   * 
-   * @param num
-   *          the number of int blocks to remove
+   *
+   * @param num the number of int blocks to remove
    * @return the number of actually removed buffers
    */
   public int freeBlocks(int num) {
-    assert num >= 0 : "free blocks must be >= 0 but was: "+ num;
+    assert num >= 0 : "free blocks must be >= 0 but was: " + num;
     final int stop;
     final int count;
     if (num > freeBlocks) {
@@ -150,7 +134,7 @@ public final class RecyclingIntBlockAllocator extends Allocator {
     while (freeBlocks > stop) {
       freeByteBlocks[--freeBlocks] = null;
     }
-    bytesUsed.addAndGet(-count*blockSize*Integer.BYTES);
+    bytesUsed.addAndGet(-count * blockSize * Integer.BYTES);
     assert bytesUsed.get() >= 0;
     return count;
   }

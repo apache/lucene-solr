@@ -18,8 +18,11 @@
 package org.apache.solr.util;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,9 +32,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.util.circuitbreaker.CPUCircuitBreaker;
 import org.apache.solr.util.circuitbreaker.CircuitBreaker;
+import org.apache.solr.util.circuitbreaker.CircuitBreakerManager;
 import org.apache.solr.util.circuitbreaker.MemoryCircuitBreaker;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -41,6 +46,9 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
+@SuppressWarnings({"rawtypes"})
 public class TestCircuitBreaker extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final static int NUM_DOCS = 20;
@@ -84,7 +92,13 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
     args.put(CommonParams.FL, "id");
 
-    CircuitBreaker circuitBreaker = new MockCircuitBreaker(h.getCore().getSolrConfig());
+    removeAllExistingCircuitBreakers();
+
+    PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+
+    CircuitBreaker circuitBreaker = new MockCircuitBreaker(circuitBreakerConfig);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
@@ -99,7 +113,12 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     args.put(QueryParsing.DEFTYPE, CircuitBreaker.NAME);
     args.put(CommonParams.FL, "id");
 
-    CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
+    removeAllExistingCircuitBreakers();
+
+    PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+    CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+    CircuitBreaker circuitBreaker = new FakeMemoryPressureCircuitBreaker(circuitBreakerConfig);
 
     h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
@@ -119,37 +138,105 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     AtomicInteger failureCount = new AtomicInteger();
 
     try {
-      CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(h.getCore().getSolrConfig());
+      removeAllExistingCircuitBreakers();
+
+      PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+      CircuitBreaker circuitBreaker = new BuildingUpMemoryPressureCircuitBreaker(circuitBreakerConfig);
 
       h.getCore().getCircuitBreakerManager().register(circuitBreaker);
 
+      List<Future<?>> futures = new ArrayList<>();
+
       for (int i = 0; i < 5; i++) {
-        executor.submit(() -> {
+        Future<?> future = executor.submit(() -> {
           try {
             h.query(req("name:\"john smith\""));
           } catch (SolrException e) {
-            if (!e.getMessage().startsWith("Circuit Breakers tripped")) {
-              if (log.isInfoEnabled()) {
-                String logMessage = "Expected error message for testBuildingMemoryPressure was not received. Error message " + e.getMessage();
-                log.info(logMessage);
-              }
-              throw new RuntimeException("Expected error message was not received. Error message " + e.getMessage());
-            }
+            assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
             failureCount.incrementAndGet();
           } catch (Exception e) {
             throw new RuntimeException(e.getMessage());
           }
         });
+
+        futures.add(future);
+      }
+
+      for  (Future<?> future : futures) {
+        try {
+          future.get();
+        } catch (Exception e) {
+          throw new RuntimeException(e.getMessage());
+        }
       }
 
       executor.shutdown();
       try {
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
         throw new RuntimeException(e.getMessage());
       }
 
       assertEquals("Number of failed queries is not correct", 1, failureCount.get());
+    } finally {
+      if (!executor.isShutdown()) {
+        executor.shutdown();
+      }
+    }
+  }
+
+  public void testFakeCPUCircuitBreaker() {
+    AtomicInteger failureCount = new AtomicInteger();
+
+    ExecutorService executor = ExecutorUtil.newMDCAwareCachedThreadPool(
+        new SolrNamedThreadFactory("TestCircuitBreaker"));
+    try {
+      removeAllExistingCircuitBreakers();
+
+      PluginInfo pluginInfo = h.getCore().getSolrConfig().getPluginInfo(CircuitBreakerManager.class.getName());
+
+      CircuitBreaker.CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerManager.buildCBConfig(pluginInfo);
+      CircuitBreaker circuitBreaker = new FakeCPUCircuitBreaker(circuitBreakerConfig);
+
+      h.getCore().getCircuitBreakerManager().register(circuitBreaker);
+
+      List<Future<?>> futures = new ArrayList<>();
+
+      for (int i = 0; i < 5; i++) {
+        Future<?> future = executor.submit(() -> {
+          try {
+            h.query(req("name:\"john smith\""));
+          } catch (SolrException e) {
+            assertThat(e.getMessage(), containsString("Circuit Breakers tripped"));
+            failureCount.incrementAndGet();
+          } catch (Exception e) {
+            throw new RuntimeException(e.getMessage());
+          }
+        });
+
+        futures.add(future);
+      }
+
+      for  (Future<?> future : futures) {
+        try {
+          future.get();
+        } catch (Exception e) {
+          throw new RuntimeException(e.getMessage());
+        }
+      }
+
+      executor.shutdown();
+      try {
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e.getMessage());
+      }
+
+      assertEquals("Number of failed queries is not correct",5, failureCount.get());
     } finally {
       if (!executor.isShutdown()) {
         executor.shutdown();
@@ -179,10 +266,16 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     );
   }
 
-  private class MockCircuitBreaker extends CircuitBreaker {
+  private void removeAllExistingCircuitBreakers() {
+    List<CircuitBreaker> registeredCircuitBreakers = h.getCore().getCircuitBreakerManager().getRegisteredCircuitBreakers();
 
-    public MockCircuitBreaker(SolrConfig solrConfig) {
-      super(solrConfig);
+    registeredCircuitBreakers.clear();
+  }
+
+  private static class MockCircuitBreaker extends MemoryCircuitBreaker {
+
+    public MockCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
     }
 
     @Override
@@ -197,10 +290,10 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     }
   }
 
-  private class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
+  private static class FakeMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
 
-    public FakeMemoryPressureCircuitBreaker(SolrConfig solrConfig) {
-      super(solrConfig);
+    public FakeMemoryPressureCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
     }
 
     @Override
@@ -210,11 +303,11 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
     }
   }
 
-  private class BuildingUpMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
+  private static class BuildingUpMemoryPressureCircuitBreaker extends MemoryCircuitBreaker {
     private AtomicInteger count;
 
-    public BuildingUpMemoryPressureCircuitBreaker(SolrConfig solrConfig) {
-      super(solrConfig);
+    public BuildingUpMemoryPressureCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
 
       this.count = new AtomicInteger(0);
     }
@@ -238,6 +331,17 @@ public class TestCircuitBreaker extends SolrTestCaseJ4 {
         log.info(logMessage);
       }
       return Long.MIN_VALUE; // Random number guaranteed to not trip the circuit breaker
+    }
+  }
+
+  private static class FakeCPUCircuitBreaker extends CPUCircuitBreaker {
+    public FakeCPUCircuitBreaker(CircuitBreakerConfig config) {
+      super(config);
+    }
+
+    @Override
+    protected double calculateLiveCPUUsage() {
+      return 92; // Return a value large enough to trigger the circuit breaker
     }
   }
 }

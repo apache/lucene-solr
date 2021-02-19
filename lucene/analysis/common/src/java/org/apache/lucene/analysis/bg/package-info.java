@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Bulgarian.
- */
+/** Analyzer for Bulgarian. */
 package org.apache.lucene.analysis.bg;

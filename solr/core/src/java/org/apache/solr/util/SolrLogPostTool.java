@@ -165,6 +165,10 @@ public class SolrLogPostTool {
     private boolean finished = false;
     private String cause;
     private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
+    private Pattern minute = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d)");
+    private Pattern tenSecond = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d:\\d)");
+
+
 
     public LogRecordReader(BufferedReader bufferedReader) throws IOException {
       this.bufferedReader = bufferedReader;
@@ -187,7 +191,12 @@ public class SolrLogPostTool {
 
         if (line != null) {
           SolrInputDocument lineDoc = new SolrInputDocument();
-          lineDoc.setField("date_dt", parseDate(line));
+          String date = parseDate(line);
+          String minute = parseMinute(line);
+          String tenSecond = parseTenSecond(line);
+          lineDoc.setField("date_dt", date);
+          lineDoc.setField("time_minute_s", minute);
+          lineDoc.setField("time_ten_second_s", tenSecond);
           lineDoc.setField("line_t", line);
           lineDoc.setField("type_s", "other"); // Overridden by known types below
 
@@ -245,7 +254,27 @@ public class SolrLogPostTool {
       Matcher m = p.matcher(line);
       if(m.find()) {
         String date = m.group(1);
-        return date.replace(" ", "T");
+        return date.replace(" ", "T")+"Z";
+      }
+
+      return null;
+    }
+
+    private String parseMinute(String line) {
+      Matcher m = minute.matcher(line);
+      if(m.find()) {
+        String date = m.group(1);
+        return date.replace(" ", "T")+":00Z";
+      }
+
+      return null;
+    }
+
+    private String parseTenSecond(String line) {
+      Matcher m = tenSecond.matcher(line);
+      if(m.find()) {
+        String date = m.group(1);
+        return date.replace(" ", "T")+"0Z";
       }
 
       return null;
@@ -474,55 +503,60 @@ public class SolrLogPostTool {
 
     private void addParams(SolrInputDocument doc,  String params) {
       String[] pairs = params.split("&");
-      for(String pair : pairs) {
+      for (String pair : pairs) {
         String[] parts = pair.split("=");
-        if(parts.length == 2 && parts[0].equals("q")) {
+        if (parts.length == 2 && parts[0].equals("q")) {
           String dq = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "q_s", dq);
           setFieldIfUnset(doc, "q_t", dq);
         }
 
-        if(parts[0].equals("rows")) {
+        if (parts[0].equals("rows")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "rows_i", dr);
         }
 
-        if(parts[0].equals("distrib")) {
+        if (parts[0].equals("start")) {
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
+          setFieldIfUnset(doc, "start_i", dr);
+        }
+
+        if (parts[0].equals("distrib")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "distrib_s", dr);
         }
 
-        if(parts[0].equals("shards")) {
+        if (parts[0].equals("shards")) {
           setFieldIfUnset(doc, "shards_s", "true");
         }
 
-        if(parts[0].equals("ids") && !isRTGRequest(doc)) {
+        if (parts[0].equals("ids") && !isRTGRequest(doc)) {
           setFieldIfUnset(doc, "ids_s", "true");
         }
 
-        if(parts[0].equals("isShard")) {
+        if (parts[0].equals("isShard")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "isShard_s", dr);
         }
 
-        if(parts[0].equals("wt")) {
+        if (parts[0].equals("wt")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "wt_s", dr);
         }
 
-        if(parts[0].equals("facet")) {
+        if (parts[0].equals("facet")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           setFieldIfUnset(doc, "facet_s", dr);
         }
 
-        if(parts[0].equals("shards.purpose")) {
+        if (parts[0].equals("shards.purpose")) {
           try {
             int purpose = Integer.parseInt(parts[1]);
             String[] purposes = getRequestPurposeNames(purpose);
             for (String p : purposes) {
               doc.addField("purpose_ss", p);
             }
-          } catch(Throwable e) {
+          } catch (Throwable e) {
             //We'll just sit on this for now and not interrupt the load for this one field.
           }
         }

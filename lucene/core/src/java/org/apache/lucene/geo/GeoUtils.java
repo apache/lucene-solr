@@ -56,20 +56,31 @@ public final class GeoUtils {
   public static final double EARTH_MEAN_RADIUS_METERS = 6_371_008.7714;
 
   // No instance:
-  private GeoUtils() {
-  }
+  private GeoUtils() {}
 
   /** validates latitude value is within standard +/-90 coordinate bounds */
   public static void checkLatitude(double latitude) {
     if (Double.isNaN(latitude) || latitude < MIN_LAT_INCL || latitude > MAX_LAT_INCL) {
-      throw new IllegalArgumentException("invalid latitude " +  latitude + "; must be between " + MIN_LAT_INCL + " and " + MAX_LAT_INCL);
+      throw new IllegalArgumentException(
+          "invalid latitude "
+              + latitude
+              + "; must be between "
+              + MIN_LAT_INCL
+              + " and "
+              + MAX_LAT_INCL);
     }
   }
 
   /** validates longitude value is within standard +/-180 coordinate bounds */
   public static void checkLongitude(double longitude) {
     if (Double.isNaN(longitude) || longitude < MIN_LON_INCL || longitude > MAX_LON_INCL) {
-      throw new IllegalArgumentException("invalid longitude " +  longitude + "; must be between " + MIN_LON_INCL + " and " + MAX_LON_INCL);
+      throw new IllegalArgumentException(
+          "invalid longitude "
+              + longitude
+              + "; must be between "
+              + MIN_LON_INCL
+              + " and "
+              + MAX_LON_INCL);
     }
   }
 
@@ -79,13 +90,15 @@ public final class GeoUtils {
 
   /**
    * Returns the trigonometric sine of an angle converted as a cos operation.
-   * <p>
-   * Note that this is not quite right... e.g. sin(0) != 0
-   * <p>
-   * Special cases:
+   *
+   * <p>Note that this is not quite right... e.g. sin(0) != 0
+   *
+   * <p>Special cases:
+   *
    * <ul>
-   *  <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
+   *   <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
    * </ul>
+   *
    * @param a an angle, in radians.
    * @return the sine of the argument.
    * @see Math#sin(double)
@@ -96,8 +109,8 @@ public final class GeoUtils {
   }
 
   /**
-   * binary search to find the exact sortKey needed to match the specified radius
-   * any sort key lte this is a query match.
+   * binary search to find the exact sortKey needed to match the specified radius any sort key lte
+   * this is a query match.
    */
   public static double distanceQuerySortKey(double radius) {
     // effectively infinite
@@ -129,33 +142,41 @@ public final class GeoUtils {
   }
 
   /**
-   * Compute the relation between the provided box and distance query.
-   * This only works for boxes that do not cross the dateline.
+   * Compute the relation between the provided box and distance query. This only works for boxes
+   * that do not cross the dateline.
    */
   public static PointValues.Relation relate(
-      double minLat, double maxLat, double minLon, double maxLon,
-      double lat, double lon, double distanceSortKey, double axisLat) {
+      double minLat,
+      double maxLat,
+      double minLon,
+      double maxLon,
+      double lat,
+      double lon,
+      double distanceSortKey,
+      double axisLat) {
 
     if (minLon > maxLon) {
       throw new IllegalArgumentException("Box crosses the dateline");
     }
 
-    if ((lon < minLon || lon > maxLon) && (axisLat + Rectangle.AXISLAT_ERROR < minLat || axisLat - Rectangle.AXISLAT_ERROR > maxLat)) {
+    if ((lon < minLon || lon > maxLon)
+        && (axisLat + Rectangle.AXISLAT_ERROR < minLat
+            || axisLat - Rectangle.AXISLAT_ERROR > maxLat)) {
       // circle not fully inside / crossing axis
-      if (SloppyMath.haversinSortKey(lat, lon, minLat, minLon) > distanceSortKey &&
-          SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) > distanceSortKey &&
-          SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) > distanceSortKey &&
-          SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) > distanceSortKey) {
+      if (SloppyMath.haversinSortKey(lat, lon, minLat, minLon) > distanceSortKey
+          && SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) > distanceSortKey
+          && SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) > distanceSortKey
+          && SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) > distanceSortKey) {
         // no points inside
         return Relation.CELL_OUTSIDE_QUERY;
       }
     }
 
-    if (within90LonDegrees(lon, minLon, maxLon) &&
-        SloppyMath.haversinSortKey(lat, lon, minLat, minLon) <= distanceSortKey &&
-        SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) <= distanceSortKey &&
-        SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) <= distanceSortKey &&
-        SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) <= distanceSortKey) {
+    if (within90LonDegrees(lon, minLon, maxLon)
+        && SloppyMath.haversinSortKey(lat, lon, minLat, minLon) <= distanceSortKey
+        && SloppyMath.haversinSortKey(lat, lon, minLat, maxLon) <= distanceSortKey
+        && SloppyMath.haversinSortKey(lat, lon, maxLat, minLon) <= distanceSortKey
+        && SloppyMath.haversinSortKey(lat, lon, maxLat, maxLon) <= distanceSortKey) {
       // we are fully enclosed, collect everything within this subtree
       return Relation.CELL_INSIDE_QUERY;
     }
@@ -194,40 +215,64 @@ public final class GeoUtils {
   }
 
   /** uses orient method to compute whether two line segments cross */
-  public static boolean lineCrossesLine(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
-    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) < 0 &&
-        orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) < 0) {
-      return true;
-    }
-    return false;
-  }
-
-  /** uses orient method to compute whether two line segments cross; boundaries included - returning true for
-   * lines that terminate on each other.
-   *
-   * e.g., (plus sign) + == true, and (capital 't') T == true
-   *
-   * Use {@link #lineCrossesLine} to exclude lines that terminate on each other from the truth table
-   **/
-  public static boolean lineCrossesLineWithBoundary(double a1x, double a1y, double b1x, double b1y, double a2x, double a2y, double b2x, double b2y) {
-    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) <= 0 &&
-        orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) <= 0) {
+  public static boolean lineCrossesLine(
+      double a1x,
+      double a1y,
+      double b1x,
+      double b1y,
+      double a2x,
+      double a2y,
+      double b2x,
+      double b2y) {
+    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) < 0
+        && orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) < 0) {
       return true;
     }
     return false;
   }
 
   /**
-   * used to define the orientation of 3 points
-   * -1 = Clockwise
-   * 0 = Colinear
-   * 1 = Counter-clockwise
-   **/
+   * uses orient method to compute whether two line segments cross; boundaries included - returning
+   * true for lines that terminate on each other.
+   *
+   * <p>e.g., (plus sign) + == true, and (capital 't') T == true
+   *
+   * <p>Use {@link #lineCrossesLine} to exclude lines that terminate on each other from the truth
+   * table
+   */
+  public static boolean lineCrossesLineWithBoundary(
+      double a1x,
+      double a1y,
+      double b1x,
+      double b1y,
+      double a2x,
+      double a2y,
+      double b2x,
+      double b2y) {
+    if (orient(a2x, a2y, b2x, b2y, a1x, a1y) * orient(a2x, a2y, b2x, b2y, b1x, b1y) <= 0
+        && orient(a1x, a1y, b1x, b1y, a2x, a2y) * orient(a1x, a1y, b1x, b1y, b2x, b2y) <= 0) {
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * used to define the orientation of 3 points -1 = Clockwise 0 = Colinear 1 = Counter-clockwise
+   */
   public enum WindingOrder {
-    CW(-1), COLINEAR(0), CCW(1);
+    CW(-1),
+    COLINEAR(0),
+    CCW(1);
     private final int sign;
-    WindingOrder(int sign) { this.sign = sign; }
-    public int sign() {return sign;}
+
+    WindingOrder(int sign) {
+      this.sign = sign;
+    }
+
+    public int sign() {
+      return sign;
+    }
+
     public static WindingOrder fromSign(final int sign) {
       if (sign == CW.sign) return CW;
       if (sign == COLINEAR.sign) return COLINEAR;

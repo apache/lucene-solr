@@ -24,35 +24,34 @@ import org.apache.lucene.util.StringHelper;
 
 /**
  * Term of a block line.
- * <p>
- * Contains the term bytes and the minimal distinguishing prefix (MDP) length
- * of this term.
- * <p>
- * The MDP is the minimal prefix that distinguishes a term from its immediate
- * previous term (terms are alphabetically sorted).
- * <p>
- * The incremental encoding suffix is the suffix starting at the last byte of
- * the MDP (inclusive).
- * <p>
- * Example:
- * For the block
+ *
+ * <p>Contains the term bytes and the minimal distinguishing prefix (MDP) length of this term.
+ *
+ * <p>The MDP is the minimal prefix that distinguishes a term from its immediate previous term
+ * (terms are alphabetically sorted).
+ *
+ * <p>The incremental encoding suffix is the suffix starting at the last byte of the MDP
+ * (inclusive).
+ *
+ * <p>Example: For the block
+ *
  * <pre>
  * client
  * color
  * company
  * companies
  * </pre>
- * "color" - MDP is "co" - incremental encoding suffix is "olor".
- * <br>
- * "company" - MDP is "com" - incremental encoding suffix is "mpany".
- * <br>
+ *
+ * "color" - MDP is "co" - incremental encoding suffix is "olor". <br>
+ * "company" - MDP is "com" - incremental encoding suffix is "mpany". <br>
  * "companies" - MDP is "compani" - incremental encoding suffix is "ies".
  *
  * @lucene.experimental
  */
 public class TermBytes implements Accountable {
 
-  private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(TermBytes.class);
+  private static final long BASE_RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(TermBytes.class);
 
   protected int mdpLength;
   protected BytesRef term;
@@ -62,8 +61,10 @@ public class TermBytes implements Accountable {
   }
 
   public TermBytes reset(int mdpLength, BytesRef term) {
-    assert term.length > 0 && mdpLength > 0 || term.length == 0 && mdpLength == 0 : "Inconsistent mdpLength=" + mdpLength + ", term.length=" + term.length;
-    assert term.length == 0 || mdpLength <= term.length : "Too large mdpLength=" + mdpLength + ", term.length=" + term.length;
+    assert term.length > 0 && mdpLength > 0 || term.length == 0 && mdpLength == 0
+        : "Inconsistent mdpLength=" + mdpLength + ", term.length=" + term.length;
+    assert term.length == 0 || mdpLength <= term.length
+        : "Too large mdpLength=" + mdpLength + ", term.length=" + term.length;
     assert term.offset == 0;
     this.mdpLength = mdpLength;
     this.term = term;
@@ -78,9 +79,7 @@ public class TermBytes implements Accountable {
     return mdpLength;
   }
 
-  /**
-   * @return This term bytes.
-   */
+  /** @return This term bytes. */
   public BytesRef getTerm() {
     return term;
   }
@@ -102,17 +101,17 @@ public class TermBytes implements Accountable {
   }
 
   /**
-   * Computes the length of the minimal distinguishing prefix (MDP) between
-   * a current term and its previous term (terms are alphabetically sorted).
-   * <p>
-   * Example: If previous="car" and current="cartridge", then MDP length is
-   * 4. It is the length of the minimal prefix distinguishing "cartridge" from
-   * "car", that is, the length of "cart".
+   * Computes the length of the minimal distinguishing prefix (MDP) between a current term and its
+   * previous term (terms are alphabetically sorted).
+   *
+   * <p>Example: If previous="car" and current="cartridge", then MDP length is 4. It is the length
+   * of the minimal prefix distinguishing "cartridge" from "car", that is, the length of "cart".
    *
    * @see TermBytes
    */
   public static int computeMdpLength(BytesRef previousTerm, BytesRef currentTerm) {
-    int mdpLength = previousTerm == null ? 1 : StringHelper.sortKeyLength(previousTerm, currentTerm);
+    int mdpLength =
+        previousTerm == null ? 1 : StringHelper.sortKeyLength(previousTerm, currentTerm);
     return Math.min(mdpLength, currentTerm.length);
   }
 

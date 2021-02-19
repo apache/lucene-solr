@@ -67,7 +67,7 @@ There are presently two types of routed alias: time routed and category routed. 
   but share some common behavior.
 
 When processing an update for a routed alias, Solr initializes its
-  <<update-request-processors.adoc#update-request-processors,UpdateRequestProcessor>> chain as usual, but
+  <<update-request-processors.adoc#,UpdateRequestProcessor>> chain as usual, but
   when `DistributedUpdateProcessor` (DUP) initializes, it detects that the update targets a routed alias and injects
   `RoutedAliasUpdateProcessor` (RAUP) in front of itself.
 RAUP, in coordination with the Overseer, is the main part of a routed alias, and must immediately precede DUP. It is not
@@ -83,7 +83,7 @@ WARNING: It's extremely important with all routed aliases that the route values 
 with a different route value for the same ID produces two distinct documents with the same ID accessible via the alias.
 All query time behavior of the routed alias is *_undefined_* and not easily predictable once duplicate ID's exist.
 
-CAUTION: It is a bad idea to use "data driven" mode (aka <<schemaless-mode.adoc#schemaless-mode,schemaless-mode>>) with
+CAUTION: It is a bad idea to use "data driven" mode (aka <<schemaless-mode.adoc#,schemaless-mode>>) with
 routed aliases, as duplicate schema mutations might happen concurrently leading to errors.
 
 
@@ -389,8 +389,6 @@ Some _potential_ areas for improvement that _are not implemented yet_ are:
 
 * Collections might be constrained by their size instead of or in addition to time or category value.
   This might be implemented as another type of routed alias, or possibly as an option on the existing routed aliases
-
-* Compatibility with CDCR.
 
 * Option for deletion of aliases that also deletes the underlying collections in one step. Routed Aliases may quickly
   create more collections than expected during initial testing. Removing them after such events is overly tedious.

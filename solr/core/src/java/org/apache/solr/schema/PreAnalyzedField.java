@@ -149,7 +149,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f)
           throws IOException {
-    writer.writeStr(name, f.stringValue(), true);
+    writer.writeStr(name, toExternal(f), true);
   }
   
   /** Utility method to convert a field to a string that is parse-able by this

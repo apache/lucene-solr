@@ -16,9 +16,6 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.packagemanager.PackageUtils.print;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
@@ -45,6 +42,9 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.packagemanager.PackageUtils.print;
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
 
 public class PackageTool extends SolrCLI.ToolBase {
 
@@ -82,7 +82,7 @@ public class PackageTool extends SolrCLI.ToolBase {
 
       try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
         if (cmd != null) {
-          packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost); 
+          packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost);
           try {
             repositoryManager = new RepositoryManager(solrClient, packageManager);
 
@@ -98,7 +98,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                 repositoryManager.addKey(FileUtils.readFileToByteArray(new File(keyFilename)), Paths.get(keyFilename).getFileName().toString());
                 break;
               case "list-installed":
-                PackageUtils.printGreen("Installed packages:\n-----");                
+                PackageUtils.printGreen("Installed packages:\n-----");
                 for (SolrPackageInstance pkg: packageManager.fetchInstalledPackageInstances()) {
                   PackageUtils.printGreen(pkg);
                 }
@@ -118,7 +118,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                   Map<String, SolrPackageInstance> packages = packageManager.getPackagesDeployed(collection);
                   PackageUtils.printGreen("Packages deployed on " + collection + ":");
                   for (String packageName: packages.keySet()) {
-                    PackageUtils.printGreen("\t" + packages.get(packageName));                 
+                    PackageUtils.printGreen("\t" + packages.get(packageName));
                   }
                 } else {
                   String packageName = cli.getArgs()[1];
@@ -176,11 +176,24 @@ public class PackageTool extends SolrCLI.ToolBase {
                 }
                 break;
               }
+              case "uninstall": {
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                if (parsedVersion.second() == null) {
+                  throw new SolrException(ErrorCode.BAD_REQUEST, "Package name and version are both required. Actual: " + cli.getArgList().get(1));
+                }
+                String packageName = parsedVersion.first();
+                String version = parsedVersion.second();
+                packageManager.uninstall(packageName, version);
+                break;
+              }
               case "help":
               case "usage":
                 print("Package Manager\n---------------");
                 printGreen("./solr package add-repo <repository-name> <repository-url>");
                 print("Add a repository to Solr.");
+                print("");
+                printGreen("./solr package add-key <file-containing-trusted-key>");
+                print("Add a trusted key to Solr.");
                 print("");
                 printGreen("./solr package install <package-name>[:<version>] ");
                 print("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
@@ -202,6 +215,9 @@ public class PackageTool extends SolrCLI.ToolBase {
                 print("");
                 printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
                 print("Undeploys a package from specified collection(s)");
+                print("");
+                printGreen("./solr package uninstall <package-name>:<version>");
+                print("Uninstall an unused package with specified version from Solr. Both package name and version are required.");
                 print("\n");
                 print("Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
                 print("      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
@@ -245,44 +261,44 @@ public class PackageTool extends SolrCLI.ToolBase {
         .argName("URL")
         .hasArg()
         .required(true)
-        .desc("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL)
+        .desc("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL + '.')
         .build(),
 
         Option.builder("collections")
         .argName("COLLECTIONS")
         .hasArg()
         .required(false)
-        .desc("List of collections. Run './solr package help' for more details.")
+        .desc("Specifies that this action should affect plugins for the given collections only, excluding cluster level plugins.")
         .build(),
 
         Option.builder("cluster")
         .required(false)
-        .desc("Needed to install cluster level plugins in a package. Run './solr package help' for more details.")
+        .desc("Specifies that this action should affect cluster-level plugins only.")
         .build(),
 
         Option.builder("p")
         .argName("PARAMS")
         .hasArgs()
         .required(false)
-        .desc("List of parameters to be used with deploy command. Run './solr package help' for more details.")
+        .desc("List of parameters to be used with deploy command.")
         .longOpt("param")
         .build(),
 
         Option.builder("u")
         .required(false)
-        .desc("If a deployment is an update over a previous deployment. Run './solr package help' for more details.")
+        .desc("If a deployment is an update over a previous deployment.")
         .longOpt("update")
         .build(),
 
         Option.builder("c")
         .required(false)
-        .desc("Run './solr package help' for more details.")
+        .desc("The collection to apply the package to, not required.")
         .longOpt("collection")
         .build(),
 
         Option.builder("y")
         .required(false)
-        .desc("Run './solr package help' for more details.")
+        .desc("Don't prompt for input; accept all default choices, defaults to false.")
         .longOpt("noprompt")
         .build()
     };

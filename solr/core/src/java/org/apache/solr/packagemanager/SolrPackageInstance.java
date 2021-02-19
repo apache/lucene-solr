@@ -46,7 +46,9 @@ public class SolrPackageInstance implements ReflectMapWriter {
 
   final public Map<String, String> parameterDefaults;
 
-  @JsonIgnore
+  public List<String> files;
+
+    @JsonIgnore
   private Object customData;
   
   @JsonIgnore

@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.util;
 
-
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 public class TestMergedIterator extends LuceneTestCase {
   private static final int REPEATS = 2;
@@ -40,7 +38,7 @@ public class TestMergedIterator extends LuceneTestCase {
     for (int i = 0; i < itrs.length; i++) {
       itrs[i] = new ArrayList<Integer>().iterator();
     }
-    merged = new MergedIterator<>( itrs );
+    merged = new MergedIterator<>(itrs);
     assertFalse(merged.hasNext());
   }
 
@@ -122,7 +120,8 @@ public class TestMergedIterator extends LuceneTestCase {
       int sumValsOnItr = 0;
       for (int itrWithVal = 0; itrWithVal < itrsWithVal; itrWithVal++) {
         int list = random.nextInt(maxList);
-        int valsOnItr = specifiedValsOnItr < 0 ? (1 + random.nextInt(-specifiedValsOnItr)) : specifiedValsOnItr;
+        int valsOnItr =
+            specifiedValsOnItr < 0 ? (1 + random.nextInt(-specifiedValsOnItr)) : specifiedValsOnItr;
         maxValsOnItr = Math.max(maxValsOnItr, valsOnItr);
         sumValsOnItr += valsOnItr;
         for (int valOnItr = 0; valOnItr < valsOnItr; valOnItr++) {
@@ -142,12 +141,12 @@ public class TestMergedIterator extends LuceneTestCase {
     for (int i = 0; i < numLists; i++) {
       itrs[i] = lists[i].iterator();
     }
-    
+
     MergedIterator<Integer> mergedItr = new MergedIterator<>(removeDups, itrs);
     Iterator<Integer> expectedItr = expected.iterator();
     while (expectedItr.hasNext()) {
       assertTrue(mergedItr.hasNext());
-      assertEquals(expectedItr.next(), mergedItr.next()); 
+      assertEquals(expectedItr.next(), mergedItr.next());
     }
     assertFalse(mergedItr.hasNext());
   }

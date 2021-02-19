@@ -16,20 +16,18 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 
 /**
- * Open an index reader.
- * <br>Other side effects: index reader object in perfRunData is set.
- * <br> Optional params commitUserData eg. OpenReader(false,commit1)
+ * Open an index reader. <br>
+ * Other side effects: index reader object in perfRunData is set. <br>
+ * Optional params commitUserData eg. OpenReader(false,commit1)
  */
 public class OpenReaderTask extends PerfTask {
   public static final String USER_DATA = "userData";
@@ -44,16 +42,16 @@ public class OpenReaderTask extends PerfTask {
     Directory dir = getRunData().getDirectory();
     DirectoryReader r = null;
     if (commitUserData != null) {
-      r = DirectoryReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData)); 
+      r = DirectoryReader.open(OpenReaderTask.findIndexCommit(dir, commitUserData));
     } else {
-      r = DirectoryReader.open(dir); 
+      r = DirectoryReader.open(dir);
     }
     getRunData().setIndexReader(r);
     // We transfer reference to the run data
     r.decRef();
     return 1;
   }
- 
+
   @Override
   public void setParams(String params) {
     super.setParams(params);
@@ -73,7 +71,7 @@ public class OpenReaderTask extends PerfTask {
   public static IndexCommit findIndexCommit(Directory dir, String userData) throws IOException {
     Collection<IndexCommit> commits = DirectoryReader.listCommits(dir);
     for (final IndexCommit ic : commits) {
-      Map<String,String> map = ic.getUserData();
+      Map<String, String> map = ic.getUserData();
       String ud = null;
       if (map != null) {
         ud = map.get(USER_DATA);

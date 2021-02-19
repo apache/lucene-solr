@@ -18,7 +18,6 @@ package org.apache.lucene.queryparser.surround.query;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class Test01Exceptions extends LuceneTestCase {
@@ -58,12 +57,9 @@ public class Test01Exceptions extends LuceneTestCase {
   };
 
   public void test01Exceptions() throws Exception {
-    String m = ExceptionQueryTst.getFailQueries(exceptionQueries, verbose);
+    String m = TestExceptionQuery.getFailQueries(exceptionQueries, verbose);
     if (m.length() > 0) {
       fail("No ParseException for:\n" + m);
     }
   }
 }
-
-
-

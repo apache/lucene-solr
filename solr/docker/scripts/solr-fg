@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# start solr in the foreground
+set -e
+
+if [[ "$VERBOSE" == "yes" ]]; then
+    set -x
+fi
+
+echo "Starting Solr $SOLR_VERSION"
+# determine TINI default. If it is already set, assume the user knows what they want
+if [[ -z "${TINI:-}" ]]; then
+  if [[ "$$" == 1 ]]; then
+    # Default to running tini, so we can run with an OOM script and have 'kill -9' work
+    TINI=yes
+  else
+    # Presumably we're already running under tini through 'docker --init', in which case we
+    # don't need to run it twice.
+    # It's also possible that we're run from a wrapper script without exec,
+    # in which case running tini would not be ideal either.
+    TINI=no
+  fi
+fi
+if [[ "$TINI" == yes ]]; then
+  exec tini -- solr -f "$@"
+elif [[ "$TINI" == no ]]; then
+  exec solr -f "$@"
+else
+  echo "invalid value TINI=$TINI"
+  exit 1
+fi

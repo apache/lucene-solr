@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -31,8 +29,8 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestSameTokenSamePosition extends LuceneTestCase {
 
   /**
-   * Attempt to reproduce an assertion error that happens
-   * only with the trunk version around April 2011.
+   * Attempt to reproduce an assertion error that happens only with the trunk version around April
+   * 2011.
    */
   public void test() throws Exception {
     Directory dir = newDirectory();
@@ -43,10 +41,8 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
     riw.close();
     dir.close();
   }
-  
-  /**
-   * Same as the above, but with more docs
-   */
+
+  /** Same as the above, but with more docs */
   public void testMoreDocs() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
@@ -63,13 +59,14 @@ public class TestSameTokenSamePosition extends LuceneTestCase {
 final class BugReproTokenStream extends TokenStream {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
   private static final int TOKEN_COUNT = 4;
   private int nextTokenIndex = 0;
-  private final String terms[] = new String[]{"six", "six", "drunken", "drunken"};
-  private final int starts[] = new int[]{0, 0, 4, 4};
-  private final int ends[] = new int[]{3, 3, 11, 11};
-  private final int incs[] = new int[]{1, 0, 1, 0};
+  private final String terms[] = new String[] {"six", "six", "drunken", "drunken"};
+  private final int starts[] = new int[] {0, 0, 4, 4};
+  private final int ends[] = new int[] {3, 3, 11, 11};
+  private final int incs[] = new int[] {1, 0, 1, 0};
 
   @Override
   public boolean incrementToken() {

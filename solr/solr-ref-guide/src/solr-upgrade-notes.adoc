@@ -28,7 +28,7 @@ your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
 file found in your Solr package. That file includes all the changes and updates
 that may effect your existing implementation.
 
-Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
+Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#,Upgrading a Solr Cluster>>.
 
 == Upgrading to 9.x Releases (NOT RELEASED)
 
@@ -37,6 +37,173 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 == Upgrading to 8.x Releases
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
+
+=== Solr 8.9
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote89[8.9 Release Notes^]
+for an overview of the main new features of Solr 8.9.
+
+When upgrading to 8.9.x users should be aware of the following major changes from 8.8.
+
+*Embedded Solr Server*
+
+* When using EmbeddedSolrServer, it will no longer close CoreContainer instances that were passed to it.
+
+=== Solr 8.8
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote88[8.8 Release Notes^]
+for an overview of the main new features of Solr 8.8.
+
+When upgrading to 8.8.x users should be aware of the following major changes from 8.7.
+
+*Nested Documents*
+
+* When doing atomic/partial updates to a child document:
+** Supply the `\_root_` field (the ID of the root document) so that Solr understands you are manipulating a child document and not a root document.
+In its absence, Solr looks at the `\_route_` parameter but this may change in the future because it's not an ideal substitute.
+If neither are present, Solr assumes you are updating a root document.
+If this assumption is false, Solr will do a cheap check that usually detects the problem and will
+throw an exception to alert you of the need to specify the Root ID.
+This backwards incompatible change was done to increase performance and robustness.
+** This feature no longer requires `stored=true` or `docValues=true` on the `\_root_` field.
+You might have it for other purposes though (e.g., for `uniqueBlock(...)`).
+** This feature no longer requires the `\_nest_path_` field, although you probably ought to
+continue to define it as it's useful for other things.
+
+*Removed Contribs*
+
+* The search results clustering contrib (Carrot2) has been removed from 8.x Solr due to lack of Java 1.8 compatibility in the dependency that provides online clustering of search results. The contrib will be re-introduced in Solr 9.0.
+
+*Learning to Rank*
+
+* Interleaving support has been added to Learning to Rank (LTR).
+Currently only the Team Draft Interleaving algorithm is supported.
+For examples using this feature, see the section <<learning-to-rank.adoc#running-a-rerank-query-interleaving-two-models,Running a Rerank Query Interleaving Two Models>>.
+
+*Metrics*
+
+* Two metrics have been added for SolrCloud's Overseer:
+** `solr_metrics_overseer_stateUpdateQueueSize`
+** `solr_metrics_overseer_collectionWorkQueueSize`
+
+*Prometheus Exporter*
+
+* The `./bin` scripts included with the Prometheus Exporter contrib now allow use of custom java options with environment variables.
+See the section <<monitoring-solr-with-prometheus-and-grafana.adoc#environment-variable-options,Environment Variable Options>> for more details.
+* The default Grafana dashboards now include panels for query performance monitoring.
+The default Prometheus Exporter configuration includes metrics like queries-per-second (QPS) and 95th percentiles (P95) to populate the new panels.
+* The default Prometheus Exporter configuration also includes the two new metrics mentioned in the Metrics above.
+
+*Solr Home*
+
+* The internal logic for identifying 'Solr Home' (`solr.solr.home`) has been refactored to make testing less error prone.
+Plugin developers using `SolrPaths.locateSolrHome()` or 'new `SolrResourceLoader`' should check deprecation warnings as existing some existing functionality will be removed in 9.0.
+https://issues.apache.org/jira/browse/SOLR-14934[SOLR-14934] has more technical details about this change for those concerned.
+
+*base_url removed from stored state*
+
+As of Solr 8.8.0, the `base_url` property was removed from the stored state for replicas (SOLR-12182). If you're able to upgrade SolrJ to 8.8.x
+for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1) to better align the stored state
+in Zookeeper with future versions of Solr. However, if you are not able to upgrade SolrJ to 8.8.x for all client applications,
+then leave the default `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url` in Zookeeper.
+
+You may also see some NPE in collection state updates during a rolling upgrade to 8.8.0 from a previous version of Solr. After upgrading all nodes in your cluster
+to 8.8.0, collections should fully recover. Trigger another rolling restart if there are any replicas that do not recover after the upgrade to re-elect leaders.
+
+=== Solr 8.7
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote87[8.7 Release Notes^]
+for an overview of the main new features of Solr 8.7.
+
+When upgrading to 8.7.x users should be aware of the following major changes from 8.6.
+
+*Autoscaling*
+
+* If upgrading from **8.6.0**, please see the <<Solr 8.6.1,8.6.1 Upgrade notes>> below for information on performance degradations introduced in 8.6.0 that require some intervention to resolve.
+If you are already on 8.6.1 or higher, you can ignore these instructions.
+
+*Deprecations*
+
+* The autoscaling framework is now formally deprecated and will be removed in Solr 9.0.
+The Solr community is working on pluggable API to replace this functionality, with the goal for it to be ready by the time 9.0 is released. Deprecations include: autoscaling policy, triggers, `withCollection` support, simulation framework, autoscaling suggestions tab in the UI, `autoAddReplicas` and `UTILIZENODE` command.
+
+* Similarly, rule-based replica placement strategy has been deprecated and will be replaced
+  in Solr 9.0 by APIs for replica placement and cluster events, with plugin-based implementations.
+
+* Support for detecting spinning disks has been removed in LUCENE-9576. Corresponding
+`spins` metrics in Solr still exist but now they always return `false` and will be removed in Solr 9.0.
+
+*Legacy Scaling (non-SolrCloud) Terminology Updated*
+
+* Solr has replaced the terms "master" and "slave" in the codebase and all documentation with "leader" and "follower".
++
+This impacts the functionality described in the section <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>.
+This functionality has only changed in terms of parameter names changed, and we do not expect any back-compatibility issues on upgrade to 8.7 or even 9.0 later.
++
+However, users should update their `solrconfig.xml` files after completing the upgrade on all nodes of a cluster.
+Comparing your configuration to the updated configuration examples in <<index-replication.adoc#,Index Replication>> will show examples of what needs to change, but here are the main changes:
++
+. On the replication leader, in the definition of the `/replication` request handler:
+.. Replace "master" with "leader".
+.. Replace "slave" with "follower" if the former term is used in the name of any follower `solrconfig.xml` file definitions.
+This file can be named anything, so you can change it to whatever you'd like to call it if you'd like.
+.. Replace "slave" with "follower" if the former term is used in a replication repeater configuration.
+. On the replication follower, in the definition of the `/replication` request handler:
+.. Replace "masterUrl" with "leaderUrl".
+.. Replace "slave" with "follower" if the former term is used in a repeater configuration.
+
+*JSON Facets*
+
+* Performance enhancements for the `relatedness()` statistics function are included with 8.7.
+These yield the highest benefits with high-cardinality fields and can be disabled if working with lower cardinality fields with a new `sweep_collection` parameter.
+See the section <<json-facet-api.adoc#relatedness-options,relatedness() Options>> for details.
+
+*solr.in.sh / solr.in.cmd*
+
+* Solr has relied on the `SOLR_STOP_WAIT` parameter defined in `solr.in.sh` or `solr.in.cmd` to determine how long to wait on _startup_. A new parameter `SOLR_START_WAIT` allows defining how long Solr should wait for start up to complete.
++
+If the time set by this parameter is exceeded, Solr will exit the startup process and return the last few lines of the `solr.log` file to the terminal.
++
+By default, this parameter is set to the same value as `SOLR_STOP_WAIT`.
+
+* The default ZooKeeper client timeout (`ZK_CLIENT_TIMEOUT`) is now 30 seconds (`30000` milliseconds) instead of 15.
+
+*Configsets*
+
+* It's now possible to overwrite an existing configset when uploading changes by supplying the `overwrite=true` parameter to the <<configsets-api.adoc#configsets-upload,Configset API>>.
++
+A related parameter is `cleanup=true`, which allows deleting any files from the old configset that are left behind after the overwrite.
++
+The default for both of these parameters is `false`.
+
+* When deleting a collection that has an automatically created configset (i.e., the configset was copied from the `_default` collection when the collection was created), the configset will also be deleted if it is not in use by any other collection.
+
+*Logging*
+
+* A request ID (`rid`) is now logged for all distributed search requests (in SolrCloud) which can be used to correlate query events across the system.
+A parameter `disableRequestId=true` can be added to disable this if desired.
+
+=== Solr 8.6.1
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote861[8.6.1 Release Notes^]
+for an overview of the fixes included in Solr 8.6.1.
+
+When upgrading to 8.6.1 users should be aware of the following major changes from 8.6.0.
+
+*Autoscaling*
+
+* As mentioned in the 8.6 upgrade notes, a default autoscaling policy was provided starting in 8.6.0.
+This default autoscaling policy resulted in increasingly slow collection creation calls in large clusters (50+ collections).
++
+In 8.6.1 the default autoscaling policy has been removed, and clusters will not use autoscaling unless a policy has explicitly been created.
+If your cluster is running 8.6.0 and *not using an explicit autoscaling policy*, upgrade to 8.6.1 and remove the default cluster policy and preferences via the following command.
++
+Replace `localhost:8983` with your Solr endpoint.
++
+[source,text]
+curl -X POST -H 'Content-type:application/json'  -d '{set-cluster-policy : [], set-cluster-preferences : []}' http://localhost:8983/api/cluster/autoscaling
++
+This information is only relevant for users upgrading from 8.6.0. If upgrading from an earlier version to 8.6.1+, this warning can be ignored.
 
 === Solr 8.6
 
@@ -64,7 +231,9 @@ More information about this new feature is available in the section <<common-que
 
 *Autoscaling*
 
-* Solr now includes a default autoscaling policy.
+* **NOTE: The default autoscaling policy has been removed as of 8.6.1**
++
+Solr now includes a default autoscaling policy.
 This policy can be overridden with your custom rules or by specifying an empty policy to replace the default.
 
 * The ComputePlan action now supports a collection selector to identify collections based on collection properties to determine which collections should be operated on.
@@ -245,10 +414,9 @@ to Solr.
 
 The system is currently considered experimental, so use with caution. It must
 be enabled with a system parameter passed at start up before it can be used.
-For details, please see the section <<package-manager.adoc#package-manager,Package Management>>.
+For details, please see the section <<package-manager.adoc#,Package Management>>.
 
-With this feature Solr's <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob Store>>
-functionality is now deprecated and will likely be removed in 9.0.
+With this feature Solr's Blob Store functionality is now deprecated and will likely be removed in 9.0.
 
 *Security*
 
@@ -265,7 +433,7 @@ the `/browse` sample search interface) are no longer enabled out of the box.
 ** The XSLT and Velocity response writers.
 +
 All of these items can be added to your Solr implementation by manually editing
-`solrconfig.xml` to add them back in, or use the <<config-api.adoc#config-api,Config API>>.
+`solrconfig.xml` to add them back in, or use the <<config-api.adoc#,Config API>>.
 +
 The `sample_techproducts_configs` and the examples found in `./example` are unchanged.
 
@@ -279,9 +447,9 @@ When upgrading to 8.4, if you are using untrusted configsets that contain `<lib 
 directives, their corresponding collections will not load (they will cease to
 work). You have a few options in this case:
 
-** You can secure your Solr instance with <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication>>
+** You can secure your Solr instance with <<authentication-and-authorization-plugins.adoc#,authentication>>
 and re-upload the configset (using the `bin/solr zk upconfig ...`
-<<solr-control-script-reference.adoc#solr-control-script-reference,Solr CLI>> command);
+<<solr-control-script-reference.adoc#,Solr CLI>> command);
 ** You can put your custom Jars in Solr's classpath instead of `lib` directories;
 ** You can try the new package management system to manage your custom Jars.
 +
@@ -304,8 +472,8 @@ As a result of this change, any custom HTML served by Solr's HTTP server that co
 
 *Using Collapse with Group Disallowed*
 
-Using the <<collapse-and-expand-results.adoc#collapse-and-expand-results,CollapsingQueryParser>>
-with <<result-grouping.adoc#result-grouping,Result Grouping>> has never been
+Using the <<collapse-and-expand-results.adoc#,CollapsingQueryParser>>
+with <<result-grouping.adoc#,Result Grouping>> has never been
 supported as it causes inconsistent behavior and NullPointerException errors.
 We have now explicitly disallowed this combination to prevent these errors.
 If you are using these together, you will need to modify your queries.
@@ -374,7 +542,7 @@ Since caching has a direct impact on the performance of your Solr
 
 * A new parameter, `maxIdleTime`, allows automatic eviction of cache items that have not been used in the defined amount of time. This allows the cache to release some memory and should aid those who want or need to fine-tune their caches.
 
-See the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>> for more details about these and other cache options and parameters.
+See the section <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>> for more details about these and other cache options and parameters.
 
 === Solr 8.2
 
@@ -412,7 +580,7 @@ Collections created with older versions will continue to work.
 
 *Distributed Tracing Support*
 
-This release adds support for tracing requests in Solr. Please review the section <<solr-tracing.adoc#solr-tracing,Distributed Solr Tracing>> for details on how to configure this feature.
+This release adds support for tracing requests in Solr. Please review the section <<solr-tracing.adoc#,Distributed Solr Tracing>> for details on how to configure this feature.
 
 === Solr 8.1
 
@@ -434,9 +602,9 @@ For more information about the new parameter, see the section <<format-of-solr-x
 
 *Security*
 
-* JSON Web Tokens (JWT) are now supported for authentication. These allow Solr to assert a user is already authenticated via an external identity provider, such as an OpenID Connect-enabled IdP. For more information, see the section <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>.
+* JSON Web Tokens (JWT) are now supported for authentication. These allow Solr to assert a user is already authenticated via an external identity provider, such as an OpenID Connect-enabled IdP. For more information, see the section <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>.
 
-* A new security plugin for audit logging has been added. A default class `SolrLogAuditLoggerPlugin` is available and configurable in `security.json`. The base class is also extendable for adding custom audit plugins if needed. See the section <<audit-logging.adoc#audit-logging,Audit Logging>> for more information.
+* A new security plugin for audit logging has been added. A default class `SolrLogAuditLoggerPlugin` is available and configurable in `security.json`. The base class is also extendable for adding custom audit plugins if needed. See the section <<audit-logging.adoc#,Audit Logging>> for more information.
 
 *Collections API*
 
@@ -472,7 +640,7 @@ If even this slight risk is unacceptable, the Log4j configuration file found in 
 == Upgrading from 7.x Releases
 
 The upgrade from 7.x to Solr 8.0 introduces several major changes that you should be aware of before upgrading.
-These changes are described in the section <<major-changes-in-solr-8.adoc#major-changes-in-solr-8,Major Changes in Solr 8>>. It's strongly recommended that you do a thorough review of that section before starting your upgrade.
+These changes are described in the section <<major-changes-in-solr-8.adoc#,Major Changes in Solr 8>>. It's strongly recommended that you do a thorough review of that section before starting your upgrade.
 
 [NOTE]
 If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order to upgrade to 8.x.
@@ -481,6 +649,6 @@ If you run in SolrCloud mode, you must be on Solr version 7.3 or higher in order
 
 Users upgrading from versions of Solr prior to 7.x are strongly encouraged to consult {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] for the details of _all_ changes since the version they are upgrading from.
 
-The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#major-changes-in-solr-7,Major Changes in Solr 7>> before starting your upgrade.
+The upgrade from Solr 6.x to Solr 7.0 introduced several *major* changes that you should be aware of before upgrading. Please do a thorough review of the section <<major-changes-in-solr-7.adoc#,Major Changes in Solr 7>> before starting your upgrade.
 
-A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-from-solr-5-to-solr-6.adoc#major-changes-from-solr-5-to-solr-6,Major Changes from Solr 5 to Solr 6>>.
+A summary of the significant changes between Solr 5.x and Solr 6.0 is in the section <<major-changes-from-solr-5-to-solr-6.adoc#,Major Changes from Solr 5 to Solr 6>>.

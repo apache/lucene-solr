@@ -19,7 +19,6 @@ package org.apache.lucene.luke.app.desktop.components.fragments.analysis;
 
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
 import org.apache.lucene.luke.models.analysis.Analysis;
 

@@ -24,7 +24,7 @@ package org.apache.lucene.spatial.prefix.tree;
 class SingletonCellIterator extends CellIterator {
 
   SingletonCellIterator(Cell cell) {
-    this.nextCell = cell;//preload nextCell
+    this.nextCell = cell; // preload nextCell
   }
 
   @Override
@@ -32,5 +32,4 @@ class SingletonCellIterator extends CellIterator {
     thisCell = null;
     return nextCell != null;
   }
-
 }

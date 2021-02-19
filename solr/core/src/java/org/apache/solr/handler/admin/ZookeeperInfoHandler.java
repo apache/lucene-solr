@@ -42,6 +42,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -516,37 +518,25 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         pagingSupport.fetchPage(page, zkClient);
         // keep track of how many collections match the filter
         boolean applyStatusFilter = (page.filterType == FilterType.status && page.filter != null);
-        List<String> matchesStatusFilter = applyStatusFilter ? new ArrayList<String>() : null;
-        Set<String> liveNodes = applyStatusFilter ?
-            zkController.getZkStateReader().getClusterState().getLiveNodes() : null;
+        List<String> matchesStatusFilter = applyStatusFilter ? new ArrayList<>() : null;
+        ClusterState cs = zkController.getZkStateReader().getClusterState();
+        Set<String> liveNodes = applyStatusFilter ? cs.getLiveNodes() : null;
 
         collectionStates = new TreeMap<>(pagingSupport);
         for (String collection : page.selected) {
-          // Get collection state from ZK
-          String collStatePath = String.format(Locale.ROOT, "/collections/%s/state.json", collection);
-          String childDataStr = null;
-          try {
-            byte[] childData = zkClient.getData(collStatePath, null, null, true);
-            if (childData != null)
-              childDataStr = (new BytesRef(childData)).utf8ToString();
-          } catch (KeeperException.NoNodeException nne) {
-            log.warn("State for collection {} not found.", collection);
-          } catch (Exception childErr) {
-            log.error("Failed to get {} due to", collStatePath, childErr);
-          }
-
-          if (childDataStr != null) {
-            Map<String, Object> extColl = (Map<String, Object>) Utils.fromJSONString(childDataStr);
-            Object collectionState = extColl.get(collection);
-
+          DocCollection dc = cs.getCollectionOrNull(collection);
+          if (dc != null) {
+            // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the state to render correctly for the UI?
+            @SuppressWarnings("unchecked")
+            Map<String, Object> collectionState = dc.isPerReplicaState() ? (Map<String, Object>)Utils.fromJSONString(Utils.toJSONString(dc)) : dc.getProperties();
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
-              if (page.matchesStatusFilter((Map<String, Object>) collectionState, liveNodes)) {
+              if (page.matchesStatusFilter(collectionState, liveNodes)) {
                 matchesStatusFilter.add(collection);
-                collectionStates.put(collection, collectionState);
+                collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON(collectionState));
               }
             } else {
-              collectionStates.put(collection, collectionState);
+              collectionStates.put(collection, ClusterStatus.postProcessCollectionJSON(collectionState));
             }
           }
         }

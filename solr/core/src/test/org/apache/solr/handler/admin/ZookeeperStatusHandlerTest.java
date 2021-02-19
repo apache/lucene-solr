@@ -211,4 +211,39 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
         "  \"status\":\"red\"}";
     assertEquals(expected, JSONUtil.toJSON(mockStatus));
   }
+
+  @Test
+  public void testZkWithPrometheusSolr14752() {
+    assumeWorkingMockito();
+    ZookeeperStatusHandler zkStatusHandler = mock(ZookeeperStatusHandler.class);
+    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "ruok")).thenReturn(Arrays.asList("imok"));
+    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "mntr")).thenReturn(
+        Arrays.asList("zk_version\t3.6.1--104dcb3e3fb464b30c5186d229e00af9f332524b, built on 04/21/2020 15:01 GMT",
+            "zk_avg_latency\t0.24",
+            "zk_server_state\tleader",
+            "zk_synced_followers\t0.0"));
+    when(zkStatusHandler.getZkRawResponse("zoo1:2181", "conf")).thenReturn(
+        Arrays.asList("clientPort=2181"));
+    when(zkStatusHandler.getZkStatus(anyString(), any())).thenCallRealMethod();
+    when(zkStatusHandler.monitorZookeeper(anyString())).thenCallRealMethod();
+    when(zkStatusHandler.validateZkRawResponse(ArgumentMatchers.any(), any(), any())).thenAnswer(Answers.CALLS_REAL_METHODS);
+
+    // Verifying that parsing the status strings with floating point no longer triggers a NumberFormatException, although floats are still displayed in UI
+    Map<String, Object> mockStatus = zkStatusHandler.getZkStatus("zoo1:2181", ZkDynamicConfig.fromZkConnectString("zoo1:2181"));
+    String expected = "{\n" +
+            "  \"mode\":\"ensemble\",\n" +
+            "  \"dynamicReconfig\":true,\n" +
+            "  \"ensembleSize\":1,\n" +
+            "  \"details\":[{\n" +
+            "      \"zk_synced_followers\":\"0.0\",\n" +
+            "      \"zk_version\":\"3.6.1--104dcb3e3fb464b30c5186d229e00af9f332524b, built on 04/21/2020 15:01 GMT\",\n" +
+            "      \"zk_avg_latency\":\"0.24\",\n" +
+            "      \"host\":\"zoo1:2181\",\n" +
+            "      \"clientPort\":\"2181\",\n" +
+            "      \"ok\":true,\n" +
+            "      \"zk_server_state\":\"leader\"}],\n" +
+            "  \"zkHost\":\"zoo1:2181\",\n" +
+            "  \"status\":\"green\"}";
+    assertEquals(expected, JSONUtil.toJSON(mockStatus));
+  }
 }

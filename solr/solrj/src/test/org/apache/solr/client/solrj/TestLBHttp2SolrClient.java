@@ -279,7 +279,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
     }
 
     public String getSolrConfigFile() {
-      return "solrj/solr/collection1/conf/solrconfig-slave1.xml";
+      return "solrj/solr/collection1/conf/solrconfig-follower1.xml";
     }
 
     public String getSolrXmlFile() {

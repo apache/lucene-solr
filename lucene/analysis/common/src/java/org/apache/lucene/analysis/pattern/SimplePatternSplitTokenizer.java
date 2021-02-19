@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.pattern;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -29,14 +28,14 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.RegExp;
 
 /**
- * This tokenizer uses a Lucene {@link RegExp} or (expert usage) a pre-built determinized {@link Automaton}, to locate tokens.
- * The regexp syntax is more limited than {@link PatternTokenizer}, but the tokenization is quite a bit faster.  This is just
- * like {@link SimplePatternTokenizer} except that the pattern should make valid token separator characters, like
- * {@code String.split}.  Empty string tokens are never produced.
+ * This tokenizer uses a Lucene {@link RegExp} or (expert usage) a pre-built determinized {@link
+ * Automaton}, to locate tokens. The regexp syntax is more limited than {@link PatternTokenizer},
+ * but the tokenization is quite a bit faster. This is just like {@link SimplePatternTokenizer}
+ * except that the pattern should make valid token separator characters, like {@code String.split}.
+ * Empty string tokens are never produced.
  *
  * @lucene.experimental
  */
-
 public final class SimplePatternSplitTokenizer extends Tokenizer {
 
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
@@ -44,10 +43,12 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
 
   private final CharacterRunAutomaton runDFA;
 
-  // TODO: this is copied from SimplePatternTokenizer, but there are subtle differences e.g. we track sepUpto an tokenUpto;
+  // TODO: this is copied from SimplePatternTokenizer, but there are subtle differences e.g. we
+  // track sepUpto an tokenUpto;
   // find a clean way to share it:
 
-  // TODO: we could likely use a single rolling buffer instead of two separate char buffers here.  We could also use PushBackReader but I
+  // TODO: we could likely use a single rolling buffer instead of two separate char buffers here.
+  // We could also use PushBackReader but I
   // suspect it's slowish:
 
   private char[] pendingChars = new char[8];
@@ -71,7 +72,8 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
   }
 
   /** See {@link RegExp} for the accepted syntax. */
-  public SimplePatternSplitTokenizer(AttributeFactory factory, String regexp, int maxDeterminizedStates) {
+  public SimplePatternSplitTokenizer(
+      AttributeFactory factory, String regexp, int maxDeterminizedStates) {
     this(factory, new RegExp(regexp).toAutomaton());
   }
 
@@ -79,7 +81,8 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
   public SimplePatternSplitTokenizer(AttributeFactory factory, Automaton dfa) {
     super(factory);
 
-    // we require user to do this up front because it is a possibly very costly operation, and user may be creating us frequently, not
+    // we require user to do this up front because it is a possibly very costly operation, and user
+    // may be creating us frequently, not
     // realizing this ctor is otherwise trappy
     if (dfa.isDeterministic() == false) {
       throw new IllegalArgumentException("please determinize the incoming automaton first");
@@ -90,7 +93,7 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
 
   private void fillToken(int offsetStart) {
     termAtt.setLength(tokenUpto);
-    offsetAtt.setOffset(correctOffset(offsetStart), correctOffset(offsetStart+tokenUpto));
+    offsetAtt.setOffset(correctOffset(offsetStart), correctOffset(offsetStart + tokenUpto));
   }
 
   @Override
@@ -123,7 +126,8 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
         do {
 
           if (runDFA.isAccept(state)) {
-            // record that the token separator matches here, but keep scanning in case a longer match also works (greedy):
+            // record that the token separator matches here, but keep scanning in case a longer
+            // match also works (greedy):
             lastAcceptLength = sepUpto;
           }
 
@@ -133,9 +137,10 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
           }
           state = runDFA.step(state, ch);
         } while (state != -1);
-        
+
         if (lastAcceptLength != -1) {
-          // we found a token separator; strip the trailing separator we just matched from the token:
+          // we found a token separator; strip the trailing separator we just matched from the
+          // token:
           int extra = sepUpto - lastAcceptLength;
           if (extra != 0) {
             pushBack(extra);
@@ -156,8 +161,9 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
             return false;
           }
         } else {
-          // false alarm: there was no token separator here; push back all but the first character we scanned
-          pushBack(sepUpto-1);
+          // false alarm: there was no token separator here; push back all but the first character
+          // we scanned
+          pushBack(sepUpto - 1);
         }
       }
     }
@@ -227,7 +233,8 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
     } else if (bufferLimit == -1) {
       return -1;
     } else {
-      assert bufferNextRead <= bufferLimit: "bufferNextRead=" + bufferNextRead + " bufferLimit=" + bufferLimit;
+      assert bufferNextRead <= bufferLimit
+          : "bufferNextRead=" + bufferNextRead + " bufferLimit=" + bufferLimit;
       if (bufferNextRead == bufferLimit) {
         bufferLimit = input.read(buffer, 0, buffer.length);
         if (bufferLimit == -1) {
@@ -241,7 +248,7 @@ public final class SimplePatternSplitTokenizer extends Tokenizer {
     }
     return result;
   }
-  
+
   private int nextCodePoint() throws IOException {
 
     int ch = nextCodeUnit();

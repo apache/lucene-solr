@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 package org.apache.lucene.queries.function.valuesource;
+
+import java.io.IOException;
+import java.util.Map;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -22,14 +25,10 @@ import org.apache.lucene.queries.function.docvalues.StrDocValues;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-import java.util.Map;
-import java.io.IOException;
-
-
 /**
- * Pass a the field value through as a String, no matter the type // Q: doesn't this mean it's a "string"?
- *
- **/
+ * Pass a the field value through as a String, no matter the type // Q: doesn't this mean it's a
+ * "string"?
+ */
 public class LiteralValueSource extends ValueSource {
   protected final String string;
   protected final BytesRef bytesRef;
@@ -45,7 +44,8 @@ public class LiteralValueSource extends ValueSource {
   }
 
   @Override
-  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext) throws IOException {
+  public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
+      throws IOException {
 
     return new StrDocValues(this) {
       @Override
@@ -79,10 +79,10 @@ public class LiteralValueSource extends ValueSource {
     LiteralValueSource that = (LiteralValueSource) o;
 
     return string.equals(that.string);
-
   }
 
   public static final int hash = LiteralValueSource.class.hashCode();
+
   @Override
   public int hashCode() {
     return hash + string.hashCode();

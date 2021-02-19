@@ -17,11 +17,9 @@
 package org.apache.lucene.analysis.de;
 // This file is encoded in UTF-8
 
-
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -37,39 +35,40 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * {@link Analyzer} for German language. 
- * <p>
- * Supports an external list of stopwords (words that
- * will not be indexed at all) and an external list of exclusions (word that will
- * not be stemmed, but indexed).
- * A default set of stopwords is used unless an alternative list is specified, but the
- * exclusion list is empty by default.
- * </p>
- * 
- * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version}
- * dependent settings as {@link StandardAnalyzer}.</p>
+ * {@link Analyzer} for German language.
+ *
+ * <p>Supports an external list of stopwords (words that will not be indexed at all) and an external
+ * list of exclusions (word that will not be stemmed, but indexed). A default set of stopwords is
+ * used unless an alternative list is specified, but the exclusion list is empty by default.
+ *
+ * <p><b>NOTE</b>: This class uses the same {@link org.apache.lucene.util.Version} dependent
+ * settings as {@link StandardAnalyzer}.
  *
  * @since 3.1
  */
 public final class GermanAnalyzer extends StopwordAnalyzerBase {
-  
+
   /** File containing default German stopwords. */
-  public final static String DEFAULT_STOPWORD_FILE = "german_stop.txt";
-  
+  public static final String DEFAULT_STOPWORD_FILE = "german_stop.txt";
+
   /**
-   * Returns a set of default German-stopwords 
-   * @return a set of default German-stopwords 
+   * Returns a set of default German-stopwords
+   *
+   * @return a set of default German-stopwords
    */
-  public static final CharArraySet getDefaultStopSet(){
+  public static final CharArraySet getDefaultStopSet() {
     return DefaultSetHolder.DEFAULT_SET;
   }
-  
+
   private static class DefaultSetHolder {
     private static final CharArraySet DEFAULT_SET;
+
     static {
       try {
-        DEFAULT_SET = WordlistLoader.getSnowballWordSet(IOUtils.getDecodingReader(SnowballFilter.class, 
-            DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
+        DEFAULT_SET =
+            WordlistLoader.getSnowballWordSet(
+                IOUtils.getDecodingReader(
+                    SnowballFilter.class, DEFAULT_STOPWORD_FILE, StandardCharsets.UTF_8));
       } catch (IOException ex) {
         // default set should always be present as it is part of the
         // distribution (JAR)
@@ -78,40 +77,30 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     }
   }
 
-  /**
-   * Contains the stopwords used with the {@link StopFilter}.
-   */
- 
-  /**
-   * Contains words that should be indexed but not stemmed.
-   */
+  /** Contains the stopwords used with the {@link StopFilter}. */
+
+  /** Contains words that should be indexed but not stemmed. */
   private final CharArraySet exclusionSet;
 
-  /**
-   * Builds an analyzer with the default stop words:
-   * {@link #getDefaultStopSet()}.
-   */
+  /** Builds an analyzer with the default stop words: {@link #getDefaultStopSet()}. */
   public GermanAnalyzer() {
     this(DefaultSetHolder.DEFAULT_SET);
   }
-  
+
   /**
-   * Builds an analyzer with the given stop words 
-   * 
-   * @param stopwords
-   *          a stopword set
+   * Builds an analyzer with the given stop words
+   *
+   * @param stopwords a stopword set
    */
   public GermanAnalyzer(CharArraySet stopwords) {
     this(stopwords, CharArraySet.EMPTY_SET);
   }
-  
+
   /**
    * Builds an analyzer with the given stop words
-   * 
-   * @param stopwords
-   *          a stopword set
-   * @param stemExclusionSet
-   *          a stemming exclusion set
+   *
+   * @param stopwords a stopword set
+   * @param stemExclusionSet a stemming exclusion set
    */
   public GermanAnalyzer(CharArraySet stopwords, CharArraySet stemExclusionSet) {
     super(stopwords);
@@ -119,15 +108,13 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates
-   * {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   * used to tokenize all the text in the provided {@link Reader}.
-   * 
-   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
-   *         built from a {@link StandardTokenizer} filtered with
-   *         {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
-   *         provided, {@link GermanNormalizationFilter} and {@link GermanLightStemFilter}
+   * Creates {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} used to tokenize all
+   * the text in the provided {@link Reader}.
+   *
+   * @return {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents} built from a {@link
+   *     StandardTokenizer} filtered with {@link LowerCaseFilter}, {@link StopFilter}, {@link
+   *     SetKeywordMarkerFilter} if a stem exclusion set is provided, {@link
+   *     GermanNormalizationFilter} and {@link GermanLightStemFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {

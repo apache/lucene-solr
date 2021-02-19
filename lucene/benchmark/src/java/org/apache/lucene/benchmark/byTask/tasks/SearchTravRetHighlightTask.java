@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
@@ -52,27 +51,31 @@ import org.apache.lucene.search.vectorhighlight.WeightedFragListBuilder;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
- * Search and Traverse and Retrieve docs task.  Highlight the fields in the retrieved documents.
+ * Search and Traverse and Retrieve docs task. Highlight the fields in the retrieved documents.
  *
- * <p>Note: This task reuses the reader if it is already open.
- * Otherwise a reader is opened at start and closed at the end.
- * </p>
+ * <p>Note: This task reuses the reader if it is already open. Otherwise a reader is opened at start
+ * and closed at the end.
  *
- * <p>Takes optional multivalued, comma separated param string as: type[&lt;enum&gt;],maxFrags[&lt;int&gt;],fields[name1;name2;...]</p>
+ * <p>Takes optional multivalued, comma separated param string as:
+ * type[&lt;enum&gt;],maxFrags[&lt;int&gt;],fields[name1;name2;...]
+ *
  * <ul>
- * <li>type - the highlighter implementation, e.g. "UH"</li>
- * <li>maxFrags - The maximum number of fragments to score by the highlighter</li>
- * <li>fields - The fields to highlight.  If not specified all fields will be highlighted (or at least attempted)</li>
+ *   <li>type - the highlighter implementation, e.g. "UH"
+ *   <li>maxFrags - The maximum number of fragments to score by the highlighter
+ *   <li>fields - The fields to highlight. If not specified all fields will be highlighted (or at
+ *       least attempted)
  * </ul>
+ *
  * Example:
+ *
  * <pre>"SearchHlgtSameRdr" SearchTravRetHighlight(type[UH],maxFrags[3],fields[body]) &gt; : 1000
  * </pre>
  *
- * Documents must be stored in order for this task to work.  Additionally, term vector positions can be used as well,
- * and offsets in postings is another option.
+ * Documents must be stored in order for this task to work. Additionally, term vector positions can
+ * be used as well, and offsets in postings is another option.
  *
- * <p>Other side effects: counts additional 1 (record) for each traversed hit,
- * and 1 more for each retrieved (non null) document and 1 for each fragment returned.</p>
+ * <p>Other side effects: counts additional 1 (record) for each traversed hit, and 1 more for each
+ * retrieved (non null) document and 1 for each fragment returned.
  */
 public class SearchTravRetHighlightTask extends SearchTravTask {
   private int maxDocCharsToAnalyze; // max leading content chars to highlight
@@ -96,7 +99,8 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
       if (split.startsWith("type[") == true) {
         type = split.substring("type[".length(), split.length() - 1);
       } else if (split.startsWith("maxFrags[") == true) {
-        maxFrags = (int) Float.parseFloat(split.substring("maxFrags[".length(), split.length() - 1));
+        maxFrags =
+            (int) Float.parseFloat(split.substring("maxFrags[".length(), split.length() - 1));
       } else if (split.startsWith("fields[") == true) {
         String fieldNames = split.substring("fields[".length(), split.length() - 1);
         String[] fieldSplits = fieldNames.split(";");
@@ -108,40 +112,64 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
   @Override
   public void setup() throws Exception {
     super.setup();
-    //check to make sure either the doc is being stored
+    // check to make sure either the doc is being stored
     PerfRunData data = getRunData();
-    if (data.getConfig().get("doc.stored", false) == false){
+    if (data.getConfig().get("doc.stored", false) == false) {
       throw new Exception("doc.stored must be set to true");
     }
-    maxDocCharsToAnalyze = data.getConfig().get("highlighter.maxDocCharsToAnalyze", Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
+    maxDocCharsToAnalyze =
+        data.getConfig()
+            .get("highlighter.maxDocCharsToAnalyze", Highlighter.DEFAULT_MAX_CHARS_TO_ANALYZE);
     analyzer = data.getAnalyzer();
     String type = this.type;
     if (type == null) {
       type = data.getConfig().get("highlighter", null);
     }
     switch (type) {
-      case "NONE": hlImpl = new NoHLImpl(); break;
-      case "SH_A": hlImpl = new StandardHLImpl(false); break;
-      case "SH_V": hlImpl = new StandardHLImpl(true); break;
+      case "NONE":
+        hlImpl = new NoHLImpl();
+        break;
+      case "SH_A":
+        hlImpl = new StandardHLImpl(false);
+        break;
+      case "SH_V":
+        hlImpl = new StandardHLImpl(true);
+        break;
 
-      case "FVH_V": hlImpl = new FastVectorHLImpl(); break;
+      case "FVH_V":
+        hlImpl = new FastVectorHLImpl();
+        break;
 
-      case "UH": hlImpl = new UnifiedHLImpl(null); break;
-      case "UH_A": hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.ANALYSIS); break;
-      case "UH_V": hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.TERM_VECTORS); break;
-      case "UH_P": hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.POSTINGS); break;
-      case "UH_PV": hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.POSTINGS_WITH_TERM_VECTORS); break;
+      case "UH":
+        hlImpl = new UnifiedHLImpl(null);
+        break;
+      case "UH_A":
+        hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.ANALYSIS);
+        break;
+      case "UH_V":
+        hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.TERM_VECTORS);
+        break;
+      case "UH_P":
+        hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.POSTINGS);
+        break;
+      case "UH_PV":
+        hlImpl = new UnifiedHLImpl(UnifiedHighlighter.OffsetSource.POSTINGS_WITH_TERM_VECTORS);
+        break;
 
-      default: throw new Exception("unrecognized highlighter type: " + type + " (try 'UH')");
+      default:
+        throw new Exception("unrecognized highlighter type: " + type + " (try 'UH')");
     }
   }
 
-  // here is where we intercept ReadTask's logic to do the highlighting, and nothing else (no retrieval of all field vals)
+  // here is where we intercept ReadTask's logic to do the highlighting, and nothing else (no
+  // retrieval of all field vals)
   @Override
   protected int withTopDocs(IndexSearcher searcher, Query q, TopDocs hits) throws Exception {
     hlImpl.withTopDocs(searcher, q, hits);
-    // note: it'd be nice if we knew the sum kilobytes of text across these hits so we could return that. It'd be a more
-    //  useful number to gauge the amount of work. But given "average" document sizes and lots of queries, returning the
+    // note: it'd be nice if we knew the sum kilobytes of text across these hits so we could return
+    // that. It'd be a more
+    //  useful number to gauge the amount of work. But given "average" document sizes and lots of
+    // queries, returning the
     //  number of docs is reasonable.
     return hits.scoreDocs.length; // always return # scored docs.
   }
@@ -168,20 +196,27 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     public void withTopDocs(IndexSearcher searcher, Query q, TopDocs hits) throws Exception {
       IndexReader reader = searcher.getIndexReader();
       highlighter.setFragmentScorer(new QueryScorer(q));
-      // highlighter.setTextFragmenter();  unfortunately no sentence mechanism, not even regex. Default here is trivial
+      // highlighter.setTextFragmenter();  unfortunately no sentence mechanism, not even regex.
+      // Default here is trivial
       for (ScoreDoc scoreDoc : docIdOrder(hits.scoreDocs)) {
         Document document = reader.document(scoreDoc.doc, hlFields);
         Fields tvFields = termVecs ? reader.getTermVectors(scoreDoc.doc) : null;
         for (IndexableField indexableField : document) {
           TokenStream tokenStream;
           if (termVecs) {
-            tokenStream = TokenSources.getTokenStream(indexableField.name(), tvFields,
-                indexableField.stringValue(), analyzer, maxDocCharsToAnalyze);
+            tokenStream =
+                TokenSources.getTokenStream(
+                    indexableField.name(),
+                    tvFields,
+                    indexableField.stringValue(),
+                    analyzer,
+                    maxDocCharsToAnalyze);
           } else {
             tokenStream = analyzer.tokenStream(indexableField.name(), indexableField.stringValue());
           }
           // will close TokenStream:
-          String[] fragments = highlighter.getBestFragments(tokenStream, indexableField.stringValue(), maxFrags);
+          String[] fragments =
+              highlighter.getBestFragments(tokenStream, indexableField.stringValue(), maxFrags);
           preventOptimizeAway = fragments.length;
         }
       }
@@ -191,23 +226,36 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
   private class FastVectorHLImpl implements HLImpl {
     int fragSize = 100;
     WeightedFragListBuilder fragListBuilder = new WeightedFragListBuilder();
-    BoundaryScanner bs = new BreakIteratorBoundaryScanner(BreakIterator.getSentenceInstance(Locale.ENGLISH));
+    BoundaryScanner bs =
+        new BreakIteratorBoundaryScanner(BreakIterator.getSentenceInstance(Locale.ENGLISH));
     ScoreOrderFragmentsBuilder fragmentsBuilder = new ScoreOrderFragmentsBuilder(bs);
     String[] preTags = {"<em>"};
     String[] postTags = {"</em>"};
-    Encoder encoder = new DefaultEncoder();// new SimpleHTMLEncoder();
-    FastVectorHighlighter highlighter = new FastVectorHighlighter(
-        true,   // phraseHighlight
-        false); // requireFieldMatch -- not pertinent to our benchmark
+    Encoder encoder = new DefaultEncoder(); // new SimpleHTMLEncoder();
+    FastVectorHighlighter highlighter =
+        new FastVectorHighlighter(
+            true, // phraseHighlight
+            false); // requireFieldMatch -- not pertinent to our benchmark
 
     @Override
     public void withTopDocs(IndexSearcher searcher, Query q, TopDocs hits) throws Exception {
       IndexReader reader = searcher.getIndexReader();
-      final FieldQuery fq = highlighter.getFieldQuery( q, reader);
+      final FieldQuery fq = highlighter.getFieldQuery(q, reader);
       for (ScoreDoc scoreDoc : docIdOrder(hits.scoreDocs)) {
         for (String hlField : hlFields) {
-          String[] fragments = highlighter.getBestFragments(fq, reader, scoreDoc.doc, hlField, fragSize, maxFrags,
-              fragListBuilder, fragmentsBuilder, preTags, postTags, encoder);
+          String[] fragments =
+              highlighter.getBestFragments(
+                  fq,
+                  reader,
+                  scoreDoc.doc,
+                  hlField,
+                  fragSize,
+                  maxFrags,
+                  fragListBuilder,
+                  fragmentsBuilder,
+                  preTags,
+                  postTags,
+                  encoder);
           preventOptimizeAway = fragments.length;
         }
       }
@@ -239,12 +287,13 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
         return;
       }
       lastSearcher = searcher;
-      highlighter = new UnifiedHighlighter(searcher, analyzer) {
-        @Override
-        protected OffsetSource getOffsetSource(String field) {
-          return offsetSource != null ? offsetSource : super.getOffsetSource(field);
-        }
-      };
+      highlighter =
+          new UnifiedHighlighter(searcher, analyzer) {
+            @Override
+            protected OffsetSource getOffsetSource(String field) {
+              return offsetSource != null ? offsetSource : super.getOffsetSource(field);
+            }
+          };
       highlighter.setBreakIterator(() -> BreakIterator.getSentenceInstance(Locale.ENGLISH));
       highlighter.setMaxLength(maxDocCharsToAnalyze);
       highlighter.setHighlightPhrasesStrictly(true);
@@ -263,7 +312,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
 
     @Override
     public void withTopDocs(IndexSearcher searcher, Query q, TopDocs hits) throws Exception {
-      //just retrieve the HL fields
+      // just retrieve the HL fields
       for (ScoreDoc scoreDoc : docIdOrder(hits.scoreDocs)) {
         preventOptimizeAway += searcher.doc(scoreDoc.doc, hlFields).iterator().hasNext() ? 2 : 1;
       }

@@ -26,10 +26,7 @@ import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -99,7 +96,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
   private void logOverseerState() throws KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
       log.info("Overseer: {}", getLeaderNode(zkClient()));
-      log.info("Election queue: {}", getSortedElectionNodes(zkClient(), "/overseer_elect/election")); // logOk
+      log.info("Election queue: {}", getSortedElectionNodes(zkClient(), "/overseer_elect/election")); // nowarn
     }
   }
 
@@ -157,9 +154,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     String leaderId = OverseerCollectionConfigSetProcessor.getLeaderId(zkClient());
     String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
     log.info("### Sending QUIT to overseer {}", leader);
-    getOverseerJetty().getCoreContainer().getZkController().getOverseer().getStateUpdateQueue()
-        .offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            "id", leaderId)));
+    getOverseerJetty().getCoreContainer().getZkController().getOverseer().sendQuitToOverseer(leaderId);
 
     waitForNewOverseer(15, s -> Objects.equals(leader, s) == false, false);
 

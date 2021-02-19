@@ -295,15 +295,6 @@
     </lst>
   </searchComponent>
 
-  <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
-
-  <requestHandler name="/terms" class="org.apache.solr.handler.component.SearchHandler">
-    <arr name="components">
-      <str>termsComp</str>
-    </arr>
-  </requestHandler>
-  
-  
   <!--
   The SpellingQueryConverter to convert raw (CommonParams.Q) queries into tokens.  Uses a simple regular expression
    to strip off field markup, boosts, ranges, etc. but it is not guaranteed to match an exact parse from the query parser.
@@ -545,7 +536,7 @@
   </restManager>
 
   <!-- warning: not a best practice; requests generally ought to be explicit to thus not require this -->
-  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants,/terms">
+  <initParams path="/select,/dismax,/defaults,/lazy,/spellCheckCompRH,/spellCheckWithWordbreak,/spellCheckCompRH_Direct,/spellCheckCompRH1,/mltrh,/tvrh,/search-facet-def,/search-facet-invariants">
     <lst name="defaults">
       <str name="df">text</str>
     </lst>

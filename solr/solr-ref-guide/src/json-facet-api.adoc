@@ -188,42 +188,42 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet-
 [width="100%",cols="20%,90%",options="header",]
 |===
 |Parameter |Description
-|field |The field name to facet over.
-|offset |Used for paging, this skips the first N buckets. Defaults to 0.
-|limit |Limits the number of buckets returned. Defaults to 10.
-|sort |Specifies how to sort the buckets produced.
+|`field` |The field name to facet over.
+|`offset` |Used for paging, this skips the first N buckets. Defaults to 0.
+|`limit` |Limits the number of buckets returned. Defaults to 10.
+|`sort` |Specifies how to sort the buckets produced.
 
-“count” specifies document count, “index” sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#stat-facet-functions,facet function / statistic>> that occurs in the bucket. The default is “count desc”. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
-|overrequest a|
+`count` specifies document count, `index` sorts by the index (natural) order of the bucket value. One can also sort by any <<json-facet-api.adoc#stat-facet-functions,facet function / statistic>> that occurs in the bucket. The default is `count desc`. This parameter may also be specified in JSON like `sort:{count:desc}`. The sort order may either be “asc” or “desc”
+|`overrequest` a|
 Number of buckets beyond the `limit` to internally request from shards during a distributed search.
 
 Larger values can increase the accuracy of the final "Top Terms" returned when the individual shards have very diff top terms.
 
 The default of `-1` causes a hueristic to be applied based on the other options specified.
-|refine |If `true`, turns on distributed facet refining. This uses a second phase to retrieve any buckets needed for the final result from shards that did not include those buckets in their initial internal results, so that every shard contributes to every returned bucket in this facet and any sub-facets.  This makes counts & stats for returned buckets exact.
-|overrefine a|
+|`refine` |If `true`, turns on distributed facet refining. This uses a second phase to retrieve any buckets needed for the final result from shards that did not include those buckets in their initial internal results, so that every shard contributes to every returned bucket in this facet and any sub-facets.  This makes counts & stats for returned buckets exact.
+|`overrefine` a|
 Number of buckets beyond the `limit` to consider internally during a distributed search when determining which buckets to refine.
 
 Larger values can increase the accuracy of the final "Top Terms" returned when the individual shards have very diff top terms, and the current `sort` option can result in refinement pushing terms lower down the sorted list (ex: `sort:"count asc"`)
 
 The default of `-1` causes a hueristic to be applied based on other options specified.
-|mincount |Only return buckets with a count of at least this number. Defaults to 1.
-|missing |A boolean that specifies if a special “missing” bucket should be returned that is defined by documents without a value in the field. Defaults to false.
-|numBuckets |A boolean. If true, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). Defaults to false.
-|allBuckets |A boolean. If true, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different than a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to false.
-|prefix |Only produce buckets for terms starting with the specified prefix.
-|facet |Aggregations, metrics or nested facets that will be calculated for every returned bucket
-|method a|
+|`mincount` |Only return buckets with a count of at least this number. Defaults to `1`.
+|`missing` |A boolean that specifies if a special “missing” bucket should be returned that is defined by documents without a value in the field. Defaults to `false`.
+|`numBuckets` |A boolean. If `true`, adds “numBuckets” to the response, an integer representing the number of buckets for the facet (as opposed to the number of buckets returned). Defaults to `false`.
+|`allBuckets` |A boolean. If `true`, adds an “allBuckets” bucket to the response, representing the union of all of the buckets. For multi-valued fields, this is different than a bucket for all of the documents in the domain since a single document can belong to multiple buckets. Defaults to `false`.
+|`prefix` |Only produce buckets for terms starting with the specified prefix.
+|`facet` |Aggregations, metrics or nested facets that will be calculated for every returned bucket
+|`method` a|
 This parameter indicates the facet algorithm to use:
 
-* "dv" DocValues, collect into ordinal array
-* "uif" UnInvertedField, collect into ordinal array
-* "dvhash" DocValues, collect into hash - improves efficiency over high cardinality fields
-* "enum" TermsEnum then intersect DocSet (stream-able)
-* "stream" Presently equivalent to "enum"
-* "smart" Pick the best method for the field type (this is the default)
+* `dv` DocValues, collect into ordinal array
+* `uif` UnInvertedField, collect into ordinal array
+* `dvhash` DocValues, collect into hash - improves efficiency over high cardinality fields
+* `enum` TermsEnum then intersect DocSet (stream-able)
+* `stream` Presently equivalent to `enum`. Used for indexed, non-point fields with sort `index asc` and `allBuckets`, `numBuckets`, and `missing` disabled.
+* `smart` Pick the best method for the field type (this is the default)
 
-|prelim_sort |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` parameter is very costly>>.
+|`prelim_sort` |An optional parameter for specifying an approximation of the final `sort` to use during initial collection of top buckets when the <<json-facet-api.adoc#sorting-facets-by-nested-functions,`sort` parameter is very costly>>.
 |===
 
 === Query Facet
@@ -581,7 +581,7 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |relatedness |`relatedness('popularity:[100 TO *]','inStock:true')`|A function for computing a relatedness score of the documents in the domain to a Foreground set, relative to a Background set (both defined as queries).  This is primarily for use when building <<json-facet-api.adoc#relatedness-and-semantic-knowledge-graphs,Semantic Knowledge Graphs>>.
 |===
 
-Numeric aggregation functions such as `avg` can be on any numeric field, or on a <<function-queries.adoc#function-queries,nested function>> of multiple numeric fields such as `avg(div(popularity,price))`.
+Numeric aggregation functions such as `avg` can be on any numeric field, or on a <<function-queries.adoc#,nested function>> of multiple numeric fields such as `avg(div(popularity,price))`.
 
 The most common way of requesting an aggregation function is as a simple String containing the expression you wish to compute:
 
@@ -617,7 +617,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-face
 ====
 --
 
-An expanded form allows for <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> to be specified.  These may be used explicitly by some specialized aggregations such as `<<json-facet-api.adoc#relatedness-options,relatedness()>>`, but can also be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
+An expanded form allows for <<local-parameters-in-queries.adoc#,Local Parameters>> to be specified.  These may be used explicitly by some specialized aggregations such as `<<json-facet-api.adoc#relatedness-options,relatedness()>>`, but can also be used as parameter references to make aggregation expressions more readable, with out needing to use (global) request parameters:
 
 [.dynamic-tabs]
 --
@@ -834,7 +834,7 @@ As discussed above, facets compute buckets or statistics based on their "domain"
 * By default, top-level facets use the set of all documents matching the main query as their domain.
 * Nested "sub-facets" are computed for every bucket of their parent facet, using a domain containing all documents in that bucket.
 
-In addition to this default behavior, domains can be also be widened, narrowed, or changed entirely.  The JSON Faceting API supports modifying domains through its `domain` property.  This is discussed in more detail <<json-faceting-domain-changes.adoc#json-faceting-domain-changes,here>>
+In addition to this default behavior, domains can be also be widened, narrowed, or changed entirely.  The JSON Faceting API supports modifying domains through its `domain` property.  This is discussed in more detail <<json-faceting-domain-changes.adoc#,here>>
 
 == Special Stat Facet Functions
 
@@ -842,7 +842,7 @@ Most stat facet functions (`avg`, `sumsq`, etc.) allow users to perform math com
 
 === uniqueBlock() and Block Join Counts
 
-When a collection contains <<indexing-nested-documents.adoc#indexing-nested-documents, Nested Documents>>, the `blockChildren` and `blockParent` <<json-faceting-domain-changes.adoc#block-join-domain-changes, domain changes>> can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).
+When a collection contains <<indexing-nested-documents.adoc#, Nested Documents>>, the `blockChildren` and `blockParent` <<json-faceting-domain-changes.adoc#block-join-domain-changes, domain changes>> can be useful when searching for parent documents and you want to compute stats against all of the affected children documents (or vice versa).
 But if you only need to know the _count_ of all the blocks that exist in the current domain, a more efficient option is the `uniqueBlock()` aggregate function.
 
 Suppose we have products with multiple SKUs, and we want to count products for each color.

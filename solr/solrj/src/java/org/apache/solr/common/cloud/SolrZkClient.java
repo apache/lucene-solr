@@ -331,6 +331,18 @@ public class SolrZkClient implements Closeable {
   }
 
   /**
+   * Returns children of the node at the path
+   */
+  public List<String> getChildren(final String path, final Watcher watcher,Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(() -> keeper.getChildren(path, wrapWatcher(watcher) , stat));
+    } else {
+      return keeper.getChildren(path, wrapWatcher(watcher), stat);
+    }
+  }
+
+  /**
    * Returns node's data
    */
   public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
@@ -761,6 +773,9 @@ public class SolrZkClient implements Closeable {
         return "";
       }
       return new String(data, StandardCharsets.UTF_8);
+    } catch (NoNodeException nne) {
+      log.debug("Zookeeper does not have the /zookeeper/config znode, assuming old ZK version");
+      return "";
     } catch (KeeperException|InterruptedException ex) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to get config from zookeeper", ex);
     }

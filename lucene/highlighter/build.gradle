@@ -28,4 +28,5 @@ dependencies {
 
   testImplementation project(':lucene:test-framework')
   testImplementation project(':lucene:analysis:common')
+  testImplementation project(':lucene:queryparser')
 }

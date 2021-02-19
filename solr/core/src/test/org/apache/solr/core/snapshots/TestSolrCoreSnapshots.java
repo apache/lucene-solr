@@ -56,8 +56,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
+/**
+ * Tests for index backing up and restoring index snapshots.
+ *
+ * These tests use the deprecated "full-snapshot" based backup method.  For tests that cover similar snapshot
+ * functionality incrementally, see {@link org.apache.solr.handler.TestIncrementalCoreBackup}
+ */
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
@@ -97,15 +101,15 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     assertEquals(1, shard.getReplicas().size());
     Replica replica = shard.getReplicas().iterator().next();
 
-    String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-    String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
+    String coreName = replica.getCoreName();
     String backupName = TestUtil.randomSimpleString(random(), 1, 5);
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
     String duplicateName = commitName.concat("_duplicate");
 
     try (
         SolrClient adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient masterClient = getHttpSolrClient(replica.getCoreUrl())) {
+        SolrClient leaderClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
       // Create another snapshot referring to the same index commit to verify the
@@ -116,8 +120,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       assertEquals (metaData.getGenerationNumber(), duplicateCommit.getGenerationNumber());
 
       // Delete all documents
-      masterClient.deleteByQuery("*:*");
-      masterClient.commit();
+      leaderClient.deleteByQuery("*:*");
+      leaderClient.commit();
       BackupRestoreUtils.verifyDocs(0, cluster.getSolrClient(), collectionName);
 
       // Verify that the index directory contains at least 2 index commits - one referred by the snapshots
@@ -133,6 +137,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
         params.put("name", backupName);
         params.put("commitName", commitName);
         params.put("location", location);
+        params.put("incremental", "false");
         BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
       }
 
@@ -192,7 +197,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
 
     try (
         SolrClient adminClient = getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
-        SolrClient masterClient = getHttpSolrClient(replica.getCoreUrl())) {
+        SolrClient leaderClient = getHttpSolrClient(replica.getCoreUrl())) {
 
       SnapshotMetaData metaData = createSnapshot(adminClient, coreName, commitName);
 
@@ -203,7 +208,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
           //Delete a few docs
           int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
           for(int i=0; i<numDeletes; i++) {
-            masterClient.deleteByQuery("id:" + i);
+            leaderClient.deleteByQuery("id:" + i);
           }
           //Add a few more
           int moreAdds = TestUtil.nextInt(random(), 1, 100);
@@ -211,9 +216,9 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
             SolrInputDocument doc = new SolrInputDocument();
             doc.addField("id", i + nDocs);
             doc.addField("name", "name = " + (i + nDocs));
-            masterClient.add(doc);
+            leaderClient.add(doc);
           }
-          masterClient.commit();
+          leaderClient.commit();
         }
       }
 
@@ -227,7 +232,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       }
 
       // Optimize the index.
-      masterClient.optimize(true, true, 1);
+      leaderClient.optimize(true, true, 1);
 
       // After invoking optimize command, verify that the index directory contains multiple commits (including the one we snapshotted earlier).
       {
@@ -248,13 +253,13 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
           SolrInputDocument doc = new SolrInputDocument();
           doc.addField("id", i + nDocs);
           doc.addField("name", "name = " + (i + nDocs));
-          masterClient.add(doc);
+          leaderClient.add(doc);
         }
-        masterClient.commit();
+        leaderClient.commit();
       }
 
       // Optimize the index.
-      masterClient.optimize(true, true, 1);
+      leaderClient.optimize(true, true, 1);
 
       // Verify that the index directory contains only 1 index commit (which is not the same as the snapshotted commit).
       Collection<IndexCommit> commits = listCommits(metaData.getIndexDirPath());

@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.util;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
@@ -27,8 +26,8 @@ import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 
 /**
- * Caches the doubleVal of another value source in a HashMap
- * so that it is computed only once.
+ * Caches the doubleVal of another value source in a HashMap so that it is computed only once.
+ *
  * @lucene.internal
  */
 public class CachingDoubleValueSource extends DoubleValuesSource {
@@ -43,11 +42,12 @@ public class CachingDoubleValueSource extends DoubleValuesSource {
 
   @Override
   public String toString() {
-    return "Cached["+source.toString()+"]";
+    return "Cached[" + source.toString() + "]";
   }
 
   @Override
-  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores) throws IOException {
+  public DoubleValues getValues(LeafReaderContext readerContext, DoubleValues scores)
+      throws IOException {
     final int base = readerContext.docBase;
     final DoubleValues vals = source.getValues(readerContext, scores);
     return new DoubleValues() {
@@ -70,7 +70,6 @@ public class CachingDoubleValueSource extends DoubleValuesSource {
       }
 
       int doc = -1;
-
     };
   }
 
@@ -85,7 +84,8 @@ public class CachingDoubleValueSource extends DoubleValuesSource {
   }
 
   @Override
-  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation)
+      throws IOException {
     return source.explain(ctx, docId, scoreExplanation);
   }
 

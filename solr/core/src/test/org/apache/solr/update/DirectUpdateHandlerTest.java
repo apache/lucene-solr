@@ -27,6 +27,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.Metric;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
@@ -38,6 +39,7 @@ import org.apache.solr.index.TieredMergePolicyFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -47,10 +49,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.VERSION_FIELD;
 
-/**
- * 
- *
- */
+@LogLevel("org.apache.solr.update=INFO")
 public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -392,7 +391,10 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     }
     assertU(adoc("id", "1"));
 
-    int nFiles = d.listAll().length;
+    assertFalse(Arrays.stream(d.listAll()).anyMatch(s -> s.startsWith(IndexFileNames.PENDING_SEGMENTS)));
+    String beforeSegmentsFile =
+        Arrays.stream(d.listAll()).filter(s -> s.startsWith(IndexFileNames.SEGMENTS)).findAny().get();
+
     if (log.isInfoEnabled()) {
       log.info("FILES before prepareCommit={}", Arrays.asList(d.listAll()));
     }
@@ -402,8 +404,10 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     if (log.isInfoEnabled()) {
       log.info("FILES after prepareCommit={}", Arrays.asList(d.listAll()));
     }
-    assertTrue( d.listAll().length > nFiles);  // make sure new index files were actually written
-    
+    assertTrue(Arrays.stream(d.listAll()).anyMatch(s -> s.startsWith(IndexFileNames.PENDING_SEGMENTS)));
+    assertEquals(beforeSegmentsFile,
+        Arrays.stream(d.listAll()).filter(s -> s.startsWith(IndexFileNames.SEGMENTS)).findAny().get());
+
     assertJQ(req("q", "id:1")
         , "/response/numFound==0"
     );

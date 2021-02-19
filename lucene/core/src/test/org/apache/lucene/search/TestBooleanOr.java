@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 package org.apache.lucene.search;
+
+import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.TextField;
@@ -33,8 +34,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestBooleanOr extends LuceneTestCase {
 
@@ -49,10 +48,9 @@ public class TestBooleanOr extends LuceneTestCase {
   private IndexSearcher searcher = null;
   private Directory dir;
   private IndexReader reader;
-  
 
   private long search(Query q) throws IOException {
-    QueryUtils.check(random(), q,searcher);
+    QueryUtils.check(random(), q, searcher);
     return searcher.search(q, 1000).totalHits.value;
   }
 
@@ -63,10 +61,7 @@ public class TestBooleanOr extends LuceneTestCase {
     assertEquals(1, search(c2));
   }
 
-  /**
-   * <code>T:files T:deleting C:production C:optimize </code>
-   * it works.
-   */
+  /** <code>T:files T:deleting C:production C:optimize </code> it works. */
   public void testFlat() throws IOException {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
     q.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
@@ -76,10 +71,7 @@ public class TestBooleanOr extends LuceneTestCase {
     assertEquals(1, search(q.build()));
   }
 
-  /**
-   * <code>(T:files T:deleting) (+C:production +C:optimize)</code>
-   * it works.
-   */
+  /** <code>(T:files T:deleting) (+C:production +C:optimize)</code> it works. */
   public void testParenthesisMust() throws IOException {
     BooleanQuery.Builder q3 = new BooleanQuery.Builder();
     q3.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
@@ -93,10 +85,7 @@ public class TestBooleanOr extends LuceneTestCase {
     assertEquals(1, search(q2.build()));
   }
 
-  /**
-   * <code>(T:files T:deleting) +(C:production C:optimize)</code>
-   * not working. results NO HIT.
-   */
+  /** <code>(T:files T:deleting) +(C:production C:optimize)</code> not working. results NO HIT. */
   public void testParenthesisMust2() throws IOException {
     BooleanQuery.Builder q3 = new BooleanQuery.Builder();
     q3.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
@@ -110,10 +99,7 @@ public class TestBooleanOr extends LuceneTestCase {
     assertEquals(1, search(q2.build()));
   }
 
-  /**
-   * <code>(T:files T:deleting) (C:production C:optimize)</code>
-   * not working. results NO HIT.
-   */
+  /** <code>(T:files T:deleting) (C:production C:optimize)</code> not working. results NO HIT. */
   public void testParenthesisShould() throws IOException {
     BooleanQuery.Builder q3 = new BooleanQuery.Builder();
     q3.add(new BooleanClause(t1, BooleanClause.Occur.SHOULD));
@@ -134,20 +120,17 @@ public class TestBooleanOr extends LuceneTestCase {
     //
     dir = newDirectory();
 
-
     //
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     //
     Document d = new Document();
-    d.add(newField(
-        FIELD_T,
-        "Optimize not deleting all files",
-        TextField.TYPE_STORED));
-    d.add(newField(
-        FIELD_C,
-        "Deleted When I run an optimize in our production environment.",
-        TextField.TYPE_STORED));
+    d.add(newField(FIELD_T, "Optimize not deleting all files", TextField.TYPE_STORED));
+    d.add(
+        newField(
+            FIELD_C,
+            "Deleted When I run an optimize in our production environment.",
+            TextField.TYPE_STORED));
 
     //
     writer.addDocument(d);
@@ -167,11 +150,12 @@ public class TestBooleanOr extends LuceneTestCase {
 
   public void testBooleanScorerMax() throws IOException {
     Directory dir = newDirectory();
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    RandomIndexWriter riw =
+        new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
 
     int docCount = atLeast(10000);
 
-    for(int i=0;i<docCount;i++) {
+    for (int i = 0; i < docCount; i++) {
       Document doc = new Document();
       doc.add(newField("field", "a", TextField.TYPE_NOT_STORED));
       riw.addDocument(doc);
@@ -193,19 +177,20 @@ public class TestBooleanOr extends LuceneTestCase {
 
     final FixedBitSet hits = new FixedBitSet(docCount);
     final AtomicInteger end = new AtomicInteger();
-    LeafCollector c = new SimpleCollector() {
+    LeafCollector c =
+        new SimpleCollector() {
 
-        @Override
-        public void collect(int doc) {
-          assertTrue("collected doc=" + doc + " beyond max=" + end, doc < end.intValue());
-          hits.set(doc);
-        }
-        
-        @Override
-        public ScoreMode scoreMode() {
-          return ScoreMode.COMPLETE_NO_SCORES;
-        }
-      };
+          @Override
+          public void collect(int doc) {
+            assertTrue("collected doc=" + doc + " beyond max=" + end, doc < end.intValue());
+            hits.set(doc);
+          }
+
+          @Override
+          public ScoreMode scoreMode() {
+            return ScoreMode.COMPLETE_NO_SCORES;
+          }
+        };
 
     while (end.intValue() < docCount) {
       final int min = end.intValue();
@@ -223,8 +208,10 @@ public class TestBooleanOr extends LuceneTestCase {
     return new BulkScorer() {
       final ScoreAndDoc scorer = new ScoreAndDoc();
       int i = 0;
+
       @Override
-      public int score(LeafCollector collector, Bits acceptDocs, int min, int max) throws IOException {
+      public int score(LeafCollector collector, Bits acceptDocs, int min, int max)
+          throws IOException {
         collector.setScorer(scorer);
         while (i < matches.length && matches[i] < min) {
           i += 1;
@@ -241,6 +228,7 @@ public class TestBooleanOr extends LuceneTestCase {
         }
         return RandomNumbers.randomIntBetween(random(), max, matches[i]);
       }
+
       @Override
       public long cost() {
         return matches.length;
@@ -251,25 +239,26 @@ public class TestBooleanOr extends LuceneTestCase {
   // Make sure that BooleanScorer keeps working even if the sub clauses return
   // next matching docs which are less than the actual next match
   public void testSubScorerNextIsNotMatch() throws IOException {
-    final List<BulkScorer> optionalScorers = Arrays.asList(
-        scorer(100000, 1000001, 9999999),
-        scorer(4000, 1000051),
-        scorer(5000, 100000, 9999998, 9999999)
-    );
+    final List<BulkScorer> optionalScorers =
+        Arrays.asList(
+            scorer(100000, 1000001, 9999999),
+            scorer(4000, 1000051),
+            scorer(5000, 100000, 9999998, 9999999));
     Collections.shuffle(optionalScorers, random());
     BooleanScorer scorer = new BooleanScorer(null, optionalScorers, 1, random().nextBoolean());
     final List<Integer> matches = new ArrayList<>();
-    scorer.score(new LeafCollector() {
+    scorer.score(
+        new LeafCollector() {
 
-      @Override
-      public void setScorer(Scorable scorer) throws IOException {}
+          @Override
+          public void setScorer(Scorable scorer) throws IOException {}
 
-      @Override
-      public void collect(int doc) throws IOException {
-        matches.add(doc);
-      }
-      
-    }, null);
+          @Override
+          public void collect(int doc) throws IOException {
+            matches.add(doc);
+          }
+        },
+        null);
     assertEquals(Arrays.asList(4000, 5000, 100000, 1000001, 1000051, 9999998, 9999999), matches);
   }
 }

@@ -19,18 +19,13 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -165,7 +160,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicas().size() < 2) {
       Replica leader = zkStateReader.getLeader(collection, shardId);
       if (leader != null
-          && leader.getBaseUrl().equals(leaderProps.get(ZkStateReader.BASE_URL_PROP))
+          && leader.getNodeName().equals(leaderProps.get(ZkStateReader.NODE_NAME_PROP))
           && leader.getCoreName().equals(leaderProps.get(ZkStateReader.CORE_NAME_PROP))) {
         isAlreadyLeader = true;
       }
@@ -174,12 +169,24 @@ class ShardLeaderElectionContextBase extends ElectionContext {
       ZkNodeProps m = ZkNodeProps.fromKeyVals(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
           ZkStateReader.SHARD_ID_PROP, shardId,
           ZkStateReader.COLLECTION_PROP, collection,
-          ZkStateReader.BASE_URL_PROP, leaderProps.get(ZkStateReader.BASE_URL_PROP),
+          ZkStateReader.NODE_NAME_PROP, leaderProps.get(ZkStateReader.NODE_NAME_PROP),
           ZkStateReader.CORE_NAME_PROP, leaderProps.get(ZkStateReader.CORE_NAME_PROP),
           ZkStateReader.STATE_PROP, Replica.State.ACTIVE.toString());
       assert zkController != null;
       assert zkController.getOverseer() != null;
-      zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+      DocCollection coll = zkStateReader.getCollection(this.collection);
+      if (coll == null || ZkController.updateStateDotJson(coll, id)) {
+        if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          zkController.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceSetShardLeader, m,
+              zkController.getSolrCloudManager(), zkStateReader);
+        } else {
+          zkController.getOverseer().offerStateUpdate(Utils.toJSON(m));
+        }
+      } else {
+        PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
+        PerReplicaStatesOps.flipLeader(zkStateReader.getClusterState().getCollection(collection).getSlice(shardId).getReplicaNames(), id, prs)
+                .persist(coll.getZNode(), zkStateReader.getZkClient());
+      }
     }
   }
 

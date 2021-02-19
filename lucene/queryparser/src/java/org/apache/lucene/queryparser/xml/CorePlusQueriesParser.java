@@ -21,14 +21,14 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.xml.builders.LikeThisQueryBuilder;
 
 /**
- * Assembles a QueryBuilder which uses Query objects from
- * Lucene's <code>queries</code> module in addition to core queries.
+ * Assembles a QueryBuilder which uses Query objects from Lucene's <code>queries</code> module in
+ * addition to core queries.
  */
 public class CorePlusQueriesParser extends CoreParser {
 
   /**
-   * Construct an XML parser that uses a single instance QueryParser for handling
-   * UserQuery tags - all parse operations are synchronized on this parser
+   * Construct an XML parser that uses a single instance QueryParser for handling UserQuery tags -
+   * all parse operations are synchronized on this parser
    *
    * @param parser A QueryParser which will be synchronized on during parse calls.
    */
@@ -49,6 +49,5 @@ public class CorePlusQueriesParser extends CoreParser {
     super(defaultField, analyzer, parser);
     String fields[] = {"contents"};
     queryFactory.addBuilder("LikeThisQuery", new LikeThisQueryBuilder(analyzer, fields));
-
   }
 }

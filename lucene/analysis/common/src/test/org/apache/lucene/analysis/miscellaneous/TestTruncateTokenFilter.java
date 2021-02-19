@@ -16,20 +16,18 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.junit.Test;
 
-/**
- * Test the truncate token filter.
- */
+/** Test the truncate token filter. */
 public class TestTruncateTokenFilter extends BaseTokenStreamTestCase {
 
   public void testTruncating() throws Exception {
     TokenStream stream = whitespaceMockTokenizer("abcdefg 1234567 ABCDEFG abcde abc 12345 123");
     stream = new TruncateTokenFilter(stream, 5);
-    assertTokenStreamContents(stream, new String[]{"abcde", "12345", "ABCDE", "abcde", "abc", "12345", "123"});
+    assertTokenStreamContents(
+        stream, new String[] {"abcde", "12345", "ABCDE", "abcde", "abc", "12345", "123"});
   }
 
   @Test(expected = IllegalArgumentException.class)
