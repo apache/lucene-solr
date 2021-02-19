@@ -245,10 +245,13 @@ class ModifyingSuggester {
 
   private void tryMovingChar(String word) {
     for (int i = 0; i < word.length(); i++) {
+      String prefix = word.substring(0, i);
       for (int j = i + 2; j < word.length() && j <= i + MAX_CHAR_DISTANCE; j++) {
-        String prefix = word.substring(0, i);
         trySuggestion(prefix + word.substring(i + 1, j) + word.charAt(i) + word.substring(j));
         trySuggestion(prefix + word.charAt(j) + word.substring(i, j) + word.substring(j + 1));
+      }
+      if (i < word.length() - 1) {
+        trySuggestion(prefix + word.substring(i + 1) + word.charAt(i));
       }
     }
   }
