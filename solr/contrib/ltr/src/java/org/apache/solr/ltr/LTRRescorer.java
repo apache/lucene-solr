@@ -128,7 +128,7 @@ public class LTRRescorer extends Rescorer {
     int hitUpto = scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
     final ScoreDoc[] rerankHited = new ScoreDoc[hitUpto];
     System.arraycopy(reranked, 0, rerankHited,0, hitUpto);
-	
+
     // Must sort all documents that we reranked, and then select the top
     sortByScore(rerankHited);
     return rerankHited;
