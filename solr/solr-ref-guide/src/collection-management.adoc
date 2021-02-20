@@ -32,7 +32,7 @@ The CREATE action is used to create new collection of data.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=1
+http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&collection.configName=techproducts&numShards=1
 
 ----
 ====
@@ -48,7 +48,8 @@ With the v2 API, the `create` command is provided as part of the JSON data that 
 curl -X POST http://localhost:8983/api/collections?omitHeader=true -H 'Content-Type: application/json' -d'
   {
     "create": {
-      "name": "newCollection",
+      "name": "techproducts_v2",
+      "config": "techproducts",
       "numShards": 1
     }
   }
@@ -95,27 +96,27 @@ The number of TLOG replicas to create for this collection. This type of replica 
 `pullReplicas`::
 The number of PULL replicas to create for this collection. This type of replica does not maintain a transaction log and only updates its index via replication from a leader. This type is not eligible to become a leader and should not be the only type of replicas in the collection. See the section <<shards-and-indexing-data-in-solrcloud.adoc#types-of-replicas,Types of Replicas>> for more information about replica types.
 
-`createNodeSet`::
+`createNodeSet` (v1), `nodeSet` (v2)::
 Allows defining the nodes to spread the new collection across. The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
 +
 If not provided, the CREATE operation will create shard-replicas spread across all live Solr nodes.
 +
 Alternatively, use the special value of `EMPTY` to initially create no shard-replica within the new collection and then later use the <<replica-management.adoc#addreplica,ADDREPLICA>> operation to add shard-replicas when and where required.
 
-`createNodeSet.shuffle`::
+`createNodeSet.shuffle` (v1), `shuffleNodes` (v2)::
 Controls whether or not the shard-replicas created for this collection will be assigned to the nodes specified by the `createNodeSet` in a sequential manner, or if the list of nodes should be shuffled prior to creating individual replicas.
 +
 A `false` value makes the results of a collection creation predictable and gives more exact control over the location of the individual shard-replicas, but `true` can be a better choice for ensuring replicas are distributed evenly across nodes. The default is `true`.
 +
 This parameter is ignored if `createNodeSet` is not also specified.
 
-`collection.configName`::
+`collection.configName` (v1), `config` (v2)::
 Defines the name of the configuration (which *must already be stored in ZooKeeper*) to use for this collection.
 +
 If not provided, Solr will use the configuration of `_default` configset to create a new (and mutable) configset named `<collectionName>.AUTOCREATED` and will use it for the new collection.
 When such a collection is deleted, its autocreated configset will be deleted by default when it is not in use by any other collection.
 
-`router.field`::
+`router.field` (v1), `router` (v2)::
 If this parameter is specified, the router will look at the value of the field in an input document to compute the hash and identify a shard instead of looking at the `uniqueKey` field. If the field specified is null in the document, the document will be rejected.
 +
 Please note that <<realtime-get.adoc#,RealTime Get>> or retrieval by document ID would also require the parameter `\_route_` (or `shard.keys`) to avoid a distributed search.
