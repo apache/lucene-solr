@@ -303,6 +303,8 @@ An attribute can be deleted by passing an empty value. For example, `yet_another
 ----
 http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=newCollection&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
 
+http://localhost:8983/solr/admin/collections?action=modifycollection&collection=newCollection&replicationFactor=2
+
 ----
 ====
 
