@@ -7,10 +7,6 @@
       "type": "integer",
       "description": "The number of replicas to be created for each shard. Replicas are physical copies of each shard, acting as failover for the shard. Note that changing this value on an existing collection does not automatically add more replicas to the collection. However, it will allow add-replica commands to succeed."
     },
-    "collection.configName": {
-      "type": "string",
-      "description": "Defines the name of the configuration (which must already be stored in ZooKeeper) to use for this collection."
-    },
     "readOnly": {
       "type": "boolean",
       "description": "Setting the readOnly attribute to true puts the collection in read-only mode, in which any index update requests are rejected. Other collection-level actions (e.g., adding / removing / moving replicas) are still available in this mode."
