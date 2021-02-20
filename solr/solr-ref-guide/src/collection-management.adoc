@@ -156,7 +156,7 @@ The response will include the status of the request and the new core names. If t
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=2&replicationFactor=1&wt=xml
+http://localhost:8983/solr/admin/collections?action=CREATE&name=techproducts_v2&collection.configName=techproducts&numShards=2&replicationFactor=1&wt=xml
 ----
 
 *Output*
@@ -174,14 +174,14 @@ http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&nu
         <int name="status">0</int>
         <int name="QTime">3450</int>
       </lst>
-      <str name="core">newCollection_shard1_replica1</str>
+      <str name="core">techproducts_v2_shard1_replica_n1</str>
     </lst>
     <lst>
       <lst name="responseHeader">
         <int name="status">0</int>
         <int name="QTime">3597</int>
       </lst>
-      <str name="core">newCollection_shard2_replica1</str>
+      <str name="core">techproducts_v2_shard2_replica_n2</str>
     </lst>
   </lst>
 </response>
@@ -203,7 +203,7 @@ will need to manually trigger the RELOAD.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2
 
 ----
 ====
@@ -216,7 +216,7 @@ With the v2 API, the `reload` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
   {
     "reload": {}
   }
@@ -227,7 +227,7 @@ Additional parameters can be passed in via the the `reload` key:
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
   {
     "reload": {
       "async": "reload1"
@@ -258,7 +258,7 @@ The response will include the status of the request and the cores that were relo
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection&wt=xml
+http://localhost:8983/solr/admin/collections?action=RELOAD&name=techproducts_v2&wt=xml
 ----
 
 *Output*
@@ -302,9 +302,9 @@ An attribute can be deleted by passing an empty value. For example, `yet_another
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=newCollection&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
+http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=techproducts_v2&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
 
-http://localhost:8983/solr/admin/collections?action=modifycollection&collection=newCollection&replicationFactor=2
+http://localhost:8983/solr/admin/collections?action=modifycollection&collection=techproducts_v2&replicationFactor=2
 
 ----
 ====
@@ -317,7 +317,7 @@ With the v2 API, the `modify` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
   {
     "modify": {
       "replicationFactor": 2
@@ -441,7 +441,7 @@ Aliases that refer to more than 1 collection are not supported.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=RENAME&name=newCollection&target=renamedCollection
+http://localhost:8983/solr/admin/collections?action=RENAME&name=techproducts_v2&target=renamedCollection
 ----
 ====
 
@@ -506,7 +506,7 @@ The DELETE action is used to delete a collection.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection
+http://localhost:8983/solr/admin/collections?action=DELETE&name=techproducts_v2
 ----
 ====
 
@@ -517,7 +517,7 @@ http://localhost:8983/solr/admin/collections?action=DELETE&name=newCollection
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/newCollection?omitHeader=true
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?omitHeader=true
 ----
 ====
 --
@@ -573,7 +573,7 @@ Add, edit or delete a collection property.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=newCollection&propertyName=propertyName&propertyValue=propertyValue
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts_v2&propertyName=propertyName&propertyValue=propertyValue
 ----
 ====
 
@@ -584,7 +584,7 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=newColle
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
   {
     "set-collection-property": {
       "name": "foo",
@@ -647,7 +647,7 @@ The MIGRATE command is used to migrate all documents having a given routing key 
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=newCollection&split.key=key1!&target.collection=postMigrationCollection&forward.timeout=60
+http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=techproducts_v2&split.key=key1!&target.collection=postMigrationCollection&forward.timeout=60
 ----
 ====
 
@@ -658,7 +658,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=newCollec
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/newCollection?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
   {
     "migrate-docs": {
       "target": "postMigrationCollection",
@@ -727,7 +727,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_0_replica1</str>
+      <str name="core">test2_shard1_0_replica_n1</str>
       <str name="status">BUFFERING</str>
     </lst>
     <lst>
@@ -735,7 +735,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">2479</int>
       </lst>
-      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica1</str>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica_n1</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -754,7 +754,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1655</int>
       </lst>
-      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica2</str>
+      <str name="core">split_shard1_0_temp_shard1_0_shard1_replica_n2</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -773,7 +773,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_0_replica1</str>
+      <str name="core">test2_shard1_0_replica_n1</str>
       <str name="status">EMPTY_BUFFER</str>
     </lst>
     <lst name="192.168.43.52:8983_solr">
@@ -793,7 +793,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_1_replica1</str>
+      <str name="core">test2_shard1_1_replica_n1</str>
       <str name="status">BUFFERING</str>
     </lst>
     <lst>
@@ -801,7 +801,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1742</int>
       </lst>
-      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica1</str>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica_n1</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -820,7 +820,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1917</int>
       </lst>
-      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica2</str>
+      <str name="core">split_shard1_1_temp_shard1_1_shard1_replica_n2</str>
     </lst>
     <lst>
       <lst name="responseHeader">
@@ -839,7 +839,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=test1&spl
         <int name="status">0</int>
         <int name="QTime">1</int>
       </lst>
-      <str name="core">test2_shard1_1_replica1</str>
+      <str name="core">test2_shard1_1_replica_n1</str>
       <str name="status">EMPTY_BUFFER</str>
     </lst>
     <lst name="192.168.43.52:8983_solr">
@@ -872,7 +872,7 @@ source collection.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCollection
+http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=techproducts_v2
 ----
 ====
 
@@ -966,12 +966,12 @@ state of the source collection's read-only flag.
 
 [source,text]
 ----
-http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCollection&numShards=3&configName=conf2&q=id:aa*&fl=id,string_s
+http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=techproducts_v2&numShards=3&configName=conf2&q=id:aa*&fl=id,string_s
 ----
 This request specifies a different schema for the target collection, copies only some of the fields, selects only the documents
 matching a query, and also potentially re-shapes the collection by explicitly specifying 3 shards. Since the target collection
-hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_newCollection_2`, will be created and on success
-an alias pointing from `newCollection` to `.rx_newCollection_2` will be created, effectively replacing the source collection
+hasn't been specified in the parameters, a collection with a unique name, e.g., `.rx_techproducts_v2_2`, will be created and on success
+an alias pointing from `techproducts_v2` to `.rx_techproducts_v2_2` will be created, effectively replacing the source collection
 for the purpose of indexing and searching. The source collection is assumed to be small so a synchronous request was made.
 
 *Output*
@@ -986,16 +986,16 @@ for the purpose of indexing and searching. The source collection is assumed to b
     "phase":"done",
     "inputDocs":13416,
     "processedDocs":376,
-    "actualSourceCollection":".rx_newCollection_1",
+    "actualSourceCollection":".rx_techproducts_v2_1",
     "state":"finished",
-    "actualTargetCollection":".rx_newCollection_2",
-    "checkpointCollection":".rx_ck_newCollection"
+    "actualTargetCollection":".rx_techproducts_v2_2",
+    "checkpointCollection":".rx_ck_techproducts_v2"
   }
 }
 ----
-As a result a new collection `.rx_newCollection_2` has been created, with selected documents reindexed to 3 shards, and
-with an alias pointing from `newCollection` to this one. The status also shows that the source collection
-was already an alias to `.rx_newCollection_1`, which was likely a result of a previous reindexing.
+As a result a new collection `.rx_techproducts_v2_2` has been created, with selected documents reindexed to 3 shards, and
+with an alias pointing from `techproducts_v2` to this one. The status also shows that the source collection
+was already an alias to `.rx_techproducts_v2_1`, which was likely a result of a previous reindexing.
 
 [[colstatus]]
 == COLSTATUS: Detailed Status of a Collection's Indexes
@@ -1011,7 +1011,7 @@ information about segments and field data.  There isn't a good equivalent V2 API
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=newCollection&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true
+http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=techproducts_v2&coreInfo=true&segments=true&fieldInfo=true&sizeInfo=true
 ----
 ====
 
@@ -1023,7 +1023,7 @@ The closest V2 API is this one, but doesn't support all the features of the V1 e
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/newCollection?omitHeader=true
+curl -X GET http://localhost:8983/api/collections/techproducts_v2?omitHeader=true
 ----
 ====
 --
