@@ -1474,7 +1474,39 @@ http://localhost:8983/solr/admin/collections?action=COLSTATUS&collection=getting
 
 Backs up Solr collections and associated configurations to a shared filesystem - for example a Network File System.
 
-`/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1backupcollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=BACKUP&name=techproducts_backup&collection=techproducts&location=file:///path/to/my/shared/drive
+
+----
+====
+
+[example.tab-pane#v2backupcollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `backup-collection` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "backup-collection": {
+      "name": "techproducts_backup",
+      "collection": "techproducts",
+      "location": "file:///path/to/my/shared/drive"
+    }
+  }
+'
+----
+====
+--
 
 The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
 
@@ -1526,7 +1558,39 @@ Incremental backups are preferred in all known circumstances and snapshot backup
 
 Restores Solr indexes and associated configurations.
 
-`/admin/collections?action=RESTORE&name=myBackupName&location=/path/to/my/shared/drive&collection=myRestoredCollectionName`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1restorecollection]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=RESTORE&name=techproducts_backup&location=file:///path/to/my/shared/drive&collection=techproducts_v3
+
+----
+====
+
+[example.tab-pane#v2restorecollection]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `restore-collection` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "restore-collection": {
+      "name": "techproducts_backup",
+      "collection": "techproducts_v3",
+      "location": "file:///path/to/my/shared/drive"
+    }
+  }
+'
+----
+====
+--
 
 The RESTORE operation will create a collection with the specified name in the collection parameter. You cannot restore into the same collection the backup was taken from. Also the target collection should not be present at the time the API is called as Solr will create it for you.
 
