@@ -63,6 +63,8 @@ public class TestPayloadCheckQParserPlugin extends SolrTestCaseJ4 {
     };
 
     String[] should_not_matches = new String[] {
+        "{!payload_check f=vals_dpf payloads='0.75' op='gt'}one two", // too few payloads
+        "{!payload_check f=vals_dpf payloads='0.75 1.5 2.0' op='gt'}one two", // too many payloads
         "{!payload_check f=vals_dpi v=A payloads=2}",
         "{!payload_check f=vals_dpi payloads='1 2'}B C",
         "{!payload_check f=vals_dpi payloads='1 2 3'}A B",
