@@ -131,6 +131,7 @@ apply from: file('gradle/ide/intellij-idea.gradle')
 apply from: file('gradle/ide/eclipse.gradle')
 
 // Validation tasks
+apply from: file('gradle/validation/measure-task-times.gradle')
 apply from: file('gradle/validation/error-prone.gradle')
 apply from: file('gradle/validation/precommit.gradle')
 apply from: file('gradle/validation/forbidden-apis.gradle')
