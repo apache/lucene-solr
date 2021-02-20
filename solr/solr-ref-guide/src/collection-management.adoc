@@ -1638,7 +1638,37 @@ Additionally, there are several parameters that may have been set on the origina
 
 Reassigns leaders in a collection according to the preferredLeader property across active nodes.
 
-`/admin/collections?action=REBALANCELEADERS&collection=collectionName`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1rebalanceleaders]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=REBALANCELEADERS&collection=techproducts
+
+----
+====
+
+[example.tab-pane#v2rebalanceleaders]
+====
+[.tab-label]*V2 API*
+
+With the v2 API, the `rebalance-leaders` command is provided as part of the JSON data that contains the required parameters:
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts?omitHeader=true -H 'Content-Type: application/json' -d'
+  {
+    "rebalance-leaders": {
+      "maxAtOnce": 3
+    }
+  }
+'
+----
+====
+--
 
 Leaders are assigned in a collection according to the `preferredLeader` property on active nodes. This command should be run after the preferredLeader property has been assigned via the BALANCESHARDUNIQUE or ADDREPLICAPROP commands.
 
