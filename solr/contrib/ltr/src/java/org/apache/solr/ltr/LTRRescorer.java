@@ -126,7 +126,7 @@ public class LTRRescorer extends Rescorer {
         .createWeight(searcher.rewrite(scoringQuery), ScoreMode.COMPLETE, 1);
 
     int hitUpto = scoreFeatures(searcher,topN, modelWeight, firstPassResults, leaves, reranked);
-	final ScoreDoc[] rerankHited = new ScoreDoc[hitUpto];
+    final ScoreDoc[] rerankHited = new ScoreDoc[hitUpto];
     System.arraycopy(reranked, 0, rerankHited,0, hitUpto);
 	
     // Must sort all documents that we reranked, and then select the top
@@ -192,10 +192,10 @@ public class LTRRescorer extends Rescorer {
           scorer = modelWeight.scorer(readerContext);
         }
         scoreSingleHit(indexSearcher, topN, modelWeight, docBase, hitUpto, hit, docID, scoringQuery, scorer, reranked);
+        hitUpto++;
       } catch (ExitableDirectoryReader.ExitingReaderException ex) {
         break;
       }
-      hitUpto++;
     }
     return hitUpto;
   }
