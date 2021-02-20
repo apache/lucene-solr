@@ -19,6 +19,8 @@
 
 A collection is a single logical index that uses a single Solr configuration file (`solrconfig.xml`) and a single index schema.
 
+The examples assume you have started Solr via `solr/bin start -c -e techproducts`.
+
 [[create]]
 == CREATE: Create a Collection
 
@@ -603,10 +605,10 @@ curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=tr
 `name`::
 The name of the collection for which the property would be set.
 
-`propertyName` (V1), `name` (V2)::
+`propertyName` (v1), `name` (v2)::
 The name of the property.
 
-`propertyValue` (V1), `value` (V2)::
+`propertyValue` (v1), `value` (v2)::
 The value of the property. When not provided, the property is deleted.
 
 === COLLECTIONPROP Response
@@ -684,13 +686,13 @@ Please note that the MIGRATE API does not perform any de-duplication on the docu
 `collection`::
 The name of the source collection from which documents will be split. This parameter is required.
 
-`target.collection` (V1), `target` (V2)::
+`target.collection` (v1), `target` (v2)::
 The name of the target collection to which documents will be migrated. This parameter is required.
 
-`split.key` (V1), `splitKey` (V2)::
+`split.key` (v1), `splitKey` (v2)::
 The routing key prefix. For example, if the uniqueKey of a document is "a!123", then you would use `split.key=a!`. This parameter is required.
 
-`forward.timeout` (V1), `forwardTimeout` (V2)::
+`forward.timeout` (v1), `forwardTimeout` (v2)::
 The timeout, in seconds, until which write requests made to the source collection for the given `split.key` will be forwarded to the target shard. The default is 60 seconds.
 
 `property._name_=_value_`::
