@@ -343,9 +343,6 @@ The attributes that can be modified are:
 
 * replicationFactor
 * collection.configName
-* rule
-* snitch
-* policy
 * readOnly
 * other custom properties that use a `property.` prefix
 
