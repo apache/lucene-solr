@@ -813,8 +813,8 @@ public class RealTimeGetComponent extends SearchComponent
         if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) continue;
       }
       for (Object val: doc.getFieldValues(fname)) {
-        if (val instanceof Field) {
-          Field f = (Field) val;
+        if (val instanceof IndexableField) {
+          IndexableField f = materialize((IndexableField) val);
           if (sf != null) {
             val = sf.getType().toObject(f);   // object or external string?
           } else {
