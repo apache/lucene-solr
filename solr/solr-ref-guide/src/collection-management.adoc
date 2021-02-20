@@ -530,7 +530,7 @@ curl -X DELETE http://localhost:8983/api/collections/newCollection?omitHeader=tr
 The name of the collection to delete. This parameter is required.
 
 `async`::
-Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>> and is a V1 API only parameter.
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
 
 === DELETE Response
 
