@@ -30,11 +30,9 @@ The CREATE action is used to create new collection of data.
 ====
 [.tab-label]*V1 API*
 
-With the v1 API, the `create` command must be capitalized as `CREATE`:
-
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection
+http://localhost:8983/solr/admin/collections?action=CREATE&name=newCollection&numShards=1
 
 ----
 ====
@@ -202,8 +200,6 @@ will need to manually trigger the RELOAD.
 ====
 [.tab-label]*V1 API*
 
-With the v1 API, the `reload` command must be capitalized as `RELOAD`:
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=RELOAD&name=newCollection
@@ -303,8 +299,6 @@ An attribute can be deleted by passing an empty value. For example, `yet_another
 ====
 [.tab-label]*V1 API*
 
-With the v1 API, the `modifycollection` command must be capitalized as `MODIFYCOLLECTION`:
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=MODIFYCOLLECTION&collection=newCollection&<attribute-name>=<attribute-value>&<another-attribute-name>=<another-value>&<yet_another_attribute_name>=
@@ -387,8 +381,6 @@ Fetch the names of the collections in the cluster.
 ====
 [.tab-label]*V1 API*
 
-With the v1 API, the `list` command must be capitalized as `LIST`:
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=LIST
@@ -446,8 +438,6 @@ Aliases that refer to more than 1 collection are not supported.
 [example.tab-pane#v1renamecollection]
 ====
 [.tab-label]*V1 API*
-
-With the v1 API, the `rename` command must be capitalized as `RENAME`:
 
 [source,bash]
 ----
@@ -513,8 +503,6 @@ The DELETE action is used to delete a collection.
 [example.tab-pane#v1deletecollection]
 ====
 [.tab-label]*V1 API*
-
-With the v1 API, the `delete` command must be capitalized as `DELETE`:
 
 [source,bash]
 ----
@@ -582,8 +570,6 @@ Add, edit or delete a collection property.
 [example.tab-pane#v1collectionproperty]
 ====
 [.tab-label]*V1 API*
-
-With the v1 API, the `collectionprop` command must be capitalized as `COLLECTIONPROP`:
 
 [source,bash]
 ----
@@ -658,8 +644,6 @@ The MIGRATE command is used to migrate all documents having a given routing key 
 [example.tab-pane#v1migratecollection]
 ====
 [.tab-label]*V1 API*
-
-With the v1 API, the `migrate` command must be capitalized as `MIGRATE`:
 
 [source,bash]
 ----
@@ -886,8 +870,6 @@ source collection.
 ====
 [.tab-label]*V1 API*
 
-With the v1 API, the `reindexcommand` command must be capitalized as `REINDEXCOLLECTION`:
-
 [source,bash]
 ----
 http://localhost:8983/solr/admin/collections?action=REINDEXCOLLECTION&name=newCollection
@@ -1026,8 +1008,6 @@ information about segments and field data.  There isn't a good equivalent V2 API
 [example.tab-pane#v1collectionstatus]
 ====
 [.tab-label]*V1 API*
-
-With the v1 API, the `colstatus` command must be capitalized as `COLSTATUS`:
 
 [source,bash]
 ----
