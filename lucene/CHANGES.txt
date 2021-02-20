@@ -89,6 +89,9 @@ API Changes
 
 * LUCENE-9646: Set BM25Similarity discountOverlaps via the constructor (Patrick Marty via Bruno Roustant)
 
+* LUCENE-9480: Make DataInput's skipBytes(long) abstract as the implementation was not performant.
+  IndexInput's api is unaffected: skipBytes() is implemented via seek(). (Greg Miller)
+
 Improvements
 
 * LUCENE-9687: Hunspell support improvements: add API for spell-checking and suggestions, support compound words,
