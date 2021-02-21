@@ -28,11 +28,6 @@ import org.junit.BeforeClass;
 
 public class TestSizeLimitedDistributedMap extends TestDistributedMap {
 
-  @BeforeClass
-  public static void setupCluster() throws Exception {
-
-  }
-
   public void testCleanup() throws Exception {
     final List<String> deletedItems = new LinkedList<>();
     final Set<String> expectedKeys = new HashSet<>();

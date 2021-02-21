@@ -174,7 +174,7 @@ public class SolrTestUtil {
     do {
       log.warn("waiting on {} {}", thread.getName(), thread.getState());
       try {
-        thread.join(50);
+        thread.join(100);
       } catch (InterruptedException e) {
 
       }

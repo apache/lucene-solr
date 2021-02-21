@@ -36,14 +36,14 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
   protected static ZkTestServer zkServer;
 
   @BeforeClass
-  public static void setUpClass() throws Exception {
+  public static void setTestDistributedMap() throws Exception {
     zkDir = SolrTestUtil.createTempDir("TestDistributedMap");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
   }
 
   @AfterClass
-  public static void tearDownClass() throws IOException, InterruptedException {
+  public static void afterTestDistributedMap() throws IOException, InterruptedException {
 
     if (zkServer != null) {
       zkServer.shutdown();
