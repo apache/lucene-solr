@@ -36,7 +36,7 @@ public class LegacyQueryFacetTest extends LegacyAbstractAnalyticsFacetTest {
   public final int NUM_LOOPS = 100;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyQueryFacetTest() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
   }
 

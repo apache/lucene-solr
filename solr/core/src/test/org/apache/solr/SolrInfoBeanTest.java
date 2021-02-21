@@ -41,7 +41,7 @@ import java.util.List;
 public class SolrInfoBeanTest extends SolrTestCaseJ4
 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSolrInfoBeanTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
 

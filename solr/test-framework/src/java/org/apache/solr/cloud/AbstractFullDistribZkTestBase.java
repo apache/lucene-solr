@@ -319,12 +319,12 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeAbstractFullDistribZkTestBase() {
     System.setProperty("solrcloud.update.delay", "0");
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterAbstractFullDistribZkTestBase() throws Exception {
 
   }
 

@@ -18,6 +18,7 @@
 package org.apache.solr.update;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,8 +27,13 @@ import static org.apache.solr.update.TestInPlaceUpdatesStandalone.addAndAssertVe
 public class TestInPlaceUpdatesRequiredField extends SolrTestCaseJ4  {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestInPlaceUpdatesRequiredField() throws Exception {
     initCore("solrconfig-tlog.xml", "schema-inplace-required-field.xml");
+  }
+
+  @AfterClass
+  public static void afterTestInPlaceUpdatesRequiredField() throws Exception {
+    deleteCore();
   }
 
   @Test

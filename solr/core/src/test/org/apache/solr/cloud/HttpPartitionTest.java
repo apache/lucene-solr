@@ -89,7 +89,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected static final int maxWaitSecsToSeeAllActive = 90;
 
   @BeforeClass
-  public static void setupSysProps() throws Exception {
+  public static void beforeHttpPartitionTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     useFactory(null);
     System.setProperty("socketTimeout", "10000");

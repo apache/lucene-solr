@@ -23,6 +23,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +33,13 @@ public class HighlighterConfigTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeHighlighterConfigTest() throws Exception {
     initCore("solrconfig-highlight.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterHighlighterConfigTest() throws Exception {
+    deleteCore();
   }
 
   @Override

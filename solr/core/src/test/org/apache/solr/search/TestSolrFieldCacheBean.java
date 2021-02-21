@@ -16,10 +16,10 @@
  */
 package org.apache.solr.search;
 
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.BeforeClass;
@@ -77,8 +77,8 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registryName, "foo");
     mbean.initializeMetrics(solrMetricsContext, null);
-    MetricsMap metricsMap = (MetricsMap)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
-    Map<String, Object> metrics = checkJmx ? metricsMap.getValue(true) : metricsMap.getValue();
+    Gauge metricsMap = (Gauge)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
+    Map<String, Object> metrics = (Map<String,Object>) metricsMap.getValue();
     assertTrue(((Number)metrics.get("entries_count")).longValue() > 0);
     assertNotNull(metrics.get("total_size"));
     assertNotNull(metrics.get("entry#0"));
@@ -91,8 +91,8 @@ public class TestSolrFieldCacheBean extends SolrTestCaseJ4 {
     SolrMetricManager metricManager = h.getCoreContainer().getMetricManager();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registryName, "foo");
     mbean.initializeMetrics(solrMetricsContext, null);
-    MetricsMap metricsMap = (MetricsMap)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
-    Map<String, Object> metrics = checkJmx ? metricsMap.getValue(true) : metricsMap.getValue();
+    Gauge metricsMap = (Gauge)metricManager.registry(registryName).getMetrics().get("CACHE.fieldCache");
+    Map<String, Object> metrics = (Map<String,Object>) metricsMap.getValue();
     assertTrue(((Number)metrics.get("entries_count")).longValue() > 0);
     assertNull(metrics.get("total_size"));
     assertNull(metrics.get("entry#0"));

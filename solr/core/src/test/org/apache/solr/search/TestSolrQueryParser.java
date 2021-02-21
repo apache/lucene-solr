@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -46,7 +47,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
@@ -551,34 +551,34 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "777"));
     delI("777");
     assertU(commit());  // arg... commit no longer "commits" unless there has been a change.
-    final MetricsMap filterCacheStats;
+    final Gauge filterCacheStats;
     try (SolrCore core = h.getCore()) {
-      filterCacheStats = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+      filterCacheStats = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
       assertNotNull(filterCacheStats);
-      final MetricsMap queryCacheStats = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+      final Gauge queryCacheStats = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
 
       assertNotNull(queryCacheStats);
     }
 
 
-    long inserts = (Long) filterCacheStats.getValue().get("inserts");
-    long hits = (Long) filterCacheStats.getValue().get("hits");
+    long inserts = (Long) ((Map) filterCacheStats.getValue()).get("inserts");
+    long hits = (Long)  ((Map) filterCacheStats.getValue()).get("hits");
 
     assertJQ(req("q", "doesnotexist filter(id:1) filter(qqq_s:X) filter(abcdefg)")
         , "/response/numFound==2"
     );
 
     inserts += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals(inserts, ((Long) ((Map) filterCacheStats.getValue()).get("inserts")).longValue());
+    assertEquals(hits, ((Long) ((Map) filterCacheStats.getValue()).get("hits")).longValue());
 
     assertJQ(req("q", "doesnotexist2 filter(id:1) filter(qqq_s:X) filter(abcdefg)")
         , "/response/numFound==2"
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals(inserts, ((Long) ((Map) filterCacheStats.getValue()).get("inserts")).longValue());
+    assertEquals(hits, ((Long) ((Map) filterCacheStats.getValue()).get("hits")).longValue());
 
     // make sure normal "fq" parameters also hit the cache the same way
     assertJQ(req("q", "doesnotexist3", "fq", "id:1", "fq", "qqq_s:X", "fq", "abcdefg")
@@ -586,8 +586,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals(inserts, ((Long) ((Map) filterCacheStats.getValue()).get("inserts")).longValue());
+    assertEquals(hits, ((Long) ((Map) filterCacheStats.getValue()).get("hits")).longValue());
 
     // try a query deeply nested in a FQ
     assertJQ(req("q", "*:* doesnotexist4", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -596,8 +596,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     inserts += 1;  // +1 for top level fq
     hits += 3;
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals(inserts, ((Long) ((Map) filterCacheStats.getValue()).get("inserts")).longValue());
+    assertEquals(hits, ((Long) ((Map) filterCacheStats.getValue()).get("hits")).longValue());
 
     // retry the complex FQ and make sure hashCode/equals works as expected w/ filter queries
     assertJQ(req("q", "*:* doesnotexist5", "fq", "(id:* +(filter(id:1) filter(qqq_s:X) filter(abcdefg)) )")
@@ -605,8 +605,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     );
 
     hits += 1;  // top-level fq should have been found.
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals(inserts, ((Long) ((Map) filterCacheStats.getValue()).get("inserts")).longValue());
+    assertEquals(hits, ((Long) ((Map) filterCacheStats.getValue()).get("hits")).longValue());
 
 
     // try nested filter with multiple top-level args (i.e. a boolean query)
@@ -616,8 +616,8 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     hits += 1;  // the inner filter
     inserts += 1; // the outer filter
-    assertEquals(inserts, ((Long) filterCacheStats.getValue().get("inserts")).longValue());
-    assertEquals(hits, ((Long) filterCacheStats.getValue().get("hits")).longValue());
+    assertEquals(inserts, ((Long) ((Map) filterCacheStats.getValue()).get("inserts")).longValue());
+    assertEquals(hits, ((Long) ((Map) filterCacheStats.getValue()).get("hits")).longValue());
 
     // test the score for a filter, and that default score is 0
     assertJQ(req("q", "+filter(*:*) +filter(id:1)", "fl", "id,score", "sort", "id asc")

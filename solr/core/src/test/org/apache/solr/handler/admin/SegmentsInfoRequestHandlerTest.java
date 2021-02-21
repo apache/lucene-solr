@@ -88,7 +88,6 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
       int finalRefCount = iwRef.getRefcount();
       iwRef.decref();
       assertEquals("IW refcount mismatch", initialRefCount, finalRefCount);
-      systemClearPropertySolrTestsMergePolicyFactory();
       System.clearProperty("solr.tests.maxBufferedDocs");
       System.clearProperty("solr.tests.ramBufferSizeMB");
     }

@@ -31,7 +31,7 @@ public class SuggesterTest extends SolrTestCaseJ4 {
   protected String requestUri = "/suggest";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSuggesterTest() throws Exception {
     useFactory(null);
     initCore("solrconfig-spellchecker.xml","schema-spellchecker.xml");
   }

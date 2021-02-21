@@ -49,7 +49,7 @@ public class TestStandardNormalizer extends SolrTestCase {
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeTestStandardNormalizer() {
     solrResourceLoader = new SolrResourceLoader();
   }
 

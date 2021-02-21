@@ -19,12 +19,13 @@ package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestTermsQParserPlugin() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
 
     assertU(adoc("id","1", "author_s", "Lev Grossman", "t_title", "The Magicians",  "cat_s", "fantasy", "pubyear_i", "2009"));
@@ -36,6 +37,11 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
     assertU(adoc("id", "6", "author_s", "Ursula K. Le Guin", "t_title", "The Left Hand of Darkness", "cat_s", "scifi", "pubyear_i", "1969"));
     assertU(adoc("id", "7", "author_s", "Isaac Asimov", "t_title", "Foundation", "cat_s", "scifi", "pubyear_i", "1951"));
     assertU(commit());
+  }
+
+  @AfterClass
+  public static void afterTestTermsQParserPlugin() throws Exception {
+    deleteCore();
   }
 
   @Test

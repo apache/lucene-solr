@@ -40,7 +40,7 @@ import java.nio.charset.StandardCharsets;
 public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestDocBuilder2() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
 

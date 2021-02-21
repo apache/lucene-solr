@@ -17,6 +17,7 @@
 package org.apache.solr.metrics.reporters;
 
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.Query;
 import javax.management.QueryExp;
@@ -64,6 +65,9 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
   }
   @AfterClass
   public static void releaseMBeanServer() {
+    if (mBeanServer != null) {
+      MBeanServerFactory.releaseMBeanServer(mBeanServer);
+    }
     mBeanServer = null;
   }
   

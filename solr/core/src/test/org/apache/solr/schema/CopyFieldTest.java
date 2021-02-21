@@ -37,7 +37,7 @@ import org.junit.Test;
  */
 public class CopyFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeCopyFieldTest() throws Exception {
     initCore("solrconfig.xml","schema-copyfield-test.xml");
   }    
 

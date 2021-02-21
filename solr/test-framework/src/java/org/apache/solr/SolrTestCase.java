@@ -688,10 +688,16 @@ public class SolrTestCase extends Assert {
     if (thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) {
       return false;
     }
-    if (thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-")) {
+
+    if (thread.getName().contains("-SendThread")) {
       log.warn("interrupt on " + thread.getName());
       thread.interrupt();
       return true;
+    }
+    if (thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-")) {
+      log.warn("interrupt on " + thread.getName());
+     // thread.interrupt();
+      return false;
     }
     if (interruptThreadListContains(nameContains, thread.getName())) {
       log.warn("interrupt on " + thread.getName());
@@ -711,8 +717,7 @@ public class SolrTestCase extends Assert {
   }
 
   public static SolrQueuedThreadPool getQtp() throws Exception {
-    SolrQueuedThreadPool qtp = new SolrQueuedThreadPool("solr-test-qtp");
-    return qtp;
+    return new SolrQueuedThreadPool("solr-test-qtp");
   }
 
 
@@ -783,7 +788,7 @@ public class SolrTestCase extends Assert {
         return testExecutor;
       }
       testExecutor = (ParWorkExecutor) ParWork.getParExecutorService(
-          "testExecutor", 10, 30, 500, new BlockingArrayQueue(32, 16));
+          "testExecutor", 5, 30, 500, new BlockingArrayQueue(12, 16));
       testExecutor.prestartAllCoreThreads();
       ((ParWorkExecutor) testExecutor).enableCloseLock();
       return testExecutor;
@@ -862,12 +867,12 @@ public class SolrTestCase extends Assert {
     /**
      * see org.apache.lucene.util.TestRuleSetupTeardownChained
      */
-    public boolean setupCalled;
+    public volatile boolean setupCalled;
 
     /**
      * see org.apache.lucene.util.TestRuleSetupTeardownChained
      */
-    public boolean teardownCalled;
+    public volatile boolean teardownCalled;
 
     @Override
     public Statement apply(final Statement base, Description description) {

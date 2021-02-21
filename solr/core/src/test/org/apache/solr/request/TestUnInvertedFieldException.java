@@ -52,8 +52,8 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
   @After
   @Override
   public void tearDown() throws Exception {
-    super.tearDown();
     deleteCore();
+    super.tearDown();
   }
 
   String t(int tnum) {
@@ -72,21 +72,19 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
 
   @Test
   public void testConcurrentInit() throws Exception {
-    final SolrQueryRequest req = req("*:*");
-    final SolrIndexSearcher searcher = req.getSearcher();
+    try (SolrQueryRequest req = req("*:*")) {
+      final SolrIndexSearcher searcher = req.getSearcher();
 
-    List<Callable<UnInvertedField>> initCallables = new ArrayList<>();
-    for (int i=0;i< TestUtil.nextInt(random(), 10, 30);i++) {
-      initCallables.add(()-> UnInvertedField.getUnInvertedField(proto.field(), searcher));
-    }
+      List<Callable<UnInvertedField>> initCallables = new ArrayList<>();
+      for (int i = 0; i < TestUtil.nextInt(random(), 10, 30); i++) {
+        initCallables.add(() -> UnInvertedField.getUnInvertedField(proto.field(), searcher));
+      }
 
-    final ExecutorService pool  = getTestExecutor();
+      final ExecutorService pool = getTestExecutor();
 
-    try {
       TestInjection.uifOutOfMemoryError = true;
       if (LuceneTestCase.assertsAreEnabled) { // if they aren't, we check that injection is disabled in live
-        List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c))
-            .collect(Collectors.toList());
+        List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c)).collect(Collectors.toList());
         for (Future<UnInvertedField> uifuture : futures) {
           try {
             final UnInvertedField uif = uifuture.get();
@@ -100,8 +98,7 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
         TestInjection.uifOutOfMemoryError = false;
       }
       UnInvertedField prev = null;
-      List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c))
-          .collect(Collectors.toList());
+      List<Future<UnInvertedField>> futures = initCallables.stream().map((c) -> pool.submit(c)).collect(Collectors.toList());
       for (Future<UnInvertedField> uifuture : futures) {
         final UnInvertedField uif = uifuture.get();
         assertNotNull(uif);
@@ -112,8 +109,6 @@ public class TestUnInvertedFieldException extends SolrTestCaseJ4 {
         assertEquals(numTerms, uif.numTerms());
         prev = uif;
       }
-    } finally {
-      req.close();
     }
   }
 }

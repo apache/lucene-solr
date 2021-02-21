@@ -32,7 +32,7 @@ import org.junit.Test;
 public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeGetByIdTest() throws Exception {
     initCore();
   }
 

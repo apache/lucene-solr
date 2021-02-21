@@ -60,7 +60,7 @@ public class LegacyNoFacetTest extends LegacyAbstractAnalyticsTest {
   static long stringMissing = 0;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyNoFacetTest() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
     defaults.put("int_id", 0);

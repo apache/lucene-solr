@@ -38,7 +38,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   private final String MV_FIELD_NAME = "severity_mv";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeEnumFieldTest() throws Exception {
     System.setProperty("solr.tests.EnumFieldTest.indexed", Boolean.toString(random().nextBoolean()));
     doInitCore();
 

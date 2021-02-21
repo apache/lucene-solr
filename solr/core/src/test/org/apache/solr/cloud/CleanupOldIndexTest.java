@@ -40,7 +40,7 @@ import org.junit.Test;
 public class CleanupOldIndexTest extends SolrCloudTestCase {
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCleanupOldIndexTest() throws Exception {
     // we restart jetty and expect to find on disk data - need a local fs directory
     System.setProperty("solr.skipCommitOnClose", "false");
 
@@ -61,7 +61,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterCleanupOldIndexTest() throws Exception {
     shutdownCluster();
   }
 

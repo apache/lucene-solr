@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -336,24 +337,43 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   public static ValidatingJsonMap parse(String resourceName,
       String includeLocation) {
-    InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName);
-    if (null == resource) {
-      throw new RuntimeException("invalid API spec: " + resourceName);
-    }
     ValidatingJsonMap map;
+    try (InputStream resource = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName)) {
+      if (null == resource) {
+        URL url = ValidatingJsonMap.class.getClassLoader().getResource(resourceName);
+        if (url == null) {
+          throw new RuntimeException("invalid API spec: " + resourceName);
+        } else {
+          try {
+            try (InputStream stream = url.openStream()) {
+              try {
+                map = fromJSON(stream, includeLocation);
+              } catch (Exception e) {
+                ParWork.propagateInterrupt(e);
+                throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
+              }
 
-    try {
-      map = fromJSON(resource, includeLocation);
-    } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error in JSON : " + resourceName, e);
+              if (map == null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty value for " + resourceName);
+              return getDeepCopy(map, 5, false);
+            }
+          } catch (IOException e) {
+
+          }
+        }
+      }
+
+      try {
+        map = fromJSON(resource, includeLocation);
+      } catch (Exception e) {
+        ParWork.propagateInterrupt(e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in JSON : " + resourceName, e);
+      }
+
+      if (map == null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty value for " + resourceName);
+      return getDeepCopy(map, 5, false);
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
-    if (map == null)
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Empty value for " + resourceName);
-    return getDeepCopy(map, 5, false);
   }
 
   @Override

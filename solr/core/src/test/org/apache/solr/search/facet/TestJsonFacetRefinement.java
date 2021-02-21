@@ -42,7 +42,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   private static SolrInstances servers;  // for distributed testing
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestJsonFacetRefinement() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
@@ -58,13 +58,13 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
   }
 
   @AfterClass
-  public static void afterTests() throws Exception {
+  public static void afterTestJsonFacetRefinement() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    deleteCore();
   }
 
 

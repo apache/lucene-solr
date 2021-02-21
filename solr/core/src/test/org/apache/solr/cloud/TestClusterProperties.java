@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -28,8 +29,13 @@ public class TestClusterProperties extends SolrCloudTestCase {
   private ClusterProperties props;
   
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeTestClusterProperties() throws Exception {
     configureCluster(1).configure();
+  }
+
+  @AfterClass
+  public static void afterTestClusterProperties() throws Exception {
+    shutdownCluster();
   }
 
   @Override

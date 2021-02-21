@@ -73,7 +73,7 @@ public class TestLBHttp2SolrClient extends SolrTestCaseJ4 {
   static String savedFactory;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestLBHttp2SolrClient() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     //System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     useFactory(null);

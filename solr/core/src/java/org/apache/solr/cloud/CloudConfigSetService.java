@@ -67,7 +67,7 @@ public class CloudConfigSetService extends ConfigSetService {
     try {
       return ConfigSetProperties.readFromResourceLoader(loader, ".");
     } catch (Exception ex) {
-      log.debug("No configSet flags", ex);
+      if (log.isDebugEnabled()) log.debug("No configSet flags", ex);
       return null;
     }
   }

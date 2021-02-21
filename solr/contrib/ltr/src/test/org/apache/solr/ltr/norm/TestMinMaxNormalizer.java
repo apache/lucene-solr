@@ -49,12 +49,12 @@ public class TestMinMaxNormalizer extends SolrTestCase {
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeTestMinMaxNormalizer() {
     solrResourceLoader = new SolrResourceLoader();
   }
 
   @AfterClass
-  public static void afterClass() throws IOException {
+  public static void afterTestMinMaxNormalizer() throws IOException {
     solrResourceLoader.close();
     solrResourceLoader = null;
   }

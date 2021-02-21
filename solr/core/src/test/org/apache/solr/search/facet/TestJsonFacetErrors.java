@@ -36,7 +36,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
 
   @SuppressWarnings("deprecation")
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestJsonFacetErrors() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     JSONTestUtil.failRepeatedKeys = true;
 
@@ -57,13 +57,13 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
 
   @SuppressWarnings("deprecation")
   @AfterClass
-  public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
+  public static void afterTestJsonFacetErrors() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
+    deleteCore();
   }
 
   public void indexSimple(Client client) throws Exception {

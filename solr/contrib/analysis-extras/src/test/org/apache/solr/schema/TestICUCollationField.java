@@ -38,7 +38,7 @@ import com.ibm.icu.util.ULocale;
 public class TestICUCollationField extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestICUCollationField() throws Exception {
     String home = setupSolrHome();
     initCore("solrconfig.xml","schema.xml", home);
     // add some docs

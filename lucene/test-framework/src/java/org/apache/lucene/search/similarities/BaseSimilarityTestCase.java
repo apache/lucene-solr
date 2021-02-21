@@ -52,7 +52,7 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
   static Directory DIR;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeBaseSimilarityTestCase() throws Exception {
     // with norms
     DIR = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), DIR);

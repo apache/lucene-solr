@@ -55,10 +55,8 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  static String savedFactory;
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
+  public static void beforeDirectUpdateHandlerTest() throws Exception {
     //System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     useFactory(null);
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
@@ -67,13 +65,8 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicyFactory();
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
+  public static void afterDirectUpdateHandlerTest() {
+    deleteCore();
   }
 
   @Override
@@ -118,6 +111,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
       String delsQName = PREFIX + "deletesByQuery";
       String cumulativeDelsQName = PREFIX + "cumulativeDeletesByQuery";
       long commits = ((Meter) metrics.get(commitsName)).getCount();
+
       long adds = ((Gauge<Number>) metrics.get(addsName)).getValue().longValue();
       long cumulativeAdds = ((Meter) metrics.get(cumulativeAddsName)).getCount();
       long cumulativeDelsI = ((Meter) metrics.get(cumulativeDelsIName)).getCount();

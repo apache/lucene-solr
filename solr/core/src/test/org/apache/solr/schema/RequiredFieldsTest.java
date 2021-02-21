@@ -27,7 +27,7 @@ import org.junit.Test;
  */
 public class RequiredFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeRequiredFieldsTest() throws Exception {
     initCore("solrconfig.xml","schema-required-fields.xml");
   }
   

@@ -68,7 +68,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   @BeforeClass
-  public static void beforeClass() throws IOException {
+  public static void beforeTestSolrCLIRunExample() throws IOException {
     LuceneTestCase.assumeFalse("FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
         Paths.get(".").toAbsolutePath().toString().contains(" "));
     // to be true

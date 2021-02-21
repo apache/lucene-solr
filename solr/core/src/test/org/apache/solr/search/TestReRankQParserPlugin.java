@@ -18,12 +18,12 @@ package org.apache.solr.search;
 
 import java.util.Map;
 
+import com.codahale.metrics.Gauge;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -385,9 +385,9 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/str[@name='id'][.='2']"
     );
     SolrCore core = h.getCore();
-    MetricsMap metrics = (MetricsMap) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    Gauge metrics = (Gauge) core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
     core.close();
-    Map<String,Object> stats = metrics.getValue(true, false);
+    Map<String,Object> stats = (Map<String,Object>) metrics.getValue();
 
     long inserts = (Long) stats.get("inserts");
 
@@ -411,7 +411,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     );
 
 
-    stats = metrics.getValue();
+    stats = (Map<String,Object>) metrics.getValue();
 
     long inserts1 = (Long) stats.get("inserts");
 
@@ -435,7 +435,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[5]/str[@name='id'][.='1']"
     );
 
-    stats = metrics.getValue();
+    stats = (Map<String,Object>) metrics.getValue();
     long inserts2 = (Long) stats.get("inserts");
     //Last query was NOT added to the cache
     assertTrue(inserts1 == inserts2);

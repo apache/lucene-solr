@@ -46,6 +46,7 @@ import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.SyntaxError;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -59,10 +60,15 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
   
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestIntervalFaceting() throws Exception {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig-basic.xml", "schema-docValuesFaceting.xml");
+  }
+
+  @AfterClass
+  public static void afterTestIntervalFaceting() {
+    deleteCore();
   }
 
   @Override

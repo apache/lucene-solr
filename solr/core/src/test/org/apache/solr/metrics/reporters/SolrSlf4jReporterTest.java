@@ -48,7 +48,7 @@ public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSolrSlf4jReporterTest() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
   }
 

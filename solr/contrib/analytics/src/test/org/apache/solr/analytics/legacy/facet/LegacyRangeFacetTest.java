@@ -46,7 +46,7 @@ public class LegacyRangeFacetTest extends LegacyAbstractAnalyticsFacetTest {
   static ArrayList<ArrayList<Float>> floatDateTestStart;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyRangeFacetTest() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 

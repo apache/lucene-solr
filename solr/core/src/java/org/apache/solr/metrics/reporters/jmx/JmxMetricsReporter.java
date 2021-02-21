@@ -531,7 +531,11 @@ public class JmxMetricsReporter implements Reporter, Closeable {
             }
           }
         }
-        mBeanServer.unregisterMBean(objectName);
+        try {
+          mBeanServer.unregisterMBean(objectName);
+        } catch (InstanceNotFoundException e) {
+          log.warn("JMX object not found name=" + objectName, e);
+        }
       }
       ObjectInstance objectInstance = mBeanServer.registerMBean(mBean, objectName);
       if (objectInstance != null) {

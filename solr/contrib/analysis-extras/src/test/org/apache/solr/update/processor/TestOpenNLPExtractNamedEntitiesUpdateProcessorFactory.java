@@ -29,7 +29,7 @@ import org.junit.Test;
 public class TestOpenNLPExtractNamedEntitiesUpdateProcessorFactory extends UpdateProcessorTestBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestOpenNLPExtractNamedEntitiesUpdateProcessorFactory() throws Exception {
     File testHome = SolrTestUtil.createTempDir().toFile();
     FileUtils.copyDirectory(SolrTestUtil.getFile("analysis-extras/solr"), testHome);
     initCore("solrconfig-opennlp-extract.xml", "schema-opennlp-extract.xml", testHome.getAbsolutePath());

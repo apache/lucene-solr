@@ -2575,21 +2575,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
     System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
   }
-
-  protected static void systemClearPropertySolrTestsMergePolicyFactory() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
-  }
   
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemSetPropertySolrDisableShardsWhitelist(String value) {
     System.setProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST, value);
   }
 
-  @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrDisableShardsWhitelist() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_DISABLE_SHARDS_WHITELIST);
-  }
-  
   /**
    * The name of a sysprop that can be set by users when running tests to force the types of numerics 
    * used for test classes that do not have the {@link SuppressPointFields} annotation:

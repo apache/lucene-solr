@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.util.Arrays;
 import java.util.Map;
 
 import com.codahale.metrics.Counter;
@@ -44,7 +43,7 @@ import org.junit.Test;
  */
 public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeMetricsHandlerTest() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     initCore("solrconfig-minimal.xml", "schema.xml");
     h.getCoreContainer().waitForLoadingCoresToFinish(30000);
@@ -61,7 +60,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupMetrics() throws Exception {
+  public static void afterMetricsHandlerTest() throws Exception {
     if (null != h) {
       h.getCoreContainer().getMetricManager().registry("solr.jvm").remove("solrtest_foo");
       h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");

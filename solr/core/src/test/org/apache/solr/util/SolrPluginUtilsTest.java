@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,8 +48,13 @@ import org.junit.Test;
 public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSolrPluginUtilsTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterSolrPluginUtilsTest() throws Exception {
+    deleteCore();
   }
 
   @Test

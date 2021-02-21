@@ -21,6 +21,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.SolrTestUtil;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -41,12 +42,17 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTestConfigSets() throws Exception {
     useFactory(null);
-    initCore("solrconfig.xml", "schema.xml");
   }
 
   @AfterClass
   public static void afterTestConfigSets() throws Exception {
-    deleteCore();
+
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    System.clearProperty("configsets");
   }
 
   public CoreContainer setupContainer(String configSetsBaseDir) {
@@ -119,25 +125,23 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     System.setProperty("configsets", csd);
 
     CoreContainer container = new CoreContainer(new SolrXmlConfig().fromString(testDirectory, solrxml));
-    container.load();
+    try {
+      container.load();
 
-    // We initially don't have a /dump handler defined
-    SolrCore core = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
-    assertThat("No /dump handler should be defined in the initial configuration",
-        core.getRequestHandler("/dump"), is(nullValue()));
+      // We initially don't have a /dump handler defined
+      SolrCore core = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
+      assertThat("No /dump handler should be defined in the initial configuration", core.getRequestHandler("/dump"), is(nullValue()));
 
-    // Now copy in a config with a /dump handler and reload
-    FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/solrconfig-withgethandler.xml"),
-        new File(new File(configSetsDir, "configset-2/conf"), "solrconfig.xml"));
-    container.reload("core1");
-
-    core.close();
-    core = container.getCore("core1");
-    assertThat("A /dump handler should be defined in the reloaded configuration",
-        core.getRequestHandler("/dump"), is(notNullValue()));
-    core.close();
-
-    container.shutdown();
+      // Now copy in a config with a /dump handler and reload
+      FileUtils.copyFile(SolrTestUtil.getFile("solr/collection1/conf/solrconfig-withgethandler.xml"), new File(new File(configSetsDir, "configset-2/conf"), "solrconfig.xml"));
+      container.reload("core1");
+      core.close();
+      core = container.getCore("core1");
+      assertThat("A /dump handler should be defined in the reloaded configuration", core.getRequestHandler("/dump"), is(notNullValue()));
+      core.close();
+    } finally {
+      container.shutdown();
+    }
   }
 
 }

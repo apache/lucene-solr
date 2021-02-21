@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
  */
 public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeDisMaxRequestHandlerTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     lrf = h.getRequestFactory
       ("/dismax", 0, 20,

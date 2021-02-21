@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
@@ -31,7 +32,6 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -204,25 +204,25 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
     try (SolrCore core = h.getCore()) {
       Map<String,Metric> metrics = h.getCoreContainer().getMetricManager().registry(core.getCoreMetricManager().getRegistryName()).getMetrics();
 
-      @SuppressWarnings("rawtypes") MetricsMap mm = (MetricsMap) metrics.get("CACHE.searcher.queryResultCache");
+      @SuppressWarnings("rawtypes") Gauge mm = (Gauge) metrics.get("CACHE.searcher.queryResultCache");
       {
-        Map<String,Object> statPre = mm.getValue();
+        Map<String,Object> statPre = (Map<String,Object>) mm.getValue();
         try (SolrQueryRequest req = req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true")) {
           h.query(req);
-          assertHitOrInsert(mm.getValue(), statPre);
+          assertHitOrInsert((Map<String,Object>) mm.getValue(), statPre);
         }
       }
 
       {
-        Map<String,Object> statPre = mm.getValue();
+        Map<String,Object> statPre = (Map<String,Object>) mm.getValue();
         try (SolrQueryRequest req = req("q", "{!join from=movieId_s to=id score=Avg}title:first", "fl", "id", "omitHeader", "true")) {
           h.query(req);
-          assertHit(mm.getValue(), statPre);
+          assertHit((Map<String,Object>) mm.getValue(), statPre);
         }
       }
 
       {
-        Map<String,Object> statPre = mm.getValue();
+        Map<String,Object> statPre = (Map<String,Object>) mm.getValue();
 
         Random r = random();
         boolean changed = false;
@@ -242,15 +242,15 @@ public class TestScoreJoinQPScore extends SolrTestCaseJ4 {
             //" b=" + boost +
             "}" + q, "fl", "id", "omitHeader", "true")) {
           resp = h.query(req);
-          assertInsert(mm.getValue(), statPre);
+          assertInsert((Map<String,Object>) mm.getValue(), statPre);
         }
 
-        statPre = mm.getValue();
+        statPre = (Map<String,Object>) mm.getValue();
         try (SolrQueryRequest req = req("q", "{!join from=" + from + " to=" + to + " score=" + score.toLowerCase(Locale.ROOT) +
             //" b=" + boost
             "}" + q, "fl", "id", "omitHeader", "true")) {
           final String repeat = h.query(req);
-          assertHit(mm.getValue(), statPre);
+          assertHit((Map<String,Object>) mm.getValue(), statPre);
 
           assertEquals("lowercase shouldn't change anything", resp, repeat);
         }

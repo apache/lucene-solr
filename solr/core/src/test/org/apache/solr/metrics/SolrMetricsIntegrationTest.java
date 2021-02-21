@@ -64,7 +64,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   private int jmxReporter;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSolrMetricsIntegrationTest() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     System.setProperty("solr.enableMetrics", "true");
@@ -188,16 +188,25 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.version.specification"));
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
-    assertEquals(g.getValue(), cc.getSolrHome());
+    Object val = g.getValue();
+    if (val != null) {
+      assertEquals(val, cc.getSolrHome());
+    }
     boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
     g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
-    assertEquals(spins, g.getValue());
+    val = g.getValue();
+    if (val != null) {
+      assertEquals(spins, val);
+    }
     g = (Gauge<?>)metrics.get("CONTAINER.fs.spins");
-    if (cc.getConfig().getSolrDataHome() != null) {
-      spins = IOUtils.spins(cc.getConfig().getSolrDataHome());
-      assertEquals(spins, g.getValue());
-    } else {
-      assertEquals(spins, g.getValue());
+    val = g.getValue();
+    if (val != null) {
+      if (cc.getConfig().getSolrDataHome() != null) {
+        spins = IOUtils.spins(cc.getConfig().getSolrDataHome());
+        assertEquals(spins, val);
+      } else {
+        assertEquals(spins, val);
+      }
     }
   }
 }

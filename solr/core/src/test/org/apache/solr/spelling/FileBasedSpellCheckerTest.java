@@ -39,7 +39,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
   private static SpellingQueryConverter queryConverter;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeFileBasedSpellCheckerTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     //Index something with a title
     assertNull(h.validateUpdate(adoc("id", "0", "teststop", "This is a title")));

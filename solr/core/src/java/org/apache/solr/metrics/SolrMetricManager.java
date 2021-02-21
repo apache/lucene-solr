@@ -17,7 +17,6 @@
 package org.apache.solr.metrics;
 
 import java.lang.invoke.MethodHandles;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,11 +46,9 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricSet;
-import com.codahale.metrics.SharedMetricRegistries;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SysStats;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.PluginInfo;
@@ -111,8 +108,6 @@ public class SolrMetricManager {
   private static final ConcurrentMap<String, MetricRegistry> REGISTRIES = new ConcurrentHashMap<>(12, 0.75f, 1);
 
   private final Map<String, Map<String, SolrMetricReporter>> reporters = new HashMap<>(32);
-
-  private final Map<String, Set<String>> tags = new ConcurrentHashMap<>(32);
 
   private final Lock reportersLock = new ReentrantLock();
 
@@ -748,17 +743,17 @@ public class SolrMetricManager {
    * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
    */
   public static class GaugeWrapper<T> implements Gauge<T> {
-    private final WeakReference<Gauge<T>> gauge;
+    private final Gauge<T> gauge;
     private final String tag;
 
     public GaugeWrapper(Gauge<T> gauge, String tag) {
-      this.gauge = new WeakReference<>(gauge);
+      this.gauge = gauge;
       this.tag = tag;
     }
 
     @Override
     public T getValue() {
-      return gauge.get().getValue();
+      return gauge.getValue();
     }
 
     public String getTag() {
@@ -766,87 +761,35 @@ public class SolrMetricManager {
     }
 
     public Gauge<T> getGauge() {
-      return gauge.get();
+      return gauge;
     }
   }
 
-  public String registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
-    Set<String> names = null;
-    if (tag != null) {
-      names = tags.get(tag);
-      if (names == null) {
-        names = ConcurrentHashMap.newKeySet();
-        Set<String> race = tags.putIfAbsent(tag, names);
-        if (race != null) {
-          names = race;
-        }
-      }
-    }
-
-    String path = registerMetric(context, registry, gauge, force, metricName, metricPath);
-    if (names != null) {
-      names.add(path);
-    }
-    return path;
+  public void registerGauge(SolrMetricsContext context, String registry, Gauge<?> gauge, String tag, boolean force, String metricName, String... metricPath) {
+    registerMetric(context, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
   }
 
-//  public int unregisterGauges(String registryName, Set<String> gaugeNames) {
-//    if (gaugeNames.size() == 0) {
-//      return 0;
-//    }
-//    MetricRegistry registry = registry(registryName);
-//    if (registry == null) return 0;
-//    AtomicInteger removed = new AtomicInteger();
-//
-//    for (String name : gaugeNames) {
-//      if (registry.remove(name)) {
-//        removed.incrementAndGet();
-//      }
-//    }
-//    return removed.get();
-//  }
-
-  public int unregisterGauges(String registryName, String tag) {
+  public int unregisterGauges(String registryName, String tagSegment) {
+    if (tagSegment == null) {
+      return 0;
+    }
+    MetricRegistry registry = registry(registryName);
+    if (registry == null) return 0;
     AtomicInteger removed = new AtomicInteger();
-    Set<String> names = tags.get(tag);
-    if (names != null) {
-      MetricRegistry registry = registry(registryName);
-      if (registry == null) return 0;
-
-
-      for (String name : names) {
-        if (registry.remove(name)) {
+    registry.removeMatching((name, metric) -> {
+      if (metric instanceof GaugeWrapper) {
+        GaugeWrapper wrapper = (GaugeWrapper) metric;
+        boolean toRemove = wrapper.getTag().contains(tagSegment);
+        if (toRemove) {
           removed.incrementAndGet();
         }
+        return toRemove;
       }
-    }
+      return false;
+
+    });
     return removed.get();
   }
-
-//
-//  public int unregisterGauges(String registryName, String tagSegment) {
-//    if (tagSegment == null) {
-//      return 0;
-//    }
-//    MetricRegistry registry = registry(registryName);
-//    if (registry == null) return 0;
-//    AtomicInteger removed = new AtomicInteger();
-//
-//    Set<Map.Entry<String,Metric>> entries = registry.getMetrics().entrySet();
-//    for (Map.Entry<String,Metric> entry : entries) {
-//      Metric metric = entry.getValue();
-//      if (metric instanceof GaugeWrapper) {
-//        GaugeWrapper wrapper = (GaugeWrapper) metric;
-//        boolean toRemove = wrapper.getTag().contains(tagSegment);
-//        if (toRemove) {
-//          removed.incrementAndGet();
-//          registry.remove(entry.getKey());
-//        }
-//      }
-//    }
-//    return removed.get();
-//  }
-
 
   /**
    * This method creates a hierarchical name with arbitrary levels of hierarchy

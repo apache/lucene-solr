@@ -122,7 +122,6 @@ public class TestTolerantSearch extends SolrJettyTestBase {
       collection2 = null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableShardsWhitelist();
   }
   
   @SuppressWarnings("unchecked")

@@ -37,7 +37,7 @@ import java.util.List;
  */
 public class TestDataConfig extends AbstractDataImportHandlerTestCase {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestDataConfig() throws Exception {
     initCore("dataimport-nodatasource-solrconfig.xml", "dataimport-schema.xml");
   }
 

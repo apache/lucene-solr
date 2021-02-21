@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.junit.AfterClass;
@@ -111,6 +112,13 @@ public class SolrCloudTestCase extends SolrTestCase {
   public static void beforeSolrCloudTestCase() throws Exception {
     qtp = getQtp();
     qtp.start();
+  }
+
+  @AfterClass
+  public static void afterSolrCloudTestCase() throws Exception {
+    if (qtp != null) {
+      IOUtils.closeQuietly(qtp);
+    }
   }
 
   /**

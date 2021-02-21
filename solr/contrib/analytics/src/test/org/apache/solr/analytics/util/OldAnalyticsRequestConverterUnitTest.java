@@ -33,7 +33,7 @@ public class OldAnalyticsRequestConverterUnitTest extends LegacyAbstractAnalytic
   String fileName = "facetWithDottedFields.txt";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeOldAnalyticsRequestConverterUnitTest() throws Exception {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
   }
 

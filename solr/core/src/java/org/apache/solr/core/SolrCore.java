@@ -255,7 +255,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private volatile boolean isClosed = false;
 
   private final PackageListeners packageListeners = new PackageListeners(this);
-  private volatile boolean unregisterMetrics = true;
 
   public Set<String> getMetricNames() {
     return metricNames;
@@ -750,7 +749,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       } else {
         currentCore = this;
       }
-      this.unregisterMetrics = false;
       boolean success = false;
       SolrCore core = null;
       try {
@@ -1400,13 +1398,13 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
     parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
-    parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    parentContext.gauge(() -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    parentContext.gauge(() -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), isReloaded, "size", Category.INDEX.toString());
+    parentContext.gauge(new MySolrCoreRefCntGauge(this), true, "refCount", Category.CORE.toString());
+    parentContext.gauge(new MySolrCoreInstanceDirGauge(this), true, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(new MySolrCoreIndexDirGauge(this), true, "indexDir", Category.CORE.toString());
+    parentContext.gauge(new MySolrCoreSizeInBytesGauge(this), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(new MySolrCoreSizeGauge(this), isReloaded, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      parentContext.gauge(() -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
+      parentContext.gauge(new MySolrCoreAliasGauge(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
         parentContext.gauge(() -> {
@@ -1810,7 +1808,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         } catch (Exception e) {
           exp.addSuppressed(e);
         }
-        throw exp;
+        log.warn("CoreContainer is closed and SolrCore still has references out", exp);
       }
       if (refCount.get() == 0 && !closing) {
         doClose();
@@ -1893,12 +1891,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         List<Callable<Object>> closeCalls = new ArrayList<Callable<Object>>();
         closeCalls.addAll(closeHookCalls);
-        if (unregisterMetrics) {
-          closeCalls.add(() -> {
-            // IOUtils.closeQuietly(coreMetricManager);
-            return "SolrCoreMetricManager";
-          });
-        }
+
         closeCalls.add(() -> {
           IOUtils.closeQuietly(restManager);
           return "restManager";
@@ -2031,6 +2024,18 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       refCount.set(-1);
 
       infoRegistry.clear();
+
+      ParWork.getRootSharedExecutor().submit(() -> {
+        try {
+          SolrInfoBean.super.close();
+        } catch (IOException e) {
+          log.warn("Exception closing SolrInfoBean", e);
+        }
+        if (coreMetricManager != null) {
+          IOUtils.closeQuietly(coreMetricManager);
+        }
+      });
+
 
       //areAllSearcherReferencesEmpty();
 
@@ -3693,6 +3698,68 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     @Override
     public Codec getCodec() {
       return Codec.getDefault();
+    }
+  }
+
+  private static class MySolrCoreInstanceDirGauge extends SolrCoreGauge {
+    public MySolrCoreInstanceDirGauge(SolrCore solrCore) {
+      super(solrCore);
+    }
+
+    @Override protected Object getValue(SolrCore solrCore) {
+      return solrCore.getInstancePath().toString();
+    }
+  }
+
+  private static class MySolrCoreRefCntGauge extends SolrCoreGauge {
+    public MySolrCoreRefCntGauge(SolrCore solrCore) {
+      super(solrCore);
+    }
+
+    @Override protected Object getValue(SolrCore solrCore) {
+      return solrCore.refCount.get();
+    }
+  }
+
+  private static class MySolrCoreIndexDirGauge extends SolrCoreGauge {
+    public MySolrCoreIndexDirGauge(SolrCore solrCore) {
+      super(solrCore);
+    }
+
+    @Override protected Object getValue(SolrCore solrCore) {
+      return solrCore.isClosed() ? "(closed)" : solrCore.getIndexDir();
+    }
+  }
+
+  private static class MySolrCoreSizeInBytesGauge extends SolrCoreGauge.SolrCoreCachedGauge {
+    public MySolrCoreSizeInBytesGauge(SolrCore solrCore) {
+      super(solrCore, 3, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrCore solrCore) {
+      return solrCore.isClosed() ? 0 : solrCore.getIndexSize();
+    }
+  }
+
+  private static class MySolrCoreSizeGauge extends SolrCoreGauge.SolrCoreCachedGauge {
+    public MySolrCoreSizeGauge(SolrCore solrCore) {
+      super(solrCore,3, TimeUnit.SECONDS);
+    }
+
+    @Override protected Object getValue(SolrCore solrCore) {
+      return solrCore.isClosed() ? "(closed)" : NumberUtils.readableSize(solrCore.getIndexSize());
+    }
+  }
+
+  private static class MySolrCoreAliasGauge extends SolrCoreGauge {
+
+    public MySolrCoreAliasGauge(SolrCore solrCore) {
+      super(solrCore);
+
+    }
+
+    @Override protected Object getValue(SolrCore solrCore) {
+      return solrCore.getCoreContainer().getNamesForCore(solrCore);
     }
   }
 }

@@ -8,9 +8,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class SolrMetricRegistry extends MetricRegistry {
+
+  private ConcurrentHashMap<String,Metric> map;
+
   protected ConcurrentMap<String,Metric> buildMap() {
     // some hold as many 500+
-    return new ConcurrentHashMap<>(712);
+    this.map = new ConcurrentHashMap<>(712);
+    return this.map;
   }
 
   public void registerAll(String prefix, MetricSet metrics) throws IllegalArgumentException {
@@ -21,5 +25,9 @@ public class SolrMetricRegistry extends MetricRegistry {
         register(name(prefix, s), metric);
       }
     });
+  }
+
+  public ConcurrentHashMap<String,Metric> getMap() {
+    return map;
   }
 }

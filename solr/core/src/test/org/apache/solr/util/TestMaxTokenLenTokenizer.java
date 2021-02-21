@@ -32,7 +32,7 @@ public class TestMaxTokenLenTokenizer extends SolrTestCaseJ4 {
   private static final String ID = "id";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestMaxTokenLenTokenizer() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema-tokenizer-test.xml");
   }
 

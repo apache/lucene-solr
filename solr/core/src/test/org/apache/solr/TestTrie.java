@@ -41,7 +41,7 @@ import org.junit.Test;
 @Deprecated
 public class TestTrie extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestTrie() throws Exception {
     initCore("solrconfig.xml","schema-trie.xml");
   }
   

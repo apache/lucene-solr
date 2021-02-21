@@ -77,7 +77,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
+    deleteCore();
   }
 
   @Before

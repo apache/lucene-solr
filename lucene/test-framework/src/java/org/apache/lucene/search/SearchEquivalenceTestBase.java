@@ -55,7 +55,7 @@ public abstract class SearchEquivalenceTestBase extends LuceneTestCase {
   protected static String stopword; // we always pick a character as a stopword
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSearchEquivalenceTestBase() throws Exception {
     Random random = random();
     directory = newDirectory();
     stopword = "" + randomChar();

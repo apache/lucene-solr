@@ -40,12 +40,12 @@ import org.junit.Test;
 @Ignore // nocommit debug
 public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeVelocityResponseWriterTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml", SolrTestUtil.getFile("velocity/solr").getAbsolutePath());
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterVelocityResponseWriterTest() throws Exception {
   }
 
   @Override

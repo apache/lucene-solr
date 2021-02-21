@@ -36,7 +36,7 @@ import org.junit.Test;
 public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestSuggesterResponse() throws Exception {
     initCore();
   }
 

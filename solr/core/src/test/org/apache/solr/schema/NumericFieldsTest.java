@@ -25,13 +25,13 @@ import org.junit.Test;
 
 public class NumericFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeNumericFieldsTest() throws Exception {
     types = new String[]{"int", "long", "float", "double", "date"};
     initCore("solrconfig-basic.xml", "schema-numeric.xml");
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterNumericFieldsTest() throws Exception {
     types = null;
   }
 

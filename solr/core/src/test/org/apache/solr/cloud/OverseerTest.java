@@ -265,7 +265,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeOverseerTest() throws Exception {
     assumeWorkingMockito();
 
     System.setProperty("solr.zkclienttimeout", "30000");
@@ -288,7 +288,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterOverseerTest() throws Exception {
     System.clearProperty("solr.zkclienttimeout");
 
     if (null != server) {

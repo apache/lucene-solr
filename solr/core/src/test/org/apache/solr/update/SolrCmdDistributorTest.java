@@ -25,7 +25,7 @@ package org.apache.solr.update;
 //  private AtomicInteger id = new AtomicInteger();
 //
 //  @BeforeClass
-//  public static void beforeClass() throws Exception {
+//  public static void beforeSolrCmdDistributorTest() throws Exception {
 //    // we can't use the Randomized merge policy because the test depends on
 //    // being able to call optimize to have all deletes expunged.
 //    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
@@ -33,7 +33,7 @@ package org.apache.solr.update;
 //  }
 //
 //  @AfterClass
-//  public static void afterClass() {
+//  public static void afterSolrCmdDistributorTest() {
 //    systemClearPropertySolrTestsMergePolicyFactory();
 //    System.clearProperty("solr.cloud.client.pollQueueTime");
 //  }

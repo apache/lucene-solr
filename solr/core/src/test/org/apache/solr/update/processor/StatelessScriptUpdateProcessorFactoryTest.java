@@ -27,6 +27,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -39,9 +40,14 @@ import org.junit.Ignore;
 public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeStatelessScriptUpdateProcessorFactoryTest() throws Exception {
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
     initCore("solrconfig-script-updateprocessor.xml", "schema12.xml");
+  }
+
+  @AfterClass
+  public static void afterStatelessScriptUpdateProcessorFactoryTest() throws Exception {
+    deleteCore();
   }
 
   /**

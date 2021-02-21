@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 public class SolrPingTest extends EmbeddedSolrServerTestBase {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSolrPingTest() throws Exception {
     File testHome = SolrTestUtil.createTempDir().toFile();
     FileUtils.copyDirectory(SolrTestUtil.getFile("solrj/solr"), testHome);
     initCore("solrconfig.xml", "schema.xml", testHome.getAbsolutePath(), "collection1");

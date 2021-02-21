@@ -32,15 +32,21 @@ import org.apache.solr.core.MockFSDirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CoreMergeIndexesAdminHandlerTest extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeCoreMergeIndexesAdminHandlerTest() throws Exception {
     useFactory(FailingDirectoryFactory.class.getName());
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTestTermsQParserPlugin() throws Exception {
+    deleteCore();
   }
 
   private static String WRAPPED_FAILING_MSG = "Error handling 'mergeindexes' action";

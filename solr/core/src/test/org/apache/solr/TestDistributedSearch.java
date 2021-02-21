@@ -99,7 +99,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeTestDistributedSearch() {
     // we shutdown a jetty and start it and try to use
     // the same http client pretty fast - this lowered setting makes sure
     // we validate the connection before use on the restarted

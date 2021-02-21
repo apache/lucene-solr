@@ -140,6 +140,9 @@ public class PropertiesUtil {
    * @return an integer version of the passed in value
    */
   public static Integer toInteger(String value, Integer defValue) {
+    if (value == null || value.trim().length() == 0) {
+      return defValue;
+    }
     try {
       return Integer.parseInt(value);
     }

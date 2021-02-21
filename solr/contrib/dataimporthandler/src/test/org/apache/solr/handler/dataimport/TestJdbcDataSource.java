@@ -78,7 +78,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   String sysProp = System.getProperty("java.naming.factory.initial");
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeTestJdbcDataSource() {
     assumeWorkingMockito();
   }
   

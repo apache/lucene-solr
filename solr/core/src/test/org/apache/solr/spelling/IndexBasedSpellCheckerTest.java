@@ -58,7 +58,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeIndexBasedSpellCheckerTest() throws Exception {
     DOCS = new String[]{
             "This is a title",
             "The quick reb fox jumped over the lazy brown dogs.",

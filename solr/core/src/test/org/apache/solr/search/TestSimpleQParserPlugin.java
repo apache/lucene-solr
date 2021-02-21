@@ -17,15 +17,21 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Simple tests for SimpleQParserPlugin. */
 public class TestSimpleQParserPlugin extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestSimpleQParserPlugin() throws Exception {
     initCore("solrconfig-basic.xml","schema-simpleqpplugin.xml");
     index();
+  }
+
+  @AfterClass
+  public static void afterTestSimpleQParserPlugin() throws Exception {
+    deleteCore();
   }
 
   public static void index() throws Exception {

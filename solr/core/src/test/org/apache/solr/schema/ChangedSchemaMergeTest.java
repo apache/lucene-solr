@@ -51,7 +51,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
   public static Class<? extends SimilarityFactory> simfac2;
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeChangedSchemaMergeTest() throws Exception {
     useFactory(null);
     SolrTestCaseJ4.randomizeNumericTypesProperties();
 

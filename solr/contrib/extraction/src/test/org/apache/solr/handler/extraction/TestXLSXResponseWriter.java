@@ -49,7 +49,7 @@ public class TestXLSXResponseWriter extends SolrTestCaseJ4 {
   private static XLSXResponseWriter writerXlsx;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestXLSXResponseWriter() throws Exception {
     System.setProperty("enable.update.log", "false");
     initCore("solrconfig.xml","schema.xml", SolrTestUtil.getFile("extraction/solr").getAbsolutePath());
     createIndex();

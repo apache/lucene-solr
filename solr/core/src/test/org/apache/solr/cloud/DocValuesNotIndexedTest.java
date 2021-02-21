@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+@SolrTestCaseJ4.SuppressPointFields(bugUrl = "try to harden")
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -72,10 +73,10 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   volatile static List<FieldProps> fieldsToTestGroupSortLast = null;
 
   @BeforeClass
-  public static void createCluster() throws Exception {
-
-    SolrTestCaseJ4.randomizeNumericTypesProperties();
+  public static void beforeDocValuesNotIndexedTest() throws Exception {
     System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP, "true");
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
+
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(2)
         .addConfig("conf1", SolrTestUtil.configset("cloud-managed"))
@@ -165,7 +166,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
 
   @AfterClass
-  public static void shutdown() throws Exception {
+  public static void afterDocValuesNotIndexedTest() throws Exception {
     shutdownCluster();
     fieldsToTestSingle = null;
     fieldsToTestMulti = null;
@@ -178,15 +179,17 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
     CloudHttp2SolrClient client = cluster.getSolrClient();
     client.deleteByQuery("*:*");
     client.commit();
-    super.tearDown();
-  }
 
-  @Before
-  public void clean() throws IOException, SolrServerException {
     resetFields(fieldsToTestSingle);
     resetFields(fieldsToTestMulti);
     resetFields(fieldsToTestGroupSortFirst);
     resetFields(fieldsToTestGroupSortLast);
+    super.tearDown();
+  }
+
+  @Before
+  public void setup() throws Exception {
+    super.setUp();
   }
 
   void resetFields(List<FieldProps> fieldProps) {

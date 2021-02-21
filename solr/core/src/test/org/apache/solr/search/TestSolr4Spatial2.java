@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -38,7 +40,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.SpatialUtils;
-import org.apache.solr.util.TestUtils;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -318,13 +319,13 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         sameReq = req(
             "q", "{!cache=false field f=" + fieldName + "}Intersects(ENVELOPE(-20, -10.0001, 30, 15.0001))",
             "sort", "id asc");
-        MetricsMap cacheMetrics = (MetricsMap) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
-        assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
-        assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
+      Gauge cacheMetrics = (Gauge) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+        assertEquals("1", ((Map)cacheMetrics.getValue()).get("cumulative_inserts").toString());
+        assertEquals("0", ((Map)cacheMetrics.getValue()).get("cumulative_hits").toString());
 
         // Repeat the query earlier
         assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
-        assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
+        assertEquals("1", ((Map)cacheMetrics.getValue()).get("cumulative_hits").toString());
 
         assertEquals("1 segment", 1, getSearcher(sameReq.getCore()).getRawReader().leaves().size());
         // Get key of first leaf reader -- this one contains the match for sure.
@@ -347,8 +348,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
         Object leafKey2 = getFirstLeafReaderKey(sameReq.getCore());
         // get the current instance of metrics - the old one may not represent the current cache instance
 
-        cacheMetrics = (MetricsMap) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
-        assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
+        cacheMetrics = (Gauge) sameReq.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName);
+        assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", ((Map)cacheMetrics.getValue()).get("cumulative_hits").toString());
 
     }
 

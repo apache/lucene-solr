@@ -27,7 +27,7 @@ import java.util.List;
 
 public class TestSchemaManager extends SolrTestCaseJ4 {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestSchemaManager() throws Exception {
     initCore("solrconfig.xml","schema-tiny.xml");
   }
 

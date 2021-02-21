@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
@@ -37,8 +38,13 @@ import org.junit.Ignore;
 public class TaggerTest extends TaggerTestCase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTaggerTest() throws Exception {
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
+  }
+
+  @AfterClass
+  public static void afterTaggerTest() {
+    deleteCore();
   }
 
   private void indexAndBuild() throws Exception {

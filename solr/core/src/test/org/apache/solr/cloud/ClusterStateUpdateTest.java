@@ -49,12 +49,12 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
   }
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeClusterStateUpdateTest() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException, IOException {
+  public static void afterClusterStateUpdateTest() throws InterruptedException, IOException {
 
   }
   

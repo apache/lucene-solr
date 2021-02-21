@@ -55,12 +55,12 @@ public class TestJsonRangeFacets extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
+    deleteCore();
   }
 
   public void indexSimple(Client client) throws Exception {

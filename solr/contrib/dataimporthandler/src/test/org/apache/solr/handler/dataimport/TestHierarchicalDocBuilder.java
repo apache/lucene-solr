@@ -93,7 +93,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
   }
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestHierarchicalDocBuilder() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");    
   }
   

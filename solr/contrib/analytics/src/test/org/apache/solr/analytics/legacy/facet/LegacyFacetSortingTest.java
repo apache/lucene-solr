@@ -25,7 +25,7 @@ public class LegacyFacetSortingTest extends LegacyAbstractAnalyticsTest {
   private static String fileName = "facetSorting.txt";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyFacetSortingTest() throws Exception {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 

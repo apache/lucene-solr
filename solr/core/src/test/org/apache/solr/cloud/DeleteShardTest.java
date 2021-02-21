@@ -47,15 +47,17 @@ public class DeleteShardTest extends SolrCloudTestCase {
   // TODO: Custom hash slice deletion test
 
   @Before
-  public void setupCluster() throws Exception {
+  public void setup() throws Exception {
+    super.setUp();
     configureCluster(2)
         .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
   }
   
   @After
-  public void teardownCluster() throws Exception {
+  public void tearDown() throws Exception {
     shutdownCluster();
+    super.tearDown();
   }
 
   @Test

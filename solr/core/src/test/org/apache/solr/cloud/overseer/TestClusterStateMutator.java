@@ -34,7 +34,7 @@ import static org.mockito.Mockito.*;
 public class TestClusterStateMutator extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeTestClusterStateMutator() {
     assumeWorkingMockito();
   }
   

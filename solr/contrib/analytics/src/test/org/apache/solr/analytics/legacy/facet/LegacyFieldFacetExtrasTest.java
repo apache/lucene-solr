@@ -44,7 +44,7 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
   static ArrayList<ArrayList<Integer>> intStringTestStart;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyFieldFacetExtrasTest() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 

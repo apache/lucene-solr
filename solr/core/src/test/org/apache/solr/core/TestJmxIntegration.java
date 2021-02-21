@@ -17,12 +17,14 @@
 package org.apache.solr.core;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxObjectNameFactory;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.management.AttributeNotFoundException;
+import javax.management.InstanceNotFoundException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
@@ -42,6 +45,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test for JMX Integration
@@ -59,7 +63,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   private static String registryName = null;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestJmxIntegration() throws Exception {
     System.setProperty("solr.enableMetrics", "true");
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     // Make sure that at least one MBeanServer is available
@@ -101,7 +105,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterTestJmxIntegration() throws Exception {
     if (newMbeanServer != null) {
       MBeanServerFactory.releaseMBeanServer(newMbeanServer);
     }
@@ -167,14 +171,48 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
         log.info("Mbeans in server: {}", mbeanServer.queryNames(null, null));
       }
 
-      Set<ObjectInstance> objects = mbeanServer.queryMBeans(searcher, null);
-      assertFalse("No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
+
+      TimeOut timeout = new TimeOut(2000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      while (!timeout.hasTimedOut()) {
+        Set<ObjectInstance> objects = mbeanServer.queryMBeans(searcher, null);
+        if (!objects.isEmpty()) break;
+      }
+      if (timeout.hasTimedOut()) {
+        fail("No mbean found for SolrIndexSearcher");
+      }
 
       ObjectName name = nameFactory.createName("gauge", registryName, "SEARCHER.searcher.numDocs");
-      int oldNumDocs = (Integer) mbeanServer.getAttribute(name, "Value");
+
+      timeout = new TimeOut(2000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      Integer oldNumDocs = null;
+      while (!timeout.hasTimedOut()) {
+        nameFactory.createName("gauge", registryName, "SEARCHER.searcher.numDocs");
+        try {
+           oldNumDocs = (Integer) mbeanServer.getAttribute(name, "Value");
+           if (oldNumDocs != null) break;
+        } catch (InstanceNotFoundException e) {
+
+        }
+      }
+
+      assertNotNull("oldNumDocs should not be null", oldNumDocs);
+
       assertU(adoc("id", "1"));
       assertU("commit", commit());
-      int numDocs = (Integer) mbeanServer.getAttribute(name, "Value");
+
+      timeout = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      Integer numDocs = null;
+      while (!timeout.hasTimedOut()) {
+        name = nameFactory.createName("gauge", registryName, "SEARCHER.searcher.numDocs");
+        try {
+           numDocs = (Integer) mbeanServer.getAttribute(name, "Value");
+           if (numDocs != null) break;
+
+        } catch (InstanceNotFoundException e) {
+
+        }
+      }
+      assertNotNull("numDocs should not be null after waiting", numDocs);
       assertTrue("New numDocs is same as old numDocs as reported by JMX", numDocs > oldNumDocs);
     }
   }

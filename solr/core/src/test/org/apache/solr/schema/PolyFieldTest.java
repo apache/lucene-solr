@@ -35,7 +35,7 @@ import org.junit.Test;
 public class PolyFieldTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforePolyFieldTest() throws Exception {
     System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false"); // Poly fields not supported as subtypes, PointType:73
     initCore("solrconfig.xml","schema.xml");
   }

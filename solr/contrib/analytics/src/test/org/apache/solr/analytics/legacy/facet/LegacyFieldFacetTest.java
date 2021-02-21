@@ -91,7 +91,7 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
   private static ArrayList<Long> multiDateTestMissing;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyFieldFacetTest() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 

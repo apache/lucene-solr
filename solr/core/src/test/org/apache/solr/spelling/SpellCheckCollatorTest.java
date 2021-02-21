@@ -50,7 +50,7 @@ public class SpellCheckCollatorTest extends SolrTestCaseJ4 {
   private static final int NUM_DOCS_WITH_TERM_EVERYOTHER=8;
   private static final int NUM_DOCS=17;
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSpellCheckCollatorTest() throws Exception {
     useFactory(null);
     initCore("solrconfig-spellcheckcomponent.xml", "schema.xml");
     assertU(adoc("id", "0", 

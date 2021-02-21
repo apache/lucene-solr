@@ -38,7 +38,7 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
 
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyExpressionTest() throws Exception {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 

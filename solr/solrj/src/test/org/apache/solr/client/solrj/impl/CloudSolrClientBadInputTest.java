@@ -25,6 +25,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,9 +38,15 @@ public class CloudSolrClientBadInputTest extends SolrCloudTestCase {
   private static final int ANY_COMMIT_WITHIN_TIME = -1;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCloudSolrClientBadInputTest() throws Exception {
     configureCluster(1)
         .configure();
+  }
+
+  @AfterClass
+  public static void afterCloudSolrClientBadInputTest() throws Exception {
+    shutdownCluster();
+    EMPTY_STR_LIST.clear();
   }
 
   @Test

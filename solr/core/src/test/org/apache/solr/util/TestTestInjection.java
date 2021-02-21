@@ -27,12 +27,12 @@ import org.junit.BeforeClass;
 public class TestTestInjection extends SolrTestCase {
   
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeTestTestInjection() {
   
   }
   
   @AfterClass
-  public static void cleanup() {
+  public static void afterTestTestInjection() {
     TestInjection.reset();
   }
   

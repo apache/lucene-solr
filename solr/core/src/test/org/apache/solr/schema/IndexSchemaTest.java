@@ -39,7 +39,7 @@ public class IndexSchemaTest extends SolrTestCaseJ4 {
   final private static String schemaFileName = "schema.xml";
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeIndexSchemaTest() throws Exception {
     initCore(solrConfigFileName, schemaFileName);
   }
 

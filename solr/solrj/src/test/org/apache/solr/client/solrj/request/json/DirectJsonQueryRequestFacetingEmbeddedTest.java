@@ -54,7 +54,7 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
   private static final int NUM_CANON = 2;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeDirectJsonQueryRequestFacetingEmbeddedTest() throws Exception {
     final String sourceHome = ExternalPaths.SOURCE_HOME;
 
     final File tempSolrHome = LuceneTestCase.createTempDir().toFile();

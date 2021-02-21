@@ -45,25 +45,26 @@ public class UninvertDocValuesMergePolicyTest extends SolrTestCaseJ4 {
   private static String SOLR_TESTS_SKIP_INTEGRITY_CHECK = "solr.tests.skipIntegrityCheck";
   private static String ID_FIELD = "id";
   private static String TEST_FIELD = "string_add_dv_later";
-  private IndexSchema schema;
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeUninvertDocValuesMergePolicyTest() throws Exception {
     System.setProperty(SOLR_TESTS_SKIP_INTEGRITY_CHECK, (random().nextBoolean() ? "true" : "false"));
   }
 
   @AfterClass
-  public static void afterTests() {
+  public static void afterUninvertDocValuesMergePolicyTest() {
     System.clearProperty(SOLR_TESTS_SKIP_INTEGRITY_CHECK);
   }
 
   @After
-  public void after() throws Exception {
+  public void tearDown() throws Exception {
     deleteCore();
+    super.tearDown();
   }
   
   @Before
-  public void before() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig-uninvertdocvaluesmergepolicyfactory.xml", "schema-docValues.xml");
   }
 

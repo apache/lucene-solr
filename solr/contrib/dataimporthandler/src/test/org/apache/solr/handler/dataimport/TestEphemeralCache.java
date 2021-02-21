@@ -29,7 +29,7 @@ public class TestEphemeralCache extends AbstractDataImportHandlerTestCase {
   
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestEphemeralCache() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
   

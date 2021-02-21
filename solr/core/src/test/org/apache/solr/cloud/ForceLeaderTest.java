@@ -54,7 +54,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   }
 
   @BeforeClass
-  public static void beforeClassSetup() {
+  public static void beforeForceLeaderTest() {
     System.setProperty("socketTimeout", "15000");
     System.setProperty("distribUpdateSoTimeout", "15000");
     System.setProperty("solr.httpclient.retries", "0");

@@ -161,7 +161,13 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
     Thread.sleep(50);
 
-    assertEquals(100,  cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    try {
+      assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    } catch (Exception e) {
+      log.error("Exception on first query", e);
+      Thread.sleep(150);
+      assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
+    }
 
 //    assertEquals("should be one less core on the source node!", sourceNumCores - 1, getNumOfCores(cloudClient, replica.getNodeName(), coll, replica.getType().name()));
 //    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));

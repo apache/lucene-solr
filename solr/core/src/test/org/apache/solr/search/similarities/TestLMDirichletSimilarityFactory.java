@@ -18,6 +18,7 @@ package org.apache.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.LMDirichletSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -25,10 +26,15 @@ import org.junit.BeforeClass;
  */
 public class TestLMDirichletSimilarityFactory extends BaseSimilarityTestCase {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestLMDirichletSimilarityFactory() throws Exception {
     initCore("solrconfig-basic.xml","schema-lmdirichlet.xml");
   }
-  
+
+  @AfterClass
+  public static void afterTestLMDirichletSimilarityFactory() throws Exception {
+    deleteCore();
+  }
+
   /** dirichlet with default parameters */
   public void test() throws Exception {
     assertEquals(LMDirichletSimilarity.class, getSimilarity("text").getClass());

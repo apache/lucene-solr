@@ -265,15 +265,16 @@ public class TestHarness extends BaseTestHarness {
    */
   public String update(String xml) {
     try {
-      SolrCore core = getCoreInc();
-      try (DirectSolrConnection connection = new DirectSolrConnection(core)) {
-        SolrRequestHandler handler = core.getRequestHandler("/update");
-        // prefer the handler mapped to /update, but use our generic backup handler
-        // if that lookup fails
-        if (handler == null) {
-          handler = updater;
+      try (DirectSolrConnection connection = new DirectSolrConnection(getCore())) {
+        try (SolrCore core = getCore()) {
+          SolrRequestHandler handler = core.getRequestHandler("/update");
+          // prefer the handler mapped to /update, but use our generic backup handler
+          // if that lookup fails
+          if (handler == null) {
+            handler = updater;
+          }
+          return connection.request(handler, null, xml);
         }
-        return connection.request(handler, null, xml);
       }
     } catch (SolrException e) {
       throw e;

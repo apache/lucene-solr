@@ -38,7 +38,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
@@ -85,7 +84,6 @@ import static org.apache.solr.client.solrj.impl.BaseCloudSolrClient.RouteRespons
 /**
  * This test would be faster if we simulated the zk state instead.
  */
-@Slow
 public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -101,7 +99,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCloudHttp2SolrClientTest() throws Exception {
     useFactory(null);
     configureCluster(NODE_COUNT)
         .addConfig(TEST_CONFIGSET_NAME, SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
@@ -121,6 +119,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         zkBasedCloudSolrClient = null;
       }
     }
+    shutdownCluster();
   }
 
   private void createTestCollection(String collection) throws IOException, SolrServerException {

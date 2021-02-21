@@ -21,14 +21,20 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class CloneFieldUpdateProcessorFactoryTest extends UpdateProcessorTestBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeCloneFieldUpdateProcessorFactoryTest() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema12.xml");
+  }
+
+  @AfterClass
+  public static void afterTestTermsQParserPlugin() throws Exception {
+    deleteCore();
   }
 
   @Test

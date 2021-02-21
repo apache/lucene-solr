@@ -118,7 +118,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     jetty.close();
     jetty = null;
     resetExceptionIgnores();
-    systemClearPropertySolrDisableShardsWhitelist();
   }
   
   @Test

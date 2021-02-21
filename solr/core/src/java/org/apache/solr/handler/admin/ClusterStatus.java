@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -42,8 +43,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ClusterStatus {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final ZkStateReader zkStateReader;
   private final ZkNodeProps message;
   private final String collection; // maybe null
@@ -208,6 +213,10 @@ public class ClusterStatus {
       return collection;
     } else {
       Map<String, Object> shards = (Map<String, Object>) collection.get("shards");
+      if (shards == null)  {
+        log.error("Illegal state detected, shards is null collection={}", collection);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Illegal state detected, shards is null collection=" + collection);
+      }
       Map<String, Object>  selected = new HashMap<>();
       for (String selectedShard : requestedShards) {
         if (!shards.containsKey(selectedShard)) {

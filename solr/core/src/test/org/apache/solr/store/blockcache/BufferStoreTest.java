@@ -19,7 +19,6 @@ package org.apache.solr.store.blockcache;
 import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
@@ -33,31 +32,31 @@ public class BufferStoreTest extends SolrTestCase {
   private final static int blockSize = 1024;
 
   private Metrics metrics;
- // private MetricsMap metricsMap;
 
   private Store store;
   private Gauge metricsMap;
 
   @Before
-  public void setup() {
+  public void setup() throws Exception {
+    super.setUp();
     metrics = new Metrics();
     SolrMetricManager metricManager = new SolrMetricManager();
     String registry = TestUtil.randomSimpleString(random(), 2, 10);
     String scope = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
     metrics.initializeMetrics(solrMetricsContext, scope);
-    metricsMap = ((MetricsMap)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache"));
+    metricsMap = ((Gauge)metricManager.registry(registry).getMetrics().get("CACHE." + scope + ".hdfsBlockCache"));
     BufferStore.initNewBuffer(blockSize, blockSize, metrics);
     store = BufferStore.instance(blockSize);
   }
 
   @After
-  public void clearBufferStores() {
+  public void tearDown() throws Exception {
+    super.tearDown();
     BufferStore.clearBufferStores();
   }
   
   @Test
-  //@Ignore // these are on a 3 second cache now
   public void testBufferTakePut() {
     byte[] b1 = store.takeBuffer(blockSize);
 

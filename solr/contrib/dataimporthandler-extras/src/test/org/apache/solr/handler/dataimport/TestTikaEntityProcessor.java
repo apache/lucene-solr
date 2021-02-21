@@ -117,7 +117,7 @@ public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
   };
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestTikaEntityProcessor() throws Exception {
     LuceneTestCase.assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
     initCore("dataimport-solrconfig.xml", "dataimport-schema-no-unique-key.xml", SolrTestUtil.getFile("dihextras/solr").getAbsolutePath());

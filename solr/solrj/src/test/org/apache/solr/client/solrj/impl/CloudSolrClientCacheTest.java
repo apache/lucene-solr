@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeCloudSolrClientCacheTest() {
     assumeWorkingMockito();
   }
 

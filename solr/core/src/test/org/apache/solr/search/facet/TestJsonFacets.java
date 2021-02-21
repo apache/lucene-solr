@@ -89,7 +89,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableShardsWhitelist();
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
@@ -97,6 +96,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
+    deleteCore();
   }
 
   // tip: when debugging failures, change this variable to DEFAULT_METHOD

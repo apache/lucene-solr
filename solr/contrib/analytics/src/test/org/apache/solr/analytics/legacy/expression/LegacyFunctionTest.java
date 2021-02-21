@@ -36,7 +36,7 @@ public class LegacyFunctionTest extends LegacyAbstractAnalyticsTest {
   static public final int NUM_LOOPS = 100;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLegacyFunctionTest() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     h.update("<delete><query>*:*</query></delete>");
 

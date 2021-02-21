@@ -41,7 +41,7 @@ import junit.framework.Assert;
 public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestSpellCheckResponse() throws Exception {
     initCore();
   }
 

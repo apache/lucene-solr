@@ -33,7 +33,7 @@ import org.junit.Ignore;
 public class ZkSolrClientTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeZkSolrClientTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
   }
 

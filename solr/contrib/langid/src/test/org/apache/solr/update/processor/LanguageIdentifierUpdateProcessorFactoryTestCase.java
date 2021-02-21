@@ -37,7 +37,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   protected LanguageIdentifierUpdateProcessor liProcessor;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeLanguageIdentifierUpdateProcessorFactoryTestCase() throws Exception {
     initCore("solrconfig-languageidentifier.xml", "schema.xml", SolrTestUtil.getFile("langid/solr").getAbsolutePath());
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id_tika");

@@ -24,7 +24,7 @@ public class TestAnalyzedSuggestions extends SolrTestCaseJ4 {
   static final String URI = "/suggest_analyzing";
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestAnalyzedSuggestions() throws Exception {
     useFactory(null);
     initCore("solrconfig-phrasesuggest.xml","schema-phrasesuggest.xml");
     assertQ(req("qt", URI, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));

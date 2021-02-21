@@ -47,7 +47,7 @@ import org.junit.Test;
 public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeExtractingRequestHandlerTest() throws Exception {
     // Is the JDK/env affected by a known bug?
     final String tzDisplayName = TimeZone.getDefault().getDisplayName(false, TimeZone.SHORT, Locale.US);
     if (!tzDisplayName.matches("[A-Za-z]{3,}([+-]\\d\\d(:\\d\\d)?)?")) {

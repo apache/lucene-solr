@@ -41,7 +41,7 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   private static SolrTestCaseHS.SolrInstances servers;  // for distributed testing
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestSmileRequest() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
@@ -54,13 +54,13 @@ public class TestSmileRequest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterTests() throws Exception {
+  public static void afterTestSmileRequest() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableShardsWhitelist();
+    deleteCore();
   }
 
   @Test

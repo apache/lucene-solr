@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 
 public class TestFileListWithLineEntityProcessor extends AbstractDataImportHandlerTestCase {
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestFileListWithLineEntityProcessor() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
   

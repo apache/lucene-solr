@@ -20,6 +20,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,8 +33,13 @@ import java.util.Map;
 public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestSolrDeletionPolicy1() throws Exception {
     initCore("solrconfig-delpolicy1.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTestTermsQParserPlugin() throws Exception {
+    deleteCore();
   }
 
   @Override

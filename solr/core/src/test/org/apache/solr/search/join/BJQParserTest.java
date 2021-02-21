@@ -27,6 +27,7 @@ import java.util.Map;
 
 import javax.xml.xpath.XPathConstants;
 
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
@@ -35,7 +36,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
@@ -291,12 +291,12 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   @Test
   public void testCacheHit() throws IOException {
     try (SolrCore core = h.getCore()) {
-      MetricsMap parentFilterCache = (MetricsMap) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegFilter"));
-      MetricsMap filterCache = (MetricsMap) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache"));
+      Gauge parentFilterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegFilter"));
+      Gauge filterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache"));
 
-      Map<String,Object> parentsBefore = parentFilterCache.getValue();
+      Map<String,Object> parentsBefore = (Map<String,Object>) parentFilterCache.getValue();
 
-      Map<String,Object> filtersBefore = filterCache.getValue();
+      Map<String,Object> filtersBefore = (Map<String,Object>) filterCache.getValue();
 
       // it should be weird enough to be uniq
       String parentFilter = "parent_s:([a TO c] [d TO f])";
@@ -305,15 +305,15 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
       assertQ("filter by parent filter", req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}"), "//*[@numFound='6']");
 
-      assertEquals("didn't hit fqCache yet ", 0L, delta("hits", filterCache.getValue(), filtersBefore));
+      assertEquals("didn't hit fqCache yet ", 0L, delta("hits", (Map<String,Object>) filterCache.getValue(), filtersBefore));
 
       assertQ("filter by join", req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}child_s:l"), "//*[@numFound='6']");
 
-      assertEquals("in cache mode every request lookups", 3, delta("lookups", parentFilterCache.getValue(), parentsBefore));
-      assertEquals("last two lookups causes hits", 2, delta("hits", parentFilterCache.getValue(), parentsBefore));
-      assertEquals("the first lookup gets insert", 1, delta("inserts", parentFilterCache.getValue(), parentsBefore));
+      assertEquals("in cache mode every request lookups", 3, delta("lookups", (Map<String,Object>) parentFilterCache.getValue(), parentsBefore));
+      assertEquals("last two lookups causes hits", 2, delta("hits", (Map<String,Object>) parentFilterCache.getValue(), parentsBefore));
+      assertEquals("the first lookup gets insert", 1, delta("inserts", (Map<String,Object>) parentFilterCache.getValue(), parentsBefore));
 
-      assertEquals("true join query is cached in fqCache", 1L, delta("lookups", filterCache.getValue(), filtersBefore));
+      assertEquals("true join query is cached in fqCache", 1L, delta("lookups", (Map<String,Object>) filterCache.getValue(), filtersBefore));
     }
   }
   

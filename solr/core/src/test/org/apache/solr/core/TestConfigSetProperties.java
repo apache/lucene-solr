@@ -31,7 +31,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.junit.Test;
 
-//@Ignore // nocommit you would want to write these props to ZK actually ...
 public class TestConfigSetProperties extends SolrTestCaseJ4 {
 
   @Test

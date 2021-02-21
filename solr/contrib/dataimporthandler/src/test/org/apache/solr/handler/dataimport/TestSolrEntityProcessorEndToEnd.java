@@ -107,13 +107,13 @@ public class TestSolrEntityProcessorEndToEnd extends AbstractDataImportHandlerTe
   //TODO: fix this test to close its directories
   static String savedFactory;
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeTestSolrEntityProcessorEndToEnd() {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
   }
   
   @AfterClass
-  public static void afterClass() {
+  public static void afterTestSolrEntityProcessorEndToEnd() {
     if (savedFactory == null) {
       System.clearProperty("solr.directoryFactory");
     } else {

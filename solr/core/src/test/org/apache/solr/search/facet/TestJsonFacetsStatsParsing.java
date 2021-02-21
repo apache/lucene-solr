@@ -34,7 +34,7 @@ import org.noggit.ObjectBuilder;
 public class TestJsonFacetsStatsParsing extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestJsonFacetsStatsParsing() throws Exception {
     initCore("solrconfig-tlog.xml","schema15.xml");
   }
 

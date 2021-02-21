@@ -22,14 +22,20 @@ import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.MoreLikeThisComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.StatsComponent;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestComponentsName extends SolrTestCaseJ4{
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestComponentsName() throws Exception {
     initCore("solrconfig-components-name.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTestComponentsName() throws Exception {
+    deleteCore();
   }
   
   @Override

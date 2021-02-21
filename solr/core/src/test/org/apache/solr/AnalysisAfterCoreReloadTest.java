@@ -40,14 +40,14 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
   static final String collection = "collection1";
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeAnalysisAfterCoreReloadTest() throws Exception {
     tmpSolrHome = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
     FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
     initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
   }
 
   @AfterClass
-  public static void AfterClass() throws Exception {
+  public static void AfterAnalysisAfterCoreReloadTest() throws Exception {
     
   }
   

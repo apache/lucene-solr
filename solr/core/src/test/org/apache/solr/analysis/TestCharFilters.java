@@ -17,6 +17,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -26,7 +27,7 @@ import org.junit.BeforeClass;
 public class TestCharFilters extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestCharFilters() throws Exception {
     initCore("solrconfig-basic.xml","schema-charfilters.xml");
     // add some docs
     assertU(adoc("id", "1", "content", "aab"));
@@ -34,6 +35,11 @@ public class TestCharFilters extends SolrTestCaseJ4 {
     assertU(adoc("id", "3", "content2", "ab"));
     assertU(adoc("id", "4", "content2", "aba"));
     assertU(commit());
+  }
+
+  @AfterClass
+  public static void afterTestCharFilters() throws Exception {
+    deleteCore();
   }
   
   /**

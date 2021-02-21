@@ -80,7 +80,7 @@ public class CurrencyFieldTypeTest extends SolrTestCaseJ4 {
 
   }
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeCurrencyFieldTypeTest() throws Exception {
     assumeCurrencySupport("USD", "EUR", "MXN", "GBP", "JPY", "NOK");
     initCore("solrconfig.xml", "schema.xml");
   }

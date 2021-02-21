@@ -26,7 +26,7 @@ import org.junit.Test;
 public class DocValuesMissingTest extends SolrTestCaseJ4 {
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeDocValuesMissingTest() throws Exception {
     initCore("solrconfig-basic.xml", "schema-docValuesMissing.xml");
   }
   

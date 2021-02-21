@@ -62,7 +62,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
-  public void setupCluster() throws Exception {
+  public void beforeCollectionsAPIAsyncDistributedZkTest() throws Exception {
     interruptThreadsOnTearDown(false, "aliveCheckExecutor");
 
     // we recreate per test - they need to be isolated to be solid
@@ -74,8 +74,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
   
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
     shutdownCluster();
+    super.tearDown();
   }
 
   @Test

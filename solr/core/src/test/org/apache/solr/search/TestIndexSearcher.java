@@ -39,6 +39,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -50,6 +51,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -58,7 +60,7 @@ import org.junit.Ignore;
 public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestIndexSearcher() throws Exception {
 
     // we need a consistent segmentation because reopen test validation
     // dependso n merges not happening when it doesn't expect
@@ -68,8 +70,8 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicyFactory();
+  public static void afterTestIndexSearcher() {
+    deleteCore();
   }
 
   @Override
@@ -80,9 +82,9 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   
   @Override
   public void tearDown() throws Exception {
-    super.tearDown();
     assertU(delQ("*:*"));
     assertU((commit()));
+    super.tearDown();
   }
 
   private String getStringVal(SolrQueryRequest sqr, String field, int doc) throws IOException {
@@ -140,11 +142,19 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertEquals(1, baseRefCount);
 
     SolrCore core = h.getCore();
-    Map<String, Metric> metrics = core.getCoreMetricManager().getRegistry().getMetrics();
-    core.close();
-    Gauge<Date> g = (Gauge<Date>)metrics.get("SEARCHER.searcher.registeredAt");
+
+
+    TimeOut timeout = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    Gauge<Date> g = null;
+    while (!timeout.hasTimedOut()) {
+      Map<String, Metric> metrics = core.getCoreMetricManager().getRegistry().getMetrics();
+      g = (Gauge<Date>)metrics.get("SEARCHER.searcher.registeredAt");
+      if (g != null) break;
+    }
+
     Date sr3SearcherRegAt = g.getValue();
     assertU(commit()); // nothing has changed
+    core.close();
     SolrQueryRequest sr4 = req("q","foo");
 
     // not necessarily true if there are searchers on deck
@@ -265,6 +275,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
     } finally {
       if (newCore != null) {
+        newCore.close();
         cores.unload("core1");
       }
     }

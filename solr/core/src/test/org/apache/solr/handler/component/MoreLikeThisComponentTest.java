@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -24,6 +23,7 @@ import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,11 +33,10 @@ import org.junit.Test;
  *
  * @see MoreLikeThisComponent
  */
-@Slow
 public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void moreLikeThisBeforeClass() throws Exception {
+  public static void beforeMoreLikeThisBeforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
     assertU(adoc("id","42","name","Tom Cruise","subword","Top Gun","subword","Risky Business","subword","The Color of Money","subword","Minority Report","subword", "Days of Thunder","subword", "Eyes Wide Shut","subword", "Far and Away", "foo_ti","10"));
     assertU(adoc("id","43","name","Tom Hanks","subword","The Green Mile","subword","Forest Gump","subword","Philadelphia Story","subword","Big","subword","Cast Away", "foo_ti","10"));
@@ -45,6 +44,11 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     assertU(adoc("id","45","name","George Harrison","subword","Yellow Submarine","subword","Help","subword","Magical Mystery Tour","subword","Sgt. Peppers Lonley Hearts Club Band"));
     assertU(adoc("id","46","name","Nicole Kidman","subword","Batman","subword","Days of Thunder","subword","Eyes Wide Shut","subword","Far and Away"));
     assertU(commit());
+  }
+
+  @AfterClass
+  public static void afterMoreLikeThisBeforeClass() throws Exception {
+    deleteCore();
   }
   
   private void initCommonMoreLikeThisParams(ModifiableSolrParams params) {
@@ -65,7 +69,7 @@ public class MoreLikeThisComponentTest extends SolrTestCaseJ4 {
     
     params.set(CommonParams.Q, "id:42");
     SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params, true);
-    assertQ("morelikethis - tom cruise",mltreq
+    assertQ("morelikethis - tom cruise", mltreq
         ,"//result/doc[1]/str[@name='id'][.='46']"
         ,"//result/doc[2]/str[@name='id'][.='43']");
 

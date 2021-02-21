@@ -37,7 +37,7 @@ public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
   //TODO: fix this test to not require FSDirectory.
   static String savedFactory;
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestErrorHandling() throws Exception {
     savedFactory = System.getProperty("solr.DirectoryFactory");
     //System.setProperty("solr.directoryFactory", "solr.MockFSDirectoryFactory");
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
