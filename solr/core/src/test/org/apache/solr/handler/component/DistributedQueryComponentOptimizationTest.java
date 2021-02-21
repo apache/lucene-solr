@@ -29,6 +29,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -56,7 +57,7 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
   private static final int sliceCount = 3;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeDistributedQueryComponentOptimizationTest() throws Exception {
     configureCluster(3)
         .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr-trackingshardhandler.xml"))
         .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
@@ -84,6 +85,11 @@ public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase
         .add(SolrTestCaseJ4.sdoc(id, "19", "text", "d", "cat_a_sS", "1", "dynamic_s", "2", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x34})))
         .commit(cluster.getSolrClient(), COLLECTION);
 
+  }
+
+  @AfterClass
+  public static void afterDistributedQueryComponentOptimizationTest() throws Exception {
+    shutdownCluster();
   }
 
   private static final String id = "id";
