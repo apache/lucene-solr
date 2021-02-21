@@ -54,12 +54,12 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void test404ViaHttp() throws Exception {
-
-    QueryRequest request = new QueryRequest(params("file",
-            "does-not-exist-404.txt"));
-    request.setPath("/admin/file");
-    SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> request.process(client));
-    assertEquals(e.toString(), 404, e.code());
+    try (SolrClient client = createNewSolrClient(jetty)) {
+      QueryRequest request = new QueryRequest(params("file", "does-not-exist-404.txt"));
+      request.setPath("/admin/file");
+      SolrException e = SolrTestCaseUtil.expectThrows(SolrException.class, () -> request.process(client));
+      assertEquals(e.toString(), 404, e.code());
+    }
   }
 
   public void test404Locally() throws Exception {

@@ -33,10 +33,10 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_OTHER_ZK_HOST = "ANY_OTHER_ZK_HOST";
 
   @Test(expected = IllegalArgumentException.class)
-  public void testNoZkHostSpecified() {
+  public void testNoZkHostSpecified() throws IOException {
     new Builder()
       .withZkChroot(ANY_CHROOT)
-      .build();
+      .build().close();
   }
   
   @Test

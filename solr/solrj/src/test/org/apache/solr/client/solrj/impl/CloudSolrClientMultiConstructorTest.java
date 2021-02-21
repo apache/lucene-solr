@@ -44,7 +44,7 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
 
     final String chroot = "/mychroot";
 
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder(128);
 
     if(setOrList) {
       /*
@@ -102,9 +102,9 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
   }
   
   @Test(expected = IllegalArgumentException.class)
-  public void testBadChroot() {
+  public void testBadChroot() throws IOException {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");
-    new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build();
+    new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build().close();
   }
 }
