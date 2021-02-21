@@ -50,7 +50,8 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Before
-  public void beforeTests() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     System.setProperty("enable.update.log", "false");
     // This tests explicitly compares Trie DV with non-DV Trie with DV Points
     // so we don't want randomized DocValues on all Trie fields
@@ -72,8 +73,8 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
     deleteCore();
+    super.tearDown();
   }
 
 

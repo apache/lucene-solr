@@ -27,6 +27,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,9 +51,20 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
     }
   }
 
+  @AfterClass
+  public static void afterDocValuesMultiTest() {
+    deleteCore();
+  }
+
+  @Before
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @After
+  public void tearDown() throws Exception {
     assertU(delQ("*:*"));
+    super.tearDown();
   }
 
   @Test

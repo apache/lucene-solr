@@ -38,8 +38,8 @@ public class SpellCheckCollatorWithCollapseTest  extends SolrTestCaseJ4 {
 
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
     deleteCore();
+    super.tearDown();
   }
   
   @Test

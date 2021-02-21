@@ -45,7 +45,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   private static RawResponseWriter[] allWriters;
 
   @BeforeClass
-  public static void setupCoreAndWriters() throws Exception {
+  public static void beforeTestRawResponseWriter() throws Exception {
     // we don't directly use this core or its config, we use
     // QueryResponseWriters' constructed programmatically,
     // but we do use this core for managing the life cycle of the requests
@@ -63,12 +63,12 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupWriters() throws Exception {
+  public static void afterTestRawResponseWriter() throws Exception {
+    deleteCore();
     writerXmlBase = null;
     writerJsonBase = null;
     writerBinBase = null;
     writerNoBase = null;
-
     allWriters = null;
   }
 

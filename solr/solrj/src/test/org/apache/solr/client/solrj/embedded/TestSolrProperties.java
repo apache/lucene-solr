@@ -38,10 +38,6 @@ import java.lang.invoke.MethodHandles;
  */
 public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-//
-//  @Rule
-//  public TestRule solrTestRules =
-//    RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected SolrClient getSolrAdmin() {
     return new EmbeddedSolrServer(cores, null);

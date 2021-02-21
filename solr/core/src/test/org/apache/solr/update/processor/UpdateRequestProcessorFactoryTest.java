@@ -27,6 +27,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,11 @@ public class UpdateRequestProcessorFactoryTest extends SolrTestCaseJ4 {
     System.setProperty("solr.logUpdateProcOnInfo", "true");
     System.setProperty("enable.runtime.lib", "true");
     initCore("solrconfig-transformers.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterUpdateRequestProcessorFactoryTest() {
+    deleteCore();
   }
 
   public void testRequestTimeUrp(){

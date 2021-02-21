@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.EventParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
   private static int preInitMockListenerCount = 0;
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestQuerySenderListener() throws Exception {
     // record current value prior to core initialization
     // so we can verify the correct number of instances later
     // NOTE: this won't work properly if concurrent tests run
@@ -39,7 +40,11 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     preInitMockListenerCount = MockEventListener.getCreateCount();
 
     initCore("solrconfig-querysender.xml","schema.xml");
+  }
 
+  @AfterClass
+  public static void afterTestQuerySenderListener() {
+    deleteCore();
   }
 
   public void testListenerCreationCounts() {

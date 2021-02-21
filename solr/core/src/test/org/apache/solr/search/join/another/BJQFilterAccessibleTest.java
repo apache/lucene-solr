@@ -28,6 +28,7 @@ import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinParentQParser;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 
@@ -39,6 +40,11 @@ public class BJQFilterAccessibleTest  extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema15.xml");
     createIndex();
+  }
+
+  @AfterClass
+  public static void afterCursorBJQFilterAccessibleTest() {
+    deleteCore();
   }
 
   public void testAbilityToCreateBJQfromAnotherPackage() throws IOException {

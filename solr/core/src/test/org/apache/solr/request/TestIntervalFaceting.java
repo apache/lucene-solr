@@ -76,7 +76,6 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
     assertU(commit());
     assertU(optimize());
-    assertQ(req("*:*"), "//*[@numFound='0']");
     super.tearDown();
   }
 

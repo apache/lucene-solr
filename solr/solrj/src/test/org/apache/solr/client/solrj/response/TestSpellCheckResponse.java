@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,6 +44,11 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
   @BeforeClass
   public static void beforeTestSpellCheckResponse() throws Exception {
     initCore();
+  }
+
+  @AfterClass
+  public static void afterTestSpellCheckResponse() {
+    deleteCore();
   }
 
   String field = "name";

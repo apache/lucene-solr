@@ -41,13 +41,15 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   private final static String VERSION = "_version_";
 
   @Before
-  public void beforeTests() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig-tlog.xml", "schema-nest.xml"); // use "nest" schema
   }
 
   @After
-  public void afterTests() {
+  public void tearDown() throws Exception {
     deleteCore();
+    super.tearDown();
   }
 
   @Test

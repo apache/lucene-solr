@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,6 +39,11 @@ public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
   @BeforeClass
   public static void beforeTestSuggesterResponse() throws Exception {
     initCore();
+  }
+
+  @AfterClass
+  public static void afterTestSuggesterResponse() {
+    deleteCore();
   }
 
   String field = "cat";

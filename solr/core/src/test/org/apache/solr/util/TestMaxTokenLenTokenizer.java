@@ -18,6 +18,7 @@
 package org.apache.solr.util;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -34,6 +35,11 @@ public class TestMaxTokenLenTokenizer extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTestMaxTokenLenTokenizer() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema-tokenizer-test.xml");
+  }
+
+  @AfterClass
+  public static void afterTestMaxTokenLenTokenizer() {
+    deleteCore();
   }
 
   public void testSingleFieldDiffAnalyzers() throws Exception {

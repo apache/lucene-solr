@@ -34,6 +34,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TimeOut;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -45,8 +46,13 @@ public class TestStressUserVersions extends TestRTGBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestStressUserVersions() throws Exception {
     initCore("solrconfig-externalversionconstraint.xml","schema15.xml");
+  }
+
+  @AfterClass
+  public static void afterTestStressUserVersions() {
+    deleteCore();
   }
 
   private static String vfield = "my_version_l";

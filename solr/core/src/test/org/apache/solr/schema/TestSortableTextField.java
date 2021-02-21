@@ -45,6 +45,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -55,7 +56,7 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
     = StringUtils.repeat("x", SortableTextField.DEFAULT_MAX_CHARS_FOR_DOC_VALUES);
   
   @BeforeClass
-  public static void create() throws Exception {
+  public static void beforeTestSortableTextField() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-sorting-text.xml");
     try (SolrCore core = h.getCore()) {
       // sanity check our fields & types...
@@ -80,6 +81,11 @@ public class TestSortableTextField extends SolrTestCaseJ4 {
 
       }
     }
+  }
+
+  @AfterClass
+  public static void afterTestSortableTextField() {
+    deleteCore();
   }
   
   @Before

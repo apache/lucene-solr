@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -52,9 +53,14 @@ import org.junit.BeforeClass;
 public class CursorMarkTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeCursorMarkTest() throws Exception {
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(CursorPagingTest.TEST_SOLRCONFIG_NAME, CursorPagingTest.TEST_SCHEMAXML_NAME);
+  }
+
+  @AfterClass
+  public static void afterCursorMarkTest() {
+    deleteCore();
   }
 
   public void testNextCursorMark() throws IOException {

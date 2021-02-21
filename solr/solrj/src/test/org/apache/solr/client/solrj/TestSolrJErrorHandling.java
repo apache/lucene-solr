@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -60,6 +61,11 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeSolrExampleTestsBase() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+  }
+
+  @AfterClass
+  public static void afterTestSolrJErrorHandling() {
+    deleteCore();
   }
 
   @Override

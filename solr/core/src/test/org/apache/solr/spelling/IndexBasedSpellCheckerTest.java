@@ -79,7 +79,8 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void afterClass() {
+  public static void afterIndexBasedSpellCheckerTest() {
+    deleteCore();
     queryConverter = null;
     DOCS = null;
   }

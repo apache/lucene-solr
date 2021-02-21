@@ -50,14 +50,15 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   @Test
   public void testSort() throws Exception {
     initCore("solrconfig-basic.xml", "schema-eff.xml");
-    updateExternalFile();
+    try {
+      updateExternalFile();
 
-    addDocuments();
-    assertQ("query",
-        req("q", "*:*", "sort", "eff asc"),
-        "//result/doc[position()=1]/str[.='3']",
-        "//result/doc[position()=2]/str[.='1']",
-        "//result/doc[position()=10]/str[.='8']");
+      addDocuments();
+      assertQ("query", req("q", "*:*", "sort", "eff asc"), "//result/doc[position()=1]/str[.='3']", "//result/doc[position()=2]/str[.='1']",
+          "//result/doc[position()=10]/str[.='8']");
+    } finally {
+      deleteCore();
+    }
   }
   
   @Test

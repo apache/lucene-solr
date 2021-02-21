@@ -26,6 +26,7 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -39,7 +40,12 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeCopyFieldTest() throws Exception {
     initCore("solrconfig.xml","schema-copyfield-test.xml");
-  }    
+  }
+
+  @AfterClass
+  public static void afterCopyFieldTest() {
+    deleteCore();
+  }
 
   @Test
   public void testCopyFieldSchemaFieldSchemaField() {

@@ -20,6 +20,7 @@ import java.util.Collection;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 /**
@@ -29,6 +30,11 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeRequiredFieldsTest() throws Exception {
     initCore("solrconfig.xml","schema-required-fields.xml");
+  }
+
+  @AfterClass
+  public static void afterRequiredFieldsTest() {
+    deleteCore();
   }
   
   @Override

@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrQueryParser;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,15 +41,16 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeEnumFieldTest() throws Exception {
     System.setProperty("solr.tests.EnumFieldTest.indexed", Boolean.toString(random().nextBoolean()));
-    doInitCore();
+    initCore("solrconfig-minimal.xml", "schema-enums.xml");
 
 //    System.out.println("solr.tests.numeric.dv: " + System.getProperty("solr.tests.numeric.dv"));
 //    System.out.println("solr.tests.EnumFieldTest.indexed: " + System.getProperty("solr.tests.EnumFieldTest.indexed"));
 //    System.out.println("solr.tests.EnumFieldType: " + System.getProperty("solr.tests.EnumFieldType"));
   }
-  
-  private static void doInitCore() throws Exception {
-    initCore("solrconfig-minimal.xml", "schema-enums.xml");
+
+  @AfterClass
+  public static void afterEnumFieldTest() {
+    deleteCore();
   }
 
   @Test
@@ -573,7 +575,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
       assertTrue(e.getMessage().contains("EnumFieldType requires docValues=\"true\""));
     } finally { // put back the core expected by other tests
       deleteCore();
-      doInitCore();
+      initCore("solrconfig-minimal.xml", "schema-enums.xml");
     }
   }
 }

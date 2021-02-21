@@ -148,7 +148,8 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   
   @Before
-  public void beforeSolrCloudBridgeTestCase() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     Path TEST_PATH = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
 
     COLLECTION = "collection" + collectionCount.incrementAndGet();
@@ -238,7 +239,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   }
   
   @After
-  public void cleanup() throws Exception {
+  public void tearDown() throws Exception {
     if (cluster != null) cluster.shutdown();
     if (controlCluster != null) controlCluster.shutdown();
     cluster = null;
@@ -250,6 +251,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     clients.clear();
     controlClient = null;
+    super.tearDown();
   }
 
   @BeforeClass
@@ -268,7 +270,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     newClients.clear();
     cloudClient = null;
-    newClients.clear();
     extraServlets = null;
     createCollection1 = true;
     createControl = false;

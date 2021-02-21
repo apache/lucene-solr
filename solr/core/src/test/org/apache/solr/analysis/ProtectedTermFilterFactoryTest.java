@@ -26,13 +26,19 @@ import org.apache.lucene.analysis.miscellaneous.ProtectedTermFilterFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.core.SolrResourceLoader;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class ProtectedTermFilterFactoryTest extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeProtectedTermFilterFactoryTest() throws Exception {
     initCore("solrconfig.xml","schema-protected-term.xml");
+  }
+
+  @AfterClass
+  public static void afterProtectedTermFilterFactoryTest() {
+    deleteCore();
   }
 
   public void testBasic() throws Exception {

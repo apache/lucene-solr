@@ -41,6 +41,7 @@ import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrQueryParser;
 import org.apache.solr.search.SyntaxError;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,6 +56,11 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     assumeWorkingMockito();
     initCore("solrconfig.xml","schema-reversed.xml");
+  }
+
+  @AfterClass
+  public static void afterTestReversedWildcardFilterFactory() {
+    deleteCore();
   }
   
   @Override

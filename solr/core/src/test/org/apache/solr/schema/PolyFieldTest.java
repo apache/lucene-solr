@@ -25,6 +25,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,6 +39,11 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
   public static void beforePolyFieldTest() throws Exception {
     System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false"); // Poly fields not supported as subtypes, PointType:73
     initCore("solrconfig.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterPolyFieldTest() {
+    deleteCore();
   }
 
   @Test
