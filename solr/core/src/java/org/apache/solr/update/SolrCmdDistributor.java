@@ -162,10 +162,12 @@ public class SolrCmdDistributor implements Closeable {
   public void distribDelete(DeleteUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean sync,
                             RollupRequestReplicationTracker rollupTracker,
                             LeaderRequestReplicationTracker leaderTracker) throws IOException {
+    if (nodes == null) return;
 //    if (!cmd.isDeleteById()) {
 //      blockAndDoRetries();
 //    }
     for (Node node : nodes) {
+      if (node == null) continue;
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
       uReq.setCommitWithin(cmd.commitWithin);
@@ -189,7 +191,9 @@ public class SolrCmdDistributor implements Closeable {
   public void distribAdd(AddUpdateCommand cmd, List<Node> nodes, ModifiableSolrParams params, boolean synchronous,
                          RollupRequestReplicationTracker rollupTracker,
                          LeaderRequestReplicationTracker leaderTracker) throws IOException {
+    if (nodes == null) return;
     for (Node node : nodes) {
+      if (node == null) continue;
       UpdateRequest uReq = new UpdateRequest();
       if (cmd.isLastDocInBatch)
         uReq.lastDocInBatch();
@@ -212,6 +216,7 @@ public class SolrCmdDistributor implements Closeable {
     }
 
     for (Node node : nodes) {
+      if (node == null) continue;
       UpdateRequest uReq = new UpdateRequest();
       uReq.setParams(params);
 

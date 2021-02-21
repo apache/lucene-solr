@@ -33,10 +33,10 @@ public class TestSurroundQueryParser extends SolrTestCaseJ4 {
   
   @Override
   public void tearDown() throws Exception {
+    deleteCore();
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.tearDown();
-    deleteCore();
   }
   
   public void testQueryParser() {
