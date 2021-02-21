@@ -21,12 +21,18 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestFileListWithLineEntityProcessor extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeTestFileListWithLineEntityProcessor() throws Exception {
     initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTestFileListWithLineEntityProcessor() throws Exception {
+    deleteCore();
   }
   
   public void test() throws Exception {

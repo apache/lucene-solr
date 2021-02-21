@@ -423,6 +423,8 @@ public class LegacyFieldFacetTest extends LegacyAbstractAnalyticsFacetTest{
 
   @AfterClass
   public static void afterLegacyFieldFacetTest() {
+    deleteCore();
+
     //INT
     intDateTestStart = null;
     intDateTestMissing = null;

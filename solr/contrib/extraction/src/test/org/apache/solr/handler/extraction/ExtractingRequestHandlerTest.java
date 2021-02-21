@@ -35,6 +35,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,13 +61,25 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     initCore("solrconfig.xml", "schema.xml", SolrTestUtil.getFile("extraction/solr").getAbsolutePath());
   }
 
+  @AfterClass
+  public static void afterExtractingRequestHandlerTest() throws Exception {
+    deleteCore();
+  }
+
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
     clearIndex();
     assertU(commit());
+    super.tearDown();
   }
+
 
   @Test
   public void testExtraction() throws Exception {

@@ -22,6 +22,7 @@ import java.util.Date;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.analytics.legacy.LegacyAbstractAnalyticsTest;
 import org.apache.solr.util.DateMathParser;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -60,6 +61,11 @@ public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
     assertU(commit());
 
     setResponse(h.query(request(fileToStringArr(LegacyExpressionTest.class, fileName))));
+  }
+
+  @AfterClass
+  public static void afterTestICUCollationFieldDocValues() throws Exception {
+    deleteCore();
   }
 
   @Test

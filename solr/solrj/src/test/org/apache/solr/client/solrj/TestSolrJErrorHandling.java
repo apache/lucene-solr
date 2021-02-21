@@ -65,7 +65,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
 
   @AfterClass
   public static void afterTestSolrJErrorHandling() {
-    deleteCore();
+
   }
 
   @Override

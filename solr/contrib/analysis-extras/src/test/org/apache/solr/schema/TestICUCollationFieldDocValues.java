@@ -23,6 +23,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import com.ibm.icu.text.Collator;
@@ -52,6 +53,11 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
     assertU(adoc("id", "11", "text", "Tzne"));
     assertU(adoc("id", "12", "text", "\u0698\u0698"));
     assertU(commit());
+  }
+
+  @AfterClass
+  public static void afterTestICUCollationFieldDocValues() throws Exception {
+    deleteCore();
   }
   
   /**
