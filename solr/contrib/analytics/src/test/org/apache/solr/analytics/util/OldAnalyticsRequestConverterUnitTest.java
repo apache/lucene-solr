@@ -17,8 +17,10 @@
 
 package org.apache.solr.analytics.util;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.analytics.legacy.facet.LegacyAbstractAnalyticsFacetTest;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,12 +31,18 @@ import static org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsValueFac
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsFacetRequest;
 import org.apache.solr.analytics.AnalyticsRequestParser.AnalyticsRangeFacetRequest;
 
+@LuceneTestCase.Nightly
 public class OldAnalyticsRequestConverterUnitTest extends LegacyAbstractAnalyticsFacetTest {
   String fileName = "facetWithDottedFields.txt";
 
   @BeforeClass
   public static void beforeOldAnalyticsRequestConverterUnitTest() throws Exception {
     initCore("solrconfig-analytics.xml", "schema-analytics.xml");
+  }
+
+  @AfterClass
+  public static void afterOldAnalyticsRequestConverterUnitTest() {
+    deleteCore();
   }
 
   @Test

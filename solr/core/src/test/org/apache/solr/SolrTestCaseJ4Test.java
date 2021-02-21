@@ -31,7 +31,8 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   private static String tmpSolrHome;
 
   @Before
-  public void beforeTest() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     // Create a temporary directory that holds a core NOT named "collection1". Use the smallest configuration sets
     // we can so we don't copy that much junk around.
     tmpSolrHome = SolrTestUtil.createTempDir().toFile().getAbsolutePath();
@@ -55,8 +56,9 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   }
 
   @After
-  public void AfterTest() throws Exception {
+  public void tearDown() throws Exception {
     deleteCore();
+    super.tearDown();
   }
 
   @Test

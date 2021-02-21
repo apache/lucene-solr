@@ -27,6 +27,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -41,6 +42,11 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
         .addConfig("conf1", SolrTestUtil.configset("cloud-minimal"))
         .addConfig("conf2", SolrTestUtil.configset("cloud-minimal"))
         .formatZk(true).configure();
+  }
+
+  @AfterClass
+  public static void afterOverseerModifyCollectionTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test

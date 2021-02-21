@@ -165,7 +165,6 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   public synchronized SolrClient getSolrClient(JettySolrRunner jetty) {
-
    return client;
   }
 

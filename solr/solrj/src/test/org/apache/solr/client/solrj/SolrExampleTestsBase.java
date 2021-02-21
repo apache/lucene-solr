@@ -53,9 +53,10 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
 
   @After
   public void tearDown() throws Exception {
-    SolrClient client = getSolrClient(jetty);
-    client.deleteByQuery("*:*");// delete everything!
-    client.commit();
+    try (SolrClient client = createNewSolrClient(jetty)) {
+      client.deleteByQuery("*:*");// delete everything!
+      client.commit();
+    }
     super.tearDown();
   }
 
