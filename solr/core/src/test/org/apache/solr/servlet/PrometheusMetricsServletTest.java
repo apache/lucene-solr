@@ -406,12 +406,15 @@ public class PrometheusMetricsServletTest {
         "# HELP local_requests_update cumulative number of local updates across cores\n" +
         "# TYPE local_requests_update counter\n" +
         "local_requests_update 54\n" +
-        "# HELP commits_hard cumulative number of hard commits across cores\n" +
-        "# TYPE commits_hard counter\n" +
-        "commits_hard 58\n" +
-        "# HELP commits_soft cumulative number of soft commits across cores\n" +
-        "# TYPE commits_soft counter\n" +
-        "commits_soft 70\n" +
+        "# HELP auto_commits_hard cumulative number of hard auto commits across cores\n" +
+        "# TYPE auto_commits_hard counter\n" +
+        "auto_commits_hard 58\n" +
+        "# HELP auto_commits_soft cumulative number of soft auto commits across cores\n" +
+        "# TYPE auto_commits_soft counter\n" +
+        "auto_commits_soft 70\n" +
+        "# HELP commits cumulative number of commits across cores\n" +
+        "# TYPE commits counter\n" +
+        "commits -4\n" +
         "# HELP deletes_by_id cumulative number of deletes by id across cores\n" +
         "# TYPE deletes_by_id counter\n" +
         "deletes_by_id 62\n" +
