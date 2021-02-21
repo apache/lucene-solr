@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,7 +48,7 @@ public class XCJFQueryTest extends SolrCloudTestCase {
   private static final String[] SIZES = new String[]{"S", "M", "L", "XL"};
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeXCJFQueryTest() throws Exception {
     configureCluster(NUM_NODES)
         .addConfig("xcjf", SolrTestUtil.configset("xcjf"))
         .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
@@ -60,6 +61,11 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("parts", "xcjf", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
+  }
+
+  @AfterClass
+  public static void afterXCJFQueryTest() throws Exception {
+    shutdownCluster();
   }
 
 //  @After

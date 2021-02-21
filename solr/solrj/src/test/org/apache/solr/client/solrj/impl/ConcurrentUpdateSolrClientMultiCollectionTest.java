@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -64,6 +65,7 @@ public class ConcurrentUpdateSolrClientMultiCollectionTest extends SolrCloudTest
   }
 
   @Test
+  @LuceneTestCase.Nightly
   public void testEnsureDocumentsSentToCorrectCollection() throws Exception {
     int numTotalDocs = 1000;
     int numExpectedPerCollection = numTotalDocs / 2;

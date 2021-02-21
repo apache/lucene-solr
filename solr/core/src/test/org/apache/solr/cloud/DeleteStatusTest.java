@@ -26,6 +26,7 @@ import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -39,6 +40,11 @@ public class DeleteStatusTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf1", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .formatZk(true).configure();
+  }
+
+  @AfterClass
+  public static void afterDeleteStatusTest() throws Exception {
+    shutdownCluster();
   }
 
   // Basically equivalent to RequestStatus.waitFor(), but doesn't delete the id from the queue

@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Locale;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -29,6 +30,7 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+@LuceneTestCase.Nightly
 public class TestDistributedMap extends SolrTestCaseJ4 {
 
   private static Path zkDir;
