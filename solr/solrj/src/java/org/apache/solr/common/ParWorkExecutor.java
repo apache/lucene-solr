@@ -113,7 +113,7 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
           Thread.currentThread().getThreadGroup();
       threadNumber.increment();
       SolrThread t = new SolrThread(group, null,
-          name + "-" + threadNumber.longValue()) {
+          name + "-" + group.getName() + "-" + threadNumber.longValue()) {
         public void run() {
           r.run();
         }

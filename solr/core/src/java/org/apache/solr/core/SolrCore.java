@@ -1627,12 +1627,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
       cache = createInitInstance(pluginInfo, StatsCache.class, null,
           LocalStatsCache.class.getName());
-      if (log.isDebugEnabled()) {
-        log.debug("Using statsCache impl: {}", cache.getClass().getName());
+      if (log.isTraceEnabled()) {
+        log.trace("Using statsCache impl: {}", cache.getClass().getName());
       }
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug("Using default statsCache cache: {}", LocalStatsCache.class.getName());
+      if (log.isTraceEnabled()) {
+        log.trace("Using default statsCache cache: {}", LocalStatsCache.class.getName());
       }
       cache = new LocalStatsCache();
     }
@@ -3040,9 +3040,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
      * down, and if possible, prevent that situation. The handleRequest and postDecorateResponse methods do not indicate
      * that they throw any checked exceptions, so it would have to be an unchecked exception that causes any problems.
      */
-    if (requestLog.isDebugEnabled() && rsp.getToLog().size() > 0) {
+    if (requestLog.isTraceEnabled() && rsp.getToLog().size() > 0) {
       // log request at debug in case something goes wrong and we aren't able to log later
-      requestLog.debug(rsp.getToLogAsString(logid));
+      requestLog.trace(rsp.getToLogAsString(logid));
     }
 
     // TODO: this doesn't seem to be working correctly and causes problems with the example server and distrib (for example /spell)

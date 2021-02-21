@@ -61,7 +61,7 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
   private static List<String> missingDocuments;
 
   @BeforeClass
-  public static void createSchemaAndFields() throws Exception {
+  public static void beforeAbstractAnalyticsFieldTest() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
 
     singleInts = new HashMap<>();
@@ -225,7 +225,7 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void closeSearcher() throws IOException {
+  public static void afterAbstractAnalyticsFieldTest() throws IOException {
     if (null != ref) {
       ref.decref();
       ref = null;

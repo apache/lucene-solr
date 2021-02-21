@@ -35,7 +35,9 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
   private static IndexSchema indexSchema;
 
   @Before
-  public void createSchemaAndFields() throws Exception {
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
     assertU(adoc("id", "1",
         "int_i", "1",
@@ -61,8 +63,9 @@ public class ExpressionFactoryTest extends SolrTestCaseJ4 {
   }
 
   @After
-  public void cleanUp() throws Exception {
+  public void tearDown() throws Exception {
     deleteCore();
+    super.tearDown();
     indexSchema = null;
   }
 

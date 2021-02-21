@@ -52,7 +52,7 @@ import java.util.List;
 import java.util.Scanner;
 
 public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
-  protected static final HashMap<String,Object> defaults = new HashMap<>();
+  protected static HashMap<String,Object> defaults;
   public static final String[] EMPTY_TS = new String[0];
 
   protected String latestType = "";
@@ -63,15 +63,14 @@ public class LegacyAbstractAnalyticsFacetTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClassAbstractAnalysis() {
-
+    defaults = new HashMap<>();
   }
 
   @AfterClass
   public static void afterClassAbstractAnalysis() {
-
     doc = null;
     rawResponse = null;
-    defaults.clear();
+    defaults = null;
   }
 
   protected static void setResponse(String response) throws ParserConfigurationException, IOException, SAXException {
