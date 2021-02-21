@@ -26,6 +26,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,12 +51,23 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     core.close();
   }
 
+  @AfterClass
+  public static void afterDistributedQueryComponentOptimizationTest() throws Exception {
+    deleteCore();
+  }
+
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @Override
+  @After
+  public void tearDown() throws Exception {
     clearIndex();
     assertU(commit());
+    super.tearDown();
   }
 
   @Test
