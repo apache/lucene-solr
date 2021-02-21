@@ -28,7 +28,9 @@ New Features
 * SOLR-15055: Re-implement 'withCollection'. This also adds the placement plugin support
   for rejecting replica / collection deletions that would violate placement constraints. (ab, ilan)
 
-* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)  
+* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)
+
+* SOLR-14787: Payload check query parser now supports inequalities. (Kevin Watters, Gus Heck)
 
 Improvements
 ----------------------
