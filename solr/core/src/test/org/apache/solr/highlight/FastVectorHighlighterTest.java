@@ -29,13 +29,15 @@ import org.junit.Test;
 public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
 
   @Before
-  public void beforeTest() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     initCore("solrconfig.xml","schema.xml");
   }
 
   @After
-  public void afterTest() throws Exception {
+  public void tearDown() throws Exception {
     deleteCore();
+    super.tearDown();
   }
 
   @Test

@@ -63,8 +63,8 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
   }
 
   @Before
-  public void setupClusters() throws Exception {
-
+  public void setUp() throws Exception {
+    super.setUp();
     final String[] clusterIds = new String[] {IMPLICIT_CLUSTER_KEY, EXPLICIT_CLUSTER_KEY};
 
     numShards = 2; // +random().nextInt(2);
@@ -117,7 +117,8 @@ public class ShardsWhitelistTest extends MultiSolrCloudTestCase {
   }
 
   @After
-  public void afterTests() {
+  public void tearDown() throws Exception {
+    super.tearDown();
     System.clearProperty(EXPLICIT_WHITELIST_PROPERTY + EXPLICIT_CLUSTER_KEY);
   }
 

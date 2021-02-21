@@ -106,12 +106,13 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void beforeMultiSolrCloudTestCase() throws Exception {
+  public void setUp() throws Exception {
     clusterId2cluster = new ConcurrentHashMap<>();
+    super.setUp();
   }
 
   @After
-  public void shutdownCluster() throws Exception {
+  public void tearDown() throws Exception {
     clusterId2cluster.forEach((s, miniSolrCloudCluster) -> {
       try {
         miniSolrCloudCluster.shutdown();
@@ -120,6 +121,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
       }
     });
     clusterId2cluster = null;
+    super.tearDown();
   }
 
 }
