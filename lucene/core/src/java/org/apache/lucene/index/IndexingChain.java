@@ -1303,6 +1303,14 @@ final class IndexingChain implements Accountable {
     }
   }
 
+  /**
+   * A schema of the field in the current document. With every new document this schema is reset. As
+   * the document fields are processed, we update the schema with options encountered in this
+   * document. Once the processing for the document is done, we compare the built schema of the
+   * current document with the corresponding FieldInfo (FieldInfo is built on a first document in
+   * the segment where we encounter this field). If there is inconsistency, we raise an error. This
+   * ensures that a field has the same data structures across all documents.
+   */
   private static final class FieldSchema {
     private final String name;
     private int docID = 0;

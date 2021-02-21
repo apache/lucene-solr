@@ -266,107 +266,121 @@ public final class FieldInfo {
   }
 
   /**
-   * Very that the provided index options are the same
+   * Verify that the provided index options are the same
    *
    * @throws IllegalArgumentException if they are not the same
    */
-  public static void verifySameIndexOptions(String fieldName, IndexOptions io1, IndexOptions io2) {
-    if (io1 != io2) {
+  public static void verifySameIndexOptions(
+      String fieldName, IndexOptions indexOptions1, IndexOptions indexOptions2) {
+    if (indexOptions1 != indexOptions2) {
       throw new IllegalArgumentException(
           "cannot change field \""
               + fieldName
               + "\" from index options="
-              + io1
+              + indexOptions1
               + " to inconsistent index options="
-              + io2);
+              + indexOptions2);
     }
   }
 
   /**
-   * Very that the provided docValues type are the same
+   * Verify that the provided docValues type are the same
    *
    * @throws IllegalArgumentException if they are not the same
    */
   public static void verifySameDocValuesType(
-      String fieldName, DocValuesType dv1, DocValuesType dv2) {
-    if (dv1 != dv2) {
+      String fieldName, DocValuesType docValuesType1, DocValuesType docValuesType2) {
+    if (docValuesType1 != docValuesType2) {
       throw new IllegalArgumentException(
           "cannot change field \""
               + fieldName
               + "\" from doc values type="
-              + dv1
+              + docValuesType1
               + " to inconsistent doc values type="
-              + dv2);
+              + docValuesType2);
     }
   }
 
   /**
-   * Very that the provided doc values generations are the same
+   * Verify that the provided doc values generations are the same
    *
    * @throws IllegalArgumentException if they are not the same
    */
-  public static void verifySameDVGen(String fieldName, long dvg1, long dvg2) {
-    if (dvg1 != dvg2) {
+  // TODO: not sure if gen also must be the same
+  public static void verifySameDVGen(String fieldName, long docValuesGen1, long docValuesGen2) {
+    if (docValuesGen1 != docValuesGen2) {
       throw new IllegalArgumentException(
           "cannot change field \""
               + fieldName
               + "\" from doc values generation="
-              + dvg1
+              + docValuesGen1
               + " to inconsistent doc values generation="
-              + dvg2);
+              + docValuesGen2);
     }
   }
 
   /**
-   * Very that the provided posting options are the same
+   * Verify that the provided posting options are the same
    *
    * @throws IllegalArgumentException if they are not the same
    */
   public static void verifySamePostingsOptions(
-      String fieldName, boolean stv1, boolean on1, boolean stv2, boolean on2) {
-    if (stv1 != stv2 || on1 != on2) {
+      String fieldName,
+      boolean storeTermVector1,
+      boolean omitNorms1,
+      boolean storeTermVector2,
+      boolean omitNorms2) {
+    if (storeTermVector1 != storeTermVector2 || omitNorms1 != omitNorms2) {
       throw new IllegalArgumentException(
           "cannot change field \""
               + fieldName
               + "\" from storeTermVector="
-              + stv1
+              + storeTermVector1
               + ", omitNorms="
-              + on1
+              + omitNorms1
               + " to inconsistent storeTermVector="
-              + stv2
+              + storeTermVector2
               + ", omitNorms="
-              + on2);
+              + omitNorms2);
     }
   }
 
   /**
-   * Very that the provided points indexing options are the same
+   * Verify that the provided points indexing options are the same
    *
    * @throws IllegalArgumentException if they are not the same
    */
   public static void verifySamePointsOptions(
-      String fieldName, int dc1, int idc1, int nb1, int dc2, int idc2, int nb2) {
-    if (dc1 != dc2 || idc1 != idc2 || nb1 != nb2) {
+      String fieldName,
+      int pointDimensionCount1,
+      int indexDimensionCount1,
+      int numBytes1,
+      int pointDimensionCount2,
+      int indexDimensionCount2,
+      int numBytes2) {
+    if (pointDimensionCount1 != pointDimensionCount2
+        || indexDimensionCount1 != indexDimensionCount2
+        || numBytes1 != numBytes2) {
       throw new IllegalArgumentException(
           "cannot change field \""
               + fieldName
               + "\" from points dimensionCount="
-              + dc1
+              + pointDimensionCount1
               + ", indexDimensionCount="
-              + idc1
+              + indexDimensionCount1
               + ", numBytes="
-              + nb1
+              + numBytes1
               + " to inconsistent dimensionCount="
-              + dc2
+              + pointDimensionCount2
               + ", indexDimensionCount="
-              + idc2
+              + indexDimensionCount2
               + ", numBytes="
-              + nb2);
+              + numBytes2);
     }
   }
 
   /**
-   * Very that the provided vector indexing options are the same
+   * Verify that the provided vector indexing options are the same
    *
    * @throws IllegalArgumentException if they are not the same
    */
