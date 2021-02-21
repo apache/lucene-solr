@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -29,12 +30,22 @@ public class DocValuesMissingTest extends SolrTestCaseJ4 {
   public static void beforeDocValuesMissingTest() throws Exception {
     initCore("solrconfig-basic.xml", "schema-docValuesMissing.xml");
   }
+
+  @AfterClass
+  public static void afterDocValuesMissingTest() {
+    deleteCore();
+  }
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
+  }
+
+  @Override
+  public void tearDown() throws Exception {
     clearIndex();
     assertU(commit());
+    super.tearDown();
   }
   
   /** numeric default lucene sort (relative to presumed default value of 0) */

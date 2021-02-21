@@ -17,6 +17,7 @@
 package org.apache.solr.schema;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestOmitPositions extends SolrTestCaseJ4 {
@@ -27,6 +28,11 @@ public class TestOmitPositions extends SolrTestCaseJ4 {
     assertU(adoc("id", "1", "nopositionstext", "this is a test this is only a test", "text", "just another test"));
     assertU(adoc("id", "2", "nopositionstext", "test test test test test test test test test test test test test", "text", "have a nice day"));
     assertU(commit());
+  }
+
+  @AfterClass
+  public static void afterTestOmitPositions() {
+    deleteCore();
   }
   
   public void testFrequencies() {
