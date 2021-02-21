@@ -85,7 +85,7 @@ public class OverseerRoleCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     //if there are too many nodes this command may time out. And most likely dedicated
     // overseers are created when there are too many nodes  . So , do this operation in a separate thread
-    // nocommit - we should remove this, but if not it needs fixing
+    // MRM TODO: - we should remove this, but if not it needs fixing
 //    new Thread(() -> {
 //      try {
 //        overseerPrioritizer.prioritizeOverseerNodes(ocmh.myId);

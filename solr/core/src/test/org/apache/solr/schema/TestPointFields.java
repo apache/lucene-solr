@@ -74,7 +74,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests for PointField functionality */
-@LuceneTestCase.Nightly // nocommit slow, slow
+@LuceneTestCase.Nightly // MRM TODO: slow, slow
 public class TestPointFields extends SolrTestCaseJ4 {
 
   // long overflow can occur in some date calculations if gaps are too large, so we limit to a million years BC & AD.

@@ -604,7 +604,7 @@ public class Overseer implements SolrCloseable {
   ZkDistributedQueue getStateUpdateQueue(Stats zkStats) {
     return new ZkDistributedQueue(zkController.getZkClient(), "/overseer/queue", zkStats, STATE_UPDATE_MAX_QUEUE, new ConnectionManager.IsClosed(){
       public boolean isClosed() {
-        return Overseer.this.isClosed() || zkController.getCoreContainer().isShutDown(); // nocommit use
+        return Overseer.this.isClosed() || zkController.getCoreContainer().isShutDown();
       }
     });
   }
@@ -728,7 +728,7 @@ public class Overseer implements SolrCloseable {
 
   public boolean processQueueItem(ZkNodeProps message) throws InterruptedException {
     if (log.isDebugEnabled()) log.debug("processQueueItem {}", message);
-    // nocommit - may not need this now
+    // MRM TODO: - may not need this now
     new OverseerTaskExecutorTask(getCoreContainer(), message).run();
 //    try {
 //      future.get();
@@ -803,14 +803,6 @@ public class Overseer implements SolrCloseable {
 
       ourLock.lock();
       try {
-//        Integer ms = Integer.getInteger("solr.stateworkqueue.throttle", 150);
-//        log.info("Overseer work queue has changed, processing in {}} ms...", ms);
-//        try {
-//          // nocommit
-//          Thread.sleep(ms);
-//        } catch (InterruptedException e) {
-//
-//        }
         try {
           List<String> items = setWatch();
           if (items.size() > 0) {

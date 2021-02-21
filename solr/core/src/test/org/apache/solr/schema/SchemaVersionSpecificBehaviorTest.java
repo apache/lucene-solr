@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 
-@Nightly // nocommit speedup
+@Nightly // MRM TODO: speedup
 public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
 
   public void testVersionBehavior() throws Exception {

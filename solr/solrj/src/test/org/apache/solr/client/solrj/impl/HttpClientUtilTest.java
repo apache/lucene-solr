@@ -47,7 +47,7 @@ public class HttpClientUtilTest extends SolrTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ check SSL related sys prop changes affecting this test
+  @Ignore // MRM TODO: ~ check SSL related sys prop changes affecting this test
   public void testSSLSystemProperties() throws IOException {
 
     assertNotNull("HTTPS scheme could not be created using system defaults",

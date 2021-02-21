@@ -32,8 +32,7 @@ public class AclParser {
 
     /**
      * parse string into list of ACL
-     * @param aclString
-     * @return
+     * @param aclString to parse
      */
     public static List<ACL> parse(String aclString) {
         List<ACL> acl;

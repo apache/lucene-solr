@@ -847,7 +847,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return getInt(path, 0);
   }
 
-  // nocommit
+  // MRM TODO: don't like these syncs I guess?...
   public int getInt(String path, int def) {
     Object val;
     synchronized (this) {

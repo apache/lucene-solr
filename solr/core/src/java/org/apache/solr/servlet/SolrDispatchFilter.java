@@ -191,7 +191,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       StartupLoggingUtils.checkLogDir();
 
-      log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
+      if (log.isInfoEnabled()) {
+        log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
+      }
 
       logWelcomeBanner();
       String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
@@ -200,7 +202,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       }
       String logLevel = System.getProperty(SOLR_LOG_LEVEL);
       if (logLevel != null) {
-        log.info("Log level override, property solr.log.level={}", logLevel);
+        if (log.isInfoEnabled()) {
+          log.info("Log level override, property solr.log.level={}", logLevel);
+        }
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
 
@@ -265,7 +269,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     try {
       metricManager.registerAll(registryName, new AltBufferPoolMetricSet(), false, "buffers");
       metricManager.registerAll(registryName, new ClassLoadingGaugeSet(), false, "classes");
-      // nocommit - this still appears fairly costly
+      // MRM TODO: - this still appears fairly costly
       metricManager.registerAll(registryName, new OperatingSystemMetricSet(), false, "os");
       metricManager.registerAll(registryName, new GarbageCollectorMetricSet(), false, "gc");
       metricManager.registerAll(registryName, new MemoryUsageGaugeSet(), false, "memory");
@@ -289,11 +293,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     // that's so ugly so far.
     if (log.isInfoEnabled()) {
       log.info("  ___ _       _ _            ___     _            Welcome to Apache Solr™ version {}", solrVersion());
-
+    }
+    if (log.isInfoEnabled()) {
       log.info(" / __| |_ ___| | |__ _ _ _  / __|___| |_ _        Starting in {} mode on port {}", isCloudMode() ? "cloud" : "standalone", getSolrPort());
-
+    }
+    if (log.isInfoEnabled()) {
       log.info(" \\__ \\  _/ -_) | / _` | '_| \\__ \\ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
-
+    }
+    if (log.isInfoEnabled()) {
       log.info(" |___/\\__\\___|_|_\\__,_|_|   |___\\___/_|_|     Start time: {}", Instant.now());
     }
   }
@@ -328,7 +335,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   protected synchronized CoreContainer createCoreContainer(Path solrHome, Properties extraProperties) throws IOException {
     String zkHost = System.getProperty("zkHost");
     if (!StringUtils.isEmpty(zkHost)) {
-      int zkClientTimeout = Integer.getInteger("zkClientTimeout", 15000); // nocommit - must come from zk settings, we should parse more here and set this up vs waiting for zkController
+      int zkClientTimeout = Integer.getInteger("zkClientTimeout", 15000); // MRM TODO: - must come from zk settings, we should parse more here and set this up vs waiting for zkController
       if (zkClient != null) {
         throw new IllegalStateException();
       }
@@ -564,10 +571,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     String path = ServletUtils.getPathAfterContext(request);
 
     if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
-      if (log.isDebugEnabled()) log.debug("V2 http call");
+      if (log.isDebugEnabled()) {
+        log.debug("V2 http call");
+      }
       return new V2HttpCall(this, cores, request, response, false);
     } else {
-      if (log.isDebugEnabled()) log.debug("V1 http call");
+      if (log.isDebugEnabled()) {
+        log.debug("V1 http call");
+      }
       return new HttpSolrCall(this, cores, request, response, retry);
     }
   }

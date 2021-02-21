@@ -34,7 +34,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slow
-@LuceneTestCase.AwaitsFix(bugUrl = "nocommit - relying on maxshardspernode enforcement, just delete this test")
+@LuceneTestCase.AwaitsFix(bugUrl = "MRM TODO: - relying on maxshardspernode enforcement, just delete this test")
 public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
   @BeforeClass

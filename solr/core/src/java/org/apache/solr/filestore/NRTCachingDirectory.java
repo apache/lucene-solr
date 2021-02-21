@@ -181,7 +181,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     for(String fileName : fileNames) {
       unCache(fileName);
     }
-    //if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit
+    //if (Boolean.getBoolean("solr.nrtDirSync")) { // MRM TODO:
       in.sync(fileNames);
     //}
   }
@@ -219,7 +219,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     // it for defensive reasons... or in case the app is
     // doing something custom (creating outputs directly w/o
     // using IndexWriter):
-    if (Boolean.getBoolean("solr.nrtDirSync")) { // nocommit - we rollback instead of close on IW, and this behavior is unwanted
+    if (Boolean.getBoolean("solr.nrtDirSync")) { // MRM TODO: - we rollback instead of close on IW, and this behavior is unwanted
       IOUtils.close(() -> {
         if (!closed.getAndSet(true)) {
           for (String fileName : cacheDirectory.listAll()) {

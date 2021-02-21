@@ -104,7 +104,7 @@ public class ClusterStateMutator {
     }
     collectionProps.put(DocCollection.DOC_ROUTER, routerSpec);
 
-    // nocommit - lost this
+    // MRM TODO: - lost this
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
     }

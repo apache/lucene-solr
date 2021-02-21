@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class SolrSlf4jReporterTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

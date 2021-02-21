@@ -55,7 +55,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
-  @Ignore // nocommit ~ debug
+  @Ignore // MRM TODO: ~ debug
   public void testBadSetup() {
     // setup the server...
     String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";

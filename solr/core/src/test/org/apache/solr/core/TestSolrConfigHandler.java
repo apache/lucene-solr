@@ -187,7 +187,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("10", m._getStr("overlay/props/updateHandler/autoCommit/maxTime",null));
   }
 
-  @Ignore // nocommit - debug, may not to poll a short while?
+  @Ignore // MRM TODO: - debug, may not to poll a short while?
   public void testUserProp() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload = "{\n" +
@@ -630,7 +630,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     return m;
   }
 
-  @Ignore //nocommit debug
+  @Ignore //MRM TODO: debug
   public void testReqParams() throws Exception {
     RestTestHarness harness = restTestHarness;
     String payload = " {\n" +

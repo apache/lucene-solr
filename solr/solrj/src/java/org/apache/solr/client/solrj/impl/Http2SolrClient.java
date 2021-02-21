@@ -180,7 +180,7 @@ public class Http2SolrClient extends SolrClient {
     }
     int moar = 512;
     if (builder.maxOutstandingAsyncRequests != null) moar = builder.maxOutstandingAsyncRequests;
-    asyncTracker = new AsyncTracker(moar); // nocommit
+    asyncTracker = new AsyncTracker(moar); // MRM TODO:
     this.headers = builder.headers;
     this.strictEventOrdering = builder.strictEventOrdering;
 
@@ -227,7 +227,7 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory = builder.sslConfig.createClientContextFactory();
       ssl = true;
     }
-    // nocommit - look at config again as well
+    // MRM TODO: - look at config again as well
     int minThreads = Integer.getInteger("solr.minHttp2ClientThreads", PROC_COUNT);
 
     minThreads = Math.min( builder.maxThreadPoolSize, minThreads);

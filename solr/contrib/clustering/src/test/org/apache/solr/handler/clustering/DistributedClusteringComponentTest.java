@@ -24,7 +24,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @SolrTestCase.SuppressSSL
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class DistributedClusteringComponentTest extends
     BaseDistributedSearchTestCase {
 

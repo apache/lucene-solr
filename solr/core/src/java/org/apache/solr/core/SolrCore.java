@@ -1241,7 +1241,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
       StopWatch timeWaitForSearcher = StopWatch.getStopWatch(this + "-startCore-waitForSearcher");
-      // nocommit - wait before publish active
+      // MRM TODO: - wait before publish active?
       if (isReloaded && !getSolrConfig().useColdSearcher) {
         try {
           initSearcherFuture[0].get();
@@ -2888,7 +2888,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 //        if (!returnSearcher) {
 //          if (waitSearcher != null) {
 //            try {
-//              waitSearcher[0].get(); // nocommit if we don't wait we dont know if it fails
+//              waitSearcher[0].get(); // MRM TODO: if we don't wait we dont know if it fails
 //            } catch (Exception e) {
 //              ParWork.propegateInterrupt(e);
 //              throw new SolrException(ErrorCode.SERVER_ERROR, e);

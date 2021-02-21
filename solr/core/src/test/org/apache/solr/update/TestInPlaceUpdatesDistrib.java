@@ -72,7 +72,7 @@ import java.util.concurrent.TimeoutException;
  * Tests the in-place updates (docValues updates) for a one shard, three replica cluster.
  */
 @Slow
-@LuceneTestCase.Nightly // nocommit - finish converting this test, also nightly due to all the delays it injects
+@LuceneTestCase.Nightly // MRM TODO: - finish converting this test, also nightly due to all the delays it injects
 public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final boolean onlyLeaderIndexes = random().nextBoolean();
@@ -93,7 +93,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     // we need consistent segments that aren't re-ordered on merge because we're
     // asserting inplace updates happen by checking the internal [docid]
    // systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-    // nocommit
+    // MRM TODO:
     //randomizeUpdateLogImpl();
 
   }
@@ -143,7 +143,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     resetDelays();
     docValuesUpdateTest();
     resetDelays();
-    // outOfOrderUpdatesIndividualReplicaTest(); nocommit debug, when the other tests were changed to testExecutor this started hitting a 404
+    // outOfOrderUpdatesIndividualReplicaTest(); MRM TODO: debug, when the other tests were changed to testExecutor this started hitting a 404
     resetDelays();
     ensureRtgWorksWithPartialUpdatesTest();
     resetDelays();
@@ -152,7 +152,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     updateExistingThenNonExistentDoc();
     resetDelays();
     // TODO Should we combine all/some of these into a single test, so as to cut down on execution time?
-    // nocommit debug wrong urls used?
+    // MRM TODO: debug wrong urls used?
 //    reorderedDBQIndividualReplicaTest();
 //    resetDelays();
 //    reorderedDeletesTest();

@@ -31,7 +31,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 
-@Ignore // nocommit Nightly and debug
+@Ignore // MRM TODO: Nightly and debug
 @Nightly
 public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 

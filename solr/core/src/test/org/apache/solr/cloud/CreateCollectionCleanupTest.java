@@ -98,7 +98,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     List<String> collections = CollectionAdminRequest.listCollections(cloudClient);
     System.out.println("collections:" + collections);
 
-    // nocommit why does this show up in list even with a long wait first? It has been removed, you can check the logs
+    // MRM TODO: why does this show up in list even with a long wait first? It has been removed, you can check the logs
 
     // Confirm using LIST that the collection does not exist
 //    assertThat("Failed collection is still in the clusterstate: " +  cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionOrNull(collectionName),
@@ -128,7 +128,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
 
     assertThat(state.getKey(), is("failed"));
 
-    // nocommit why does this show up in list even with a long wait first? It has been removed, you can check the logs
+    // MRM TODO: why does this show up in list even with a long wait first? It has been removed, you can check the logs
 
     // Confirm using LIST that the collection does not exist
 //    assertThat("Failed collection is still in the clusterstate: " + cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollectionOrNull(collectionName),

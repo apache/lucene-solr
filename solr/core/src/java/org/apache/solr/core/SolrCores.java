@@ -110,7 +110,7 @@ class SolrCores implements Closeable {
     // list to the pendingCloses list.
 
     // make a copy of the cores then clear the map so the core isn't handed out to a request again
-    // nocommit
+    // MRM TODO: transient needs work
     if (transientSolrCoreCache != null) {
       coreList.addAll(transientSolrCoreCache.prepareForShutdown());
     }

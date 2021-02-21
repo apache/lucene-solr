@@ -39,7 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 
-@Ignore // nocommit
+@Ignore // MRM TODO:
 public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 
   public static final Path TEST_PATH = SolrTestUtil.getFile("solr/configsets").toPath();

@@ -111,7 +111,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CoreStatus coreStatus = getCoreStatus(replica);
     Path dataDir = Paths.get(coreStatus.getDataDirectory());
 
-    // nocommit onlyIfDown disabled
+    // MRM TODO: onlyIfDown disabled
 //    Exception e = expectThrows(Exception.class, () -> {
 //      CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
 //          .setOnlyIfDown(true)
@@ -130,7 +130,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     
     // the core should no longer have a watch collection state since it was removed    // the core should no longer have a watch collection state since it was removed
-// nocommit
+// MRM TODO:
     //    TimeOut timeOut = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
 //    timeOut.waitFor("Waiting for core's watcher to be removed", () -> {
 //        final long postDeleteWatcherCount = countUnloadCoreOnDeletedWatchers

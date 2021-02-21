@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -14,14 +30,19 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.Iterator;
 
 public class SolrTestUtil {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public SolrTestUtil() {
   }
 
@@ -92,8 +113,8 @@ public class SolrTestUtil {
     }
 
     SSLTestConfig result = sslRandomizer.createSSLTestConfig();
-    if (SolrTestCase.log.isInfoEnabled()) {
-      SolrTestCase.log.info("Randomized ssl ({}) and clientAuth ({}) via: {}", result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
+    if (log.isInfoEnabled()) {
+      log.info("Randomized ssl ({}) and clientAuth ({}) via: {}", result.isSSLMode(), result.isClientAuthMode(), sslRandomizer.debug);
     }
     return result;
   }
@@ -146,12 +167,12 @@ public class SolrTestUtil {
 
   public static void wait(Thread thread) {
     if (thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) {
-      SolrTestCase.log.info("Dont wait on ForkJoinPool. or Log4j2-");
+      log.info("Dont wait on ForkJoinPool. or Log4j2-");
       return;
     }
 
     do {
-      SolrTestCase.log.warn("waiting on {} {}", thread.getName(), thread.getState());
+      log.warn("waiting on {} {}", thread.getName(), thread.getState());
       try {
         thread.join(50);
       } catch (InterruptedException e) {

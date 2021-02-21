@@ -913,7 +913,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   /** This test is a best effort at verifying that checkIntegrity doesn't miss any files. It tests that the
    *  combination of opening a reader and calling checkIntegrity on it reads all bytes of all files. */
-  @Ignore // nocommit - something off - all lucene stuff will be reset to no changes, just ignore ftm.
+  @Ignore // MRM TODO: - something off - all lucene stuff will be reset to no changes, just ignore ftm.
   public void testCheckIntegrityReadsAllBytes() throws Exception {
     assumeFalse("SimpleText doesn't store checksums of its files", getCodec() instanceof SimpleTextCodec);
     FileTrackingDirectoryWrapper dir = new FileTrackingDirectoryWrapper(newDirectory());

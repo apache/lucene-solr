@@ -190,10 +190,14 @@ public class ZkStateWriter {
 
             for (Map.Entry<String,Object> entry : message.getProperties().entrySet()) {
               if (OverseerAction.DOWNNODE.equals(OverseerAction.get(entry.getKey()))) {
-                if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
+                if (log.isDebugEnabled()) {
+                  log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
+                }
                 nodeOperation(entry, Replica.State.getShortState(Replica.State.DOWN));
               } else if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(entry.getKey()))) {
-                if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
+                if (log.isDebugEnabled()) {
+                  log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
+                }
                 nodeOperation(entry, Replica.State.getShortState(Replica.State.RECOVERING));
               }
             }
@@ -207,7 +211,9 @@ public class ZkStateWriter {
                 log.info("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
                 String core = entry.getKey();
                 String collectionAndStateString = (String) entry.getValue();
-                if (log.isDebugEnabled()) log.debug("collectionAndState={}", collectionAndStateString);
+                if (log.isDebugEnabled()) {
+                  log.debug("collectionAndState={}", collectionAndStateString);
+                }
                 String[] collectionAndState = collectionAndStateString.split(",");
 
                 if (collectionAndState.length != 2) {
@@ -251,7 +257,9 @@ public class ZkStateWriter {
                   Replica replica = docColl.getReplica(core);
                   if (replica != null) {
                     if (setState.equals("leader")) {
-                      if (log.isDebugEnabled()) log.debug("set leader {}", replica);
+                      if (log.isDebugEnabled()) {
+                        log.debug("set leader {}", replica);
+                      }
                       Slice slice = docColl.getSlice(replica.getSlice());
                       slice.setLeader(replica);
                       replica.setState(Replica.State.ACTIVE);
@@ -357,7 +365,7 @@ public class ZkStateWriter {
       for (Replica replica : replicas) {
         if (!Replica.State.getShortState(replica.getState()).equals(operation) && replica.getNodeName().equals(entry.getValue())) {
           if (log.isDebugEnabled()) log.debug("set {} for replica {}", operation, replica);
-          // nocommit
+          // MRM TODO:
           Slice slice = docColl.getSlice(replica.getSlice());
           slice.setLeader(null);
           replica.setState(Replica.State.shortStateToState(operation));
@@ -413,7 +421,7 @@ public class ZkStateWriter {
 
       if (failedUpdates.size() > 0) {
         Exception lfe = lastFailedException.get();
-        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lfe); // nocommit expand
+        log.warn("Some collection updates failed {} logging last exception", failedUpdates, lfe); // MRM TODO: expand
         failedUpdates.clear();
         lfe = null;
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, lfe);
@@ -539,7 +547,7 @@ public class ZkStateWriter {
     //    } finally {
     //      writeLock.unlock();
     //    }
-    // nocommit - harden against failures and exceptions
+    // MRM TODO: - harden against failures and exceptions
 
     //    if (log.isDebugEnabled()) {
     //      log.debug("writePendingUpdates() - end - New Cluster State is: {}", newClusterState);

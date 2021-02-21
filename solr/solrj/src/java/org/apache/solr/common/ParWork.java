@@ -383,7 +383,7 @@ public class ParWork implements Closeable {
                   try {
                     future.get(
                         Long.getLong("solr.parwork.task_timeout", TimeUnit.MINUTES.toMillis(10)),
-                        TimeUnit.MILLISECONDS); // nocommit
+                        TimeUnit.MILLISECONDS); // MRM TODO:
                     if (!future.isDone() || future.isCancelled()) {
                       log.warn("A task did not finish isDone={} isCanceled={}",
                           future.isDone(), future.isCancelled());
@@ -673,7 +673,7 @@ public class ParWork implements Closeable {
 
     public SolrFutureTask(String label, Callable callable) {
       super(callable);
-      label = label;
+      this.label = label;
       callerThreadAllowed = true;
       callerThreadUsesAvailableLimit = false;
     }

@@ -164,7 +164,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     doTestCompressionMode("best_compression", "BEST_COMPRESSION");
   }
 
-  @Ignore // nocommit - this test can be flakey after the explicit reload below - some race ...?
+  @Ignore // MRM TODO: - this test can be flakey after the explicit reload below - some race ...?
   public void testMixedCompressionMode() throws Exception {
     System.setProperty("tests.COMPRESSION_MODE", "BEST_SPEED");
     h.getCoreContainer().reload(h.coreName);

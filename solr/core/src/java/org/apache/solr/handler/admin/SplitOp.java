@@ -72,7 +72,9 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
     String splitKey = params.get("split.key");
     String[] newCoreNames = params.getParams("targetCore");
     String cname = params.get(CoreAdminParams.CORE, null);
-    log.info("Run split cmd splitkey={} core={} targetCore={}", splitKey, cname, newCoreNames == null ? null : Arrays.asList(newCoreNames), cname);
+    if (log.isInfoEnabled()) {
+      log.info("Run split cmd splitkey={} core={} targetCore={}", splitKey, cname, newCoreNames == null ? null : Arrays.asList(newCoreNames), cname);
+    }
     if (cname == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "core cannot be null " + params);
     }

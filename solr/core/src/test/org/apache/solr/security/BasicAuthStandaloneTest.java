@@ -53,7 +53,7 @@ import static org.apache.solr.cloud.SolrCloudAuthTestCase.NOT_NULL_PREDICATE;
 import static org.apache.solr.security.BasicAuthIntegrationTest.STD_CONF;
 import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecurityStatus;
 
-@Ignore // nocommit - flakey
+@Ignore // MRM TODO: - flakey
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

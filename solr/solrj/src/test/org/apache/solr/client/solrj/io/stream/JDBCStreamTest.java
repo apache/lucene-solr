@@ -49,7 +49,7 @@ import org.junit.*;
 
 @SuppressPointFields(bugUrl="https://issues.apache.org/jira/browse/SOLR-10960")
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class JDBCStreamTest extends SolrCloudTestCase {
 
   private static final String COLLECTIONORALIAS = "jdbc";
@@ -83,7 +83,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     configureCluster(4)
         .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
-    // nocommit - need alias work
+    // MRM TODO: - need alias work
     boolean useAlias = false;
    // boolean useAlias = random().nextBoolean();
     String collection;

@@ -54,7 +54,6 @@ public abstract class CliCommand {
 
     /**
      * Set out printStream (usable for testing)
-     * @param out
      */
     public void setOut(PrintStream out) {
         this.out = out;
@@ -62,7 +61,6 @@ public abstract class CliCommand {
 
     /**
      * Set err printStream (usable for testing)
-     * @param err
      */
     public void setErr(PrintStream err) {
         this.err = err;
@@ -86,7 +84,6 @@ public abstract class CliCommand {
 
     /**
      * get the string used to call this command
-     * @return
      */
     public String getCmdStr() {
         return cmdStr;
@@ -94,7 +91,6 @@ public abstract class CliCommand {
 
     /**
      * get the option string
-     * @return
      */
     public String getOptionStr() {
         return optionStr;
@@ -102,7 +98,6 @@ public abstract class CliCommand {
 
     /**
      * get a usage string, contains the command and the options
-     * @return
      */
     public String getUsageStr() {
         return cmdStr + " " + optionStr;
@@ -110,7 +105,7 @@ public abstract class CliCommand {
 
     /**
      * add this command to a map. Use the command string as key.
-     * @param cmdMap
+     * @param cmdMap to use
      */
     public void addToMap(Map<String,CliCommand> cmdMap) {
         cmdMap.put(cmdStr, this);
@@ -118,16 +113,15 @@ public abstract class CliCommand {
 
     /**
      * parse the command arguments
-     * @param cmdArgs
+     * @param cmdArgs to use
      * @return this CliCommand
-     * @throws CliParseException
+     * @throws CliParseException on exception
      */
     public abstract CliCommand parse(String[] cmdArgs) throws CliParseException;
 
     /**
      *
-     * @return
-     * @throws CliException
+     * @throws CliException on exception
      */
     public abstract boolean exec() throws CliException;
 

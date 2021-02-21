@@ -138,7 +138,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit changed
+  @Ignore // MRM TODO: changed
   public void testRefCount() throws Exception {
     SolrCore core = h.getCore();
     assertTrue("Refcount != 1", core.getOpenCount() == 1);
@@ -176,7 +176,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     
 
   @Test
-  @Ignore // nocommit changed
+  @Ignore // MRM TODO: changed
   public void testRefCountMT() throws Exception {
     SolrCore core = h.getCore();
     assertTrue("Refcount != 1", core.getOpenCount() == 1);

@@ -270,7 +270,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
       assertEquals("post update commit failed?", 0, CLOUD_CLIENT.commit().getStatus());
 
-      // nocommit - see nocommit below
+      // MRM TODO: - see MRM TODO: below
 //      for (int j = 0; j < 100; j++) {
 //        if (expectedDocIds.cardinality() == countDocs(CLOUD_CLIENT)) {
 //          break;
@@ -293,7 +293,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         final boolean actualBit = actualDocIds.get(b);
         log.error("bit #{} mismatch: expected {} BUT actual {}", b, expectedBit, actualBit);
       }
-      // nocommit - fails, investigate
+      // MRM TODO: - fails, investigate
 //      assertEquals(x.cardinality() + " mismatched bits",
 //                   expectedDocIds.cardinality(), actualDocIds.cardinality());
     }

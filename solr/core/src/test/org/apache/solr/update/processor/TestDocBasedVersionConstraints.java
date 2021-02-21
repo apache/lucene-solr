@@ -440,7 +440,7 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
    * Constantly hammer the same doc with multiple concurrent threads and diff versions,
    * confirm that the highest version wins.
    */
-  @Ignore // nocommit - something not air tight about DocBasedVersionConstraintsProcessor?
+  @Ignore // MRM TODO: - something not air tight about DocBasedVersionConstraintsProcessor?
   public void testConcurrentAdds() throws Exception {
     final int NUM_DOCS = SolrTestUtil.atLeast(50);
     final int MAX_CONCURENT = SolrTestUtil.atLeast(10);

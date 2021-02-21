@@ -75,7 +75,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 @Slow
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class TestTlogReplica extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -312,7 +312,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     doReplaceLeader(true);
   }
 
-  // nocommit debug
+  // MRM TODO: debug
   @Ignore
   public void testKillLeader() throws Exception {
     doReplaceLeader(false);
@@ -655,7 +655,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     assertFalse("Doc1 is deleted but it's still exist", successs);
   }
 
-  // nocommit debug
+  // MRM TODO: debug
   @Ignore
   public void testBasicLeaderElection() throws Exception {
     createAndWaitForCollection(1,0,2,0);
@@ -700,7 +700,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     );
   }
 
-  // nocommit debug
+  // MRM TODO: debug
   @Ignore
   public void testOutOfOrderDBQWithInPlaceUpdates() throws Exception {
     createAndWaitForCollection(1,0,2,0);

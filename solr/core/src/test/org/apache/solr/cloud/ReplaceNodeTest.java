@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@LuceneTestCase.AwaitsFix(bugUrl = "nocommit - can leak a Solr a reasonable percent - cmd needs polish/finish anyway")
+@LuceneTestCase.AwaitsFix(bugUrl = "MRM TODO: - can leak a Solr a reasonable percent - cmd needs polish/finish anyway")
 public class ReplaceNodeTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -107,7 +107,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
       assertFalse(rsp.getResponse().toString(), rsp.getRequestStatus() == RequestStatusState.FAILED);
       Thread.sleep(250);
     }
-  // nocommit
+  // MRM TODO:
     //  assertTrue(success);
     Http2SolrClient coreclient = cloudClient.getHttpClient();
 
@@ -180,7 +180,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     //    try {
 //      CollectionAdminRequest.deleteCollection(coll).process(cluster.getSolrClient());
 //    } catch (BaseHttpSolrClient.RemoteSolrException e) {
-//      // nocommit fails with Error from server at null: Cannot unload non-existent core [replacenodetest_coll_shard4_replica_n27]}
+//      // MRM TODO: fails with Error from server at null: Cannot unload non-existent core [replacenodetest_coll_shard4_replica_n27]}
 //    }
   }
 

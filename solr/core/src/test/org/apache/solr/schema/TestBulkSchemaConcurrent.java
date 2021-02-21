@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
 import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
 
-@LuceneTestCase.Nightly // nocommit - this test is still too expensive
+@LuceneTestCase.Nightly // MRM TODO: - this test is still too expensive
 public class TestBulkSchemaConcurrent extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

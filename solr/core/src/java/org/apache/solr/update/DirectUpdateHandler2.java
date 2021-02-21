@@ -598,7 +598,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     boolean error=true;
 
     try {
-      if (log.isDebugEnabled()) log.debug("start {}", cmd);
+      if (log.isDebugEnabled()) {
+        log.debug("start {}", cmd);
+      }
       RefCounted<IndexWriter> iw = solrCoreState.getIndexWriter(core);
       try {
         SolrIndexWriter.setCommitData(iw.get(), cmd.getVersion());
@@ -607,7 +609,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         iw.decref();
       }
 
-      if (log.isDebugEnabled()) log.debug("end_prepareCommit");
+      if (log.isDebugEnabled()) {
+        log.debug("end_prepareCommit");
+      }
 
       error=false;
     }
@@ -826,7 +830,9 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void close() throws IOException {
-    if (log.isDebugEnabled()) log.debug("closing {}", this);
+    if (log.isDebugEnabled()) {
+      log.debug("closing {}", this);
+    }
     try (ParWork closer = new ParWork(this, true, false)) {
       closer.collect(commitTracker);
       closer.collect(softCommitTracker);

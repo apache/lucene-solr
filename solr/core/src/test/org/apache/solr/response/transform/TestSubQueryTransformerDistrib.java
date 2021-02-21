@@ -51,7 +51,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 @org.apache.solr.SolrTestCaseJ4.SuppressSSL()
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   
   private static final String support = "These guys help customers";

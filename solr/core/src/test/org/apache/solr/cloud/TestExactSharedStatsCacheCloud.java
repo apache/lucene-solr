@@ -22,7 +22,7 @@ import org.junit.Ignore;
 /**
  *
  */
-@Ignore // nocommit - use this test to work out parallel commits waiting for flushed updates
+@Ignore // MRM TODO: - use this test to work out parallel commits waiting for flushed updates
 public class TestExactSharedStatsCacheCloud extends TestBaseStatsCacheCloud {
   @Override
   protected boolean assertSameScores() {

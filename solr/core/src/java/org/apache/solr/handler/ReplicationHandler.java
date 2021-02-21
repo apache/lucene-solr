@@ -503,7 +503,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       MDC.put("RestoreCore.core", core.getName());
       MDC.put("RestoreCore.backupLocation", location);
       MDC.put("RestoreCore.backupName", name);
-      // nocommit - whats up with using the virt? we prob need to disable run in own thread at the least
+      // MRM TODO: - whats up with using the virt? we prob need to disable run in own thread at the least
       restoreFuture = ParWork.getRootSharedExecutor().submit(restoreCore);
       currentRestoreName = name;
       rsp.add(STATUS, OK_STATUS);
@@ -731,7 +731,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
       }
 
-       if (log.isDebugEnabled()) log.debug("FileList={}", result);
+      if (log.isDebugEnabled()) {
+        log.debug("FileList={}", result);
+      }
       rsp.add(CMD_GET_FILE_LIST, result);
       
       if (confFileNameAlias.size() < 1 || core.getCoreContainer().isZooKeeperAware()) {
@@ -1385,7 +1387,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         }
       }
     }
-    if (log.isDebugEnabled()) log.debug("Commits will be reserved for {} ms", reserveCommitDuration);
+    if (log.isDebugEnabled()) {
+      log.debug("Commits will be reserved for {} ms", reserveCommitDuration);
+    }
   }
 
   // check master or slave is enabled

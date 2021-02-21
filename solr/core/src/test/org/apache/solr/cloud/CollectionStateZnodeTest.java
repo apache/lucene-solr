@@ -25,7 +25,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-// nocommit - speed this up - waits for zkwriter to see its own state after delete
+// MRM TODO: - speed this up - waits for zkwriter to see its own state after delete
 public class CollectionStateZnodeTest extends SolrCloudTestCase {
 
   @BeforeClass

@@ -74,7 +74,7 @@ import org.slf4j.LoggerFactory;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
-@Ignore // nocommit trying to slim down and cleanup, but a bunch of races remain
+@Ignore // MRM TODO: trying to slim down and cleanup, but a bunch of races remain
 public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -134,7 +134,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       baseUrl = randomJetty.getBaseUrl().toString();
      // verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
       assertNumberOfMetrics(8); // Basic auth metrics available
-      // nocommit - we prob have to wait for these to show up
+      // MRM TODO: - we prob have to wait for these to show up
       //assertAuthMetricsMinimums(1, 0, 1, 0, 0, 0);
       assertPkiAuthMetricsMinimums(0, 0, 0, 0, 0, 0);
       
@@ -151,7 +151,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       }
 
       // avoid bad connection races due to shutdown
-      // nocommit
+      // MRM TODO:
      // cluster.getSolrClient().getHttpClient().getConnectionManager().closeExpiredConnections();
      // cluster.getSolrClient().getHttpClient().getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
       

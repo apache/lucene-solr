@@ -1008,7 +1008,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.deleteByQuery(cmd);
-          return null; // nocommit
+          return null; // MRM TODO:
         }
 
         future = ParWork.getRootSharedExecutor().submit(() -> {
@@ -1485,10 +1485,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     @Override
     public Object call() throws Exception {
-      if (log.isTraceEnabled()) log.trace("Run distrib add collection");
+      if (log.isTraceEnabled()) {
+        log.trace("Run distrib add collection");
+      }
       try {
         doDistribAdd(finalCloneCmd);
-        if (log.isTraceEnabled()) log.trace("after distrib add collection");
+        if (log.isTraceEnabled()) {
+          log.trace("after distrib add collection");
+        }
       } catch (Throwable e) {
         return e;
       }

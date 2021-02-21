@@ -31,7 +31,7 @@ import org.apache.solr.common.util.Utils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.Nightly // nocommit speed up
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class SchemaApiFailureTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "schema-api-failure";

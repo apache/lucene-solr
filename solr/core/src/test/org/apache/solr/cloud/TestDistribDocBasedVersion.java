@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@Ignore // nocommit - finish getRandomJettyLeader
+@Ignore // MRM TODO: - finish getRandomJettyLeader
 public class TestDistribDocBasedVersion extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -97,7 +97,7 @@ public class TestDistribDocBasedVersion extends SolrCloudBridgeTestCase {
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
-      // nocommit flakey?
+      // MRM TODO: flakey?
       // doTestDocVersions();
     doTestHardFail();
     commit(); // work arround SOLR-5628

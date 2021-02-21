@@ -165,7 +165,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("buffers.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("classes.")).count() > 0);
 
-    // nocommit disabled for slowness
+    // MRM TODO: disabled for slowness
    // assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("os.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("gc.")).count() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("memory.")).count() > 0);

@@ -60,7 +60,7 @@ import java.util.TreeSet;
 /**
  * Wrapper around an XML DOM object to provide convenient accessors to it.  Intended for XML config files.
  */
-// MRM nocommit - figure out where to put and what to do with the config files that were in _default/lang
+// MRM MRM TODO: - figure out where to put and what to do with the config files that were in _default/lang
 public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -254,7 +254,6 @@ public class XmlConfigFile { // formerly simply "Config"
       return prefix;
     }
 
-    // nocommit
     public NodeInfo getNode(String expression, boolean errifMissing){
       String path = normalize(expression);
       try {
@@ -412,7 +411,7 @@ public class XmlConfigFile { // formerly simply "Config"
       }
     }
 
-    // nocommit expression not precompiled
+    // MRM TODO: expression not precompiled
     public String getVal (String expression, boolean errIfMissing){
       String xstr = normalize(expression);
       try {

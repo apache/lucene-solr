@@ -149,9 +149,9 @@ public class DelQuotaCommand extends CliCommand {
      * @param path the path to start from and go up and see if their is any
      * unwanted parent in the path.
      * @return true if successful
-     * @throws KeeperException
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws KeeperException on zk exception
+     * @throws IOException on ioexception
+     * @throws InterruptedException on interruption
      */
     private static boolean trimProcQuotas(
         ZooKeeper zk,

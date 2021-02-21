@@ -41,7 +41,7 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Nightly // nocommit debug, got slow
+@LuceneTestCase.Nightly // MRM TODO: debug, got slow
 public class TestManagedSchema extends AbstractBadConfigTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

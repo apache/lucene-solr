@@ -40,7 +40,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-@Ignore // nocommit this mock test needs updating after dropping the separate solrdispatchfilter zkclient
+@Ignore // MRM TODO: this mock test needs updating after dropping the separate solrdispatchfilter zkclient
 public class CoreSorterTest extends SolrTestCaseJ4 {
 
   private static final List<CountsForEachShard> inputCounts = Arrays.asList(

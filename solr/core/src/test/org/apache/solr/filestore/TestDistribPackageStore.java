@@ -303,7 +303,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         .withParams(params)
         .build()
         .process(client);
-    // nocommit - does not come back on error
+    // MRM TODO: - does not come back on error
     // assertEquals(rsp.getResponse(), rsp.getResponse().get(CommonParams.FILE));
   }
 

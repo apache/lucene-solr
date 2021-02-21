@@ -207,7 +207,9 @@ public final class ManagedIndexSchema extends IndexSchema {
           if (stat != null) {
             found = stat.getVersion();
           }
-          if (log.isDebugEnabled()) log.debug("Bad version when trying to persist schema using {} found {} schema {}", ver, found, this);
+          if (log.isDebugEnabled()) {
+            log.debug("Bad version when trying to persist schema using {} found {} schema {}", ver, found, this);
+          }
 
           schemaChangedInZk = true;
         }
@@ -222,7 +224,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     }
     if (schemaChangedInZk) {
       String msg = "Failed to persist managed schema at " + managedSchemaPath + " - version mismatch";
-      if (log.isDebugEnabled()) log.debug(msg);
+      if (log.isDebugEnabled()) {
+        log.debug(msg);
+      }
       throw new SchemaChangedInZkException(ErrorCode.CONFLICT, msg + ", retry.");
     }
 
@@ -246,7 +250,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     // get a list of active replica cores to query for the schema zk version (skipping this core of course)
     List<GetZkSchemaVersionCallable> concurrentTasks = new ArrayList<>();
     for (String coreUrl : getActiveReplicaCoreUrls(zkController, collection, coreName))
-      // nocommit - make a general http2 client that is not also for updates, for now we use recovery client
+      // MRM TODO: - make a general http2 client that is not also for updates, for now we use recovery client
       concurrentTasks.add(new GetZkSchemaVersionCallable(coreUrl, schemaZkVersion, zkController.getCoreContainer().getUpdateShardHandler().getRecoveryOnlyClient(), isClosed));
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
 
@@ -1409,7 +1413,9 @@ public final class ManagedIndexSchema extends IndexSchema {
     this.managedSchemaResourceName = managedSchemaResourceName;
     this.schemaZkVersion = schemaZkVersion;
     this.collection = collection;
-    if (log.isDebugEnabled()) log.debug("Copy to new ManagedIndexSchemaFactory with version {}", schemaZkVersion);
+    if (log.isDebugEnabled()) {
+      log.debug("Copy to new ManagedIndexSchemaFactory with version {}", schemaZkVersion);
+    }
   }
 
   /**

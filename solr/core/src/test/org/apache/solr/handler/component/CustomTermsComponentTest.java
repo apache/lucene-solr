@@ -33,7 +33,7 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit issue with shard white list feature? Maybe needs update to master?
+@Ignore // MRM TODO: issue with shard white list feature? Maybe needs update to master?
 public class CustomTermsComponentTest extends ShardsWhitelistTest {
 
   public static class CustomTermsComponent extends TermsComponent {

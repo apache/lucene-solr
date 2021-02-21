@@ -134,7 +134,7 @@ public class TestHttpShardHandlerFactory extends SolrTestCaseJ4 {
   
   @Test
   public void testLiveNodesToHostUrl() throws Exception {
-  // nocommit - takes a zkreader
+  // MRM TODO: - takes a zkreader
 //    Set<String> liveNodes = new HashSet<>(Arrays.asList(new String[]{
 //        "1.2.3.4:8983_solr",
 //        "1.2.3.4:9000_",

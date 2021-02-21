@@ -291,7 +291,7 @@ public class IndexFetcher {
 
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    // nocommit
+    // MRM TODO:
     solrClient = sc.getCoreContainer().getUpdateShardHandler().getTheSharedHttpClient();
 
     // createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
@@ -691,7 +691,9 @@ public class IndexFetcher {
               try {
                 solrCore.getDirectoryFactory().remove(indexDir);
               } catch (IllegalArgumentException e) {
-                if (log.isDebugEnabled()) log.debug("Error removing directory in IndexFetcher", e);
+                if (log.isDebugEnabled()) {
+                  log.debug("Error removing directory in IndexFetcher", e);
+                }
                 // could already be removed
               }
             }
@@ -1061,9 +1063,11 @@ public class IndexFetcher {
       log.warn("WARNING: clearing disk space ahead of time to avoid running out of space, could cause problems with current SolrCore approxTotalSpaceReqd{}, usableSpace={}", atsr, usableSpace);
       deleteFilesInAdvance(indexDir, indexDirPath, totalSpaceRequired, usableSpace);
     }
-    if (log.isDebugEnabled()) log.debug("Files to download {}", filesToDownload);
+    if (log.isDebugEnabled()) {
+      log.debug("Files to download {}", filesToDownload);
+    }
     try {
-      // nocommit
+      // MRM TODO: test parallel for file download (not enabled)
       try (ParWork parWork = new ParWork(this, true)) {
         synchronized (filesToDownload) {
           for (Map<String,Object> file : filesToDownload) {
@@ -1354,7 +1358,9 @@ public class IndexFetcher {
   private boolean moveAFile(Directory tmpIdxDir, Directory indexDir, String fname) {
     boolean success = false;
     try {
-      if (log.isDebugEnabled()) log.debug("Moving file: {} size={}", fname, tmpIdxDir.fileLength(fname));
+      if (log.isDebugEnabled()) {
+        log.debug("Moving file: {} size={}", fname, tmpIdxDir.fileLength(fname));
+      }
       if (slowFileExists(indexDir, fname)) {
         log.warn("Cannot complete replication attempt because file already exists: {}", fname);
 
@@ -1801,7 +1807,6 @@ public class IndexFetcher {
           file.write(buf, packetSize);
 
           bytesDownloaded += packetSize;
-          // nocommit
           log.info("Fetched and wrote {} bytes of file={} from replica={}", bytesDownloaded, fileName, masterUrl);
           //errorCount is always set to zero after a successful packet
           errorCount = 0;

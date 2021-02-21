@@ -281,7 +281,9 @@ public class ZookeeperStatusHandler extends RequestHandlerBase {
             try (BufferedReader in = new BufferedReader(isr)) {
               out.println(fourLetterWordCommand);
               List<String> response = in.lines().collect(Collectors.toList());
-              if (log.isDebugEnabled()) log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
+              if (log.isDebugEnabled()) {
+                log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
+              }
               return response;
             }
           }

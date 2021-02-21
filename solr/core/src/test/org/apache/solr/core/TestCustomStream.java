@@ -28,7 +28,7 @@ import org.junit.Test;
 /**
  * Created by caomanhdat on 6/3/16.
  */
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class TestCustomStream extends AbstractFullDistribZkTestBase {
 
   @Test

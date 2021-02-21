@@ -86,7 +86,9 @@ public class TestOnReconnectListenerSupport extends SolrCloudBridgeTestCase {
       log.info("listener:" + listener.getClass().getSuperclass().getName());
       if (listener instanceof ZkIndexSchemaReader) {
         ZkIndexSchemaReader reader = (ZkIndexSchemaReader)listener;
-        log.info("leadercoreid:" + leaderCoreId + " against:" + reader.getUniqueCoreId());
+        if (log.isInfoEnabled()) {
+          log.info("leadercoreid={} against={}", leaderCoreId, reader.getUniqueCoreId());
+        }
         if (leaderCoreId.equals(reader.getUniqueCoreId())) {
           expectedListener = reader;
           break;

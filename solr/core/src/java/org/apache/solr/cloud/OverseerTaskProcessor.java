@@ -98,7 +98,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   final private Predicate<String> excludedTasks = new Predicate<>() {
     @Override
     public boolean test(String s) {
-      // nocommit
       if (s.startsWith(OverseerTaskQueue.RESPONSE_PREFIX)) {
         if (log.isDebugEnabled()) log.debug("exclude {} due to prefix {}", s, OverseerTaskQueue.RESPONSE_PREFIX);
         return true;
@@ -186,28 +185,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       log.debug("close() - start");
     }
     isClosed = true;
-
-
     IOUtils.closeQuietly(selector);
-
-
-//    if (closeAndDone) {
-//      // nocommit
-//      //      for (Future future : taskFutures.values()) {
-//      //        future.cancel(false);
-//      //      }
-//      for (Future future : taskFutures.values()) {
-//        try {
-//          future.get(1, TimeUnit.SECONDS);
-//        } catch (InterruptedException e) {
-//          ParWork.propagateInterrupt(e);
-//          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-//        } catch (Exception e) {
-//          log.info("Exception closing Overseer {} {}", e.getClass().getName(), e.getMessage());
-//        }
-//      }
-//    }
-
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk) throws KeeperException, InterruptedException {

@@ -178,7 +178,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
           .build()
           .process(cluster.getSolrClient());
 
-      // nocommit cluster property watcher?
+      // MRM TODO: cluster property watcher?
       for (int i = 0; i < 15; i++) {
         Map m = cluster.getSolrClient().getZkStateReader().getClusterProperty(COLLECTION_DEF, null);
         if (m != null) break;
@@ -243,7 +243,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - testing large numbers
+  @Ignore // MRM TODO: - testing large numbers
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 36, 18)
@@ -266,7 +266,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
 
     assertFalse(zkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
-    // nocommit what happened to success?
+    // MRM TODO: what happened to success?
 //    assertTrue(response.toString(), response.isSuccess());
 //    Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
 //    assertEquals(TEST_NIGHTLY ? 4 : 2, nodesStatus.size());
@@ -315,7 +315,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   public void testCreateAndDeleteShard() throws Exception {
     // Create an implicit collection
     String collectionName = "solrj_implicit";
-    // nocommit 1, 1
+    // MRM TODO: 1, 1
     CollectionAdminResponse response
         = CollectionAdminRequest.createCollectionWithImplicitRouter(collectionName, "conf", "shardA,shardB", 3, 0, 0)
         .setMaxShardsPerNode(3)
@@ -325,7 +325,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
 
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
-   // nocommit
+   // MRM TODO:
     // assertEquals(6, coresStatus.size());
 
     // Add a shard to the implicit collection
@@ -335,7 +335,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertTrue(response.isSuccess());
     
     coresStatus = response.getCollectionCoresStatus();
-    // nocommit TODO
+    // MRM TODO: TODO
     //assertEquals(3, coresStatus.size());
     int replicaTlog = 0;
     int replicaNrt = 0;
@@ -359,7 +359,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void testCreateAndDeleteAlias() throws IOException, SolrServerException {
 
     final String collection = "aliasedCollection";
@@ -407,7 +407,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 //      return true;
 //    });
 
-    // nocommit - just to remove from equation
+    // MRM TODO: - just to remove from equation
     // Test splitting using split.key
 //    response = CollectionAdminRequest.splitShard(collectionName)
 //        .setSplitKey("b!")
@@ -434,7 +434,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
 
-    // nocommit - there has always been a race where this can be missed if its handled too fast
+    // MRM TODO: - there has always been a race where this can be missed if its handled too fast
 //    Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
 //    assertEquals(1, coresStatus.size());
 
@@ -466,7 +466,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collectionName, 1, 3);
-    // nocommit - look at returned status not coming back
+    // MRM TODO: - look at returned status not coming back
 //    Replica newReplica = grabNewReplica(response, getCollectionState(collectionName));
 //    assertEquals(0, response.getStatus());
 //    assertTrue(response.isSuccess());
@@ -532,7 +532,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     checkCollectionProperty(collectionName, propName, "false", 3000);
 
     // Check for removing value
-    // nocommit our kind of ugly handling I think, flakey
+    // MRM TODO: our kind of ugly handling I think, flakey
 //    CollectionAdminRequest.setCollectionProperty(collectionName, propName, null)
 //        .process(cluster.getSolrClient());
 //    checkCollectionProperty(collectionName, propName, null, 3000);
@@ -705,7 +705,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testDeleteAliasedCollection() throws Exception {
     CloudHttp2SolrClient solrClient = cluster.getSolrClient();
     String collectionName1 = "aliasedCollection1";
@@ -789,7 +789,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - have to fix that race
+  @Ignore // MRM TODO: - have to fix that race
   public void testOverseerStatus() throws IOException, SolrServerException {
     CollectionAdminResponse response = new CollectionAdminRequest.OverseerStatus().process(cluster.getSolrClient());
     assertEquals(0, response.getStatus());
@@ -804,7 +804,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit whats status of preferred leader?
+  @Ignore // MRM TODO: whats status of preferred leader?
   public void testAddAndDeleteReplicaProp() throws InterruptedException, IOException, SolrServerException {
 
     final String collection = "replicaProperties";
@@ -830,7 +830,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit whats status of preferred leader?: Error from server at null: CMD did not return a response:balanceshardunique
+  @Ignore // MRM TODO: whats status of preferred leader?: Error from server at null: CMD did not return a response:balanceshardunique
   public void testBalanceShardUnique() throws IOException,
       SolrServerException, KeeperException, InterruptedException {
 

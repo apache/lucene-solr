@@ -962,7 +962,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       response.getResponseHeader().get("errors");
     
     assertNotNull(assertionMsgPrefix + ": Null errors: " + response.toString(), errors);
-// nocommit
+// MRM TODO:
 //    assertEquals(assertionMsgPrefix + ": Num error ids: " + errors.toString(),
 //                 expectedErrs.length, errors.size());
 

@@ -113,8 +113,7 @@ public class DistributedMap {
     for(String childName: childNames) {
       zookeeper.delete(dir + "/" + childName, -1, true);
     }
-//nocommit
-    //zookeeper.delete(paths, true);
+
   }
   
   /**

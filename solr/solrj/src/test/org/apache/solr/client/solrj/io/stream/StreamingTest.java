@@ -103,7 +103,7 @@ public static void configureCluster() throws Exception {
       .configure();
 
   String collection;
-  // nocommit
+  // MRM TODO:
   useAlias = false; //random().nextBoolean();
   if (useAlias) {
     collection = COLLECTIONORALIAS + "_collection";

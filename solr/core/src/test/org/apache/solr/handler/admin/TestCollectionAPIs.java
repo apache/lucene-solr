@@ -104,7 +104,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}", null,
         "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', op:create, property.prop1:prop1val, property.prop2:prop2val}");
 
-    // nocommit
+    // MRM TODO:
 //    compareOutput(apiBag, "/collections", POST,
 //        "{create-alias:{name: aliasName , collections:[c1,c2] }}", null, "{op : createalias, name: aliasName, collections:[c1,c2] }");
 

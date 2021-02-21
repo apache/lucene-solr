@@ -34,7 +34,7 @@ import java.util.Set;
 
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@LuceneTestCase.Nightly // nocommit, speed up and bridge
+@LuceneTestCase.Nightly // MRM TODO:, speed up and bridge
 public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 

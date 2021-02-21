@@ -644,7 +644,7 @@ public class IndexSchema {
         // we don't want ot fail if there happens to be a dynamicField matching ROOT, (ie: "*")
         // because the user may not care about child docs at all.  The run time code
         // related to child docs can catch that if it happens
-        // nocommit
+        // MRM TODO:
         if (fields.containsKey(ROOT_FIELD_NAME) && ! isUsableForChildDocs()) {
           String msg = ROOT_FIELD_NAME + " field must be defined using the exact same fieldType as the " +
             UNIQUE_KEY + " field ("+uniqueKeyFieldName+") uses: " + uniqueKeyFieldType.getTypeName();

@@ -336,7 +336,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
           overseer.writePendingUpdates();
         }
 
-        // nocommit consider
+        // MRM TODO: consider
         if (responce != null && responce.asyncFinalRunner != null) {
           AddReplicaCmd.Response resp = responce.asyncFinalRunner.call();
           if (log.isDebugEnabled()) log.debug("Finalize after Command returned clusterstate={}", resp.clusterState);
@@ -427,7 +427,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
     AddReplicaCmd.Response response = new AddReplicaCmd.Response();
     response.results = results;
-    // nocommit - we don't change this for this cmd, we should be able to indicate that to caller
+    // MRM TODO: - we don't change this for this cmd, we should be able to indicate that to caller
     response.clusterState = null;
     return response;
   }
@@ -906,7 +906,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         if (log.isDebugEnabled()) log.debug("created watch for response {}", requestId);
         boolean success = false;
         for (int i = 0; i < 15; i++) {
-          success = latch.await(3, TimeUnit.SECONDS); // nocommit - still need a central timeout strat
+          success = latch.await(3, TimeUnit.SECONDS); // MRM TODO: - still need a central timeout strat
           if (success) {
             if (log.isDebugEnabled()) log.debug("latch was triggered {}", requestId);
             break;

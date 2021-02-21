@@ -35,7 +35,7 @@ import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Properties;
 
-@Ignore // nocommit - think this overwrites our rules
+@Ignore // MRM TODO: - think this overwrites our rules
 public class TestSolrXml extends SolrTestCaseJ4 {
 
 //  @Rule

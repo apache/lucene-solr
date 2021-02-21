@@ -139,7 +139,7 @@ public class TestStressVersions extends TestRTGBase {
               // Even with versions, we can't remove the sync because increasing versions does not mean increasing vals.
               //
               // NOTE: versioning means we can now remove the sync and tell what update "won"
-              // nocommit sync turned back on or else fail
+              // MRM TODO: sync turned back on or else fail
               synchronized (sync) {
               DocInfo info = model.get(id);
 

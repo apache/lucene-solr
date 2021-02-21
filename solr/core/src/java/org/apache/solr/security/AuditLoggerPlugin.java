@@ -117,7 +117,7 @@ public abstract class AuditLoggerPlugin extends ParWork.ParWorkCallableBase impl
     pluginConfig.remove(PARAM_NUM_THREADS);
     if (async) {
       queue = new BlockingArrayQueue<>(blockingQueueSize);
-      // nocommit take a closer look at executor usage here
+      // MRM TODO: take a closer look at executor usage here
       // executorService = ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("audit"));
       executorService = ParWork.getMyPerThreadExecutor();
       assert runningFuture == null;

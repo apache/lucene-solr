@@ -91,7 +91,9 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   }
   
   URI resolveRelativeURI(String baseURI, String systemId) throws URISyntaxException {
-    if (log.isDebugEnabled()) log.debug("resolve relative uri {} {}, {}, {}", baseURI, systemId);
+    if (log.isDebugEnabled()) {
+      log.debug("resolve relative uri {} {}, {}, {}", baseURI, systemId);
+    }
     URI uri;
     
     // special case for backwards compatibility: if relative systemId starts with "/" (we convert that to an absolute solrres:-URI)
@@ -119,7 +121,9 @@ public final class SystemIdResolver implements EntityResolver, EntityResolver2 {
   
   @Override
   public InputSource resolveEntity(String name, String publicId, String baseURI, String systemId) throws IOException {
-    if (log.isDebugEnabled()) log.debug("resolve entity {} {}, {}, {}", name, publicId, baseURI, systemId);
+    if (log.isDebugEnabled()) {
+      log.debug("resolve entity {} {}, {}, {}", name, publicId, baseURI, systemId);
+    }
     if (systemId == null) {
       return null;
     }

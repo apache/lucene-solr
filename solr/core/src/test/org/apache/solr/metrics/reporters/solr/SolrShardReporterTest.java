@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@Ignore // nocommit fix silly sleeps
+@Ignore // MRM TODO: fix silly sleeps
 public class SolrShardReporterTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

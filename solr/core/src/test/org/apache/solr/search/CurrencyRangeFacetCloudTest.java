@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.Nightly // nocommit - debug this on low end hardware
+@LuceneTestCase.Nightly // MRM TODO: - debug this on low end hardware
 public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

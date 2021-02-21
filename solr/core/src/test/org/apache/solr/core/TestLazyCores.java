@@ -102,7 +102,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit harden
+  @Ignore // MRM TODO: harden
   public void testLazyLoad() throws Exception {
     CoreContainer cc = init();
     try {
@@ -202,7 +202,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testCachingLimit() throws Exception {
     CoreContainer cc = init();
     try {
@@ -276,7 +276,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // Test case for SOLR-4300
 
   @Test
-  @Ignore // nocommit harden
+  @Ignore // MRM TODO: harden
   public void testRace() throws Exception {
     final List<SolrCore> theCores = new ArrayList<>();
     final CoreContainer cc = init();
@@ -326,7 +326,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     }
   }
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testCreateSame() throws Exception {
     final CoreContainer cc = init();
     try {
@@ -389,7 +389,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   
   // Make sure that creating a transient core from the admin handler correctly respects the transient limits etc.
   @Test
-  @Ignore // nocommit harden
+  @Ignore // MRM TODO: harden
   public void testCreateTransientFromAdmin() throws Exception {
     final CoreContainer cc = init();
     try {
@@ -471,7 +471,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // 3> that OK cores can be searched even when some cores failed to load.
   // 4> that having no solr.xml entry for transient chache handler correctly uses the default.
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testBadConfigsGenerateErrors() throws Exception {
     final CoreContainer cc = initGoodAndBad(Arrays.asList("core1", "core2"),
         Arrays.asList("badSchema1", "badSchema2"),
@@ -801,7 +801,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // Note, this needs FS-based indexes to persist!
   // Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testNoCommit() throws Exception {
     CoreContainer cc = init();
     cc.waitForLoadingCoresToFinish(10000);

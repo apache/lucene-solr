@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 @LuceneTestCase.Slow
 @LuceneTestCase.Nightly
 @LogLevel("org.apache.solr.handler.admin=DEBUG")
-@Ignore // nocommit debug, I think it takes a bit of time for metrics to be populated
+@Ignore // MRM TODO: debug, I think it takes a bit of time for metrics to be populated
 public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

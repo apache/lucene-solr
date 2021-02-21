@@ -138,7 +138,9 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
           // Attempt to load the managed schema
           byte[] data = zkClient.getData(managedSchemaPath, null, stat);
           schemaZkVersion = stat.getVersion();
-          if (log.isDebugEnabled()) log.debug("Found schema version on load {}", schemaZkVersion);
+          if (log.isDebugEnabled()) {
+            log.debug("Found schema version on load {}", schemaZkVersion);
+          }
           schemaInputStream = new ByteArrayInputStream(data);
           loadedResource = managedSchemaResourceName;
           warnIfNonManagedSchemaExists();

@@ -89,7 +89,7 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void testBBox() throws Exception {
     String fieldName = random().nextBoolean() ? "bbox" : "bboxD_dynamic";
     assertU(adoc("id", "0"));//nothing

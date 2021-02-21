@@ -246,7 +246,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
                                              "count(//arr[@name='errors']/lst)=0"));
     
     response = update("tolerant-chain-max-errors-10", delQ("invalidfield:1"));
-    // nocommit
+    // MRM TODO:
 //    assertNull(BaseTestHarness.validateXPath
 //               (solrConfig.getResourceLoader(), response,
 //                "//int[@name='status']=0",

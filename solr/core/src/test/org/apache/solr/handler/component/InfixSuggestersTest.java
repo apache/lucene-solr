@@ -100,7 +100,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit don't think the test is right
+  @Ignore // MRM TODO: don't think the test is right
   public void testReloadDuringBuild() throws Exception {
     ExecutorService executor = getTestExecutor();
     // Build the suggester in the background with a long dictionary
@@ -117,7 +117,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit don't think the test is right
+  @Ignore // MRM TODO: don't think the test is right
   public void testShutdownDuringBuild() throws Exception {
     ExecutorService executor = getTestExecutor();
     try {

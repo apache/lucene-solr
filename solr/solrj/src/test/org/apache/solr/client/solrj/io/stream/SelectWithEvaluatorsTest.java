@@ -60,7 +60,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
         .configure();
     
     String collection;
-    // nocommit - need alias work
+    // MRM TODO: - need alias work
     // useAlias = random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";

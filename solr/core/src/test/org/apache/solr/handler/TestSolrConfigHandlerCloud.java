@@ -40,7 +40,7 @@ import org.junit.Test;
 
 import static java.util.Arrays.asList;
 
-@Ignore // nocommit - some race on adding a dump request handler and then the next command finding it
+@Ignore // MRM TODO: - some race on adding a dump request handler and then the next command finding it
 // TODO: switch to bridge test class
 public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 

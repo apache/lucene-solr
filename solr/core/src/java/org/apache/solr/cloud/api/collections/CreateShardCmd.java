@@ -118,7 +118,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       clusterState = resp.clusterState;
     } catch (Assign.AssignmentException e) {
       // clean up the slice that we created
-      // nocommit
+      // MRM TODO:
 //      ZkNodeProps deleteShard = new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName, ASYNC, async);
 //      new DeleteShardCmd(ocmh).call(clusterState, deleteShard, results);
       throw e;
@@ -176,7 +176,7 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
         ParWork.propagateInterrupt(e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
-      //  nocommit - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
+      //  MRM TODO: - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
 
       if (resp.asyncFinalRunner != null) {
         try {

@@ -460,7 +460,9 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
       // indexed are available in SolrCloud and if the split succeeded then all replicas of the sub-shard
       // must be consistent (i.e. have same numdocs)
 
-      log.info("Shard split request state is {}", splitStatus == null ? "unknown" : splitStatus.getKey());
+      if (log.isInfoEnabled()) {
+        log.info("Shard split request state is {}", splitStatus == null ? "unknown" : splitStatus.getKey());
+      }
       stop.set(true);
       monkeyThread.join();
       Set<String> addFails = new HashSet<>();
@@ -599,14 +601,14 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
   @Test
   @ShardsFixed(num = 3)
-  @Ignore // nocommit - need to fix state updates for rules
+  @Ignore // MRM TODO: - need to fix state updates for rules
   public void testSplitShardWithRule() throws Exception {
     doSplitShardWithRule(SolrIndexSplitter.SplitMethod.REWRITE);
   }
 
   @Test
   @LuceneTestCase.Nightly
-  @Ignore // nocommit - need to fix state updates for rules
+  @Ignore // MRM TODO: - need to fix state updates for rules
   public void testSplitShardWithRuleLink() throws Exception {
     doSplitShardWithRule(SolrIndexSplitter.SplitMethod.LINK);
   }
@@ -625,7 +627,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     response = splitShardRequest.process(cloudClient);
     assertEquals(String.valueOf(response.getErrorMessages()), 0, response.getStatus());
 
-    // nocommit
+    // MRM TODO:
     //cluster.waitForActiveCollection(collectionName, 2, 2);
   }
 
@@ -693,7 +695,9 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
     int numReplicas = shard1.getReplicas().size();
 
     clusterState = cloudClient.getZkStateReader().getClusterState();
-    log.debug("-- COLLECTION: {}", clusterState.getCollection(DEFAULT_COLLECTION));
+    if (log.isDebugEnabled()) {
+      log.debug("-- COLLECTION: {}", clusterState.getCollection(DEFAULT_COLLECTION));
+    }
     del("*:*");
     for (int id = 0; id <= 100; id++) {
       String shardKey = "" + (char)('a' + (id % 26)); // See comment in ShardRoutingTest for hash distribution
@@ -705,7 +709,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
       Random random = random();
       int max = LuceneTestCase.atLeast(random, 401);
       int sleep = LuceneTestCase.atLeast(random, 25);
-      log.info("SHARDSPLITTEST: Going to add " + max + " number of docs at 1 doc per " + sleep + "ms");
+      log.info("SHARDSPLITTEST: Going to add {} number of docs at 1 doc per {}ms", max, sleep);
       Set<String> deleted = new HashSet<>();
       for (int id = 101; id < max; id++) {
         try {
@@ -742,7 +746,7 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
           if (e.code() != 500)  {
             throw e;
           }
-          log.error("SPLITSHARD failed. " + (i < 2 ? " Retring split" : ""), e);
+          log.error("SPLITSHARD failed. {}", (i < 2 ? " Retring split" : ""), e);
           if (i == 2) {
             fail("SPLITSHARD was not successful even after three tries");
           }
@@ -861,7 +865,9 @@ public class ShardSplitTest extends SolrCloudBridgeTestCase {
 
     for (int i = 0; i < docCounts.length; i++) {
       int docCount = docCounts[i];
-      log.info("Shard {} docCount = {}", "shard1_" + i, docCount);
+      if (log.isInfoEnabled()) {
+        log.info("Shard {} docCount = {}", "shard1_" + i, docCount);
+      }
     }
     log.info("Route key doc count = {}", splitKeyDocCount);
 

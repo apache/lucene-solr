@@ -243,7 +243,7 @@ public class ConnectionManager implements Watcher, Closeable {
         connected = true;
         if (isClosed()) return;
         if (log.isDebugEnabled()) log.debug("zkClient has connected");
-        // nocommit - maybe use root shared
+        // MRM TODO: - maybe use root shared
         client.zkConnManagerCallbackExecutor.execute(() -> {
           connected();
         });

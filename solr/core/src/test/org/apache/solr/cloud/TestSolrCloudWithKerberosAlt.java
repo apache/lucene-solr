@@ -37,7 +37,7 @@ import java.nio.charset.StandardCharsets;
  * Test 5 nodes Solr cluster with Kerberos plugin enabled.
  */
 @LuceneTestCase.Slow
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class TestSolrCloudWithKerberosAlt extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

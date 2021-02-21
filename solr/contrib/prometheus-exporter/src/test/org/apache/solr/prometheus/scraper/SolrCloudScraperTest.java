@@ -48,7 +48,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - flakey
+@Ignore // MRM TODO: - flakey
 public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
   private MetricsConfiguration configuration;

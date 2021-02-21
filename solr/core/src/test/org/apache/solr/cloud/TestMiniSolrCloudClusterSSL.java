@@ -63,7 +63,7 @@ import java.util.List;
  *
  * @see TestSSLRandomization
  */
-@Ignore // nocommit
+@Ignore // MRM TODO:
 public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   private static final SSLContext DEFAULT_SSL_CONTEXT;

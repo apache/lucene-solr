@@ -288,7 +288,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (collection != null) {
         DocCollection coll = coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionOrNull(collection);
         if (coll != null && !action.equals(DELETE)) {
-          //rsp.add("csver", coll.getZNodeVersion()); // nocommit - find out which version was written by overseer and return it in response for this
+          //rsp.add("csver", coll.getZNodeVersion()); // MRM TODO: - find out which version was written by overseer and return it in response for this
         } else {
           // deleted
         }
@@ -326,13 +326,19 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       rsp.getValues().addAll(overseerResponse.getResponse());
       Exception exp = overseerResponse.getException();
       if (exp != null) {
-        if (log.isDebugEnabled()) log.debug("Exception", exp);
+        if (log.isDebugEnabled()) {
+          log.debug("Exception", exp);
+        }
         rsp.setException(exp);
       }
-      if (log.isDebugEnabled()) log.debug("Overseer is done, response={}", rsp.getValues());
+      if (log.isDebugEnabled()) {
+        log.debug("Overseer is done, response={}", rsp.getValues());
+      }
     } else {
       // submits and doesn't wait for anything (no response)
-      if (log.isDebugEnabled()) log.debug("send request to Overseer queue and don't wait for anything (no response) ... " + props);
+      if (log.isDebugEnabled()) {
+        log.debug("send request to Overseer queue and don't wait for anything (no response) ... " + props);
+      }
       coreContainer.getZkController().getOverseerCollectionQueue()
           .offer(Utils.toJSON(props));
     }
@@ -405,7 +411,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
             + " the collection time out:" + timeout / 1000 + "s " + m);
       } else if (event.getWatchedEvent() != null) {
-        log.info("no timeout, but got this watch event {}", event.getWatchedEvent());
+        if (log.isInfoEnabled()) {
+          log.info("no timeout, but got this watch event {}", event.getWatchedEvent());
+        }
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
             + " the collection error [Watcher fired on path: "
             + event.getWatchedEvent().getPath() + " state: "

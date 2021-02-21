@@ -35,7 +35,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.util.Map;
 
-@Ignore // nocommit
+@Ignore // MRM TODO:
 public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

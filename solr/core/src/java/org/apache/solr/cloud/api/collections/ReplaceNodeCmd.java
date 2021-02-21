@@ -181,7 +181,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
         for (ZkNodeProps createdReplica : createdReplicas) {
           @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
           try {
-            // nocommit - return results from deleteReplica cmd, update clusterstate
+            // MRM TODO: - return results from deleteReplica cmd, update clusterstate
             AddReplicaCmd.Response dr = ocmh.deleteReplica(finalClusterState, createdReplica.plus("parallel", "true"), deleteResult);
 
           } catch (KeeperException e) {

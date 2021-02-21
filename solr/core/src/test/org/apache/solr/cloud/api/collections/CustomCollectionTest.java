@@ -40,7 +40,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 /**
  * Tests the Custom Sharding API.
  */
-@LuceneTestCase.Nightly // nocommit look into this test sometimes being very slow to finish
+@LuceneTestCase.Nightly // MRM TODO: look into this test sometimes being very slow to finish
 public class CustomCollectionTest extends SolrCloudTestCase {
 
   private static final int NODE_COUNT = 4;
@@ -90,7 +90,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
     assertEquals(0, cluster.getSolrClient().query(collection, new SolrQuery("*:*").setParam(_ROUTE_, "b")).getResults().getNumFound());
     assertEquals(3, cluster.getSolrClient().query(collection, new SolrQuery("*:*").setParam(_ROUTE_, "a")).getResults().getNumFound());
 
-    // nocommit: I think this combo can still stall and have issues
+    // MRM TODO:: I think this combo can still stall and have issues
     cluster.getSolrClient().deleteByQuery(collection, "*:*");
     cluster.getSolrClient().commit(collection, true, true);
     assertEquals(0, cluster.getSolrClient().query(collection, new SolrQuery("*:*")).getResults().getNumFound());

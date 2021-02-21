@@ -2388,8 +2388,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static Http2SolrClient getHttpSolrClient(String url, Http2SolrClient httpClient, ResponseParser responseParser, boolean compression) {
     return new Http2SolrClient.Builder(url)
         .withHttpClient(httpClient)
-       // .withResponseParser(responseParser) // nocommit
-       // .allowCompression(compression) // nocommit
+       // .withResponseParser(responseParser) // MRM TODO:
+       // .allowCompression(compression) // MRM TODO:
         .build();
   }
   
@@ -2401,7 +2401,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static Http2SolrClient getHttpSolrClient(String url, Http2SolrClient httpClient, ResponseParser responseParser) {
     return new Http2SolrClient.Builder(url)
         .withHttpClient(httpClient)
-     //   .withResponseParser(responseParser) // nocommit
+     //   .withResponseParser(responseParser) // MRM TODO:
         .build();
   }
   

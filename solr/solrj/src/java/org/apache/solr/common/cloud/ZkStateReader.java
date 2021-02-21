@@ -234,7 +234,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
   private final Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
 
-  private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(15000, TimeUnit.MILLISECONDS); // nocommit
+  private static final long LAZY_CACHE_TIME = TimeUnit.NANOSECONDS.convert(15000, TimeUnit.MILLISECONDS); // MRM TODO:
 
   private volatile Future<?> collectionPropsCacheCleaner; // only kept to identify if the cleaner has already been started.
   private volatile String node = null;
@@ -335,7 +335,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
 
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) {
-    // nocommit check this out
+    // MRM TODO: check this out
     assert (closeTracker = new CloseTracker()) != null;
     this.zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
             // on reconnect, reload cloud info
@@ -1039,7 +1039,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
       String name = leaderProps.getNodeProps().getStr(ZkStateReader.CORE_NAME_PROP);
       leaderProps.getNodeProps().getProperties().remove(ZkStateReader.CORE_NAME_PROP);
-      // nocommit - right key for leader name?
+      // MRM TODO: - right key for leader name?
       return new Replica(name, leaderProps.getNodeProps().getProperties(), collection, slice, this);
 
     } catch (KeeperException.NoNodeException e) {
@@ -2574,7 +2574,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     public boolean update() throws KeeperException, InterruptedException {
       log.debug("Checking ZK for most up to date Aliases {}", ALIASES);
       // Call sync() first to ensure the subsequent read (getData) is up to date.
-      // nocommit
+      // MRM TODO:
       zkClient.getSolrZooKeeper().sync(ALIASES, null, null);
       Stat stat = new Stat();
       final byte[] data = zkClient.getData(ALIASES, null, stat, true);

@@ -126,7 +126,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       collectionName = extCollectionName;
     }
 
-    // nocommit
+    // MRM TODO:
     boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
     boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
@@ -138,7 +138,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both 'node' and 'createNodeSet' parameters cannot be specified together.");
     }
 
-    // nocommit
+    // MRM TODO:
     int timeout = message.getInt(TIMEOUT, 15); // 10 minutes
 
     Replica.Type replicaType = Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE, Replica.Type.NRT.name()).toUpperCase(Locale.ROOT));
@@ -236,7 +236,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     try {
       log.info("waiting for created replicas shard={} {}", shard, coreNames);
-      zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // nocommit timeout
+      zkStateReader.waitForState(collectionName, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> { // MRM TODO: timeout
         if (collectionState == null) {
           return false;
         }
@@ -271,7 +271,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       boolean skipCreateReplicaInClusterState,
       ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
 
-    // nocommit
+    // MRM TODO:
 //    if (collection.getStr(WITH_COLLECTION) != null) {
 //      String withCollectionName = collection.getStr(WITH_COLLECTION);
 //      DocCollection withCollection = clusterState.getCollection(withCollectionName);

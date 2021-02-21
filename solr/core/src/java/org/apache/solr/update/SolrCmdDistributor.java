@@ -207,7 +207,9 @@ public class SolrCmdDistributor implements Closeable {
       ModifiableSolrParams params) {
     // we need to do any retries before commit...
     //blockAndDoRetries();
-    if (log.isDebugEnabled()) log.debug("Distrib commit to: {} params: {}", nodes, params);
+    if (log.isDebugEnabled()) {
+      log.debug("Distrib commit to: {} params: {}", nodes, params);
+    }
 
     for (Node node : nodes) {
       UpdateRequest uReq = new UpdateRequest();
@@ -275,14 +277,16 @@ public class SolrCmdDistributor implements Closeable {
       client.asyncRequest(req.uReq, null, new AsyncListener<>() {
         @Override
         public void onSuccess(NamedList result) {
-          if (log.isTraceEnabled()) log.trace("Success for distrib update {}", result);
+          if (log.isTraceEnabled()) {
+            log.trace("Success for distrib update {}", result);
+          }
         }
 
         @Override
         public void onFailure(Throwable t, int code) {
           log.error("Exception sending dist update {} {}", code, t);
 
-          // nocommit - we want to prevent any more from this request
+          // MRM TODO: - we want to prevent any more from this request
           // to go just to this node rather than stop the whole request
           if (code == 404) {
             cancelExeption = t;

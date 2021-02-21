@@ -114,7 +114,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
         newVersion > initialVersion);
     Assert.assertThat( "Doc value must be updated", solrDocument.get("inplace_updatable_int"), is(newDocValue));
 
-    // nocommit - this can randomly fail, investigate
+    // MRM TODO: - this can randomly fail, investigate
     // Assert.assertThat("Lucene doc id should not be changed for In-Place Updates.", solrDocument.get("[docid]"), is(luceneDocId));
 
     sdoc.remove("shardName");
@@ -122,7 +122,7 @@ public class TestInPlaceUpdateWithRouteField extends SolrCloudTestCase {
 
     sdoc.addField("shardName",  SolrTestCaseJ4.map("set", "newShardName"));
 
-    // nocommit - the following does not fail with exception
+    // MRM TODO: - the following does not fail with exception
     // checkWrongCommandFailure(sdoc);
   }
 

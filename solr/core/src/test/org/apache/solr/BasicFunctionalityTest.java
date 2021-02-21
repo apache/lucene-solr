@@ -376,7 +376,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     for (String field : FIELDS) {
       SolrException e1 = SolrTestCaseUtil.expectThrows(SolrException.class, "Didn't encounter an error trying to add a bad date: " + field, () -> h.update(add(doc("id", "100", field, BAD_VALUE))));
       String msg1 = e1.getMessage();
-      // nocommit
+      // MRM TODO:
 //      assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
 //          400 <= e1.code() && e1.code() < 500);
       assertTrue("(update) client error does not mention bad value: " + msg1,
@@ -427,7 +427,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     for (String field : FIELDS) {
       SolrException e1 = SolrTestCaseUtil.expectThrows(SolrException.class, "Didn't encounter an error trying to add a non-number: " + field, () -> h.update(add(doc("id", "100", field, BAD_VALUE))));
       String msg1 = e1.toString();
-      // nocommit
+      // MRM TODO:
 //      assertTrue("not an (update) client error on field: " + field +" : "+ msg1,
 //          400 <= e1.code() && e1.code() < 500);
       assertTrue("(update) client error does not mention bad value: " + msg1,

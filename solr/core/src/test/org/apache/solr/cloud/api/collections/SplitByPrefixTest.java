@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *  This class tests higher level SPLITSHARD functionality when splitByPrefix is specified.
  *  See SplitHandlerTest for random tests of lower-level split selection logic.
  */
-@Ignore // nocommit
+@Ignore // MRM TODO:
 public class SplitByPrefixTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -153,7 +153,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
   public void doTest() throws IOException, SolrServerException {
     // SPLITSHARD is recommended to be run in async mode, so we default to that.
     // Also, autoscale triggers use async with splits as well.
-    boolean doAsync = true; // nocommit random().nextBoolean();
+    boolean doAsync = true; // MRM TODO: random().nextBoolean();
 
     CollectionAdminRequest
         .createCollection(COLLECTION_NAME, "conf", 1, 1)
@@ -173,7 +173,6 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
       splitShard.setAsyncId("SPLIT1");
     }
     splitShard.process(client);
-    //cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2); // nocommit
 
     List<Prefix> prefixes = findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = removeDups(prefixes);
@@ -208,7 +207,7 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     Slice slice1 = slices1.iterator().next();
     Slice slice2 = slices2.iterator().next();
 
-    // nocommit - work this out
+    // MRM TODO: - work this out
 //    assertTrue(slices1.size() == 1 && slices2.size() == 1);
 //    assertTrue(slice1 != slice2);
 //

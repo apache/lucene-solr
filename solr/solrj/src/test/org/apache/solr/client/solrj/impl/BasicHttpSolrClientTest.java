@@ -202,7 +202,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   }
   
   @Test
-  @Ignore // nocommit changed for http2
+  @Ignore // MRM TODO: changed for http2
   public void testCompression() throws Exception {
     final SolrQuery q = new SolrQuery("*:*");
     
@@ -261,7 +261,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   }
 
   @Test
-  @Ignore // nocommit flakey
+  @Ignore // MRM TODO: flakey
   public void testGetRawStream() throws SolrServerException, IOException{
     CloseableHttpClient client = HttpClientUtil.createClient(null);
     try {
@@ -296,7 +296,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
    * Ensure cookies are actually set and that request is actually changed
    */
   @Test
-  @Ignore // nocommit changed for http2
+  @Ignore // MRM TODO: changed for http2
   public void testInterceptors() {
     DebugServlet.clear();
     HttpClientUtil.addRequestInterceptor(changeRequestInterceptor);

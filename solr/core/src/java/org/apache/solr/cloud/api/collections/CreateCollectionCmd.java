@@ -142,7 +142,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
   public AddReplicaCmd.Response call(ClusterState clusterState, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
     log.info("CreateCollectionCmd {}", message);
     if (ocmh.zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
-      ocmh.zkStateReader.aliasesManager.update(); // nocommit - hate this
+      ocmh.zkStateReader.aliasesManager.update(); // MRM TODO: - check into this
     }
     final String async = message.getStr(ASYNC);
     Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
@@ -314,7 +314,6 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ShardRequest sreq = e.getValue();
         if (log.isDebugEnabled()) log.debug("Submit request to shard for for replica coreName={} total requests={} shards={}", e.getKey(), coresToCreate.size(),
             sreq.actualShards != null ? Arrays.asList(sreq.actualShards) : "null");
-        // nocommit - work out parallel / async 100%
         shardHandler.submit(sreq, sreq.shards[0], sreq.params);
       }
 
@@ -356,7 +355,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           ParWork.propagateInterrupt(e);
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
-        //  nocommit - put this in finalizer and finalizer after all calls to allow parallel and forward momentum
+        //  MRM TODO: - put this in finalizer and finalizer after all calls to allow parallel and forward momentum ... MRM later on, huh?
 
         AddReplicaCmd.Response response = new AddReplicaCmd.Response();
 
@@ -366,7 +365,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           //        // Let's cleanup as we hit an exception
           //        // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
           //        // element, which may be interpreted by the user as a positive ack
-          //        // nocommit review
+          //        // MRM TODO: review
           try {
             AddReplicaCmd.Response rsp = ocmh.cleanupCollection(collectionName, new NamedList<Object>());
 

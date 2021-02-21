@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  */
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl="SSL overhead seems to cause OutOfMemory when stress testing")
-@Ignore // nocommit - looking at how this has been working with parallel dist updates
+@Ignore // MRM TODO: - looking at how this has been working with parallel dist updates
 public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -360,7 +360,7 @@ public class TestStressCloudBlindAtomicUpdates extends SolrCloudTestCase {
       }
       
     }
-    // nocommit - now that we do parallel updates, some of these assumptions are off - look into this
+    // MRM TODO: - now that we do parallel updates, some of these assumptions are off - look into this
     // assertEquals("Some docs had errors -- check logs", 0, incorrectDocs);
   }
 

@@ -159,7 +159,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testRestoreFailure() throws Exception {
     setTestSuffix("testfailure");
     replFactor = TestUtil.nextInt(random(), 1, 2);

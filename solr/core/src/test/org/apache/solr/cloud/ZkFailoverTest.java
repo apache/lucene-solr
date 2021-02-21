@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class ZkFailoverTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

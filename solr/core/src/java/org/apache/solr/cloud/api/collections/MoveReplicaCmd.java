@@ -156,7 +156,7 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     AddReplicaCmd.Response resp = null;
     if (isSharedFS && inPlaceMove) {
       log.debug("-- moveHdfsReplica");
-      // nocommit TODO
+      // MRM TODO: TODO
       moveHdfsReplica(clusterState, results, dataDir.toString(), targetNode, async, coll, replica, slice, timeout, waitForFinalState);
     } else {
       log.debug("-- moveNormalReplica (inPlaceMove={}, isSharedFS={}", inPlaceMove, isSharedFS);

@@ -17,7 +17,7 @@
 package org.apache.solr.update;
 
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
-//@Ignore // nocommit: debug - and now SolrCmdDistributor has changed
+//@Ignore // MRM TODO:: debug - and now SolrCmdDistributor has changed
 //public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 //
 //  private static enum NodeType {FORWARD, STANDARD};
@@ -307,7 +307,7 @@ package org.apache.solr.update;
 //    testReqShouldRetryBadRequest();
 //    testReqShouldRetryNotFound();
 //    testReqShouldRetryDBQ();
-//    // nocommit testDeletes(false, true);
+//    // MRM TODO: testDeletes(false, true);
 //    testDeletes(false, false);
 //    testDeletes(true, true);
 //    testDeletes(true, false);

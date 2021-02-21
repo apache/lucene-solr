@@ -30,7 +30,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.Nightly // nocommit - the overseer priority test is disabled because that feature is disabled
+@LuceneTestCase.Nightly // MRM TODO: - the overseer priority test is disabled because that feature is disabled
 public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

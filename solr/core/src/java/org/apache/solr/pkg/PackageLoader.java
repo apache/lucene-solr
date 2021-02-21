@@ -70,7 +70,9 @@ public class PackageLoader implements Closeable {
   }
 
   public void refreshPackageConf() {
-    if (log.isDebugEnabled()) log.debug("{} updated to version {}", ZkStateReader.SOLR_PKGS_PATH, packageAPI.pkgs.znodeVersion);
+    if (log.isDebugEnabled()) {
+      log.debug("{} updated to version {}", ZkStateReader.SOLR_PKGS_PATH, packageAPI.pkgs.znodeVersion);
+    }
 
     List<Package> updated = new ArrayList<>();
     Map<String, List<PackageAPI.PkgVersion>> modified = getModified(myCopy, packageAPI.pkgs);

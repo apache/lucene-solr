@@ -60,7 +60,7 @@ public class JsonValidatorTest extends SolrTestCaseJ4  {
     assertNotNull(toJSONString(errs), errs);
     assertTrue(toJSONString(errs), errs.get(0).contains("expected"));
     errs = validator.validateJson(Utils.fromJSONString("{x:y, collections: [ c1 , c2]}"));
-    // nocommit - it's giving ["Unknown field 'x' in object : {\n  \"x\":\"y\",\n  \"collections\":[\n    \"c1\",\n    \"c2\"]}"]
+    // MRM TODO: - it's giving ["Unknown field 'x' in object : {\n  \"x\":\"y\",\n  \"collections\":[\n    \"c1\",\n    \"c2\"]}"]
    // assertTrue(toJSONString(errs), StrUtils.join(errs, '|').contains("Missing required attribute"));
     errs = validator.validateJson(Utils.fromJSONString("{name : x, collections: [ 1 , 2]}"));
     assertFalse(toJSONString(errs), errs.isEmpty());

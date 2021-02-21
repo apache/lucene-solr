@@ -119,7 +119,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
         try {
 
-          // nocommit - return results from deleteReplica cmd
+          // MRM TODO: - return results from deleteReplica cmd
           AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, shardHandler, shardRequestTracker, deleteResult);
           if (resp.asyncFinalRunner != null) {
             finalizers.add(resp.asyncFinalRunner);

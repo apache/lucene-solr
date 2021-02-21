@@ -852,7 +852,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // wait for replay
       RecoveryInfo report;
       try {
-        report = future.get(10, TimeUnit.MINUTES); // nocommit - how long? make configurable too
+        report = future.get(10, TimeUnit.MINUTES); // MRM TODO: - how long? make configurable too
       } catch (InterruptedException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Replay failed");
       } catch (TimeoutException e) {
@@ -916,7 +916,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
     int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "10000"));
-    // nocommit
+
     try (Http2SolrClient client = new Http2SolrClient.Builder(leaderBaseUrl).withHttpClient(cc.getUpdateShardHandler().
         getRecoveryOnlyClient()).idleTimeout(readTimeout).markInternalRequest().build()) {
 

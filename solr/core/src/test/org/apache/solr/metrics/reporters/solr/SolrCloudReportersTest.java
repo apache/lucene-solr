@@ -41,7 +41,7 @@ import com.codahale.metrics.Metric;
 /**
  *
  */
-@Ignore // nocommit fix silly sleeps
+@Ignore // MRM TODO: fix silly sleeps
 public class SolrCloudReportersTest extends SolrCloudTestCase {
   volatile int leaderRegistries;
   volatile int clusterRegistries;

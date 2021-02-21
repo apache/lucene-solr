@@ -47,7 +47,7 @@ import static org.apache.solr.security.hadoop.ImpersonationUtil.getExpectedGroup
 import static org.apache.solr.security.hadoop.ImpersonationUtil.getExpectedHostExMsg;
 import static org.apache.solr.security.hadoop.ImpersonationUtil.getProxyRequest;
 
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   protected static final int NUM_SERVERS = 2;
   private static final boolean defaultAddRequestHeadersToContext =

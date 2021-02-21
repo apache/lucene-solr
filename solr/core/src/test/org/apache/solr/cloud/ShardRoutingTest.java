@@ -103,7 +103,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void doHashingTest() throws Exception {
     log.info("### STARTING doHashingTest");
     assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
@@ -246,7 +246,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
       client.add(SolrTestCaseJ4.sdoc("id", "b!doc1"));
       nEnd = getNumRequests();
 
-      // nocommit - can be 9?
+      // MRM TODO: - can be 9?
       // assertEquals(3, nEnd - nStart);   // orig request + replica forwards to leader, which forward back to replica.
 
       JettySolrRunner leader2 = cluster.getShardLeaderJetty(DEFAULT_COLLECTION, bucket2);
@@ -289,7 +289,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   }
 
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void doAtomicUpdate() throws Exception {
     log.info("### STARTING doAtomicUpdate");
     int nClients = clients.size();

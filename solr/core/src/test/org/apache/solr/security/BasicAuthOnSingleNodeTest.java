@@ -57,7 +57,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void basicTest() throws Exception {
     try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
         .build()){
@@ -72,7 +72,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testDeleteSecurityJsonZnode() throws Exception {
     try (Http2SolrClient client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
         .build()){

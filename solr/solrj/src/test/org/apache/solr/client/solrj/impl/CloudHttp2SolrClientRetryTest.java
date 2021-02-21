@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit ~ still a bit flakey when run in the suite, usually passes in the IDE though
+@Ignore // MRM TODO: ~ still a bit flakey when run in the suite, usually passes in the IDE though
 public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 
@@ -75,7 +75,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
               UpdateRequest req = new UpdateRequest();
               req.add(new SolrInputDocument("id", "2"));
               req.setCommitWithin(-1);
-              req.setParam("maxErrors", "0"); // nocommit: did the default change for single doc adds?
+              req.setParam("maxErrors", "0"); // MRM TODO:: did the default change for single doc adds?
               req.process(solrClient, collectionName);
             });
       } finally {

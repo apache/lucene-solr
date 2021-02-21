@@ -43,7 +43,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit - does not appear to be fully working, perhaps due to cluster property change ..
+@Ignore // MRM TODO: - does not appear to be fully working, perhaps due to cluster property change ..
 public class TestDistributedTracing extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

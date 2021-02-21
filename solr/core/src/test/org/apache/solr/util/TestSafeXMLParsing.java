@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 
-@Ignore // nocommit fix good XML object reuse change to work with this test
+@Ignore // MRM TODO: fix good XML object reuse change to work with this test
 public class TestSafeXMLParsing extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   

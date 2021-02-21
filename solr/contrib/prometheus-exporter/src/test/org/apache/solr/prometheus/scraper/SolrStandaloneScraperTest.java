@@ -100,7 +100,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void pingCores() throws Exception {
     Map<String, MetricSamples> allCoreMetrics = solrScraper.pingAllCores(
         configuration.getPingConfiguration().get(0));
@@ -126,7 +126,7 @@ public class SolrStandaloneScraperTest extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit debug - probably just that metrics are not instant
+  @Ignore // MRM TODO: debug - probably just that metrics are not instant
   public void metricsForHost() throws Exception {
     Map<String, MetricSamples> metricsByHost = solrScraper.metricsForAllHosts(configuration.getMetricsConfiguration().get(0));
 

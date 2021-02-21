@@ -182,7 +182,7 @@ public class TestStressReorder extends TestRTGBase {
               lastId = id;
             }
             Object sync = syncArr[id];
-            // nocommit do we need this like in TestRealTimeGet to make sure our model matches?
+            // MRM TODO: do we need this like in TestRealTimeGet to make sure our model matches?
             // maybe try a test httpclient with strict ordering?
             synchronized (sync) {
               DocInfo info = model.get(id);

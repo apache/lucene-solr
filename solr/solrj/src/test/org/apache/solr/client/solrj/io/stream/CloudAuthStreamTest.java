@@ -56,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud cluster
  * using both Authenticationand Role based Authorization
  */
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class CloudAuthStreamTest extends SolrCloudTestCase {
     
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

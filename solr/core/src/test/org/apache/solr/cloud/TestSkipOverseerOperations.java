@@ -36,7 +36,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit need to fix stats
+@Ignore // MRM TODO: need to fix stats
 public class TestSkipOverseerOperations extends SolrCloudTestCase {
 
   @Before

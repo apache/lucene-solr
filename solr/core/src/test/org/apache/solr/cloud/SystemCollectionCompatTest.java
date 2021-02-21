@@ -63,7 +63,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-@Ignore // nocommit not working since starting to straighten out some more overseer action
+@Ignore // MRM TODO: not working since starting to straighten out some more overseer action
 public class SystemCollectionCompatTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

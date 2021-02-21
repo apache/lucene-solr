@@ -272,7 +272,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   }
   
   @Test
-  @Ignore // nocommit - causes an updatelog leak
+  @Ignore // MRM TODO: - causes an updatelog leak
   public void testReloadCoreAfterFailure() throws Exception {
     cores.shutdown();
     useFactory(null); // use FS factory

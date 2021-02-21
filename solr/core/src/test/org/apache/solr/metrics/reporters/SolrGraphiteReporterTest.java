@@ -43,7 +43,7 @@ import org.junit.Test;
 /**
  *
  */
-@Ignore // nocommit debug - the reporter shows up for the core but not the node
+@Ignore // MRM TODO: debug - the reporter shows up for the core but not the node
 public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
 
   @Test
@@ -68,7 +68,7 @@ public class SolrGraphiteReporterTest extends SolrTestCaseJ4 {
                                              
       h.coreName = DEFAULT_TEST_CORENAME;
       SolrMetricManager metricManager = cc.getMetricManager();
-      // nocommit - where is the node stuff that should be here? Do we have to wait for it to show up?
+      // MRM TODO: - where is the node stuff that should be here? Do we have to wait for it to show up?
       Map<String, SolrMetricReporter> reporters = metricManager.getReporters("solr.core.collection1");
       assertEquals(1 + jmxReporter, reporters.size());
       SolrMetricReporter reporter = reporters.values().iterator().next();

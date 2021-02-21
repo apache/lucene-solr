@@ -106,7 +106,7 @@ import static org.junit.matchers.JUnitMatchers.containsString;
 // Currently unknown why SSL does not work with this test
 // commented 20-July-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 // commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
-@LuceneTestCase.Nightly // nocommit - nightly for a moment
+@LuceneTestCase.Nightly // MRM TODO: - nightly for a moment
 public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -508,7 +508,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void doTestIndexAndConfigReplication() throws Exception {
 
     TestInjection.delayBeforeSlaveCommitRefresh = random().nextInt(10);
@@ -1013,14 +1013,16 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         // :TODO: assert that one of the paths is a subpath of hte other
       }
       if (dirFactory instanceof StandardDirectoryFactory) {
-        log.info(Arrays.asList(new File(ddir).list()).toString());
+        if (log.isInfoEnabled()) {
+          log.info(Arrays.asList(new File(ddir).list()).toString());
+        }
         // we also allow one extra index dir - it may not be removed until the core is closed
         int cnt = indexDirCount(ddir);
         // if after reload, there may be 2 index dirs while the reloaded SolrCore closes.
         if (afterReload) {
           assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()).toString(), 1 == cnt || 2 == cnt);
         } else {
-          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()).toString(), 1 == cnt);
+          assertTrue("found:" + cnt + Arrays.asList(new File(ddir).list()).toString(), cnt == 1);
         }
 
       }
@@ -1044,7 +1046,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void doTestRepeater() throws Exception {
     // no polling
     slave.setTestPort(masterJetty.getLocalPort());

@@ -194,7 +194,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
       assertTrue("REPLICATION.peerSync.errors present", metrics.containsKey("REPLICATION.peerSync.errors"));
 
       Counter counter = (Counter)metrics.get("REPLICATION.peerSync.errors");
-      // nocommit
+      // MRM TODO:
       //assertEquals(0L, counter.getCount());
       success = true;
     } finally {

@@ -110,7 +110,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertTrue(schema.getFieldType(fieldName).getTypeName().equals("pdoubles") || schema.getFieldType(fieldName).getTypeName().equals("pfloats"));
     assertU(commit());
-    // nocommit - currently double or float
+    // MRM TODO: - currently double or float
    // assertQ(req("id:2"), "//arr[@name='" + fieldName + "']/float[.='" + floatValue.toString() + "']");
   }
 
@@ -210,7 +210,7 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     core.close();
     assertNotNull(schema.getFieldOrNull(fieldName1));
     assertNotNull(schema.getFieldOrNull(fieldName2));
-    // nocommit - can be either order, not consistent
+    // MRM TODO: - can be either order, not consistent
 //    assertEquals("pdoubles", schema.getFieldType(fieldName1).getTypeName());
 //    assertEquals("plongs", schema.getFieldType(fieldName2).getTypeName());
     assertU(commit());

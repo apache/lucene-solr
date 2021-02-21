@@ -247,7 +247,7 @@ public class ReplicaMutator {
       return clusterState;
     }
 
-   // nocommit
+   // MRM TODO:
 //    if (coreNodeName == null) {
 //      coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(collection,
 //          message.getStr(ZkStateReader.NODE_NAME_PROP), message.getStr(ZkStateReader.CORE_NAME_PROP));

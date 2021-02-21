@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit - failing on nested things .. hmmm?
+@Ignore // MRM TODO: - failing on nested things .. hmmm?
 public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -56,7 +56,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
   public void test() throws Exception {
     // this test is not correct - we currently should pass when an update succeeds locally and we don't forward to a leader
     // sendWrongRouteParam();
-    // nocommit - fails with NPE in test
+    // MRM TODO: - fails with NPE in test
     doNestedInplaceUpdateTest();
     doRootShardRoutingTest();
   }
@@ -171,7 +171,7 @@ public class NestedShardedAtomicUpdateTest extends SolrCloudBridgeTestCase {
       assertEquals(1, grandChildren.size());
       SolrDocument grandChild = grandChildren.get(0);
 
-      // nocommit this is failing
+      // MRM TODO: this is failing
       //assertEquals(grandChild.toString(), fieldValue, grandChild.getFirstValue("inplace_updatable_int"));
 
       assertEquals("3", grandChild.getFieldValue("id"));

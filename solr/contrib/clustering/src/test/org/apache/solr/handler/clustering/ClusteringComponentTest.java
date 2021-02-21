@@ -44,7 +44,7 @@ import org.junit.Test;
  *
  *
  **/
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class ClusteringComponentTest extends AbstractClusteringTestCase {
 
   @Before

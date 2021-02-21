@@ -761,7 +761,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   public ExpectedException exception = ExpectedException.none();
 
   @Test
-  @Ignore // nocommit ~ getting "org.apache.zookeeper.KeeperException$NoNodeException: KeeperErrorCode = NoNode for /aliases.json"
+  @Ignore // MRM TODO: ~ getting "org.apache.zookeeper.KeeperException$NoNodeException: KeeperErrorCode = NoNode for /aliases.json"
   public void testWrongZkChrootTest() throws IOException {
 
     exception.expect(SolrException.class);
@@ -865,7 +865,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void testRetryUpdatesWhenClusterStateIsStale() throws Exception {
     final String COL = "stale_state_test_col";
     assert cluster.getJettySolrRunners().size() >= 2;

@@ -38,7 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-// nocommit - i have a workaround for this threadleak
+// MRM TODO: - i have a workaround for this threadleak
 @Ignore
 @LuceneTestCase.Nightly
 public class HdfsRecoverLeaseTest extends SolrTestCaseJ4 {

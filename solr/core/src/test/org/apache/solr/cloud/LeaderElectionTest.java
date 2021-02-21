@@ -186,7 +186,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       assertNotNull(es);
       TestLeaderElectionContext context = new TestLeaderElectionContext(es.elector, shard, "collection1", nodeName, replica, es.zkController, runLeaderDelay, null);
       es.elector.setup(context);
-      // nocommit - we have to get the seq another way, now returns if become leader first try
+      // MRM TODO: - we have to get the seq another way, now returns if become leader first try
       //seq = es.elector.joinElection(context, false);
       electionDone = true;
       seqToThread.put(seq, this);
@@ -221,7 +221,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       return seq;
     }
   }
-// nocommit
+// MRM TODO:
 //  @Test
 //  public void testBasic() throws Exception {
 //    LeaderElector elector = new LeaderElector(zkClient);
@@ -236,7 +236,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 //        getLeaderUrl("collection1", "shard2"));
 //  }
 
-  // nocommit
+  // MRM TODO:
 //  @Test
 //  public void testCancelElection() throws Exception {
 //    LeaderElector first = new LeaderElector(zkClient);
@@ -275,7 +275,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
             ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(
             ZkNodeProps.load(data));
-        // nocommit
+        // MRM TODO:
         Replica replica = new Replica("", leaderProps.getNodeProps().getProperties(), collection, slice, zkStateReader);
 
         return replica.getCoreUrl();

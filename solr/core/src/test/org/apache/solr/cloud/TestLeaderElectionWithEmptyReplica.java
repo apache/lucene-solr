@@ -40,7 +40,7 @@ import java.lang.invoke.MethodHandles;
 /**
  * See SOLR-9504
  */
-@Ignore // nocommit debug, we don't get a leader till the addReplica fails - is it hanging onto a higher leader ephem election node?
+@Ignore // MRM TODO: debug, we don't get a leader till the addReplica fails - is it hanging onto a higher leader ephem election node?
 public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -106,7 +106,9 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
       Http2SolrClient client = new Http2SolrClient.Builder(replica.getCoreUrl())
           .withHttpClient(cloudClient.getHttpClient()).build();
       QueryResponse response = client.query(new SolrQuery("q", "*:*", "distrib", "false"));
-      log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
+      if (log.isInfoEnabled()) {
+        log.info("Found numFound={} on replica: {}", response.getResults().getNumFound(), replica.getCoreUrl());
+      }
       if (numFound == Long.MIN_VALUE)  {
         numFound = response.getResults().getNumFound();
       } else  {

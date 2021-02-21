@@ -1029,7 +1029,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                   if (ruleExpiryLock.tryLock() || ruleExpiryLock.tryLock(10, TimeUnit.MILLISECONDS)) {
                     log.info("Going to expire routing rule");
                     try {
-                      // nocommit TODO: needs to use the statepublisher
+                      // MRM TODO: TODO: needs to use the statepublisher
                       Map<String, Object> map = Utils.makeMap(Overseer.QUEUE_OPERATION, OverseerAction.REMOVEROUTINGRULE.toLower(),
                           ZkStateReader.COLLECTION_PROP, collection,
                           ZkStateReader.SHARD_ID_PROP, myShardId,

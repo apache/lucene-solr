@@ -31,7 +31,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Test Heatmap Facets (both impls) */
-@LuceneTestCase.Nightly // nocommit - debug why this can be so slow - close to 30 seconds in a parallel run
+@LuceneTestCase.Nightly // MRM TODO: - debug why this can be so slow - close to 30 seconds in a parallel run
 public class SpatialHeatmapFacetsTest extends BaseDistributedSearchTestCase {
   private static final String FIELD = "srpt_quad";
 

@@ -54,7 +54,7 @@ import static org.apache.solr.handler.TestReplicationHandler.invokeReplicationCo
 
 @LogLevel("org.apache.solr.handler.IndexFetcher=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
-@LuceneTestCase.Nightly // nocommit speed up
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

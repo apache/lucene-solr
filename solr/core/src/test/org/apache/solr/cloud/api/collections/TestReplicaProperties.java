@@ -38,7 +38,7 @@
 //import org.junit.Test;
 //
 //@Slow
-//@Ignore // nocommit debug
+//@Ignore // MRM TODO: debug
 //public class TestReplicaProperties extends ReplicaPropertiesBase {
 //
 //  public static final String COLLECTION_NAME = "testcollection";

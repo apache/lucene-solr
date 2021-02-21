@@ -132,7 +132,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       log.info("Deleting replica type={} for collection={} shard={} on node={}", type, coll, shard, node);
       @SuppressWarnings({"rawtypes"}) NamedList deleteResult = new NamedList();
       try {
-        // nocommit - return results from deleteReplica cmd
+        // MRM TODO: - return results from deleteReplica cmd
         AddReplicaCmd.Response resp = ((DeleteReplicaCmd) ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica, shardHandler, shardRequestTracker, deleteResult);
         clusterState = resp.clusterState;
         responses.add(resp);

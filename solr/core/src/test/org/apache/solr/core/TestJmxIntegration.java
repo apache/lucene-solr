@@ -218,7 +218,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testJmxOnCoreReload() throws Exception {
     // make sure searcher beans are registered
     assertQ(req("q", "*:*"), "//result[@numFound='0']");

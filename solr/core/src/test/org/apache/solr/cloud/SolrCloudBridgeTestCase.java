@@ -783,7 +783,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 
       // send reload command for the collection
-      log.info("Sending RELOAD command for "+testCollectionName);
+      log.info("Sending RELOAD command for {}", testCollectionName);
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.RELOAD.toString());
       params.set("name", testCollectionName);

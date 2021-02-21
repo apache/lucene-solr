@@ -57,7 +57,7 @@ public class SolrQoSFilter extends QoSFilter {
   }
 
   @Override
-  // nocommit - this is all just test/prototype - we should extract an actual strategy for adjusting on load
+  // MRM TODO: - this is all just test/prototype - we should extract an actual strategy for adjusting on load
   // allow the user to select and configure one
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
     HttpServletRequest req = (HttpServletRequest) request;
@@ -68,14 +68,18 @@ public class SolrQoSFilter extends QoSFilter {
     //log.info("SolrQoSFilter {} {} {}", sysStats.getSystemLoad(), sysStats.getTotalUsage(), externalRequest);
 
     if (externalRequest) {
-      if (log.isDebugEnabled()) log.debug("external request"); //nocommit: remove when testing is done
+      if (log.isDebugEnabled()) {
+        log.debug("external request"); //MRM TODO:: remove when testing is done
+      }
       checkLoad();
 
       //chain.doFilter(req, response);
       super.doFilter(req, response, chain);
 
     } else {
-      if (log.isDebugEnabled()) log.debug("internal request, allow");
+      if (log.isDebugEnabled()) {
+        log.debug("internal request, allow");
+      }
       chain.doFilter(req, response);
     }
   }
@@ -83,7 +87,9 @@ public class SolrQoSFilter extends QoSFilter {
   private void checkLoad() {
     double ourLoad = sysStats.getTotalUsage();
     int currentMaxRequests = getMaxRequests();
-    if (log.isDebugEnabled()) log.debug("Our individual load is {}", ourLoad);
+    if (log.isDebugEnabled()) {
+      log.debug("Our individual load is {}", ourLoad);
+    }
     double sLoad = sysStats.getSystemLoad();
 
 
@@ -103,7 +109,7 @@ public class SolrQoSFilter extends QoSFilter {
         }
       }
     }
-      // nocommit - deal with no supported, use this as a fail safe with high and low watermark?
+      // MRM TODO: - deal with no supported, use this as a fail safe with high and low watermark?
   }
 
   private boolean lowStateLoad(double sLoad, int currentMaxRequests) {

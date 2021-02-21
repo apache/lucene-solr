@@ -181,7 +181,7 @@ public class DeleteReplicaCmd implements Cmd {
           }
 
           try {
-            waitForCoreNodeGone(collectionName, shard, replicaName, 5000); // nocommit timeout
+            waitForCoreNodeGone(collectionName, shard, replicaName, 5000); // MRM TODO: timeout
           } catch (Exception e) {
             log.error("", e);
           }
@@ -239,7 +239,7 @@ public class DeleteReplicaCmd implements Cmd {
       // callDeleteReplica on all replicas
       for (String replica : replicas) {
         if (log.isDebugEnabled()) log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
-        // nocommit - DONT DO THIS ONE AT TIME
+        // MRM TODO: - DONT DO THIS ONE AT TIME
 
         AddReplicaCmd.Response resp = deleteCore(clusterState, shardSlice, collectionName, replica, message, shard, results, shardRequestTracker, shardHandler);
         clusterState = resp.clusterState;

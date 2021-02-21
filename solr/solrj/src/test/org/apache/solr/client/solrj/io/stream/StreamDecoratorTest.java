@@ -98,7 +98,7 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
 
     String collection;
 
-    // nocommit - need alias work
+    // MRM TODO: - need alias work
     useAlias = false;
 
     // useAlias = random().nextBoolean();

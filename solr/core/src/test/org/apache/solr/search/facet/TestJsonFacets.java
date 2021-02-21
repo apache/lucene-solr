@@ -51,7 +51,7 @@ import org.junit.Test;
 //   TestJsonRangeFacets for range facet tests
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
-@LuceneTestCase.Nightly // nocommit - figure out why this test can sometimes take 20 seconds - it's facet executor use?
+@LuceneTestCase.Nightly // MRM TODO: - figure out why this test can sometimes take 20 seconds - it's facet executor use?
 public class TestJsonFacets extends SolrTestCaseHS {
   
   private static SolrInstances servers;  // for distributed testing

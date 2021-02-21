@@ -57,7 +57,7 @@ public class ResponseHeaderTest extends SolrJettyTestBase {
   }
   
   @Test
-  @Ignore // nocommit use Http2SolrClient#GET
+  @Ignore // MRM TODO: use Http2SolrClient#GET
   public void testHttpResponse() throws SolrServerException, IOException {
     Http2SolrClient client = (Http2SolrClient) getSolrClient(jetty);
 

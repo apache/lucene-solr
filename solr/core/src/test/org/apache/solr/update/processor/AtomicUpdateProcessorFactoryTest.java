@@ -277,7 +277,7 @@ public class AtomicUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
         req("q", "cat:(" + queryString.toString() + ")")
         , "//result[@numFound=1]");
 
-    // nocommit - debug something off here, finds no docs, wrong finalCount computation?
+    // MRM TODO: - debug something off here, finds no docs, wrong finalCount computation?
 //    assertQ("Check the total number of docs",
 //        req("q", "int_i:" + finalCount)
 //        , "//result[@numFound=1]");

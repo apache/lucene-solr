@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit
+@Ignore // MRM TODO:
 public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
   private static AtomicInteger idCounter = new AtomicInteger();

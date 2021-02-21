@@ -458,10 +458,14 @@ public class HttpSolrCall {
    * Extract handler from the URL path if not set.
    */
   protected void extractHandlerFromURLPath(SolrRequestParsers parser) throws Exception {
-    if (log.isTraceEnabled()) log.trace("Extract handler from url path {} {}", handler, path);
+    if (log.isTraceEnabled()) {
+      log.trace("Extract handler from url path {} {}", handler, path);
+    }
     if (handler == null && path.length() > 1) { // don't match "" or "/" as valid path
       handler = core.getRequestHandler(path);
-      if (log.isTraceEnabled()) log.trace("handler={} name={}", handler, path);
+      if (log.isTraceEnabled()) {
+        log.trace("handler={} name={}", handler, path);
+      }
       // no handler yet but <requestDispatcher> allows us to handle /select with a 'qt' param
       if (handler == null && parser.isHandleSelect()) {
         if ("/select".equals(path) || "/select/".equals(path)) {
@@ -688,7 +692,9 @@ public class HttpSolrCall {
   void destroy() {
     try {
       if (solrReq != null) {
-        if (log.isTraceEnabled()) log.trace("Closing out SolrRequest: {}", solrReq);
+        if (log.isTraceEnabled()) {
+          log.trace("Closing out SolrRequest: {}", solrReq);
+        }
         IOUtils.closeQuietly(solrReq);
       }
     } finally {
@@ -708,7 +714,7 @@ public class HttpSolrCall {
     if (req != null) {
 
       log.info("proxy to:" + coreUrl + "?" + req.getQueryString());
-      // nocommit - dont proxy around too much
+      // MRM TODO: - dont proxy around too much
       String fhost = req.getHeader(HttpHeader.X_FORWARDED_FOR.toString());
       if (fhost != null) {
         // Already proxied
@@ -778,7 +784,7 @@ public class HttpSolrCall {
       listener.getInputStream().transferTo(response.getOutputStream());
 
 //      try {
-//        listener.await(60, TimeUnit.SECONDS); // nocommit timeout
+//        listener.await(60, TimeUnit.SECONDS); // MRM TODO: timeout
 //      } catch (InterruptedException e) {
 //        log.error("Interrupted waiting for proxy request");
 //      } catch (TimeoutException e) {
@@ -802,7 +808,7 @@ public class HttpSolrCall {
   }
 
   protected void addProxyHeaders(HttpServletRequest clientRequest, Request proxyRequest) {
-    proxyRequest.header(HttpHeader.VIA, "HTTP/2.0 Solr Proxy"); //nocommit protocol hard code
+    proxyRequest.header(HttpHeader.VIA, "HTTP/2.0 Solr Proxy"); //MRM TODO: protocol hard code
     proxyRequest.header(HttpHeader.X_FORWARDED_FOR, clientRequest.getRemoteAddr());
     // we have some tricky to see in tests header size limitations
     // proxyRequest.header(HttpHeader.X_FORWARDED_PROTO, clientRequest.getScheme());
@@ -1047,7 +1053,9 @@ public class HttpSolrCall {
       for (String pair : pairs) {
         String[] pcs = StringUtils.split(pair, ':');
         if (pcs.length == 2 && !pcs[0].isEmpty() && !pcs[1].isEmpty()) {
-          if (log.isDebugEnabled()) log.debug("compare version states {} {}", pcs[0], Integer.parseInt(pcs[1]));
+          if (log.isDebugEnabled()) {
+            log.debug("compare version states {} {}", pcs[0], Integer.parseInt(pcs[1]));
+          }
 
           if (result == null) result = new HashMap<>();
           result.put(pcs[0], Integer.parseInt(pcs[1]));
@@ -1055,12 +1063,16 @@ public class HttpSolrCall {
         }
       }
     }
-    if (log.isTraceEnabled()) log.trace("compare version states result {} {}", stateVer, result);
+    if (log.isTraceEnabled()) {
+      log.trace("compare version states result {} {}", stateVer, result);
+    }
     return result;
   }
 
   protected SolrCore getCoreByCollection(String collectionName, boolean isPreferLeader) throws TimeoutException, InterruptedException {
-    if (log.isDebugEnabled()) log.debug("get core by collection {} {}", collectionName, isPreferLeader);
+    if (log.isDebugEnabled()) {
+      log.debug("get core by collection {} {}", collectionName, isPreferLeader);
+    }
     ensureStatesAreAtLeastAtClient();
 
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
@@ -1121,7 +1133,9 @@ public class HttpSolrCall {
 
     String coreUrl = getCoreUrl(slices);
 
-    if (log.isDebugEnabled()) log.debug("get remote core url returning {} for {} {}", coreUrl, collectionName, origCorename);
+    if (log.isDebugEnabled()) {
+      log.debug("get remote core url returning {} for {} {}", coreUrl, collectionName, origCorename);
+    }
     return coreUrl;
   }
 

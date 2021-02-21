@@ -55,7 +55,7 @@ import org.slf4j.LoggerFactory;
 
 // TODO: This test would be a lot faster if it used a solrhome with fewer config
 // files - there are a lot of them to upload
-@Ignore // nocommit come back to this
+@Ignore // MRM TODO: come back to this
 public class ZkCLITest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

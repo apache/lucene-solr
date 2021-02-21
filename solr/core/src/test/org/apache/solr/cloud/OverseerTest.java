@@ -1396,7 +1396,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
   }
 
-//  @Test nocommit
+//  @Test MRM TODO:
 //  public void testLatchWatcher() throws InterruptedException {
 //    OverseerTaskQueue.LatchWatcher latch1 = new OverseerTaskQueue.LatchWatcher();
 //    long before = System.nanoTime();

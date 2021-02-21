@@ -156,7 +156,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit - look at, prob some race, parallel commit
+  @Ignore // MRM TODO: - look at, prob some race, parallel commit
   public void testReadOnlyCollection() throws Exception {
     int NUM_DOCS = 10;
     final String collectionName = "readOnlyTest";

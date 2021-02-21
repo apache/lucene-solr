@@ -102,7 +102,7 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       };
       indexThread.start();
 
-      // nocommit
+      // MRM TODO:
       // kill the leader
       CloudJettyRunner leaderJetty = null;// shardToLeaderJetty.get("shard1");
       leaderJetty.jetty.stop();

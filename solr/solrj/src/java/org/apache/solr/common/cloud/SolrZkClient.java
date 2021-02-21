@@ -718,7 +718,7 @@ public class SolrZkClient implements Closeable {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
 
-    // nocommit, still haackey, do fails right
+    // MRM TODO:, still haackey, do fails right
     if (code[0] != 0) {
       KeeperException e = KeeperException.create(KeeperException.Code.get(code[0]), path[0]);
       throw e;
@@ -804,12 +804,12 @@ public class SolrZkClient implements Closeable {
       keeper.delete(path, -1, (rc, path1, ctx) -> {
         try {
           // MRM TODO:
-          if (log.isDebugEnabled()) log.debug("async delete resp rc={}, path1={}, ctx={}", rc, path1, ctx);
+          if (log.isDebugEnabled()) {
+            log.debug("async delete resp rc={}, path1={}, ctx={}", rc, path1, ctx);
+          }
           if (rc != 0) {
             log.error("got zk error deleting paths {}", rc);
             KeeperException e = KeeperException.create(KeeperException.Code.get(rc), path1);
-
-
             if (e instanceof NoNodeException) {
               if (log.isDebugEnabled()) log.debug("Problem removing zk node {}", path1);
             } else {
@@ -825,14 +825,16 @@ public class SolrZkClient implements Closeable {
 
     }
 
-    if (log.isDebugEnabled()) log.debug("done with all paths, see if wait ... wait={}", wait);
+    if (log.isDebugEnabled()) {
+      log.debug("done with all paths, see if wait ... wait={}", wait);
+    }
     if (wait) {
       TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       boolean success = false;
       while (!timeout.hasTimedOut() && !isClosed) {
         if (!connManager.getKeeper().getState().isConnected()) {
           try {
-            connManager.waitForConnected(60000);
+            connManager.waitForConnected(30000);
           } catch (TimeoutException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           } catch (InterruptedException e) {
@@ -845,7 +847,7 @@ public class SolrZkClient implements Closeable {
           throw ke[0];
         }
         try {
-          success = latch.await(3, TimeUnit.SECONDS);
+          success = latch.await(2, TimeUnit.SECONDS);
           if (log.isDebugEnabled()) log.debug("done waiting on latch, success={}", success);
           if (success) {
             break;
@@ -856,18 +858,14 @@ public class SolrZkClient implements Closeable {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
         }
       }
-
-      if (!success) {
-        SolrException e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for operations to complete");
-        log.error("failed, throw an exception, success={}", success, e);
-        throw e;
-      }
     }
 
     if (ke[0] != null) {
       throw ke[0];
     }
-    if (log.isDebugEnabled()) log.debug("done with delete {} {}", paths, wait);
+    if (log.isDebugEnabled()) {
+      log.debug("done with delete {} {}", paths, wait);
+    }
   }
 
   // Calls setData for a list of existing paths in parallel
@@ -907,7 +905,7 @@ public class SolrZkClient implements Closeable {
 
   public String mkdir(String path, byte[] data, CreateMode createMode) throws KeeperException, InterruptedException {
     if (log.isDebugEnabled()) log.debug("mkdir path={}", path);
-    boolean retryOnConnLoss = true; // nocommit
+    boolean retryOnConnLoss = true; // MRM TODO:
     if (retryOnConnLoss) {
       ZkCmdExecutor.retryOperation(zkCmdExecutor, new CreateZkOperation(path, data, createMode));
     } else {

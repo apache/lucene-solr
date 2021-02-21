@@ -60,7 +60,7 @@ import org.slf4j.LoggerFactory;
  * Super basic testing, no shard restarting or anything.
  */
 @Slow
-@LuceneTestCase.Nightly // nocommit flakey + using testConcurrentIndexing as custom test
+@LuceneTestCase.Nightly // MRM TODO: flakey + using testConcurrentIndexing as custom test
 public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final AtomicInteger NAME_COUNTER = new AtomicInteger(1);

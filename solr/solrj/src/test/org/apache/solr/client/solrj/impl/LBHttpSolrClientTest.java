@@ -27,7 +27,7 @@ import java.io.IOException;
 /**
  * Test the LBHttpSolrClient.
  */
-// nocommit - checking parser stuff http2solrclient does not have
+// MRM TODO: - checking parser stuff http2solrclient does not have
 public class LBHttpSolrClientTest {
   
   /**

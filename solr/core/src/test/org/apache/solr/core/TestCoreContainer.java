@@ -626,7 +626,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     SAXParseException saxEx = (SAXParseException) ex;
     assertTrue("init failure doesn't mention problem: " + saxEx.toString(), saxEx.getSystemId().contains("solrconfig.xml"));
 
-    // nocommit
+    // MRM TODO:
     // ----
     // fix col_bad's config (again) and RELOAD to fix failure
 //    FileUtils.copyFile(getFile("solr/collection1/conf/solrconfig-defaults.xml"),

@@ -667,7 +667,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit ~ hangs, possibly related to creating collections with processAsync
+  @Ignore // MRM TODO: ~ hangs, possibly related to creating collections with processAsync
   public void checkCollectionParameters() throws Exception {
 
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
@@ -796,7 +796,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public ExpectedException exception = ExpectedException.none();
 
   @Test
-  @Ignore // nocommit ~ getting a NoNodeException instead of the exepcted SolrException
+  @Ignore // MRM TODO: ~ getting a NoNodeException instead of the exepcted SolrException
   public void testWrongZkChrootTest() throws IOException {
     try (CloudSolrClient client = SolrTestCaseJ4.getCloudSolrClient(cluster.getZkServer().getZkAddress() + "/xyz/foo")) {
       client.setZkClientTimeout(1000 * 60);
@@ -1075,7 +1075,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // flakey test? nocommit
+  @Ignore // flakey test? MRM TODO:
   public void testPing() throws Exception {
     final String testCollection = "ping_test";
     CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1).process(cluster.getSolrClient());

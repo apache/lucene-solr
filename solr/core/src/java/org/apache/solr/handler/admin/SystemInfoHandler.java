@@ -104,7 +104,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     }
     
     RTimer timer = new RTimer();
-    // nocommit - this is bad for tests, blocks a lot
+    // MRM TODO: - this is bad for tests, blocks a lot
 //    try {
 //      InetAddress addr = InetAddress.getLocalHost();
 //      hostname = addr.getCanonicalHostName();

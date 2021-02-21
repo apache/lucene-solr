@@ -81,7 +81,7 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
             UpdateRequest req = new UpdateRequest();
             req.add(new SolrInputDocument("id", "2"));
             req.setCommitWithin(-1);
-            req.setParam("maxErrors", "0"); // nocommit: did the default change for single doc adds?
+            req.setParam("maxErrors", "0"); // MRM TODO:: did the default change for single doc adds?
             req.process(solrClient, collectionName);
           });
     } finally {

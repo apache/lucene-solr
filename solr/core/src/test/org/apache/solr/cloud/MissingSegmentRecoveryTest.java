@@ -45,7 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Slow
-@Ignore // nocommit - this feature needs a little work
+@Ignore // MRM TODO: - this feature needs a little work
 public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -84,7 +84,9 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
     DocCollection state = getCollectionState(collection);
     leader = state.getLeader("s1");
     replica = getRandomReplica(state.getSlice("s1"), (r) -> leader != r);
-    log.info("leader={} replicaToCorrupt={}", leader.getName(), replica.getName());
+    if (log.isInfoEnabled()) {
+      log.info("leader={} replicaToCorrupt={}", leader.getName(), replica.getName());
+    }
   }
   
   @After

@@ -315,7 +315,9 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
 
   private void collectMetrics() {
-    if (log.isDebugEnabled()) log.debug("-- collectMetrics");
+    if (log.isDebugEnabled()) {
+      log.debug("-- collectMetrics");
+    }
     // Make sure we are a solr server thread, so we can use PKI auth, SOLR-12860
     // This is a workaround since we could not instrument the ScheduledThreadPoolExecutor in ExecutorUtils
     ExecutorUtil.setServerThreadFlag(true);

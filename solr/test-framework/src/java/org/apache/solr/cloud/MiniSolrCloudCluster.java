@@ -378,7 +378,9 @@ public class MiniSolrCloudCluster {
       log.info("Cannot wait for Jetty with null node name");
       throw new IllegalArgumentException("Cannot wait for Jetty with null node name");
     }
-    log.info("waitForNode: {}", jetty.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("waitForNode: {}", jetty.getNodeName());
+    }
 
     ZkStateReader reader = getSolrClient().getZkStateReader();
 
@@ -779,7 +781,7 @@ public class MiniSolrCloudCluster {
   }
 
   public  void injectChaos(Random random) throws Exception {
-    if (LuceneTestCase.TEST_NIGHTLY && false) { // nocommit
+    if (LuceneTestCase.TEST_NIGHTLY && false) { // MRM TODO:
       synchronized (this) {
         // sometimes we restart one of the jetty nodes
         if (random.nextBoolean()) {
@@ -874,14 +876,19 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {
-    log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    if (log.isInfoEnabled()) {
+      log.info("waitForJettyToStop: {}", runner.getLocalPort());
+    }
     String nodeName = runner.getNodeName();
     if (nodeName == null) {
-      log.info("Cannot wait for Jetty with null node name");
+      if (log.isInfoEnabled()) {
+        log.info("Cannot wait for Jetty with null node name");}
       return;
     }
 
-    log.info("waitForNode: {}", runner.getNodeName());
+    if (log.isInfoEnabled()) {
+      log.info("waitForNode: {}", runner.getNodeName());
+    }
 
 
     ZkStateReader reader = getSolrClient().getZkStateReader();

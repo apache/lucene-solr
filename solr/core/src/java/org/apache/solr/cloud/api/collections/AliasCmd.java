@@ -95,7 +95,7 @@ abstract class AliasCmd implements OverseerCollectionMessageHandler.Cmd {
     CollectionProperties collectionProperties = new CollectionProperties(ocmh.zkStateReader);
     collectionProperties.setCollectionProperty(createCollName,ROUTED_ALIAS_NAME_CORE_PROP,aliasName);
 
-    // nocommit make efficient
+    // MRM TODO: make efficient
     while (!ocmh.zkStateReader.getCollectionProperties(createCollName,1000).containsKey(ROUTED_ALIAS_NAME_CORE_PROP)) {
       Thread.sleep(50);
     }

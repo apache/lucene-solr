@@ -79,8 +79,10 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
           isLive = coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName());
           if (isLive) {
             if (replica.getState() == waitForState) {
-              if (log.isDebugEnabled()) log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState,
-                  coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
+              if (log.isDebugEnabled()) {
+                log.debug("replica={} state={} waitForState={} isLive={}", replica, replica.getState(), waitForState,
+                    coreContainer.getZkController().getZkStateReader().isNodeLive(replica.getNodeName()));
+              }
               return true;
             } else if (replica.getState() == Replica.State.ACTIVE) {
               return true;

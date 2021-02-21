@@ -70,7 +70,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
   }
 
   @Test
-  @Ignore // nocommit race ?
+  @Ignore // MRM TODO: race ?
   public void testManagedSynonyms() throws Exception {
     // this endpoint depends on at least one field type containing the following
     // declaration in the schema-rest.xml:

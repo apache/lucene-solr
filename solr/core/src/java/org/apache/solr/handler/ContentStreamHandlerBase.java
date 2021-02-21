@@ -56,7 +56,9 @@ public abstract class ContentStreamHandlerBase extends RequestHandlerBase {
     UpdateRequestProcessorChain processorChain =
         req.getCore().getUpdateProcessorChain(params);
 
-    if (log.isTraceEnabled()) log.trace("update chain {}", processorChain);
+    if (log.isTraceEnabled()) {
+      log.trace("update chain {}", processorChain);
+    }
 
     UpdateRequestProcessor processor = processorChain.createProcessor(req, rsp);
     try {

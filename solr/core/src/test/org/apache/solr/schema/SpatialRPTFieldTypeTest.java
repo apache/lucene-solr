@@ -30,7 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.locationtech.spatial4j.shape.Shape;
 
-@LuceneTestCase.Nightly // nocommit speed up
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   
   private static File tmpSolrHome;

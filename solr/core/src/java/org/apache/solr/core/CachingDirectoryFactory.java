@@ -409,7 +409,7 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
         if (log.isDebugEnabled()) log.debug("Reusing cached directory: {}", cacheValue, DEBUG_GET_RELEASE && cacheValue.path.equals("data/index") ? new RuntimeException() : null );
       }
       //  if (cacheValue.path.equals("data/index")) {
-      //    log.info("getDir " + path, new RuntimeException("track get " + fullPath)); // nocommit
+      //    log.info("getDir " + path, new RuntimeException("track get " + fullPath)); // MRM TODO:
       // }
 
       if (log.isTraceEnabled()) log.trace("get(String, DirContext, String) - end");
@@ -492,10 +492,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
 //      if (cacheValue.path.equals("data/index")) {
 //        log.info(
 //            "Releasing directory: " + cacheValue.path + " " + (cacheValue.refCnt - 1) + " " + cacheValue.doneWithDir,
-//            new RuntimeException("Fake to find stack trace")); // nocommit
+//            new RuntimeException("Fake to find stack trace")); // MRM TODO:
 //      } else {
       if (log.isDebugEnabled()) log.debug(
-              "Releasing directory: " + cacheValue.path + " " + (cacheValue.refCnt - 1) + " " + cacheValue.doneWithDir,  DEBUG_GET_RELEASE && cacheValue.path.equals("data/index") ? new RuntimeException() : null ); // nocommit
+              "Releasing directory: " + cacheValue.path + " " + (cacheValue.refCnt - 1) + " " + cacheValue.doneWithDir,  DEBUG_GET_RELEASE && cacheValue.path.equals("data/index") ? new RuntimeException() : null ); // MRM TODO:
 
       //    }
       cacheValue.refCnt--;

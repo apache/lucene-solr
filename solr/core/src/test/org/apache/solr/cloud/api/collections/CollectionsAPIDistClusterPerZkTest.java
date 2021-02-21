@@ -130,7 +130,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit we can speed this up, TJP ~ WIP: fails
+  @Ignore // MRM TODO: we can speed this up, TJP ~ WIP: fails
   public void testCreateShouldFailOnExistingCore() throws Exception {
     assertEquals(0, CollectionAdminRequest.createCollection("halfcollectionblocker", "conf", 1, 1)
         .setCreateNodeSet("")
@@ -228,7 +228,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
   //28-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018 SOLR-12028
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void testCollectionsAPI() throws Exception {
 
     // create new collections rapid fire
@@ -457,7 +457,7 @@ public class CollectionsAPIDistClusterPerZkTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     newReplica = grabNewReplica(response, getCollectionState(collectionName));
-    // nocommit do we really want to support this anymore?
+    // MRM TODO: do we really want to support this anymore?
     // assertEquals("'core' should be 'propertyDotName' " + newReplica.getName(), "propertyDotName", newReplica.getName());
   }
 

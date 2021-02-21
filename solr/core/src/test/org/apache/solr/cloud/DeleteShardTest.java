@@ -132,7 +132,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     coreStatus = getCoreStatus(leader);
     assertEquals(2, getCollectionState(collection).getActiveSlices().size());
 
-    // nocommit
+    // MRM TODO:
     if (coreStatus != null && coreStatus.getResponse() != null) {
       assertFalse("Instance directory still exists", FileUtils.fileExists(coreStatus.getInstanceDirectory()));
       assertFalse("Data directory still exists", FileUtils.fileExists(coreStatus.getDataDirectory()));

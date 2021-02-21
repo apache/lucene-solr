@@ -170,7 +170,7 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
   public static void postData(CloudHttp2SolrClient cloudClient, String baseUrl, String blobName, ByteBuffer bytarr) throws IOException {
     String response = null;
     try {
-      Http2SolrClient.SimpleResponse resp = Http2SolrClient.POST(baseUrl + "/.system/blob/" + blobName, cloudClient.getHttpClient(), bytarr, "application/octet-stream"); // nocommit
+      Http2SolrClient.SimpleResponse resp = Http2SolrClient.POST(baseUrl + "/.system/blob/" + blobName, cloudClient.getHttpClient(), bytarr, "application/octet-stream"); // MRM TODO:
 
       try {
         response = resp.asString;

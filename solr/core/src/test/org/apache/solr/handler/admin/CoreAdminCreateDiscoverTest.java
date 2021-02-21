@@ -164,7 +164,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     req.close();
 
     // Try to create another core with a different name, but the same instance dir
-    // nocommit disabled at the moment
+    // MRM TODO: disabled at the moment
 //    SolrException e = expectThrows(SolrException.class, () -> {
 //      admin.handleRequestBody
 //          (req(CoreAdminParams.ACTION,

@@ -1135,7 +1135,7 @@ public class SolrMetricManager {
 
       reportersLock.lock();
       if (log.isDebugEnabled()) log.debug("Closing metric reporters for registry=" + registry + ", tag=" + tag);
-      // nocommit
+      // MRM TODO:
       Map<String,SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry != null) {
         Set<String> names = new HashSet<>(perRegistry.keySet());

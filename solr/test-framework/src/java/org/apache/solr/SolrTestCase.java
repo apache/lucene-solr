@@ -147,7 +147,7 @@ public class SolrTestCase extends Assert {
    * @see <a href="https://issues.apache.org/jira/browse/SOLR-14247">SOLR-14247</a>
    * @see #afterSolrTestCase()
    */
-  public static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String[] EMPTY_STRING_ARRAY = new String[0];
 
   public static final boolean TEST_NIGHTLY = LuceneTestCase.TEST_NIGHTLY;
@@ -379,7 +379,7 @@ public class SolrTestCase extends Assert {
       // can generate tons of URL garbage and can happen too often, defaults to false now anyway
       System.setProperty("solr.reloadSPI", "false");
 
-      // nocommit - not used again yet
+      // MRM TODO: - not used again yet
       // System.setProperty("solr.OverseerStateUpdateDelay", "0");
 
       System.setProperty("solr.enableMetrics", "false");
@@ -430,7 +430,7 @@ public class SolrTestCase extends Assert {
 
       System.setProperty("prepRecoveryReadTimeoutExtraWait", "100");
       System.setProperty("validateAfterInactivity", "-1");
-      System.setProperty("leaderVoteWait", "2500"); // this is also apparently controlling how long we wait for a leader on register nocommit
+      System.setProperty("leaderVoteWait", "2500"); // this is also apparently controlling how long we wait for a leader on register MRM TODO:
       System.setProperty("leaderConflictResolveWait", "10000");
 
       System.setProperty("solr.recovery.recoveryThrottle", "0");
@@ -600,12 +600,16 @@ public class SolrTestCase extends Assert {
 //      }
 
       if (clazz != null) {
-        // nocommit - leave this on
+        // MRM TODO: - leave this on
         if (!LuceneTestCase.TEST_NIGHTLY) fail("A " + clazz.getName() + " took too long to close: " + tooLongTime + "\n" + times);
       }
     }
-    log.info("@AfterClass end ------------------------------------------------------");
-    log.info("*******************************************************************");
+    if (log.isInfoEnabled()) {
+      log.info("@AfterClass end ------------------------------------------------------");
+    }
+    if (log.isInfoEnabled()) {
+      log.info("*******************************************************************");
+    }
 
     StartupLoggingUtils.shutdown();
 
@@ -644,7 +648,9 @@ public class SolrTestCase extends Assert {
       interuptThreadWithNameContains.addAll(Arrays.asList(nameContains));
       return;
     }
+
     log.info("Checking leaked threads after test");
+
    // System.out.println("DO FORCED INTTERUPTS");
     //  we need to filter and only do this for known threads? dont want users to count on this behavior unless necessary
     String testThread = Thread.currentThread().getName();
@@ -652,13 +658,15 @@ public class SolrTestCase extends Assert {
     ThreadGroup tg = Thread.currentThread().getThreadGroup();
   //  System.out.println("test group:" + tg.getName());
     Set<Map.Entry<Thread,StackTraceElement[]>> threadSet = Thread.getAllStackTraces().entrySet();
-    log.info("thread count: " + threadSet.size());
+    if (log.isInfoEnabled()) {
+      log.info("thread count={}", threadSet.size());
+    }
     List<Thread> waitThreads = new ArrayList<>();
     for (Map.Entry<Thread,StackTraceElement[]> threadEntry : threadSet) {
       Thread thread = threadEntry.getKey();
       ThreadGroup threadGroup = thread.getThreadGroup();
       if (threadGroup != null) {
-        log.warn("thread is " + thread.getName());
+        log.warn("thread is {}", thread.getName());
         if (threadGroup.getName().equals(tg.getName()) && !(thread.getName().startsWith("SUITE") && thread.getName().endsWith("]"))) {
           if (interrupt(thread, nameContains)) {
             waitThreads.add(thread);
@@ -670,7 +678,7 @@ public class SolrTestCase extends Assert {
         threadGroup = threadGroup.getParent();
         //if (thread.getState().equals(Thread.State.TERMINATED) || nameContains != null && threadGroup.getName().equals(tg.getName())) {
         if (threadGroup.getName().equals(tg.getName())) {
-          log.warn("thread is " + thread.getName());
+          log.warn("thread is {}", thread.getName());
           if (interrupt(thread, nameContains)) {
             waitThreads.add(thread);
           }
@@ -690,17 +698,17 @@ public class SolrTestCase extends Assert {
     }
 
     if (thread.getName().contains("-SendThread")) {
-      log.warn("interrupt on " + thread.getName());
+      log.warn("interrupt on {}",  thread.getName());
       thread.interrupt();
       return true;
     }
     if (thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-")) {
-      log.warn("interrupt on " + thread.getName());
+      log.warn("interrupt on {}", thread.getName());
      // thread.interrupt();
       return false;
     }
     if (interruptThreadListContains(nameContains, thread.getName())) {
-      log.warn("interrupt on " + thread.getName());
+      log.warn("interrupt on {}", thread.getName());
       thread.interrupt();
       return true;
     }

@@ -167,8 +167,11 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
         }
       }
     }
-    
-    log.info("added docs: {} with {} fails and deletes: {}", numAdds, (addFails.size() + deleteFails.size()), numDeletes);
+
+    if (log.isInfoEnabled()) {
+      int total = addFails.size() + deleteFails.size();
+      log.info("added docs={} with {} fails and deletes={}", numAdds, total, numDeletes);
+    }
   }
   
   @Override

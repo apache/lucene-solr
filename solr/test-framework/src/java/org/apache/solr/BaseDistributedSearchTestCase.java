@@ -981,7 +981,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     handle.put("rf", SKIPVAL);
     String cmp = compare(a.getResponse(), b.getResponse(), flags, handle);
     if (cmp != null) {
-      log.error("Mismatched responses:\n{}\n{}\nhandle=" + handle, a, b);
+      if (log.isErrorEnabled()) {
+        log.error("Mismatched responses:\n{}\n{}\nhandle={}", a, b, handle);
+      }
       Assert.fail(cmp);
     }
   }

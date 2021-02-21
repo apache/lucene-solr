@@ -112,7 +112,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
 
     // random create tlog or pull type replicas with nrt
-    boolean isTlog = false; // nocommit random().nextBoolean();
+    boolean isTlog = false; // MRM TODO: random().nextBoolean();
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(coll, "conf1", 2, isTlog ? 2 : 1, isTlog ? 1 : 0, 0);
 
     cloudClient.request(create);
@@ -173,7 +173,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 //    assertEquals("should be one more core on target node!", targetNumCores + 1, getNumOfCores(cloudClient, targetNode, coll, replica.getType().name()));
 
 
-    // nocommit
+    // MRM TODO:
 //    moveReplica = createMoveReplicaRequest(coll, replica, targetNode, shardId);
 //    moveReplica.setInPlaceMove(inPlaceMove);
 //    moveReplica.process(cloudClient);

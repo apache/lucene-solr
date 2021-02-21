@@ -941,7 +941,7 @@ public class ZkController implements Closeable, Runnable {
   }
 
   private void init() {
-    // nocommit
+    // MRM TODO:
     //    Runtime.getRuntime().addShutdownHook(new Thread() {
     //      public void run() {
     //        shutdown();
@@ -1062,7 +1062,7 @@ public class ZkController implements Closeable, Runnable {
             //              throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
             //            }
             //
-            //            // nocommit, still haackey, do fails right
+            //            // MRM TODO:, still haackey, do fails right
             //            if (code[0] != 0) {
             //              System.out.println("fail code: "+ code[0]);
             //              KeeperException e = KeeperException.create(KeeperException.Code.get(code[0]), path[0]);
@@ -1236,7 +1236,6 @@ public class ZkController implements Closeable, Runnable {
         zkClient.create(nodePath, (byte[]) null, CreateMode.EPHEMERAL, true);
       } catch (KeeperException.NodeExistsException e) {
         log.warn("Found our ephemeral live node already exists. This must be a quick restart after a hard shutdown? ... {}", nodePath);
-        // TODO nocommit
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
     } catch (Exception e) {
@@ -1271,7 +1270,7 @@ public class ZkController implements Closeable, Runnable {
   }
 
   public void registerUnloadWatcher(String collection, String shardId, String name) {
-    // nocommit - this thing is currently bad
+    // MRM TODO: - this thing is currently bad
 //    zkStateReader.registerDocCollectionWatcher(collection,
 //        new UnloadCoreOnDeletedWatcher(shardId, name));
   }
@@ -1313,7 +1312,7 @@ public class ZkController implements Closeable, Runnable {
 
       try {
         log.info("Waiting to see our entry in state.json {}", desc.getName());
-        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 5000), TimeUnit.MILLISECONDS, (l, c) -> { // nocommit timeout
+        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 5000), TimeUnit.MILLISECONDS, (l, c) -> { // MRM TODO: timeout
           if (c == null) {
             return false;
           }
@@ -1359,7 +1358,7 @@ public class ZkController implements Closeable, Runnable {
       boolean joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
       if (replica.getType() != Type.PULL) {
         //getCollectionTerms(collection).register(cloudDesc.getShardId(), coreName);
-        // nocommit review
+        // MRM TODO: review joinAtHead
         joinElection(desc, joinAtHead);
       }
 
@@ -1454,7 +1453,7 @@ public class ZkController implements Closeable, Runnable {
       }
 
       // the watcher is added to a set so multiple calls of this method will left only one watcher
-      // nocommit
+      // MRM TODO:
       registerUnloadWatcher(cloudDesc.getCollectionName(), cloudDesc.getShardId(), desc.getName());
 
       log.info("SolrCore Registered, core{} baseUrl={} collection={}, shard={}", coreName, baseUrl, collection, shardId);
@@ -1536,7 +1535,7 @@ public class ZkController implements Closeable, Runnable {
 
       byte[] data = zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
       ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
-      // nocommit - right key for leader name?
+      // MRM TODO: - right key for leader name?
       return new Replica(leaderProps.getNodeProps().getStr("name"), leaderProps.getNodeProps().getProperties(), collection, slice, zkStateReader);
 
     } catch (Exception e) {
@@ -1622,7 +1621,7 @@ public class ZkController implements Closeable, Runnable {
     Map<String,Object> props = new HashMap<>();
     try (SolrCore core = cc.getCore(cd.getName())) {
 
-      // nocommit TODO if we publish anything but ACTIVE, cancel any possible election?
+      // MRM TODO: if we publish anything but ACTIVE, cancel any possible election?
 
       // System.out.println(Thread.currentThread().getStackTrace()[3]);
       Integer numShards = cd.getCloudDescriptor().getNumShards();
@@ -1640,7 +1639,7 @@ public class ZkController implements Closeable, Runnable {
       props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().toString());
       try {
         if (core.getDirectoryFactory().isSharedStorage()) {
-          // nocommit
+          // MRM TODO: currently doesn't publish anywhere
           if (core.getDirectoryFactory().isSharedStorage()) {
             props.put(ZkStateReader.SHARED_STORAGE_PROP, "true");
             props.put("dataDir", core.getDataDir());

@@ -50,7 +50,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit
+@Ignore // MRM TODO:
 public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
   
   @BeforeClass

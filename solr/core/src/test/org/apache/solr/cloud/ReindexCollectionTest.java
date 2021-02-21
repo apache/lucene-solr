@@ -55,7 +55,7 @@ import org.junit.Test;
  *
  */
 @LogLevel("org.apache.solr.cloud.api.collections.ReindexCollectionCmd=DEBUG")
-@LuceneTestCase.Nightly // nocommit speed up
+@LuceneTestCase.Nightly // MRM TODO: speed up
 public class ReindexCollectionTest extends SolrCloudTestCase {
 
   @BeforeClass

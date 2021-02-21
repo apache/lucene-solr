@@ -134,7 +134,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     String splitKey = message.getStr("split.key");
 
     Slice parentSlice = getParentSlice(clusterState, collectionName, slice, splitKey);
-    // nocommit
+    // MRM TODO:
 //    if (parentSlice.getState() != Slice.State.ACTIVE) {
 //      throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Parent slice is not active: " +
 //          collectionName + "/ " + parentSlice.getName() + ", state=" + parentSlice.getState());

@@ -64,7 +64,7 @@ public class ConcurrentUpdateHttp2SolrClientMultiCollectionTest extends SolrClou
   }
 
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testEnsureDocumentsSentToCorrectCollection() throws Exception {
     int numTotalDocs = 1000;
     int numExpectedPerCollection = numTotalDocs / 2;

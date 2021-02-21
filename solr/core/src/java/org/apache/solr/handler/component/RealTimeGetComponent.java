@@ -351,7 +351,9 @@ public class RealTimeGetComponent extends SearchComponent
     if (idStr == null) return;
     AtomicLong version = new AtomicLong();
     SolrInputDocument doc = getInputDocument(req.getCore(), new BytesRef(idStr), version, null, Resolution.DOC);
-    if (log.isDebugEnabled()) log.debug("getInputDocument called for id={}, returning {}", idStr, doc);
+    if (log.isDebugEnabled()) {
+      log.debug("getInputDocument called for id={}, returning {}", idStr, doc);
+    }
     rb.rsp.add("inputDocument", doc);
     rb.rsp.add("version", version.get());
   }
@@ -965,7 +967,9 @@ public class RealTimeGetComponent extends SearchComponent
     // the mappings.
 
     for (int i=0; i<rb.slices.length; i++) {
-      if (log.isDebugEnabled()) log.debug("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
+      if (log.isDebugEnabled()) {
+        log.debug("LOOKUP_SLICE:{}={}", rb.slices[i], rb.shards[i]);
+      }
       if (lookup.equals(rb.slices[i]) || slice.equals(rb.slices[i])) {
         return new String[]{rb.shards[i]};
       }
@@ -1184,7 +1188,9 @@ public class RealTimeGetComponent extends SearchComponent
 
     // TODO: get this from cache instead of rebuilding?
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-      if (log.isDebugEnabled()) log.debug("Get updates  versionsRequested={} params={}", versions.size(), params);
+      if (log.isDebugEnabled()) {
+        log.debug("Get updates  versionsRequested={} params={}", versions.size(), params);
+      }
       for (Long version : versions) {
         try {
           Object o = recentUpdates.lookup(version);

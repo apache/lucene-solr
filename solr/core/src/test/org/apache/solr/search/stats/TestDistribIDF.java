@@ -136,7 +136,7 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
           query.setFields("*,score");
           queryResponse = solrClient_local.query("onecollection_local", query);
           assertEquals(2, queryResponse.getResults().getNumFound());
-// nocommit - dont count on order?
+// MRM TODO: - dont count on order?
 //          assertEquals("2", queryResponse.getResults().get(0).get("id"));
 //          assertEquals("1", queryResponse.getResults().get(1).get("id"));
           float score1_local = (float) queryResponse.getResults().get(0).get("score");

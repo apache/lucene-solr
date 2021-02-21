@@ -61,7 +61,7 @@ public class ExternalFileFieldSortTest extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit - not throwing an exception
+  @Ignore // MRM TODO: - not throwing an exception
   public void testPointKeyFieldType() throws Exception {
     System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
     // This one should fail though, no "node" parameter specified

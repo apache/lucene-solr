@@ -60,7 +60,7 @@ import static org.apache.solr.security.HttpParamDelegationTokenPlugin.USER_PARAM
  * Test the delegation token support in the {@link org.apache.solr.security.KerberosPlugin}.
  */
 @LuceneTestCase.Slow
-@Ignore // nocommit - can leak, flakey
+@Ignore // MRM TODO: - can leak, flakey
 public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int NUM_SERVERS = 2;
@@ -446,7 +446,7 @@ public class TestSolrCloudWithDelegationTokens extends SolrTestCaseJ4 {
    * Test HttpSolrServer's delegation token support for Update Requests
    */
   @Test
-  @Ignore // nocommit need to make proxy call compat with security
+  @Ignore // MRM TODO: need to make proxy call compat with security
   public void testDelegationTokenSolrClientWithUpdateRequests() throws Exception {
     String collectionName = "testDelegationTokensWithUpdate";
 

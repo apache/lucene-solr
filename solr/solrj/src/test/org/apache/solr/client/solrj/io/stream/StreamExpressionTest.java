@@ -85,7 +85,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
         .configure();
 
     String collection;
-    // nocommit
+    // MRM TODO:
     useAlias = false; //random().nextBoolean();
     if (useAlias) {
       collection = COLLECTIONORALIAS + "_collection";
@@ -1795,7 +1795,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // debug nocommit
+  @Ignore // debug MRM TODO:
   public void testMultiCollection() throws Exception {
 
     CollectionAdminRequest.createCollection("collection2", "conf", 2, 1).process(cluster.getSolrClient());
@@ -2948,7 +2948,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore // nocommit catching some flakey issue ...
+  @Ignore // MRM TODO: catching some flakey issue ...
   public void testBasicTextLogitStream() throws Exception {
     Assume.assumeTrue(!useAlias);
 

@@ -64,8 +64,8 @@ import java.util.Map;
  */
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
-// nocommit finish compare query impl
-// nocommit this test is flakey
+// MRM TODO: finish compare query impl
+// MRM TODO: this test is flakey
 @LuceneTestCase.AwaitsFix(bugUrl = "FINISH ABOVE")
 public class DistribCursorPagingTest extends SolrCloudBridgeTestCase {
 

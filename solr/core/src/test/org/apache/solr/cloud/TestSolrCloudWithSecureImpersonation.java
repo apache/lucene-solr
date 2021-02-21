@@ -301,7 +301,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore // nocommit HttpSolrCall#remoteQuery needs to handle this
+  @Ignore // MRM TODO: HttpSolrCall#remoteQuery needs to handle this
   public void testForwarding() throws Exception {
     String collectionName = "forwardingCollection";
     miniCluster.uploadConfigSet(SolrTestUtil.TEST_PATH().resolve("collection1/conf"), "conf1");

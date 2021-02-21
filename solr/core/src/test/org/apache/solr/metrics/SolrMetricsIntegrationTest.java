@@ -148,7 +148,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
       }
 
       long finalCount = timer.getCount();
-      // nocommit - those timers are disabled right now
+      // MRM TODO: - those timers are disabled right now
       // assertEquals("metric counter incorrect", iterations, finalCount - initialCount);
       Map<String,SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
       assertEquals(RENAMED_REPORTERS.length + jmxReporter, reporters.size());

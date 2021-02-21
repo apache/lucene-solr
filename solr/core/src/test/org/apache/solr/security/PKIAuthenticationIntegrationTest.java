@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.Utils.makeMap;
 
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class PKIAuthenticationIntegrationTest extends SolrCloudAuthTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

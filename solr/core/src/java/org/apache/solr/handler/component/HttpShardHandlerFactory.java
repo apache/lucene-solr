@@ -273,7 +273,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     if (v != null) {
       r.setSeed(Long.parseLong(v));
     }
-    // nocommit
+    // MRM TODO:
     // this.defaultClient.addListenerFactory(this.httpListenerFactory);
     this.loadbalancer = new LBHttp2SolrClient(defaultClient);
 
@@ -390,7 +390,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    // nocommit
+    // MRM TODO:
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
     //httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
 //    commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,

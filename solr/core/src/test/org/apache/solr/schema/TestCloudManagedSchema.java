@@ -53,7 +53,7 @@ public class TestCloudManagedSchema extends SolrCloudBridgeTestCase {
     NamedList namedListResponse = client.request(request);
     client.setBaseUrl(previousBaseURL); // Restore baseURL
     NamedList status = (NamedList)namedListResponse.get("status");
-    // nocommit
+    // MRM TODO:
 //    NamedList collectionStatus = (NamedList)status.getVal(0);
 //    String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
 //    // Make sure the upgrade to managed schema happened

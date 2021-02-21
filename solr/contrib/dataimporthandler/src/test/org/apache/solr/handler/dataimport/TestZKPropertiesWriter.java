@@ -44,7 +44,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static ZkTestServer zkServer;
@@ -66,7 +66,7 @@ public class TestZKPropertiesWriter extends AbstractDataImportHandlerTestCase {
     System.setProperty("jetty.port", "0000");
 
     zkServer.buildZooKeeper();
-    // nocommit - you can't set config this way anymore, the _default config is used
+    // MRM TODO: - you can't set config this way anymore, the _default config is used
 //    zkServer.buildZooKeeper(getFile("dih/solr"),
 //        "dataimport-solrconfig.xml", "dataimport-schema.xml");
 

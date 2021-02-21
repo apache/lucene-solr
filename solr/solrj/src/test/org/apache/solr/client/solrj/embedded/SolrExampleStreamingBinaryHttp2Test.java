@@ -38,7 +38,7 @@ import org.junit.Test;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@Ignore // nocommit - mrm: some fails to look deeper at here
+@Ignore // MRM TODO: - mrm: some fails to look deeper at here
 public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHttp2Test {
 
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {

@@ -5,7 +5,7 @@ Solr Search Velocity Templates
 A quick demo of using Solr using http://wiki.apache.org/solr/VelocityResponseWriter
 
 You typically access these templates via:
-	http://localhost:8983/solr/collection1/browse
+http://localhost:8983/solr/collection1/browse
 
 It's called "browse" because you can click around with your mouse
 without needing to type any search terms.  And of course it
@@ -13,7 +13,7 @@ also works as a standard search app as well.
 
 Known Limitations
 -----------------
-* The /browse and the VelocityResponseWriter component
+* The /browse and the VelocityResponseWriter component 
   serve content directly from Solr, which usually requires
   Solr's HTTP API to be exposed.  Advanced users could
   potentially access other parts of Solr directly.
@@ -31,9 +31,9 @@ are immediately visible in browser on the next visit.
 
 Links:
 
-	http://velocity.apache.org
-	http://wiki.apache.org/velocity/
-	http://velocity.apache.org/engine/releases/velocity-1.7/user-guide.html
+    http://velocity.apache.org
+    http://wiki.apache.org/velocity/
+    http://velocity.apache.org/engine/releases/velocity-1.7/user-guide.html
 
 
 File List

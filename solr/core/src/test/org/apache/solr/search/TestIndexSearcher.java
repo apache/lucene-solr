@@ -222,7 +222,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
   }
 
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void testSearcherListeners() throws Exception {
     MockSearchComponent.registerSlowSearcherListener = false;
         
@@ -288,7 +288,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     assertTrue(connection.request("/select",params, null ).contains("<int name=\"status\">0</int>"));
   }
 
-  @Ignore // nocommit
+  @Ignore // MRM TODO:
   public void testDontUseColdSearcher() throws Exception {
     MockSearchComponent.registerFirstSearcherListener = false;
     MockSearchComponent.registerNewSearcherListener = false;

@@ -53,7 +53,7 @@ import org.junit.Test;
 
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
-@LuceneTestCase.Nightly// nocommit debug - can take a long time
+@LuceneTestCase.Nightly// MRM TODO: debug - can take a long time
 public class HealthCheckHandlerTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {

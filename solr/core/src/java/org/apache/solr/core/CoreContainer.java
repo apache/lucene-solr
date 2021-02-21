@@ -2134,12 +2134,12 @@ public class CoreContainer implements Closeable {
 
     // todo: ensure only transient?
 //    if (core == null && desc != null) {
-//      // nocommit - this does not seem right - should stop a core from loading on startup, before zk reg, not from getCore ...
+//      // MRM TODO: - this does not seem right - should stop a core from loading on startup, before zk reg, not from getCore ...
 //      //      if (isZooKeeperAware()) {
 //      //        zkSys.getZkController().throwErrorIfReplicaReplaced(desc);
 //      //      }
 //
-//      // nocommit: this can recreate a core when it's not transient - no good!
+//      // MRM TODO:: this can recreate a core when it's not transient - no good!
 //      if (desc.isTransient() || !desc.isLoadOnStartup()) {
 //        core = createFromDescriptor(desc, false); // This should throw an error if it fails.
 //      }

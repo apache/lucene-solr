@@ -59,7 +59,7 @@ public class TestExportTool extends SolrCloudTestCase {
     randomizeNumericTypesProperties();
   }
 
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
     configureCluster(4)

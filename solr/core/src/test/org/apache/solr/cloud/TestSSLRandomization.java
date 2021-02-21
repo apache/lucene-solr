@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  * @see TestMiniSolrCloudClusterSSL
  */
 @RandomizeSSL(ssl=0.5,reason="frequent SSL usage to make test worth while")
-@LuceneTestCase.Nightly // nocommit check
+@LuceneTestCase.Nightly // MRM TODO: check
 public class TestSSLRandomization extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -80,7 +80,7 @@ import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHas
  * Validate that audit logging works in a live cluster
  */
 @SolrTestCaseJ4.SuppressSSL
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

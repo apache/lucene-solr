@@ -174,7 +174,9 @@ public class ZkTestServer implements Closeable {
 
         startupWait.countDown();
 
-        log.info("ZK Port:" + zooKeeperServer.getClientPort());
+        if (log.isInfoEnabled()) {
+          log.info("ZK Port={}", zooKeeperServer.getClientPort());
+        }
         cnxnFactory.join();
 
       } catch (InterruptedException e) {
@@ -498,7 +500,7 @@ public class ZkTestServer implements Closeable {
   }
 
   public static List<HostPort> parseHostPortList(String hplist) {
-    log.info("parse host and port list: " + hplist);
+    log.info("parse host and port list={}", hplist);
     ArrayList<HostPort> alist = new ArrayList<>();
     for (String hp : hplist.split(",")) {
       int idx = hp.lastIndexOf(':');
@@ -557,7 +559,9 @@ public class ZkTestServer implements Closeable {
     File file = new File(solrhome, "collection1"
             + File.separator + "conf" + File.separator + srcName);
     if (!file.exists()) {
-      log.info("skipping " + file.getAbsolutePath() + " because it doesn't exist");
+      if (log.isInfoEnabled()) {
+        log.info("skipping {} because it doesn't exist", file.getAbsolutePath());
+      }
       return;
     }
 
@@ -565,7 +569,9 @@ public class ZkTestServer implements Closeable {
     if (zkChroot != null) {
       destPath = zkChroot + destPath;
     }
-    log.info("put " + file.getAbsolutePath() + " to " + destPath);
+    if (log.isInfoEnabled()) {
+      log.info("put {} to {}", file.getAbsolutePath(), destPath);
+    }
     zkClient.makePath(destPath, file, false, true);
   }
 

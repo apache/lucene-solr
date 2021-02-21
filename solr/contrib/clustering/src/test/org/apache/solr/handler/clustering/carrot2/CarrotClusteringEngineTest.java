@@ -49,7 +49,7 @@ import org.junit.Test;
 /**
  *
  */
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testCarrotLingo() throws Exception {

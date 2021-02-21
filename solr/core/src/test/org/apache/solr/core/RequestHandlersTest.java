@@ -44,7 +44,7 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
 
   @Test
   public void testInitCount() {
-    // nocommit MRM needs to wait for metric
+    // MRM TODO: MRM needs to wait for metric
     try (SolrCore core = h.getCore()) {
       String registry = core.getCoreMetricManager().getRegistryName();
       SolrMetricManager manager = h.getCoreContainer().getMetricManager();

@@ -723,7 +723,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
 
     // test sorting  with some docs missing the sort field
 
-      // nocommit have to look at what changed here
+      // MRM TODO: have to look at what changed here
       if (true) {
           return;
       }

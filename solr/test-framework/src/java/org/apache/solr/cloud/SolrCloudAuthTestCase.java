@@ -217,8 +217,10 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
       } finally {
         Utils.readFully(is);
       }
-      // nocommit response?
-      log.info("Got response {} {} {}", url, m, rsp.getStatusLine().getStatusCode() );
+      // MRM TODO: response?
+       if (log.isInfoEnabled()) {
+         log.info("Got response {} {} {}", url, m, rsp.getStatusLine().getStatusCode());
+       }
       if (rsp.getStatusLine().getStatusCode() == 200) {
         break;
       }

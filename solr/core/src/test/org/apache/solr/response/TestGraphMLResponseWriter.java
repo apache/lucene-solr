@@ -37,7 +37,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit - the output is correct, strange this test xpath query stuff is returning false ...
+@Ignore // MRM TODO: - the output is correct, strange this test xpath query stuff is returning false ...
 public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {

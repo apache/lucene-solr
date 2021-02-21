@@ -347,7 +347,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
   
   @Test
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testUploadWithScriptUpdateProcessor() throws Exception {
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
     Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("JavaScript"));
@@ -388,7 +388,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
 
     assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
 
-    // nocommit - work out using newcollection3 and dealing with it finding the collection after first create fails - instead of using newCollection4
+    // MRM TODO: - work out using newcollection3 and dealing with it finding the collection after first create fails - instead of using newCollection4
     // Authorization on
     final String trustedSuffix = "-trusted";
     protectConfigsHandler();

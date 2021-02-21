@@ -24,7 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
 
   @BeforeClass

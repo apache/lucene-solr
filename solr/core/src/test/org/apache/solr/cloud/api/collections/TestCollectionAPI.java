@@ -100,7 +100,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     // clusterStatusRolesTest();
 
 
-    // nocommit debug
+    // MRM TODO: debug
 //    replicaPropTest();
 
     // clusterStatusZNodeVersion(); maybe this relies on stateformat=1?

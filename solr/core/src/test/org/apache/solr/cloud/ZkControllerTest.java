@@ -239,7 +239,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Slow
   @LogLevel(value = "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
-  @Ignore // nocommit debug
+  @Ignore // MRM TODO: debug
   public void testPublishAndWaitForDownStates() throws Exception  {
 
     /*
@@ -269,7 +269,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           CoreDescriptor descriptor = new CoreDescriptor(collectionName, SolrTestUtil.TEST_PATH(), Collections.emptyMap(), new Properties(), zkControllerRef.get());
           // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates to wait indefinitely
           // when using coreNodeName but usage of core name alone will return immediately
-          // nocommit
+          // MRM TODO:
           //descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
           return Collections.singletonList(descriptor);
         }

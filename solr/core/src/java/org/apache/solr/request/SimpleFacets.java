@@ -796,7 +796,7 @@ public class SimpleFacets {
     // Also, a subtlety of directExecutor is that no matter how many times you "submit" a job, it's really
     // just a method call in that it's run by the calling thread.
     int maxThreads = req.getParams().getInt(FacetParams.FACET_THREADS, 0);
-    // nocommit
+    // MRM TODO:
     // Executor executor = maxThreads == 0 ? directExecutor : facetExecutor;
 
 //    if (fdebugParent != null) {

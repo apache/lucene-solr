@@ -168,7 +168,9 @@ public abstract class AbstractPluginLoader<T>
               try {
                 T plugin = create(loader, finalName, className, node, xpath);
 
-                if (log.isTraceEnabled()) log.trace("created {}: {}", ((finalName != null) ? finalName : ""), plugin.getClass().getName());
+                if (log.isTraceEnabled()) {
+                  log.trace("created {}: {}", ((finalName != null) ? finalName : ""), plugin.getClass().getName());
+                }
 
                 // Either initialize now or wait till everything has been registered
                 if (preRegister) {
@@ -300,13 +302,13 @@ public abstract class AbstractPluginLoader<T>
 
     PluginInitInfo(T plugin, NodeInfo node) {
       this.plugin = plugin;
-      this.node = node; // nocommit
+      this.node = node; // MRM TODO:
    //   this.domNode = null;
     }
 
 //    PluginInitInfo(T plugin, Node node) {
 //      this.plugin = plugin;
-//      this.domNode = node; // nocommit
+//      this.domNode = node; // MRM TODO:
 //      this. node = null;
 //    }
   }

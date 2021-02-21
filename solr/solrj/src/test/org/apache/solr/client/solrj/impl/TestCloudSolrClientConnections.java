@@ -31,7 +31,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // nocommit debug
+@Ignore // MRM TODO: debug
 public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
 
   @Test
