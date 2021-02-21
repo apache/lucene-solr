@@ -127,7 +127,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends SolrCloudBridgeTestCase
     cloudClient.commit(COLLECTION);
   }
 
-  public static List<SolrInputDocument> generateRandomizedFieldDocuments() {
+  public List<SolrInputDocument> generateRandomizedFieldDocuments() {
     final List<SolrInputDocument> solrDocs = new ArrayList<>();
 
     final Iterator<String> iterator = FIELD_NAMES.iterator();
@@ -146,7 +146,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends SolrCloudBridgeTestCase
     return solrDoc;
   }
 
-  private static final List<String> FIELD_NAMES = Arrays.asList(
+  private final List<String> FIELD_NAMES = Arrays.asList(
       new String[] {
           "name_DfsqCIYgwMpJnc_prop_s",
           "name_VHzHTZWnqGALJJ_prop_s",
