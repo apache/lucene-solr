@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.junit.Test;
 
 public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
@@ -105,6 +106,8 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
   public void testBadChroot() throws IOException {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");
-    new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build().close();
+    try (SolrClient client = new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build()) {
+
+    }
   }
 }
