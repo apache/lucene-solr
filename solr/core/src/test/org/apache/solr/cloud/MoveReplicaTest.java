@@ -159,13 +159,11 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     }
     assertTrue(success);
 
-    Thread.sleep(50);
-
     try {
       assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
     } catch (Exception e) {
       log.error("Exception on first query", e);
-      Thread.sleep(150);
+      Thread.sleep(450);
       assertEquals(100, cluster.getSolrClient().query(coll, new SolrQuery("*:*")).getResults().getNumFound());
     }
 

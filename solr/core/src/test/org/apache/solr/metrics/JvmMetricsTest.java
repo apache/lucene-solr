@@ -160,6 +160,7 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   @Test
   public void testSetupJvmMetrics() throws Exception {
     SolrMetricManager metricManager = jetty.getCoreContainer().getMetricManager();
+    Thread.sleep(100);
     Map<String,Metric> metrics = metricManager.registry("solr.jvm").getMetrics();
     assertTrue(metrics.size() > 0);
     assertTrue(metrics.toString(), metrics.entrySet().stream().filter(e -> e.getKey().startsWith("buffers.")).count() > 0);
