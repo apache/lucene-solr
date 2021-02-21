@@ -36,6 +36,96 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This command returns stats about the Overseer, the cluster state updater and collection API activity occurring
+ * <b>within the current Overseer node</b> (this is important because distributed operations occurring on other nodes
+ * are <b>not included</b> in these stats, for example distributed cluster state updates or Per Replica States updates).<p>
+ *
+ * The structure of the returned results is as follows:
+ * <ul>
+ *   <li><b>{@code leader}:</b> {@code ID} of the current overseer leader node</li>
+ *   <li><b>{@code overseer_queue_size}:</b> count of entries in the {@code /overseer/queue} Zookeeper queue/directory</li>
+ *   <li><b>{@code overseer_work_queue_size}:</b> count of entries in the {@code /overseer/queue-work} Zookeeper queue/directory</li>
+ *   <li><b>{@code overseer_collection_queue_size}:</b> count of entries in the {@code /overseer/collection-queue-work}
+ *   Zookeeper queue/directory</li>
+ *   <li><b>{@code overseer_operations}:</b> map (of maps) of success and error counts for operations. The operations
+ *   (keys) tracked in this map are:
+ *     <ul>
+ *       <li>{@code am_i_leader} (Overseer checking it is still the elected Overseer as it processes cluster state update
+ *       messages)</li>
+ *       <li>{@code configset_}<i>{@code <config set operation>}</i> (from
+ *       {@link org.apache.solr.handler.admin.ConfigSetsHandler.ConfigSetOperation})</li>
+ *       <li>Cluster state change operation names from {@link org.apache.solr.common.params.CollectionParams.CollectionAction}
+ *       (not all of them!) and {@link org.apache.solr.cloud.overseer.OverseerAction} (the complete list: {@code create},
+ *       {@code delete}, {@code createshard}, {@code deleteshard}, {@code addreplica}, {@code addreplicaprop}, {@code deletereplicaprop},
+ *       {@code balanceshardunique}, {@code modifycollection}, {@code state}, {@code leader}, {@code deletecore}, {@code addroutingrule},
+ *       {@code removeroutingrule}, {@code updateshardstate}, {@code downnode} and {@code quit} with this like one unlikely
+ *       to be observed since the Overseer is existing right away)</li>
+ *       <li>{@code update_state} (when Overseer cluster state updater persists changes in Zookeeper)</li>
+ *     </ul>
+ *     For each key, the value is a map composed of:
+ *     <ul>
+ *       <li>{@code requests}: success count of the given operation </li>
+ *       <li>{@code errors}: error count of the operation </li>
+ *       <li>More metrics (see below)</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>{@code collection_operations}:</b> map (of maps) of success and error counts for collection related operations.
+ *   The operations(keys) tracked in this map are <b>all operations</b> that start with {@code collection_}, but the
+ *   {@code collection_} prefix is <b>stripped</b> of the returned value. Possible keys are therefore:
+ *     <ul>
+ *       <li>{@code am_i_leader}: originating in a stat called {@code collection_am_i_leader} representing Overseer checking
+ *       it is still the elected Overseer as it processes Collection API and Config Set API messages.</li>
+ *       <li>Collection API operation names from {@link org.apache.solr.common.params.CollectionParams.CollectionAction} (the
+ *       stripped {@code collection_} prefix gets added in {@link OverseerCollectionMessageHandler#getTimerName(String)})</li>
+ *     </ul>
+ *     For each key, the value is a map composed of:
+ *     <ul>
+ *       <li>{@code requests}: success count of the given operation </li>
+ *       <li>{@code errors}: error count of the operation </li>
+ *       <li>{@code recent_failures}: an <b>optional</b> entry containing a list of maps, each map having two entries, one
+ *       with key {@code request} with a failed request properties (a {@link ZkNodeProps}) and the other with key
+ *       {@code response} with the corresponding response properties (a {@link org.apache.solr.client.solrj.SolrResponse}).</li>
+ *       <li>More metrics (see below)</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>{@code overseer_queue}:</b> metrics on operations done on the Zookeeper queue {@code /overseer/queue} (see
+ *   metrics below).<br>
+ *   The operations that can be done on the queue and that can be keys whose values are a metrics map are:
+ *   <ul>
+ *     <li>{@code offer}</li>
+ *     <li>{@code peek}</li>
+ *     <li>{@code peek_wait}</li>
+ *     <li>{@code peek_wait_forever}</li>
+ *     <li>{@code peekTopN_wait}</li>
+ *     <li>{@code peekTopN_wait_forever}</li>
+ *     <li>{@code poll}</li>
+ *     <li>{@code remove}</li>
+ *     <li>{@code remove_event}</li>
+ *     <li>{@code take}</li>
+ *   </ul>
+ *   </li>
+ *   <li><b>{@code overseer_internal_queue}:</b> same as above but for queue {@code /overseer/queue-work}</li>
+ *   <li><b>{@code collection_queue}:</b> same as above but for queue {@code /overseer/collection-queue-work}</li>
+ * </ul>
+ *
+ * <p>
+ * Maps returned as values of keys in <b>{@code overseer_operations}</b>, <b>{@code collection_operations}</b>,
+ * <b>{@code overseer_queue}</b>, <b>{@code overseer_internal_queue}</b> and <b>{@code collection_queue}</b> include
+ * additional stats. These stats are provided by {@link MetricUtils}, and represent metrics on each type of operation
+ * execution (be it failed or successful), see calls to {@link Stats#time(String)}. The metric keys are:
+ * <ul>
+ *       <li>{@code avgRequestsPerSecond}</li>
+ *       <li>{@code 5minRateRequestsPerSecond}</li>
+ *       <li>{@code 15minRateRequestsPerSecond}</li>
+ *       <li>{@code avgTimePerRequest}</li>
+ *       <li>{@code medianRequestTime}</li>
+ *       <li>{@code 75thPcRequestTime}</li>
+ *       <li>{@code 95thPcRequestTime}</li>
+ *       <li>{@code 99thPcRequestTime}</li>
+ *       <li>{@code 999thPcRequestTime}</li>
+ * </ul>
+ */
 public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
@@ -60,16 +150,6 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
     zkStateReader.getZkClient().getData("/overseer/collection-queue-work",null, stat, true);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
-    // Overseer reported stats below are tracked in the Overseer cluster state updater when it performs certain operations.
-    // Sharing the ocmh.stats variable between the cluster state updater and the Collection API (this command) is by the way
-    // about the only thing that ties the cluster state updater to the collection api message handler and that takes
-    // advantage of the fact that both run on the same node (the Overseer node). (recently added PerReplicaStates also
-    // take advantage of this through method Overseer.submit() accessed via CollectionCommandContext.submitIntraProcessMessage()).
-    // When distributed updates are enabled, cluster state updates are not done by the Overseer (it doesn't even see them)
-    // and therefore can't report them. The corresponding data in OVERSEERSTATUS (all data built below) is no longer returned.
-    // This means top level keys "overseer_operations", "collection_operations", "overseer_queue", "overseer_internal_queue"
-    // and "collection_queue" are either empty or do not contain all expected information when cluster state updates are distributed.
-
     @SuppressWarnings({"rawtypes"})
     NamedList overseerStats = new NamedList();
     @SuppressWarnings({"rawtypes"})
@@ -80,47 +160,45 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
     NamedList workQueueStats = new NamedList();
     @SuppressWarnings({"rawtypes"})
     NamedList collectionQueueStats = new NamedList();
-    // stats below do not make sense when cluster state updates are distributed. Return them empty.
-    if (!ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      Stats stats = ccc.getOverseerStats();
-      for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
-        String key = entry.getKey();
-        NamedList<Object> lst = new SimpleOrderedMap<>();
-        if (key.startsWith("collection_")) {
-          collectionStats.add(key.substring(11), lst);
-          int successes = stats.getSuccessCount(entry.getKey());
-          int errors = stats.getErrorCount(entry.getKey());
-          lst.add("requests", successes);
-          lst.add("errors", errors);
-          List<Stats.FailedOp> failureDetails = stats.getFailureDetails(key);
-          if (failureDetails != null) {
-            List<SimpleOrderedMap<Object>> failures = new ArrayList<>();
-            for (Stats.FailedOp failedOp : failureDetails) {
-              SimpleOrderedMap<Object> fail = new SimpleOrderedMap<>();
-              fail.add("request", failedOp.req.getProperties());
-              fail.add("response", failedOp.resp.getResponse());
-              failures.add(fail);
-            }
-            lst.add("recent_failures", failures);
+    Stats stats = ccc.getOverseerStats();
+    for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
+      String key = entry.getKey();
+      NamedList<Object> lst = new SimpleOrderedMap<>();
+      if (key.startsWith("collection_")) {
+        collectionStats.add(key.substring(11), lst);
+        int successes = stats.getSuccessCount(entry.getKey());
+        int errors = stats.getErrorCount(entry.getKey());
+        lst.add("requests", successes);
+        lst.add("errors", errors);
+        List<Stats.FailedOp> failureDetails = stats.getFailureDetails(key);
+        if (failureDetails != null) {
+          List<SimpleOrderedMap<Object>> failures = new ArrayList<>();
+          for (Stats.FailedOp failedOp : failureDetails) {
+            SimpleOrderedMap<Object> fail = new SimpleOrderedMap<>();
+            fail.add("request", failedOp.req.getProperties());
+            fail.add("response", failedOp.resp.getResponse());
+            failures.add(fail);
           }
-        } else if (key.startsWith("/overseer/queue_")) {
-          stateUpdateQueueStats.add(key.substring(16), lst);
-        } else if (key.startsWith("/overseer/queue-work_")) {
-          workQueueStats.add(key.substring(21), lst);
-        } else if (key.startsWith("/overseer/collection-queue-work_")) {
-          collectionQueueStats.add(key.substring(32), lst);
-        } else {
-          // overseer stats
-          overseerStats.add(key, lst);
-          int successes = stats.getSuccessCount(entry.getKey());
-          int errors = stats.getErrorCount(entry.getKey());
-          lst.add("requests", successes);
-          lst.add("errors", errors);
+          lst.add("recent_failures", failures);
         }
-        Timer timer = entry.getValue().requestTime;
-        MetricUtils.addMetrics(lst, timer);
+      } else if (key.startsWith("/overseer/queue_")) {
+        stateUpdateQueueStats.add(key.substring(16), lst);
+      } else if (key.startsWith("/overseer/queue-work_")) {
+        workQueueStats.add(key.substring(21), lst);
+      } else if (key.startsWith("/overseer/collection-queue-work_")) {
+        collectionQueueStats.add(key.substring(32), lst);
+      } else {
+        // overseer stats
+        overseerStats.add(key, lst);
+        int successes = stats.getSuccessCount(entry.getKey());
+        int errors = stats.getErrorCount(entry.getKey());
+        lst.add("requests", successes);
+        lst.add("errors", errors);
       }
+      Timer timer = entry.getValue().requestTime;
+      MetricUtils.addMetrics(lst, timer);
     }
+
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);
     results.add("overseer_queue", stateUpdateQueueStats);

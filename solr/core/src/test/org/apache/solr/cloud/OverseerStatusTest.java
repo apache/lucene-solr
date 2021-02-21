@@ -48,9 +48,11 @@ public class OverseerStatusTest extends SolrCloudTestCase {
     NamedList<Object> overseer_operations = (NamedList<Object>) resp.get("overseer_operations");
     SimpleOrderedMap<Object> createcollection
         = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
-    // When cluster state updates are distributed, Overseer doesn't see the updates and doesn't report stats on them.
+    assertEquals("No stats for create in OverseerCollectionProcessor", numCollectionCreates + 1, createcollection.get("requests"));
+    // When cluster state updates are distributed, Overseer doesn't see them and doesn't report stats on them.
     if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      assertEquals("No stats for create in OverseerCollectionProcessor", numCollectionCreates + 1, createcollection.get("requests"));
+      // Note the "create" key here is in a different map from the "create" key above. Above it's Collection creation in the
+      // Collection API, here it's the collection creation from the cluster state updater perspective.
       createcollection = (SimpleOrderedMap<Object>) overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
       assertEquals("No stats for create in Overseer", numOverseerCreates + 1, createcollection.get("requests"));
     }
