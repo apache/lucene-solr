@@ -130,6 +130,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
       // We initially don't have a /dump handler defined
       SolrCore core = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
+
       assertThat("No /dump handler should be defined in the initial configuration", core.getRequestHandler("/dump"), is(nullValue()));
 
       // Now copy in a config with a /dump handler and reload

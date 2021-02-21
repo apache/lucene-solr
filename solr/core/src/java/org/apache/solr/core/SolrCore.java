@@ -1746,12 +1746,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   @Override
   public void close() {
     int cref = refCount.get();
-    if (cref == -1 || cref == 0) {
-      throw new IllegalStateException("Already closed " + cref);
-    }
+
 
 
     int count = refCount.decrementAndGet();
+
+    if (count < -1) {
+      refCount.set(-1);
+      throw new IllegalStateException("Already closed " + count);
+    }
 
 //    if (log.isDebugEnabled()) {
 //      RuntimeException e = new RuntimeException();

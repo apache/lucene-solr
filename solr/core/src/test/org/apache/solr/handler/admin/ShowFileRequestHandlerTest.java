@@ -43,13 +43,13 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   @Before
   public void setUp() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
     super.setUp();
+    createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @After
   public void tearDown() throws Exception {
-      super.tearDown();
+    super.tearDown();
   }
 
   public void test404ViaHttp() throws Exception {
