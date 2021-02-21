@@ -64,7 +64,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       jetty = jettys.iterator().next();
     }
 
-    if (client == null && jettys.size() > 0) {
+    if (client == null && jetty != null) {
       SolrClient newClient = createNewSolrClient(jetty);
       clients.add(newClient);
       client = newClient;
@@ -178,7 +178,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   public SolrClient createNewSolrClient(JettySolrRunner jetty) {
     try {
       // setup the client...
-      final String url = jetty.getBaseUrl().toString() + "/" + "collection1";
+      final String url = jetty.getBaseUrl() + "/" + "collection1";
       final Http2SolrClient client = getHttpSolrClient(url, DEFAULT_CONNECTION_TIMEOUT);
       return client;
     } catch (final Exception ex) {

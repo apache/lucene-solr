@@ -19,6 +19,7 @@ package org.apache.solr.handler.admin;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -44,7 +45,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
   }
 
   @After
@@ -80,15 +81,20 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
             rsp.getException() instanceof SolrException);
     assertEquals(404, ((SolrException) rsp.getException()).code());
     core.close();
+
+    deleteCore();
   }
 
   public void testDirList() throws SolrServerException, IOException {
     //assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     QueryRequest request = new QueryRequest();
     request.setPath("/admin/file");
-    QueryResponse resp = request.process(client);
-    assertEquals(0, resp.getStatus());
-    assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0);//some files
+    try (SolrClient client = createNewSolrClient(jetty)) {
+      QueryResponse resp = request.process(client);
+
+      assertEquals(0, resp.getStatus());
+      assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0);//some files
+    }
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {
@@ -119,7 +125,9 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
       }
     });
 
-    client.request(request);//runs request
+    try (SolrClient client = createNewSolrClient(jetty)) {
+      client.request(request);//runs request
+    }
     //request.process(client); but we don't have a NamedList response
     assertTrue(readFile.get());
   }
