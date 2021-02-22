@@ -406,8 +406,6 @@ This command recreates replicas in one node (the source) on another node(s) (the
 
 For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader, either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 
-The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
-
 [.dynamic-tabs]
 --
 [example.tab-pane#v1replacenode]
@@ -456,8 +454,27 @@ This operation does not hold necessary locks on the replicas that belong to on t
 == DELETENODE: Delete Replicas in a Node
 
 Deletes all replicas of all collections in that node. Please note that the node itself will remain as a live node after this operation.
+[.dynamic-tabs]
+--
+[example.tab-pane#v1deletenode]
+====
+[.tab-label]*V1 API*
 
-`/admin/collections?action=DELETENODE&node=nodeName`
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=DELETENODE&node=nodeName
+
+----
+====
+
+[example.tab-pane#v2deletenode]
+====
+[.tab-label]*V2 API*
+
+We do not currently have a V2 equivalent.
+
+====
+--
 
 === DELETENODE Parameters
 
@@ -470,11 +487,42 @@ Request ID to track this action which will be <<collections-api.adoc#asynchronou
 [[addrole]]
 == ADDROLE: Add a Role
 
-`/admin/collections?action=ADDROLE&role=_roleName_&node=_nodeName_`
+
 
 Assigns a role to a given node in the cluster. The only supported role is `overseer`.
 
 Use this command to dedicate a particular node as Overseer. Invoke it multiple times to add more nodes. This is useful in large clusters where an Overseer is likely to get overloaded. If available, one among the list of nodes which are assigned the 'overseer' role would become the overseer. The system would assign the role to any other node if none of the designated nodes are up and running.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1addrole]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=localhost:8983_solr
+
+----
+====
+
+[example.tab-pane#v2addrole]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d'
+  {
+    "add-role": {
+      "role": "overseer",
+      "node": "localhost:8983_solr"
+    }
+  }
+'
+----
+====
+--
 
 === ADDROLE Parameters
 
@@ -514,7 +562,36 @@ http://localhost:8983/solr/admin/collections?action=ADDROLE&role=overseer&node=1
 
 Remove an assigned role. This API is used to undo the roles assigned using ADDROLE operation
 
-`/admin/collections?action=REMOVEROLE&role=_roleName_&node=_nodeName_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1removerole]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&node=localhost:8983_solr
+
+----
+====
+
+[example.tab-pane#v2removerole]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d'
+  {
+    "remove-role": {
+      "role": "overseer",
+      "node": "localhost:8983_solr"
+    }
+  }
+'
+----
+====
+--
 
 === REMOVEROLE Parameters
 
@@ -555,7 +632,29 @@ http://localhost:8983/solr/admin/collections?action=REMOVEROLE&role=overseer&nod
 
 Returns the current status of the overseer, performance statistics of various overseer APIs, and the last 10 failures per operation type.
 
-`/admin/collections?action=OVERSEERSTATUS`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1overseerstatus]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
+
+----
+====
+
+[example.tab-pane#v2overseerstatus]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X GET http://localhost:8983/api/cluster/overseer -H 'Content-Type: application/json'
+----
+====
+--
 
 === Examples using OVERSEERSTATUS
 
