@@ -20,9 +20,9 @@ import static org.apache.lucene.analysis.hunspell.Dictionary.FLAG_UNSET;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_BEGIN;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
+import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_RULE_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -51,17 +51,28 @@ import org.apache.lucene.util.IntsRef;
 public class Hunspell {
   final Dictionary dictionary;
   final Stemmer stemmer;
+  final Runnable checkCanceled;
 
   public Hunspell(Dictionary dictionary) {
+    this(dictionary, () -> {});
+  }
+
+  /**
+   * @param checkCanceled an object that's periodically called, allowing to interrupt spell-checking
+   *     or suggestion generation by throwing an exception
+   */
+  public Hunspell(Dictionary dictionary, Runnable checkCanceled) {
     this.dictionary = dictionary;
+    this.checkCanceled = checkCanceled;
     stemmer = new Stemmer(dictionary);
   }
 
   /** @return whether the given word's spelling is considered correct according to Hunspell rules */
   public boolean spell(String word) {
+    checkCanceled.run();
     if (word.isEmpty()) return true;
 
-    if (dictionary.needsInputCleaning) {
+    if (dictionary.needsInputCleaning(word)) {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
@@ -148,15 +159,19 @@ public class Hunspell {
 
   private Root<CharsRef> findStem(
       char[] wordChars, int offset, int length, WordCase originalCase, WordContext context) {
+    checkCanceled.run();
+    boolean checkCase = context != COMPOUND_MIDDLE && context != COMPOUND_END;
     @SuppressWarnings({"rawtypes", "unchecked"})
     Root<CharsRef>[] result = new Root[1];
     stemmer.doStem(
         wordChars,
         offset,
         length,
-        originalCase,
         context,
         (stem, formID, morphDataId) -> {
+          if (checkCase && !acceptCase(originalCase, formID, stem)) {
+            return dictionary.hasFlag(formID, Dictionary.HIDDEN_FLAG);
+          }
           if (acceptsStem(formID)) {
             result[0] = new Root<>(stem, formID);
           }
@@ -165,12 +180,39 @@ public class Hunspell {
     return result[0];
   }
 
+  private boolean acceptCase(WordCase originalCase, int entryId, CharsRef root) {
+    boolean keepCase = dictionary.hasFlag(entryId, dictionary.keepcase);
+    if (originalCase != null) {
+      if (keepCase
+          && dictionary.checkSharpS
+          && originalCase == WordCase.TITLE
+          && containsSharpS(root.chars, root.offset, root.length)) {
+        return true;
+      }
+      return !keepCase;
+    }
+    return !dictionary.hasFlag(entryId, Dictionary.HIDDEN_FLAG);
+  }
+
+  private boolean containsSharpS(char[] word, int offset, int length) {
+    for (int i = 0; i < length; i++) {
+      if (word[i + offset] == 'ß') {
+        return true;
+      }
+    }
+    return false;
+  }
+
   boolean acceptsStem(int formID) {
     return true;
   }
 
   private boolean checkCompounds(CharsRef word, WordCase originalCase, CompoundPart prev) {
     if (prev != null && prev.index > dictionary.compoundMax - 2) return false;
+    if (prev == null && word.offset != 0) {
+      // we check the word's beginning for FORCEUCASE and expect to find it at 0
+      throw new IllegalArgumentException();
+    }
 
     int limit = word.length - dictionary.compoundMin + 1;
     for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
@@ -231,7 +273,7 @@ public class Hunspell {
     if (lastRoot != null
         && !dictionary.hasFlag(lastRoot.entryId, dictionary.forbiddenword)
         && !(dictionary.checkCompoundDup && prev.root.equals(lastRoot))
-        && !hasForceUCaseProblem(lastRoot, originalCase)
+        && !hasForceUCaseProblem(lastRoot, originalCase, word.chars)
         && prev.mayCompound(lastRoot, remainingLength, originalCase)) {
       return true;
     }
@@ -240,8 +282,9 @@ public class Hunspell {
     return checkCompounds(tail, originalCase, prev);
   }
 
-  private boolean hasForceUCaseProblem(Root<?> root, WordCase originalCase) {
+  private boolean hasForceUCaseProblem(Root<?> root, WordCase originalCase, char[] wordChars) {
     if (originalCase == WordCase.TITLE || originalCase == WordCase.UPPER) return false;
+    if (originalCase == null && Character.isUpperCase(wordChars[0])) return false;
     return dictionary.hasFlag(root.entryId, dictionary.forceUCase);
   }
 
@@ -351,12 +394,12 @@ public class Hunspell {
 
     int limit = length - dictionary.compoundMin + 1;
     for (int breakPos = dictionary.compoundMin; breakPos < limit; breakPos++) {
+      checkCanceled.run();
       IntsRef forms = dictionary.lookupWord(wordChars, offset, breakPos);
       if (forms != null) {
         words.add(forms);
 
-        if (dictionary.compoundRules != null
-            && dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words))) {
+        if (dictionary.compoundRules.stream().anyMatch(r -> r.mayMatch(words))) {
           if (checkLastCompoundPart(wordChars, offset + breakPos, length - breakPos, words)) {
             return true;
           }
@@ -375,13 +418,17 @@ public class Hunspell {
 
   private boolean checkLastCompoundPart(
       char[] wordChars, int start, int length, List<IntsRef> words) {
-    IntsRef forms = dictionary.lookupWord(wordChars, start, length);
-    if (forms == null) return false;
+    IntsRef ref = new IntsRef(new int[1], 0, 1);
+    words.add(ref);
 
-    words.add(forms);
-    boolean result = dictionary.compoundRules.stream().anyMatch(r -> r.fullyMatches(words));
+    Stemmer.RootProcessor stopOnMatching =
+        (stem, formID, morphDataId) -> {
+          ref.ints[0] = formID;
+          return dictionary.compoundRules.stream().noneMatch(r -> r.fullyMatches(words));
+        };
+    boolean found = !stemmer.doStem(wordChars, start, length, COMPOUND_RULE_END, stopOnMatching);
     words.remove(words.size() - 1);
-    return result;
+    return found;
   }
 
   private static boolean isNumber(String s) {
@@ -458,9 +505,10 @@ public class Hunspell {
   }
 
   public List<String> suggest(String word) {
+    checkCanceled.run();
     if (word.length() >= 100) return Collections.emptyList();
 
-    if (dictionary.needsInputCleaning) {
+    if (dictionary.needsInputCleaning(word)) {
       word = dictionary.cleanInput(word, new StringBuilder()).toString();
     }
 
@@ -473,7 +521,7 @@ public class Hunspell {
     }
 
     Hunspell suggestionSpeller =
-        new Hunspell(dictionary) {
+        new Hunspell(dictionary, checkCanceled) {
           @Override
           boolean acceptsStem(int formID) {
             return !dictionary.hasFlag(formID, dictionary.noSuggest)
@@ -546,14 +594,10 @@ public class Hunspell {
   }
 
   private String cleanOutput(String s) {
-    if (!dictionary.needsOutputCleaning) return s;
+    if (dictionary.oconv == null) return s;
 
-    try {
-      StringBuilder sb = new StringBuilder(s);
-      Dictionary.applyMappings(dictionary.oconv, sb);
-      return sb.toString();
-    } catch (IOException bogus) {
-      throw new RuntimeException(bogus);
-    }
+    StringBuilder sb = new StringBuilder(s);
+    dictionary.oconv.applyMappings(sb);
+    return sb.toString();
   }
 }

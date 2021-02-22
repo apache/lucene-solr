@@ -106,8 +106,15 @@ import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.response.RequestStatusState.*;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.*;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_EMPTY;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_IF_DOWN;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARDS_PROP;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
@@ -1084,11 +1091,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       req.getParams().required().check(NAME, COLLECTION_PROP);
 
       final String collectionName = SolrIdentifierValidator.validateCollectionName(req.getParams().get(COLLECTION_PROP));
-      final ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
-      //We always want to restore into an collection name which doesn't  exist yet.
-      if (clusterState.hasCollection(collectionName)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' exists, no action taken.");
-      }
       if (h.coreContainer.getZkController().getZkStateReader().getAliases().hasAlias(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Collection '" + collectionName + "' is an existing alias, no action taken.");
       }

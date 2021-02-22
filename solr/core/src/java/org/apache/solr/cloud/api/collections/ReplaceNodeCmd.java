@@ -49,19 +49,19 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
-public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
+public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public ReplaceNodeCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public ReplaceNodeCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
   @SuppressWarnings({"unchecked"})
   public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
     String source = message.getStr(CollectionParams.SOURCE_NODE, message.getStr("source"));
     String target = message.getStr(CollectionParams.TARGET_NODE, message.getStr("target"));
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -95,9 +95,9 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     List<ZkNodeProps> createdReplicas = new ArrayList<>();
 
     AtomicBoolean anyOneFailed = new AtomicBoolean(false);
-    SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ocmh);
+    SolrCloseableLatch countDownLatch = new SolrCloseableLatch(sourceReplicas.size(), ccc.getCloseableToLatchOn());
 
-    SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ocmh);
+    SolrCloseableLatch replicasToRecover = new SolrCloseableLatch(numLeaders, ccc.getCloseableToLatchOn());
     try {
       for (ZkNodeProps sourceReplica : sourceReplicas) {
         @SuppressWarnings({"rawtypes"})
@@ -118,16 +118,16 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
               .assignNrtReplicas(numNrtReplicas)
               .assignTlogReplicas(numTlogReplicas)
               .assignPullReplicas(numPullReplicas)
-              .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()))
+              .onNodes(new ArrayList<>(ccc.getSolrCloudManager().getClusterStateProvider().getLiveNodes()))
               .build();
           Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(
-              ocmh.overseer.getCoreContainer(),
+              ccc.getCoreContainer(),
               clusterState, clusterState.getCollection(sourceCollection));
-          targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
+          targetNode = assignStrategy.assign(ccc.getSolrCloudManager(), assignRequest).get(0).node;
         }
         ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
         if (async != null) msg.getProperties().put(ASYNC, async);
-        final ZkNodeProps addedReplica = ocmh.addReplica(clusterState,
+        final ZkNodeProps addedReplica = new AddReplicaCmd(ccc).addReplica(clusterState,
             msg, nl, () -> {
               countDownLatch.countDown();
               if (nl.get("failure") != null) {
@@ -198,12 +198,12 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     if (anyOneFailed.get()) {
       log.info("Failed to create some replicas. Cleaning up all replicas on target node");
-      SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ocmh);
+      SolrCloseableLatch cleanupLatch = new SolrCloseableLatch(createdReplicas.size(), ccc.getCloseableToLatchOn());
       for (ZkNodeProps createdReplica : createdReplicas) {
         @SuppressWarnings({"rawtypes"})
         NamedList deleteResult = new NamedList();
         try {
-          ocmh.deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult, () -> {
+          new DeleteReplicaCmd(ccc).deleteReplica(zkStateReader.getClusterState(), createdReplica.plus("parallel", "true"), deleteResult, () -> {
             cleanupLatch.countDown();
             if (deleteResult.get("failure") != null) {
               synchronized (results) {
@@ -227,7 +227,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
 
     // we have reached this far means all replicas could be recreated
     //now cleanup the replicas in the source node
-    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ocmh, source, async);
+    DeleteNodeCmd.cleanupReplicas(results, state, sourceReplicas, ccc, source, async);
     results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
   }
 

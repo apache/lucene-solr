@@ -150,6 +150,9 @@ _(raw; not yet edited)_
 * SOLR-15121: XSLTResponseWriter moved to /contrib/scripting/ package instead
  of shipping as part of Solr, due to security concerns.
 
+* SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
+escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the

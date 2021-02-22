@@ -28,6 +28,7 @@ configure(project(":lucene").subprojects) { prj ->
 
     spotless {
       java {
+        toggleOffOn() // obviously, only to be used sparingly.
         // TODO: Work out how to support multiple different header files (we have
         // classes in the codebase that have original headers). We currently use
         // Apache RAT to enforce headers so this is of lesser priority.

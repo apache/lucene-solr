@@ -245,10 +245,13 @@ class ModifyingSuggester {
 
   private void tryMovingChar(String word) {
     for (int i = 0; i < word.length(); i++) {
+      String prefix = word.substring(0, i);
       for (int j = i + 2; j < word.length() && j <= i + MAX_CHAR_DISTANCE; j++) {
-        String prefix = word.substring(0, i);
         trySuggestion(prefix + word.substring(i + 1, j) + word.charAt(i) + word.substring(j));
         trySuggestion(prefix + word.charAt(j) + word.substring(i, j) + word.substring(j + 1));
+      }
+      if (i < word.length() - 1) {
+        trySuggestion(prefix + word.substring(i + 1) + word.charAt(i));
       }
     }
   }
@@ -302,12 +305,12 @@ class ModifyingSuggester {
   }
 
   private void trySplitting(String word) {
-    for (int i = 1; i < word.length() - 1; i++) {
+    for (int i = 1; i < word.length(); i++) {
       String w1 = word.substring(0, i);
       String w2 = word.substring(i);
       if (checkSimpleWord(w1) && checkSimpleWord(w2)) {
         result.add(w1 + " " + w2);
-        if (shouldSplitByDash()) {
+        if (w1.length() > 1 && w2.length() > 1 && shouldSplitByDash()) {
           result.add(w1 + "-" + w2);
         }
       }

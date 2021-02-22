@@ -692,6 +692,7 @@ pre.syntax .tex .formula
 #content .address-bar
 {
   margin-bottom: 10px;
+  margin-top: 10px;
   background-image: url( ../../img/ico/ui-address-bar.png );
   background-position: 5px 50%;
   border: 1px solid #f0f0f0;
