@@ -702,7 +702,8 @@ public class SolrTestCase extends Assert {
       thread.interrupt();
       return true;
     }
-    if (thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-") || thread.getName().contains("ParWork-") || thread.getName().contains("Core-")) {
+    if (thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-") || thread.getName().contains("ParWork-") || thread.getName().contains("Core-")
+        || thread.getName().contains("ProcessThread(")) {
       log.warn("interrupt on {}", thread.getName());
       try {
         thread.join(50);
