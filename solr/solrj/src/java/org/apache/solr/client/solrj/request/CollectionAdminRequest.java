@@ -21,8 +21,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
 import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
 import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
+import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -961,53 +963,49 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   // BACKUP request
   public static class Backup extends AsyncCollectionSpecificAdminRequest {
-    protected final String name;
-    protected Optional<String> repositoryName = Optional.empty();
-    protected String location;
-    protected Optional<String> commitName = Optional.empty();
-    protected Optional<String> indexBackupStrategy = Optional.empty();
-    protected boolean incremental = true;
-    protected Optional<Integer> maxNumBackupPoints = Optional.empty();
+    protected final BackupCollectionPayload backupParams;
 
     public Backup(String collection, String name) {
       super(CollectionAction.BACKUP, collection);
-      this.name = name;
-      this.repositoryName = Optional.empty();
+
+      this.backupParams = new BackupCollectionPayload();
+      this.backupParams.collection = collection;
+      this.backupParams.name = name;
     }
 
     public String getLocation() {
-      return location;
+      return backupParams.location;
     }
 
     public Backup setLocation(String location) {
-      this.location = location;
+      this.backupParams.location = location;
       return this;
     }
 
     public Optional<String> getRepositoryName() {
-      return repositoryName;
+      return Optional.ofNullable(backupParams.repository);
     }
 
     public Backup setRepositoryName(String repositoryName) {
-      this.repositoryName = Optional.ofNullable(repositoryName);
+      this.backupParams.repository = repositoryName;
       return this;
     }
 
     public Optional<String> getCommitName() {
-      return commitName;
+      return Optional.ofNullable(this.backupParams.commitName);
     }
 
     public Backup setCommitName(String commitName) {
-      this.commitName = Optional.ofNullable(commitName);
+      this.backupParams.commitName = commitName;
       return this;
     }
 
     public Optional<String> getIndexBackupStrategy() {
-      return indexBackupStrategy;
+      return Optional.ofNullable(this.backupParams.indexBackup);
     }
 
     public Backup setIndexBackupStrategy(String indexBackupStrategy) {
-      this.indexBackupStrategy = Optional.ofNullable(indexBackupStrategy);
+      this.backupParams.indexBackup = indexBackupStrategy;
       return this;
     }
 
@@ -1025,7 +1023,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      */
     @Deprecated
     public Backup setIncremental(boolean incremental) {
-      this.incremental = incremental;
+      this.backupParams.incremental = incremental;
       return this;
     }
 
@@ -1039,29 +1037,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * @param maxNumBackupPoints the number of backup points to retain after the current backup
      */
     public Backup setMaxNumberBackupPoints(int maxNumBackupPoints) {
-      this.maxNumBackupPoints = Optional.of(maxNumBackupPoints);
+      this.backupParams.maxNumBackupPoints = maxNumBackupPoints;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set(CoreAdminParams.COLLECTION, collection);
-      params.set(CoreAdminParams.NAME, name);
-      params.set(CoreAdminParams.BACKUP_LOCATION, location); //note: optional
-      if (repositoryName.isPresent()) {
-        params.set(CoreAdminParams.BACKUP_REPOSITORY, repositoryName.get());
-      }
-      if (commitName.isPresent()) {
-        params.set(CoreAdminParams.COMMIT_NAME, commitName.get());
-      }
-      if (indexBackupStrategy.isPresent()) {
-        params.set(CollectionAdminParams.INDEX_BACKUP_STRATEGY, indexBackupStrategy.get());
-      }
-      if (maxNumBackupPoints.isPresent()) {
-        params.set(CoreAdminParams.MAX_NUM_BACKUP_POINTS, maxNumBackupPoints.get());
-      }
-      params.set(CoreAdminParams.BACKUP_INCREMENTAL, incremental);
+      params.set(CoreAdminParams.COLLECTION, backupParams.collection);
+      params.set(CoreAdminParams.NAME, backupParams.name);
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, backupParams.location);
+      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, backupParams.repository);
+      params.setNonNull(CoreAdminParams.COMMIT_NAME, backupParams.commitName);
+      params.setNonNull(CollectionAdminParams.INDEX_BACKUP_STRATEGY, backupParams.indexBackup);
+      params.setNonNull(CoreAdminParams.BACKUP_INCREMENTAL, backupParams.incremental);
+      params.setNonNull(CoreAdminParams.MAX_NUM_BACKUP_POINTS, backupParams.maxNumBackupPoints);
       return params;
     }
 
@@ -1073,9 +1063,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   // RESTORE request
   public static class Restore extends AsyncCollectionSpecificAdminRequest {
-    protected final String backupName;
-    protected Optional<String> repositoryName = Optional.empty();
-    protected String location;
+    protected final RestoreCollectionPayload restoreParams;
 
     // in common with collection creation:
     protected String configName;
@@ -1090,27 +1078,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public Restore(String collection, String backupName) {
       super(CollectionAction.RESTORE, collection);
-      this.backupName = backupName;
+
+      restoreParams = new RestoreCollectionPayload();
+      restoreParams.collection = collection;
+      restoreParams.name = backupName;
     }
 
     public String getLocation() {
-      return location;
+      return this.restoreParams.location;
     }
 
     public Restore setLocation(String location) {
-      this.location = location;
+      this.restoreParams.location = location;
       return this;
     }
 
     public Optional<String> getRepositoryName() {
-      return repositoryName;
+      return Optional.ofNullable(this.restoreParams.repository);
     }
 
     public Restore setRepositoryName(String repositoryName) {
-      this.repositoryName = Optional.ofNullable(repositoryName);
+      this.restoreParams.repository = repositoryName;
       return this;
     }
 
+    // TODO JEGERLOW - my attempt to reuse the payload objects falls over a bit here, because I didn't eradicate Map<>
+    //  entirely as I should have.  I'll need to detour and fix that before I'm able to really do anything w/ these
+    //  create-collection-param setters.
     public void setCreateNodeSet(String createNodeSet) {
       this.createNodeSet = Optional.of(createNodeSet);
     }
@@ -1168,9 +1162,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set(CoreAdminParams.COLLECTION, collection);
-      params.set(CoreAdminParams.NAME, backupName);
-      params.set(CoreAdminParams.BACKUP_LOCATION, location); //note: optional
+      params.set(CoreAdminParams.COLLECTION, this.restoreParams.collection);
+      params.set(CoreAdminParams.NAME, this.restoreParams.name);
+      params.set(CoreAdminParams.BACKUP_LOCATION, this.restoreParams.location); //note: optional
       params.set("collection.configName", configName); //note: optional
       if (replicationFactor != null && nrtReplicas != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -1191,9 +1185,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if (properties != null) {
         addProperties(params, properties);
       }
-      if (repositoryName.isPresent()) {
-        params.set(CoreAdminParams.BACKUP_REPOSITORY, repositoryName.get());
-      }
+      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, restoreParams.repository);
       if (createNodeSet.isPresent()) {
         params.set(CREATE_NODE_SET_PARAM, createNodeSet.get());
       }

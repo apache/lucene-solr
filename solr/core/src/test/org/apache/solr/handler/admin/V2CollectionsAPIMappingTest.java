@@ -216,6 +216,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
                         "'indexBackup': 'copy-files', " +
                         "'commitName': 'someSnapshotName', " +
                         "'incremental': true, " +
+                        "'maxNumBackupPoints': 3, " +
                         "'async': 'requestTrackingId' " +
                         "}}");
 
@@ -228,6 +229,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
         assertEquals("copy-files", v1Params.get(CollectionAdminParams.INDEX_BACKUP_STRATEGY));
         assertEquals("someSnapshotName", v1Params.get(CoreAdminParams.COMMIT_NAME));
         assertEquals(true, v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_INCREMENTAL));
+        assertEquals(3, v1Params.getPrimitiveInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS));
         assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
     }
 

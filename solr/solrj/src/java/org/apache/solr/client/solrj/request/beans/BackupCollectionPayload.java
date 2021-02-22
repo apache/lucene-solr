@@ -50,5 +50,8 @@ public class BackupCollectionPayload implements ReflectMapWriter {
     public Boolean incremental;
 
     @JsonProperty
+    public Integer maxNumBackupPoints;
+
+    @JsonProperty
     public String async;
 }
