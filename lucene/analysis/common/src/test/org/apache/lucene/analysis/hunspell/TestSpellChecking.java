@@ -25,8 +25,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSpellChecking extends StemmerTestBase {
+public class TestSpellChecking extends LuceneTestCase {
 
   public void testBase() throws Exception {
     doTest("base");
@@ -233,7 +234,7 @@ public class TestSpellChecking extends StemmerTestBase {
     try {
       Dictionary dictionary =
           new Dictionary(new ByteBuffersDirectory(), "dictionary", affixStream, dictStream);
-      speller = new Hunspell(dictionary);
+      speller = new Hunspell(dictionary, TimeoutPolicy.NO_TIMEOUT, () -> {});
     } finally {
       IOUtils.closeWhileHandlingException(affixStream);
       IOUtils.closeWhileHandlingException(dictStream);
