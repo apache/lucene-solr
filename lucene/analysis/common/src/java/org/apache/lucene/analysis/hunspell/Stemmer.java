@@ -648,11 +648,11 @@ final class Stemmer {
       if (recursionDepth == 0) {
         if (prefix) {
           prefixId = affix;
-          doPrefix = dictionary.complexPrefixes && dictionary.twoStageAffix;
+          doPrefix = dictionary.complexPrefixes && dictionary.isSecondStageAffix(flag);
           // we took away the first prefix.
           // COMPLEXPREFIXES = true:  combine with a second prefix and another suffix
           // COMPLEXPREFIXES = false: combine with a suffix
-        } else if (!dictionary.complexPrefixes && dictionary.twoStageAffix) {
+        } else if (!dictionary.complexPrefixes && dictionary.isSecondStageAffix(flag)) {
           doPrefix = false;
           // we took away a suffix.
           // COMPLEXPREFIXES = true: we don't recurse! only one suffix allowed
@@ -665,7 +665,7 @@ final class Stemmer {
         if (prefix && dictionary.complexPrefixes) {
           prefixId = affix;
           // we took away the second prefix: go look for another suffix
-        } else if (prefix || dictionary.complexPrefixes || !dictionary.twoStageAffix) {
+        } else if (prefix || dictionary.complexPrefixes || !dictionary.isSecondStageAffix(flag)) {
           return true;
         }
         // we took away a prefix, then a suffix: go look for another suffix

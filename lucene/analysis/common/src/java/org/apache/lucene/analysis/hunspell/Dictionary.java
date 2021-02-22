@@ -37,10 +37,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -78,9 +78,6 @@ public class Dictionary {
   private static final int DEFAULT_FLAGS = 65510;
   static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 
-  // TODO: really for suffixes we should reverse the automaton and run them backwards
-  private static final String PREFIX_CONDITION_REGEX = "%s.*";
-  private static final String SUFFIX_CONDITION_REGEX = ".*%s";
   static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
   CharsetDecoder decoder = replacingDecoder(DEFAULT_CHARSET);
 
@@ -147,8 +144,12 @@ public class Dictionary {
   boolean ignoreCase;
   boolean checkSharpS;
   boolean complexPrefixes;
-  // if no affixes have continuation classes, no need to do 2-level affix stripping
-  boolean twoStageAffix;
+
+  /**
+   * All flags used in affix continuation classes. If an outer affix's flag isn't here, there's no
+   * need to do 2-level affix stripping with it.
+   */
+  private char[] secondStageAffixFlags;
 
   char circumfix;
   char keepcase, forceUCase;
@@ -332,6 +333,7 @@ public class Dictionary {
       throws IOException, ParseException {
     TreeMap<String, List<Integer>> prefixes = new TreeMap<>();
     TreeMap<String, List<Integer>> suffixes = new TreeMap<>();
+    Set<Character> stage2Flags = new HashSet<>();
     Map<String, Integer> seenPatterns = new HashMap<>();
 
     // zero condition -> 0 ord
@@ -359,9 +361,9 @@ public class Dictionary {
       } else if ("AM".equals(firstWord)) {
         parseMorphAlias(line);
       } else if ("PFX".equals(firstWord)) {
-        parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX, seenPatterns, seenStrips, flags);
+        parseAffix(prefixes, stage2Flags, line, reader, false, seenPatterns, seenStrips, flags);
       } else if ("SFX".equals(firstWord)) {
-        parseAffix(suffixes, line, reader, SUFFIX_CONDITION_REGEX, seenPatterns, seenStrips, flags);
+        parseAffix(suffixes, stage2Flags, line, reader, true, seenPatterns, seenStrips, flags);
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -476,6 +478,7 @@ public class Dictionary {
 
     this.prefixes = affixFST(prefixes);
     this.suffixes = affixFST(suffixes);
+    secondStageAffixFlags = toSortedCharArray(stage2Flags);
 
     int totalChars = 0;
     for (String strip : seenStrips.keySet()) {
@@ -675,16 +678,15 @@ public class Dictionary {
    * @param affixes Map where the result of the parsing will be put
    * @param header Header line of the affix rule
    * @param reader BufferedReader to read the content of the rule from
-   * @param conditionPattern {@link String#format(String, Object...)} pattern to be used to generate
-   *     the condition regex pattern
    * @param seenPatterns map from condition -&gt; index of patterns, for deduplication.
    * @throws IOException Can be thrown while reading the rule
    */
   private void parseAffix(
       TreeMap<String, List<Integer>> affixes,
+      Set<Character> secondStageFlags,
       String header,
       LineNumberReader reader,
-      String conditionPattern,
+      boolean isSuffix,
       Map<String, Integer> seenPatterns,
       Map<String, Integer> seenStrips,
       FlagEnumerator flags)
@@ -694,7 +696,6 @@ public class Dictionary {
     String[] args = header.split("\\s+");
 
     boolean crossProduct = args[2].equals("Y");
-    boolean isSuffix = conditionPattern.equals(SUFFIX_CONDITION_REGEX);
 
     int numLines;
     try {
@@ -725,7 +726,9 @@ public class Dictionary {
         }
 
         appendFlags = flagParsingStrategy.parseFlags(flagPart);
-        twoStageAffix = true;
+        for (char appendFlag : appendFlags) {
+          secondStageFlags.add(appendFlag);
+        }
       }
       // zero affix -> empty string
       if ("0".equals(affixArg)) {
@@ -750,7 +753,8 @@ public class Dictionary {
         // if we remove 'strip' from condition, we don't have to append 'strip' to check it...!
         // but this is complicated...
       } else {
-        regex = String.format(Locale.ROOT, conditionPattern, condition);
+        // TODO: really for suffixes we should reverse the automaton and run them backwards
+        regex = isSuffix ? ".*" + condition : condition + ".*";
       }
 
       // deduplicate patterns
@@ -1608,6 +1612,20 @@ public class Dictionary {
     }
 
     return reuse;
+  }
+
+  private static char[] toSortedCharArray(Set<Character> set) {
+    char[] chars = new char[set.size()];
+    int i = 0;
+    for (Character c : set) {
+      chars[i++] = c;
+    }
+    Arrays.sort(chars);
+    return chars;
+  }
+
+  boolean isSecondStageAffix(char flag) {
+    return Arrays.binarySearch(secondStageAffixFlags, flag) >= 0;
   }
 
   /** folds single character (according to LANG if present) */

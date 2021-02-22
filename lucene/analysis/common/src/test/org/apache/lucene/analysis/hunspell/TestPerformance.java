@@ -66,7 +66,7 @@ public class TestPerformance extends LuceneTestCase {
 
   @Test
   public void de() throws Exception {
-    checkAnalysisPerformance("de", 200_000);
+    checkAnalysisPerformance("de", 300_000);
   }
 
   @Test
@@ -76,7 +76,7 @@ public class TestPerformance extends LuceneTestCase {
 
   @Test
   public void fr() throws Exception {
-    checkAnalysisPerformance("fr", 40_000);
+    checkAnalysisPerformance("fr", 80_000);
   }
 
   @Test
