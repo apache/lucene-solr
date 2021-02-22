@@ -30,7 +30,7 @@ import org.apache.lucene.util.SmallFloat;
 import org.apache.lucene.util.packed.DirectWriter;
 
 /**
- * Lucene 8.0 DocValues format.
+ * Lucene 9.0 DocValues format.
  *
  * <p>Documents that have a value for the field are encoded in a way that it is always possible to
  * know the ordinal of the current document in the set of documents that have a value. For instance,

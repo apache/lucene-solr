@@ -166,7 +166,7 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
   /**
    * Note: although this format is only used on older versions, we need to keep the write logic in
    * addition to the read logic. It's possible for doc values on older segments to be written to
-   * through in-place doc values updates.
+   * through doc values updates.
    */
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {

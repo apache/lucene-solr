@@ -314,7 +314,7 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
   /**
    * Note: although this format is only used on older versions, we need to keep the write logic in
    * addition to the read logic. It's possible for field infos on older segments to be written to,
-   * for example as part of in-place doc values updates.
+   * for example as part of doc values updates.
    */
   @Override
   public void write(

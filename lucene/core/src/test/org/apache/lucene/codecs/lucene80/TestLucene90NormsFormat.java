@@ -20,7 +20,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseNormsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/** Tests Lucene80NormsFormat */
+/** Tests Lucene90NormsFormat */
 public class TestLucene90NormsFormat extends BaseNormsFormatTestCase {
   private final Codec codec = TestUtil.getDefaultCodec();
 

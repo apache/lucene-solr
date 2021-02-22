@@ -67,7 +67,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.TestUtil;
 
-/** Tests Lucene80DocValuesFormat */
+/** Tests Lucene90DocValuesFormat */
 public abstract class BaseLucene90DocValuesFormatTestCase
     extends BaseCompressingDocValuesFormatTestCase {
 

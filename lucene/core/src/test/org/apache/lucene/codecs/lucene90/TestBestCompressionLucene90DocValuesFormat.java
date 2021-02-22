@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.lucene90;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.util.TestUtil;
 
-/** Tests Lucene80DocValuesFormat */
+/** Tests Lucene90DocValuesFormat */
 public class TestBestCompressionLucene90DocValuesFormat
     extends BaseLucene90DocValuesFormatTestCase {
   private final Codec codec =

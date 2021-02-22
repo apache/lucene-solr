@@ -26,7 +26,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 
 /**
- * Lucene 8.0 Score normalization format.
+ * Lucene 9.0 Score normalization format.
  *
  * <p>Encodes normalization values by encoding each value with the minimum number of bytes needed to
  * represent the range (which can be zero).
