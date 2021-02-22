@@ -26,17 +26,18 @@ import java.util.stream.Collectors;
 /** A class that modifies the given misspelled word in various ways to get correct suggestions */
 class ModifyingSuggester {
   private static final int MAX_CHAR_DISTANCE = 4;
-  private final LinkedHashSet<String> result = new LinkedHashSet<>();
+  private final LinkedHashSet<String> result;
   private final char[] tryChars;
   private final Hunspell speller;
   boolean hasGoodSuggestions;
 
-  ModifyingSuggester(Hunspell speller) {
+  ModifyingSuggester(Hunspell speller, LinkedHashSet<String> result) {
     this.speller = speller;
     tryChars = speller.dictionary.tryChars.toCharArray();
+    this.result = result;
   }
 
-  LinkedHashSet<String> suggest(String word, WordCase wordCase) {
+  void suggest(String word, WordCase wordCase) {
     String low = wordCase != WordCase.LOWER ? speller.dictionary.toLowerCase(word) : word;
     if (wordCase == WordCase.UPPER || wordCase == WordCase.MIXED) {
       trySuggestion(low);
@@ -68,12 +69,11 @@ class ModifyingSuggester {
         tryVariationsOf(speller.dictionary.toTitleCase(low));
       }
 
-      return result.stream()
-          .map(s -> capitalizeAfterSpace(low, s))
-          .collect(Collectors.toCollection(LinkedHashSet::new));
+      List<String> adjusted =
+          result.stream().map(s -> capitalizeAfterSpace(low, s)).collect(Collectors.toList());
+      result.clear();
+      result.addAll(adjusted);
     }
-
-    return result;
   }
 
   // aNew -> "a New" (instead of "a new")

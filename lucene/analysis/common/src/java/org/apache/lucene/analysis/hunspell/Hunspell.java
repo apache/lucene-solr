@@ -24,11 +24,13 @@ import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_RULE_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.SIMPLE_WORD;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
@@ -49,20 +51,25 @@ import org.apache.lucene.util.IntsRef;
  * shared by multiple spell-checkers in different threads).
  */
 public class Hunspell {
+  static final long SUGGEST_TIME_LIMIT = 250;
+
   final Dictionary dictionary;
   final Stemmer stemmer;
+  private final TimeoutPolicy policy;
   final Runnable checkCanceled;
 
   public Hunspell(Dictionary dictionary) {
-    this(dictionary, () -> {});
+    this(dictionary, TimeoutPolicy.RETURN_PARTIAL_RESULT, () -> {});
   }
 
   /**
+   * @param policy a strategy determining what to do when API calls take too much time
    * @param checkCanceled an object that's periodically called, allowing to interrupt spell-checking
    *     or suggestion generation by throwing an exception
    */
-  public Hunspell(Dictionary dictionary, Runnable checkCanceled) {
+  public Hunspell(Dictionary dictionary, TimeoutPolicy policy, Runnable checkCanceled) {
     this.dictionary = dictionary;
+    this.policy = policy;
     this.checkCanceled = checkCanceled;
     stemmer = new Stemmer(dictionary);
   }
@@ -504,7 +511,12 @@ public class Hunspell {
         && spell(word.substring(breakPos + breakStr.length()));
   }
 
-  public List<String> suggest(String word) {
+  /**
+   * @return suggestions for the given misspelled word
+   * @throws SuggestionTimeoutException if the computation takes too long and {@link
+   *     TimeoutPolicy#THROW_EXCEPTION} was specified in the constructor
+   */
+  public List<String> suggest(String word) throws SuggestionTimeoutException {
     checkCanceled.run();
     if (word.length() >= 100) return Collections.emptyList();
 
@@ -520,16 +532,30 @@ public class Hunspell {
       }
     }
 
+    LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+    try {
+      doSuggest(word, wordCase, suggestions);
+    } catch (SuggestionTimeoutException e) {
+      if (policy == TimeoutPolicy.RETURN_PARTIAL_RESULT) {
+        return postprocess(word, wordCase, suggestions);
+      }
+      throw e;
+    }
+
+    return postprocess(word, wordCase, suggestions);
+  }
+
+  private void doSuggest(String word, WordCase wordCase, LinkedHashSet<String> suggestions) {
     Hunspell suggestionSpeller =
-        new Hunspell(dictionary, checkCanceled) {
+        new Hunspell(dictionary, policy, checkTimeLimit(word, wordCase, suggestions)) {
           @Override
           boolean acceptsStem(int formID) {
             return !dictionary.hasFlag(formID, dictionary.noSuggest)
                 && !dictionary.hasFlag(formID, dictionary.subStandard);
           }
         };
-    ModifyingSuggester modifier = new ModifyingSuggester(suggestionSpeller);
-    Set<String> suggestions = modifier.suggest(word, wordCase);
+    ModifyingSuggester modifier = new ModifyingSuggester(suggestionSpeller, suggestions);
+    modifier.suggest(word, wordCase);
 
     if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
       suggestions.addAll(
@@ -540,7 +566,36 @@ public class Hunspell {
     if (word.contains("-") && suggestions.stream().noneMatch(s -> s.contains("-"))) {
       suggestions.addAll(modifyChunksBetweenDashes(word));
     }
+  }
 
+  private Runnable checkTimeLimit(String word, WordCase wordCase, Set<String> suggestions) {
+    return new Runnable() {
+      final long limit = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(SUGGEST_TIME_LIMIT);
+      int invocationCounter = 100;
+
+      @Override
+      public void run() {
+        checkCanceled.run();
+        if (--invocationCounter <= 0) {
+          if (System.nanoTime() > limit) {
+            stop();
+          }
+          invocationCounter = 100;
+        }
+      }
+
+      private void stop() {
+        List<String> partialResult =
+            policy == TimeoutPolicy.RETURN_PARTIAL_RESULT
+                ? null
+                : postprocess(word, wordCase, suggestions);
+        String message = "Time limit of " + SUGGEST_TIME_LIMIT + "ms exceeded for " + word;
+        throw new SuggestionTimeoutException(message, partialResult);
+      }
+    };
+  }
+
+  private List<String> postprocess(String word, WordCase wordCase, Collection<String> suggestions) {
     Set<String> result = new LinkedHashSet<>();
     for (String candidate : suggestions) {
       result.add(adjustSuggestionCase(candidate, wordCase, word));

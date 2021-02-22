@@ -17,13 +17,16 @@
 package org.apache.lucene.analysis.hunspell;
 
 import static org.apache.lucene.analysis.hunspell.StemmerTestBase.loadDictionary;
+import static org.apache.lucene.analysis.hunspell.TimeoutPolicy.*;
 
+import java.io.IOException;
+import java.text.ParseException;
 import java.util.Collections;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class HunspellTest extends LuceneTestCase {
+public class TestHunspell extends LuceneTestCase {
   public void testCheckCanceled() throws Exception {
     AtomicBoolean canceled = new AtomicBoolean();
     Runnable checkCanceled =
@@ -32,8 +35,8 @@ public class HunspellTest extends LuceneTestCase {
             throw new CancellationException();
           }
         };
-    Hunspell hunspell =
-        new Hunspell(loadDictionary(false, "simple.aff", "simple.dic"), checkCanceled);
+    Dictionary dictionary = loadDictionary(false, "simple.aff", "simple.dic");
+    Hunspell hunspell = new Hunspell(dictionary, RETURN_PARTIAL_RESULT, checkCanceled);
 
     assertTrue(hunspell.spell("apache"));
     assertEquals(Collections.singletonList("apach"), hunspell.suggest("apac"));
@@ -41,5 +44,21 @@ public class HunspellTest extends LuceneTestCase {
     canceled.set(true);
     assertThrows(CancellationException.class, () -> hunspell.spell("apache"));
     assertThrows(CancellationException.class, () -> hunspell.suggest("apac"));
+  }
+
+  public void testSuggestionTimeLimit() throws IOException, ParseException {
+    Dictionary dictionary = loadDictionary(false, "timelimit.aff", "simple.dic");
+    String word = "qazwsxedcrfvtgbyhnujm";
+
+    Hunspell incomplete = new Hunspell(dictionary, RETURN_PARTIAL_RESULT, () -> {});
+    assertFalse(incomplete.spell(word));
+    assertEquals(Collections.emptyList(), incomplete.suggest(word));
+
+    Hunspell throwing = new Hunspell(dictionary, THROW_EXCEPTION, () -> {});
+    assertFalse(throwing.spell(word));
+
+    SuggestionTimeoutException exception =
+        assertThrows(SuggestionTimeoutException.class, () -> throwing.suggest(word));
+    assertEquals(Collections.emptyList(), exception.getPartialResult());
   }
 }

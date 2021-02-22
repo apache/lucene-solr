@@ -28,6 +28,7 @@ import java.nio.file.Paths;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -81,7 +82,7 @@ public class TestPerformance extends LuceneTestCase {
 
   @Test
   public void fr_suggest() throws Exception {
-    checkSuggestionPerformance("fr", 10);
+    checkSuggestionPerformance("fr", 100);
   }
 
   private Dictionary loadDictionary(String code) throws IOException, ParseException {
@@ -117,10 +118,10 @@ public class TestPerformance extends LuceneTestCase {
 
   private void checkSuggestionPerformance(String code, int wordCount) throws Exception {
     Dictionary dictionary = loadDictionary(code);
-    Hunspell speller = new Hunspell(dictionary);
+    Hunspell speller = new Hunspell(dictionary, TimeoutPolicy.THROW_EXCEPTION, () -> {});
     List<String> words =
         loadWords(code, wordCount, dictionary).stream()
-            .filter(w -> !speller.spell(w))
+            .filter(w -> hasQuickSuggestions(speller, w))
             .collect(Collectors.toList());
     System.out.println("Checking " + words.size() + " misspelled words");
 
@@ -132,6 +133,25 @@ public class TestPerformance extends LuceneTestCase {
           }
         });
     System.out.println();
+  }
+
+  private boolean hasQuickSuggestions(Hunspell speller, String word) {
+    if (speller.spell(word)) {
+      return false;
+    }
+
+    long start = System.nanoTime();
+    try {
+      speller.suggest(word);
+    } catch (SuggestionTimeoutException e) {
+      System.out.println("Timeout happened for " + word + ", skipping");
+      return false;
+    }
+    long elapsed = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start);
+    if (elapsed > Hunspell.SUGGEST_TIME_LIMIT * 4 / 5) {
+      System.out.println(elapsed + "ms for " + word + ", too close to time limit, skipping");
+    }
+    return true;
   }
 
   private Path findAffFile(String code) throws IOException {
