@@ -17,14 +17,31 @@
 package org.apache.lucene.backward_codecs.Lucene87;
 
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
+import org.apache.lucene.backward_codecs.lucene84.Lucene84RWPostingsFormat;
 import org.apache.lucene.backward_codecs.lucene87.Lucene87Codec;
 import org.apache.lucene.codecs.CompoundFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /** RW impersonation of {@link Lucene87Codec}. */
 public class Lucene87RWCodec extends Lucene87Codec {
 
+  private final PostingsFormat defaultPF = new Lucene84RWPostingsFormat();
+  private final PostingsFormat postingsFormat =
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return defaultPF;
+        }
+      };
+
   @Override
   public final CompoundFormat compoundFormat() {
     return new Lucene50RWCompoundFormat();
+  }
+
+  @Override
+  public PostingsFormat postingsFormat() {
+    return postingsFormat;
   }
 }
