@@ -8,7 +8,7 @@ from previous versions and gives guidelines for making format changes.
 Codecs and file formats are versioned according to the minor version in which
 they were created. For example Lucene87Codec represents the codec used for
 creating Lucene 8.7 indices, and potentially later index versions too. Each
-segment records the codec version that was used to write it.
+segment records the codec name that was used to write it.
 
 Lucene supports the ability to read segments created in older versions by
 maintaining old codec classes. These older codecs live in the backwards-codecs
