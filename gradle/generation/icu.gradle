@@ -109,6 +109,9 @@ configure(project(":lucene:analysis:icu")) {
   }
 
   task regenerate() {
+    description "Regenerate ICU data files"
+    group "generation"
+
     dependsOn genUtr30DataFiles
     dependsOn genRbbi
   }
@@ -121,9 +124,7 @@ configure(project(":lucene:analysis:icu")) {
       if (!icuBinZip.exists()) {
         icuBuildDir.mkdirs()
 
-        // No official Windows binaries for ICU 62.2... I've checked the script
-        // against ICU 68.2 (below) and it works but results in a different generated file.
-        // def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-68-2/icu4c-68_2-Win64-MSVC2019.zip")
+        // Download binaries matching icu4j version in version.props
         def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-Win64-MSVC2019.zip")
 
         logger.lifecycle("Trying to download binary ICU version: ${v} from:\n  ${src}")
@@ -149,8 +150,7 @@ configure(project(":lucene:analysis:icu")) {
       def v = getVersion('com.ibm.icu', 'icu4j');
       def icuSrcTgz = file("${icuBuildDir}/icu4c-${v.replace(".", "_")}-src.tgz")
 
-      // download version matching icu4j version in version.props
-      // curl -fLO https://github.com/unicode-org/icu/releases/download/release-62-2/icu4c-62_2-src.tgz
+      // Download sources for version matching icu4j version in version.props
       if (!icuSrcTgz.exists()) {
         icuBuildDir.mkdirs()
         def src = URI.create("https://github.com/unicode-org/icu/releases/download/release-${v.replace(".", "-")}/icu4c-${v.replace(".", "_")}-src.tgz")
@@ -162,8 +162,7 @@ configure(project(":lucene:analysis:icu")) {
       def icuSrcDir = file("${icuBuildDir}/icu/source")
       project.delete icuSrcDir
 
-      // extract tgz
-      // tar -zxvf icu4c-62_2-src.tgz
+      // Extract the tgz
       project.exec {
         executable "tar"
         ignoreExitValue false
@@ -175,8 +174,7 @@ configure(project(":lucene:analysis:icu")) {
         ]
       }
 
-      // compile
-      // (cd icu/source && ./configure --prefix=$(pwd) --enable-rpath && make -j4)
+      // Compile: (cd icu/source && ./configure --prefix=$(pwd) --enable-rpath && make -j4)
       project.exec {
         executable "sh"
         ignoreExitValue false
@@ -198,8 +196,7 @@ configure(project(":lucene:analysis:icu")) {
         ]
       }
 
-      // test that the binaries work
-      // derb -V
+      // Test that the binaries work:  derb -V
       logger.lifecycle("Compiled ICU, checking...")
       project.exec {
         executable "./derb"

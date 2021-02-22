@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
@@ -595,13 +595,13 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         ZkStateReader.REPLICATION_FACTOR, replicationFactor.toString(),
         "name", COLLECTION_NAME,
         "collection.configName", CONFIG_NAME,
-        OverseerCollectionMessageHandler.NUM_SLICES, numberOfSlices.toString()
+        CollectionHandlingUtils.NUM_SLICES, numberOfSlices.toString()
     );
     if (sendCreateNodeList) {
-      propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET,
+      propMap.put(CollectionHandlingUtils.CREATE_NODE_SET,
           (createNodeList != null)?StrUtils.join(createNodeList, ','):null);
-      if (OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT != createNodeSetShuffle || random().nextBoolean()) {
-        propMap.put(OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE, createNodeSetShuffle);
+      if (CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE_DEFAULT != createNodeSetShuffle || random().nextBoolean()) {
+        propMap.put(CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE, createNodeSetShuffle);
       }
     }
 

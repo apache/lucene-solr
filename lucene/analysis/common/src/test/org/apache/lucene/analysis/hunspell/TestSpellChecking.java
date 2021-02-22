@@ -200,6 +200,10 @@ public class TestSpellChecking extends StemmerTestBase {
     doTest("sug2");
   }
 
+  public void testMaxNGramSugsDefaultIsNotUnlimited() throws Exception {
+    doTest("maxNGramSugsDefault");
+  }
+
   public void testMixedCaseSuggestionHeuristics() throws Exception {
     doTest("i58202");
   }
@@ -210,6 +214,10 @@ public class TestSpellChecking extends StemmerTestBase {
 
   public void testNoSuggest() throws Exception {
     doTest("nosuggest");
+  }
+
+  public void testUseUSKeyboardAsDefaultKeyValue() throws Exception {
+    doTest("keyDefault");
   }
 
   protected void doTest(String name) throws Exception {

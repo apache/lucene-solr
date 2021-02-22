@@ -60,13 +60,13 @@ import static org.apache.solr.core.backup.BackupManager.START_TIME_PROP;
  * The deletion can either delete a specific {@link BackupId}, delete everything except the most recent N backup
  * points, or can be used to trigger a "garbage collection" of unused index files in the backup repository.
  */
-public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
+public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-    private final OverseerCollectionMessageHandler ocmh;
+    private final CollectionCommandContext ccc;
 
-    DeleteBackupCmd(OverseerCollectionMessageHandler ocmh) {
-        this.ocmh = ocmh;
+    public DeleteBackupCmd(CollectionCommandContext ccc) {
+        this.ccc = ccc;
     }
 
     @Override
@@ -81,7 +81,7 @@ public class DeleteBackupCmd implements OverseerCollectionMessageHandler.Cmd {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT, "%s, %s or %s param must be provided", CoreAdminParams.BACKUP_ID, CoreAdminParams.MAX_NUM_BACKUP_POINTS,
                     CoreAdminParams.BACKUP_PURGE_UNUSED));
         }
-        CoreContainer cc = ocmh.overseer.getCoreContainer();
+        CoreContainer cc = ccc.getCoreContainer();
         try (BackupRepository repository = cc.newBackupRepository(repo)) {
             URI location = repository.createURI(backupLocation);
             final URI backupPath = BackupFilePaths.buildExistingBackupLocationURI(repository, location, backupName);

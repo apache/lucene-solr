@@ -28,6 +28,10 @@ New Features
 * SOLR-15055: Re-implement 'withCollection'. This also adds the placement plugin support
   for rejecting replica / collection deletions that would violate placement constraints. (ab, ilan)
 
+* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)
+
+* SOLR-14787: Payload check query parser now supports inequalities. (Kevin Watters, Gus Heck)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -213,6 +217,8 @@ Bug Fixes
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
 
+* SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh) 
+
 ==================  8.9.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -223,6 +229,8 @@ New Features
 
 * SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
 
+* SOLR-15087: SolrCloud backups can now be restored to compatible existing collections, instead of requiring a new collection
+  for each restore. (Jason Gerlowski, shalin, Cao Manh Dat)
 
 Improvements
 ---------------------

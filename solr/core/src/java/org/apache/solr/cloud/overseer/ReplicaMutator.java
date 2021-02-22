@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.api.collections.SplitShardCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -127,14 +127,14 @@ public class ReplicaMutator {
     }
     property = property.toLowerCase(Locale.ROOT);
     String propVal = message.getStr(ZkStateReader.PROPERTY_VALUE_PROP);
-    String shardUnique = message.getStr(OverseerCollectionMessageHandler.SHARD_UNIQUE);
+    String shardUnique = message.getStr(CollectionHandlingUtils.SHARD_UNIQUE);
 
     boolean isUnique = false;
 
     if (SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(property)) {
       if (StringUtils.isNotBlank(shardUnique) && Boolean.parseBoolean(shardUnique) == false) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Overseer ADDREPLICAPROP for " +
-            property + " cannot have " + OverseerCollectionMessageHandler.SHARD_UNIQUE + " set to anything other than" +
+            property + " cannot have " + CollectionHandlingUtils.SHARD_UNIQUE + " set to anything other than" +
             "'true'. No action taken");
       }
       isUnique = true;

@@ -57,15 +57,15 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
+public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Set<String> okayExceptions = Collections.singleton(NonExistentCoreException.class.getName());
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public DeleteCollectionCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public DeleteCollectionCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
@@ -75,7 +75,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ((Runnable)o).run(); // this will ensure the collection is removed from the alias before it disappears.
     }
     final String extCollection = message.getStr(NAME);
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    ZkStateReader zkStateReader = ccc.getZkStateReader();
 
     if (zkStateReader.aliasesManager != null) { // not a mock ZkStateReader
       zkStateReader.aliasesManager.update(); // aliases may have been stale; get latest from ZK
@@ -96,8 +96,8 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     // verify the placement modifications caused by the deletion are allowed
     DocCollection coll = state.getCollectionOrNull(collection);
     if (coll != null) {
-      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ocmh.overseer.getCoreContainer(), state, coll);
-      assignStrategy.verifyDeleteCollection(ocmh.cloudManager, coll);
+      Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer(), state, coll);
+      assignStrategy.verifyDeleteCollection(ccc.getSolrCloudManager(), coll);
     }
 
     final boolean deleteHistory = message.getBool(CoreAdminParams.DELETE_METRICS_HISTORY, true);
@@ -119,7 +119,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
       // remove collection-level metrics history
       if (deleteHistory) {
-        MetricsHistoryHandler historyHandler = ocmh.overseer.getCoreContainer().getMetricsHistoryHandler();
+        MetricsHistoryHandler historyHandler = ccc.getCoreContainer().getMetricsHistoryHandler();
         if (historyHandler != null) {
           String registry = SolrMetricManager.getRegistryName(SolrInfoBean.Group.collection, collection);
           historyHandler.removeHistory(registry);
@@ -136,7 +136,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       ZkNodeProps internalMsg = message.plus(NAME, collection);
 
       @SuppressWarnings({"unchecked"})
-      List<Replica> failedReplicas = ocmh.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions);
+      List<Replica> failedReplicas = CollectionHandlingUtils.collectionCmd(internalMsg, params, results, null, asyncId, okayExceptions, ccc, state);
       for (Replica failedReplica : failedReplicas) {
         boolean isSharedFS = failedReplica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && failedReplica.get("dataDir") != null;
         if (isSharedFS) {
@@ -148,11 +148,11 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.ClusterDeleteCollection, m,
-            ocmh.cloudManager, ocmh.zkStateReader);
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.ClusterDeleteCollection, m,
+            ccc.getSolrCloudManager(), ccc.getZkStateReader());
       } else {
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(Utils.toJSON(m));
       }
 
       // wait for a while until we don't see the collection
@@ -160,7 +160,7 @@ public class DeleteCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       // we can delete any remaining unique aliases
       if (!aliasReferences.isEmpty()) {
-        ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> {
+        ccc.getZkStateReader().aliasesManager.applyModificationAndExportToZk(a -> {
           for (String alias : aliasReferences) {
             a = a.cloneWithCollectionAlias(alias, null);
           }

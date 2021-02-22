@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -54,12 +54,12 @@ import org.slf4j.LoggerFactory;
 /**
  * This class implements the functionality of deleting a collection level snapshot.
  */
-public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
+public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public DeleteSnapshotCmd (OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public DeleteSnapshotCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
@@ -69,7 +69,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
     if (followAliases) {
-      collectionName = ocmh.zkStateReader.getAliases().resolveSimpleAlias(extCollectionName);
+      collectionName = ccc.getZkStateReader().getAliases().resolveSimpleAlias(extCollectionName);
     } else {
       collectionName = extCollectionName;
     }
@@ -77,8 +77,8 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     String asyncId = message.getStr(ASYNC);
     @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
-    SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
+    ShardHandler shardHandler = ccc.getShardHandler();
+    SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
 
     Optional<CollectionSnapshotMetaData> meta = SolrSnapshotManager.getCollectionLevelSnapshot(zkClient, collectionName, commitName);
     if (!meta.isPresent()) { // Snapshot not found. Nothing to do.
@@ -88,7 +88,7 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     log.info("Deleting a snapshot for collection={} with commitName={}", collectionName, commitName);
 
     Set<String> existingCores = new HashSet<>();
-    for (Slice s : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
+    for (Slice s : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica r : s.getReplicas()) {
         existingCores.add(r.getCoreName());
       }
@@ -101,9 +101,9 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
       }
     }
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     log.info("Existing cores with snapshot for collection={} are {}", collectionName, existingCores);
-    for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
+    for (Slice slice : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() == State.DOWN) {
           continue; // Since replica is down - no point sending a request.
