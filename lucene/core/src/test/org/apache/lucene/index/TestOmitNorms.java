@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.index;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
-import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,58 +24,11 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestOmitNorms extends LuceneTestCase {
-  // Tests whether the DocumentWriter correctly enable the
-  // omitNorms bit in the FieldInfo
-  public void testOmitNorms() throws Exception {
-    Directory ram = newDirectory();
-    Analyzer analyzer = new MockAnalyzer(random());
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer));
-    Document d = new Document();
 
-    // this field will have norms
-    Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
-    d.add(f1);
-
-    // this field will NOT have norms
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setOmitNorms(true);
-    Field f2 = newField("f2", "This field has NO norms in all docs", customType);
-    d.add(f2);
-
-    writer.addDocument(d);
-    writer.forceMerge(1);
-    // now we add another document which has term freq for field f2 and not for f1 and verify if the
-    // SegmentMerger
-    // keep things constant
-    d = new Document();
-
-    // Reverse
-    d.add(newField("f1", "This field has norms", customType));
-
-    d.add(newTextField("f2", "This field has NO norms in all docs", Field.Store.NO));
-
-    writer.addDocument(d);
-
-    // force merge
-    writer.forceMerge(1);
-    // flush
-    writer.close();
-
-    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
-    FieldInfos fi = reader.getFieldInfos();
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
-
-    reader.close();
-    ram.close();
-  }
-
-  // Tests whether merging of docs that have different
-  // omitNorms for the same field works
-  public void testMixedMerge() throws Exception {
+  // Tests that merging of docs with different omitNorms throws error
+  public void testMixedMergeThrowsError() throws Exception {
     Directory ram = newDirectory();
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer =
@@ -90,42 +40,40 @@ public class TestOmitNorms extends LuceneTestCase {
     Document d = new Document();
 
     // this field will have norms
-    Field f1 = newTextField("f1", "This field has norms", Field.Store.NO);
+    FieldType fieldType1 = new FieldType(TextField.TYPE_NOT_STORED);
+    fieldType1.setOmitNorms(false);
+    fieldType1.setStoreTermVectors(false);
+    Field f1 = new Field("f1", "This field has norms", fieldType1);
     d.add(f1);
 
     // this field will NOT have norms
-    FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);
-    customType.setOmitNorms(true);
-    Field f2 = newField("f2", "This field has NO norms in all docs", customType);
+    FieldType fieldType2 = new FieldType(TextField.TYPE_NOT_STORED);
+    fieldType2.setOmitNorms(true);
+    fieldType2.setStoreTermVectors(false);
+    Field f2 = new Field("f2", "This field has NO norms in all docs", fieldType2);
     d.add(f2);
 
     for (int i = 0; i < 30; i++) {
       writer.addDocument(d);
     }
 
-    // now we add another document which has norms for field f2 and not for f1 and verify if the
-    // SegmentMerger
-    // keep things constant
-    d = new Document();
+    // reverse omitNorms options for f1 and f2
+    Document d2 = new Document();
+    d2.add(new Field("f1", "This field has NO norms", fieldType2));
+    d2.add(new Field("f2", "This field has norms", fieldType1));
 
-    // Reverese
-    d.add(newField("f1", "This field has norms", customType));
+    IllegalArgumentException exception =
+        expectThrows(IllegalArgumentException.class, () -> writer.addDocument(d2));
+    assertEquals("cannot change field \"f1\" from omitNorms=false to inconsistent omitNorms=true", exception.getMessage());
 
-    d.add(newTextField("f2", "This field has NO norms in all docs", Field.Store.NO));
-
-    for (int i = 0; i < 30; i++) {
-      writer.addDocument(d);
-    }
-
-    // force merge
     writer.forceMerge(1);
-    // flush
     writer.close();
 
     LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
-    assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
+    // assert original omitNorms
+    assertTrue("OmitNorms field bit must not be set.", fi.fieldInfo("f1").omitsNorms() == false);
+    assertTrue("OmitNorms field bit must be set.", fi.fieldInfo("f2").omitsNorms());
 
     reader.close();
     ram.close();
@@ -224,107 +172,4 @@ public class TestOmitNorms extends LuceneTestCase {
     ram.close();
   }
 
-  /**
-   * Tests various combinations of omitNorms=true/false, the field not existing at all, ensuring
-   * that only omitNorms is 'viral'; can't check variations of field indexed with field un-indexed
-   * as it violates the requirement of consistency of data structures across documents. Internally
-   * checks that MultiNorms.norms() is consistent (returns the same bytes) as the fully merged
-   * equivalent.
-   */
-  public void testOmitNormsCombos() throws IOException {
-    // indexed with norms
-    FieldType customType = new FieldType(TextField.TYPE_STORED);
-    Field norms = new Field("foo", "a", customType);
-    // indexed without norms
-    FieldType customType1 = new FieldType(TextField.TYPE_STORED);
-    customType1.setOmitNorms(true);
-    Field noNorms = new Field("foo", "a", customType1);
-    // not indexed, but stored
-    FieldType customType2 = new FieldType();
-    customType2.setStored(true);
-    Field noIndex = new Field("foo", "a", customType2);
-    // not indexed but stored, omitNorms is set
-    FieldType customType3 = new FieldType();
-    customType3.setStored(true);
-    customType3.setOmitNorms(true);
-    Field noNormsNoIndex = new Field("foo", "a", customType3);
-    // not indexed nor stored (doesnt exist at all, we index a different field instead)
-    Field emptyNorms = new Field("bar", "a", customType);
-
-    assertNotNull(getNorms("foo", norms, norms));
-    assertNull(getNorms("foo", norms, noNorms));
-    assertNotNull(getNorms("foo", norms, emptyNorms));
-    assertNull(getNorms("foo", noNorms, noNorms));
-    assertNull(getNorms("foo", noNorms, emptyNorms));
-    assertNull(getNorms("foo", noIndex, noIndex));
-    assertNull(getNorms("foo", noIndex, noNormsNoIndex));
-    assertNull(getNorms("foo", noIndex, emptyNorms));
-    assertNull(getNorms("foo", noNormsNoIndex, noNormsNoIndex));
-    assertNull(getNorms("foo", noNormsNoIndex, emptyNorms));
-    assertNull(getNorms("foo", emptyNorms, emptyNorms));
-  }
-
-  /**
-   * Indexes at least 1 document with f1, and at least 1 document with f2. returns the norms for
-   * "field".
-   */
-  NumericDocValues getNorms(String field, Field f1, Field f2) throws IOException {
-    Directory dir = newDirectory();
-    IndexWriterConfig iwc =
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy());
-    RandomIndexWriter riw = new RandomIndexWriter(random(), dir, iwc);
-
-    // add f1
-    Document d = new Document();
-    d.add(f1);
-    riw.addDocument(d);
-
-    // add f2
-    d = new Document();
-    d.add(f2);
-    riw.addDocument(d);
-
-    // add a mix of f1's and f2's
-    int numExtraDocs = TestUtil.nextInt(random(), 1, 1000);
-    for (int i = 0; i < numExtraDocs; i++) {
-      d = new Document();
-      d.add(random().nextBoolean() ? f1 : f2);
-      riw.addDocument(d);
-    }
-
-    IndexReader ir1 = riw.getReader();
-    // todo: generalize
-    NumericDocValues norms1 = MultiDocValues.getNormValues(ir1, field);
-
-    // fully merge and validate MultiNorms against single segment.
-    riw.forceMerge(1);
-    DirectoryReader ir2 = riw.getReader();
-    NumericDocValues norms2 = getOnlyLeafReader(ir2).getNormValues(field);
-
-    if (norms1 == null) {
-      assertNull(norms2);
-    } else {
-      while (true) {
-        int norms1DocID = norms1.nextDoc();
-        int norms2DocID = norms2.nextDoc();
-        while (norms1DocID < norms2DocID) {
-          assertEquals(0, norms1.longValue());
-          norms1DocID = norms1.nextDoc();
-        }
-        while (norms2DocID < norms1DocID) {
-          assertEquals(0, norms2.longValue());
-          norms2DocID = norms2.nextDoc();
-        }
-        if (norms1.docID() == NO_MORE_DOCS) {
-          break;
-        }
-        assertEquals(norms1.longValue(), norms2.longValue());
-      }
-    }
-    ir1.close();
-    ir2.close();
-    riw.close();
-    dir.close();
-    return norms1;
-  }
 }

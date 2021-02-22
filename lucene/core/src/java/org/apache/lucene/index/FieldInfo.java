@@ -242,27 +242,30 @@ public final class FieldInfo {
   }
 
   void verifySameSchema(FieldInfo o, long dvGen) {
-    verifySameIndexOptions(this.name, this.indexOptions, o.getIndexOptions());
+    String fieldName = this.name;
+    verifySameIndexOptions(fieldName, this.indexOptions, o.getIndexOptions());
     if (this.indexOptions != IndexOptions.NONE) {
-      verifySamePostingsOptions(
-          this.name, this.storeTermVector, this.omitNorms, o.storeTermVector, o.omitNorms);
+      verifySameOmitNorms(fieldName, this.omitNorms, o.omitNorms);
+      verifySameStoreTermVectors(fieldName, this.storeTermVector, o.storeTermVector);
     }
-    verifySameDocValuesType(this.name, this.docValuesType, o.docValuesType);
-    verifySameDVGen(this.name, this.dvGen, dvGen);
+    verifySameDocValuesType(fieldName, this.docValuesType, o.docValuesType);
+    verifySameDVGen(fieldName, this.dvGen, dvGen);
     verifySamePointsOptions(
-        this.name,
+        fieldName,
         this.pointDimensionCount,
         this.pointIndexDimensionCount,
         this.pointNumBytes,
         o.pointDimensionCount,
         o.pointIndexDimensionCount,
-        o.pointNumBytes);
+        o.pointNumBytes
+    );
     verifySameVectorOptions(
-        this.name,
+        fieldName,
         this.vectorDimension,
         this.vectorSearchStrategy,
         o.vectorDimension,
-        o.vectorSearchStrategy);
+        o.vectorSearchStrategy
+    );
   }
 
   /**
@@ -319,31 +322,45 @@ public final class FieldInfo {
     }
   }
 
-  /**
-   * Verify that the provided posting options are the same
-   *
+
+   /**
+   * Verify that the provided store term vectors options are the same
    * @throws IllegalArgumentException if they are not the same
    */
-  public static void verifySamePostingsOptions(
+  public static void verifySameStoreTermVectors(
       String fieldName,
       boolean storeTermVector1,
-      boolean omitNorms1,
-      boolean storeTermVector2,
-      boolean omitNorms2) {
-    if (storeTermVector1 != storeTermVector2 || omitNorms1 != omitNorms2) {
+      boolean storeTermVector2) {
+    if (storeTermVector1 != storeTermVector2) {
       throw new IllegalArgumentException(
           "cannot change field \""
               + fieldName
               + "\" from storeTermVector="
               + storeTermVector1
-              + ", omitNorms="
-              + omitNorms1
               + " to inconsistent storeTermVector="
-              + storeTermVector2
-              + ", omitNorms="
+              + storeTermVector2);
+    }
+  }
+
+  /**
+   * Verify that the provided omitNorms are the same
+   * @throws IllegalArgumentException if they are not the same
+   */
+  public static void verifySameOmitNorms(
+      String fieldName,
+      boolean omitNorms1,
+      boolean omitNorms2) {
+    if (omitNorms1 != omitNorms2) {
+      throw new IllegalArgumentException(
+          "cannot change field \""
+              + fieldName
+              + "\" from omitNorms="
+              + omitNorms1
+              + " to inconsistent omitNorms="
               + omitNorms2);
     }
   }
+
 
   /**
    * Verify that the provided points indexing options are the same

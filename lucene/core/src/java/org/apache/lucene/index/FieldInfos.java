@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import static org.apache.lucene.index.FieldInfo.verifySameDocValuesType;
 import static org.apache.lucene.index.FieldInfo.verifySameIndexOptions;
+import static org.apache.lucene.index.FieldInfo.verifySameOmitNorms;
 import static org.apache.lucene.index.FieldInfo.verifySamePointsOptions;
 import static org.apache.lucene.index.FieldInfo.verifySameVectorOptions;
 
@@ -316,6 +317,8 @@ public class FieldInfos implements Iterable<FieldInfo> {
     private final Map<String, FieldDimensions> dimensions;
 
     private final Map<String, FieldVectorProperties> vectorProps;
+    private final Map<String, Boolean> omitNorms;
+
 
     // TODO: we should similarly catch an attempt to turn
     // norms back on after they were already committed; today
@@ -332,6 +335,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       this.docValuesType = new HashMap<>();
       this.dimensions = new HashMap<>();
       this.vectorProps = new HashMap<>();
+      this.omitNorms = new HashMap<>();
       this.softDeletesFieldName = softDeletesFieldName;
     }
 
@@ -344,6 +348,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         String fieldName,
         int preferredFieldNumber,
         IndexOptions indexOptions,
+        boolean omitNorms,
         DocValuesType dvType,
         int dimensionCount,
         int indexDimensionCount,
@@ -368,7 +373,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         FieldInfo.checkOptionsCorrectness(
             fieldName,
             false,
-            false,
+            omitNorms,
             false,
             indexOptions,
             dvType,
@@ -377,10 +382,14 @@ public class FieldInfos implements Iterable<FieldInfo> {
             indexDimensionCount,
             dimensionNumBytes,
             vectorDimension,
-            searchStrategy);
+            searchStrategy
+        );
         numberToName.put(fieldNumber, fieldName);
         nameToNumber.put(fieldName, fieldNumber);
         this.indexOptions.put(fieldName, indexOptions);
+        if (indexOptions != IndexOptions.NONE) {
+          this.omitNorms.put(fieldName, omitNorms);
+        }
         docValuesType.put(fieldName, dvType);
         dimensions.put(
             fieldName, new FieldDimensions(dimensionCount, indexDimensionCount, dimensionNumBytes));
@@ -389,6 +398,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
         verifySameSchema(
             fieldName,
             indexOptions,
+            omitNorms,
             dvType,
             dimensionCount,
             indexDimensionCount,
@@ -425,6 +435,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     private void verifySameSchema(
         String fieldName,
         IndexOptions indexOptions,
+        boolean omitNorms,
         DocValuesType dvType,
         int dimensionCount,
         int indexDimensionCount,
@@ -434,6 +445,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
 
       IndexOptions currentOpts = this.indexOptions.get(fieldName);
       verifySameIndexOptions(fieldName, currentOpts, indexOptions);
+      if (currentOpts != IndexOptions.NONE) {
+        boolean curOmitNorms = this.omitNorms.get(fieldName);
+        verifySameOmitNorms(fieldName, curOmitNorms, omitNorms);
+      }
 
       DocValuesType currentDVType = docValuesType.get(fieldName);
       verifySameDocValuesType(fieldName, currentDVType, dvType);
@@ -673,6 +688,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
               name,
               preferredFieldNumber,
               indexOptions,
+              omitNorms,
               docValues,
               dataDimensionCount,
               indexDimensionCount,

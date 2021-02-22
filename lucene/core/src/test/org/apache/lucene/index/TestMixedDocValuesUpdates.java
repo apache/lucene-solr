@@ -709,7 +709,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       IllegalArgumentException iae =
           expectThrows(IllegalArgumentException.class, () -> writer.addDocument(doc1));
       assertEquals(
-          "cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"",
+          "cannot change field \"not_existing\" from doc values type=NUMERIC to inconsistent doc values type=BINARY",
           iae.getMessage());
 
       iae =
@@ -720,12 +720,12 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
                       new Term("id", "1"),
                       new BinaryDocValuesField("not_existing", new BytesRef())));
       assertEquals(
-          "cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"",
+          "cannot change field \"not_existing\" from doc values type=NUMERIC to inconsistent doc values type=BINARY",
           iae.getMessage());
     }
   }
 
-  public void testUpdateFieldWithNoPreviousDocValues() throws IOException {
+  public void testUpdateFieldWithNoPreviousDocValuesThrowsError() throws IOException {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     try (Directory dir = newDirectory();
         IndexWriter writer = new IndexWriter(dir, conf)) {
@@ -740,13 +740,10 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       } else if (random().nextBoolean()) {
         writer.commit();
       }
-      writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField("id", 1));
-      try (DirectoryReader reader = writer.getReader()) {
-        NumericDocValues id = reader.leaves().get(0).reader().getNumericDocValues("id");
-        assertNotNull(id);
-        assertTrue(id.advanceExact(0));
-        assertEquals(1, id.longValue());
-      }
+      IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
+        () -> writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField("id", 1))
+      );
+      assertEquals("cannot change field \"id\" from index options=DOCS to inconsistent index options=NONE", exception.getMessage());
     }
   }
 }
