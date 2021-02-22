@@ -42,6 +42,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.update.SolrIndexSplitter;
+
+import org.hamcrest.MatcherAssert;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -127,7 +130,8 @@ public class SplitShardTest extends SolrCloudTestCase {
     CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
             .setShardName("shard1");
     SolrResponse response = splitShard.process(cluster.getSolrClient());
-    assertTrue(response.getResponse().toString().contains("hardLinkCopy"));
+    MatcherAssert.assertThat("LINK split method is default, so split response should contain link timings.",
+            response.getResponse().toString().contains("hardLinkCopy"), Matchers.equalTo(true));
 
     waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
                     cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
@@ -138,7 +142,9 @@ public class SplitShardTest extends SolrCloudTestCase {
             .setShardName("shard2")
             .setSplitMethod(SolrIndexSplitter.SplitMethod.REWRITE.name());
     response = splitShard.process(cluster.getSolrClient());
-    assertFalse(response.getResponse().toString().contains("hardLinkCopy"));
+    MatcherAssert.assertThat("REWRITE split method was specified, so split response should NOT contain link timings.",
+            response.getResponse().toString().contains("hardLinkCopy"), Matchers.equalTo(false));
+
     waitForState("Timed out waiting for sub shards to be active. Number of active shards=" +
                     cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getActiveSlices().size(),
             COLLECTION_NAME, activeClusterShape(5, 7));
@@ -150,7 +156,8 @@ public class SplitShardTest extends SolrCloudTestCase {
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when splitMethod is anything other than LINK or REWRITE");
     } catch (BaseHttpSolrClient.RemoteSolrException ex) {
-      assertTrue(ex.getMessage().contains("Unknown value 'splitMethod': HELLO"));
+      MatcherAssert.assertThat("Invalid split method HELLO was specified, so split should fail.",
+              ex.getMessage().contains("Unknown value 'splitMethod': HELLO"), Matchers.equalTo(true));
     }
   }
 

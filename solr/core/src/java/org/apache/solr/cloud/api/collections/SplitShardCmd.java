@@ -599,7 +599,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       }
 
       if (log.isDebugEnabled()) {
-        log.debug("Timings for split sub-ops: ", timings.toString());
+        log.debug("Timings for split sub-ops: {}", timings.toString());
       }
       success = true;
       // don't unlock the shard yet - only do this if the final switch-over in
