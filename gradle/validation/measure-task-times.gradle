@@ -1,0 +1,69 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import java.util.concurrent.ConcurrentHashMap
+import java.util.stream.Collectors
+
+// Measure aggregate wall time of each task execution time (summed up across
+// all projects).
+
+if (propertyOrDefault("task.times", null) != null) {
+  gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
+    def taskTimes = new ConcurrentHashMap<String, Long>()
+    def measured = graph.allTasks.findAll { task -> true }
+
+    graph.addTaskExecutionListener(new TaskExecutionListener() {
+      @Override
+      void beforeExecute(Task task) {
+        def start = System.currentTimeMillis()
+        if (measured.contains(task)) {
+          taskTimes.put(task.path, start)
+        }
+      }
+
+      @Override
+      void afterExecute(Task task, TaskState taskState) {
+        def stop = System.currentTimeMillis()
+        if (measured.contains(task)) {
+          if (taskState.didWork) {
+            taskTimes.compute(task.path, { k, v -> stop - v })
+          } else {
+            taskTimes.remove(task.path)
+          }
+        }
+      }
+    })
+
+    // After the build is finished, check the test count.
+    gradle.buildFinished {
+      // Compute aggregate times of all task execution times.
+      def aggregates = taskTimes.entrySet().stream()
+          .collect(Collectors.groupingBy({e -> e.key.replaceAll(".*:", "")}))
+           .entrySet().stream()
+           .collect(Collectors.toMap(
+               {e -> e.key },
+               {e -> e.value.stream().mapToLong({ entry -> entry.value }).sum() }
+           ))
+
+      logger.lifecycle("Aggregate task times (possibly running in parallel!):")
+      aggregates.entrySet().stream()
+        .sorted({a, b -> Long.compare(b.value, a.value) })
+        .forEach {v ->
+          logger.lifecycle(String.format(Locale.ROOT, " %6.2f sec.  %s", v.value / 1000.0, v.key))
+        }
+    }
+  }
+}

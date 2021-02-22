@@ -277,8 +277,6 @@ What follows are brief descriptions of the currently available update request pr
 
 {solr-javadocs}/core/org/apache/solr/update/processor/IgnoreLargeDocumentProcessorFactory.html[IgnoreLargeDocumentProcessorFactory]:: Allows you to prevent large documents with size more than `limit` (in KB) from getting indexed. It can help to prevent unexpected problems on indexing as well as on recovering because of very large documents.
 
-{solr-javadocs}/core/org/apache/solr/update/processor/CloneFieldUpdateProcessorFactory.html[CloneFieldUpdateProcessorFactory]:: Clones the values found in any matching _source_ field into the configured _dest_ field.
-
 {solr-javadocs}/core/org/apache/solr/update/processor/RegexpBoostProcessorFactory.html[RegexpBoostProcessorFactory]:: A processor which will match content of "inputField" against regular expressions found in "boostFilename", and if it matches will return the corresponding boost value from the file and output this to "boostField" as a double value.
 
 {solr-javadocs}/core/org/apache/solr/update/processor/SignatureUpdateProcessorFactory.html[SignatureUpdateProcessorFactory]:: Uses a defined set of fields to generate a hash "signature" for the document. Useful for only indexing one copy of "similar" documents.

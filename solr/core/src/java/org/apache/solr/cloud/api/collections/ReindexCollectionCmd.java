@@ -88,7 +88,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
  *    <li>optionally delete the source collection.</li>
  * </ol>
  */
-public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cmd {
+public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String COMMAND = "cmd";
@@ -114,7 +114,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM
   );
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
   private static AtomicInteger tmpCollectionSeq = new AtomicInteger();
 
@@ -161,8 +161,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
   private String zkHost;
 
-  public ReindexCollectionCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public ReindexCollectionCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
@@ -179,7 +179,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collection;
     if (followAliases) {
-      collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+      collection = ccc.getSolrCloudManager().getClusterStateProvider().resolveSimpleAlias(extCollection);
     } else {
       collection = extCollection;
     }
@@ -191,7 +191,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       target = collection;
     } else {
       if (followAliases) {
-        target = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(target);
+        target = ccc.getSolrCloudManager().getClusterStateProvider().resolveSimpleAlias(target);
       }
     }
     boolean sameTarget = target.equals(collection) || target.equals(extCollection);
@@ -200,7 +200,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     if (command == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown command: " + message.getStr(COMMAND));
     }
-    Map<String, Object> reindexingState = getReindexingState(ocmh.cloudManager.getDistribStateManager(), collection);
+    Map<String, Object> reindexingState = getReindexingState(ccc.getSolrCloudManager().getDistribStateManager(), collection);
     if (!reindexingState.containsKey(STATE)) {
       reindexingState.put(STATE, State.IDLE.toLower());
     }
@@ -244,7 +244,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       router = DocRouter.DEFAULT;
     }
 
-    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, ocmh.zkStateReader.readConfigName(collection));
+    String configName = message.getStr(ZkStateReader.CONFIGNAME_PROP, ccc.getZkStateReader().readConfigName(collection));
     String targetCollection;
     int seq = tmpCollectionSeq.getAndIncrement();
     if (sameTarget) {
@@ -263,7 +263,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     Exception exc = null;
     boolean createdTarget = false;
     try {
-      zkHost = ocmh.zkStateReader.getZkClient().getZkServerAddress();
+      zkHost = ccc.getZkStateReader().getZkClient().getZkServerAddress();
       // set the running flag
       reindexingState.clear();
       reindexingState.put("actualSourceCollection", collection);
@@ -286,8 +286,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             CommonParams.NAME, chkCollection,
             CoreAdminParams.DELETE_METRICS_HISTORY, "true"
         );
-        ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
-        ocmh.checkResults("deleting old checkpoint collection " + chkCollection, cmdResults, true);
+        new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+        CollectionHandlingUtils.checkResults("deleting old checkpoint collection " + chkCollection, cmdResults, true);
       }
 
       if (maybeAbort(collection)) {
@@ -332,9 +332,9 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, cmd, cmdResults);
+      new CreateCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
       createdTarget = true;
-      ocmh.checkResults("creating target collection " + targetCollection, cmdResults, true);
+      CollectionHandlingUtils.checkResults("creating target collection " + targetCollection, cmdResults, true);
 
       // create the checkpoint collection - use RF=1 and 1 shard
       cmd = new ZkNodeProps(
@@ -346,15 +346,15 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           CommonAdminParams.WAIT_FOR_FINAL_STATE, "true"
       );
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.CREATE).call(clusterState, cmd, cmdResults);
-      ocmh.checkResults("creating checkpoint collection " + chkCollection, cmdResults, true);
+      new CreateCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      CollectionHandlingUtils.checkResults("creating checkpoint collection " + chkCollection, cmdResults, true);
       // wait for a while until we see both collections
-      TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, ocmh.timeSource);
+      TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
       boolean created = false;
       while (!waitUntil.hasTimedOut()) {
         waitUntil.sleep(100);
         // this also refreshes our local var clusterState
-        clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
+        clusterState = ccc.getSolrCloudManager().getClusterStateProvider().getClusterState();
         created = clusterState.hasCollection(targetCollection) && clusterState.hasCollection(chkCollection);
         if (created) break;
       }
@@ -371,11 +371,11 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
           ZkStateReader.COLLECTION_PROP, collection,
           ZkStateReader.READ_ONLY, "true");
-      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, cmd,
-            ocmh.cloudManager, ocmh.zkStateReader);
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, cmd,
+            ccc.getSolrCloudManager(), ccc.getZkStateReader());
       } else {
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(cmd));
+        ccc.offerStateUpdate(Utils.toJSON(cmd));
       }
 
       TestInjection.injectReindexLatch();
@@ -407,7 +407,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       log.debug("- starting copying documents from {} to {}", collection, targetCollection);
       SolrResponse rsp = null;
       try {
-        rsp = ocmh.cloudManager.request(new QueryRequest(q));
+        rsp = ccc.getSolrCloudManager().request(new QueryRequest(q));
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unable to copy documents from " +
             collection + " to " + targetCollection, e);
@@ -439,8 +439,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             CommonParams.NAME, extCollection,
             "collections", targetCollection);
         cmdResults = new NamedList<>();
-        ocmh.commandMap.get(CollectionParams.CollectionAction.CREATEALIAS).call(clusterState, cmd, cmdResults);
-        ocmh.checkResults("setting up alias " + extCollection + " -> " + targetCollection, cmdResults, true);
+        new CreateAliasCmd(ccc).call(clusterState, cmd, cmdResults);
+        CollectionHandlingUtils.checkResults("setting up alias " + extCollection + " -> " + targetCollection, cmdResults, true);
         reindexingState.put("alias", extCollection + " -> " + targetCollection);
       }
 
@@ -462,8 +462,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
-      ocmh.checkResults("deleting checkpoint collection " + chkCollection, cmdResults, true);
+      new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      CollectionHandlingUtils.checkResults("deleting checkpoint collection " + chkCollection, cmdResults, true);
 
       // 7. optionally delete the source collection
       if (removeSource) {
@@ -475,19 +475,19 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
             CoreAdminParams.DELETE_METRICS_HISTORY, "true"
         );
         cmdResults = new NamedList<>();
-        ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
-        ocmh.checkResults("deleting source collection " + collection, cmdResults, true);
+        new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+        CollectionHandlingUtils.checkResults("deleting source collection " + collection, cmdResults, true);
       } else {
         // 8. clear readOnly on source
         ZkNodeProps props = new ZkNodeProps(
             Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
             ZkStateReader.COLLECTION_PROP, collection,
             ZkStateReader.READ_ONLY, null);
-        if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-          ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
-              ocmh.cloudManager, ocmh.zkStateReader);
+        if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
+              ccc.getSolrCloudManager(), ccc.getZkStateReader());
         } else {
-          ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+          ccc.offerStateUpdate(Utils.toJSON(props));
         }
       }
       // 9. set FINISHED state on the target and clear the state on the source
@@ -495,11 +495,11 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
           ZkStateReader.COLLECTION_PROP, targetCollection,
           REINDEXING_STATE, State.FINISHED.toLower());
-      if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-        ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
-            ocmh.cloudManager, ocmh.zkStateReader);
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
+            ccc.getSolrCloudManager(), ccc.getZkStateReader());
       } else {
-        ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+        ccc.offerStateUpdate(Utils.toJSON(props));
       }
 
       reindexingState.put(STATE, State.FINISHED.toLower());
@@ -525,7 +525,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
   private Map<String, Object> setReindexingState(String collection, State state, Map<String, Object> props) throws Exception {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
-    DistribStateManager stateManager = ocmh.cloudManager.getDistribStateManager();
+    DistribStateManager stateManager = ccc.getSolrCloudManager().getDistribStateManager();
     if (props == null) { // retrieve existing props, if any
       props = Utils.getJson(stateManager, path);
     }
@@ -541,7 +541,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
 
   private void removeReindexingState(String collection) throws Exception {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
-    DistribStateManager stateManager = ocmh.cloudManager.getDistribStateManager();
+    DistribStateManager stateManager = ccc.getSolrCloudManager().getDistribStateManager();
     if (stateManager.hasData(path)) {
       stateManager.removeData(path, -1);
     }
@@ -555,7 +555,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   }
 
   private long getNumberOfDocs(String collection) {
-    CloudSolrClient solrClient = ocmh.overseer.getCoreContainer().getSolrClientCache().getCloudSolrClient(zkHost);
+    CloudSolrClient solrClient = ccc.getCoreContainer().getSolrClientCache().getCloudSolrClient(zkHost);
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add(CommonParams.Q, "*:*");
@@ -568,13 +568,13 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   }
 
   private boolean maybeAbort(String collection) throws Exception {
-    DocCollection coll = ocmh.cloudManager.getClusterStateProvider().getClusterState().getCollectionOrNull(collection);
+    DocCollection coll = ccc.getSolrCloudManager().getClusterStateProvider().getClusterState().getCollectionOrNull(collection);
     if (coll == null) {
       // collection no longer present - abort
       log.info("## Aborting - collection {} no longer present.", collection);
       return true;
     }
-    Map<String, Object> reindexingState = getReindexingState(ocmh.cloudManager.getDistribStateManager(), collection);
+    Map<String, Object> reindexingState = getReindexingState(ccc.getSolrCloudManager().getDistribStateManager(), collection);
     State state = State.get(reindexingState.getOrDefault(STATE, State.RUNNING.toLower()));
     if (state != State.ABORTED) {
       return false;
@@ -639,7 +639,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   // XXX SolrCore where the daemon is running
   @SuppressWarnings({"unchecked"})
   private void waitForDaemon(String daemonName, String daemonUrl, String sourceCollection, String targetCollection, Map<String, Object> reindexingState) throws Exception {
-    HttpClient client = ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
+    HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder()
         .withHttpClient(client)
         .withBaseSolrUrl(daemonUrl).build()) {
@@ -684,7 +684,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           reindexingState.put("processedDocs", getNumberOfDocs(targetCollection));
           setReindexingState(sourceCollection, State.RUNNING, reindexingState);
         }
-        ocmh.cloudManager.getTimeSource().sleep(2000);
+        ccc.getSolrCloudManager().getTimeSource().sleep(2000);
       } while (isRunning && !maybeAbort(sourceCollection));
     }
   }
@@ -692,7 +692,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   @SuppressWarnings({"unchecked"})
   private void killDaemon(String daemonName, String daemonUrl) throws Exception {
     log.debug("-- killing daemon {} at {}", daemonName, daemonUrl);
-    HttpClient client = ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
+    HttpClient client = ccc.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient();
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder()
         .withHttpClient(client)
         .withBaseSolrUrl(daemonUrl).build()) {
@@ -733,7 +733,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           // now wait for the daemon to really stop
           q.set("action", "list");
           req = new QueryRequest(q);
-          TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, ocmh.timeSource);
+          TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, ccc.getSolrCloudManager().getTimeSource());
           while (!timeOut.hasTimedOut()) {
             rsp = solrClient.request(req);
             rs = (Map<String, Object>) rsp.get("result-set");
@@ -788,7 +788,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     if (daemonUrl != null) {
       killDaemon(daemonName, daemonUrl);
     }
-    ClusterState clusterState = ocmh.cloudManager.getClusterStateProvider().getClusterState();
+    ClusterState clusterState = ccc.getSolrCloudManager().getClusterStateProvider().getClusterState();
     NamedList<Object> cmdResults = new NamedList<>();
     if (createdTarget && !collection.equals(targetCollection) && clusterState.hasCollection(targetCollection)) {
       log.debug(" -- removing {}", targetCollection);
@@ -798,8 +798,8 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           FOLLOW_ALIASES, "false",
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
-      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
-      ocmh.checkResults("CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
+      new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      CollectionHandlingUtils.checkResults("CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
 
     }
     // remove chk collection
@@ -812,19 +812,19 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
       cmdResults = new NamedList<>();
-      ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
-      ocmh.checkResults("CLEANUP: deleting checkpoint collection " + chkCollection, cmdResults, false);
+      new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      CollectionHandlingUtils.checkResults("CLEANUP: deleting checkpoint collection " + chkCollection, cmdResults, false);
     }
     log.debug(" -- turning readOnly mode off for {}", collection);
     ZkNodeProps props = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower(),
         ZkStateReader.COLLECTION_PROP, collection,
         ZkStateReader.READ_ONLY, null);
-    if (ocmh.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
-      ocmh.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
-          ocmh.cloudManager, ocmh.zkStateReader);
+    if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection, props,
+          ccc.getSolrCloudManager(), ccc.getZkStateReader());
     } else {
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
+      ccc.offerStateUpdate(Utils.toJSON(props));
     }
     removeReindexingState(collection);
   }

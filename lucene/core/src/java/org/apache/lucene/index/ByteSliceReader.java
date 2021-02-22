@@ -138,4 +138,9 @@ final class ByteSliceReader extends DataInput {
       }
     }
   }
+
+  @Override
+  public void skipBytes(long numBytes) throws IOException {
+    skipBytesSlowly(numBytes);
+  }
 }

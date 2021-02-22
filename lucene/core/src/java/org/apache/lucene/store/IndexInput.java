@@ -72,6 +72,23 @@ public abstract class IndexInput extends DataInput implements Cloneable, Closeab
    */
   public abstract void seek(long pos) throws IOException;
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>Behavior is functionally equivalent to seeking to <code>getFilePointer() + numBytes</code>.
+   *
+   * @see #getFilePointer()
+   * @see #seek(long)
+   */
+  @Override
+  public void skipBytes(long numBytes) throws IOException {
+    if (numBytes < 0) {
+      throw new IllegalArgumentException("numBytes must be >= 0, got " + numBytes);
+    }
+    final long skipTo = getFilePointer() + numBytes;
+    seek(skipTo);
+  }
+
   /** The number of bytes in the file. */
   public abstract long length();
 

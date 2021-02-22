@@ -25,10 +25,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assume;
 import org.junit.AssumptionViolatedException;
@@ -54,24 +56,43 @@ public class TestPerformance extends LuceneTestCase {
 
   @Test
   public void en() throws Exception {
-    checkPerformance("en", 500_000);
+    checkAnalysisPerformance("en", 1_000_000);
+  }
+
+  @Test
+  public void en_suggest() throws Exception {
+    checkSuggestionPerformance("en", 1_000);
   }
 
   @Test
   public void de() throws Exception {
-    checkPerformance("de", 200_000);
+    checkAnalysisPerformance("de", 300_000);
+  }
+
+  @Test
+  public void de_suggest() throws Exception {
+    checkSuggestionPerformance("de", 30);
   }
 
   @Test
   public void fr() throws Exception {
-    checkPerformance("fr", 40_000);
+    checkAnalysisPerformance("fr", 80_000);
   }
 
-  private void checkPerformance(String code, int wordCount) throws Exception {
-    Path aff = findAffFile(code);
+  @Test
+  public void fr_suggest() throws Exception {
+    checkSuggestionPerformance("fr", 10);
+  }
 
+  private Dictionary loadDictionary(String code) throws IOException, ParseException {
+    Path aff = findAffFile(code);
     Dictionary dictionary = TestAllDictionaries.loadDictionary(aff);
     System.out.println("Loaded " + aff);
+    return dictionary;
+  }
+
+  private void checkAnalysisPerformance(String code, int wordCount) throws Exception {
+    Dictionary dictionary = loadDictionary(code);
 
     List<String> words = loadWords(code, wordCount, dictionary);
 
@@ -89,6 +110,25 @@ public class TestPerformance extends LuceneTestCase {
         blackHole -> {
           for (String word : words) {
             blackHole.accept(speller.spell(word));
+          }
+        });
+    System.out.println();
+  }
+
+  private void checkSuggestionPerformance(String code, int wordCount) throws Exception {
+    Dictionary dictionary = loadDictionary(code);
+    Hunspell speller = new Hunspell(dictionary);
+    List<String> words =
+        loadWords(code, wordCount, dictionary).stream()
+            .filter(w -> !speller.spell(w))
+            .collect(Collectors.toList());
+    System.out.println("Checking " + words.size() + " misspelled words");
+
+    measure(
+        "Suggestions for " + code,
+        blackHole -> {
+          for (String word : words) {
+            blackHole.accept(speller.suggest(word));
           }
         });
     System.out.println();

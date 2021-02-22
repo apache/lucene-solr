@@ -50,6 +50,10 @@ public abstract class ChecksumIndexInput extends IndexInput {
       throw new IllegalStateException(
           getClass() + " cannot seek backwards (pos=" + pos + " getFilePointer()=" + curFP + ")");
     }
-    skipBytes(skip);
+    // we must skip slowly to ensure skipped bytes are still read and used
+    // to update checksums
+    // TODO: this "slow skip" logic should be moved into this class once
+    //       no longer needed as default logic in DataInput
+    skipBytesSlowly(skip);
   }
 }
