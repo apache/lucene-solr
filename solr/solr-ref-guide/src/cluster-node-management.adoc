@@ -164,7 +164,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=propertyNam
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/v2/cluster -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/cluster -H 'Content-Type: application/json' -d'
   {
     "set-property": {
       "name": "urlScheme",
@@ -265,7 +265,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
       }
     }
   }
-}' http://localhost:8983/v2/cluster
+}' http://localhost:8983/api/cluster
 ----
 ====
 --
