@@ -59,7 +59,9 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +74,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROPS_ZKNODE
 
 @LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059")
 public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
+  private static final String origSysprop=System.getProperty("solr.disableConfigSetsCreateAuthChecks");
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String alias = "myalias";
@@ -101,6 +105,20 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       solrClient.close();
     }
     shutdownCluster();
+  }
+
+  @BeforeClass
+  public static void setUpClass() {
+    System.setProperty("solr.disableConfigSetsCreateAuthChecks", "true");
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    if (origSysprop != null) {
+      System.setProperty("solr.disableConfigSetsCreateAuthChecks", origSysprop);
+    } else {
+      System.getProperties().remove("solr.disableConfigSetsCreateAuthChecks");
+    }
   }
 
   @Slow

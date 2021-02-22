@@ -28,7 +28,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -61,7 +60,7 @@ import org.junit.Ignore;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13696")
+//@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13696")
 @Ignore  // don't try too run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 
@@ -265,8 +264,6 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       collections.addAll(new CollectionAdminRequest.ListAliases().process(getSolrClient()).getAliasesAsLists().get(getAlias()));
     }
 
-    int commitWithin = random().nextBoolean() ? -1 : 500; // if -1, we commit explicitly instead
-
     if (random().nextBoolean()) {
       // Send in separate threads. Choose random collection & solrClient
       ExecutorService exec = null;
@@ -277,7 +274,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
           List<Future<UpdateResponse>> futures = new ArrayList<>(solrInputDocuments.length);
           for (SolrInputDocument solrInputDocument : solrInputDocuments) {
             String col = collections.get(random().nextInt(collections.size()));
-            futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, commitWithin)));
+            futures.add(exec.submit(() -> solrClient.add(col, solrInputDocument, -1)));
           }
           for (Future<UpdateResponse> future : futures) {
             assertUpdateResponse(future.get());
@@ -294,34 +291,11 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
       // send in a batch.
       String col = collections.get(random().nextInt(collections.size()));
       try (CloudSolrClient solrClient = getCloudSolrClient(cluster)) {
-        assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), commitWithin));
+        assertUpdateResponse(solrClient.add(col, Arrays.asList(solrInputDocuments), -1));
       }
     }
     String col = collections.get(random().nextInt(collections.size()));
-    if (commitWithin == -1) {
-      getSolrClient().commit(col);
-    } else {
-      // check that it all got committed eventually
-      String docsQ =
-          "{!terms f=id}"
-          + Arrays.stream(solrInputDocuments).map(d -> d.getFieldValue("id").toString())
-              .collect(Collectors.joining(","));
-      int numDocs = queryNumDocs(docsQ);
-      if (numDocs == solrInputDocuments.length) {
-        System.err.println("Docs committed sooner than expected.  Bug or slow test env?");
-        return;
-      }
-      // wait until it's committed
-      Thread.sleep(commitWithin);
-      for (int idx = 0; idx < 100; ++idx) { // Loop for up to 10 seconds waiting for commit to catch up
-        numDocs = queryNumDocs(docsQ);
-        if (numDocs == solrInputDocuments.length) break;
-        Thread.sleep(100);
-      }
-
-      assertEquals("not committed.  Bug or a slow test?",
-          solrInputDocuments.length, numDocs);
-    }
+    getSolrClient().commit(col);
   }
 
   void assertUpdateResponse(UpdateResponse rsp) {
