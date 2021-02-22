@@ -62,6 +62,8 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
                                                  iwc.getMergePolicy());
       assertEquals(0.5D, tieredMP.getNoCFSRatio(), 0.0D);
+    } finally {
+      deleteCore();
     }
   }
 

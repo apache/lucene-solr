@@ -29,6 +29,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,6 +45,14 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   @BeforeClass
   public static void beforeSolrExampleTestsBase() throws Exception {
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome());
+  }
+
+  @AfterClass
+  public static void afterSolrExampleTestsBase() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+      jetty = null;
+    }
   }
 
   @Before

@@ -1278,16 +1278,17 @@ public class CoreContainer implements Closeable {
     coreInitFailures.remove(cd.getName());
 
     if (old == null || old == core) {
-      log.info("registering core: " + cd.getName());
       return null;
     } else {
-      log.info("replacing core: " + cd.getName());
+      log.info("replacing core name={}", cd.getName());
       if (closeOld) {
         if (old != null) {
           SolrCore finalCore = old;
           try {
             Future<?> future = solrCoreExecutor.submit(() -> {
-              log.info("Closing replaced core {}", cd.getName());
+              if (log.isDebugEnabled()) {
+                log.debug("Closing replaced core {}", cd.getName());
+              }
               finalCore.close();
             });
           } catch (RejectedExecutionException e) {

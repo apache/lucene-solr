@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,7 +54,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
   private static boolean useAlias;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeSelectWithEvaluatorsTest() throws Exception {
     configureCluster(4).formatZk(true)
         .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .addConfig("ml", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
@@ -72,6 +73,11 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
     }
+  }
+
+  @AfterClass
+  public static void afterSelectWithEvaluatorsTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
