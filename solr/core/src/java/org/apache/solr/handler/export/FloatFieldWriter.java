@@ -19,19 +19,21 @@ package org.apache.solr.handler.export;
 
 import java.io.IOException;
 
+import com.carrotsearch.hppc.IntObjectHashMap;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.solr.common.MapWriter;
 
 class FloatFieldWriter extends FieldWriter {
   private String field;
+  private IntObjectHashMap<NumericDocValues> docValuesCache = new IntObjectHashMap<>();
 
   public FloatFieldWriter(String field) {
     this.field = field;
   }
 
-  public boolean write(SortDoc sortDoc, LeafReader reader, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
+  public boolean write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex) throws IOException {
     SortValue sortValue = sortDoc.getSortValue(this.field);
     if (sortValue != null) {
       if (sortValue.isPresent()) {
@@ -43,7 +45,21 @@ class FloatFieldWriter extends FieldWriter {
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
-      NumericDocValues vals = DocValues.getNumeric(reader, this.field);
+      int readerOrd = readerContext.ord;
+      NumericDocValues vals = null;
+      if(docValuesCache.containsKey(readerOrd)) {
+        NumericDocValues numericDocValues = docValuesCache.get(readerOrd);
+        if(numericDocValues.docID() < sortDoc.docId) {
+          //We have not advanced beyond the current docId so we can use this docValues.
+          vals = numericDocValues;
+        }
+      }
+
+      if(vals == null) {
+        vals = DocValues.getNumeric(readerContext.reader(), this.field);
+        docValuesCache.put(readerOrd, vals);
+      }
+
       if (vals.advance(sortDoc.docId) == sortDoc.docId) {
         int val = (int) vals.longValue();
         ew.put(this.field, Float.intBitsToFloat(val));

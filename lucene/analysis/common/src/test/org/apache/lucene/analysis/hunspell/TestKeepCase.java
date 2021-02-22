@@ -34,11 +34,22 @@ public class TestKeepCase extends StemmerTestBase {
     assertStemsTo("DRINKS", "drink");
     assertStemsTo("walk", "walk");
     assertStemsTo("walks", "walk");
-    assertStemsTo("Walk");
-    assertStemsTo("Walks");
-    assertStemsTo("WALKS");
+    assertStemsTo("Walk", "walk");
+    assertStemsTo("Walks", "walk");
+    assertStemsTo("WALKS", "walk");
     assertStemsTo("test", "test");
-    assertStemsTo("Test");
-    assertStemsTo("TEST");
+    assertStemsTo("Test", "test");
+    assertStemsTo("TEST", "test");
+
+    // dotted stems differ form "hunspell -s", but in a controversial way,
+    // and most importantly stem presence is the same
+    assertStemsTo("baz.", "baz.");
+    assertStemsTo("Baz.", "baz.");
+
+    assertStemsTo("Quux.", "Quux.");
+    assertStemsTo("QUUX.", "Quux.");
+
+    assertStemsTo("Ways", "way", "ways");
+    assertStemsTo("WAYS", "way", "ways");
   }
 }

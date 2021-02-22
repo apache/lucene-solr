@@ -41,23 +41,20 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cluster.placement.plugins.MinimizeCoresPlacementFactory;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
-import org.apache.solr.util.TimeOut;
 
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,9 +66,7 @@ import static java.util.Collections.singletonMap;
  */
 @LogLevel("org.apache.solr.cluster.placement.impl=DEBUG")
 public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static final String COLLECTION = PlacementPluginIntegrationTest.class.getName() + "_collection";
+  private static final String COLLECTION = PlacementPluginIntegrationTest.class.getSimpleName() + "_collection";
 
   private static SolrCloudManager cloudManager;
   private static CoreContainer cc;
@@ -144,14 +139,15 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testDynamicReconfiguration() throws Exception {
     PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
     assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
     DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
+    Phaser phaser = new Phaser();
+    wrapper.setDelegationPhaser(phaser);
 
-    int version = wrapper.getVersion();
-    log.debug("--initial version={}", version);
+    int version = phaser.getPhase();
+    assertTrue("wrong version " + version, version > -1);
 
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
@@ -163,9 +159,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper, 10);
-
-    assertTrue("wrong version " + version, version > 0);
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     PlacementPluginFactory<? extends PlacementPluginConfig> factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof MinimizeCoresPlacementFactory);
 
@@ -179,7 +173,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper, 10);
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
@@ -196,7 +190,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .build();
     req.process(cluster.getSolrClient());
 
-    version = waitForVersionChange(version, wrapper, 10);
+    version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
     assertTrue("wrong type " + factory.getClass().getName(), factory instanceof AffinityPlacementFactory);
     config = ((AffinityPlacementFactory) factory).getConfig();
@@ -211,14 +205,8 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .withPayload(singletonMap("add", plugin))
         .build();
     req.process(cluster.getSolrClient());
-    try {
-      int newVersion = waitForVersionChange(version, wrapper, 5);
-      if (newVersion != version) {
-        fail("factory configuration updated but plugin name was wrong: " + plugin);
-      }
-    } catch (TimeoutException te) {
-      // expected
-    }
+    final int oldVersion = version;
+    expectThrows(TimeoutException.class, () -> phaser.awaitAdvanceInterruptibly(oldVersion, 5, TimeUnit.SECONDS));
     // remove plugin
     req = new V2Request.Builder("/cluster/plugin")
         .forceV2(true)
@@ -226,9 +214,92 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .withPayload("{remove: '" + PlacementPluginFactory.PLUGIN_NAME + "'}")
         .build();
     req.process(cluster.getSolrClient());
-    waitForVersionChange(version, wrapper, 10);
+    phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
     factory = wrapper.getDelegate();
     assertNull("no factory should be present", factory);
+  }
+
+  @Test
+  public void testWithCollectionIntegration() throws Exception {
+    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
+    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
+    DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
+    Phaser phaser = new Phaser();
+    wrapper.setDelegationPhaser(phaser);
+
+    int version = phaser.getPhase();
+
+    Set<String> nodeSet = new HashSet<>();
+    for (String node : cloudManager.getClusterStateProvider().getLiveNodes()) {
+      if (nodeSet.size() > 1) {
+        break;
+      }
+      nodeSet.add(node);
+    }
+
+    String SECONDARY_COLLECTION = COLLECTION + "_secondary";
+    PluginMeta plugin = new PluginMeta();
+    plugin.name = PlacementPluginFactory.PLUGIN_NAME;
+    plugin.klass = AffinityPlacementFactory.class.getName();
+    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(COLLECTION, SECONDARY_COLLECTION));
+    V2Request req = new V2Request.Builder("/cluster/plugin")
+        .forceV2(true)
+        .POST()
+        .withPayload(singletonMap("add", plugin))
+        .build();
+    req.process(cluster.getSolrClient());
+
+    phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
+
+    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(SECONDARY_COLLECTION, "conf", 1, 3)
+        .process(cluster.getSolrClient());
+    assertTrue(rsp.isSuccess());
+    cluster.waitForActiveCollection(SECONDARY_COLLECTION, 1, 3);
+    DocCollection secondary = cloudManager.getClusterStateProvider().getClusterState().getCollection(SECONDARY_COLLECTION);
+    Set<String> secondaryNodes = new HashSet<>();
+    secondary.forEachReplica((shard, replica) -> secondaryNodes.add(replica.getNodeName()));
+
+    rsp = CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 2)
+        .setCreateNodeSet(String.join(",", nodeSet))
+        .process(cluster.getSolrClient());
+    assertTrue(rsp.isSuccess());
+    cluster.waitForActiveCollection(COLLECTION, 2, 4);
+    // make sure the primary replicas were placed on the nodeset
+    DocCollection primary = cloudManager.getClusterStateProvider().getClusterState().getCollection(COLLECTION);
+    primary.forEachReplica((shard, replica) ->
+        assertTrue("primary replica not on secondary node!", nodeSet.contains(replica.getNodeName())));
+
+    // try deleting secondary replica from node without the primary replica
+    Optional<String> onlySecondaryReplica = secondary.getReplicas().stream()
+        .filter(replica -> !nodeSet.contains(replica.getNodeName()))
+        .map(replica -> replica.getName()).findFirst();
+    assertTrue("no secondary node without primary replica", onlySecondaryReplica.isPresent());
+
+    rsp = CollectionAdminRequest.deleteReplica(SECONDARY_COLLECTION, "shard1", onlySecondaryReplica.get())
+        .process(cluster.getSolrClient());
+    assertTrue("delete of a lone secondary replica should succeed", rsp.isSuccess());
+
+    // try deleting secondary replica from node WITH the primary replica - should fail
+    Optional<String> secondaryWithPrimaryReplica = secondary.getReplicas().stream()
+        .filter(replica -> nodeSet.contains(replica.getNodeName()))
+        .map(replica -> replica.getName()).findFirst();
+    assertTrue("no secondary node with primary replica", secondaryWithPrimaryReplica.isPresent());
+    try {
+      rsp = CollectionAdminRequest.deleteReplica(SECONDARY_COLLECTION, "shard1", secondaryWithPrimaryReplica.get())
+          .process(cluster.getSolrClient());
+      fail("should have failed: " + rsp);
+    } catch (Exception e) {
+      assertTrue(e.toString(), e.toString().contains("co-located with replicas"));
+    }
+
+    // try deleting secondary collection
+    try {
+      rsp = CollectionAdminRequest.deleteCollection(SECONDARY_COLLECTION)
+          .process(cluster.getSolrClient());
+      fail("should have failed: " + rsp);
+    } catch (Exception e) {
+      assertTrue(e.toString(), e.toString().contains("colocated collection"));
+    }
   }
 
   @Test
@@ -242,7 +313,18 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     AttributeFetcher attributeFetcher = new AttributeFetcherImpl(cloudManager);
     NodeMetric<String> someMetricKey = new NodeMetricImpl<>("solr.jvm:system.properties:user.name");
     String sysprop = "user.name";
-    String sysenv = "PWD";
+    Set<String> potentialEnvVars = Set.of("PWD", "TMPDIR", "TMP", "TEMP", "USER", "USERNAME", "HOME");
+
+    String envVar = null;
+    for (String env : potentialEnvVars) {
+      if (System.getenv(env) != null) {
+        envVar = env;
+        break;
+      }
+    }
+    if (envVar == null) {
+      fail("None of the potential env vars exist? " + potentialEnvVars);
+    }
     attributeFetcher
         .fetchFrom(cluster.getLiveNodes())
         .requestNodeMetric(NodeMetricImpl.HEAP_USAGE)
@@ -253,11 +335,11 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         .requestNodeMetric(NodeMetricImpl.AVAILABLE_PROCESSORS)
         .requestNodeMetric(someMetricKey)
         .requestNodeSystemProperty(sysprop)
-        .requestNodeEnvironmentVariable(sysenv)
+        .requestNodeEnvironmentVariable(envVar)
         .requestCollectionMetrics(collection, Set.of(ReplicaMetricImpl.INDEX_SIZE_GB, ReplicaMetricImpl.QUERY_RATE_1MIN, ReplicaMetricImpl.UPDATE_RATE_1MIN));
     AttributeValues attributeValues = attributeFetcher.fetchAttributes();
     String userName = System.getProperty("user.name");
-    String pwd = System.getenv("PWD");
+    String envVarValue = System.getenv(envVar);
     // node metrics
     for (Node node : cluster.getLiveNodes()) {
       Optional<Double> doubleOpt = attributeValues.getNodeMetric(node, NodeMetricImpl.HEAP_USAGE);
@@ -280,9 +362,9 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
       Optional<String> syspropOpt = attributeValues.getSystemProperty(node, sysprop);
       assertTrue("sysprop", syspropOpt.isPresent());
       assertEquals("user.name sysprop", userName, syspropOpt.get());
-      Optional<String> sysenvOpt = attributeValues.getEnvironmentVariable(node, sysenv);
-      assertTrue("sysenv", sysenvOpt.isPresent());
-      assertEquals("PWD sysenv", pwd, sysenvOpt.get());
+      Optional<String> envVarOpt = attributeValues.getEnvironmentVariable(node, envVar);
+      assertTrue("envVar", envVarOpt.isPresent());
+      assertEquals("envVar " + envVar, envVarValue, envVarOpt.get());
     }
     assertTrue(attributeValues.getCollectionMetrics(COLLECTION).isPresent());
     CollectionMetrics collectionMetrics = attributeValues.getCollectionMetrics(COLLECTION).get();
@@ -303,22 +385,5 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
         assertNotNull("updateRate", replicaMetrics.getReplicaMetric(ReplicaMetricImpl.UPDATE_RATE_1MIN));
       });
     });
-  }
-
-  private int waitForVersionChange(int currentVersion, DelegatingPlacementPluginFactory wrapper, int timeoutSec) throws Exception {
-    TimeOut timeout = new TimeOut(timeoutSec, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-
-    while (!timeout.hasTimedOut()) {
-      int newVersion = wrapper.getVersion();
-      if (newVersion < currentVersion) {
-        throw new Exception("Invalid version - went back! currentVersion=" + currentVersion +
-            " newVersion=" + newVersion);
-      } else if (currentVersion < newVersion) {
-        log.debug("--current version was {}, new version is {}", currentVersion, newVersion);
-        return newVersion;
-      }
-      timeout.sleep(200);
-    }
-    throw new TimeoutException("version didn't change in time, currentVersion=" + currentVersion);
   }
 }

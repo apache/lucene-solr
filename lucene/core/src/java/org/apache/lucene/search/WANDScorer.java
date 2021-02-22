@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import static org.apache.lucene.search.DisiPriorityQueue.leftNode;
 import static org.apache.lucene.search.DisiPriorityQueue.parentNode;
 import static org.apache.lucene.search.DisiPriorityQueue.rightNode;
+import static org.apache.lucene.search.ScorerUtil.costWithMinShouldMatch;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,13 +31,25 @@ import java.util.OptionalInt;
  * This implements the WAND (Weak AND) algorithm for dynamic pruning described in "Efficient Query
  * Evaluation using a Two-Level Retrieval Process" by Broder, Carmel, Herscovici, Soffer and Zien.
  * Enhanced with techniques described in "Faster Top-k Document Retrieval Using Block-Max Indexes"
- * by Ding and Suel. This scorer maintains a feedback loop with the collector in order to know at
- * any time the minimum score that is required in order for a hit to be competitive. Then it
- * leverages the {@link Scorer#getMaxScore(int) max score} from each scorer in order to know when it
- * may call {@link DocIdSetIterator#advance} rather than {@link DocIdSetIterator#nextDoc} to move to
- * the next competitive hit. Implementation is similar to {@link MinShouldMatchSumScorer} except
- * that instead of enforcing that {@code freq >= minShouldMatch}, we enforce that {@code ∑ max_score
- * >= minCompetitiveScore}.
+ * by Ding and Suel. For scoreMode == {@link ScoreMode#TOP_SCORES}, this scorer maintains a feedback
+ * loop with the collector in order to know at any time the minimum score that is required in order
+ * for a hit to be competitive.
+ *
+ * <p>The implementation supports both minCompetitiveScore by enforce that {@code ∑ max_score >=
+ * minCompetitiveScore}, and minShouldMatch by enforcing {@code freq >= minShouldMatch}. It keeps
+ * sub scorers in 3 different places: - tail: a heap that contains scorers that are behind the
+ * desired doc ID. These scorers are ordered by cost so that we can advance the least costly ones
+ * first. - lead: a linked list of scorer that are positioned on the desired doc ID - head: a heap
+ * that contains scorers which are beyond the desired doc ID, ordered by doc ID in order to move
+ * quickly to the next candidate.
+ *
+ * <p>When scoreMode == {@link ScoreMode#TOP_SCORES}, it leverages the {@link
+ * Scorer#getMaxScore(int) max score} from each scorer in order to know when it may call {@link
+ * DocIdSetIterator#advance} rather than {@link DocIdSetIterator#nextDoc} to move to the next
+ * competitive hit. When scoreMode != {@link ScoreMode#TOP_SCORES}, block-max scoring related logic
+ * is skipped. Finding the next match consists of first setting the desired doc ID to the least
+ * entry in 'head', and then advance 'tail' until there is a match, by meeting the configured {@code
+ * freq >= minShouldMatch} and / or {@code ∑ max_score >= minCompetitiveScore} requirements.
  */
 final class WANDScorer extends Scorer {
 
@@ -130,64 +143,90 @@ final class WANDScorer extends Scorer {
 
   int upTo; // upper bound for which max scores are valid
 
-  WANDScorer(Weight weight, Collection<Scorer> scorers) throws IOException {
+  final int minShouldMatch;
+  int freq;
+
+  final ScoreMode scoreMode;
+
+  WANDScorer(Weight weight, Collection<Scorer> scorers, int minShouldMatch, ScoreMode scoreMode)
+      throws IOException {
     super(weight);
 
+    if (minShouldMatch >= scorers.size()) {
+      throw new IllegalArgumentException("minShouldMatch should be < the number of scorers");
+    }
+
     this.minCompetitiveScore = 0;
+
+    assert minShouldMatch >= 0 : "minShouldMatch should not be negative, but got " + minShouldMatch;
+    this.minShouldMatch = minShouldMatch;
+
     this.doc = -1;
     this.upTo = -1; // will be computed on the first call to nextDoc/advance
+
+    this.scoreMode = scoreMode;
 
     head = new DisiPriorityQueue(scorers.size());
     // there can be at most num_scorers - 1 scorers beyond the current position
     tail = new DisiWrapper[scorers.size()];
 
-    OptionalInt scalingFactor = OptionalInt.empty();
-    for (Scorer scorer : scorers) {
-      scorer.advanceShallow(0);
-      float maxScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
-      if (maxScore != 0 && Float.isFinite(maxScore)) {
-        // 0 and +Infty should not impact the scale
-        scalingFactor =
-            OptionalInt.of(
-                Math.min(scalingFactor.orElse(Integer.MAX_VALUE), scalingFactor(maxScore)));
+    if (this.scoreMode == ScoreMode.TOP_SCORES) {
+      OptionalInt scalingFactor = OptionalInt.empty();
+      for (Scorer scorer : scorers) {
+        scorer.advanceShallow(0);
+        float maxScore = scorer.getMaxScore(DocIdSetIterator.NO_MORE_DOCS);
+        if (maxScore != 0 && Float.isFinite(maxScore)) {
+          // 0 and +Infty should not impact the scale
+          scalingFactor =
+              OptionalInt.of(
+                  Math.min(scalingFactor.orElse(Integer.MAX_VALUE), scalingFactor(maxScore)));
+        }
       }
-    }
-    // Use a scaling factor of 0 if all max scores are either 0 or +Infty
-    this.scalingFactor = scalingFactor.orElse(0);
 
-    long cost = 0;
-    for (Scorer scorer : scorers) {
-      DisiWrapper w = new DisiWrapper(scorer);
-      cost += w.cost;
-      addLead(w);
+      // Use a scaling factor of 0 if all max scores are either 0 or +Infty
+      this.scalingFactor = scalingFactor.orElse(0);
+      this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
+    } else {
+      this.scalingFactor = 0;
+      this.maxScorePropagator = null;
     }
-    this.cost = cost;
-    this.maxScorePropagator = new MaxScoreSumPropagator(scorers);
+
+    for (Scorer scorer : scorers) {
+      addLead(new DisiWrapper(scorer));
+    }
+
+    this.cost =
+        costWithMinShouldMatch(
+            scorers.stream().map(Scorer::iterator).mapToLong(DocIdSetIterator::cost),
+            scorers.size(),
+            minShouldMatch);
   }
 
   // returns a boolean so that it can be called from assert
   // the return value is useless: it always returns true
   private boolean ensureConsistent() {
-    long maxScoreSum = 0;
-    for (int i = 0; i < tailSize; ++i) {
-      assert tail[i].doc < doc;
-      maxScoreSum = Math.addExact(maxScoreSum, tail[i].maxScore);
-    }
-    assert maxScoreSum == tailMaxScore : maxScoreSum + " " + tailMaxScore;
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      long maxScoreSum = 0;
+      for (int i = 0; i < tailSize; ++i) {
+        assert tail[i].doc < doc;
+        maxScoreSum = Math.addExact(maxScoreSum, tail[i].maxScore);
+      }
+      assert maxScoreSum == tailMaxScore : maxScoreSum + " " + tailMaxScore;
 
-    maxScoreSum = 0;
-    for (DisiWrapper w = lead; w != null; w = w.next) {
-      assert w.doc == doc;
-      maxScoreSum = Math.addExact(maxScoreSum, w.maxScore);
+      maxScoreSum = 0;
+      for (DisiWrapper w = lead; w != null; w = w.next) {
+        assert w.doc == doc;
+        maxScoreSum = Math.addExact(maxScoreSum, w.maxScore);
+      }
+      assert maxScoreSum == leadMaxScore : maxScoreSum + " " + leadMaxScore;
+
+      assert minCompetitiveScore == 0 || tailMaxScore < minCompetitiveScore;
+      assert doc <= upTo;
     }
-    assert maxScoreSum == leadMaxScore : maxScoreSum + " " + leadMaxScore;
 
     for (DisiWrapper w : head) {
       assert w.doc > doc;
     }
-
-    assert minCompetitiveScore == 0 || tailMaxScore < minCompetitiveScore;
-    assert doc <= upTo;
 
     return true;
   }
@@ -196,6 +235,8 @@ final class WANDScorer extends Scorer {
   public void setMinCompetitiveScore(float minScore) throws IOException {
     // Let this disjunction know about the new min score so that it can skip
     // over clauses that produce low scores.
+    assert scoreMode == ScoreMode.TOP_SCORES
+        : "minCompetitiveScore can only be set for ScoreMode.TOP_SCORES, but got: " + scoreMode;
     assert minScore >= 0;
     long scaledMinScore = scaleMinScore(minScore, scalingFactor);
     assert scaledMinScore >= minCompetitiveScore;
@@ -265,15 +306,17 @@ final class WANDScorer extends Scorer {
 
       @Override
       public boolean matches() throws IOException {
-        while (leadMaxScore < minCompetitiveScore) {
-          if (leadMaxScore + tailMaxScore >= minCompetitiveScore) {
+        while (leadMaxScore < minCompetitiveScore || freq < minShouldMatch) {
+          if (leadMaxScore + tailMaxScore < minCompetitiveScore
+              || freq + tailSize < minShouldMatch) {
+            return false;
+          } else {
             // a match on doc is still possible, try to
             // advance scorers from the tail
             advanceTail();
-          } else {
-            return false;
           }
         }
+
         return true;
       }
 
@@ -290,6 +333,7 @@ final class WANDScorer extends Scorer {
     lead.next = this.lead;
     this.lead = lead;
     leadMaxScore += lead.maxScore;
+    freq += 1;
   }
 
   /** Move disis that are in 'lead' back to the tail. */
@@ -404,7 +448,9 @@ final class WANDScorer extends Scorer {
       }
     }
 
-    assert upTo == DocIdSetIterator.NO_MORE_DOCS || (head.size() > 0 && head.top().doc <= upTo);
+    assert (head.size() == 0 && upTo == DocIdSetIterator.NO_MORE_DOCS)
+        || (head.size() > 0 && head.top().doc <= upTo);
+    assert upTo >= target;
   }
 
   /**
@@ -412,16 +458,18 @@ final class WANDScorer extends Scorer {
    * 'lead'.
    */
   private void moveToNextCandidate(int target) throws IOException {
-    // Update score bounds if necessary so
-    updateMaxScoresIfNecessary(target);
-    assert upTo >= target;
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      // Update score bounds if necessary so
+      updateMaxScoresIfNecessary(target);
+      assert upTo >= target;
 
-    // updateMaxScores tries to move forward until a block with matches is found
-    // so if the head is empty it means there are no matches at all anymore
-    if (head.size() == 0) {
-      assert upTo == DocIdSetIterator.NO_MORE_DOCS;
-      doc = DocIdSetIterator.NO_MORE_DOCS;
-      return;
+      // updateMaxScores tries to move forward until a block with matches is found
+      // so if the head is empty it means there are no matches at all anymore
+      if (head.size() == 0) {
+        assert upTo == DocIdSetIterator.NO_MORE_DOCS;
+        doc = DocIdSetIterator.NO_MORE_DOCS;
+        return;
+      }
     }
 
     // The top of `head` defines the next potential match
@@ -429,6 +477,7 @@ final class WANDScorer extends Scorer {
     lead = head.pop();
     lead.next = null;
     leadMaxScore = lead.maxScore;
+    freq = 1;
     doc = lead.doc;
     while (head.size() > 0 && head.top().doc == doc) {
       addLead(head.pop());
@@ -437,7 +486,7 @@ final class WANDScorer extends Scorer {
 
   /** Move iterators to the tail until there is a potential match. */
   private int doNextCompetitiveCandidate() throws IOException {
-    while (leadMaxScore + tailMaxScore < minCompetitiveScore) {
+    while (leadMaxScore + tailMaxScore < minCompetitiveScore || freq + tailSize < minShouldMatch) {
       // no match on doc is possible, move to the next potential match
       pushBackLeads(doc + 1);
       moveToNextCandidate(doc + 1);

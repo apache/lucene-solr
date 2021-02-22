@@ -43,6 +43,11 @@ public abstract class StemmerTestBase extends LuceneTestCase {
 
   static void init(boolean ignoreCase, String affix, String... dictionaries)
       throws IOException, ParseException {
+    stemmer = new Stemmer(loadDictionary(ignoreCase, affix, dictionaries));
+  }
+
+  static Dictionary loadDictionary(boolean ignoreCase, String affix, String... dictionaries)
+      throws IOException, ParseException {
     if (dictionaries.length == 0) {
       throw new IllegalArgumentException("there must be at least one dictionary");
     }
@@ -52,7 +57,7 @@ public abstract class StemmerTestBase extends LuceneTestCase {
       throw new FileNotFoundException("file not found: " + affix);
     }
 
-    InputStream dictStreams[] = new InputStream[dictionaries.length];
+    InputStream[] dictStreams = new InputStream[dictionaries.length];
     for (int i = 0; i < dictionaries.length; i++) {
       dictStreams[i] = StemmerTestBase.class.getResourceAsStream(dictionaries[i]);
       if (dictStreams[i] == null) {
@@ -61,14 +66,12 @@ public abstract class StemmerTestBase extends LuceneTestCase {
     }
 
     try {
-      Dictionary dictionary =
-          new Dictionary(
-              new ByteBuffersDirectory(),
-              "dictionary",
-              affixStream,
-              Arrays.asList(dictStreams),
-              ignoreCase);
-      stemmer = new Stemmer(dictionary);
+      return new Dictionary(
+          new ByteBuffersDirectory(),
+          "dictionary",
+          affixStream,
+          Arrays.asList(dictStreams),
+          ignoreCase);
     } finally {
       IOUtils.closeWhileHandlingException(affixStream);
       IOUtils.closeWhileHandlingException(dictStreams);
@@ -80,7 +83,7 @@ public abstract class StemmerTestBase extends LuceneTestCase {
     Arrays.sort(expected);
 
     List<CharsRef> stems = stemmer.stem(s);
-    String actual[] = new String[stems.size()];
+    String[] actual = new String[stems.size()];
     for (int i = 0; i < actual.length; i++) {
       actual[i] = stems.get(i).toString();
     }

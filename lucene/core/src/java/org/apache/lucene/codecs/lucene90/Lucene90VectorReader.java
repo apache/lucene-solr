@@ -22,6 +22,7 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -66,20 +67,28 @@ public final class Lucene90VectorReader extends VectorReader {
 
     int versionMeta = readMetadata(state, Lucene90VectorFormat.META_EXTENSION);
     long[] checksumRef = new long[1];
-    vectorData =
-        openDataInput(
-            state,
-            versionMeta,
-            Lucene90VectorFormat.VECTOR_DATA_EXTENSION,
-            Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME,
-            checksumRef);
-    vectorIndex =
-        openDataInput(
-            state,
-            versionMeta,
-            Lucene90VectorFormat.VECTOR_INDEX_EXTENSION,
-            Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME,
-            checksumRef);
+    boolean success = false;
+    try {
+      vectorData =
+          openDataInput(
+              state,
+              versionMeta,
+              Lucene90VectorFormat.VECTOR_DATA_EXTENSION,
+              Lucene90VectorFormat.VECTOR_DATA_CODEC_NAME,
+              checksumRef);
+      vectorIndex =
+          openDataInput(
+              state,
+              versionMeta,
+              Lucene90VectorFormat.VECTOR_INDEX_EXTENSION,
+              Lucene90VectorFormat.VECTOR_INDEX_CODEC_NAME,
+              checksumRef);
+      success = true;
+    } finally {
+      if (success == false) {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
     checksumSeed = checksumRef[0];
   }
 
@@ -115,37 +124,28 @@ public final class Lucene90VectorReader extends VectorReader {
       String codecName,
       long[] checksumRef)
       throws IOException {
-    boolean success = false;
-
     String fileName =
         IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, fileExtension);
     IndexInput in = state.directory.openInput(fileName, state.context);
-    try {
-      int versionVectorData =
-          CodecUtil.checkIndexHeader(
-              in,
-              codecName,
-              Lucene90VectorFormat.VERSION_START,
-              Lucene90VectorFormat.VERSION_CURRENT,
-              state.segmentInfo.getId(),
-              state.segmentSuffix);
-      if (versionMeta != versionVectorData) {
-        throw new CorruptIndexException(
-            "Format versions mismatch: meta="
-                + versionMeta
-                + ", "
-                + codecName
-                + "="
-                + versionVectorData,
-            in);
-      }
-      checksumRef[0] = CodecUtil.retrieveChecksum(in);
-      success = true;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(in);
-      }
+    int versionVectorData =
+        CodecUtil.checkIndexHeader(
+            in,
+            codecName,
+            Lucene90VectorFormat.VERSION_START,
+            Lucene90VectorFormat.VERSION_CURRENT,
+            state.segmentInfo.getId(),
+            state.segmentSuffix);
+    if (versionMeta != versionVectorData) {
+      throw new CorruptIndexException(
+          "Format versions mismatch: meta="
+              + versionMeta
+              + ", "
+              + codecName
+              + "="
+              + versionVectorData,
+          in);
     }
+    checksumRef[0] = CodecUtil.retrieveChecksum(in);
     return in;
   }
 
@@ -358,14 +358,14 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue() throws IOException {
-      dataIn.seek(ord * byteSize);
+      dataIn.seek((long) ord * byteSize);
       dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
 
     @Override
     public BytesRef binaryValue() throws IOException {
-      dataIn.seek(ord * byteSize);
+      dataIn.seek((long) ord * byteSize);
       dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize, false);
       return binaryValue;
     }
@@ -386,9 +386,19 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     @Override
-    public int advance(int target) throws IOException {
-      // We could do better by log-binary search in ordToDoc, but this is never used
-      return slowAdvance(target);
+    public int advance(int target) {
+      assert docID() < target;
+      ord = Arrays.binarySearch(fieldEntry.ordToDoc, ord + 1, fieldEntry.ordToDoc.length, target);
+      if (ord < 0) {
+        ord = -(ord + 1);
+      }
+      assert ord >= 0 && ord <= fieldEntry.ordToDoc.length;
+      if (ord == fieldEntry.ordToDoc.length) {
+        doc = NO_MORE_DOCS;
+      } else {
+        doc = fieldEntry.ordToDoc[ord];
+      }
+      return doc;
     }
 
     @Override
@@ -429,7 +439,7 @@ public final class Lucene90VectorReader extends VectorReader {
 
     @Override
     public float[] vectorValue(int targetOrd) throws IOException {
-      dataIn.seek(targetOrd * byteSize);
+      dataIn.seek((long) targetOrd * byteSize);
       dataIn.readLEFloats(value, 0, value.length);
       return value;
     }
@@ -441,8 +451,7 @@ public final class Lucene90VectorReader extends VectorReader {
     }
 
     private void readValue(int targetOrd) throws IOException {
-      long offset = targetOrd * byteSize;
-      dataIn.seek(offset);
+      dataIn.seek((long) targetOrd * byteSize);
       dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
     }
   }

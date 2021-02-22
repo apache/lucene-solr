@@ -23,9 +23,9 @@ import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
-import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
-import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
+import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
+import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
+import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
@@ -46,7 +46,7 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
@@ -120,7 +120,7 @@ public class ClusterAPI {
 
     @Command(name = "create")
     @SuppressWarnings("unchecked")
-    public void create(PayloadObj<CreateConfigInfo> obj) throws Exception {
+    public void create(PayloadObj<CreateConfigPayload> obj) throws Exception {
       Map<String, Object> mapVals = obj.get().toMap(new HashMap<>());
       Map<String,Object> customProps = (Map<String, Object>) mapVals.remove("properties");
       if(customProps!= null) {
@@ -223,7 +223,7 @@ public class ClusterAPI {
 
     @Command(name = "set-obj-property")
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void setObjProperty(PayloadObj<ClusterPropInfo> obj) {
+    public void setObjProperty(PayloadObj<ClusterPropPayload> obj) {
       //Not using the object directly here because the API differentiate between {name:null} and {}
       Map m = obj.getDataMap();
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
@@ -242,8 +242,8 @@ public class ClusterAPI {
     }
 
     @Command(name = "set-ratelimiter")
-    public void setRateLimiters(PayloadObj<RateLimiterMeta> payLoad) {
-      RateLimiterMeta rateLimiterConfig = payLoad.get();
+    public void setRateLimiters(PayloadObj<RateLimiterPayload> payLoad) {
+      RateLimiterPayload rateLimiterConfig = payLoad.get();
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
 
       try {

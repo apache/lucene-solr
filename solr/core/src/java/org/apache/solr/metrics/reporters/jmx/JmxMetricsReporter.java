@@ -527,7 +527,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
           }
           for (ObjectInstance inst : objects) {
             if (log.isDebugEnabled()) {
-              log.debug("## - tag={}{}", mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
+              log.debug("## - tag={}", mBeanServer.getAttribute(inst.getObjectName(), INSTANCE_TAG));
             }
           }
         }
@@ -567,8 +567,8 @@ public class JmxMetricsReporter implements Reporter, Closeable {
         if (filter.matches(name, gauge)) {
           final ObjectName objectName = createName("gauges", name);
           if (gauge instanceof SolrMetricManager.GaugeWrapper &&
-              ((SolrMetricManager.GaugeWrapper)gauge).getGauge() instanceof MetricsMap) {
-            MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper)gauge).getGauge();
+              ((SolrMetricManager.GaugeWrapper<?>)gauge).getGauge() instanceof MetricsMap) {
+            MetricsMap mm = (MetricsMap)((SolrMetricManager.GaugeWrapper<?>)gauge).getGauge();
             mm.setAttribute(new Attribute(INSTANCE_TAG, tag));
             // don't wrap it in a JmxGauge, it already supports all necessary JMX attributes
             registerMBean(mm, objectName);
@@ -746,7 +746,7 @@ public class JmxMetricsReporter implements Reporter, Closeable {
       } else if (v instanceof Timer) {
         listener.onTimerAdded(k, (Timer)v);
       } else if (v instanceof Gauge) {
-        listener.onGaugeAdded(k, (Gauge)v);
+        listener.onGaugeAdded(k, (Gauge<?>)v);
       } else {
         log.warn("Unknown metric type {} for metric '{}', ignoring", v.getClass().getName(), k);
       }

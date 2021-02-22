@@ -102,7 +102,6 @@ public class TestBooleanSimilarity extends BaseSimilarityTestCase {
   public void testSameNormsAsBM25() {
     BooleanSimilarity sim1 = new BooleanSimilarity();
     BM25Similarity sim2 = new BM25Similarity();
-    sim2.setDiscountOverlaps(true);
     for (int iter = 0; iter < 100; ++iter) {
       final int length = TestUtil.nextInt(random(), 1, 100);
       final int position = random().nextInt(length);

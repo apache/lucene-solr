@@ -75,7 +75,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
     } else {
       final Collection<ScorerSupplier> optionalScorers = subs.get(Occur.SHOULD);
       final long shouldCost =
-          MinShouldMatchSumScorer.cost(
+          ScorerUtil.costWithMinShouldMatch(
               optionalScorers.stream().mapToLong(ScorerSupplier::cost),
               optionalScorers.size(),
               minShouldMatch);
@@ -230,10 +230,16 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       for (ScorerSupplier scorer : optional) {
         optionalScorers.add(scorer.get(leadCost));
       }
-      if (minShouldMatch > 1) {
-        return new MinShouldMatchSumScorer(weight, optionalScorers, minShouldMatch);
-      } else if (scoreMode == ScoreMode.TOP_SCORES) {
-        return new WANDScorer(weight, optionalScorers);
+
+      // Technically speaking, WANDScorer should be able to handle the following 3 conditions now
+      // 1. Any ScoreMode (with scoring or not)
+      // 2. Any minCompetitiveScore ( >= 0 )
+      // 3. Any minShouldMatch ( >= 0 )
+      //
+      // However, as WANDScorer uses more complex algorithm and data structure, we would like to
+      // still use DisjunctionSumScorer to handle exhaustive pure disjunctions, which may be faster
+      if (scoreMode == ScoreMode.TOP_SCORES || minShouldMatch > 1) {
+        return new WANDScorer(weight, optionalScorers, minShouldMatch, scoreMode);
       } else {
         return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }

@@ -1,4 +1,4 @@
-<!-- 
+<!--
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -17,10 +17,14 @@
 
 <!--
   Simple transform of Solr query response into Solr Update XML compliant XML.
-  When used in the xslt response writer you will get UpdaateXML as output.
+  When used in the xslt response writer you will get UpdateXML as output.
   But you can also store a query response XML to disk and feed this XML to
   the XSLTUpdateRequestHandler to index the content. Provided as example only.
-  See http://wiki.apache.org/solr/XsltUpdateRequestHandler for more info
+
+  This is part of the Scripting contrib module.
+
+  See more about this response writer at https://lucene.apache.org/solr/guide/response-writers.html#xslt-response-writer
+
  -->
 <xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform'>
   <xsl:output media-type="text/xml" method="xml" indent="yes"/>
@@ -30,7 +34,7 @@
         <xsl:apply-templates select="response/result/doc"/>
     </add>
   </xsl:template>
-  
+
   <!-- Ignore score (makes no sense to index) -->
   <xsl:template match="doc/*[@name='score']" priority="100">
   </xsl:template>
@@ -47,7 +51,7 @@
   <!-- Flatten arrays to duplicate field lines -->
   <xsl:template match="doc/arr" priority="100">
       <xsl:variable name="fn" select="@name"/>
-      
+
       <xsl:for-each select="*">
         <xsl:element name="field">
           <xsl:attribute name="name"><xsl:value-of select="$fn"/></xsl:attribute>

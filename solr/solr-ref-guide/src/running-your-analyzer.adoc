@@ -16,11 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Once you've <<field-type-definitions-and-properties.adoc#field-type-definitions-and-properties,defined a field type in your Schema>>, and specified the analysis steps that you want applied to it, you should test it out to make sure that it behaves the way you expect it to.
+Once you've <<field-type-definitions-and-properties.adoc#,defined a field type in your Schema>>, and specified the analysis steps that you want applied to it, you should test it out to make sure that it behaves the way you expect it to.
 
-Luckily, there is a very handy page in the Solr <<using-the-solr-administration-user-interface.adoc#using-the-solr-administration-user-interface,admin interface>> that lets you do just that. You can invoke the analyzer for any text field, provide sample input, and display the resulting token stream.
+Luckily, there is a very handy page in the Solr <<using-the-solr-administration-user-interface.adoc#,admin interface>> that lets you do just that. You can invoke the analyzer for any text field, provide sample input, and display the resulting token stream.
 
-For example, let's look at some of the "Text" field types available in the `bin/solr -e techproducts` example configuration, and use the <<analysis-screen.adoc#analysis-screen,Analysis Screen>> (`\http://localhost:8983/solr/#/techproducts/analysis`) to compare how the tokens produced at index time for the sentence "Running an Analyzer" match up with a slightly different query text of "run my analyzer"
+For example, let's look at some of the "Text" field types available in the `bin/solr -e techproducts` example configuration, and use the <<analysis-screen.adoc#,Analysis Screen>> (`\http://localhost:8983/solr/#/techproducts/analysis`) to compare how the tokens produced at index time for the sentence "Running an Analyzer" match up with a slightly different query text of "run my analyzer"
 
 We can begin with "```text_ws```" - one of the most simplified Text field types available:
 

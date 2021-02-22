@@ -225,4 +225,29 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
     });
     assertEquals(expectedException.toString(), ex.toString());
   }
+
+  @Test
+  public void multipleAdditiveTreesTestMissingFeatureStore(){
+    final ModelException expectedException =
+        new ModelException("Missing or empty feature store: not_existent_store");
+
+    ModelException ex = expectThrows(ModelException.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_notExistentStore.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    assertEquals(expectedException.toString(), ex.toString());
+  }
+
+  @Test
+  public void multipleAdditiveTreesTestUnknownFeature(){
+    final ModelException expectedException =
+        new ModelException("Feature: notExist1 not found in store: _DEFAULT_");
+
+    ModelException ex = expectThrows(ModelException.class, () -> {
+      createModelFromFiles("multipleadditivetreesmodel_unknownFeature.json",
+          "multipleadditivetreesmodel_features.json");
+    });
+    assertEquals(expectedException.toString(), ex.toString());
+  }
+ 
 }

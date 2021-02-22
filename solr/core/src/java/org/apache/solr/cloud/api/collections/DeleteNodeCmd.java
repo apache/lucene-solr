@@ -18,6 +18,7 @@
 package org.apache.solr.cloud.api.collections;
 
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,29 +39,28 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
-public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
+public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public DeleteNodeCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public DeleteNodeCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
   @SuppressWarnings({"unchecked"})
   public void call(ClusterState state, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results) throws Exception {
-    ocmh.checkRequired(message, "node");
+    CollectionHandlingUtils.checkRequired(message, "node");
     String node = message.getStr("node");
     List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
     List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
     if (!singleReplicas.isEmpty()) {
       results.add("failure", "Can't delete the only existing non-PULL replica(s) on node " + node + ": " + singleReplicas.toString());
     } else {
-      cleanupReplicas(results, state, sourceReplicas, ocmh, node, message.getStr(ASYNC));
+      cleanupReplicas(results, state, sourceReplicas, ccc, node, message.getStr(ASYNC));
     }
   }
 
@@ -96,9 +96,9 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   static void cleanupReplicas(@SuppressWarnings({"rawtypes"})NamedList results,
                               ClusterState clusterState,
                               List<ZkNodeProps> sourceReplicas,
-                              OverseerCollectionMessageHandler ocmh,
+                              CollectionCommandContext ccc,
                               String node,
-                              String async) throws InterruptedException {
+                              String async) throws IOException, InterruptedException {
     CountDownLatch cleanupLatch = new CountDownLatch(sourceReplicas.size());
     for (ZkNodeProps sourceReplica : sourceReplicas) {
       String coll = sourceReplica.getStr(COLLECTION_PROP);
@@ -109,7 +109,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
       NamedList deleteResult = new NamedList();
       try {
         if (async != null) sourceReplica = sourceReplica.plus(ASYNC, async);
-        ((DeleteReplicaCmd)ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
+        new DeleteReplicaCmd(ccc).deleteReplica(clusterState, sourceReplica.plus("parallel", "true"), deleteResult, () -> {
           cleanupLatch.countDown();
           if (deleteResult.get("failure") != null) {
             synchronized (results) {

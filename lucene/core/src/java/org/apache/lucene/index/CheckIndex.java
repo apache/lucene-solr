@@ -506,7 +506,9 @@ public final class CheckIndex implements Closeable {
     try {
       // Do not use SegmentInfos.read(Directory) since the spooky
       // retrying it does is not necessary here (we hold the write lock):
-      sis = SegmentInfos.readCommit(dir, lastSegmentsFile);
+      sis =
+          SegmentInfos.readCommit(
+              dir, lastSegmentsFile, 0 /* always open old indices if codecs are around */);
     } catch (Throwable t) {
       if (failFast) {
         throw IOUtils.rethrowAlways(t);
@@ -3383,7 +3385,6 @@ public final class CheckIndex implements Closeable {
       case SORTED:
         status.totalSortedFields++;
         checkDVIterator(fi, maxDoc, dvReader::getSorted);
-        checkBinaryDocValues(fi.name, maxDoc, dvReader.getSorted(fi), dvReader.getSorted(fi));
         checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi), dvReader.getSorted(fi));
         break;
       case SORTED_NUMERIC:
