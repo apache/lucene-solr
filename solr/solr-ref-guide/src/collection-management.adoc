@@ -393,7 +393,7 @@ http://localhost:8983/solr/admin/collections?action=LIST
 ====
 [.tab-label]*V2 API*
 
-With the v2 API, the `modify` command is provided as part of the JSON data that contains the required parameters:
+With the v2 API, the `list` command is provided as part of the JSON data that contains the required parameters:
 
 [source,bash]
 ----
