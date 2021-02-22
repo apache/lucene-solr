@@ -17,7 +17,6 @@
 
 package org.apache.lucene.backward_codecs.lucene87;
 
-import java.util.Objects;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.backward_codecs.lucene60.Lucene60FieldInfosFormat;
@@ -54,25 +53,6 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * @lucene.experimental
  */
 public class Lucene87Codec extends Codec {
-
-  /** Configuration option for the codec. */
-  public static enum Mode {
-    /** Trade compression ratio for retrieval speed. */
-    BEST_SPEED(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, Lucene80DocValuesFormat.Mode.BEST_SPEED),
-    /** Trade retrieval speed for compression ratio. */
-    BEST_COMPRESSION(
-        Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
-        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
-
-    private final Lucene87StoredFieldsFormat.Mode storedMode;
-    private final Lucene80DocValuesFormat.Mode dvMode;
-
-    private Mode(Lucene87StoredFieldsFormat.Mode storedMode, Lucene80DocValuesFormat.Mode dvMode) {
-      this.storedMode = Objects.requireNonNull(storedMode);
-      this.dvMode = Objects.requireNonNull(dvMode);
-    }
-  }
-
   private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene60FieldInfosFormat();
   private final SegmentInfoFormat segmentInfosFormat = new Lucene86SegmentInfoFormat();

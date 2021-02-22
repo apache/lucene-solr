@@ -22,8 +22,7 @@ import org.apache.lucene.util.TestUtil;
 /** Tests Lucene80DocValuesFormat */
 public class TestBestSpeedLucene80DocValuesFormat extends BaseLucene80DocValuesFormatTestCase {
   private final Codec codec =
-      TestUtil.alwaysDocValuesFormat(
-          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_SPEED));
+      TestUtil.alwaysDocValuesFormat(new Lucene80DocValuesFormat(false, false));
 
   @Override
   protected Codec getCodec() {

@@ -33,6 +33,7 @@ import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -64,7 +65,14 @@ import org.apache.lucene.util.packed.DirectWriter;
 /** writer for {@link Lucene80DocValuesFormat} */
 final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Closeable {
 
-  final Lucene80DocValuesFormat.Mode mode;
+  /** Compression for {@link DocValuesType#BINARY} */
+  private boolean binaryCompression;
+  /**
+   * Compression for terms dict from {@link DocValuesType#SORTED_SET} or {@link
+   * DocValuesType#SORTED}
+   */
+  private boolean termsDictCompression;
+
   IndexOutput data, meta;
   final int maxDoc;
   private final SegmentWriteState state;
@@ -77,10 +85,12 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
       String dataExtension,
       String metaCodec,
       String metaExtension,
-      Lucene80DocValuesFormat.Mode mode)
+      boolean binaryCompression,
+      boolean termsDictCompression)
       throws IOException {
-    this.mode = mode;
-    if (Lucene80DocValuesFormat.Mode.BEST_COMPRESSION == this.mode) {
+    this.binaryCompression = binaryCompression;
+    this.termsDictCompression = termsDictCompression;
+    if (this.termsDictCompression) {
       this.termsDictBuffer = new byte[1 << 14];
     }
     boolean success = false;
@@ -545,19 +555,18 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
   @Override
   public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
-    field.putAttribute(Lucene80DocValuesFormat.MODE_KEY, mode.name());
+    field.putAttribute(
+        Lucene80DocValuesFormat.MODE_KEY,
+        this.binaryCompression
+            ? Lucene80DocValuesFormat.CODEC_LZ4
+            : Lucene80DocValuesFormat.CODEC_DEFAULT);
     meta.writeInt(field.number);
     meta.writeByte(Lucene80DocValuesFormat.BINARY);
 
-    switch (mode) {
-      case BEST_SPEED:
-        doAddUncompressedBinaryField(field, valuesProducer);
-        break;
-      case BEST_COMPRESSION:
-        doAddCompressedBinaryField(field, valuesProducer);
-        break;
-      default:
-        throw new AssertionError();
+    if (this.binaryCompression) {
+      doAddCompressedBinaryField(field, valuesProducer);
+    } else {
+      doAddUncompressedBinaryField(field, valuesProducer);
     }
   }
 
@@ -743,7 +752,7 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     final long size = values.getValueCount();
     meta.writeVLong(size);
     boolean compress =
-        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION == mode
+        this.termsDictCompression
             && values.getValueCount()
                 > Lucene80DocValuesFormat.TERMS_DICT_BLOCK_COMPRESSION_THRESHOLD;
     int code, blockMask, shift;

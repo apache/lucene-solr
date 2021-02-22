@@ -154,8 +154,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
                     + " in segment: "
                     + segmentName);
           }
-          Lucene80DocValuesFormat.Mode mode = Lucene80DocValuesFormat.Mode.valueOf(value);
-          compressed = mode == Lucene80DocValuesFormat.Mode.BEST_COMPRESSION;
+          compressed = Lucene80DocValuesFormat.CODEC_LZ4.equals(value);
         } else {
           compressed = version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED;
         }

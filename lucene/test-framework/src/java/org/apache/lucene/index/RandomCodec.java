@@ -227,7 +227,7 @@ public class RandomCodec extends AssertingCodec {
     addDocValues(
         avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
-        new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION),
+        new Lucene80DocValuesFormat(true, true),
         new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);

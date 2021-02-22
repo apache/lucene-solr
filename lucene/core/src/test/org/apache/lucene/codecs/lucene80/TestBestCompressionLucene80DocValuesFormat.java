@@ -23,8 +23,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestBestCompressionLucene80DocValuesFormat
     extends BaseLucene80DocValuesFormatTestCase {
   private final Codec codec =
-      TestUtil.alwaysDocValuesFormat(
-          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION));
+      TestUtil.alwaysDocValuesFormat(new Lucene80DocValuesFormat(true, true));
 
   @Override
   protected Codec getCodec() {

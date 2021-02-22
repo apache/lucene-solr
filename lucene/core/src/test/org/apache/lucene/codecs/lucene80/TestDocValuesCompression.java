@@ -25,7 +25,9 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -65,6 +67,10 @@ public class TestDocValuesCompression extends LuceneTestCase {
 
   public void testTermsDictCompressionForHighCardinalityFields() throws IOException {
     final int CARDINALITY = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_COMPRESSION_THRESHOLD << 1;
+    final Codec termsDictCompressionCodec =
+        new Lucene90Codec(
+            new Lucene90Codec.CodecConfig(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, false, true));
+
     Set<String> valuesSet = new HashSet<>();
     for (int i = 0; i < CARDINALITY; ++i) {
       final int length = TestUtil.nextInt(random(), 10, 30);
@@ -76,9 +82,12 @@ public class TestDocValuesCompression extends LuceneTestCase {
     List<String> values = new ArrayList<>(valuesSet);
     long sizeForBestSpeed = writeAndGetDocValueFileSize(bestSpeed, values);
     long sizeForBestCompression = writeAndGetDocValueFileSize(bestCompression, values);
+    long sizeForTermsDictCompression =
+        writeAndGetDocValueFileSize(termsDictCompressionCodec, values);
 
     // Compression happened.
     assertTrue(sizeForBestCompression < sizeForBestSpeed);
+    assertEquals(sizeForBestCompression, sizeForTermsDictCompression);
   }
 
   public void testReseekAfterSkipDecompression() throws IOException {
@@ -233,6 +242,42 @@ public class TestDocValuesCompression extends LuceneTestCase {
       ireader.close();
       writer.close();
     }
+  }
+
+  public void testBinaryCompressionOnlyCodec() throws IOException {
+    final Codec binaryCompressionCodec =
+        new Lucene90Codec(
+            new Lucene90Codec.CodecConfig(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, true, false));
+
+    long sizeForBestSpeed = writeBinaryDocValuesAndGetFileSize(bestSpeed);
+    long sizeForBinaryCompressionCodec = writeBinaryDocValuesAndGetFileSize(binaryCompressionCodec);
+    assertTrue(sizeForBinaryCompressionCodec < sizeForBestSpeed);
+  }
+
+  private static long writeBinaryDocValuesAndGetFileSize(Codec codec) throws IOException {
+    long dvdFileSize = -1;
+    try (Directory directory = newDirectory()) {
+      Analyzer analyzer = new StandardAnalyzer();
+      IndexWriterConfig config = new IndexWriterConfig(analyzer);
+      config.setCodec(codec);
+      config.setUseCompoundFile(false);
+      IndexWriter writer = new IndexWriter(directory, config);
+      for (int i = 0; i < 256; i++) {
+        Document doc = new Document();
+        doc.add(new StringField("id", "Doc" + i, Field.Store.NO));
+        doc.add(new BinaryDocValuesField("bin_a", new BytesRef("BinaryValuesFieldA_" + i)));
+        doc.add(new BinaryDocValuesField("bin_b", new BytesRef("BinaryValuesFieldB_" + i)));
+        writer.addDocument(doc);
+      }
+      writer.commit();
+      writer.forceMerge(1);
+      writer.close();
+
+      dvdFileSize = docValueFileSize(directory);
+      assertTrue(dvdFileSize > 0);
+    }
+
+    return dvdFileSize;
   }
 
   private static long writeAndGetDocValueFileSize(Codec codec, List<String> values)

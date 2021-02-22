@@ -70,12 +70,6 @@ public class TestLucene87StoredFieldsFormatHighCompression extends BaseStoredFie
     expectThrows(
         NullPointerException.class,
         () -> {
-          new Lucene90Codec(null);
-        });
-
-    expectThrows(
-        NullPointerException.class,
-        () -> {
           new Lucene87StoredFieldsFormat(null);
         });
   }

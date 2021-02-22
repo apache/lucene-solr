@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.lucene80;
 
 import java.io.IOException;
-import java.util.Objects;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.DocValuesProducer;
@@ -139,34 +138,42 @@ import org.apache.lucene.util.packed.DirectWriter;
  */
 public final class Lucene80DocValuesFormat extends DocValuesFormat {
 
-  /** Configuration option for doc values. */
-  public static enum Mode {
-    /** Trade compression ratio for retrieval speed. */
-    BEST_SPEED,
-    /** Trade retrieval speed for compression ratio. */
-    BEST_COMPRESSION
-  }
-
   /** Attribute key for compression mode. */
   public static final String MODE_KEY = Lucene80DocValuesFormat.class.getSimpleName() + ".mode";
 
-  private final Mode mode;
+  static final String CODEC_DEFAULT = "NONE";
+  static final String CODEC_LZ4 = "LZ4";
+
+  /** Compression for {@link DocValuesType#BINARY} */
+  private boolean binaryCompression;
+  /**
+   * Compression for terms dict from {@link DocValuesType#SORTED_SET} or {@link
+   * DocValuesType#SORTED}
+   */
+  private boolean termsDictCompression;
 
   /** Default constructor. */
   public Lucene80DocValuesFormat() {
-    this(Mode.BEST_SPEED);
+    this(false, false);
   }
 
   /** Constructor */
-  public Lucene80DocValuesFormat(Mode mode) {
+  public Lucene80DocValuesFormat(boolean binaryCompression, boolean termsDictCompression) {
     super("Lucene80");
-    this.mode = Objects.requireNonNull(mode);
+    this.binaryCompression = binaryCompression;
+    this.termsDictCompression = termsDictCompression;
   }
 
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new Lucene80DocValuesConsumer(
-        state, DATA_CODEC, DATA_EXTENSION, META_CODEC, META_EXTENSION, mode);
+        state,
+        DATA_CODEC,
+        DATA_EXTENSION,
+        META_CODEC,
+        META_EXTENSION,
+        this.binaryCompression,
+        this.termsDictCompression);
   }
 
   @Override

@@ -49,22 +49,22 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * @lucene.experimental
  */
 public class Lucene90Codec extends Codec {
+  private static CodecConfig BEST_SPEED_CONFIG =
+      new CodecConfig(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, false, false);
+  private static CodecConfig BEST_COMPESSION_CONFIG =
+      new CodecConfig(Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION, true, true);
 
-  /** Configuration option for the codec. */
-  public static enum Mode {
+  /** Simple configuration options for the codec. */
+  public enum Mode {
     /** Trade compression ratio for retrieval speed. */
-    BEST_SPEED(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, Lucene80DocValuesFormat.Mode.BEST_SPEED),
+    BEST_SPEED(BEST_SPEED_CONFIG),
     /** Trade retrieval speed for compression ratio. */
-    BEST_COMPRESSION(
-        Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
-        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
+    BEST_COMPRESSION(BEST_COMPESSION_CONFIG);
 
-    private final Lucene87StoredFieldsFormat.Mode storedMode;
-    private final Lucene80DocValuesFormat.Mode dvMode;
+    private final CodecConfig config;
 
-    private Mode(Lucene87StoredFieldsFormat.Mode storedMode, Lucene80DocValuesFormat.Mode dvMode) {
-      this.storedMode = Objects.requireNonNull(storedMode);
-      this.dvMode = Objects.requireNonNull(dvMode);
+    Mode(CodecConfig config) {
+      this.config = Objects.requireNonNull(config);
     }
   }
 
@@ -101,16 +101,26 @@ public class Lucene90Codec extends Codec {
   }
 
   /**
-   * Instantiates a new codec, specifying the stored fields compression mode to use.
+   * Instantiates a new codec, specifying compression mode.
    *
-   * @param mode stored fields compression mode to use for newly flushed/merged segments.
+   * @param mode compression mode for stored fields and DocValues.
    */
   public Lucene90Codec(Mode mode) {
+    this(Objects.requireNonNull(mode).config);
+  }
+
+  /**
+   * Instantiates a new codec with detailed compression configurations.
+   *
+   * @param config codec configurations.
+   */
+  public Lucene90Codec(CodecConfig config) {
     super("Lucene90");
-    this.storedFieldsFormat =
-        new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
+    CodecConfig cc = Objects.requireNonNull(config);
+    this.storedFieldsFormat = new Lucene87StoredFieldsFormat(cc.storedFieldMode);
     this.defaultFormat = new Lucene84PostingsFormat();
-    this.defaultDVFormat = new Lucene80DocValuesFormat(mode.dvMode);
+    this.defaultDVFormat =
+        new Lucene80DocValuesFormat(cc.binaryDocValueCompression, cc.termsDictCompression);
   }
 
   @Override
@@ -195,5 +205,37 @@ public class Lucene90Codec extends Codec {
   @Override
   public final NormsFormat normsFormat() {
     return normsFormat;
+  }
+
+  /** Provides all the compression related configurations. */
+  public static class CodecConfig {
+    // Stored field data compression mode.
+    Lucene87StoredFieldsFormat.Mode storedFieldMode;
+
+    // Terms dict compression for SortedSet/Sorted DocValues.
+    boolean termsDictCompression;
+
+    boolean binaryDocValueCompression;
+
+    public CodecConfig() {
+      this(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, false, false);
+    }
+
+    /**
+     * Constructor with flexible compression configurations.
+     *
+     * @param storedFieldMode Specifies {@link Mode} for Stored fields data.
+     * @param binaryDocValueCompression If true, terms-dict compression for SortedSet/Sorted
+     *     DocValues is enabled.
+     * @param termsDictCompression If true, binary DocValues compression is enabled.
+     */
+    public CodecConfig(
+        Lucene87StoredFieldsFormat.Mode storedFieldMode,
+        boolean binaryDocValueCompression,
+        boolean termsDictCompression) {
+      this.storedFieldMode = storedFieldMode;
+      this.binaryDocValueCompression = binaryDocValueCompression;
+      this.termsDictCompression = termsDictCompression;
+    }
   }
 }
