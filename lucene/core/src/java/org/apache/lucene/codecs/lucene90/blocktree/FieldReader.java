@@ -96,11 +96,7 @@ public final class FieldReader extends Terms implements Accountable {
     // Initialize FST always off-heap.
     final IndexInput clone = indexIn.clone();
     clone.seek(indexStartFP);
-    if (metaIn == indexIn) { // Only true before Lucene 8.6
-      index = new FST<>(clone, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
-    } else {
-      index = new FST<>(metaIn, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
-    }
+    index = new FST<>(metaIn, clone, ByteSequenceOutputs.getSingleton(), new OffHeapFSTStore());
     /*
      if (false) {
      final String dotFileName = segment + "_" + fieldInfo.name + ".dot";
