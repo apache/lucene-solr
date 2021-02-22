@@ -16,11 +16,7 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.util.Collections;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 public class TestStemmer extends StemmerTestBase {
 
@@ -60,13 +56,6 @@ public class TestStemmer extends StemmerTestBase {
     assertStemsTo("mood", "moo");
     assertStemsTo("olr", "olr");
     assertStemsTo("solr", "olr");
-  }
-
-  @Test
-  public void testHunspellStemmingApi() throws IOException, ParseException {
-    Hunspell hunspell = new Hunspell(loadDictionary(false, "simple.aff", "simple.dic"));
-    assertEquals(Collections.singletonList("apach"), hunspell.getRoots("apache"));
-    assertEquals(Collections.singletonList("foo"), hunspell.getRoots("foo"));
   }
 
   // some bogus stuff that should not stem (empty lists)!

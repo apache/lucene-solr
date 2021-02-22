@@ -18,6 +18,9 @@ package org.apache.lucene.analysis.hunspell;
 
 /** A strategy determining what to do when Hunspell API calls take too much time */
 public enum TimeoutPolicy {
+  /** Let the computation complete even if it takes ages */
+  NO_TIMEOUT,
+
   /** Just stop the calculation and return whatever has been computed so far */
   RETURN_PARTIAL_RESULT,
 

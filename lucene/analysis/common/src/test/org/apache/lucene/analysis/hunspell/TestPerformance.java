@@ -98,7 +98,7 @@ public class TestPerformance extends LuceneTestCase {
     List<String> words = loadWords(code, wordCount, dictionary);
 
     Stemmer stemmer = new Stemmer(dictionary);
-    Hunspell speller = new Hunspell(dictionary);
+    Hunspell speller = new Hunspell(dictionary, TimeoutPolicy.NO_TIMEOUT, () -> {});
     measure(
         "Stemming " + code,
         blackHole -> {

@@ -17,6 +17,7 @@
 package org.apache.lucene.analysis.hunspell;
 
 import static org.apache.lucene.analysis.hunspell.Dictionary.FLAG_UNSET;
+import static org.apache.lucene.analysis.hunspell.TimeoutPolicy.*;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_BEGIN;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_END;
 import static org.apache.lucene.analysis.hunspell.WordContext.COMPOUND_MIDDLE;
@@ -59,7 +60,7 @@ public class Hunspell {
   final Runnable checkCanceled;
 
   public Hunspell(Dictionary dictionary) {
-    this(dictionary, TimeoutPolicy.RETURN_PARTIAL_RESULT, () -> {});
+    this(dictionary, RETURN_PARTIAL_RESULT, () -> {});
   }
 
   /**
@@ -517,6 +518,10 @@ public class Hunspell {
    *     TimeoutPolicy#THROW_EXCEPTION} was specified in the constructor
    */
   public List<String> suggest(String word) throws SuggestionTimeoutException {
+    return suggest(word, SUGGEST_TIME_LIMIT);
+  }
+
+  List<String> suggest(String word, long timeLimitMs) throws SuggestionTimeoutException {
     checkCanceled.run();
     if (word.length() >= 100) return Collections.emptyList();
 
@@ -533,10 +538,14 @@ public class Hunspell {
     }
 
     LinkedHashSet<String> suggestions = new LinkedHashSet<>();
+    Runnable checkCanceled =
+        policy == NO_TIMEOUT
+            ? this.checkCanceled
+            : checkTimeLimit(word, wordCase, suggestions, timeLimitMs);
     try {
-      doSuggest(word, wordCase, suggestions);
+      doSuggest(word, wordCase, suggestions, checkCanceled);
     } catch (SuggestionTimeoutException e) {
-      if (policy == TimeoutPolicy.RETURN_PARTIAL_RESULT) {
+      if (policy == RETURN_PARTIAL_RESULT) {
         return postprocess(word, wordCase, suggestions);
       }
       throw e;
@@ -545,9 +554,10 @@ public class Hunspell {
     return postprocess(word, wordCase, suggestions);
   }
 
-  private void doSuggest(String word, WordCase wordCase, LinkedHashSet<String> suggestions) {
+  private void doSuggest(
+      String word, WordCase wordCase, LinkedHashSet<String> suggestions, Runnable checkCanceled) {
     Hunspell suggestionSpeller =
-        new Hunspell(dictionary, policy, checkTimeLimit(word, wordCase, suggestions)) {
+        new Hunspell(dictionary, policy, checkCanceled) {
           @Override
           boolean acceptsStem(int formID) {
             return !dictionary.hasFlag(formID, dictionary.noSuggest)
@@ -568,16 +578,17 @@ public class Hunspell {
     }
   }
 
-  private Runnable checkTimeLimit(String word, WordCase wordCase, Set<String> suggestions) {
+  private Runnable checkTimeLimit(
+      String word, WordCase wordCase, Set<String> suggestions, long timeLimitMs) {
     return new Runnable() {
-      final long limit = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(SUGGEST_TIME_LIMIT);
+      final long deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeLimitMs);
       int invocationCounter = 100;
 
       @Override
       public void run() {
         checkCanceled.run();
         if (--invocationCounter <= 0) {
-          if (System.nanoTime() > limit) {
+          if (System.nanoTime() - deadline > 0) {
             stop();
           }
           invocationCounter = 100;
@@ -586,10 +597,8 @@ public class Hunspell {
 
       private void stop() {
         List<String> partialResult =
-            policy == TimeoutPolicy.RETURN_PARTIAL_RESULT
-                ? null
-                : postprocess(word, wordCase, suggestions);
-        String message = "Time limit of " + SUGGEST_TIME_LIMIT + "ms exceeded for " + word;
+            policy == RETURN_PARTIAL_RESULT ? null : postprocess(word, wordCase, suggestions);
+        String message = "Time limit of " + timeLimitMs + "ms exceeded for " + word;
         throw new SuggestionTimeoutException(message, partialResult);
       }
     };
