@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,6 +51,11 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
+  }
+
+  @AfterClass
+  public static void afterZkCollectionPropsCachingTest() {
+   shutdownCluster();
   }
 
   @Before

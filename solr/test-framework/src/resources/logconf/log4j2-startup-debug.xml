@@ -77,6 +77,8 @@
 
         <AsyncLogger name="com.google.inject.servlet" level="DEBUG"/>
 
+        <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
+
         <AsyncRoot level="INFO">
             <AppenderRef ref="STDERR_COLOR"/>
             <AppenderRef ref="FILE2"/>

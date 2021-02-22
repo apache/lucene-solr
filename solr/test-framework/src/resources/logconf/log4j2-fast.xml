@@ -29,7 +29,7 @@
 
     </Appenders>
     <Loggers>
-
+        <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
 
         <AsyncRoot level="off">
             <AppenderRef ref="STDOUT"/>

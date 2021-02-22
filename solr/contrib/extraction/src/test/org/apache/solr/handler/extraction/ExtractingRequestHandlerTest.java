@@ -46,6 +46,7 @@ import org.junit.Test;
  *
  *
  **/
+@LuceneTestCase.Nightly
 public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
