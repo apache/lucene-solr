@@ -26,7 +26,27 @@ These API commands work with a SolrCloud cluster at the entire cluster level, or
 
 Fetch the cluster status including collections, shards, replicas, configuration name as well as collection aliases and cluster properties.
 
-`/admin/collections?action=CLUSTERSTATUS`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1clusterstatus]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
+
+----
+====
+
+[example.tab-pane#v2clusterstatus]
+====
+[.tab-label]*V2 API*
+
+We do not currently have a V2 equivalent.
+
+====
+--
 
 === CLUSTERSTATUS Parameters
 
@@ -125,7 +145,37 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERSTATUS
 
 Add, edit or delete a cluster-wide property.
 
-`/admin/collections?action=CLUSTERPROP&name=_propertyName_&val=_propertyValue_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1clusterprop]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=propertyName&val=propertyValue
+
+----
+====
+
+[example.tab-pane#v2clusterprop]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/v2/cluster -H 'Content-Type: application/json' -d'
+  {
+    "set-property": {
+      "name": "urlScheme",
+      "val": "https"
+    }
+  }
+'
+----
+====
+--
+
 
 === CLUSTERPROP Parameters
 
@@ -169,6 +219,12 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 It is possible to set cluster-wide default values for certain attributes of a collection, using the `defaults` parameter.
 
 *Set/update default values*
+[.dynamic-tabs]
+--
+[example.tab-pane#v1setobjproperty]
+====
+[.tab-label]*V1 API*
+
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -185,8 +241,39 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
   }
 }' http://localhost:8983/api/cluster
 ----
+====
+
+[example.tab-pane#v2setobjproperty]
+====
+[.tab-label]*V2 API*
+
+This and the v1 example may actually BOTH be the same?  Or both be V2?
+
+Need to clarify this, for both this and the next two examples.
+
+[source,bash]
+----
+curl -X POST -H 'Content-type:application/json' --data-binary '
+{
+  "set-obj-property": {
+    "defaults" : {
+      "collection": {
+        "numShards": 2,
+        "nrtReplicas": 1,
+        "tlogReplicas": 1,
+        "pullReplicas": 1
+      }
+    }
+  }
+}' http://localhost:8983/v2/cluster
+----
+====
+--
+
+
 
 *Unset the only value of `nrtReplicas`*
+
 [source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
@@ -235,9 +322,37 @@ At this point, if you run a query on a node having e.g., `rack=rack1`, Solr will
 [[balanceshardunique]]
 == BALANCESHARDUNIQUE: Balance a Property Across Nodes
 
-`/admin/collections?action=BALANCESHARDUNIQUE&collection=_collectionName_&property=_propertyName_`
-
 Insures that a particular property is distributed evenly amongst the physical nodes that make up a collection. If the property already exists on a replica, every effort is made to leave it there. If the property is *not* on any replica on a shard, one is chosen and the property is added.
+
+[.dynamic-tabs]
+--
+[example.tab-pane#v1balanceshardunique]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=BALANCESHARDUNIQUE&collection=techproducts&property=preferredLeader
+
+----
+====
+
+[example.tab-pane#v2balanceshardunique]
+====
+[.tab-label]*V2 API*
+
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
+  {
+    "balance-shard-unique": {
+      "property": "preferredLeader"
+    }
+  }
+'
+----
+====
+--
 
 === BALANCESHARDUNIQUE Parameters
 
@@ -287,13 +402,33 @@ Examining the clusterstate after issuing this call should show exactly one repli
 [[replacenode]]
 == REPLACENODE: Move All Replicas in a Node to Another
 
-This command recreates replicas in one node (the source) to another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
+This command recreates replicas in one node (the source) on another node(s) (the target). After each replica is copied, the replicas in the source node are deleted.
 
-For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
+For source replicas that are also shard leaders the operation will wait for the number of seconds set with the `timeout` parameter to make sure there's an active replica that can become a leader, either an existing replica becoming a leader or the new replica completing recovery and becoming a leader).
 
 The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
 
-`/admin/collections?action=REPLACENODE&sourceNode=_source-node_&targetNode=_target-node_`
+[.dynamic-tabs]
+--
+[example.tab-pane#v1replacenode]
+====
+[.tab-label]*V1 API*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/collections?action=REPLACENODE&sourceNode=source-node&targetNode=target-node
+
+----
+====
+
+[example.tab-pane#v2replacenode]
+====
+[.tab-label]*V2 API*
+
+We do not currently have a V2 equivalent.
+
+====
+--
 
 === REPLACENODE Parameters
 
