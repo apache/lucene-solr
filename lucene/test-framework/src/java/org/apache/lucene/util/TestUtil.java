@@ -53,8 +53,8 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
 import org.apache.lucene.codecs.lucene90.Lucene90Codec;
+import org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat;
 import org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
@@ -1252,7 +1252,7 @@ public final class TestUtil {
    * Lucene.
    */
   public static DocValuesFormat getDefaultDocValuesFormat() {
-    return new Lucene80DocValuesFormat();
+    return new Lucene90DocValuesFormat();
   }
 
   // TODO: generalize all 'test-checks-for-crazy-codecs' to

@@ -14,6 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/** Components from the Lucene 8.0 index format. */
 package org.apache.lucene.backward_codecs.lucene80;
+
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.util.TestUtil;
+
+/** Tests Lucene80DocValuesFormat */
+public class TestBestCompressionLucene80DocValuesFormat
+    extends BaseLucene80DocValuesFormatTestCase {
+  private final Codec codec =
+      TestUtil.alwaysDocValuesFormat(
+          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION));
+
+  @Override
+  protected Codec getCodec() {
+    return codec;
+  }
+}

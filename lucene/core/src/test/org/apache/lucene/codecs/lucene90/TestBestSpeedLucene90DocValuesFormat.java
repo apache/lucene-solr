@@ -14,13 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene90;
 
-/** Test the merge instance of the Lucene80 norms format. */
-public class TestLucene80NormsFormatMergeInstance extends TestLucene80NormsFormat {
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.util.TestUtil;
+
+/** Tests Lucene90DocValuesFormat */
+public class TestBestSpeedLucene90DocValuesFormat extends BaseLucene90DocValuesFormatTestCase {
+  private final Codec codec =
+      TestUtil.alwaysDocValuesFormat(
+          new Lucene90DocValuesFormat(Lucene90DocValuesFormat.Mode.BEST_SPEED));
 
   @Override
-  protected boolean shouldTestMergeInstance() {
-    return true;
+  protected Codec getCodec() {
+    return codec;
   }
 }

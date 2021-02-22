@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.backward_codecs.lucene80;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -163,6 +163,11 @@ public final class Lucene80DocValuesFormat extends DocValuesFormat {
     this.mode = Objects.requireNonNull(mode);
   }
 
+  /**
+   * Note: although this format is only used on older versions, we need to keep the write logic in
+   * addition to the read logic. It's possible for doc values on older segments to be written to
+   * through doc values updates.
+   */
   @Override
   public DocValuesConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
     return new Lucene80DocValuesConsumer(

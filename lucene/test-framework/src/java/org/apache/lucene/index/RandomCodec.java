@@ -39,9 +39,9 @@ import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
-import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsReader;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsWriter;
+import org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
@@ -227,7 +227,7 @@ public class RandomCodec extends AssertingCodec {
     addDocValues(
         avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
-        new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION),
+        new Lucene90DocValuesFormat(Lucene90DocValuesFormat.Mode.BEST_COMPRESSION),
         new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);

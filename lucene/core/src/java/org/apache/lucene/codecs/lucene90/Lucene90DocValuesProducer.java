@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene90;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,8 +51,8 @@ import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.packed.DirectMonotonicReader;
 import org.apache.lucene.util.packed.DirectReader;
 
-/** reader for {@link Lucene80DocValuesFormat} */
-final class Lucene80DocValuesProducer extends DocValuesProducer implements Closeable {
+/** reader for {@link Lucene90DocValuesFormat} */
+final class Lucene90DocValuesProducer extends DocValuesProducer implements Closeable {
   private final Map<String, NumericEntry> numerics = new HashMap<>();
   private final Map<String, BinaryEntry> binaries = new HashMap<>();
   private final Map<String, SortedEntry> sorted = new HashMap<>();
@@ -64,7 +64,7 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   private int version = -1;
 
   /** expert: instantiates a new reader */
-  Lucene80DocValuesProducer(
+  Lucene90DocValuesProducer(
       SegmentReadState state,
       String dataCodec,
       String dataExtension,
@@ -85,8 +85,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
             CodecUtil.checkIndexHeader(
                 in,
                 metaCodec,
-                Lucene80DocValuesFormat.VERSION_START,
-                Lucene80DocValuesFormat.VERSION_CURRENT,
+                Lucene90DocValuesFormat.VERSION_START,
+                Lucene90DocValuesFormat.VERSION_CURRENT,
                 state.segmentInfo.getId(),
                 state.segmentSuffix);
 
@@ -108,8 +108,8 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
           CodecUtil.checkIndexHeader(
               data,
               dataCodec,
-              Lucene80DocValuesFormat.VERSION_START,
-              Lucene80DocValuesFormat.VERSION_CURRENT,
+              Lucene90DocValuesFormat.VERSION_START,
+              Lucene90DocValuesFormat.VERSION_CURRENT,
               state.segmentInfo.getId(),
               state.segmentSuffix);
       if (version != version2) {
@@ -139,32 +139,27 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
         throw new CorruptIndexException("Invalid field number: " + fieldNumber, meta);
       }
       byte type = meta.readByte();
-      if (type == Lucene80DocValuesFormat.NUMERIC) {
+      if (type == Lucene90DocValuesFormat.NUMERIC) {
         numerics.put(info.name, readNumeric(meta));
-      } else if (type == Lucene80DocValuesFormat.BINARY) {
-        final boolean compressed;
-        if (version >= Lucene80DocValuesFormat.VERSION_CONFIGURABLE_COMPRESSION) {
-          String value = info.getAttribute(Lucene80DocValuesFormat.MODE_KEY);
-          if (value == null) {
-            throw new IllegalStateException(
-                "missing value for "
-                    + Lucene80DocValuesFormat.MODE_KEY
-                    + " for field: "
-                    + info.name
-                    + " in segment: "
-                    + segmentName);
-          }
-          Lucene80DocValuesFormat.Mode mode = Lucene80DocValuesFormat.Mode.valueOf(value);
-          compressed = mode == Lucene80DocValuesFormat.Mode.BEST_COMPRESSION;
-        } else {
-          compressed = version >= Lucene80DocValuesFormat.VERSION_BIN_COMPRESSED;
+      } else if (type == Lucene90DocValuesFormat.BINARY) {
+        String value = info.getAttribute(Lucene90DocValuesFormat.MODE_KEY);
+        if (value == null) {
+          throw new IllegalStateException(
+              "missing value for "
+                  + Lucene90DocValuesFormat.MODE_KEY
+                  + " for field: "
+                  + info.name
+                  + " in segment: "
+                  + segmentName);
         }
+        Lucene90DocValuesFormat.Mode mode = Lucene90DocValuesFormat.Mode.valueOf(value);
+        final boolean compressed = mode == Lucene90DocValuesFormat.Mode.BEST_COMPRESSION;
         binaries.put(info.name, readBinary(meta, compressed));
-      } else if (type == Lucene80DocValuesFormat.SORTED) {
+      } else if (type == Lucene90DocValuesFormat.SORTED) {
         sorted.put(info.name, readSorted(meta));
-      } else if (type == Lucene80DocValuesFormat.SORTED_SET) {
+      } else if (type == Lucene90DocValuesFormat.SORTED_SET) {
         sortedSets.put(info.name, readSortedSet(meta));
-      } else if (type == Lucene80DocValuesFormat.SORTED_NUMERIC) {
+      } else if (type == Lucene90DocValuesFormat.SORTED_NUMERIC) {
         sortedNumerics.put(info.name, readSortedNumeric(meta));
       } else {
         throw new CorruptIndexException("invalid type: " + type, meta);
@@ -288,10 +283,10 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
   private static void readTermDict(IndexInput meta, TermsDictEntry entry) throws IOException {
     entry.termsDictSize = meta.readVLong();
     int termsDictBlockCode = meta.readInt();
-    if (Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_CODE == termsDictBlockCode) {
+    if (Lucene90DocValuesFormat.TERMS_DICT_BLOCK_LZ4_CODE == termsDictBlockCode) {
       // This is a LZ4 compressed block.
       entry.compressed = true;
-      entry.termsDictBlockShift = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_LZ4_SHIFT;
+      entry.termsDictBlockShift = Lucene90DocValuesFormat.TERMS_DICT_BLOCK_LZ4_SHIFT;
     } else {
       entry.termsDictBlockShift = termsDictBlockCode;
     }

@@ -14,19 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.backward_codecs.lucene80;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.util.TestUtil;
+import java.io.IOException;
+import org.apache.lucene.codecs.NormsConsumer;
+import org.apache.lucene.index.SegmentWriteState;
 
-/** Tests Lucene80DocValuesFormat */
-public class TestBestSpeedLucene80DocValuesFormat extends BaseLucene80DocValuesFormatTestCase {
-  private final Codec codec =
-      TestUtil.alwaysDocValuesFormat(
-          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_SPEED));
+public class Lucene80RWNormsFormat extends Lucene80NormsFormat {
 
   @Override
-  protected Codec getCodec() {
-    return codec;
+  public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
+    return new Lucene80NormsConsumer(
+        state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
 }

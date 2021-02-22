@@ -17,14 +17,12 @@
 package org.apache.lucene.codecs.lucene80;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseNormsFormatTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/** Tests Lucene80DocValuesFormat */
-public class TestBestCompressionLucene80DocValuesFormat
-    extends BaseLucene80DocValuesFormatTestCase {
-  private final Codec codec =
-      TestUtil.alwaysDocValuesFormat(
-          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION));
+/** Tests Lucene90NormsFormat */
+public class TestLucene90NormsFormat extends BaseNormsFormatTestCase {
+  private final Codec codec = TestUtil.getDefaultCodec();
 
   @Override
   protected Codec getCodec() {

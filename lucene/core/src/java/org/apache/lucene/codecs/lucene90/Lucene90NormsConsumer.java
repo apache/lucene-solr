@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.codecs.lucene90;
 
-import static org.apache.lucene.codecs.lucene80.Lucene80NormsFormat.VERSION_CURRENT;
+import static org.apache.lucene.codecs.lucene90.Lucene90NormsFormat.VERSION_CURRENT;
 
 import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
@@ -30,12 +30,12 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
-/** Writer for {@link Lucene80NormsFormat} */
-final class Lucene80NormsConsumer extends NormsConsumer {
+/** Writer for {@link Lucene90NormsFormat} */
+final class Lucene90NormsConsumer extends NormsConsumer {
   IndexOutput data, meta;
   final int maxDoc;
 
-  Lucene80NormsConsumer(
+  Lucene90NormsConsumer(
       SegmentWriteState state,
       String dataCodec,
       String dataExtension,

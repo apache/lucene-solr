@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.backward_codecs.lucene80;
 
 import java.io.IOException;
 import org.apache.lucene.codecs.CodecUtil;
@@ -87,8 +87,7 @@ public class Lucene80NormsFormat extends NormsFormat {
 
   @Override
   public NormsConsumer normsConsumer(SegmentWriteState state) throws IOException {
-    return new Lucene80NormsConsumer(
-        state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
+    throw new UnsupportedOperationException("Old codecs may only be used for reading");
   }
 
   @Override
@@ -97,10 +96,10 @@ public class Lucene80NormsFormat extends NormsFormat {
         state, DATA_CODEC, DATA_EXTENSION, METADATA_CODEC, METADATA_EXTENSION);
   }
 
-  private static final String DATA_CODEC = "Lucene80NormsData";
-  private static final String DATA_EXTENSION = "nvd";
-  private static final String METADATA_CODEC = "Lucene80NormsMetadata";
-  private static final String METADATA_EXTENSION = "nvm";
+  static final String DATA_CODEC = "Lucene80NormsData";
+  static final String DATA_EXTENSION = "nvd";
+  static final String METADATA_CODEC = "Lucene80NormsMetadata";
+  static final String METADATA_EXTENSION = "nvm";
   static final int VERSION_START = 0;
   static final int VERSION_CURRENT = VERSION_START;
 }

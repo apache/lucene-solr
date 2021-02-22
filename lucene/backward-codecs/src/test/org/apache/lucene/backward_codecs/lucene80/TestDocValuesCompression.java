@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene80;
+package org.apache.lucene.backward_codecs.lucene80;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene90.Lucene90Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -43,8 +42,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestDocValuesCompression extends LuceneTestCase {
-  private final Codec bestSpeed = new Lucene90Codec(Lucene90Codec.Mode.BEST_SPEED);
-  private final Codec bestCompression = new Lucene90Codec(Lucene90Codec.Mode.BEST_COMPRESSION);
+  private final Codec bestSpeed =
+      TestUtil.alwaysDocValuesFormat(
+          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_SPEED));
+
+  private final Codec bestCompression =
+      TestUtil.alwaysDocValuesFormat(
+          new Lucene80DocValuesFormat(Lucene80DocValuesFormat.Mode.BEST_COMPRESSION));
 
   public void testTermsDictCompressionForLowCardinalityFields() throws IOException {
     final int CARDINALITY = Lucene80DocValuesFormat.TERMS_DICT_BLOCK_COMPRESSION_THRESHOLD - 1;
