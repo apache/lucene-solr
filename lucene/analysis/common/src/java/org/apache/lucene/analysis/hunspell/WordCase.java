@@ -17,45 +17,80 @@
 package org.apache.lucene.analysis.hunspell;
 
 enum WordCase {
+  /** e.g. WORD */
   UPPER,
+
+  /** e.g. Word */
   TITLE,
+
+  /** e.g. word */
   LOWER,
-  MIXED;
+
+  /** e.g. WoRd or wOrd */
+  MIXED,
+
+  /** e.g "-" or "/" or "42" */
+  NEUTRAL;
 
   static WordCase caseOf(char[] word, int length) {
-    boolean startsWithLower = Character.isLowerCase(word[0]);
+    CharCase startCase = charCase(word[0]);
 
     boolean seenUpper = false;
     boolean seenLower = false;
     for (int i = 1; i < length; i++) {
-      char ch = word[i];
-      seenUpper = seenUpper || Character.isUpperCase(ch);
-      seenLower = seenLower || Character.isLowerCase(ch);
+      CharCase cc = charCase(word[i]);
+      seenUpper = seenUpper || cc == CharCase.UPPER;
+      seenLower = seenLower || cc == CharCase.LOWER;
       if (seenUpper && seenLower) break;
     }
 
-    return get(startsWithLower, seenUpper, seenLower);
+    return get(startCase, seenUpper, seenLower);
+  }
+
+  static WordCase caseOf(CharSequence word) {
+    return caseOf(word, word.length());
   }
 
   static WordCase caseOf(CharSequence word, int length) {
-    boolean startsWithLower = Character.isLowerCase(word.charAt(0));
+    CharCase startCase = charCase(word.charAt(0));
 
     boolean seenUpper = false;
     boolean seenLower = false;
     for (int i = 1; i < length; i++) {
-      char ch = word.charAt(i);
-      seenUpper = seenUpper || Character.isUpperCase(ch);
-      seenLower = seenLower || Character.isLowerCase(ch);
+      CharCase cc = charCase(word.charAt(i));
+      seenUpper = seenUpper || cc == CharCase.UPPER;
+      seenLower = seenLower || cc == CharCase.LOWER;
       if (seenUpper && seenLower) break;
     }
 
-    return get(startsWithLower, seenUpper, seenLower);
+    return get(startCase, seenUpper, seenLower);
   }
 
-  private static WordCase get(boolean startsWithLower, boolean seenUpper, boolean seenLower) {
-    if (!startsWithLower) {
-      return !seenLower ? UPPER : !seenUpper ? TITLE : MIXED;
+  private static WordCase get(CharCase startCase, boolean seenUpper, boolean seenLower) {
+    if (seenLower && seenUpper) return MIXED;
+    switch (startCase) {
+      case LOWER:
+        return seenUpper ? MIXED : LOWER;
+      case UPPER:
+        return !seenLower ? UPPER : TITLE;
+      default:
+        return seenLower ? LOWER : seenUpper ? UPPER : NEUTRAL;
     }
-    return seenUpper ? MIXED : LOWER;
+  }
+
+  private static CharCase charCase(char c) {
+    if (Character.isUpperCase(c)) {
+      return CharCase.UPPER;
+    }
+    if (Character.isLowerCase(c) && Character.toUpperCase(c) != c) {
+      return CharCase.LOWER;
+    }
+    return CharCase.NEUTRAL;
+  }
+
+  private enum CharCase {
+    UPPER,
+    LOWER,
+    NEUTRAL
   }
 }

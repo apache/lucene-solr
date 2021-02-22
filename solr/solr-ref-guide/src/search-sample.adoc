@@ -76,8 +76,8 @@ These larger samples can be used to build reliable statistical models that descr
 The examples below demonstrate univariate and bivariate scatter
 plots of random samples.
 Statistical modeling with random samples
-is covered in the <<statistics.adoc#statistics,Statistics>>, <<probability-distributions.adoc#probability-distributions,Probability>>, <<regression.adoc#regression,Linear Regression>>, <<curve-fitting.adoc#curve-fitting,Curve Fitting>>,
-and <<machine-learning.adoc#machine-learning,Machine Learning>> sections.
+is covered in the <<statistics.adoc#,Statistics>>, <<probability-distributions.adoc#,Probability>>, <<regression.adoc#,Linear Regression>>, <<curve-fitting.adoc#,Curve Fitting>>,
+and <<machine-learning.adoc#,Machine Learning>> sections.
 
 === Univariate Scatter Plots
 
@@ -153,7 +153,7 @@ image::images/math-expressions/stats.png[]
 The `facet` function performs single and multi-dimension
 aggregations that behave in a similar manner to SQL group by aggregations.
 Under the covers the `facet` function pushes down the aggregations to Solr's
-<<json-facet-api.adoc#json-facet-api,JSON Facet API>> for fast distributed execution.
+<<json-facet-api.adoc#,JSON Facet API>> for fast distributed execution.
 
 The example below performs a single dimension aggregation from the
 nyc311 (NYC complaints) dataset.
@@ -254,7 +254,7 @@ image::images/math-expressions/sterms.png[]
 === nodes
 
 The `nodes` function performs aggregations of nodes during a breadth first search of a graph.
-This function is covered in detail in the section <<graph-traversal.adoc#graph-traversal,Graph Traversal>>.
+This function is covered in detail in the section <<graph-traversal.adoc#,Graph Traversal>>.
 In this example the focus will be on finding correlated nodes in a time series
 graph using the `nodes` expressions.
 

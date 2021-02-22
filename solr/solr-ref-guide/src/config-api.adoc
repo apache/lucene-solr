@@ -28,7 +28,7 @@ All Config API endpoints are collection-specific, meaning this API can inspect o
 
 * `_collection_/config`: retrieve the full effective config, or modify the config. Use GET to retrieve and POST for executing commands.
 * `_collection_/config/overlay`: retrieve the details in the `configoverlay.json` only, removing any options defined in `solrconfig.xml` directly or implicitly through defaults.
-* `_collection_/config/params`: create parameter sets that can override or take the place of parameters defined in `solrconfig.xml`. See <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> for more information about this endpoint.
+* `_collection_/config/params`: create parameter sets that can override or take the place of parameters defined in `solrconfig.xml`. See <<request-parameters-api.adoc#,Request Parameters API>> for more information about this endpoint.
 
 == Retrieving the Config
 
@@ -85,7 +85,7 @@ http://localhost:8983/api/collections/techproducts/config/requestHandler
 ====
 --
 
-The output will be details of each request handler defined in `solrconfig.xml`, all  <<implicit-requesthandlers.adoc#implicit-requesthandlers,defined implicitly>> by Solr, and all defined with this Config API stored in `configoverlay.json`. To see the configuration for implicit request handlers, add `expandParams=true` to the request. See the documentation for the implicit request handlers for examples using this command.
+The output will be details of each request handler defined in `solrconfig.xml`, all  <<implicit-requesthandlers.adoc#,defined implicitly>> by Solr, and all defined with this Config API stored in `configoverlay.json`. To see the configuration for implicit request handlers, add `expandParams=true` to the request. See the documentation for the implicit request handlers for examples using this command.
 
 The available top-level sections that can be added as path parameters are: `query`, `requestHandler`, `searchComponent`, `updateHandler`, `queryResponseWriter`, `initParams`, `znodeVersion`, `listener`, `directoryFactory`, `indexConfig`, and `codecFactory`.
 
@@ -154,7 +154,7 @@ The properties that can be configured with `set-property` and `unset-property` a
 
 *Update Handler Settings*
 
-See <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,UpdateHandlers in SolrConfig>> for defaults and acceptable values for these settings.
+See <<updatehandlers-in-solrconfig.adoc#,UpdateHandlers in SolrConfig>> for defaults and acceptable values for these settings.
 
 * `updateHandler.autoCommit.maxDocs`
 * `updateHandler.autoCommit.maxTime`
@@ -166,7 +166,7 @@ See <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,UpdateHandl
 
 *Query Settings*
 
-See <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>> for defaults and acceptable values for these settings.
+See <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>> for defaults and acceptable values for these settings.
 
 _Caches and Cache Sizes_
 
@@ -203,14 +203,14 @@ _Query Sizing and Warming_
 
 _Query Circuit Breakers_
 
-See <<circuit-breakers.adoc#circuit-breakers,Circuit Breakers in Solr>> for more details
+See <<circuit-breakers.adoc#,Circuit Breakers in Solr>> for more details
 
 * `query.useCircuitBreakers`
 * `query.memoryCircuitBreakerThresholdPct`
 
 *RequestDispatcher Settings*
 
-See <<requestdispatcher-in-solrconfig.adoc#requestdispatcher-in-solrconfig,RequestDispatcher in SolrConfig>> for defaults and acceptable values for these settings.
+See <<requestdispatcher-in-solrconfig.adoc#,RequestDispatcher in SolrConfig>> for defaults and acceptable values for these settings.
 
 * `requestDispatcher.handleSelect`
 * `requestDispatcher.requestParsers.enableRemoteStreaming`
@@ -859,7 +859,7 @@ Every core watches the ZooKeeper directory for the configset being used with tha
 
 For instance, if the configset 'myconf' is used by a core, the node would watch `/configs/myconf`. Every write operation performed through the API would 'touch' the directory and all watchers are notified. Every core would check if the schema file, `solrconfig.xml`, or `configoverlay.json` has been modified by comparing the `znode` versions. If any have been modified, the core is reloaded.
 
-If `params.json` is modified, the params object is just updated without a core reload (see <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>> for more information about `params.json`).
+If `params.json` is modified, the params object is just updated without a core reload (see <<request-parameters-api.adoc#,Request Parameters API>> for more information about `params.json`).
 
 === Empty Command
 

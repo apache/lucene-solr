@@ -26,7 +26,7 @@ The `nodes` function can be combined with the `scoreNodes` function to provide r
 
 [IMPORTANT]
 ====
-This document assumes a basic understanding of graph terminology and streaming expressions. You can begin exploring graph traversal concepts with this https://en.wikipedia.org/wiki/Graph_traversal[Wikipedia article]. More details about streaming expressions are available in this Guide, in the section <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>.
+This document assumes a basic understanding of graph terminology and streaming expressions. You can begin exploring graph traversal concepts with this https://en.wikipedia.org/wiki/Graph_traversal[Wikipedia article]. More details about streaming expressions are available in this Guide, in the section <<streaming-expressions.adoc#,Streaming Expressions>>.
 ====
 
 == Basic Syntax
@@ -59,7 +59,7 @@ nodes(emails,
 
 The `nodes` function above finds all the edges with "johndoe@apache.org" or "janesmith@apache.org" in the `from` field and gathers the `to` field.
 
-Like all <<streaming-expressions.adoc#streaming-expressions,Streaming Expressions>>, you can execute a `nodes` expression by sending it to the `/stream` handler. For example:
+Like all <<streaming-expressions.adoc#,Streaming Expressions>>, you can execute a `nodes` expression by sending it to the `/stream` handler. For example:
 
 [source,bash]
 ----
@@ -220,7 +220,7 @@ nodes(emails,
       gather="to")
 ----
 
-In the example above only emails that match the filter query will be included in the traversal. Any Solr query can be included here. So you can do fun things like <<spatial-search.adoc#spatial-search,geospatial queries>>, apply any of the available <<query-syntax-and-parsing.adoc#query-syntax-and-parsing,query parsers>>, or even write custom query parsers to limit the traversal.
+In the example above only emails that match the filter query will be included in the traversal. Any Solr query can be included here. So you can do fun things like <<spatial-search.adoc#,geospatial queries>>, apply any of the available <<query-syntax-and-parsing.adoc#,query parsers>>, or even write custom query parsers to limit the traversal.
 
 == Root Streams
 

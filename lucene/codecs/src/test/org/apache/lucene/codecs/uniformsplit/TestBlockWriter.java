@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
 import java.util.Collections;
-import org.apache.lucene.codecs.lucene84.MockTermStateFactory;
+import org.apache.lucene.codecs.lucene90.MockTermStateFactory;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;

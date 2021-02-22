@@ -140,7 +140,7 @@ public class SolrAnalyticsTestCase extends SolrCloudTestCase {
   private Object queryCloudObject(SolrParams params) {
     QueryResponse resp;
     try {
-      cluster.waitForAllNodes(10000);
+      cluster.waitForAllNodes(10);
       QueryRequest qreq = new QueryRequest(params);
       resp = qreq.process(cluster.getSolrClient(), COLLECTIONORALIAS);
     } catch (Exception e) {

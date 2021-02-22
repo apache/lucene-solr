@@ -29,14 +29,16 @@ Likewise, committing changes using `openSearcher=false` may result in changes co
 
 == SolrCloud Backups
 
-Support for backups when running SolrCloud is provided with the <<collection-management.adoc#collection-management,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
+Support for backups when running SolrCloud is provided with the <<collection-management.adoc#,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
 
 NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
 
-Two commands are available:
+Four different API commands are supported:
 
 * `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collection-management.adoc#backup,Backup Collection>>.
 * `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collection-management.adoc#restore,Restore Collection>>.
+* `action=LISTBACKUP`: This command lists the backup points available at a specified location, displaying metadata for each.  More information is available in the section <<collection-management.adoc#listbackup,List Backups>>.
+* `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.  More information is available in the section <<collection-management.adoc#deletebackup,Delete Backups>>.
 
 == Standalone Mode Backups
 
@@ -227,7 +229,7 @@ The repository interfaces needs to be configured in the `solr.xml` file. While r
 
 If no repository is configured then the local filesystem repository will be used automatically.
 
-Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,HDFS>>:
+Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs.adoc#,HDFS>>:
 
 [source,xml]
 ----

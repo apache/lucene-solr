@@ -49,8 +49,13 @@ public class OverseerStatusTest extends SolrCloudTestCase {
     SimpleOrderedMap<Object> createcollection
         = (SimpleOrderedMap<Object>) collection_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
     assertEquals("No stats for create in OverseerCollectionProcessor", numCollectionCreates + 1, createcollection.get("requests"));
-    createcollection = (SimpleOrderedMap<Object>) overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
-    assertEquals("No stats for create in Overseer", numOverseerCreates + 1, createcollection.get("requests"));
+    // When cluster state updates are distributed, Overseer doesn't see them and doesn't report stats on them.
+    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      // Note the "create" key here is in a different map from the "create" key above. Above it's Collection creation in the
+      // Collection API, here it's the collection creation from the cluster state updater perspective.
+      createcollection = (SimpleOrderedMap<Object>) overseer_operations.get(CollectionParams.CollectionAction.CREATE.toLower());
+      assertEquals("No stats for create in Overseer", numOverseerCreates + 1, createcollection.get("requests"));
+    }
 
     // Reload the collection
     CollectionAdminRequest.reloadCollection(collectionName).process(cluster.getSolrClient());
@@ -81,19 +86,21 @@ public class OverseerStatusTest extends SolrCloudTestCase {
     assertNotNull(amIleader.get("errors"));
     assertNotNull(amIleader.get("avgTimePerRequest"));
 
-    amIleader = (SimpleOrderedMap<Object>) overseer_operations.get("am_i_leader");
-    assertNotNull("Overseer amILeader stats should not be null", amIleader);
-    assertNotNull(amIleader.get("requests"));
-    assertTrue(Integer.parseInt(amIleader.get("requests").toString()) > 0);
-    assertNotNull(amIleader.get("errors"));
-    assertNotNull(amIleader.get("avgTimePerRequest"));
+    // When cluster state updates are distributed, Overseer doesn't see the updates and doesn't report stats on them.
+    if (!cluster.getOpenOverseer().getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      amIleader = (SimpleOrderedMap<Object>) overseer_operations.get("am_i_leader");
+      assertNotNull("Overseer amILeader stats should not be null", amIleader);
+      assertNotNull(amIleader.get("requests"));
+      assertTrue(Integer.parseInt(amIleader.get("requests").toString()) > 0);
+      assertNotNull(amIleader.get("errors"));
+      assertNotNull(amIleader.get("avgTimePerRequest"));
 
-    SimpleOrderedMap<Object> updateState = (SimpleOrderedMap<Object>) overseer_operations.get("update_state");
-    assertNotNull("Overseer update_state stats should not be null", updateState);
-    assertNotNull(updateState.get("requests"));
-    assertTrue(Integer.parseInt(updateState.get("requests").toString()) > 0);
-    assertNotNull(updateState.get("errors"));
-    assertNotNull(updateState.get("avgTimePerRequest"));
-
+      SimpleOrderedMap<Object> updateState = (SimpleOrderedMap<Object>) overseer_operations.get("update_state");
+      assertNotNull("Overseer update_state stats should not be null", updateState);
+      assertNotNull(updateState.get("requests"));
+      assertTrue(Integer.parseInt(updateState.get("requests").toString()) > 0);
+      assertNotNull(updateState.get("errors"));
+      assertNotNull(updateState.get("avgTimePerRequest"));
+    }
   }
 }

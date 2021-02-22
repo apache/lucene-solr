@@ -368,7 +368,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       float score = scorer.score(freq, norm);
       // check that score isn't infinite or negative
       assertTrue("infinite/NaN score: " + score, Float.isFinite(score));
-      assertTrue("negative score: " + score, score >= 0);
+      if (!(similarity instanceof IndriDirichletSimilarity)) {
+        assertTrue("negative score: " + score, score >= 0);
+      }
       assertTrue("greater than maxScore: " + score + ">" + maxScore, score <= maxScore);
       // check explanation matches
       Explanation explanation =
@@ -395,7 +397,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
       float prevScore = scorer.score(prevFreq, norm);
       // check that score isn't infinite or negative
       assertTrue(Float.isFinite(prevScore));
-      assertTrue(prevScore >= 0);
+      if (!(similarity instanceof IndriDirichletSimilarity)) {
+        assertTrue(prevScore >= 0);
+      }
       // check explanation matches
       Explanation prevExplanation =
           scorer.explain(
@@ -419,7 +423,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
         float prevNormScore = scorer.score(freq, norm - 1);
         // check that score isn't infinite or negative
         assertTrue(Float.isFinite(prevNormScore));
-        assertTrue(prevNormScore >= 0);
+        if (!(similarity instanceof IndriDirichletSimilarity)) {
+          assertTrue(prevNormScore >= 0);
+        }
         // check explanation matches
         Explanation prevNormExplanation =
             scorer.explain(
@@ -459,7 +465,9 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
         float prevTermScore = prevTermScorer.score(freq, norm);
         // check that score isn't infinite or negative
         assertTrue(Float.isFinite(prevTermScore));
-        assertTrue(prevTermScore >= 0);
+        if (!(similarity instanceof IndriDirichletSimilarity)) {
+          assertTrue(prevTermScore >= 0);
+        }
         // check explanation matches
         Explanation prevTermExplanation =
             prevTermScorer.explain(

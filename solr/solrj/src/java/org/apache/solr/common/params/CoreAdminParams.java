@@ -123,6 +123,36 @@ public abstract class CoreAdminParams
   public static final String BACKUP_LOCATION = "location";
 
   /**
+   * The ID of the shard-backup prior to the latest one (indicated by {@link #SHARD_BACKUP_ID}
+   */
+  public static final String PREV_SHARD_BACKUP_ID = "prevShardBackupId";
+
+  /**
+   * The ID of the shard-backup in question
+   */
+  public static final String SHARD_BACKUP_ID = "shardBackupId";
+
+  /**
+   * A parameter to specify last number of backups (delete the rest)
+   */
+  public static final String MAX_NUM_BACKUP_POINTS = "maxNumBackupPoints";
+
+  /**
+   * Unique id of the backup
+   */
+  public static final String BACKUP_ID = "backupId";
+
+  /**
+   * Purging/deleting all index files, shard-backup metadata files, backup property files that are unreachable, uncompleted or corrupted.
+   */
+  public static final String BACKUP_PURGE_UNUSED = "purgeUnused";
+
+  /**
+   * A parameter to specify whether incremental backup is used
+   */
+  public static final String BACKUP_INCREMENTAL = "incremental";
+
+  /**
    * A parameter to specify the name of the commit to be stored during the backup operation.
    */
   public static final String COMMIT_NAME = "commitName";

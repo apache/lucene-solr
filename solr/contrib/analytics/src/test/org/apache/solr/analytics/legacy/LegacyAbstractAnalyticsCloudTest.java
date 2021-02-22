@@ -96,7 +96,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     for (int i = 0; i + 1 < testParams.length;) {
       params.add(testParams[i++], testParams[i++]);
     }
-    cluster.waitForAllNodes(10000);
+    cluster.waitForAllNodes(10);
     QueryRequest qreq = new QueryRequest(params);
     QueryResponse resp = qreq.process(cluster.getSolrClient(), COLLECTIONORALIAS);
     final NamedList<Object> response = resp.getResponse();
@@ -108,7 +108,7 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
   protected void assertRequestTimeout(ModifiableSolrParams params)
       throws IOException, InterruptedException, TimeoutException, SolrServerException {
     params.set("timeAllowed", 0);
-    cluster.waitForAllNodes(10000);
+    cluster.waitForAllNodes(10);
     final QueryResponse maybeTimeout = new QueryRequest(params).process(cluster.getSolrClient(), COLLECTIONORALIAS);
     assertEquals(maybeTimeout.getHeader() + "", 0, maybeTimeout.getStatus());
     final Boolean partial = maybeTimeout.getHeader()

@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.misc.store;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,20 +34,32 @@ import org.junit.BeforeClass;
 public class TestDirectIODirectory extends BaseDirectoryTestCase {
 
   @BeforeClass
-  public static void checkSupported() {
+  public static void checkSupported() throws IOException {
     assumeTrue(
         "This test required a JDK version that has support for ExtendedOpenOption.DIRECT",
         DirectIODirectory.ExtendedOpenOption_DIRECT != null);
+    // jdk supports it, let's check that the filesystem does too
+    Path path = createTempDir("directIOProbe");
+    try (Directory dir = open(path);
+        IndexOutput out = dir.createOutput("out", IOContext.DEFAULT)) {
+      out.writeString("test");
+    } catch (IOException e) {
+      assumeNoException("test requires filesystem that supports Direct IO", e);
+    }
   }
 
-  @Override
-  protected DirectIODirectory getDirectory(Path path) throws IOException {
+  private static DirectIODirectory open(Path path) throws IOException {
     return new DirectIODirectory(FSDirectory.open(path)) {
       @Override
       protected boolean useDirectIO(String name, IOContext context, OptionalLong fileLength) {
         return true;
       }
     };
+  }
+
+  @Override
+  protected DirectIODirectory getDirectory(Path path) throws IOException {
+    return open(path);
   }
 
   public void testIndexWriteRead() throws IOException {
@@ -77,7 +91,65 @@ public class TestDirectIODirectory extends BaseDirectoryTestCase {
       o.close();
       IndexInput i = dir.openInput("out", newIOContext(random()));
       i.seek(fileSize);
+
+      // Seeking past EOF should always throw EOFException
+      expectThrows(
+          EOFException.class, () -> i.seek(fileSize + RandomizedTest.randomIntBetween(1, 2048)));
+
+      // Reading immediately after seeking past EOF should throw EOFException
+      expectThrows(EOFException.class, () -> i.readByte());
       i.close();
+    }
+  }
+
+  public void testReadPastEOFShouldThrowEOFExceptionWithEmptyFile() throws Exception {
+    // fileSize needs to be 0 to test this condition. Do not randomized.
+    final int fileSize = 0;
+    try (Directory dir = getDirectory(createTempDir("testReadPastEOF"))) {
+      try (IndexOutput o = dir.createOutput("out", newIOContext(random()))) {
+        o.writeBytes(new byte[fileSize], 0, fileSize);
+      }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        i.seek(fileSize);
+        expectThrows(EOFException.class, () -> i.readByte());
+        expectThrows(EOFException.class, () -> i.readBytes(new byte[1], 0, 1));
+      }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        expectThrows(
+            EOFException.class, () -> i.seek(fileSize + RandomizedTest.randomIntBetween(1, 2048)));
+        expectThrows(EOFException.class, () -> i.readByte());
+        expectThrows(EOFException.class, () -> i.readBytes(new byte[1], 0, 1));
+      }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        expectThrows(EOFException.class, () -> i.readByte());
+      }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        expectThrows(EOFException.class, () -> i.readBytes(new byte[1], 0, 1));
+      }
+    }
+  }
+
+  public void testSeekPastEOFAndRead() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testSeekPastEOF"))) {
+      final int len = random().nextInt(2048);
+
+      try (IndexOutput o = dir.createOutput("out", newIOContext(random()))) {
+        byte[] b = new byte[len];
+        o.writeBytes(b, 0, len);
+      }
+
+      try (IndexInput i = dir.openInput("out", newIOContext(random()))) {
+        // Seeking past EOF should always throw EOFException
+        expectThrows(
+            EOFException.class, () -> i.seek(len + RandomizedTest.randomIntBetween(1, 2048)));
+
+        // Reading immediately after seeking past EOF should throw EOFException
+        expectThrows(EOFException.class, () -> i.readByte());
+      }
     }
   }
 

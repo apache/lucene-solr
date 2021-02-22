@@ -533,8 +533,6 @@ class RenderJavadocTask extends DefaultTask {
 
         ignoreExitValue true
       }
-
-      logger.lifecycle("Exec returned: ${result}")
     }
 
     if (result.getExitValue() != 0) {

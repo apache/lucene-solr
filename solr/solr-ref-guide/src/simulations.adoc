@@ -56,7 +56,7 @@ the `change_d` vector.
 Notice that the `conv` function is simply "convolving" the `change_d` vector
 with a reversed copy of itself.
 This is the technique for performing autocorrelation using convolution.
-The <<dsp.adoc#dsp,Signal Processing>> section
+The <<dsp.adoc#,Signal Processing>> section
 of the user guide covers both convolution and autocorrelation in detail.
 In this section we'll just discuss the plot.
 

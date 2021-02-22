@@ -20,11 +20,11 @@ In addition to the main query parsers discussed earlier, there are several other
 
 This section details the other parsers, and gives examples for how they might be used.
 
-Many of these parsers are expressed the same way as <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters in Queries>>.
+Many of these parsers are expressed the same way as <<local-parameters-in-queries.adoc#,Local Parameters in Queries>>.
 
 == Block Join Query Parsers
 
-There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#indexing-nested-documents, indexed as Nested Documents>>.
+There are two query parsers that support block joins. These parsers allow indexing and searching for relational content that has been <<indexing-nested-documents.adoc#, indexed as Nested Documents>>.
 
 The example usage of the query parsers below assumes the following documents have been indexed:
 
@@ -297,7 +297,7 @@ The `CollapsingQParser` is really a _post filter_ that provides more performant 
 
 This parser collapses the result set to a single document per group before it forwards the result set to the rest of the search components. So all downstream components (faceting, highlighting, etc.) will work with the collapsed result set.
 
-Details about using the `CollapsingQParser` can be found in the section <<collapse-and-expand-results.adoc#collapse-and-expand-results,Collapse and Expand Results>>.
+Details about using the `CollapsingQParser` can be found in the section <<collapse-and-expand-results.adoc#,Collapse and Expand Results>>.
 
 == Complex Phrase Query Parser
 
@@ -406,7 +406,7 @@ q=+field:text +COLOR:Red +SIZE:XL
 
 == Function Query Parser
 
-The `FunctionQParser` extends the `QParserPlugin` and creates a function query from the input value. This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on <<function-queries.adoc#function-queries,Function Queries>>.
+The `FunctionQParser` extends the `QParserPlugin` and creates a function query from the input value. This is only one way to use function queries in Solr; for another, more integrated, approach, see the section on <<function-queries.adoc#,Function Queries>>.
 
 Example:
 
@@ -484,7 +484,7 @@ Boolean that indicates if the results of the query should be filtered so that on
 
 === Graph Query Limitations
 
-The `graph` parser only works in single node Solr installations, or with <<solrcloud.adoc#solrcloud,SolrCloud>> collections that use exactly 1 shard.
+The `graph` parser only works in single node Solr installations, or with <<solrcloud.adoc#,SolrCloud>> collections that use exactly 1 shard.
 
 === Graph Query Examples
 
@@ -890,7 +890,7 @@ Example:
 {!ltr model=myModel reRankDocs=100}
 ----
 
-Details about using the `LTRQParserPlugin` can be found in the <<learning-to-rank.adoc#learning-to-rank,Learning To Rank>> section.
+Details about using the `LTRQParserPlugin` can be found in the <<learning-to-rank.adoc#,Learning To Rank>> section.
 
 == Max Score Query Parser
 
@@ -977,16 +977,11 @@ For more information about the possibilities of nested queries, see Yonik Seeley
 
 == Payload Query Parsers
 
-These query parsers utilize payloads encoded on terms during indexing.
-
-The main query, for both of these parsers, is parsed straightforwardly from the field type's query analysis into a `SpanQuery`. The generated `SpanQuery` will be either a `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted. Payloads can be encoded on terms using either the `DelimitedPayloadTokenFilter` or the `NumericPayloadTokenFilter`. The payload using parsers are:
-
-* `PayloadScoreQParser`
-* `PayloadCheckQParser`
+These query parsers utilize payloads encoded on terms during indexing. Payloads can be encoded on terms using either the `DelimitedPayloadTokenFilter` or the `NumericPayloadTokenFilter`.
 
 === Payload Score Parser
 
-`PayloadScoreQParser` incorporates each matching term's numeric (integer or float) payloads into the scores.
+`PayloadScoreQParser` incorporates each matching term's numeric (integer or float) payloads into the scores. The main query is parsed from the field type's query analysis into a `SpanQuery` based on the value of the `operator` parameter below.
 
 This parser accepts the following parameters:
 
@@ -997,7 +992,9 @@ The field to use. This parameter is required.
 The payload function. The options are: `min`, `max`, `average`, or `sum`. This parameter is required.
 
 `operator`::
-A search operator. The options are `or` and `phrase`, which is the default. This defines if the search query should be an OR query or a phrase query.
+A search operator. The options are
+  * `or` will generate either a `SpanTermQuery` or a `SpanOrQuery` depending on the number of tokens emitted.
+  * `phrase` will generate either `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted.
 
 `includeSpanScore`::
 If `true`, multiples the computed payload factor by the score of the original query. If `false`, the default, the computed payload factor is the score.
@@ -1012,7 +1009,9 @@ If `true`, multiples the computed payload factor by the score of the original qu
 
 === Payload Check Parser
 
-`PayloadCheckQParser` only matches when the matching terms also have the specified payloads.
+`PayloadCheckQParser` only matches when the matching terms also have the specified relationship to the payloads.  The default relationship is equals, however, inequality matching can also be performed. The main query, for both of these parsers, is parsed straightforwardly from the field type's query analysis into a `SpanQuery`. The generated `SpanQuery` will be either a `SpanTermQuery` or an ordered, zero slop `SpanNearQuery`, depending on how many tokens are emitted. The net effect is that the main query always operates in a manner similar to a phrase query in the standard lucene parser (thus ignoring any value for `q.op`).
+
+NOTE: If when the field analysis is applied to the query, it alters the number of tokens, the final number of tokens must match the number of payloads supplied in the `payloads` parameter. If there is a mismatch between the number of query tokens, and the number of payload values supplied with this query, the query will not match.
 
 This parser accepts the following parameters:
 
@@ -1020,18 +1019,30 @@ This parser accepts the following parameters:
 The field to use (required).
 
 `payloads`::
-A space-separated list of payloads that must match the query terms (required)
-+
-Each specified payload will be encoded using the encoder determined from the field type and encoded accordingly for matching.
-+
-`DelimitedPayloadTokenFilter` 'identity' encoded payloads also work here, as well as float and integer encoded ones.
+A space-separated list of payloads to be compared with payloads in the matching tokens from the document (required). Each specified payload will be encoded using the encoder determined from the field type prior to matching. Integer, float and identity (string) encodings are supported with the same meanings as for DelimitedPayloadTokenFilter.
 
-*Example*
+`op`::
+The inequality operation to apply to the payload check. All operations require that consecutive tokens derived from the analysis of the query match consecutive tokens in the document, and additionally the payloads on the document tokens must be:
+ * `eq` -  equal to the specified payloads (default)
+ * `gt` -  greater than the specified payloads
+ * `lt` -  less than the specified payloads
+ * `gte` -  greater than or equal to the specified payloads
+ * `lte` -  less than or equal to the specified payloads
 
+*Examples*
+
+Find all documents with the phrase "searching stuff" where searching has a payload of "VERB" and "stuff" has a payload of "NOUN"
 [source,text]
-----
 {!payload_check f=words_dps payloads="VERB NOUN"}searching stuff
-----
+
+Find all documents with "foo" where "foo" has a payload with a value of greater than or equal to 0.75
+[source,text]
+{!payload_check f=words_dpf payloads="0.75" op="gte"}foo
+
+Find all documents with the phrase "foo bar" where term "foo" has a payload greater than 9 and "bar" has a payload greater than 5
+[source,text]
+{!payload_check f=words_dpi payloads="9 5" op="gt"}foo bar
+
 
 == Prefix Query Parser
 
@@ -1082,7 +1093,7 @@ http://localhost:8983/solr/techproducts?q=memory _query_:{!rank f='pagerank', fu
 
 The `ReRankQParserPlugin` is a special purpose parser for Re-Ranking the top results of a simple query using a more complex ranking query.
 
-Details about using the `ReRankQParserPlugin` can be found in the <<query-re-ranking.adoc#query-re-ranking,Query Re-Ranking>> section.
+Details about using the `ReRankQParserPlugin` can be found in the <<query-re-ranking.adoc#,Query Re-Ranking>> section.
 
 == Simple Query Parser
 
@@ -1136,7 +1147,7 @@ Any errors in syntax are ignored and the query parser will interpret queries as 
 
 There are two spatial QParsers in Solr: `geofilt` and `bbox`. But there are other ways to query spatially: using the `frange` parser with a distance function, using the standard (lucene) query parser with the range syntax to pick the corners of a rectangle, or with RPT and BBoxField you can use the standard query parser but use a special syntax within quotes that allows you to pick the spatial predicate.
 
-All these options are documented further in the section <<spatial-search.adoc#spatial-search,Spatial Search>>.
+All these options are documented further in the section <<spatial-search.adoc#,Spatial Search>>.
 
 == Surround Query Parser
 
@@ -1232,7 +1243,7 @@ If no analysis or transformation is desired for any type of field, see the <<Raw
 
 `TermsQParser` functions similarly to the <<Term Query Parser,Term Query Parser>> but takes in multiple values separated by commas and returns documents matching any of the specified values.
 
-This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#the-standard-query-parser,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
+This can be useful for generating filter queries from the external human readable terms returned by the faceting or terms components, and may be more efficient in some cases than using the <<the-standard-query-parser.adoc#,Standard Query Parser>> to generate a boolean query since the default implementation `method` avoids scoring.
 
 This query parser takes the following parameters:
 

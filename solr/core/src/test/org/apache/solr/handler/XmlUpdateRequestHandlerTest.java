@@ -39,6 +39,9 @@ import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Queue;
 
+/**
+ * Tests the UpdateRequestHandler support for XML updates.
+ */
 public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
   private static XMLInputFactory inputFactory;
   protected static UpdateRequestHandler handler;

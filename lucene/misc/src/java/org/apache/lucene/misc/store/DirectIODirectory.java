@@ -206,8 +206,9 @@ public class DirectIODirectory extends FilterDirectory {
      * Creates a new instance of DirectIOIndexOutput for writing index output with direct IO
      * bypassing OS buffer
      *
-     * @throws UnsupportedOperationException if the operating system, file system or JDK does not
-     *     support Direct I/O or a sufficient equivalent.
+     * @throws UnsupportedOperationException if the JDK does not support Direct I/O
+     * @throws IOException if the operating system or filesystem does not support support Direct I/O
+     *     or a sufficient equivalent.
      */
     public DirectIOIndexOutput(Path path, String name, int blockSize, int bufferSize)
         throws IOException {
@@ -300,8 +301,9 @@ public class DirectIODirectory extends FilterDirectory {
      * Creates a new instance of DirectIOIndexInput for reading index input with direct IO bypassing
      * OS buffer
      *
-     * @throws UnsupportedOperationException if the operating system, file system or JDK does not
-     *     support Direct I/O or a sufficient equivalent.
+     * @throws UnsupportedOperationException if the JDK does not support Direct I/O
+     * @throws IOException if the operating system or filesystem does not support support Direct I/O
+     *     or a sufficient equivalent.
      */
     public DirectIOIndexInput(Path path, int blockSize, int bufferSize) throws IOException {
       super("DirectIOIndexInput(path=\"" + path + "\")");
@@ -359,12 +361,8 @@ public class DirectIODirectory extends FilterDirectory {
         filePos = alignedPos - buffer.capacity();
 
         final int delta = (int) (pos - alignedPos);
-        refill();
-        try {
-          buffer.position(delta);
-        } catch (IllegalArgumentException iae) {
-          throw new EOFException("read past EOF: " + this);
-        }
+        refill(delta);
+        buffer.position(delta);
       }
       assert pos == getFilePointer();
     }
@@ -381,17 +379,18 @@ public class DirectIODirectory extends FilterDirectory {
     @Override
     public byte readByte() throws IOException {
       if (!buffer.hasRemaining()) {
-        refill();
+        refill(1);
       }
+
       return buffer.get();
     }
 
-    private void refill() throws IOException {
+    private void refill(int bytesToRead) throws IOException {
       filePos += buffer.capacity();
 
       // BaseDirectoryTestCase#testSeekPastEOF test for consecutive read past EOF,
       // hence throwing EOFException early to maintain buffer state (position in particular)
-      if (filePos > channel.size()) {
+      if (filePos > channel.size() || (channel.size() - filePos < bytesToRead)) {
         throw new EOFException("read past EOF: " + this);
       }
 
@@ -417,7 +416,7 @@ public class DirectIODirectory extends FilterDirectory {
           buffer.get(dst, offset, left);
           toRead -= left;
           offset += left;
-          refill();
+          refill(toRead);
         } else {
           buffer.get(dst, offset, toRead);
           break;

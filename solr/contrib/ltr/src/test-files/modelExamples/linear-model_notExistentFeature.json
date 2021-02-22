@@ -1,0 +1,19 @@
+{
+  "class": "org.apache.solr.ltr.model.LinearModel",
+  "name": "6029760550880411648",
+  "store": "test",
+  "features": [
+    {
+      "name": "notExist1"
+    },
+    {
+      "name": "notExist2"
+    }
+  ],
+  "params": {
+    "weights": {
+      "notExist1": 0.0000000000,
+      "notExist2": 0.1000000000
+    }
+  }
+}
