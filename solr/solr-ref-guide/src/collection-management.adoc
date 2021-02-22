@@ -47,7 +47,7 @@ With the v2 API, the `create` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
   {
     "create": {
       "name": "techproducts_v2",
@@ -218,7 +218,7 @@ With the v2 API, the `reload` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
   {
     "reload": {}
   }
@@ -229,7 +229,7 @@ Additional parameters can be passed in via the the `reload` key:
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
   {
     "reload": {
       "async": "reload1"
@@ -319,7 +319,7 @@ With the v2 API, the `modify` command is provided as part of the JSON data that 
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
   {
     "modify": {
       "replicationFactor": 2
@@ -397,7 +397,7 @@ With the v2 API, the `list` command is provided as part of the JSON data that co
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections?omitHeader=true
+curl -X GET http://localhost:8983/api/collections
 ----
 ====
 --
@@ -519,7 +519,7 @@ http://localhost:8983/solr/admin/collections?action=DELETE&name=techproducts_v2
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts_v2?omitHeader=true
+curl -X DELETE http://localhost:8983/api/collections/techproducts_v2
 ----
 ====
 --
@@ -586,7 +586,7 @@ http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techprod
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
   {
     "set-collection-property": {
       "name": "foo",
@@ -660,7 +660,7 @@ http://localhost:8983/solr/admin/collections?action=MIGRATE&collection=techprodu
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts_v2?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts_v2 -H 'Content-Type: application/json' -d'
   {
     "migrate-docs": {
       "target": "postMigrationCollection",
@@ -1025,7 +1025,7 @@ The closest V2 API is this one, but doesn't support all the features of the V1 e
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/collections/techproducts_v2?omitHeader=true
+curl -X GET http://localhost:8983/api/collections/techproducts_v2
 ----
 ====
 --
@@ -1495,7 +1495,7 @@ With the v2 API, the `backup-collection` command is provided as part of the JSON
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
   {
     "backup-collection": {
       "name": "techproducts_backup",
@@ -1579,7 +1579,7 @@ With the v2 API, the `restore-collection` command is provided as part of the JSO
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections -H 'Content-Type: application/json' -d'
   {
     "restore-collection": {
       "name": "techproducts_backup",
@@ -1659,7 +1659,7 @@ With the v2 API, the `rebalance-leaders` command is provided as part of the JSON
 
 [source,bash]
 ----
-curl -X POST http://localhost:8983/api/collections/techproducts?omitHeader=true -H 'Content-Type: application/json' -d'
+curl -X POST http://localhost:8983/api/collections/techproducts -H 'Content-Type: application/json' -d'
   {
     "rebalance-leaders": {
       "maxAtOnce": 3
