@@ -54,7 +54,7 @@ public class ZkCollectionPropsCachingTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterZkCollectionPropsCachingTest() {
+  public static void afterZkCollectionPropsCachingTest() throws Exception {
    shutdownCluster();
   }
 
