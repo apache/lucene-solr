@@ -31,7 +31,6 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
@@ -107,7 +106,7 @@ public class Lucene90Codec extends Codec {
     super("Lucene90");
     this.storedFieldsFormat =
         new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
-    this.defaultFormat = new Lucene84PostingsFormat();
+    this.defaultFormat = new Lucene90PostingsFormat();
     this.defaultDVFormat = new Lucene90DocValuesFormat(mode.dvMode);
   }
 

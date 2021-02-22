@@ -38,7 +38,7 @@ import org.apache.lucene.util.automaton.Transition;
  * automaton.
  *
  * <p>By design of the UniformSplit block keys, it is less efficient than {@code
- * org.apache.lucene.codecs.blocktree.IntersectTermsEnum} for {@link
+ * org.apache.lucene.backward_codecs.lucene40.blocktree.IntersectTermsEnum} for {@link
  * org.apache.lucene.search.FuzzyQuery} (-37%). It is slightly slower for {@link
  * org.apache.lucene.search.WildcardQuery} (-5%) and slightly faster for {@link
  * org.apache.lucene.search.PrefixQuery} (+5%).

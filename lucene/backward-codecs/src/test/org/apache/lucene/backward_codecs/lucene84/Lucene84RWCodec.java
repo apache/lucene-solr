@@ -24,11 +24,22 @@ import org.apache.lucene.backward_codecs.lucene80.Lucene80RWNormsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /** RW impersonation of {@link Lucene84Codec}. */
 public class Lucene84RWCodec extends Lucene84Codec {
+
+  private final PostingsFormat defaultPF = new Lucene84RWPostingsFormat();
+  private final PostingsFormat postingsFormat =
+      new PerFieldPostingsFormat() {
+        @Override
+        public PostingsFormat getPostingsFormatForField(String field) {
+          return defaultPF;
+        }
+      };
 
   @Override
   public PointsFormat pointsFormat() {
@@ -48,6 +59,11 @@ public class Lucene84RWCodec extends Lucene84Codec {
   @Override
   public NormsFormat normsFormat() {
     return new Lucene80RWNormsFormat();
+  }
+
+  @Override
+  public PostingsFormat postingsFormat() {
+    return postingsFormat;
   }
 
   @Override

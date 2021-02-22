@@ -25,7 +25,7 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
@@ -55,7 +55,7 @@ import org.apache.lucene.util.automaton.Transition;
 //   - or: longer dense skip lists than just next byte?
 
 /**
- * Wraps {@link Lucene84PostingsFormat} format for on-disk storage, but then at read time loads and
+ * Wraps {@link Lucene90PostingsFormat} format for on-disk storage, but then at read time loads and
  * stores all terms and postings directly in RAM as byte[], int[].
  *
  * <p><b>WARNING</b>: This is exceptionally RAM intensive: it makes no effort to compress the
@@ -98,12 +98,12 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return PostingsFormat.forName("Lucene84").fieldsConsumer(state);
+    return PostingsFormat.forName("Lucene90").fieldsConsumer(state);
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    FieldsProducer postings = PostingsFormat.forName("Lucene84").fieldsProducer(state);
+    FieldsProducer postings = PostingsFormat.forName("Lucene90").fieldsProducer(state);
     if (state.context.context != IOContext.Context.MERGE) {
       FieldsProducer loadedPostings;
       try {

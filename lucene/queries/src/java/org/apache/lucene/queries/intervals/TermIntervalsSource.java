@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -261,10 +261,10 @@ class TermIntervalsSource extends IntervalsSource {
   /**
    * A guess of the average number of simple operations for the initial seek and buffer refill per
    * document for the positions of a term. See also {@link
-   * Lucene84PostingsReader.EverythingEnum#nextPosition()}.
+   * Lucene90PostingsReader.EverythingEnum#nextPosition()}.
    *
    * <p>Aside: Instead of being constant this could depend among others on {@link
-   * Lucene84PostingsFormat#BLOCK_SIZE}, {@link TermsEnum#docFreq()}, {@link
+   * Lucene90PostingsFormat#BLOCK_SIZE}, {@link TermsEnum#docFreq()}, {@link
    * TermsEnum#totalTermFreq()}, {@link DocIdSetIterator#cost()} (expected number of matching docs),
    * {@link LeafReader#maxDoc()} (total number of docs in the segment), and the seek time and block
    * size of the device storing the index.
@@ -272,7 +272,7 @@ class TermIntervalsSource extends IntervalsSource {
   private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
 
   /**
-   * Number of simple operations in {@link Lucene84PostingsReader.EverythingEnum#nextPosition()}
+   * Number of simple operations in {@link Lucene90PostingsReader.EverythingEnum#nextPosition()}
    * when no seek or buffer refill is done.
    */
   private static final int TERM_OPS_PER_POS = 7;
