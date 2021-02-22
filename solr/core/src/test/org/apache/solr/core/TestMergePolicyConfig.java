@@ -47,7 +47,6 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
   @After
   public void tearDown() throws Exception {
-    deleteCore();
     super.tearDown();
   }
   
@@ -55,7 +54,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     final boolean useCompoundFile = random().nextBoolean();
     System.setProperty("testSetNoCFSMergePolicyConfig.useCompoundFile", String.valueOf(useCompoundFile));
 
-      initCore("solrconfig-mergepolicyfactory-nocfs.xml","schema-minimal.xml");
+    initCore("solrconfig-mergepolicyfactory-nocfs.xml","schema-minimal.xml");
     try (SolrCore core = h.getCore())  {
       IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(core);
       assertEquals(useCompoundFile, iwc.getUseCompoundFile());
@@ -77,6 +76,8 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
       assertCommitSomeNewDocs();
       assertCompoundSegments(core, false);
+    } finally {
+      deleteCore();
     }
   }
 
@@ -95,6 +96,8 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
       assertCommitSomeNewDocs();
       assertCompoundSegments(core, expectCFS);
+    } finally {
+      deleteCore();
     }
   }
   
@@ -133,6 +136,8 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       assertNumSegments(core, 1);
       // we've now forced a merge, and the MP ratio should be in play
       assertCompoundSegments(core, false);
+    } finally {
+      deleteCore();
     }
   }
 
@@ -150,8 +155,9 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
       assertU(optimize());
       assertNumSegments(core, 2);
+    } finally {
+      deleteCore();
     }
-    deleteCore();
 
     initCore("solrconfig-nomergepolicyfactory.xml", "schema-minimal.xml");
     try (SolrCore core = h.getCore()) {
@@ -166,6 +172,8 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
       SolrTestCaseUtil.expectThrows(IllegalArgumentException.class, () -> {
         updater.commit(cmtCmd);
       });
+    } finally {
+      deleteCore();
     }
   }
 
@@ -198,6 +206,8 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
 
       assertEquals(11, logMP.getMergeFactor());
       assertEquals(456, logMP.getMaxMergeDocs());
+    } finally {
+      deleteCore();
     }
   }
 

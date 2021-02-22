@@ -470,6 +470,11 @@ public class SolrCmdDistributor implements Closeable {
       this.shardId = shardId;
       this.retry = maxRetries > 0;
       this.maxRetries = maxRetries;
+      if (nodeProps == null) {
+        SolrException e = new SolrException(SolrException.ErrorCode.SERVER_ERROR, "nodeProps cannot be null");
+        log.error("nodeProps cannot be null", e);
+        throw e;
+      }
     }
     
     public String getCollection() {
