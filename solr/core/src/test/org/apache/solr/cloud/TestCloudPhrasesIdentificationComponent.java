@@ -116,6 +116,7 @@ public class TestCloudPhrasesIdentificationComponent extends SolrCloudTestCase {
     }
     CLIENTS.clear();
     CLOUD_CLIENT = null;
+    shutdownCluster();
   }
 
   public void testBasicPhrases() throws Exception {

@@ -31,11 +31,10 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.core.CoreDescriptor;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 
 import org.slf4j.Logger;
@@ -55,9 +54,12 @@ public class TestSegmentSorting extends SolrCloudTestCase {
       .addConfig(configName, Paths.get(SolrTestUtil.TEST_HOME(), "collection1", "conf"))
       .configure();
   }
-  
-  @Rule public TestName testName = new TestName();
-  
+
+  @AfterClass
+  public static void afterTestSolrJErrorHandling() throws Exception {
+    shutdownCluster();
+  }
+
   @After
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
@@ -65,9 +67,9 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   }
 
   @Before
-  public void createCollection() throws Exception {
-
-    final String collectionName = testName.getMethodName();
+  public void setUp() throws Exception {
+    super.setUp();
+    final String collectionName = getSaferTestName();
     final CloudHttp2SolrClient cloudSolrClient = cluster.getSolrClient();
     
     final Map<String, String> collectionProperties = new HashMap<>();
