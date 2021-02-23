@@ -102,8 +102,8 @@ public class CollectionsAPI {
             final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
 
             v1Params.put(ACTION, CollectionAction.RESTORE.toLower());
-            if (v2Body.createCollectionParams != null && !v2Body.createCollectionParams.isEmpty()) {
-                final Map<String, Object> createCollParams = (Map<String, Object>) v1Params.remove(V2ApiConstants.CREATE_COLLECTION_KEY);
+            if (v2Body.createCollectionParams != null) {
+                final Map<String, Object> createCollParams = v2Body.createCollectionParams.toMap(new HashMap<>());
                 convertV2CreateCollectionMapToV1ParamMap(createCollParams);
                 v1Params.putAll(createCollParams);
             }

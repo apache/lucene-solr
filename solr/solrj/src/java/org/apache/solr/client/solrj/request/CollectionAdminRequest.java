@@ -22,9 +22,13 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.beans.BackupCollectionPayload;
+import org.apache.solr.client.solrj.request.beans.CreateAliasPayload;
+import org.apache.solr.client.solrj.request.beans.CreatePayload;
+import org.apache.solr.client.solrj.request.beans.DeleteAliasPayload;
 import org.apache.solr.client.solrj.request.beans.DeleteBackupPayload;
 import org.apache.solr.client.solrj.request.beans.ListBackupPayload;
 import org.apache.solr.client.solrj.request.beans.RestoreCollectionPayload;
+import org.apache.solr.client.solrj.request.beans.SetAliasPropertyPayload;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -97,9 +101,34 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return params;
   }
 
+  protected Properties convertToProperties(Map<String, Object> propMap) {
+    final Properties properties = new Properties();
+    for (Map.Entry<String, Object> entry : propMap.entrySet()) {
+      properties.put(entry.getKey(), entry.getValue());
+    }
+
+    return properties;
+  }
+
+  protected Map<String, Object> convertToMap(Properties properties) {
+    final Map<String, Object> propMap = new HashMap<>();
+    for (String propertyName : properties.stringPropertyNames()) {
+      propMap.put(propertyName, properties.getProperty(propertyName));
+    }
+
+    return propMap;
+  }
+
   protected void addProperties(ModifiableSolrParams params, Properties props) {
     for (String propertyName : props.stringPropertyNames()) {
       params.set(PROPERTY_PREFIX + propertyName, props.getProperty(propertyName));
+    }
+  }
+
+  protected void addProperties(ModifiableSolrParams params, Map<String, Object> propMap) {
+    if (propMap == null || propMap.isEmpty())
+    for (String propertyName : propMap.keySet()) {
+      params.set(PROPERTY_PREFIX + propertyName, propMap.get(propertyName).toString());
     }
   }
 
@@ -410,21 +439,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // CREATE request
   public static class Create extends AsyncCollectionSpecificAdminRequest {
 
-    protected String configName = null;
-    protected String createNodeSet = null;
-    protected String routerName;
-    protected String policy;
-    protected String shards;
-    protected String routerField;
-    protected Integer numShards;
-    protected Integer nrtReplicas;
-    protected Integer pullReplicas;
-    protected Integer tlogReplicas;
-    protected Boolean perReplicaState;
-
-    protected Properties properties;
-    protected String alias;
-    protected String[] rule , snitch;
+    protected final CreatePayload createParams;
 
     /** Constructor intended for typical use cases */
     protected Create(String collection, String config, Integer numShards, Integer numNrtReplicas, Integer numTlogReplicas, Integer numPullReplicas) { // TODO: maybe add other constructors
@@ -442,43 +457,49 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       if ((null != shards) && (null != numShards)) {
         throw new IllegalArgumentException("Can not specify both a numShards and a list of shards");
       }
-      this.configName = config;
-      this.routerName = routerName;
-      this.numShards = numShards;
-      this.setShards(shards);
-      this.nrtReplicas = numNrtReplicas;
-      this.tlogReplicas = numTlogReplicas;
-      this.pullReplicas = numPullReplicas;
+
+      this.createParams = new CreatePayload();
+      this.createParams.name = collection;
+      this.createParams.config = config;
+      this.createParams.numShards = numShards;
+      this.createParams.nrtReplicas = numNrtReplicas;
+      this.createParams.tlogReplicas = numTlogReplicas;
+      this.createParams.pullReplicas = numPullReplicas;
+      setRouterName(routerName);
+      setShards(shards);
     }
 
-    public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
-    public Create setRouterName(String routerName) { this.routerName = routerName; return this; }
-    public Create setRouterField(String routerField) { this.routerField = routerField; return this; }
-    public Create setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas = nrtReplicas; return this;}
-    public Create setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this;}
-    public Create setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this;}
-
-    public Create setReplicationFactor(Integer repl) { this.nrtReplicas = repl; return this; }
-    public Create setRule(String... s){ this.rule = s; return this; }
-    public Create setSnitch(String... s){ this.snitch = s; return this; }
-    public Create setPerReplicaState(Boolean b) {this.perReplicaState =  b; return this; }
-
-    public Create setAlias(String alias) {
-      this.alias = alias;
+    public Create setCreateNodeSet(String nodeSet) { this.createParams.nodeSet = Arrays.asList(nodeSet.split(",")); return this; }
+    public Create setNrtReplicas(Integer nrtReplicas) { this.createParams.nrtReplicas = nrtReplicas; return this;}
+    public Create setTlogReplicas(Integer tlogReplicas) { this.createParams.tlogReplicas = tlogReplicas; return this;}
+    public Create setPullReplicas(Integer pullReplicas) { this.createParams.pullReplicas = pullReplicas; return this;}
+    public Create setRouterName(String routerName) {
+      if (routerName != null) createParams.router.put(CommonParams.NAME, routerName);
+      return this;
+    }
+    public Create setRouterField(String routerField) {
+      if (routerField != null) createParams.router.put("field", routerField);
       return this;
     }
 
-    public String getConfigName()  { return configName; }
-    public String getCreateNodeSet() { return createNodeSet; }
-    public String getRouterName() { return  routerName; }
-    public String getShards() { return  shards; }
-    public Integer getNumShards() { return numShards; }
+    public Create setReplicationFactor(Integer repl) { this.createParams.nrtReplicas = repl; return this; }
+    public Create setPerReplicaState(Boolean b) { createParams.perReplicaState =  b; return this; }
+
+    public Create setAlias(String alias) { createParams.alias = alias; return this; }
+
+    public String getConfigName()  { return createParams.config; }
+    public String getCreateNodeSet() { return (createParams.nodeSet == null) ? null : String.join(",", createParams.nodeSet); }
+    public String getRouterName() { return (String) createParams.router.get(CommonParams.NAME); }
+    public String getRouterField() { return (String) createParams.router.get("field"); }
+
+    public String getShards() { return  createParams.shards; }
+    public Integer getNumShards() { return createParams.numShards; }
 
     public Integer getReplicationFactor() { return getNumNrtReplicas(); }
-    public Integer getNumNrtReplicas() { return nrtReplicas; }
-    public Integer getNumTlogReplicas() {return tlogReplicas;}
-    public Integer getNumPullReplicas() {return pullReplicas;}
-    public Boolean getPerReplicaState() {return perReplicaState;}
+    public Integer getNumNrtReplicas() { return createParams.nrtReplicas; }
+    public Integer getNumTlogReplicas() {return createParams.tlogReplicas;}
+    public Integer getNumPullReplicas() {return createParams.pullReplicas;}
+    public Boolean getPerReplicaState() {return createParams.perReplicaState;}
 
     /**
      * Provide the name of the shards to be created, separated by commas
@@ -488,34 +509,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * @throws IllegalArgumentException if any of the shard names contain invalid characters.
      */
     public Create setShards(String shards) {
-      if (null != shards) {
+      if (null == shards) {
         for (String shard : shards.split(",")) {
           SolrIdentifierValidator.validateShardName(shard);
         }
       }
-      this.shards = shards;
+      createParams.shards = shards;
       return this;
     }
 
     public Properties getProperties() {
-      return properties;
+      return convertToProperties(createParams.properties);
     }
 
     public Create setProperties(Properties properties) {
-      this.properties = properties;
+      createParams.properties = convertToMap(properties);
       return this;
     }
 
     public Create setProperties(Map<String, String> properties) {
-      this.properties = new Properties();
-      this.properties.putAll(properties);
+      properties.forEach((k, v) -> {
+        createParams.properties.put(k, v);
+      });
       return this;
     }
 
     public Create withProperty(String key, String value) {
-      if (this.properties == null)
-        this.properties = new Properties();
-      this.properties.setProperty(key, value);
+      createParams.properties.put(key, value);
       return this;
     }
 
@@ -523,42 +543,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
 
-      if (configName != null)
-        params.set("collection.configName", configName);
-      if (createNodeSet != null)
-        params.set(CREATE_NODE_SET_PARAM, createNodeSet);
-      if (numShards != null) {
-        params.set( ZkStateReader.NUM_SHARDS_PROP, numShards);
+      // Collection name handled by parent class, all other params are optional.
+      params.setNonNull(COLL_CONF, createParams.config);
+      params.setNonNull(ZkStateReader.NUM_SHARDS_PROP, createParams.numShards);
+      params.setNonNull(ZkStateReader.NRT_REPLICAS, createParams.nrtReplicas);
+      params.setNonNull(ZkStateReader.PULL_REPLICAS, createParams.pullReplicas);
+      params.setNonNull(ZkStateReader.TLOG_REPLICAS, createParams.tlogReplicas);
+      params.setNonNull(CREATE_NODE_SET_PARAM, getCreateNodeSet());
+      params.setNonNull("shards", createParams.shards);
+      params.setNonNull("router.name", getRouterName());
+      params.setNonNull("router.field", getRouterField());
+      params.setNonNull(ALIAS, createParams.alias);
+      addProperties(params, createParams.properties);
+      if(Boolean.TRUE.equals(createParams.perReplicaState)) {
+        params.set(PER_REPLICA_STATE, createParams.perReplicaState);
       }
-      if (routerName != null)
-        params.set( "router.name", routerName);
-      if (shards != null)
-        params.set("shards", shards);
-      if (routerField != null) {
-        params.set("router.field", routerField);
-      }
-      if (nrtReplicas != null) {
-        params.set( ZkStateReader.NRT_REPLICAS, nrtReplicas);
-      }
-      if (properties != null) {
-        addProperties(params, properties);
-      }
-      if (pullReplicas != null) {
-        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
-      }
-      if (tlogReplicas != null) {
-        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
-      }
-      if(Boolean.TRUE.equals(perReplicaState)) {
-        params.set(PER_REPLICA_STATE, perReplicaState);
-      }
-      params.setNonNull(ALIAS, alias);
       return params;
-    }
-
-    public Create setPolicy(String policy) {
-      this.policy = policy;
-      return this;
     }
   }
 
@@ -1066,14 +1066,6 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected final RestoreCollectionPayload restoreParams;
 
     // in common with collection creation:
-    protected String configName;
-    protected Integer replicationFactor;
-    protected Integer nrtReplicas;
-    protected Integer tlogReplicas;
-    protected Integer pullReplicas;
-    protected Optional<String> createNodeSet = Optional.empty();
-    protected Optional<Boolean> createNodeSetShuffle = Optional.empty();
-    protected Properties properties;
     protected Integer backupId;
 
     public Restore(String collection, String backupName) {
@@ -1084,63 +1076,11 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       restoreParams.name = backupName;
     }
 
-    public String getLocation() {
-      return this.restoreParams.location;
-    }
+    public String getLocation() { return this.restoreParams.location; }
+    public Restore setLocation(String location) { this.restoreParams.location = location; return this; }
 
-    public Restore setLocation(String location) {
-      this.restoreParams.location = location;
-      return this;
-    }
-
-    public Optional<String> getRepositoryName() {
-      return Optional.ofNullable(this.restoreParams.repository);
-    }
-
-    public Restore setRepositoryName(String repositoryName) {
-      this.restoreParams.repository = repositoryName;
-      return this;
-    }
-
-    // TODO JEGERLOW - my attempt to reuse the payload objects falls over a bit here, because I didn't eradicate Map<>
-    //  entirely as I should have.  I'll need to detour and fix that before I'm able to really do anything w/ these
-    //  create-collection-param setters.
-    public void setCreateNodeSet(String createNodeSet) {
-      this.createNodeSet = Optional.of(createNodeSet);
-    }
-
-    public Optional<String> getCreateNodeSet() {
-      return createNodeSet;
-    }
-
-    public Optional<Boolean> getCreateNodeSetShuffle() {
-      return createNodeSetShuffle;
-    }
-
-    public void setCreateNodeSetShuffle(boolean createNodeSetShuffle) {
-      this.createNodeSetShuffle = Optional.of(createNodeSetShuffle);
-    }
-
-    // Collection creation params in common:
-    public Restore setConfigName(String config) { this.configName = config; return this; }
-    public String getConfigName()  { return configName; }
-
-    public Integer getReplicationFactor() { return replicationFactor; }
-    public Restore setReplicationFactor(Integer replicationFactor) { this.replicationFactor = replicationFactor; return this; }
-
-    public Integer getNrtReplicas() { return nrtReplicas; }
-    public Restore setNrtReplicas(Integer nrtReplicas) { this.nrtReplicas= nrtReplicas; return this; };
-
-    public Integer getTlogReplicas() { return tlogReplicas; }
-    public Restore setTlogReplicas(Integer tlogReplicas) { this.tlogReplicas = tlogReplicas; return this; }
-
-    public Integer getPullReplicas() { return pullReplicas; }
-    public Restore setPullReplicas(Integer pullReplicas) { this.pullReplicas = pullReplicas; return this; }
-
-    public Properties getProperties() {
-      return properties;
-    }
-    public Restore setProperties(Properties properties) { this.properties = properties; return this;}
+    public Optional<String> getRepositoryName() { return Optional.ofNullable(this.restoreParams.repository); }
+    public Restore setRepositoryName(String repositoryName) { this.restoreParams.repository = repositoryName; return this; }
 
     /**
      * Specify the ID of the backup-point to restore from.
@@ -1152,9 +1092,46 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      *
      * @param backupId the ID of the backup-point to restore from
      */
-    public Restore setBackupId(int backupId) {
-      this.backupId = backupId;
-      return this;
+    public Restore setBackupId(int backupId) { restoreParams.backupId = backupId; return this; }
+    public Integer getBackupId() { return restoreParams.backupId; }
+
+    // Collection creation params in common:
+    public Restore setConfigName(String config) { this.restoreParams.createCollectionParams.config = config; return this; }
+    public String getConfigName()  { return restoreParams.createCollectionParams.config; }
+
+    public Integer getReplicationFactor() { return restoreParams.createCollectionParams.replicationFactor; }
+    public Restore setReplicationFactor(Integer replicationFactor) { restoreParams.createCollectionParams.replicationFactor = replicationFactor; return this; }
+
+    public Integer getNrtReplicas() { return restoreParams.createCollectionParams.nrtReplicas; }
+    public Restore setNrtReplicas(Integer nrtReplicas) { restoreParams.createCollectionParams.nrtReplicas = nrtReplicas; return this; };
+
+    public Integer getTlogReplicas() { return restoreParams.createCollectionParams.tlogReplicas; }
+    public Restore setTlogReplicas(Integer tlogReplicas) { restoreParams.createCollectionParams.tlogReplicas = tlogReplicas; return this; }
+
+    public Integer getPullReplicas() { return restoreParams.createCollectionParams.pullReplicas; }
+    public Restore setPullReplicas(Integer pullReplicas) { restoreParams.createCollectionParams.pullReplicas = pullReplicas; return this; }
+
+    public Properties getProperties() { return convertToProperties(restoreParams.createCollectionParams.properties); }
+    public Restore setProperties(Properties properties) { restoreParams.createCollectionParams.properties = convertToMap(properties); return this; }
+
+    public void setCreateNodeSet(String createNodeSet) {
+      if (createNodeSet != null) {
+        this.restoreParams.createCollectionParams.nodeSet = Arrays.asList(createNodeSet.split(","));
+      }
+    }
+
+    public Optional<String> getCreateNodeSet() {
+      final String combinedString = (restoreParams.createCollectionParams.nodeSet == null) ?
+              null : String.join(",", restoreParams.createCollectionParams.nodeSet);
+      return Optional.ofNullable(combinedString);
+    }
+
+    public Optional<Boolean> getCreateNodeSetShuffle() {
+      return Optional.ofNullable(restoreParams.createCollectionParams.shuffleNodes);
+    }
+
+    public void setCreateNodeSetShuffle(boolean createNodeSetShuffle) {
+      restoreParams.createCollectionParams.shuffleNodes = createNodeSetShuffle;
     }
 
     // TODO support rule, snitch
@@ -1164,37 +1141,25 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.COLLECTION, this.restoreParams.collection);
       params.set(CoreAdminParams.NAME, this.restoreParams.name);
-      params.set(CoreAdminParams.BACKUP_LOCATION, this.restoreParams.location); //note: optional
-      params.set("collection.configName", configName); //note: optional
-      if (replicationFactor != null && nrtReplicas != null) {
+      params.setNonNull(CoreAdminParams.BACKUP_LOCATION, this.restoreParams.location);
+      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, restoreParams.repository);
+      params.setNonNull(CoreAdminParams.BACKUP_ID, restoreParams.backupId);
+
+      // Collection-creation parameters
+      params.setNonNull(COLL_CONF, restoreParams.createCollectionParams.config);
+      if (restoreParams.createCollectionParams.replicationFactor != null && restoreParams.createCollectionParams.nrtReplicas != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Cannot set both replicationFactor and nrtReplicas as they mean the same thing");
       }
-      if (replicationFactor != null) {
-        params.set(ZkStateReader.REPLICATION_FACTOR, replicationFactor);
+      params.setNonNull(REPLICATION_FACTOR, restoreParams.createCollectionParams.replicationFactor);
+      params.setNonNull(NRT_REPLICAS, restoreParams.createCollectionParams.nrtReplicas);
+      params.setNonNull(PULL_REPLICAS, restoreParams.createCollectionParams.pullReplicas);
+      params.setNonNull(TLOG_REPLICAS, restoreParams.createCollectionParams.tlogReplicas);
+      params.setNonNull(CREATE_NODE_SET_SHUFFLE_PARAM, restoreParams.createCollectionParams.shuffleNodes);
+      if (getCreateNodeSet().isPresent()) {
+        params.setNonNull(CREATE_NODE_SET_PARAM, getCreateNodeSet().get());
       }
-      if (nrtReplicas != null) {
-        params.set(ZkStateReader.NRT_REPLICAS, nrtReplicas);
-      }
-      if (pullReplicas != null) {
-        params.set(ZkStateReader.PULL_REPLICAS, pullReplicas);
-      }
-      if (tlogReplicas != null) {
-        params.set(ZkStateReader.TLOG_REPLICAS, tlogReplicas);
-      }
-      if (properties != null) {
-        addProperties(params, properties);
-      }
-      params.setNonNull(CoreAdminParams.BACKUP_REPOSITORY, restoreParams.repository);
-      if (createNodeSet.isPresent()) {
-        params.set(CREATE_NODE_SET_PARAM, createNodeSet.get());
-      }
-      if (createNodeSetShuffle.isPresent()) {
-        params.set(CREATE_NODE_SET_SHUFFLE_PARAM, createNodeSetShuffle.get());
-      }
-      if (backupId != null) {
-        params.set(CoreAdminParams.BACKUP_ID, backupId);
-      }
+      addProperties(params, restoreParams.createCollectionParams.properties);
 
       return params;
     }
@@ -1661,24 +1626,25 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   public static class SetAliasProperty extends AsyncCollectionAdminRequest {
 
-    private final String aliasName;
-    private Map<String,String> properties = new HashMap<>();
+    private final SetAliasPropertyPayload setAliasPropertyParams;
 
     public SetAliasProperty(String aliasName) {
       super(CollectionAction.ALIASPROP);
-      this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
+
+      this.setAliasPropertyParams = new SetAliasPropertyPayload();
+      this.setAliasPropertyParams.name = SolrIdentifierValidator.validateAliasName(aliasName);
     }
 
     public SetAliasProperty addProperty(String key, String value) {
-      properties.put(key,value);
+      setAliasPropertyParams.properties.put(key, value);
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set(CoreAdminParams.NAME, aliasName);
-      properties.forEach((key, value) ->  params.set("property." + key, value));
+      params.set(CoreAdminParams.NAME, setAliasPropertyParams.name);
+      setAliasPropertyParams.properties.forEach((key, value) ->  params.set("property." + key, value.toString()));
       return params;
     }
   }
@@ -1695,28 +1661,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   // CREATEALIAS request
   public static class CreateAlias extends AsyncCollectionAdminRequest {
 
+    protected final CreateAliasPayload aliasParams;
     protected String aliasName;
     protected String aliasedCollections;
 
     private CreateAlias(String aliasName, String aliasedCollections) {
       super(CollectionAction.CREATEALIAS);
-      this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
-      this.aliasedCollections = checkNotNull("aliasedCollections",aliasedCollections);
+
+      aliasParams = new CreateAliasPayload();
+      aliasParams.name = SolrIdentifierValidator.validateAliasName(aliasName);
+
+      checkNotNull("aliasedCollections",aliasedCollections);
+      aliasParams.collections = Arrays.asList(aliasedCollections.split(","));
     }
 
     public String getAliasName() {
-      return aliasName;
+      return aliasParams.name;
     }
 
     public String getAliasedCollections() {
-      return this.aliasedCollections;
+      return String.join(",", aliasParams.collections);
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set(CoreAdminParams.NAME, aliasName);
-      params.set("collections", aliasedCollections);
+      params.set(CoreAdminParams.NAME, aliasParams.name);
+      params.set("collections", getAliasedCollections());
       return params;
     }
 
@@ -1751,71 +1722,61 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_PREEMPTIVE_CREATE_WINDOW = "router.preemptiveCreateMath";
     public static final String ROUTER_AUTO_DELETE_AGE = "router.autoDeleteAge";
 
-    private final String aliasName;
-    private final String routerField;
-    private final String start;
-    private final String interval;
-    //Optional:
-    private TimeZone tz;
-    private Integer maxFutureMs;
-    private String preemptiveCreateMath;
-    private String autoDeleteAge;
-
-    private final Create createCollTemplate;
+    protected final CreateAliasPayload aliasParams;
+    protected final Create createCollTemplate;
 
     public CreateTimeRoutedAlias(String aliasName, String routerField, String start, String interval, Create createCollTemplate) {
       super(CollectionAction.CREATEALIAS);
-      this.aliasName = aliasName;
-      this.start = start;
-      this.interval = interval;
-      this.routerField = routerField;
+      aliasParams = new CreateAliasPayload();
+
+      aliasParams.name = aliasName;
+      aliasParams.router.start = start;
+      aliasParams.router.interval = interval;
+      aliasParams.router.field = routerField;
+
       this.createCollTemplate = createCollTemplate;
     }
 
     /** Sets the timezone for interpreting any Solr "date math. */
     public CreateTimeRoutedAlias setTimeZone(TimeZone tz) {
-      this.tz = tz;
+      aliasParams.tz = tz.getID();
       return this;
     }
 
     /** Sets how long into the future (millis) that we will allow a document to pass. */
     public CreateTimeRoutedAlias setMaxFutureMs(Integer maxFutureMs) {
-      this.maxFutureMs = maxFutureMs;
+      aliasParams.router.maxFutureMs = maxFutureMs;
       return this;
     }
 
     public CreateTimeRoutedAlias setPreemptiveCreateWindow(String preemptiveCreateMath) {
-      this.preemptiveCreateMath = preemptiveCreateMath;
+      aliasParams.router.preemptiveCreateMath = preemptiveCreateMath;
       return this;
     }
 
     public CreateTimeRoutedAlias setAutoDeleteAge(String autoDeleteAge) {
-      this.autoDeleteAge = autoDeleteAge;
+      aliasParams.router.autoDeleteAge = autoDeleteAge;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.add(CommonParams.NAME, aliasName);
-      params.add(ROUTER_TYPE_NAME, "time");
-      params.add(ROUTER_FIELD, routerField);
-      params.add(ROUTER_START, start);
-      params.add(ROUTER_INTERVAL, interval);
-      if (tz != null) {
-        params.add(CommonParams.TZ, tz.getID());
-      }
-      if (maxFutureMs != null) {
-        params.add(ROUTER_MAX_FUTURE, ""+maxFutureMs);
-      }
-      if (preemptiveCreateMath != null) {
-        params.add(ROUTER_PREEMPTIVE_CREATE_WINDOW, preemptiveCreateMath);
-      }
-      if (autoDeleteAge != null) {
-        params.add(ROUTER_AUTO_DELETE_AGE, autoDeleteAge);
-      }
 
-      // merge the above with collectionParams.  Above takes precedence.
+      // Mandatory params
+      params.add(CommonParams.NAME, aliasParams.name);
+      params.add(ROUTER_TYPE_NAME, "time");
+      params.add(ROUTER_FIELD, aliasParams.router.field);
+      params.add(ROUTER_START, aliasParams.router.start);
+      params.add(ROUTER_INTERVAL, aliasParams.router.interval);
+
+      // Optional params
+      params.setNonNull(CommonParams.TZ, aliasParams.tz);
+      params.setNonNull(ROUTER_MAX_FUTURE, aliasParams.router.maxFutureMs);
+      params.setNonNull(ROUTER_PREEMPTIVE_CREATE_WINDOW, aliasParams.router.preemptiveCreateMath);
+      params.setNonNull(ROUTER_AUTO_DELETE_AGE, aliasParams.router.autoDeleteAge);
+
+      // Collection-creation template params (values above take precedence where overlap occurs)
       ModifiableSolrParams createCollParams = mergeCollParams(createCollTemplate);
       return SolrParams.wrapDefaults(params, createCollParams);
     }
@@ -1827,12 +1788,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     @Override
     public String getRouterField() {
-      return routerField;
+      return aliasParams.router.field;
     }
 
     @Override
     public java.util.List<String> getParamNames() {
-      return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_START, ROUTER_INTERVAL,ROUTER_MAX_FUTURE, ROUTER_PREEMPTIVE_CREATE_WINDOW, ROUTER_AUTO_DELETE_AGE, CommonParams.TZ);
+      return java.util.List.of(ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_START, ROUTER_INTERVAL,ROUTER_MAX_FUTURE,
+              ROUTER_PREEMPTIVE_CREATE_WINDOW, ROUTER_AUTO_DELETE_AGE, CommonParams.TZ);
     }
 
     @Override
@@ -1861,37 +1823,35 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
     public static final String ROUTER_MUST_MATCH = "router.mustMatch";
 
-    private final String aliasName;
-    private final String routerField;
-    private Integer maxCardinality;
+    private final CreateAliasPayload aliasParams;
     private String mustMatch;
 
     private final Create createCollTemplate;
 
     public CreateCategoryRoutedAlias(String aliasName, String routerField, int maxCardinality, Create createCollTemplate) {
       super(CollectionAction.CREATEALIAS);
-      this.aliasName = aliasName;
-      this.routerField = routerField;
-      this.maxCardinality = maxCardinality;
+
+      aliasParams = new CreateAliasPayload();
+      aliasParams.name = aliasName;
+      aliasParams.router.field = routerField;
+      aliasParams.router.maxCardinality = maxCardinality;
       this.createCollTemplate = createCollTemplate;
     }
 
     public CreateCategoryRoutedAlias setMustMatch(String regex) {
-      this.mustMatch = regex;
+      aliasParams.router.mustMatch = regex;
       return this;
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.add(CommonParams.NAME, aliasName);
+      params.add(CommonParams.NAME, aliasParams.name);
       params.add(ROUTER_TYPE_NAME, RoutedAliasTypes.CATEGORY.name());
-      params.add(ROUTER_FIELD, routerField);
-      params.add(ROUTER_MAX_CARDINALITY, maxCardinality.toString());
+      params.add(ROUTER_FIELD, aliasParams.router.field);
+      params.add(ROUTER_MAX_CARDINALITY, aliasParams.router.maxCardinality.toString());
 
-      if (mustMatch != null) {
-        params.add(ROUTER_MUST_MATCH, mustMatch);
-      }
+      params.setNonNull(ROUTER_MUST_MATCH, aliasParams.router.mustMatch);
 
       // merge the above with collectionParams.  Above takes precedence.
       ModifiableSolrParams createCollParams = mergeCollParams(createCollTemplate);
@@ -1905,7 +1865,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     @Override
     public String getRouterField() {
-      return routerField;
+      return aliasParams.router.field;
     }
 
     @Override
@@ -2046,18 +2006,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   // DELETEALIAS request
   public static class DeleteAlias extends AsyncCollectionAdminRequest {
-
-    protected String aliasName;
+    protected final DeleteAliasPayload deleteAliasParams;
 
     private DeleteAlias(String aliasName) {
       super(CollectionAction.DELETEALIAS);
-      this.aliasName = checkNotNull("aliasName",aliasName);
+
+      this.deleteAliasParams = new DeleteAliasPayload();
+      this.deleteAliasParams.name = checkNotNull("aliasName",aliasName);
     }
 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
-      params.set(CoreAdminParams.NAME, aliasName);
+      params.set(CoreAdminParams.NAME, deleteAliasParams.name);
       return params;
     }
   }

@@ -28,7 +28,11 @@ import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_C
  *
  * Analogous to the request parameters for v1 /admin/collections?action=RESTORE API.
  */
-public class RestoreCollectionPayload implements ReflectMapWriter {
+public class RestoreCollectionPayload extends AsyncPayloadBase implements ReflectMapWriter {
+
+    public RestoreCollectionPayload() {
+        this.createCollectionParams = new CommonCreateCollectionPayloadBase();
+    }
 
     @JsonProperty(required = true)
     public String collection;
@@ -46,8 +50,5 @@ public class RestoreCollectionPayload implements ReflectMapWriter {
     public Integer backupId;
 
     @JsonProperty(CREATE_COLLECTION_KEY)
-    public Map<String, Object> createCollectionParams;
-
-    @JsonProperty
-    public String async;
+    public CommonCreateCollectionPayloadBase createCollectionParams;
 }

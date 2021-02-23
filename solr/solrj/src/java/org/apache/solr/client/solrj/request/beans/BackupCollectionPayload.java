@@ -24,7 +24,7 @@ import org.apache.solr.common.util.ReflectMapWriter;
  *
  * Analogous to the request parameters for v1 /admin/collections?action=BACKUP API.
  */
-public class BackupCollectionPayload implements ReflectMapWriter {
+public class BackupCollectionPayload extends AsyncPayloadBase implements ReflectMapWriter {
     @JsonProperty(required = true)
     public String collection;
 
@@ -51,7 +51,4 @@ public class BackupCollectionPayload implements ReflectMapWriter {
 
     @JsonProperty
     public Integer maxNumBackupPoints;
-
-    @JsonProperty
-    public String async;
 }

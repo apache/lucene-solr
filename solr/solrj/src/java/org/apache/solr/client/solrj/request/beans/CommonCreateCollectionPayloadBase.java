@@ -20,20 +20,42 @@ import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class SetAliasPropertyPayload implements ReflectMapWriter {
+/**
+ * Collection creation parameters shared by all APIs that create a collection.
+ *
+ * While collection creation has its own dedicated API it also occurs in the process of several other API commands (e.g.
+ * "restore-backup").  This class defines a base class with only these shared parameters to enable reuse.
+ */
+public class CommonCreateCollectionPayloadBase implements ReflectMapWriter {
 
-    public SetAliasPropertyPayload() {
-        this.properties = new HashMap<>();
-    }
+  public CommonCreateCollectionPayloadBase() {
+    this.properties = new HashMap<>();
+  }
 
-    @JsonProperty(required = true)
-    public String name;
+  @JsonProperty
+  public String config;
 
-    @JsonProperty
-    public String async;
+  @JsonProperty
+  public Integer replicationFactor;
 
-    @JsonProperty
-    public Map<String, Object> properties;
+  @JsonProperty
+  public Integer nrtReplicas;
+
+  @JsonProperty
+  public Integer tlogReplicas;
+
+  @JsonProperty
+  public Integer pullReplicas;
+
+  @JsonProperty
+  public List<String> nodeSet;
+
+  @JsonProperty
+  public Boolean shuffleNodes;
+
+  @JsonProperty
+  public Map<String, Object> properties;
 }

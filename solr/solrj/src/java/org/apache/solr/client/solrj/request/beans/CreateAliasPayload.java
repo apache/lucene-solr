@@ -24,7 +24,12 @@ import java.util.Map;
 
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.CREATE_COLLECTION_KEY;
 
-public class CreateAliasPayload implements ReflectMapWriter {
+public class CreateAliasPayload extends AsyncPayloadBase implements ReflectMapWriter {
+
+    public CreateAliasPayload() {
+        this.router = new AliasRouter();
+    }
+
     @JsonProperty(required = true)
     public String name;
 
@@ -39,9 +44,6 @@ public class CreateAliasPayload implements ReflectMapWriter {
 
     @JsonProperty(CREATE_COLLECTION_KEY)
     public Map<String, Object> createCollectionParams;
-
-    @JsonProperty
-    public String async;
 
     public static class AliasRouter implements ReflectMapWriter {
         @JsonProperty(required = true)
