@@ -70,18 +70,18 @@ class ModifyingSuggester {
       }
 
       List<String> adjusted =
-          result.stream().map(s -> capitalizeAfterSpace(low, s)).collect(Collectors.toList());
+          result.stream().map(s -> capitalizeAfterSpace(word, s)).collect(Collectors.toList());
       result.clear();
       result.addAll(adjusted);
     }
   }
 
   // aNew -> "a New" (instead of "a new")
-  private String capitalizeAfterSpace(String lowMisspelled, String candidate) {
+  private String capitalizeAfterSpace(String misspelled, String candidate) {
     int space = candidate.indexOf(' ');
     int tail = candidate.length() - space - 1;
     if (space > 0
-        && lowMisspelled.regionMatches(lowMisspelled.length() - tail, candidate, space + 1, tail)) {
+        && !misspelled.regionMatches(misspelled.length() - tail, candidate, space + 1, tail)) {
       return candidate.substring(0, space + 1)
           + Character.toUpperCase(candidate.charAt(space + 1))
           + candidate.substring(space + 2);
