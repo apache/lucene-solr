@@ -297,29 +297,29 @@ public class Dictionary {
     final FST.BytesReader bytesReader = fst.getBytesReader();
     final FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<>());
     // Accumulate output as we go
-    final IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
-    IntsRef output = NO_OUTPUT;
+    IntsRef output = fst.outputs.getNoOutput();
 
     int l = offset + length;
-    try {
-      for (int i = offset, cp; i < l; i += Character.charCount(cp)) {
-        cp = Character.codePointAt(word, i, l);
-        if (fst.findTargetArc(cp, arc, arc, bytesReader) == null) {
-          return null;
-        } else if (arc.output() != NO_OUTPUT) {
-          output = fst.outputs.add(output, arc.output());
-        }
-      }
-      if (fst.findTargetArc(FST.END_LABEL, arc, arc, bytesReader) == null) {
+    for (int i = offset, cp; i < l; i += Character.charCount(cp)) {
+      cp = Character.codePointAt(word, i, l);
+      output = nextArc(fst, arc, bytesReader, output, cp);
+      if (output == null) {
         return null;
-      } else if (arc.output() != NO_OUTPUT) {
-        return fst.outputs.add(output, arc.output());
-      } else {
-        return output;
+      }
+    }
+    return nextArc(fst, arc, bytesReader, output, FST.END_LABEL);
+  }
+
+  static IntsRef nextArc(
+      FST<IntsRef> fst, FST.Arc<IntsRef> arc, FST.BytesReader reader, IntsRef output, int ch) {
+    try {
+      if (fst.findTargetArc(ch, arc, arc, reader) == null) {
+        return null;
       }
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
+    return fst.outputs.add(output, arc.output());
   }
 
   /**

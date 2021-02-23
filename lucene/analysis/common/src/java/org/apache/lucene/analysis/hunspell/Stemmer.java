@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -259,12 +258,8 @@ final class Stemmer {
         }
       }
     }
-    try {
-      return stem(
-          word, offset, length, context, -1, Dictionary.FLAG_UNSET, -1, 0, true, false, processor);
-    } catch (IOException bogus) {
-      throw new RuntimeException(bogus);
-    }
+    return stem(
+        word, offset, length, context, -1, Dictionary.FLAG_UNSET, -1, 0, true, false, processor);
   }
 
   /**
@@ -373,22 +368,18 @@ final class Stemmer {
       int recursionDepth,
       boolean doPrefix,
       boolean previousWasPrefix,
-      RootProcessor processor)
-      throws IOException {
+      RootProcessor processor) {
     if (doPrefix && dictionary.prefixes != null) {
       FST<IntsRef> fst = dictionary.prefixes;
       FST.Arc<IntsRef> arc = prefixArcs[recursionDepth];
       fst.getFirstArc(arc);
-      IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
-      IntsRef output = NO_OUTPUT;
+      IntsRef output = fst.outputs.getNoOutput();
       int limit = dictionary.fullStrip ? length + 1 : length;
       for (int i = 0; i < limit; i++) {
         if (i > 0) {
-          char ch = word[offset + i - 1];
-          if (fst.findTargetArc(ch, arc, arc, prefixReader) == null) {
+          output = Dictionary.nextArc(fst, arc, prefixReader, output, word[offset + i - 1]);
+          if (output == null) {
             break;
-          } else if (arc.output() != NO_OUTPUT) {
-            output = fst.outputs.add(output, arc.output());
           }
         }
         if (!arc.isFinal()) {
@@ -431,16 +422,13 @@ final class Stemmer {
       FST<IntsRef> fst = dictionary.suffixes;
       FST.Arc<IntsRef> arc = suffixArcs[recursionDepth];
       fst.getFirstArc(arc);
-      IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
-      IntsRef output = NO_OUTPUT;
+      IntsRef output = fst.outputs.getNoOutput();
       int limit = dictionary.fullStrip ? 0 : 1;
       for (int i = length; i >= limit; i--) {
         if (i < length) {
-          char ch = word[offset + i];
-          if (fst.findTargetArc(ch, arc, arc, suffixReader) == null) {
+          output = Dictionary.nextArc(fst, arc, suffixReader, output, word[offset + i]);
+          if (output == null) {
             break;
-          } else if (arc.output() != NO_OUTPUT) {
-            output = fst.outputs.add(output, arc.output());
           }
         }
         if (!arc.isFinal()) {
@@ -610,8 +598,7 @@ final class Stemmer {
       int prefixId,
       int recursionDepth,
       boolean prefix,
-      RootProcessor processor)
-      throws IOException {
+      RootProcessor processor) {
     char flag = dictionary.affixData(affix, Dictionary.AFFIX_FLAG);
 
     boolean skipLookup = needsAnotherAffix(affix, previousAffix, !prefix, prefixId);

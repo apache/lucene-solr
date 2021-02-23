@@ -175,65 +175,83 @@ class GeneratingSuggester {
     }
 
     // suffixes
-    processFST(
-        dictionary.suffixes,
-        (key, ids) -> {
-          String suffix = new StringBuilder(toString(key)).reverse().toString();
-          if (misspelled.length() <= suffix.length() || !misspelled.endsWith(suffix)) return;
+    processAffixes(
+        false,
+        misspelled,
+        (suffixLength, suffixId) -> {
+          if (!hasCompatibleFlags(root, suffixId) || !checkAffixCondition(suffixId, root.word)) {
+            return;
+          }
 
-          for (int i = 0; i < ids.length; i++) {
-            int suffixId = ids.ints[ids.offset + i];
-            if (!hasCompatibleFlags(root, suffixId) || !checkAffixCondition(suffixId, root.word)) {
-              continue;
-            }
-
-            String withSuffix =
-                root.word.substring(0, root.word.length() - affixStripLength(suffixId)) + suffix;
-            result.add(withSuffix);
-            if (dictionary.isCrossProduct(suffixId)) {
-              crossProducts.add(withSuffix);
-            }
+          String suffix = misspelled.substring(misspelled.length() - suffixLength);
+          String withSuffix =
+              root.word.substring(0, root.word.length() - affixStripLength(suffixId)) + suffix;
+          result.add(withSuffix);
+          if (dictionary.isCrossProduct(suffixId)) {
+            crossProducts.add(withSuffix);
           }
         });
 
     // cross-product prefixes
-    processFST(
-        dictionary.prefixes,
-        (key, ids) -> {
-          String prefix = toString(key);
-          if (misspelled.length() <= prefix.length() || !misspelled.startsWith(prefix)) return;
+    processAffixes(
+        true,
+        misspelled,
+        (prefixLength, prefixId) -> {
+          if (!dictionary.hasFlag(root.entryId, dictionary.affixData(prefixId, AFFIX_FLAG))
+              || !dictionary.isCrossProduct(prefixId)) {
+            return;
+          }
 
-          for (int i = 0; i < ids.length; i++) {
-            int prefixId = ids.ints[ids.offset + i];
-            if (!dictionary.hasFlag(root.entryId, dictionary.affixData(prefixId, AFFIX_FLAG))
-                || !dictionary.isCrossProduct(prefixId)) {
-              continue;
-            }
-
-            for (String suffixed : crossProducts) {
-              if (checkAffixCondition(prefixId, suffixed)) {
-                result.add(prefix + suffixed.substring(affixStripLength(prefixId)));
-              }
+          String prefix = misspelled.substring(0, prefixLength);
+          for (String suffixed : crossProducts) {
+            if (checkAffixCondition(prefixId, suffixed)) {
+              result.add(prefix + suffixed.substring(affixStripLength(prefixId)));
             }
           }
         });
 
     // pure prefixes
-    processFST(
-        dictionary.prefixes,
-        (key, ids) -> {
-          String prefix = toString(key);
-          if (misspelled.length() <= prefix.length() || !misspelled.startsWith(prefix)) return;
-
-          for (int i = 0; i < ids.length; i++) {
-            int prefixId = ids.ints[ids.offset + i];
-            if (hasCompatibleFlags(root, prefixId) && checkAffixCondition(prefixId, root.word)) {
-              result.add(prefix + root.word.substring(affixStripLength(prefixId)));
-            }
+    processAffixes(
+        true,
+        misspelled,
+        (prefixLength, prefixId) -> {
+          if (hasCompatibleFlags(root, prefixId) && checkAffixCondition(prefixId, root.word)) {
+            String prefix = misspelled.substring(0, prefixLength);
+            result.add(prefix + root.word.substring(affixStripLength(prefixId)));
           }
         });
 
     return result.stream().limit(MAX_WORDS).collect(Collectors.toList());
+  }
+
+  private void processAffixes(boolean prefixes, String word, AffixProcessor processor) {
+    FST<IntsRef> fst = prefixes ? dictionary.prefixes : dictionary.suffixes;
+    if (fst == null) return;
+
+    FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<>());
+    FST.BytesReader reader = fst.getBytesReader();
+
+    IntsRef output = fst.outputs.getNoOutput();
+    int length = word.length();
+    int step = prefixes ? 1 : -1;
+    int limit = prefixes ? length : -1;
+    for (int i = prefixes ? 0 : length - 1; i != limit; i += step) {
+      output = Dictionary.nextArc(fst, arc, reader, output, word.charAt(i));
+      if (output == null) {
+        break;
+      }
+
+      if (arc.isFinal()) {
+        IntsRef affixIds = fst.outputs.add(output, arc.nextFinalOutput());
+        for (int j = 0; j < affixIds.length; j++) {
+          processor.processAffix(prefixes ? i + 1 : length - i, affixIds.ints[affixIds.offset + j]);
+        }
+      }
+    }
+  }
+
+  private interface AffixProcessor {
+    void processAffix(int affixLength, int affixId);
   }
 
   private boolean hasCompatibleFlags(Root<?> root, int affixId) {
