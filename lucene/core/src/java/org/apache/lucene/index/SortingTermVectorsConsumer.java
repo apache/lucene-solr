@@ -24,7 +24,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.codecs.TermVectorsWriter;
-import org.apache.lucene.codecs.compressing.CompressingTermVectorsFormat;
+import org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsFormat;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -37,7 +37,7 @@ import org.apache.lucene.util.IntBlockPool;
 final class SortingTermVectorsConsumer extends TermVectorsConsumer {
 
   private static final TermVectorsFormat TEMP_TERM_VECTORS_FORMAT =
-      new CompressingTermVectorsFormat(
+      new Lucene90CompressingTermVectorsFormat(
           "TempTermVectors", "", SortingStoredFieldsConsumer.NO_COMPRESSION, 8 * 1024, 10);
   TrackingTmpOutputDirectoryWrapper tmpDirectory;
 

@@ -33,7 +33,7 @@ import org.apache.lucene.store.IOContext;
  *
  * @lucene.experimental
  */
-public class CompressingTermVectorsFormat extends TermVectorsFormat {
+public class Lucene90CompressingTermVectorsFormat extends TermVectorsFormat {
 
   private final String formatName;
   private final String segmentSuffix;
@@ -42,7 +42,7 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
   private final int blockSize;
 
   /**
-   * Create a new {@link CompressingTermVectorsFormat}.
+   * Create a new {@link Lucene90CompressingTermVectorsFormat}.
    *
    * <p><code>formatName</code> is the name of the format. This name will be used in the file
    * formats to perform {@link CodecUtil#checkIndexHeader codec header checks}.
@@ -50,7 +50,8 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
    * <p>The <code>compressionMode</code> parameter allows you to choose between compression
    * algorithms that have various compression and decompression speeds so that you can pick the one
    * that best fits your indexing and searching throughput. You should never instantiate two {@link
-   * CompressingTermVectorsFormat}s that have the same name but different {@link CompressionMode}s.
+   * Lucene90CompressingTermVectorsFormat}s that have the same name but different {@link
+   * CompressionMode}s.
    *
    * <p><code>chunkSize</code> is the minimum byte size of a chunk of documents. Higher values of
    * <code>chunkSize</code> should improve the compression ratio but will require more memory at
@@ -64,7 +65,7 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
    * @param blockSize the number of chunks to store in an index block.
    * @see CompressionMode
    */
-  public CompressingTermVectorsFormat(
+  public Lucene90CompressingTermVectorsFormat(
       String formatName,
       String segmentSuffix,
       CompressionMode compressionMode,
@@ -87,14 +88,14 @@ public class CompressingTermVectorsFormat extends TermVectorsFormat {
   public final TermVectorsReader vectorsReader(
       Directory directory, SegmentInfo segmentInfo, FieldInfos fieldInfos, IOContext context)
       throws IOException {
-    return new CompressingTermVectorsReader(
+    return new Lucene90CompressingTermVectorsReader(
         directory, segmentInfo, segmentSuffix, fieldInfos, context, formatName, compressionMode);
   }
 
   @Override
   public final TermVectorsWriter vectorsWriter(
       Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
-    return new CompressingTermVectorsWriter(
+    return new Lucene90CompressingTermVectorsWriter(
         directory,
         segmentInfo,
         segmentSuffix,

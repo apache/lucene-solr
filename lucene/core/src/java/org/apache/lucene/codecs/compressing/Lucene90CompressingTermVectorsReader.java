@@ -14,7 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.compressing;
+package org.apache.lucene.codecs.compressing;
+
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.FLAGS_BITS;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.META_VERSION_START;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.OFFSETS;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.PACKED_BLOCK_SIZE;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.PAYLOADS;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.POSITIONS;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.VECTORS_EXTENSION;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.VECTORS_INDEX_CODEC_NAME;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.VECTORS_INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.VECTORS_META_EXTENSION;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsWriter.VERSION_START;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -24,8 +37,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsReader;
-import org.apache.lucene.codecs.compressing.CompressionMode;
-import org.apache.lucene.codecs.compressing.Decompressor;
 import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -54,35 +65,12 @@ import org.apache.lucene.util.packed.BlockPackedReaderIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link TermVectorsReader} for {@link Lucene50CompressingTermVectorsFormat}.
+ * {@link TermVectorsReader} for {@link Lucene90CompressingTermVectorsFormat}.
  *
  * @lucene.experimental
  */
-public final class Lucene50CompressingTermVectorsReader extends TermVectorsReader
+public final class Lucene90CompressingTermVectorsReader extends TermVectorsReader
     implements Closeable {
-
-  // hard limit on the maximum number of documents per chunk
-  static final int MAX_DOCUMENTS_PER_CHUNK = 128;
-
-  static final String VECTORS_EXTENSION = "tvd";
-  static final String VECTORS_INDEX_EXTENSION = "tvx";
-  static final String VECTORS_META_EXTENSION = "tvm";
-  static final String VECTORS_INDEX_CODEC_NAME = "Lucene85TermVectorsIndex";
-
-  static final int VERSION_START = 1;
-  static final int VERSION_OFFHEAP_INDEX = 2;
-  /** Version where all metadata were moved to the meta file. */
-  static final int VERSION_META = 3;
-
-  static final int VERSION_CURRENT = VERSION_META;
-  static final int META_VERSION_START = 0;
-
-  static final int PACKED_BLOCK_SIZE = 64;
-
-  static final int POSITIONS = 0x01;
-  static final int OFFSETS = 0x02;
-  static final int PAYLOADS = 0x04;
-  static final int FLAGS_BITS = PackedInts.bitsRequired(POSITIONS | OFFSETS | PAYLOADS);
 
   private final FieldInfos fieldInfos;
   final FieldsIndex indexReader;
@@ -100,7 +88,7 @@ public final class Lucene50CompressingTermVectorsReader extends TermVectorsReade
   private final long maxPointer; // end of the data section
 
   // used by clone
-  private Lucene50CompressingTermVectorsReader(Lucene50CompressingTermVectorsReader reader) {
+  private Lucene90CompressingTermVectorsReader(Lucene90CompressingTermVectorsReader reader) {
     this.fieldInfos = reader.fieldInfos;
     this.vectorsStream = reader.vectorsStream.clone();
     this.indexReader = reader.indexReader.clone();
@@ -119,7 +107,7 @@ public final class Lucene50CompressingTermVectorsReader extends TermVectorsReade
   }
 
   /** Sole constructor. */
-  public Lucene50CompressingTermVectorsReader(
+  public Lucene90CompressingTermVectorsReader(
       Directory d,
       SegmentInfo si,
       String segmentSuffix,
@@ -146,26 +134,19 @@ public final class Lucene50CompressingTermVectorsReader extends TermVectorsReade
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix)
           == vectorsStream.getFilePointer();
 
-      if (version >= VERSION_OFFHEAP_INDEX) {
-        final String metaStreamFN =
-            IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_META_EXTENSION);
-        metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
-        CodecUtil.checkIndexHeader(
-            metaIn,
-            VECTORS_INDEX_CODEC_NAME + "Meta",
-            META_VERSION_START,
-            version,
-            si.getId(),
-            segmentSuffix);
-      }
+      final String metaStreamFN =
+          IndexFileNames.segmentFileName(segment, segmentSuffix, VECTORS_META_EXTENSION);
+      metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
+      CodecUtil.checkIndexHeader(
+          metaIn,
+          VECTORS_INDEX_CODEC_NAME + "Meta",
+          META_VERSION_START,
+          version,
+          si.getId(),
+          segmentSuffix);
 
-      if (version >= VERSION_META) {
-        packedIntsVersion = metaIn.readVInt();
-        chunkSize = metaIn.readVInt();
-      } else {
-        packedIntsVersion = vectorsStream.readVInt();
-        chunkSize = vectorsStream.readVInt();
-      }
+      packedIntsVersion = metaIn.readVInt();
+      chunkSize = metaIn.readVInt();
 
       // NOTE: data file is too costly to verify checksum against all the bytes on open,
       // but for now we at least verify proper structure of the checksum footer: which looks
@@ -173,70 +154,21 @@ public final class Lucene50CompressingTermVectorsReader extends TermVectorsReade
       // such as file truncation.
       CodecUtil.retrieveChecksum(vectorsStream);
 
-      FieldsIndex indexReader = null;
-      long maxPointer = -1;
+      FieldsIndexReader fieldsIndexReader =
+          new FieldsIndexReader(
+              d,
+              si.name,
+              segmentSuffix,
+              VECTORS_INDEX_EXTENSION,
+              VECTORS_INDEX_CODEC_NAME,
+              si.getId(),
+              metaIn);
 
-      if (version < VERSION_OFFHEAP_INDEX) {
-        // Load the index into memory
-        final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, "tvx");
-        try (ChecksumIndexInput indexStream = d.openChecksumInput(indexName, context)) {
-          Throwable priorE = null;
-          try {
-            assert formatName.endsWith("Data");
-            final String codecNameIdx =
-                formatName.substring(0, formatName.length() - "Data".length()) + "Index";
-            final int version2 =
-                CodecUtil.checkIndexHeader(
-                    indexStream,
-                    codecNameIdx,
-                    VERSION_START,
-                    VERSION_CURRENT,
-                    si.getId(),
-                    segmentSuffix);
-            if (version != version2) {
-              throw new CorruptIndexException(
-                  "Version mismatch between stored fields index and data: "
-                      + version
-                      + " != "
-                      + version2,
-                  indexStream);
-            }
-            assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix)
-                == indexStream.getFilePointer();
-            indexReader = new LegacyFieldsIndexReader(indexStream, si);
-            maxPointer = indexStream.readVLong(); // the end of the data section
-          } catch (Throwable exception) {
-            priorE = exception;
-          } finally {
-            CodecUtil.checkFooter(indexStream, priorE);
-          }
-        }
-      } else {
-        FieldsIndexReader fieldsIndexReader =
-            new FieldsIndexReader(
-                d,
-                si.name,
-                segmentSuffix,
-                VECTORS_INDEX_EXTENSION,
-                VECTORS_INDEX_CODEC_NAME,
-                si.getId(),
-                metaIn);
-        indexReader = fieldsIndexReader;
-        maxPointer = fieldsIndexReader.getMaxPointer();
-      }
+      this.indexReader = fieldsIndexReader;
+      this.maxPointer = fieldsIndexReader.getMaxPointer();
 
-      this.indexReader = indexReader;
-      this.maxPointer = maxPointer;
-
-      if (version >= VERSION_META) {
-        numDirtyChunks = metaIn.readVLong();
-        numDirtyDocs = metaIn.readVLong();
-      } else {
-        // Old versions of this format did not record numDirtyDocs. Since bulk
-        // merges are disabled on version increments anyway, we make no effort
-        // to get valid values of numDirtyChunks and numDirtyDocs.
-        numDirtyChunks = numDirtyDocs = -1;
-      }
+      numDirtyChunks = metaIn.readVLong();
+      numDirtyDocs = metaIn.readVLong();
 
       decompressor = compressionMode.newDecompressor();
       this.reader =
@@ -329,7 +261,7 @@ public final class Lucene50CompressingTermVectorsReader extends TermVectorsReade
 
   @Override
   public TermVectorsReader clone() {
-    return new Lucene50CompressingTermVectorsReader(this);
+    return new Lucene90CompressingTermVectorsReader(this);
   }
 
   @Override

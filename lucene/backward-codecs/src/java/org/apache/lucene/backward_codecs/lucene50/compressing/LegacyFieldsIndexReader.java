@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.compressing;
+package org.apache.lucene.backward_codecs.lucene50.compressing;
 
 import static org.apache.lucene.util.BitUtil.zigZagDecode;
 

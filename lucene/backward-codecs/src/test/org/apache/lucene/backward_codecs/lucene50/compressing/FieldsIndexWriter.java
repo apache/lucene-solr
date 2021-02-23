@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.compressing;
+package org.apache.lucene.backward_codecs.lucene50.compressing;
 
-import static org.apache.lucene.backward_codecs.compressing.FieldsIndexReader.VERSION_CURRENT;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.FieldsIndexReader.VERSION_CURRENT;
 
 import java.io.Closeable;
 import java.io.IOException;

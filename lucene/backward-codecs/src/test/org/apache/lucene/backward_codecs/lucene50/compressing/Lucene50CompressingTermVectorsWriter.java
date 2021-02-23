@@ -14,19 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.compressing;
+package org.apache.lucene.backward_codecs.lucene50.compressing;
 
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.FLAGS_BITS;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.MAX_DOCUMENTS_PER_CHUNK;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.OFFSETS;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.PACKED_BLOCK_SIZE;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.PAYLOADS;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.POSITIONS;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_EXTENSION;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_INDEX_CODEC_NAME;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_INDEX_EXTENSION;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VECTORS_META_EXTENSION;
-import static org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsReader.VERSION_CURRENT;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.FLAGS_BITS;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.MAX_DOCUMENTS_PER_CHUNK;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.OFFSETS;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.PACKED_BLOCK_SIZE;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.PAYLOADS;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.POSITIONS;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.VECTORS_EXTENSION;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.VECTORS_INDEX_CODEC_NAME;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.VECTORS_INDEX_EXTENSION;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.VECTORS_META_EXTENSION;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsReader.VERSION_CURRENT;
 
 import java.io.IOException;
 import java.util.ArrayDeque;

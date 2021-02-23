@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-import org.apache.lucene.backward_codecs.compressing.Lucene50CompressingTermVectorsFormat;
+import org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsFormat;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;

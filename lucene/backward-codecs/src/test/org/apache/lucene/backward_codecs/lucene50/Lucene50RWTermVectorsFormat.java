@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-import org.apache.lucene.backward_codecs.compressing.Lucene50RWCompressingTermVectorsFormat;
+import org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50RWCompressingTermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 
 /** RW impersonation of Lucene50StoredFieldsFormat. */
