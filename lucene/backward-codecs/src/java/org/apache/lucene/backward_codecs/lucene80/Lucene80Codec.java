@@ -35,7 +35,6 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
@@ -44,7 +43,7 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  *
  * <p>
  *
- * @see org.apache.lucene.codecs.lucene80 package documentation for file format details.
+ * @see org.apache.lucene.backward_codecs.lucene80 package documentation for file format details.
  * @lucene.experimental
  */
 public class Lucene80Codec extends Codec {

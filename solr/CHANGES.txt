@@ -28,6 +28,10 @@ New Features
 * SOLR-15055: Re-implement 'withCollection'. This also adds the placement plugin support
   for rejecting replica / collection deletions that would violate placement constraints. (ab, ilan)
 
+* SOLR-8138: Simple UI for issuing SQL queries (Michael Suzuki via Eric Pugh)
+
+* SOLR-14787: Payload check query parser now supports inequalities. (Kevin Watters, Gus Heck)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -74,6 +78,9 @@ Improvements
 
 * SOLR-15011: /admin/logging handler will now propagate setLevel (log threshold) to all nodes
 when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
+
+* SOLR-15156: [child] doc transformer's childFilter param no longer applies query syntax
+  escaping. It was inconsistent with other Solr options.  (David Smiley)
 
 Other Changes
 ----------------------
@@ -201,10 +208,16 @@ Other Changes
 
 * SOLR-15118: Switch /v2/collections APIs over to the now-preferred annotated-POJO implementation approach (Jason Gerlowski)
 
+* SOLR-14928: Allow cluster state updates to be done in a distributed fashion without going through Overseer (Ilan Ginzburg)
+
+* SOLR-15121: Move XSLT (tr param) response writer and update request handler to scripting contrib.  (Eric Pugh, David Smiley)
+
 Bug Fixes
 ---------------------
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
+
+* SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh) 
 
 ==================  8.9.0 ==================
 
@@ -213,6 +226,11 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 New Features
 ---------------------
 * SOLR-14330: ExpandComponent now supports an expand.nullGroup=true option (hossman)
+
+* SOLR-15150: New update.partial.requireInPlace=true option to prevent any partial document updates that can't be done In-Place (hossman)
+
+* SOLR-15087: SolrCloud backups can now be restored to compatible existing collections, instead of requiring a new collection
+  for each restore. (Jason Gerlowski, shalin, Cao Manh Dat)
 
 Improvements
 ---------------------
@@ -223,9 +241,14 @@ Improvements
 * SOLR-14234: Unhelpful message in RemoteExecutionException. (ab)
 
 * SOLR-13608: Backups are now done incrementally by default.  Multiple backups can be stored at the same location, and each
-  backup will only upload those files that are new since the last backup. (Jason Gerlowski, Shalin , Cao Manh Dat)
+  backup will only upload those files that are new since the last backup. (Jason Gerlowski, shalin, Cao Manh Dat)
 
 * SOLR-15123: Revamp SolrCLI tool's help descriptions for all commands for consistency and clarity. (Eric Pugh)
+
+* SOLR-15101: Add "list" and "delete" APIs for managing incremental backups (Jason Gerlowski, shalin, Cao Manh Dat)
+
+* SOLR-15038: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters to query elevation.
+  (Dennis Berger, Tobias Kässmann via Bruno Roustant)
 
 Optimizations
 ---------------------
@@ -237,10 +260,30 @@ Optimizations
 Bug Fixes
 ---------------------
 * SOLR-15078: Fix ExpandComponent behavior when expanding on numeric fields to differentiate '0' group from null group (hossman)
+* SOLR-15149: Better exception handling for LTR model creation errors (Alessandro Benedetti, Christine Poerschke)
+
 
 Other Changes
 ---------------------
 * SOLR-15118: Deprecate CollectionAdminRequest.getV2Request(). (Jason Gerlowski)
+
+==================  8.8.1 ==================
+
+Bug Fixes
+---------------------
+
+* SOLR-15145: System property to control whether base_url is stored in state.json to enable back-compat with older SolrJ versions.
+  (Timothy Potter)
+
+* SOLR-15114: Fix bug that caused WAND optimization to be disabled in cases where the max score is requested (such as
+  multi-shard requests in SolrCloud) (Naoto Minami via Tomás Fernández Löbbe)
+
+* SOLR-15136: Reduce excessive logging introduced with Per Replica States feature (Ishan Chattopadhyaya)
+
+* SOLR-15138: Collection creation for PerReplicaStates does not scale to large collections as well as regular collections
+  (Mike Drob, Ilan Ginzburg, noble, Ishan Chattopadhyaya)
+
+* SOLR-15135: Admin UI display collections with perReplicaState=true in graph view (Timothy Potter)
 
 ==================  8.8.0 ==================
 
@@ -2523,6 +2566,50 @@ Other Changes
 * SOLR-12365: Renamed class Config to XmlConfigFile (David Smiley)
 
 * SOLR-9515: Hadoop dependencies have been upgraded to Hadoop 3.2.0 from 2.7.2. (Mark Miller, Kevin Risden)
+
+
+==================  7.7.3 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache ZooKeeper 3.4.14
+Jetty 9.4.14.v20181114
+
+
+Bug fixes
+----------------------
+
+* SOLR-13779: Use the safe fork of simple-xml for clustering contrib. (Dawid Weiss, Sachin Pattan)
+
+* SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
+
+* SOLR-12291: prematurely reporting not yet finished async Collections API call as completed
+  when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
+
+* SOLR-13828: Improve ExecutePlanAction error handling.
+
+* SOLR-13472: Forwarded requests should skip authorization on receiving nodes (Ishan Chattopadhyaya)
+
+* SOLR-13793: HttpSolrCall now maintains internal request count (_forwardedCount) for remote queries and limits them to
+  the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can
+  bring down nodes containing the said collection (Kesharee Nandan Vishwakarma, Ishan Chattopadhyaya)
+
+* SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters. Also, removed velocity
+  response writer from _default configset. (Ishan Chattopadhyaya, Sachin Pattan)
+
+* SOLR-14025: VelocityResponseWriter has been hardened - only trusted configsets can render configset provided
+  templates and rendering templates from request parameters has been removed.
+
+* SOLR-13158: DataImportHandler: Added enable.dih.dataConfigParam system property to toggle whether the dataConfig param
+  is permitted. (David Smiley, janhoy, Tomás Fernández Löbbe)
+
+* SOLR-14259: Back port javabin performance regression fixes from SOLR-14013 (noble)
+
 
 ==================  7.7.2 ==================
 

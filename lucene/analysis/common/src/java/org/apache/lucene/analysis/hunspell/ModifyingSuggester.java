@@ -21,27 +21,34 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 /** A class that modifies the given misspelled word in various ways to get correct suggestions */
 class ModifyingSuggester {
   private static final int MAX_CHAR_DISTANCE = 4;
-  private final LinkedHashSet<String> result = new LinkedHashSet<>();
+  private final LinkedHashSet<String> result;
   private final char[] tryChars;
-  private final SpellChecker speller;
+  private final Hunspell speller;
   boolean hasGoodSuggestions;
 
-  ModifyingSuggester(SpellChecker speller) {
+  ModifyingSuggester(Hunspell speller, LinkedHashSet<String> result) {
     this.speller = speller;
     tryChars = speller.dictionary.tryChars.toCharArray();
+    this.result = result;
   }
 
-  LinkedHashSet<String> suggest(String word, WordCase wordCase) {
+  void suggest(String word, WordCase wordCase) {
+    String low = wordCase != WordCase.LOWER ? speller.dictionary.toLowerCase(word) : word;
+    if (wordCase == WordCase.UPPER || wordCase == WordCase.MIXED) {
+      trySuggestion(low);
+    }
+
     tryVariationsOf(word);
 
     if (wordCase == WordCase.TITLE) {
-      tryVariationsOf(speller.dictionary.toLowerCase(word));
+      tryVariationsOf(low);
     } else if (wordCase == WordCase.UPPER) {
-      tryVariationsOf(speller.dictionary.toLowerCase(word));
+      tryVariationsOf(low);
       tryVariationsOf(speller.dictionary.toTitleCase(word));
     } else if (wordCase == WordCase.MIXED) {
       int dot = word.indexOf('.');
@@ -51,10 +58,35 @@ class ModifyingSuggester {
         result.add(word.substring(0, dot + 1) + " " + word.substring(dot + 1));
       }
 
-      tryVariationsOf(speller.dictionary.toLowerCase(word));
-    }
+      boolean capitalized = Character.isUpperCase(word.charAt(0));
+      if (capitalized) {
+        tryVariationsOf(speller.dictionary.caseFold(word.charAt(0)) + word.substring(1));
+      }
 
-    return result;
+      tryVariationsOf(low);
+
+      if (capitalized) {
+        tryVariationsOf(speller.dictionary.toTitleCase(low));
+      }
+
+      List<String> adjusted =
+          result.stream().map(s -> capitalizeAfterSpace(word, s)).collect(Collectors.toList());
+      result.clear();
+      result.addAll(adjusted);
+    }
+  }
+
+  // aNew -> "a New" (instead of "a new")
+  private String capitalizeAfterSpace(String misspelled, String candidate) {
+    int space = candidate.indexOf(' ');
+    int tail = candidate.length() - space - 1;
+    if (space > 0
+        && !misspelled.regionMatches(misspelled.length() - tail, candidate, space + 1, tail)) {
+      return candidate.substring(0, space + 1)
+          + Character.toUpperCase(candidate.charAt(space + 1))
+          + candidate.substring(space + 2);
+    }
+    return candidate;
   }
 
   private void tryVariationsOf(String word) {
@@ -213,10 +245,13 @@ class ModifyingSuggester {
 
   private void tryMovingChar(String word) {
     for (int i = 0; i < word.length(); i++) {
+      String prefix = word.substring(0, i);
       for (int j = i + 2; j < word.length() && j <= i + MAX_CHAR_DISTANCE; j++) {
-        String prefix = word.substring(0, i);
         trySuggestion(prefix + word.substring(i + 1, j) + word.charAt(i) + word.substring(j));
         trySuggestion(prefix + word.charAt(j) + word.substring(i, j) + word.substring(j + 1));
+      }
+      if (i < word.length() - 1) {
+        trySuggestion(prefix + word.substring(i + 1) + word.charAt(i));
       }
     }
   }
@@ -270,12 +305,12 @@ class ModifyingSuggester {
   }
 
   private void trySplitting(String word) {
-    for (int i = 1; i < word.length() - 1; i++) {
+    for (int i = 1; i < word.length(); i++) {
       String w1 = word.substring(0, i);
       String w2 = word.substring(i);
       if (checkSimpleWord(w1) && checkSimpleWord(w2)) {
         result.add(w1 + " " + w2);
-        if (shouldSplitByDash()) {
+        if (w1.length() > 1 && w2.length() > 1 && shouldSplitByDash()) {
           result.add(w1 + "-" + w2);
         }
       }

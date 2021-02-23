@@ -24,6 +24,49 @@ dependencies {
   testImplementation project(':lucene:test-framework')
 }
 
+// Fetch the data and enable regression tests against woorm/ libreoffice dictionaries.
+task checkoutHunspellRegressionRepos() {
+  ext {
+    checkoutDir = file("${buildDir}/hunspell-regressions")
+  }
+
+  outputs.dir checkoutDir
+  doFirst {
+    // Clone the repositories we need if they don't exist.
+    [
+        "libreoffice": "https://github.com/LibreOffice/dictionaries",
+        "woorm": "https://github.com/wooorm/dictionaries"
+    ].each { name, repo ->
+      if (!file("${checkoutDir}/${name}").exists()) {
+        checkoutDir.mkdirs()
+        // This will work only if git is available, but I assume it is.
+        project.exec {
+          executable "git"
+          ignoreExitValue false
+          workingDir checkoutDir
+          args = [ "clone", "--depth=1", repo, name ]
+        }
+      }
+    }
+  }
+}
+
+task testRegressions(type: Test) {
+  group "Verification"
+  description "Run Hunspell regression tests against Woorm/ LibreOffice git repositories."
+
+  dependsOn checkoutHunspellRegressionRepos
+
+  failFast = true
+  include "**/TestAllDictionaries*"
+
+  systemProperty "hunspell.dictionaries", checkoutHunspellRegressionRepos.checkoutDir
+
+  doFirst {
+    logger.lifecycle("Running Hunspell regression tests...")
+  }
+}
+
 // Pass all hunspell-tests-specific project properties to tests as system properties.
 tasks.withType(Test) {
   [

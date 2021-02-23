@@ -22,17 +22,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.fst.CharSequenceOutputs;
-import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.FSTCompiler;
-import org.apache.lucene.util.fst.Outputs;
-import org.apache.lucene.util.fst.Util;
 import org.junit.Test;
 
 public class TestDictionary extends LuceneTestCase {
@@ -162,51 +160,36 @@ public class TestDictionary extends LuceneTestCase {
     assertTrue(dictStream.isClosed());
   }
 
-  public void testReplacements() throws Exception {
-    Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
-    FSTCompiler<CharsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, outputs);
-    IntsRefBuilder scratchInts = new IntsRefBuilder();
-
-    // a -> b
-    Util.toUTF16("a", scratchInts);
-    fstCompiler.add(scratchInts.get(), new CharsRef("b"));
-
-    // ab -> c
-    Util.toUTF16("ab", scratchInts);
-    fstCompiler.add(scratchInts.get(), new CharsRef("c"));
-
-    // c -> de
-    Util.toUTF16("c", scratchInts);
-    fstCompiler.add(scratchInts.get(), new CharsRef("de"));
-
-    // def -> gh
-    Util.toUTF16("def", scratchInts);
-    fstCompiler.add(scratchInts.get(), new CharsRef("gh"));
-
-    FST<CharsRef> fst = fstCompiler.compile();
+  public void testReplacements() {
+    TreeMap<String, String> map = new TreeMap<>();
+    map.put("a", "b");
+    map.put("ab", "c");
+    map.put("c", "de");
+    map.put("def", "gh");
+    ConvTable table = new ConvTable(map);
 
     StringBuilder sb = new StringBuilder("atestanother");
-    Dictionary.applyMappings(fst, sb);
+    table.applyMappings(sb);
     assertEquals("btestbnother", sb.toString());
 
     sb = new StringBuilder("abtestanother");
-    Dictionary.applyMappings(fst, sb);
+    table.applyMappings(sb);
     assertEquals("ctestbnother", sb.toString());
 
     sb = new StringBuilder("atestabnother");
-    Dictionary.applyMappings(fst, sb);
+    table.applyMappings(sb);
     assertEquals("btestcnother", sb.toString());
 
     sb = new StringBuilder("abtestabnother");
-    Dictionary.applyMappings(fst, sb);
+    table.applyMappings(sb);
     assertEquals("ctestcnother", sb.toString());
 
     sb = new StringBuilder("abtestabcnother");
-    Dictionary.applyMappings(fst, sb);
+    table.applyMappings(sb);
     assertEquals("ctestcdenother", sb.toString());
 
     sb = new StringBuilder("defdefdefc");
-    Dictionary.applyMappings(fst, sb);
+    table.applyMappings(sb);
     assertEquals("ghghghde", sb.toString());
   }
 
@@ -242,6 +225,35 @@ public class TestDictionary extends LuceneTestCase {
     String asAscii = new String(src.getBytes(StandardCharsets.UTF_8), Dictionary.DEFAULT_CHARSET);
     assertNotEquals(src, asAscii);
     assertEquals(src, new String(strategy.parseFlags(asAscii)));
+  }
+
+  @Test
+  public void testCustomMorphologicalData() throws IOException, ParseException {
+    Dictionary dic = loadDictionary("morphdata.aff", "morphdata.dic");
+    assertNull(dic.lookupEntries("nonexistent"));
+
+    DictEntries simpleNoun = dic.lookupEntries("simplenoun");
+    assertEquals(1, simpleNoun.size());
+    assertEquals(Collections.emptyList(), simpleNoun.getMorphologicalValues(0, "aa:"));
+    assertEquals(Collections.singletonList("42"), simpleNoun.getMorphologicalValues(0, "fr:"));
+
+    DictEntries lay = dic.lookupEntries("lay");
+    String actual =
+        IntStream.range(0, 3)
+            .mapToObj(lay::getMorphologicalData)
+            .sorted()
+            .collect(Collectors.joining("; "));
+    assertEquals("is:past_2 po:verb st:lie; is:present po:verb; po:noun", actual);
+
+    DictEntries sing = dic.lookupEntries("sing");
+    assertEquals(1, sing.size());
+    assertEquals(Arrays.asList("sang", "sung"), sing.getMorphologicalValues(0, "al:"));
+
+    assertEquals(
+        "al:abaléar po:verbo ts:transitiva",
+        dic.lookupEntries("unsupported1").getMorphologicalData(0));
+
+    assertEquals("", dic.lookupEntries("unsupported2").getMorphologicalData(0));
   }
 
   private Directory getDirectory() {

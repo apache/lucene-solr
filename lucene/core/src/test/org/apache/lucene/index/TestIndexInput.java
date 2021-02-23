@@ -263,6 +263,41 @@ public class TestIndexInput extends LuceneTestCase {
     }
   }
 
+  private void checkSeeksAndSkips(IndexInput is, Random random) throws IOException {
+    long len = is.length();
+
+    int iterations = LuceneTestCase.TEST_NIGHTLY ? 1_000 : 10;
+    for (int i = 0; i < iterations; i++) {
+      is.seek(0); // make sure we're at the start
+
+      for (long curr = 0; curr < len; ) {
+        long maxSkipTo = len - 1;
+        // if we're close to the end, just skip all the way
+        long skipTo = (len - curr < 10) ? maxSkipTo : TestUtil.nextLong(random, curr, maxSkipTo);
+        long skipDelta = skipTo - curr;
+
+        // first reposition using seek
+        byte startByte1 = is.readByte();
+        is.seek(skipTo);
+        byte endByte1 = is.readByte();
+
+        // do the same thing but with skipBytes
+        is.seek(curr);
+        byte startByte2 = is.readByte();
+        is.seek(curr);
+        is.skipBytes(skipDelta);
+        byte endByte2 = is.readByte();
+
+        assertEquals(startByte1, startByte2);
+        assertEquals(endByte1, endByte2);
+        // +1 since we read the byte we seek/skip to
+        assertEquals(curr + skipDelta + 1, is.getFilePointer());
+
+        curr = is.getFilePointer();
+      }
+    }
+  }
+
   // this test checks the IndexInput methods of any impl
   public void testRawIndexInputRead() throws IOException {
     for (int i = 0; i < 10; i++) {
@@ -273,6 +308,7 @@ public class TestIndexInput extends LuceneTestCase {
       os.close();
       IndexInput is = dir.openInput("foo", newIOContext(random));
       checkReads(is, IOException.class);
+      checkSeeksAndSkips(is, random);
       is.close();
 
       os = dir.createOutput("bar", newIOContext(random));
@@ -280,6 +316,7 @@ public class TestIndexInput extends LuceneTestCase {
       os.close();
       is = dir.openInput("bar", newIOContext(random));
       checkRandomReads(is);
+      checkSeeksAndSkips(is, random);
       is.close();
       dir.close();
     }
@@ -290,5 +327,67 @@ public class TestIndexInput extends LuceneTestCase {
     checkReads(is, RuntimeException.class);
     is = new ByteArrayDataInput(RANDOM_TEST_BYTES);
     checkRandomReads(is);
+  }
+
+  public void testNoReadOnSkipBytes() throws IOException {
+    long len = LuceneTestCase.TEST_NIGHTLY ? Long.MAX_VALUE : 1_000_000;
+    long maxSeekPos = len - 1;
+    InterceptingIndexInput is = new InterceptingIndexInput("foo", len);
+
+    while (is.pos < maxSeekPos) {
+      long seekPos = TestUtil.nextLong(random(), is.pos, maxSeekPos);
+      long skipDelta = seekPos - is.pos;
+      is.skipBytes(skipDelta);
+      assertEquals(seekPos, is.pos);
+    }
+  }
+
+  /**
+   * Mock IndexInput that just tracks a position (which responds to seek/skip) and throws if
+   * #readByte or #readBytes are called, ensuring seek/skip doesn't invoke reads.
+   */
+  private static final class InterceptingIndexInput extends IndexInput {
+    long pos = 0;
+    final long len;
+
+    protected InterceptingIndexInput(String resourceDescription, long len) {
+      super(resourceDescription);
+      this.len = len;
+    }
+
+    @Override
+    public void seek(long pos) {
+      this.pos = pos;
+    }
+
+    @Override
+    public long getFilePointer() {
+      return pos;
+    }
+
+    @Override
+    public long length() {
+      return len;
+    }
+
+    @Override
+    public byte readByte() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void readBytes(byte[] b, int offset, int len) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void close() {
+      // no-op
+    }
+
+    @Override
+    public IndexInput slice(String sliceDescription, long offset, long length) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

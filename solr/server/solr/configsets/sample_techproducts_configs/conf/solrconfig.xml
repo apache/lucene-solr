@@ -828,6 +828,17 @@
     </lst>
   </requestHandler>
 
+  <!-- XSLT Update Request Handler
+
+       https://lucene.apache.org/solr/guide/uploading-data-with-index-handlers.html#using-xslt-to-transform-xml-index-updates
+
+    -->
+  <requestHandler name="/update/xslt"
+                  startup="lazy"
+                  class="solr.scripting.xslt.XSLTUpdateRequestHandler" >
+    <int name="xsltCacheLifetimeSeconds">5</int>
+  </requestHandler>
+
    <!-- Spell Check
 
         The spell check component can return a list of alternative spelling
@@ -1331,10 +1342,14 @@
   </queryResponseWriter>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
-       in Solr's conf/xslt directory.  Changes to xslt files are checked for
-       every xsltCacheLifetimeSeconds.
-    -->
-  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
+       in Solr's conf/xslt directory.  Changes to xslt files are checked
+       every xsltCacheLifetimeSeconds.  This is part of the Scripting contrib module.
+
+       See more about this response writer at https://lucene.apache.org/solr/guide/response-writers.html#xslt-response-writer
+  -->
+  <queryResponseWriter name="xslt"
+                          startup="lazy"
+                          class="solr.scripting.xslt.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
 

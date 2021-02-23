@@ -60,7 +60,7 @@ class BackupCoreOp implements CoreAdminHandler.CoreAdminOp {
 
       if (incremental) {
         if ("file".equals(locationUri.getScheme())) {
-          core.getCoreContainer().assertPathAllowed(Paths.get(location));
+          core.getCoreContainer().assertPathAllowed(Paths.get(locationUri));
         }
         final ShardBackupId prevShardBackupId = prevShardBackupIdStr != null ? ShardBackupId.from(prevShardBackupIdStr) : null;
         BackupFilePaths incBackupFiles = new BackupFilePaths(repository, locationUri);

@@ -15,5 +15,5 @@
  * limitations under the License.
  */
 
-/** Lucene 8.0 file format. */
+/** Components from the Lucene 8.0 index format. */
 package org.apache.lucene.backward_codecs.lucene80;

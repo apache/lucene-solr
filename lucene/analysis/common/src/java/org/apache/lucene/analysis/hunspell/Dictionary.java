@@ -18,11 +18,11 @@ package org.apache.lucene.analysis.hunspell;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
@@ -37,14 +37,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
@@ -53,6 +52,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -61,15 +61,16 @@ import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.IntSequenceOutputs;
-import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
 /** In-memory structure for the dictionary (.dic) and affix (.aff) data of a hunspell dictionary. */
 public class Dictionary {
+  // Derived from woorm/LibreOffice dictionaries.
+  // See TestAllDictionaries.testMaxPrologueNeeded.
+  static final int MAX_PROLOGUE_SCAN_WINDOW = 30 * 1024;
 
   static final char[] NOFLAGS = new char[0];
 
@@ -77,10 +78,6 @@ public class Dictionary {
   private static final int DEFAULT_FLAGS = 65510;
   static final char HIDDEN_FLAG = (char) 65511; // called 'ONLYUPCASEFLAG' in Hunspell
 
-  // TODO: really for suffixes we should reverse the automaton and run them backwards
-  private static final String PREFIX_CONDITION_REGEX = "%s.*";
-  private static final String SUFFIX_CONDITION_REGEX = ".*%s";
-  private static final Pattern MORPH_KEY_PATTERN = Pattern.compile("\\s+(?=\\p{Alpha}{2}:)");
   static final Charset DEFAULT_CHARSET = StandardCharsets.ISO_8859_1;
   CharsetDecoder decoder = replacingDecoder(DEFAULT_CHARSET);
 
@@ -99,6 +96,9 @@ public class Dictionary {
    * for flagLookup.
    */
   FST<IntsRef> words;
+
+  /** A Bloom filter over {@link #words} to avoid unnecessary expensive FST traversals */
+  FixedBitSet wordHashes;
 
   /**
    * The list of unique flagsets (wordforms). theoretically huge, but practically small (for Polish
@@ -119,7 +119,7 @@ public class Dictionary {
   // offsets in affixData
   static final int AFFIX_FLAG = 0;
   static final int AFFIX_STRIP_ORD = 1;
-  static final int AFFIX_CONDITION = 2;
+  private static final int AFFIX_CONDITION = 2;
   static final int AFFIX_APPEND = 3;
 
   // Default flag parsing strategy
@@ -133,21 +133,23 @@ public class Dictionary {
   private String[] morphAliases;
   private int morphAliasCount = 0;
 
-  // st: morphological entries (either directly, or aliased from AM)
-  private String[] stemExceptions = new String[8];
-  private int stemExceptionCount = 0;
+  final List<String> morphData = new ArrayList<>(Collections.singletonList("")); // empty data at 0
 
   /**
-   * we set this during sorting, so we know to add an extra FST output. when set, some words have
-   * exceptional stems, and the last entry is a pointer to stemExceptions
+   * we set this during sorting, so we know to add an extra int (index in {@link #morphData}) to FST
+   * output
    */
-  boolean hasStemExceptions;
+  boolean hasCustomMorphData;
 
   boolean ignoreCase;
   boolean checkSharpS;
   boolean complexPrefixes;
-  // if no affixes have continuation classes, no need to do 2-level affix stripping
-  boolean twoStageAffix;
+
+  /**
+   * All flags used in affix continuation classes. If an outer affix's flag isn't here, there's no
+   * need to do 2-level affix stripping with it.
+   */
+  private char[] secondStagePrefixFlags, secondStageSuffixFlags;
 
   char circumfix;
   char keepcase, forceUCase;
@@ -165,20 +167,15 @@ public class Dictionary {
   private char[] ignore;
 
   String tryChars = "";
-  String[] neighborKeyGroups = new String[0];
+  String[] neighborKeyGroups = {"qwertyuiop", "asdfghjkl", "zxcvbnm"};
   boolean enableSplitSuggestions = true;
   List<RepEntry> repTable = new ArrayList<>();
   List<List<String>> mapTable = new ArrayList<>();
   int maxDiff = 5;
-  int maxNGramSuggestions = Integer.MAX_VALUE;
+  int maxNGramSuggestions = 4;
   boolean onlyMaxDiff;
-
-  // FSTs used for ICONV/OCONV, output ord pointing to replacement text
-  FST<CharsRef> iconv;
-  FST<CharsRef> oconv;
-
-  boolean needsInputCleaning;
-  boolean needsOutputCleaning;
+  char noSuggest, subStandard;
+  ConvTable iconv, oconv;
 
   // true if we can strip suffixes "down to nothing"
   boolean fullStrip;
@@ -224,54 +221,62 @@ public class Dictionary {
       boolean ignoreCase)
       throws IOException, ParseException {
     this.ignoreCase = ignoreCase;
-    this.needsInputCleaning = ignoreCase;
-    this.needsOutputCleaning = false; // set if we have an OCONV
 
-    Path tempPath = getDefaultTempDir(); // TODO: make this configurable?
-    Path aff = Files.createTempFile(tempPath, "affix", "aff");
-
-    BufferedInputStream aff1 = null;
-    InputStream aff2 = null;
-    boolean success = false;
-    try {
-      // Copy contents of the affix stream to a temp file.
-      try (OutputStream os = Files.newOutputStream(aff)) {
-        affix.transferTo(os);
+    try (BufferedInputStream affixStream =
+        new BufferedInputStream(affix, MAX_PROLOGUE_SCAN_WINDOW) {
+          @Override
+          public void close() {
+            // TODO: maybe we should consume and close it? Why does it need to stay open?
+            // Don't close the affix stream as per javadoc.
+          }
+        }) {
+      // I assume we don't support other BOMs (utf16, etc.)? We trivially could,
+      // by adding maybeConsume() with a proper bom... but I don't see hunspell repo to have
+      // any such exotic examples.
+      Charset streamCharset;
+      if (maybeConsume(affixStream, BOM_UTF8)) {
+        streamCharset = StandardCharsets.UTF_8;
+      } else {
+        streamCharset = DEFAULT_CHARSET;
       }
 
-      // pass 1: get encoding & flag
-      aff1 = new BufferedInputStream(Files.newInputStream(aff));
-      readConfig(aff1);
+      /*
+       * pass 1: look for encoding & flag. This is simple but works. We just prefetch
+       * a large enough chunk of the input and scan through it. The buffered data will
+       * be subsequently reused anyway so nothing is wasted.
+       */
+      affixStream.mark(MAX_PROLOGUE_SCAN_WINDOW);
+      byte[] prologue = affixStream.readNBytes(MAX_PROLOGUE_SCAN_WINDOW - 1);
+      affixStream.reset();
+      readConfig(new ByteArrayInputStream(prologue), streamCharset);
 
       // pass 2: parse affixes
-      aff2 = new BufferedInputStream(Files.newInputStream(aff));
       FlagEnumerator flagEnumerator = new FlagEnumerator();
-      readAffixFile(aff2, decoder, flagEnumerator);
+      readAffixFile(affixStream, decoder, flagEnumerator);
 
       // read dictionary entries
-      IndexOutput unsorted = mergeDictionaries(tempDir, tempFileNamePrefix, dictionaries, decoder);
+      IndexOutput unsorted = tempDir.createTempOutput(tempFileNamePrefix, "dat", IOContext.DEFAULT);
+      int wordCount = mergeDictionaries(dictionaries, decoder, unsorted);
+      wordHashes = new FixedBitSet(Integer.highestOneBit(wordCount * 10));
       String sortedFile = sortWordsOffline(tempDir, tempFileNamePrefix, unsorted);
       words = readSortedDictionaries(tempDir, sortedFile, flagEnumerator);
       flagLookup = flagEnumerator.finish();
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
-      success = true;
-    } finally {
-      IOUtils.closeWhileHandlingException(aff1, aff2);
-      if (success) {
-        Files.delete(aff);
-      } else {
-        IOUtils.deleteFilesIgnoringExceptions(aff);
-      }
     }
   }
 
   int formStep() {
-    return hasStemExceptions ? 2 : 1;
+    return hasCustomMorphData ? 2 : 1;
   }
 
   /** Looks up Hunspell word forms from the dictionary */
   IntsRef lookupWord(char[] word, int offset, int length) {
+    int hash = CharsRef.stringHashCode(word, offset, length);
+    if (!wordHashes.get(Math.abs(hash) % wordHashes.length())) {
+      return null;
+    }
+
     return lookup(words, word, offset, length);
   }
 
@@ -292,29 +297,29 @@ public class Dictionary {
     final FST.BytesReader bytesReader = fst.getBytesReader();
     final FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<>());
     // Accumulate output as we go
-    final IntsRef NO_OUTPUT = fst.outputs.getNoOutput();
-    IntsRef output = NO_OUTPUT;
+    IntsRef output = fst.outputs.getNoOutput();
 
     int l = offset + length;
-    try {
-      for (int i = offset, cp; i < l; i += Character.charCount(cp)) {
-        cp = Character.codePointAt(word, i, l);
-        if (fst.findTargetArc(cp, arc, arc, bytesReader) == null) {
-          return null;
-        } else if (arc.output() != NO_OUTPUT) {
-          output = fst.outputs.add(output, arc.output());
-        }
-      }
-      if (fst.findTargetArc(FST.END_LABEL, arc, arc, bytesReader) == null) {
+    for (int i = offset, cp; i < l; i += Character.charCount(cp)) {
+      cp = Character.codePointAt(word, i, l);
+      output = nextArc(fst, arc, bytesReader, output, cp);
+      if (output == null) {
         return null;
-      } else if (arc.output() != NO_OUTPUT) {
-        return fst.outputs.add(output, arc.output());
-      } else {
-        return output;
+      }
+    }
+    return nextArc(fst, arc, bytesReader, output, FST.END_LABEL);
+  }
+
+  static IntsRef nextArc(
+      FST<IntsRef> fst, FST.Arc<IntsRef> arc, FST.BytesReader reader, IntsRef output, int ch) {
+    try {
+      if (fst.findTargetArc(ch, arc, arc, reader) == null) {
+        return null;
       }
     } catch (IOException bogus) {
       throw new RuntimeException(bogus);
     }
+    return fst.outputs.add(output, arc.output());
   }
 
   /**
@@ -328,6 +333,8 @@ public class Dictionary {
       throws IOException, ParseException {
     TreeMap<String, List<Integer>> prefixes = new TreeMap<>();
     TreeMap<String, List<Integer>> suffixes = new TreeMap<>();
+    Set<Character> prefixContFlags = new HashSet<>();
+    Set<Character> suffixContFlags = new HashSet<>();
     Map<String, Integer> seenPatterns = new HashMap<>();
 
     // zero condition -> 0 ord
@@ -349,14 +356,15 @@ public class Dictionary {
       if (line.isEmpty()) continue;
 
       String firstWord = line.split("\\s")[0];
+      // TODO: convert to a switch?
       if ("AF".equals(firstWord)) {
         parseAlias(line);
       } else if ("AM".equals(firstWord)) {
         parseMorphAlias(line);
       } else if ("PFX".equals(firstWord)) {
-        parseAffix(prefixes, line, reader, PREFIX_CONDITION_REGEX, seenPatterns, seenStrips, flags);
+        parseAffix(prefixes, prefixContFlags, line, reader, false, seenPatterns, seenStrips, flags);
       } else if ("SFX".equals(firstWord)) {
-        parseAffix(suffixes, line, reader, SUFFIX_CONDITION_REGEX, seenPatterns, seenStrips, flags);
+        parseAffix(suffixes, suffixContFlags, line, reader, true, seenPatterns, seenStrips, flags);
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -375,16 +383,13 @@ public class Dictionary {
       } else if ("IGNORE".equals(firstWord)) {
         ignore = singleArgument(reader, line).toCharArray();
         Arrays.sort(ignore);
-        needsInputCleaning = true;
       } else if ("ICONV".equals(firstWord) || "OCONV".equals(firstWord)) {
         int num = parseNum(reader, line);
-        FST<CharsRef> res = parseConversions(reader, num);
+        ConvTable res = parseConversions(reader, num);
         if (line.startsWith("I")) {
           iconv = res;
-          needsInputCleaning |= iconv != null;
         } else {
           oconv = res;
-          needsOutputCleaning |= oconv != null;
         }
       } else if ("FULLSTRIP".equals(firstWord)) {
         fullStrip = true;
@@ -424,6 +429,10 @@ public class Dictionary {
         onlyMaxDiff = true;
       } else if ("FORBIDDENWORD".equals(firstWord)) {
         forbiddenword = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("NOSUGGEST".equals(firstWord)) {
+        noSuggest = flagParsingStrategy.parseFlag(singleArgument(reader, line));
+      } else if ("SUBSTANDARD".equals(firstWord)) {
+        subStandard = flagParsingStrategy.parseFlag(singleArgument(reader, line));
       } else if ("COMPOUNDMIN".equals(firstWord)) {
         compoundMin = Math.max(1, parseNum(reader, line));
       } else if ("COMPOUNDWORDMAX".equals(firstWord)) {
@@ -458,11 +467,20 @@ public class Dictionary {
           checkCompoundPatterns.add(
               new CheckCompoundPattern(reader.readLine(), flagParsingStrategy, this));
         }
+      } else if ("SET".equals(firstWord)) {
+        checkCriticalDirectiveSame(
+            "SET", reader, decoder.charset(), getDecoder(singleArgument(reader, line)).charset());
+      } else if ("FLAG".equals(firstWord)) {
+        FlagParsingStrategy strategy = getFlagParsingStrategy(line, decoder.charset());
+        checkCriticalDirectiveSame(
+            "FLAG", reader, flagParsingStrategy.getClass(), strategy.getClass());
       }
     }
 
     this.prefixes = affixFST(prefixes);
     this.suffixes = affixFST(suffixes);
+    secondStagePrefixFlags = toSortedCharArray(prefixContFlags);
+    secondStageSuffixFlags = toSortedCharArray(suffixContFlags);
 
     int totalChars = 0;
     for (String strip : seenStrips.keySet()) {
@@ -479,6 +497,19 @@ public class Dictionary {
     }
     assert currentIndex == seenStrips.size();
     stripOffsets[currentIndex] = currentOffset;
+  }
+
+  private void checkCriticalDirectiveSame(
+      String directive, LineNumberReader reader, Object expected, Object actual)
+      throws ParseException {
+    if (!expected.equals(actual)) {
+      throw new ParseException(
+          directive
+              + " directive should occur at most once, and in the first "
+              + MAX_PROLOGUE_SCAN_WINDOW
+              + " bytes of the *.aff file",
+          reader.getLineNumber());
+    }
   }
 
   private List<String> parseMapEntry(LineNumberReader reader, String line) throws ParseException {
@@ -509,6 +540,44 @@ public class Dictionary {
       }
     }
     return false;
+  }
+
+  /**
+   * @param root a string to look up in the dictionary. No case conversion or affix removal is
+   *     performed. To get the possible roots of any word, you may call {@link
+   *     Hunspell#getRoots(String)}
+   * @return the dictionary entries for the given root, or {@code null} if there's none
+   */
+  public DictEntries lookupEntries(String root) {
+    IntsRef forms = lookupWord(root.toCharArray(), 0, root.length());
+    if (forms == null) return null;
+
+    return new DictEntries() {
+      @Override
+      public int size() {
+        return forms.length / (hasCustomMorphData ? 2 : 1);
+      }
+
+      @Override
+      public String getMorphologicalData(int entryIndex) {
+        if (!hasCustomMorphData) return "";
+        return morphData.get(forms.ints[forms.offset + entryIndex * 2 + 1]);
+      }
+
+      @Override
+      public List<String> getMorphologicalValues(int entryIndex, String key) {
+        assert key.length() == 3;
+        assert key.charAt(2) == ':';
+
+        String fields = getMorphologicalData(entryIndex);
+        if (fields.isEmpty() || !fields.contains(key)) return Collections.emptyList();
+
+        return Arrays.stream(fields.split(" "))
+            .filter(s -> s.startsWith(key))
+            .map(s -> s.substring(3))
+            .collect(Collectors.toList());
+      }
+    };
   }
 
   static String extractLanguageCode(String isoCode) {
@@ -611,16 +680,15 @@ public class Dictionary {
    * @param affixes Map where the result of the parsing will be put
    * @param header Header line of the affix rule
    * @param reader BufferedReader to read the content of the rule from
-   * @param conditionPattern {@link String#format(String, Object...)} pattern to be used to generate
-   *     the condition regex pattern
    * @param seenPatterns map from condition -&gt; index of patterns, for deduplication.
    * @throws IOException Can be thrown while reading the rule
    */
   private void parseAffix(
       TreeMap<String, List<Integer>> affixes,
+      Set<Character> secondStageFlags,
       String header,
       LineNumberReader reader,
-      String conditionPattern,
+      boolean isSuffix,
       Map<String, Integer> seenPatterns,
       Map<String, Integer> seenStrips,
       FlagEnumerator flags)
@@ -630,7 +698,6 @@ public class Dictionary {
     String[] args = header.split("\\s+");
 
     boolean crossProduct = args[2].equals("Y");
-    boolean isSuffix = conditionPattern.equals(SUFFIX_CONDITION_REGEX);
 
     int numLines;
     try {
@@ -661,7 +728,9 @@ public class Dictionary {
         }
 
         appendFlags = flagParsingStrategy.parseFlags(flagPart);
-        twoStageAffix = true;
+        for (char appendFlag : appendFlags) {
+          secondStageFlags.add(appendFlag);
+        }
       }
       // zero affix -> empty string
       if ("0".equals(affixArg)) {
@@ -686,7 +755,8 @@ public class Dictionary {
         // if we remove 'strip' from condition, we don't have to append 'strip' to check it...!
         // but this is complicated...
       } else {
-        regex = String.format(Locale.ROOT, conditionPattern, condition);
+        // TODO: really for suffixes we should reverse the automaton and run them backwards
+        regex = isSuffix ? ".*" + condition : condition + ".*";
       }
 
       // deduplicate patterns
@@ -737,9 +807,8 @@ public class Dictionary {
       affixData[dataStart + AFFIX_CONDITION] = (char) patternOrd;
       affixData[dataStart + AFFIX_APPEND] = (char) appendFlagsOrd;
 
-      if (needsInputCleaning) {
-        CharSequence cleaned = cleanInput(affixArg, sb);
-        affixArg = cleaned.toString();
+      if (needsInputCleaning(affixArg)) {
+        affixArg = cleanInput(affixArg, sb).toString();
       }
 
       if (isSuffix) {
@@ -766,9 +835,17 @@ public class Dictionary {
     return affixData[affixIndex * 4 + offset];
   }
 
-  private FST<CharsRef> parseConversions(LineNumberReader reader, int num)
+  boolean isCrossProduct(int affix) {
+    return (affixData(affix, AFFIX_CONDITION) & 1) == 1;
+  }
+
+  int getAffixCondition(int affix) {
+    return affixData(affix, AFFIX_CONDITION) >>> 1;
+  }
+
+  private ConvTable parseConversions(LineNumberReader reader, int num)
       throws IOException, ParseException {
-    Map<String, String> mappings = new TreeMap<>();
+    TreeMap<String, String> mappings = new TreeMap<>();
 
     for (int i = 0; i < num; i++) {
       String[] parts = splitBySpace(reader, reader.readLine(), 3);
@@ -777,45 +854,42 @@ public class Dictionary {
       }
     }
 
-    Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
-    FSTCompiler<CharsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, outputs);
-    IntsRefBuilder scratchInts = new IntsRefBuilder();
-    for (Map.Entry<String, String> entry : mappings.entrySet()) {
-      Util.toUTF16(entry.getKey(), scratchInts);
-      fstCompiler.add(scratchInts.get(), new CharsRef(entry.getValue()));
-    }
-
-    return fstCompiler.compile();
+    return new ConvTable(mappings);
   }
 
   private static final byte[] BOM_UTF8 = {(byte) 0xef, (byte) 0xbb, (byte) 0xbf};
 
   /** Parses the encoding and flag format specified in the provided InputStream */
-  private void readConfig(BufferedInputStream stream) throws IOException, ParseException {
-    // I assume we don't support other BOMs (utf16, etc.)? We trivially could,
-    // by adding maybeConsume() with a proper bom... but I don't see hunspell repo to have
-    // any such exotic examples.
-    Charset streamCharset;
-    if (maybeConsume(stream, BOM_UTF8)) {
-      streamCharset = StandardCharsets.UTF_8;
-    } else {
-      streamCharset = DEFAULT_CHARSET;
-    }
-
-    // TODO: can these flags change throughout the file? If not then we can abort sooner. And
-    // then we wouldn't even need to create a temp file for the affix stream - a large enough
-    // leading buffer (BufferedInputStream) would be sufficient?
+  private void readConfig(InputStream stream, Charset streamCharset)
+      throws IOException, ParseException {
     LineNumberReader reader = new LineNumberReader(new InputStreamReader(stream, streamCharset));
     String line;
+    String flagLine = null;
+    boolean charsetFound = false;
+    boolean flagFound = false;
     while ((line = reader.readLine()) != null) {
       if (line.isBlank()) continue;
 
       String firstWord = line.split("\\s")[0];
       if ("SET".equals(firstWord)) {
         decoder = getDecoder(singleArgument(reader, line));
+        charsetFound = true;
       } else if ("FLAG".equals(firstWord)) {
-        flagParsingStrategy = getFlagParsingStrategy(line, decoder.charset());
+        // Preserve the flag line for parsing later since we need the decoder's charset
+        // and just in case they come out of order.
+        flagLine = line;
+        flagFound = true;
+      } else {
+        continue;
       }
+
+      if (charsetFound && flagFound) {
+        break;
+      }
+    }
+
+    if (flagFound) {
+      flagParsingStrategy = getFlagParsingStrategy(flagLine, decoder.charset());
     }
   }
 
@@ -959,15 +1033,12 @@ public class Dictionary {
     }
   }
 
-  private IndexOutput mergeDictionaries(
-      Directory tempDir,
-      String tempFileNamePrefix,
-      List<InputStream> dictionaries,
-      CharsetDecoder decoder)
+  private int mergeDictionaries(
+      List<InputStream> dictionaries, CharsetDecoder decoder, IndexOutput output)
       throws IOException {
     StringBuilder sb = new StringBuilder();
-    IndexOutput unsorted = tempDir.createTempOutput(tempFileNamePrefix, "dat", IOContext.DEFAULT);
-    try (ByteSequencesWriter writer = new ByteSequencesWriter(unsorted)) {
+    int wordCount = 0;
+    try (ByteSequencesWriter writer = new ByteSequencesWriter(output)) {
       for (InputStream dictionary : dictionaries) {
         BufferedReader lines = new BufferedReader(new InputStreamReader(dictionary, decoder));
         lines.readLine(); // first line is number of entries (approximately, sometimes)
@@ -979,24 +1050,27 @@ public class Dictionary {
             continue;
           }
           line = unescapeEntry(line);
-          // if we havent seen any stem exceptions, try to parse one
-          if (!hasStemExceptions) {
+          // if we haven't seen any custom morphological data, try to parse one
+          if (!hasCustomMorphData) {
             int morphStart = line.indexOf(MORPH_SEPARATOR);
             if (morphStart >= 0 && morphStart < line.length()) {
-              hasStemExceptions = hasStemException(line.substring(morphStart + 1));
+              String data = line.substring(morphStart + 1);
+              hasCustomMorphData =
+                  splitMorphData(data).stream().anyMatch(s -> !s.startsWith("ph:"));
             }
           }
 
-          writeNormalizedWordEntry(sb, writer, line);
+          wordCount += writeNormalizedWordEntry(sb, writer, line);
         }
       }
-      CodecUtil.writeFooter(unsorted);
+      CodecUtil.writeFooter(output);
     }
-    return unsorted;
+    return wordCount;
   }
 
-  private void writeNormalizedWordEntry(
-      StringBuilder reuse, ByteSequencesWriter writer, String line) throws IOException {
+  /** @return the number of word entries written */
+  private int writeNormalizedWordEntry(StringBuilder reuse, ByteSequencesWriter writer, String line)
+      throws IOException {
     int flagSep = line.indexOf(FLAG_SEPARATOR);
     int morphSep = line.indexOf(MORPH_SEPARATOR);
     assert morphSep > 0;
@@ -1004,8 +1078,9 @@ public class Dictionary {
     int sep = flagSep < 0 ? morphSep : flagSep;
 
     CharSequence toWrite;
-    if (needsInputCleaning) {
-      cleanInput(line, sep, reuse);
+    String beforeSep = line.substring(0, sep);
+    if (needsInputCleaning(beforeSep)) {
+      cleanInput(beforeSep, reuse);
       reuse.append(line, sep, line.length());
       toWrite = reuse;
     } else {
@@ -1019,7 +1094,9 @@ public class Dictionary {
     WordCase wordCase = WordCase.caseOf(written, sep);
     if (wordCase == WordCase.MIXED || wordCase == WordCase.UPPER && flagSep > 0) {
       addHiddenCapitalizedWord(reuse, writer, written.substring(0, sep), written.substring(sep));
+      return 2;
     }
+    return 1;
   }
 
   private void addHiddenCapitalizedWord(
@@ -1111,6 +1188,8 @@ public class Dictionary {
       Directory tempDir, String sorted, FlagEnumerator flags) throws IOException {
     boolean success = false;
 
+    Map<String, Integer> morphIndices = new HashMap<>();
+
     EntryGrouper grouper = new EntryGrouper(flags);
 
     try (ByteSequencesReader reader =
@@ -1150,20 +1229,18 @@ public class Dictionary {
           }
           entry = line.substring(0, flagSep);
         }
-        // we possibly have morphological data
-        int stemExceptionID = 0;
+
+        int morphDataID = 0;
         if (end + 1 < line.length()) {
-          String morphData = line.substring(end + 1);
-          for (String datum : splitMorphData(morphData)) {
-            if (datum.startsWith("st:")) {
-              stemExceptionID = addStemException(datum.substring(3));
-            } else if (datum.startsWith("ph:") && datum.length() > 3) {
-              addPhoneticRepEntries(entry, datum.substring(3));
-            }
+          List<String> morphFields = readMorphFields(entry, line.substring(end + 1));
+          if (!morphFields.isEmpty()) {
+            morphFields.sort(Comparator.naturalOrder());
+            morphDataID = addMorphFields(morphIndices, String.join(" ", morphFields));
           }
         }
 
-        grouper.add(entry, wordForm, stemExceptionID);
+        wordHashes.set(Math.abs(entry.hashCode()) % wordHashes.length());
+        grouper.add(entry, wordForm, morphDataID);
       }
 
       // finalize last entry
@@ -1179,10 +1256,29 @@ public class Dictionary {
     }
   }
 
-  private int addStemException(String stemException) {
-    stemExceptions = ArrayUtil.grow(stemExceptions, stemExceptionCount + 1);
-    stemExceptions[stemExceptionCount++] = stemException;
-    return stemExceptionCount; // we use '0' to indicate no exception for the form
+  private List<String> readMorphFields(String word, String unparsed) {
+    List<String> morphFields = null;
+    for (String datum : splitMorphData(unparsed)) {
+      if (datum.startsWith("ph:")) {
+        addPhoneticRepEntries(word, datum.substring(3));
+      } else {
+        if (morphFields == null) morphFields = new ArrayList<>(1);
+        morphFields.add(datum);
+      }
+    }
+    return morphFields == null ? Collections.emptyList() : morphFields;
+  }
+
+  private int addMorphFields(Map<String, Integer> indices, String morphFields) {
+    Integer alreadyCached = indices.get(morphFields);
+    if (alreadyCached != null) {
+      return alreadyCached;
+    }
+
+    int index = morphData.size();
+    indices.put(morphFields, index);
+    morphData.add(morphFields);
+    return index;
   }
 
   private void addPhoneticRepEntries(String word, String ph) {
@@ -1233,7 +1329,7 @@ public class Dictionary {
     final FSTCompiler<IntsRef> words =
         new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, IntSequenceOutputs.getSingleton());
     private final List<char[]> group = new ArrayList<>();
-    private final List<Integer> stemExceptionIDs = new ArrayList<>();
+    private final List<Integer> morphDataIDs = new ArrayList<>();
     private final IntsRefBuilder scratchInts = new IntsRefBuilder();
     private String currentEntry = null;
     private final FlagEnumerator flagEnumerator;
@@ -1242,7 +1338,7 @@ public class Dictionary {
       this.flagEnumerator = flagEnumerator;
     }
 
-    void add(String entry, char[] flags, int stemExceptionID) throws IOException {
+    void add(String entry, char[] flags, int morphDataID) throws IOException {
       if (!entry.equals(currentEntry)) {
         if (currentEntry != null) {
           if (entry.compareTo(currentEntry) < 0) {
@@ -1254,8 +1350,8 @@ public class Dictionary {
       }
 
       group.add(flags);
-      if (hasStemExceptions) {
-        stemExceptionIDs.add(stemExceptionID);
+      if (hasCustomMorphData) {
+        morphDataIDs.add(morphDataID);
       }
     }
 
@@ -1277,8 +1373,8 @@ public class Dictionary {
         }
 
         currentOrds.append(flagEnumerator.add(flags));
-        if (hasStemExceptions) {
-          currentOrds.append(stemExceptionIDs.get(i));
+        if (hasCustomMorphData) {
+          currentOrds.append(morphDataIDs.get(i));
         }
       }
 
@@ -1286,7 +1382,7 @@ public class Dictionary {
       words.add(scratchInts.get(), currentOrds.get());
 
       group.clear();
-      stemExceptionIDs.clear();
+      morphDataIDs.clear();
     }
   }
 
@@ -1320,10 +1416,6 @@ public class Dictionary {
     }
   }
 
-  String getStemException(int id) {
-    return stemExceptions[id - 1];
-  }
-
   private void parseMorphAlias(String line) {
     if (morphAliases == null) {
       // first line should be the aliases count
@@ -1333,15 +1425,6 @@ public class Dictionary {
       String arg = line.substring(2); // leave the space
       morphAliases[morphAliasCount++] = arg;
     }
-  }
-
-  private boolean hasStemException(String morphData) {
-    for (String datum : splitMorphData(morphData)) {
-      if (datum.startsWith("st:")) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private List<String> splitMorphData(String morphData) {
@@ -1356,18 +1439,14 @@ public class Dictionary {
     if (morphData.isBlank()) {
       return Collections.emptyList();
     }
-    return Arrays.stream(MORPH_KEY_PATTERN.split(morphData))
-        .map(String::trim)
-        .filter(s -> !s.isBlank())
+    return Arrays.stream(morphData.split("\\s+"))
+        .filter(
+            s ->
+                s.length() > 3
+                    && Character.isLetter(s.charAt(0))
+                    && Character.isLetter(s.charAt(1))
+                    && s.charAt(2) == ':')
         .collect(Collectors.toList());
-  }
-
-  boolean isForbiddenWord(char[] word, int length) {
-    if (forbiddenword != FLAG_UNSET) {
-      IntsRef forms = lookupWord(word, 0, length);
-      return forms != null && hasFlag(forms, forbiddenword);
-    }
-    return false;
   }
 
   boolean hasFlag(IntsRef forms, char flag) {
@@ -1489,14 +1568,28 @@ public class Dictionary {
     return flagLookup.hasFlag(entryId, flag);
   }
 
-  CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
-    return cleanInput(input, input.length(), reuse);
+  boolean mayNeedInputCleaning() {
+    return ignoreCase || ignore != null || iconv != null;
   }
 
-  private CharSequence cleanInput(CharSequence input, int prefixLength, StringBuilder reuse) {
+  boolean needsInputCleaning(CharSequence input) {
+    if (mayNeedInputCleaning()) {
+      for (int i = 0; i < input.length(); i++) {
+        char ch = input.charAt(i);
+        if (ignore != null && Arrays.binarySearch(ignore, ch) >= 0
+            || ignoreCase && caseFold(ch) != ch
+            || iconv != null && iconv.mightReplaceChar(ch)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  CharSequence cleanInput(CharSequence input, StringBuilder reuse) {
     reuse.setLength(0);
 
-    for (int i = 0; i < prefixLength; i++) {
+    for (int i = 0; i < input.length(); i++) {
       char ch = input.charAt(i);
 
       if (ignore != null && Arrays.binarySearch(ignore, ch) >= 0) {
@@ -1512,11 +1605,7 @@ public class Dictionary {
     }
 
     if (iconv != null) {
-      try {
-        applyMappings(iconv, reuse);
-      } catch (IOException bogus) {
-        throw new RuntimeException(bogus);
-      }
+      iconv.applyMappings(reuse);
       if (ignoreCase) {
         for (int i = 0; i < reuse.length(); i++) {
           reuse.setCharAt(i, caseFold(reuse.charAt(i)));
@@ -1525,6 +1614,24 @@ public class Dictionary {
     }
 
     return reuse;
+  }
+
+  private static char[] toSortedCharArray(Set<Character> set) {
+    char[] chars = new char[set.size()];
+    int i = 0;
+    for (Character c : set) {
+      chars[i++] = c;
+    }
+    Arrays.sort(chars);
+    return chars;
+  }
+
+  boolean isSecondStagePrefix(char flag) {
+    return Arrays.binarySearch(secondStagePrefixFlags, flag) >= 0;
+  }
+
+  boolean isSecondStageSuffix(char flag) {
+    return Arrays.binarySearch(secondStageSuffixFlags, flag) >= 0;
   }
 
   /** folds single character (according to LANG if present) */
@@ -1539,44 +1646,6 @@ public class Dictionary {
       }
     } else {
       return Character.toLowerCase(c);
-    }
-  }
-
-  // TODO: this could be more efficient!
-  static void applyMappings(FST<CharsRef> fst, StringBuilder sb) throws IOException {
-    final FST.BytesReader bytesReader = fst.getBytesReader();
-    final FST.Arc<CharsRef> firstArc = fst.getFirstArc(new FST.Arc<>());
-    final CharsRef NO_OUTPUT = fst.outputs.getNoOutput();
-
-    // temporary stuff
-    final FST.Arc<CharsRef> arc = new FST.Arc<>();
-    int longestMatch;
-    CharsRef longestOutput;
-
-    for (int i = 0; i < sb.length(); i++) {
-      arc.copyFrom(firstArc);
-      CharsRef output = NO_OUTPUT;
-      longestMatch = -1;
-      longestOutput = null;
-
-      for (int j = i; j < sb.length(); j++) {
-        char ch = sb.charAt(j);
-        if (fst.findTargetArc(ch, arc, arc, bytesReader) == null) {
-          break;
-        } else {
-          output = fst.outputs.add(output, arc.output());
-        }
-        if (arc.isFinal()) {
-          longestOutput = fst.outputs.add(output, arc.nextFinalOutput());
-          longestMatch = j;
-        }
-      }
-
-      if (longestMatch >= 0) {
-        sb.delete(i, longestMatch + 1);
-        sb.insert(i, longestOutput);
-        i += (longestOutput.length - 1);
-      }
     }
   }
 

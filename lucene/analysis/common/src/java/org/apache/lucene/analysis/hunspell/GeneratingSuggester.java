@@ -16,15 +16,24 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_APPEND;
+import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_FLAG;
+import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_STRIP_ORD;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.IntsRefFSTEnum;
 
 /**
@@ -33,44 +42,68 @@ import org.apache.lucene.util.fst.IntsRefFSTEnum;
  */
 class GeneratingSuggester {
   private static final int MAX_ROOTS = 100;
-  private static final int MAX_GUESSES = 100;
+  private static final int MAX_WORDS = 100;
+  private static final int MAX_GUESSES = 200;
   private final Dictionary dictionary;
+  private final Hunspell speller;
 
-  GeneratingSuggester(Dictionary dictionary) {
-    this.dictionary = dictionary;
+  GeneratingSuggester(Hunspell speller) {
+    this.dictionary = speller.dictionary;
+    this.speller = speller;
   }
 
   List<String> suggest(String word, WordCase originalCase, Set<String> prevSuggestions) {
-    List<WeightedWord> roots = findSimilarDictionaryEntries(word, originalCase);
-    List<WeightedWord> expanded = expandRoots(word, roots);
-    TreeSet<WeightedWord> bySimilarity = rankBySimilarity(word, expanded);
+    List<Weighted<Root<String>>> roots = findSimilarDictionaryEntries(word, originalCase);
+    List<Weighted<String>> expanded = expandRoots(word, roots);
+    TreeSet<Weighted<String>> bySimilarity = rankBySimilarity(word, expanded);
     return getMostRelevantSuggestions(bySimilarity, prevSuggestions);
   }
 
-  private List<WeightedWord> findSimilarDictionaryEntries(String word, WordCase originalCase) {
-    try {
-      IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(dictionary.words);
-      TreeSet<WeightedWord> roots = new TreeSet<>();
+  private List<Weighted<Root<String>>> findSimilarDictionaryEntries(
+      String word, WordCase originalCase) {
+    Comparator<Weighted<Root<String>>> natural = Comparator.naturalOrder();
+    PriorityQueue<Weighted<Root<String>>> roots = new PriorityQueue<>(natural.reversed());
+    processFST(
+        dictionary.words,
+        (key, forms) -> {
+          if (Math.abs(key.length - word.length()) > 4) return;
 
+          String root = toString(key);
+          List<Root<String>> entries = filterSuitableEntries(root, forms);
+          if (entries.isEmpty()) return;
+
+          if (originalCase == WordCase.LOWER
+              && WordCase.caseOf(root) == WordCase.TITLE
+              && !dictionary.hasLanguage("de")) {
+            return;
+          }
+
+          String lower = dictionary.toLowerCase(root);
+          int sc =
+              ngram(3, word, lower, EnumSet.of(NGramOptions.LONGER_WORSE))
+                  + commonPrefix(word, root);
+
+          if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
+            return;
+          }
+
+          entries.forEach(e -> roots.add(new Weighted<>(e, sc)));
+          while (roots.size() > MAX_ROOTS) {
+            roots.poll();
+          }
+        });
+    return roots.stream().sorted().collect(Collectors.toList());
+  }
+
+  private void processFST(FST<IntsRef> fst, BiConsumer<IntsRef, IntsRef> keyValueConsumer) {
+    if (fst == null) return;
+    try {
+      IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(fst);
       IntsRefFSTEnum.InputOutput<IntsRef> mapping;
       while ((mapping = fstEnum.next()) != null) {
-        IntsRef key = mapping.input;
-        if (Math.abs(key.length - word.length()) > 4 || !isSuitableRoot(mapping.output)) continue;
-
-        String root = toString(key);
-        if (originalCase == WordCase.LOWER
-            && WordCase.caseOf(root) == WordCase.TITLE
-            && !dictionary.hasLanguage("de")) {
-          continue;
-        }
-
-        String lower = dictionary.toLowerCase(root);
-        int sc =
-            ngram(3, word, lower, EnumSet.of(NGramOptions.LONGER_WORSE)) + commonPrefix(word, root);
-
-        roots.add(new WeightedWord(root, sc));
+        speller.checkCanceled.run();
+        keyValueConsumer.accept(mapping.input, mapping.output);
       }
-      return roots.stream().limit(MAX_ROOTS).collect(Collectors.toList());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -84,33 +117,36 @@ class GeneratingSuggester {
     return new String(chars);
   }
 
-  private boolean isSuitableRoot(IntsRef forms) {
+  private List<Root<String>> filterSuitableEntries(String word, IntsRef forms) {
+    List<Root<String>> result = new ArrayList<>();
     for (int i = 0; i < forms.length; i += dictionary.formStep()) {
       int entryId = forms.ints[forms.offset + i];
-      if (dictionary.hasFlag(entryId, dictionary.needaffix)
-          || dictionary.hasFlag(entryId, dictionary.forbiddenword)
+      if (dictionary.hasFlag(entryId, dictionary.forbiddenword)
+          || dictionary.hasFlag(entryId, dictionary.noSuggest)
           || dictionary.hasFlag(entryId, Dictionary.HIDDEN_FLAG)
           || dictionary.hasFlag(entryId, dictionary.onlyincompound)) {
         continue;
       }
-      return true;
+      result.add(new Root<>(word, entryId));
     }
 
-    return false;
+    return result;
   }
 
-  private List<WeightedWord> expandRoots(String word, List<WeightedWord> roots) {
-    int thresh = calcThreshold(word);
+  private List<Weighted<String>> expandRoots(
+      String misspelled, List<Weighted<Root<String>>> roots) {
+    int thresh = calcThreshold(misspelled);
 
-    TreeSet<WeightedWord> expanded = new TreeSet<>();
-    for (WeightedWord weighted : roots) {
-      String guess = weighted.word;
-      String lower = dictionary.toLowerCase(guess);
-      int sc =
-          ngram(word.length(), word, lower, EnumSet.of(NGramOptions.ANY_MISMATCH))
-              + commonPrefix(word, guess);
-      if (sc > thresh) {
-        expanded.add(new WeightedWord(guess, sc));
+    TreeSet<Weighted<String>> expanded = new TreeSet<>();
+    for (Weighted<Root<String>> weighted : roots) {
+      for (String guess : expandRoot(weighted.word, misspelled)) {
+        String lower = dictionary.toLowerCase(guess);
+        int sc =
+            ngram(misspelled.length(), misspelled, lower, EnumSet.of(NGramOptions.ANY_MISMATCH))
+                + commonPrefix(misspelled, guess);
+        if (sc > thresh) {
+          expanded.add(new Weighted<>(guess, sc));
+        }
       }
     }
     return expanded.stream().limit(MAX_GUESSES).collect(Collectors.toList());
@@ -132,14 +168,123 @@ class GeneratingSuggester {
     return thresh / 3 - 1;
   }
 
-  private TreeSet<WeightedWord> rankBySimilarity(String word, List<WeightedWord> expanded) {
+  private List<String> expandRoot(Root<String> root, String misspelled) {
+    List<String> crossProducts = new ArrayList<>();
+    Set<String> result = new LinkedHashSet<>();
+
+    if (!dictionary.hasFlag(root.entryId, dictionary.needaffix)) {
+      result.add(root.word);
+    }
+
+    // suffixes
+    processAffixes(
+        false,
+        misspelled,
+        (suffixLength, suffixId) -> {
+          if (!hasCompatibleFlags(root, suffixId) || !checkAffixCondition(suffixId, root.word)) {
+            return;
+          }
+
+          String suffix = misspelled.substring(misspelled.length() - suffixLength);
+          String withSuffix =
+              root.word.substring(0, root.word.length() - affixStripLength(suffixId)) + suffix;
+          result.add(withSuffix);
+          if (dictionary.isCrossProduct(suffixId)) {
+            crossProducts.add(withSuffix);
+          }
+        });
+
+    // cross-product prefixes
+    processAffixes(
+        true,
+        misspelled,
+        (prefixLength, prefixId) -> {
+          if (!dictionary.hasFlag(root.entryId, dictionary.affixData(prefixId, AFFIX_FLAG))
+              || !dictionary.isCrossProduct(prefixId)) {
+            return;
+          }
+
+          String prefix = misspelled.substring(0, prefixLength);
+          for (String suffixed : crossProducts) {
+            if (checkAffixCondition(prefixId, suffixed)) {
+              result.add(prefix + suffixed.substring(affixStripLength(prefixId)));
+            }
+          }
+        });
+
+    // pure prefixes
+    processAffixes(
+        true,
+        misspelled,
+        (prefixLength, prefixId) -> {
+          if (hasCompatibleFlags(root, prefixId) && checkAffixCondition(prefixId, root.word)) {
+            String prefix = misspelled.substring(0, prefixLength);
+            result.add(prefix + root.word.substring(affixStripLength(prefixId)));
+          }
+        });
+
+    return result.stream().limit(MAX_WORDS).collect(Collectors.toList());
+  }
+
+  private void processAffixes(boolean prefixes, String word, AffixProcessor processor) {
+    FST<IntsRef> fst = prefixes ? dictionary.prefixes : dictionary.suffixes;
+    if (fst == null) return;
+
+    FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<>());
+    FST.BytesReader reader = fst.getBytesReader();
+
+    IntsRef output = fst.outputs.getNoOutput();
+    int length = word.length();
+    int step = prefixes ? 1 : -1;
+    int limit = prefixes ? length : -1;
+    for (int i = prefixes ? 0 : length - 1; i != limit; i += step) {
+      output = Dictionary.nextArc(fst, arc, reader, output, word.charAt(i));
+      if (output == null) {
+        break;
+      }
+
+      if (arc.isFinal()) {
+        IntsRef affixIds = fst.outputs.add(output, arc.nextFinalOutput());
+        for (int j = 0; j < affixIds.length; j++) {
+          processor.processAffix(prefixes ? i + 1 : length - i, affixIds.ints[affixIds.offset + j]);
+        }
+      }
+    }
+  }
+
+  private interface AffixProcessor {
+    void processAffix(int affixLength, int affixId);
+  }
+
+  private boolean hasCompatibleFlags(Root<?> root, int affixId) {
+    if (!dictionary.hasFlag(root.entryId, dictionary.affixData(affixId, AFFIX_FLAG))) {
+      return false;
+    }
+
+    int append = dictionary.affixData(affixId, AFFIX_APPEND);
+    return !dictionary.hasFlag(append, dictionary.needaffix)
+        && !dictionary.hasFlag(append, dictionary.circumfix)
+        && !dictionary.hasFlag(append, dictionary.onlyincompound);
+  }
+
+  private boolean checkAffixCondition(int suffixId, String stem) {
+    int condition = dictionary.getAffixCondition(suffixId);
+    return condition == 0 || dictionary.patterns.get(condition).run(stem);
+  }
+
+  private int affixStripLength(int affixId) {
+    char stripOrd = dictionary.affixData(affixId, AFFIX_STRIP_ORD);
+    return dictionary.stripOffsets[stripOrd + 1] - dictionary.stripOffsets[stripOrd];
+  }
+
+  private TreeSet<Weighted<String>> rankBySimilarity(String word, List<Weighted<String>> expanded) {
     double fact = (10.0 - dictionary.maxDiff) / 5.0;
-    TreeSet<WeightedWord> bySimilarity = new TreeSet<>();
-    for (WeightedWord weighted : expanded) {
+    TreeSet<Weighted<String>> bySimilarity = new TreeSet<>();
+    for (Weighted<String> weighted : expanded) {
       String guess = weighted.word;
       String lower = dictionary.toLowerCase(guess);
       if (lower.equals(word)) {
-        bySimilarity.add(new WeightedWord(guess, weighted.score + 2000));
+        bySimilarity.add(new Weighted<>(guess, weighted.score + 2000));
         break;
       }
 
@@ -155,16 +300,16 @@ class GeneratingSuggester {
               + ngram(4, word, lower, EnumSet.of(NGramOptions.ANY_MISMATCH))
               + re
               + (re < (word.length() + lower.length()) * fact ? -1000 : 0);
-      bySimilarity.add(new WeightedWord(guess, score));
+      bySimilarity.add(new Weighted<>(guess, score));
     }
     return bySimilarity;
   }
 
   private List<String> getMostRelevantSuggestions(
-      TreeSet<WeightedWord> bySimilarity, Set<String> prevSuggestions) {
+      TreeSet<Weighted<String>> bySimilarity, Set<String> prevSuggestions) {
     List<String> result = new ArrayList<>();
     boolean hasExcellent = false;
-    for (WeightedWord weighted : bySimilarity) {
+    for (Weighted<String> weighted : bySimilarity) {
       if (weighted.score > 1000) {
         hasExcellent = true;
       } else if (hasExcellent) {
@@ -178,9 +323,10 @@ class GeneratingSuggester {
       }
 
       if (prevSuggestions.stream().noneMatch(weighted.word::contains)
-          && result.stream().noneMatch(weighted.word::contains)) {
+          && result.stream().noneMatch(weighted.word::contains)
+          && speller.checkWord(weighted.word)) {
         result.add(weighted.word);
-        if (result.size() > dictionary.maxNGramSuggestions) {
+        if (result.size() >= dictionary.maxNGramSuggestions) {
           break;
         }
       }
@@ -284,11 +430,11 @@ class GeneratingSuggester {
     ANY_MISMATCH
   }
 
-  private static class WeightedWord implements Comparable<WeightedWord> {
-    final String word;
+  private static class Weighted<T extends Comparable<T>> implements Comparable<Weighted<T>> {
+    final T word;
     final int score;
 
-    WeightedWord(String word, int score) {
+    Weighted(T word, int score) {
       this.word = word;
       this.score = score;
     }
@@ -296,8 +442,9 @@ class GeneratingSuggester {
     @Override
     public boolean equals(Object o) {
       if (this == o) return true;
-      if (!(o instanceof WeightedWord)) return false;
-      WeightedWord that = (WeightedWord) o;
+      if (!(o instanceof Weighted)) return false;
+      @SuppressWarnings("unchecked")
+      Weighted<T> that = (Weighted<T>) o;
       return score == that.score && word.equals(that.word);
     }
 
@@ -312,7 +459,7 @@ class GeneratingSuggester {
     }
 
     @Override
-    public int compareTo(WeightedWord o) {
+    public int compareTo(Weighted<T> o) {
       int cmp = Integer.compare(score, o.score);
       return cmp != 0 ? -cmp : word.compareTo(o.word);
     }

@@ -42,6 +42,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
@@ -162,6 +163,9 @@ If `TRUE`, node names are not based on the address of the node, but on a generic
 `zkCredentialsProvider` & `zkACLProvider`::
 Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
 
+
+`distributedClusterStateUpdates`::
+If `TRUE`, the internal behavior of SolrCloud is changed to not use the Overseer for collections' `state.json` updates but do this directly against ZooKeeper.
 
 === The <logging> Element
 

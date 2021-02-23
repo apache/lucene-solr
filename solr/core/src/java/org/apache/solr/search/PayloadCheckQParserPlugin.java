@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.payloads.FloatEncoder;
@@ -28,6 +29,8 @@ import org.apache.lucene.analysis.payloads.IdentityEncoder;
 import org.apache.lucene.analysis.payloads.IntegerEncoder;
 import org.apache.lucene.analysis.payloads.PayloadEncoder;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.MatchOperation;
+import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery.PayloadType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
@@ -53,6 +56,13 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
         String field = localParams.get(QueryParsing.F);
         String value = localParams.get(QueryParsing.V);
         String p = localParams.get("payloads");
+        // payloads and op parameter are probably mutually exclusive. we could consider making a different query
+        // not a span payload check query, but something that just operates on payloads without the span?
+        String strOp = localParams.get("op");
+        MatchOperation op = MatchOperation.EQ;
+        if (strOp != null) {
+          op = MatchOperation.valueOf(strOp.toUpperCase(Locale.ROOT));
+        }
 
         if (field == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'f' not specified");
@@ -81,12 +91,16 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
 
         PayloadEncoder encoder = null;
         String e = PayloadUtils.getPayloadEncoder(ft);
+        PayloadType payloadType = null;
         if ("float".equals(e)) {    // TODO: centralize this string->PayloadEncoder logic (see DelimitedPayloadTokenFilterFactory)
           encoder = new FloatEncoder();
+          payloadType = PayloadType.FLOAT;
         } else if ("integer".equals(e)) {
           encoder = new IntegerEncoder();
+          payloadType = PayloadType.INT;
         } else if ("identity".equals(e)) {
           encoder = new IdentityEncoder();
+          payloadType = PayloadType.STRING;
         }
 
         if (encoder == null) {
@@ -99,8 +113,7 @@ public class PayloadCheckQParserPlugin extends QParserPlugin {
           if (rawPayload.length() > 0)
             payloads.add(encoder.encode(rawPayload.toCharArray()));
         }
-
-        return new SpanPayloadCheckQuery(query, payloads);
+        return new SpanPayloadCheckQuery(query, payloads, payloadType, op);
       }
     };
 

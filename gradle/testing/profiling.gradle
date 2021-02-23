@@ -42,16 +42,16 @@ allprojects {
           }
         }
       }
-
-      gradle.buildFinished {
-        if (!recordings.isEmpty()) {
-          ProfileResults.printReport(recordings.getFiles().collect { it.toString() },
-              propertyOrDefault(ProfileResults.MODE_KEY, ProfileResults.MODE_DEFAULT) as String,
-              Integer.parseInt(propertyOrDefault(ProfileResults.STACKSIZE_KEY, ProfileResults.STACKSIZE_DEFAULT)),
-              Integer.parseInt(propertyOrDefault(ProfileResults.COUNT_KEY, ProfileResults.COUNT_DEFAULT)),
-              Boolean.parseBoolean(propertyOrDefault(ProfileResults.LINENUMBERS_KEY, ProfileResults.LINENUMBERS_DEFAULT)))
-        }
-      }
     }
+  }
+}
+
+gradle.buildFinished {
+  if (!recordings.isEmpty()) {
+    ProfileResults.printReport(recordings.getFiles().collect { it.toString() },
+        propertyOrDefault(ProfileResults.MODE_KEY, ProfileResults.MODE_DEFAULT) as String,
+        Integer.parseInt(propertyOrDefault(ProfileResults.STACKSIZE_KEY, ProfileResults.STACKSIZE_DEFAULT)),
+        Integer.parseInt(propertyOrDefault(ProfileResults.COUNT_KEY, ProfileResults.COUNT_DEFAULT)),
+        Boolean.parseBoolean(propertyOrDefault(ProfileResults.LINENUMBERS_KEY, ProfileResults.LINENUMBERS_DEFAULT)))
   }
 }
