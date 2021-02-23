@@ -63,7 +63,7 @@ import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -1769,9 +1769,9 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     for (Map.Entry<String, Object> entry : collectionProps.entrySet()) {
       if(entry.getValue() !=null) params.set(entry.getKey(), String.valueOf(entry.getValue()));
     }
-    Integer numShards = (Integer) collectionProps.get(OverseerCollectionMessageHandler.NUM_SLICES);
+    Integer numShards = (Integer) collectionProps.get(CollectionHandlingUtils.NUM_SLICES);
     if(numShards==null){
-      String shardNames = (String) collectionProps.get(OverseerCollectionMessageHandler.SHARDS_PROP);
+      String shardNames = (String) collectionProps.get(CollectionHandlingUtils.SHARDS_PROP);
       numShards = StrUtils.splitSmart(shardNames,',').size();
     }
     Integer numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.NRT_REPLICAS);
@@ -1779,7 +1779,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       numNrtReplicas = (Integer) collectionProps.get(ZkStateReader.REPLICATION_FACTOR);
     }
     if(numNrtReplicas == null){
-      numNrtReplicas = (Integer) OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.get(ZkStateReader.REPLICATION_FACTOR);
+      numNrtReplicas = (Integer) CollectionHandlingUtils.COLLECTION_PROPS_AND_DEFAULTS.get(ZkStateReader.REPLICATION_FACTOR);
     }
     if (numNrtReplicas == null) {
       numNrtReplicas = Integer.valueOf(0);
@@ -1837,11 +1837,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
-            OverseerCollectionMessageHandler.NUM_SLICES, numShards,
+            CollectionHandlingUtils.NUM_SLICES, numShards,
             ZkStateReader.NRT_REPLICAS, numNrtReplicas,
             ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
             ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-            OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr),
+            CollectionHandlingUtils.CREATE_NODE_SET, createNodeSetStr),
         client, configSetName);
   }
 
@@ -1852,11 +1852,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     int numTlogReplicas = useTlogReplicas()?replicationFactor:0;
     return createCollection(collectionInfos, collectionName,
         Utils.makeMap(
-            OverseerCollectionMessageHandler.NUM_SLICES, numShards,
+            CollectionHandlingUtils.NUM_SLICES, numShards,
             ZkStateReader.NRT_REPLICAS, numNrtReplicas,
             ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
             ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-            OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr),
+            CollectionHandlingUtils.CREATE_NODE_SET, createNodeSetStr),
         client, configName);
   }
 
@@ -2049,7 +2049,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
         ZkStateReader.NRT_REPLICAS, numNrtReplicas,
         ZkStateReader.TLOG_REPLICAS, numTlogReplicas,
         ZkStateReader.PULL_REPLICAS, getPullReplicaCount(),
-        OverseerCollectionMessageHandler.NUM_SLICES, numShards);
+        CollectionHandlingUtils.NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, collName, props, client);
   }

@@ -34,20 +34,32 @@ import org.junit.BeforeClass;
 public class TestDirectIODirectory extends BaseDirectoryTestCase {
 
   @BeforeClass
-  public static void checkSupported() {
+  public static void checkSupported() throws IOException {
     assumeTrue(
         "This test required a JDK version that has support for ExtendedOpenOption.DIRECT",
         DirectIODirectory.ExtendedOpenOption_DIRECT != null);
+    // jdk supports it, let's check that the filesystem does too
+    Path path = createTempDir("directIOProbe");
+    try (Directory dir = open(path);
+        IndexOutput out = dir.createOutput("out", IOContext.DEFAULT)) {
+      out.writeString("test");
+    } catch (IOException e) {
+      assumeNoException("test requires filesystem that supports Direct IO", e);
+    }
   }
 
-  @Override
-  protected DirectIODirectory getDirectory(Path path) throws IOException {
+  private static DirectIODirectory open(Path path) throws IOException {
     return new DirectIODirectory(FSDirectory.open(path)) {
       @Override
       protected boolean useDirectIO(String name, IOContext context, OptionalLong fileLength) {
         return true;
       }
     };
+  }
+
+  @Override
+  protected DirectIODirectory getDirectory(Path path) throws IOException {
+    return open(path);
   }
 
   public void testIndexWriteRead() throws IOException {

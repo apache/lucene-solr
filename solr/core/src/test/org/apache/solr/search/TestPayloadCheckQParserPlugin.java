@@ -46,20 +46,41 @@ public class TestPayloadCheckQParserPlugin extends SolrTestCaseJ4 {
         "{!payload_check f=vals_dpi payloads='1 2'}A B",
         // "{!payload_check f=vals_dpi payloads='1 2.0'}A B",  // ideally this should pass, but IntegerEncoder can't handle "2.0"
         "{!payload_check f=vals_dpi payloads='1 2 3'}A B C",
-
         "{!payload_check f=vals_dpf payloads='1 2'}one two",
+        "{!payload_check f=vals_dpf payloads='1 2' op='eq'}one two",
         "{!payload_check f=vals_dpf payloads='1 2.0'}one two", // shows that FloatEncoder can handle "1"
-
-        "{!payload_check f=vals_dps payloads='NOUN VERB'}cat jumped"
+        "{!payload_check f=vals_dps payloads='NOUN VERB'}cat jumped",
+        "{!payload_check f=vals_dpf payloads='0.75' op='gt'}one",
+        "{!payload_check f=vals_dpf payloads='0.75 1.5' op='gt'}one two",
+        "{!payload_check f=vals_dpf payloads='1.25' op='lt'}one", // inequality on float lt
+        "{!payload_check f=vals_dpf payloads='1.0' op='lte'}one", // inequality on float lte
+        "{!payload_check f=vals_dpf payloads='0.75' op='gt'}one", // inequality on float gt
+        "{!payload_check f=vals_dpf payloads='1.0' op='gte'}one", // inequality on float gte
+        "{!payload_check f=vals_dpi payloads='2' op='lt'}A", // inequality on int lt
+        "{!payload_check f=vals_dpi payloads='1' op='lte'}A", // inequality on int lte
+        "{!payload_check f=vals_dpi payloads='0' op='gt'}A", // inequality on int gt
+        "{!payload_check f=vals_dpi payloads='1' op='gte'}A" // inequality on int gte
     };
 
     String[] should_not_matches = new String[] {
+        "{!payload_check f=vals_dpf payloads='0.75' op='gt'}one two", // too few payloads
+        "{!payload_check f=vals_dpf payloads='0.75 1.5 2.0' op='gt'}one two", // too many payloads
         "{!payload_check f=vals_dpi v=A payloads=2}",
         "{!payload_check f=vals_dpi payloads='1 2'}B C",
         "{!payload_check f=vals_dpi payloads='1 2 3'}A B",
         "{!payload_check f=vals_dpi payloads='1 2'}A B C",
         "{!payload_check f=vals_dpf payloads='1 2.0'}two three",
-        "{!payload_check f=vals_dps payloads='VERB NOUN'}cat jumped"
+        "{!payload_check f=vals_dps payloads='VERB NOUN'}cat jumped",
+        "{!payload_check f=vals_dpf payloads='1.25' op='gt'}one",
+        "{!payload_check f=vals_dpf payloads='0.75 3' op='gt'}one two",
+        "{!payload_check f=vals_dpf payloads='1.0' op='lt'}one", // inequality on float lt
+        "{!payload_check f=vals_dpf payloads='0.75' op='lte'}one", // inequality on float lte
+        "{!payload_check f=vals_dpf payloads='1.0' op='gt'}one", // inequality on float gt
+        "{!payload_check f=vals_dpf payloads='1.25' op='gte'}one", // inequality on float gte
+        "{!payload_check f=vals_dpi payloads='1' op='lt'}A", // inequality on int lt
+        "{!payload_check f=vals_dpi payloads='0' op='lte'}A", // inequality on int lte
+        "{!payload_check f=vals_dpi payloads='1' op='gt'}A", // inequality on int gt
+        "{!payload_check f=vals_dpi payloads='2' op='gte'}A" // inequality on int gte
     };
 
     for(String should_match : should_matches) {

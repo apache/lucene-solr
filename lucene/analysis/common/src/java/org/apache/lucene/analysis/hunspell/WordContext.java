@@ -17,13 +17,33 @@
 package org.apache.lucene.analysis.hunspell;
 
 enum WordContext {
+  /** non-compound */
   SIMPLE_WORD,
+
+  /** The first root in a word with COMPOUNDFLAG/BEGIN/MIDDLE/END compounding */
   COMPOUND_BEGIN,
+
+  /** A middle root in a word with COMPOUNDFLAG/BEGIN/MIDDLE/END compounding */
   COMPOUND_MIDDLE,
-  COMPOUND_END;
+
+  /** The final root in a word with COMPOUNDFLAG/BEGIN/MIDDLE/END compounding */
+  COMPOUND_END,
+
+  /**
+   * The final root in a word with COMPOUNDRULE compounding. The difference to {@link #COMPOUND_END}
+   * is that this context doesn't require COMPOUNDFLAG/COMPOUNDEND flags, but allows ONLYINCOMPOUND.
+   */
+  COMPOUND_RULE_END;
 
   boolean isCompound() {
     return this != SIMPLE_WORD;
+  }
+
+  boolean isAffixAllowedWithoutSpecialPermit(boolean isPrefix) {
+    if (isPrefix) {
+      return this == WordContext.COMPOUND_BEGIN;
+    }
+    return this == WordContext.COMPOUND_END || this == WordContext.COMPOUND_RULE_END;
   }
 
   char requiredFlag(Dictionary dictionary) {

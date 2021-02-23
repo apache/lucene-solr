@@ -54,7 +54,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PER
 
 /**
  * All V2 APIs for collection management
- *
  */
 public class CollectionsAPI {
 

@@ -587,15 +587,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
     followerJetty.stop();
 
-    // setup an xslt dir to force subdir file replication
-    File leaderXsltDir = new File(leader.getConfDir() + File.separator + "xslt");
-    File leaderXsl = new File(leaderXsltDir, "dummy.xsl");
-    assertTrue("could not make dir " + leaderXsltDir, leaderXsltDir.mkdirs());
-    assertTrue(leaderXsl.createNewFile());
+    // setup an sub directory /foo/ in order to force subdir file replication
+    File leaderFooDir = new File(leader.getConfDir() + File.separator + "foo");
+    File leaderBarFile = new File(leaderFooDir, "bar.txt");
+    assertTrue("could not make dir " + leaderFooDir, leaderFooDir.mkdirs());
+    assertTrue(leaderBarFile.createNewFile());
 
-    File followerXsltDir = new File(follower.getConfDir() + File.separator + "xslt");
-    File followerXsl = new File(followerXsltDir, "dummy.xsl");
-    assertFalse(followerXsltDir.exists());
+    File followerFooDir = new File(follower.getConfDir() + File.separator + "foo");
+    File followerBarFile = new File(followerFooDir, "bar.txt");
+    assertFalse(followerFooDir.exists());
 
     followerJetty = createAndStartJetty(follower);
     followerClient.close();
@@ -611,8 +611,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocument d = ((SolrDocumentList) followerQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
 
-    assertTrue(followerXsltDir.isDirectory());
-    assertTrue(followerXsl.exists());
+    assertTrue(followerFooDir.isDirectory());
+    assertTrue(followerBarFile.exists());
     
     checkForSingleIndex(leaderJetty);
     checkForSingleIndex(followerJetty, true);

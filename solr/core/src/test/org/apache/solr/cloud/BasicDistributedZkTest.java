@@ -63,7 +63,7 @@ import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.GroupResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -781,9 +781,9 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.CREATE.toString());
 
-    params.set(OverseerCollectionMessageHandler.NUM_SLICES, numShards);
+    params.set(CollectionHandlingUtils.NUM_SLICES, numShards);
     params.set(ZkStateReader.REPLICATION_FACTOR, numReplicas);
-    if (createNodeSetStr != null) params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, createNodeSetStr);
+    if (createNodeSetStr != null) params.set(CollectionHandlingUtils.CREATE_NODE_SET, createNodeSetStr);
 
     int clientIndex = clients.size() > 1 ? random().nextInt(2) : 0;
     List<Integer> list = new ArrayList<>();

@@ -344,6 +344,11 @@ public final class PagedBytes implements Accountable {
       }
     }
 
+    @Override
+    public void skipBytes(long numBytes) throws IOException {
+      skipBytesSlowly(numBytes);
+    }
+
     private void nextBlock() {
       currentBlockIndex++;
       currentBlockUpto = 0;

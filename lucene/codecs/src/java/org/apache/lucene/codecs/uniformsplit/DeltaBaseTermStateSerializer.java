@@ -17,13 +17,13 @@
 
 package org.apache.lucene.codecs.uniformsplit;
 
-import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.BLOCK_SIZE;
+import static org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.BLOCK_SIZE;
 
 import java.io.IOException;
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.IntBlockTermState;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat.IntBlockTermState;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermState;
@@ -34,7 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * {@link TermState} serializer which encodes each file pointer as a delta relative to a base file
- * pointer. It differs from {@link Lucene84PostingsWriter#encodeTerm} which encodes each file
+ * pointer. It differs from {@link Lucene90PostingsWriter#encodeTerm} which encodes each file
  * pointer as a delta relative to the previous file pointer.
  *
  * <p>It automatically sets the base file pointer to the first valid file pointer for doc start FP,
@@ -95,7 +95,7 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   /**
    * Writes a {@link BlockTermState} to the provided {@link DataOutput}.
    *
-   * <p>Simpler variant of {@link Lucene84PostingsWriter#encodeTerm(DataOutput, FieldInfo,
+   * <p>Simpler variant of {@link Lucene90PostingsWriter#encodeTerm(DataOutput, FieldInfo,
    * BlockTermState, boolean)}.
    */
   public void writeTermState(
@@ -148,7 +148,7 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   /**
    * Reads a {@link BlockTermState} from the provided {@link DataInput}.
    *
-   * <p>Simpler variant of {@link Lucene84PostingsReader#decodeTerm(DataInput, FieldInfo,
+   * <p>Simpler variant of {@link Lucene90PostingsReader#decodeTerm(DataInput, FieldInfo,
    * BlockTermState, boolean)}.
    *
    * @param reuse {@link BlockTermState} to reuse; or null to create a new one.

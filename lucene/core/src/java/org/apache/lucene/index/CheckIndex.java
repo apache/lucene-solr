@@ -3385,7 +3385,6 @@ public final class CheckIndex implements Closeable {
       case SORTED:
         status.totalSortedFields++;
         checkDVIterator(fi, maxDoc, dvReader::getSorted);
-        checkBinaryDocValues(fi.name, maxDoc, dvReader.getSorted(fi), dvReader.getSorted(fi));
         checkSortedDocValues(fi.name, maxDoc, dvReader.getSorted(fi), dvReader.getSorted(fi));
         break;
       case SORTED_NUMERIC:

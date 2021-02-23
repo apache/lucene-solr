@@ -55,4 +55,11 @@ public interface QueryElevationParams {
    * they be subject to whatever the sort criteria is?  True by default.
    */
   String USE_CONFIGURED_ELEVATED_ORDER = "useConfiguredElevatedOrder";
+
+  /**
+   * By default, the component will also elevate docs that aren't part of the search result (matching the query).
+   * If you only want to elevate the docs that are part of the search result, set this to true. False by default.
+   */
+  String ELEVATE_ONLY_DOCS_MATCHING_QUERY = "elevateOnlyDocsMatchingQuery";
+
 }

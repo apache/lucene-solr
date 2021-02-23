@@ -20,7 +20,7 @@ if (!String.prototype.includes) {
   String.prototype.includes = function(search, start) { 'use strict';
   if (search instanceof RegExp) {
     throw TypeError('first argument must not be a RegExp');
-  } 
+  }
   if (start === undefined) { start = 0; }
     return this.indexOf(search, start) !== -1;
   };
@@ -52,7 +52,8 @@ var solrAdminApp = angular.module("solrAdminApp", [
   "ngtimeago",
   "solrAdminServices",
   "localytics.directives",
-  "ab-base64"
+  "ab-base64",
+  "ui.grid"
 ]);
 
 solrAdminApp.config([
@@ -155,6 +156,10 @@ solrAdminApp.config([
       when('/:core/stream', {
         templateUrl: 'partials/stream.html',
         controller: 'StreamController'
+      }).
+      when('/:core/sqlquery', {
+        templateUrl: 'partials/sqlquery.html',
+        controller: 'SQLQueryController'
       }).
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
