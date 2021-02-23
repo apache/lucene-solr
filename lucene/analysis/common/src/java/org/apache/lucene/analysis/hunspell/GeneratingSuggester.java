@@ -22,6 +22,7 @@ import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_STRIP_ORD;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -60,7 +61,8 @@ class GeneratingSuggester {
 
   private List<Weighted<Root<String>>> findSimilarDictionaryEntries(
       String word, WordCase originalCase) {
-    PriorityQueue<Weighted<Root<String>>> roots = new PriorityQueue<>();
+    Comparator<Weighted<Root<String>>> natural = Comparator.naturalOrder();
+    PriorityQueue<Weighted<Root<String>>> roots = new PriorityQueue<>(natural.reversed());
     processFST(
         dictionary.words,
         (key, forms) -> {
