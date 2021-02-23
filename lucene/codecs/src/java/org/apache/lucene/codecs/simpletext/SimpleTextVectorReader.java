@@ -64,6 +64,13 @@ public class SimpleTextVectorReader extends VectorReader {
             readState.segmentInfo.name,
             readState.segmentSuffix,
             SimpleTextVectorFormat.META_EXTENSION);
+    String vectorFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            SimpleTextVectorFormat.VECTOR_EXTENSION);
+
+    boolean success = false;
     try (ChecksumIndexInput in =
         readState.directory.openChecksumInput(metaFileName, IOContext.DEFAULT)) {
       int fieldNumber = readInt(in, FIELD_NUMBER);
@@ -87,16 +94,7 @@ public class SimpleTextVectorReader extends VectorReader {
         fieldNumber = readInt(in, FIELD_NUMBER);
       }
       SimpleTextUtil.checkFooter(in);
-    }
 
-    String vectorFileName =
-        IndexFileNames.segmentFileName(
-            readState.segmentInfo.name,
-            readState.segmentSuffix,
-            SimpleTextVectorFormat.VECTOR_EXTENSION);
-
-    boolean success = false;
-    try {
       dataIn = readState.directory.openInput(vectorFileName, IOContext.DEFAULT);
       success = true;
     } finally {
