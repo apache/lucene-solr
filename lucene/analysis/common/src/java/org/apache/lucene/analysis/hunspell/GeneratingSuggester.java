@@ -269,7 +269,7 @@ class GeneratingSuggester {
 
   private boolean checkAffixCondition(int suffixId, String stem) {
     int condition = dictionary.getAffixCondition(suffixId);
-    return condition == 0 || dictionary.patterns.get(condition).run(stem);
+    return condition == 0 || dictionary.patterns.get(condition).acceptsStem(stem);
   }
 
   private int affixStripLength(int affixId) {

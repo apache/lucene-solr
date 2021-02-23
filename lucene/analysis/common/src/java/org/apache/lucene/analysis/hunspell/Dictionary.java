@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
+import static org.apache.lucene.analysis.hunspell.AffixKind.*;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -59,8 +61,6 @@ import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.RegExp;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.IntSequenceOutputs;
@@ -89,7 +89,7 @@ public class Dictionary {
    * All condition checks used by prefixes and suffixes. these are typically re-used across many
    * affix stripping rules. so these are deduplicated, to save RAM.
    */
-  ArrayList<CharacterRunAutomaton> patterns = new ArrayList<>();
+  ArrayList<AffixCondition> patterns = new ArrayList<>();
 
   /**
    * The entries in the .dic file, mapping to their set of flags. the fst output is the ordinal list
@@ -338,7 +338,7 @@ public class Dictionary {
     Map<String, Integer> seenPatterns = new HashMap<>();
 
     // zero condition -> 0 ord
-    seenPatterns.put(".*", 0);
+    seenPatterns.put(AffixCondition.ALWAYS_TRUE_KEY, 0);
     patterns.add(null);
 
     // zero strip -> 0 ord
@@ -362,9 +362,11 @@ public class Dictionary {
       } else if ("AM".equals(firstWord)) {
         parseMorphAlias(line);
       } else if ("PFX".equals(firstWord)) {
-        parseAffix(prefixes, prefixContFlags, line, reader, false, seenPatterns, seenStrips, flags);
+        parseAffix(
+            prefixes, prefixContFlags, line, reader, PREFIX, seenPatterns, seenStrips, flags);
       } else if ("SFX".equals(firstWord)) {
-        parseAffix(suffixes, suffixContFlags, line, reader, true, seenPatterns, seenStrips, flags);
+        parseAffix(
+            suffixes, suffixContFlags, line, reader, SUFFIX, seenPatterns, seenStrips, flags);
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -655,25 +657,6 @@ public class Dictionary {
     return fstCompiler.compile();
   }
 
-  static String escapeDash(String re) {
-    // we have to be careful, even though dash doesn't have a special meaning,
-    // some dictionaries already escape it (e.g. pt_PT), so we don't want to nullify it
-    StringBuilder escaped = new StringBuilder();
-    for (int i = 0; i < re.length(); i++) {
-      char c = re.charAt(i);
-      if (c == '-') {
-        escaped.append("\\-");
-      } else {
-        escaped.append(c);
-        if (c == '\\' && i + 1 < re.length()) {
-          escaped.append(re.charAt(i + 1));
-          i++;
-        }
-      }
-    }
-    return escaped.toString();
-  }
-
   /**
    * Parses a specific affix rule putting the result into the provided affix map
    *
@@ -688,7 +671,7 @@ public class Dictionary {
       Set<Character> secondStageFlags,
       String header,
       LineNumberReader reader,
-      boolean isSuffix,
+      AffixKind kind,
       Map<String, Integer> seenPatterns,
       Map<String, Integer> seenStrips,
       FlagEnumerator flags)
@@ -738,41 +721,18 @@ public class Dictionary {
       }
 
       String condition = ruleArgs.length > 4 ? ruleArgs[4] : ".";
-      // at least the gascon affix file has this issue
-      if (condition.startsWith("[") && condition.indexOf(']') == -1) {
-        condition = condition + "]";
-      }
-      // "dash hasn't got special meaning" (we must escape it)
-      if (condition.indexOf('-') >= 0) {
-        condition = escapeDash(condition);
-      }
-
-      final String regex;
-      if (".".equals(condition)) {
-        regex = ".*"; // Zero condition is indicated by dot
-      } else if (condition.equals(strip)) {
-        regex = ".*"; // TODO: optimize this better:
-        // if we remove 'strip' from condition, we don't have to append 'strip' to check it...!
-        // but this is complicated...
-      } else {
-        // TODO: really for suffixes we should reverse the automaton and run them backwards
-        regex = isSuffix ? ".*" + condition : condition + ".*";
-      }
+      String key = AffixCondition.uniqueKey(kind, strip, condition);
 
       // deduplicate patterns
-      Integer patternIndex = seenPatterns.get(regex);
+      Integer patternIndex = seenPatterns.get(key);
       if (patternIndex == null) {
         patternIndex = patterns.size();
         if (patternIndex > Short.MAX_VALUE) {
           throw new UnsupportedOperationException(
               "Too many patterns, please report this to dev@lucene.apache.org");
         }
-        seenPatterns.put(regex, patternIndex);
-        try {
-          patterns.add(new CharacterRunAutomaton(conditionRegexp(regex).toAutomaton()));
-        } catch (IllegalArgumentException e) {
-          throw new IllegalArgumentException("On line " + reader.getLineNumber() + ": " + line, e);
-        }
+        seenPatterns.put(key, patternIndex);
+        patterns.add(AffixCondition.compile(kind, strip, condition, line));
       }
 
       Integer stripOrd = seenStrips.get(strip);
@@ -811,23 +771,12 @@ public class Dictionary {
         affixArg = cleanInput(affixArg, sb).toString();
       }
 
-      if (isSuffix) {
+      if (kind == SUFFIX) {
         affixArg = new StringBuilder(affixArg).reverse().toString();
       }
 
       affixes.computeIfAbsent(affixArg, __ -> new ArrayList<>()).add(currentAffix);
       currentAffix++;
-    }
-  }
-
-  private static RegExp conditionRegexp(String regex) {
-    try {
-      return new RegExp(regex, RegExp.NONE);
-    } catch (IllegalArgumentException e) {
-      if (e.getMessage().contains("expected ']'")) {
-        return conditionRegexp(regex + "]");
-      }
-      throw e;
     }
   }
 
