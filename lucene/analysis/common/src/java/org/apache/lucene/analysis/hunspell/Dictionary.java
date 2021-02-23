@@ -149,7 +149,7 @@ public class Dictionary {
    * All flags used in affix continuation classes. If an outer affix's flag isn't here, there's no
    * need to do 2-level affix stripping with it.
    */
-  private char[] secondStageAffixFlags;
+  private char[] secondStagePrefixFlags, secondStageSuffixFlags;
 
   char circumfix;
   char keepcase, forceUCase;
@@ -333,7 +333,8 @@ public class Dictionary {
       throws IOException, ParseException {
     TreeMap<String, List<Integer>> prefixes = new TreeMap<>();
     TreeMap<String, List<Integer>> suffixes = new TreeMap<>();
-    Set<Character> stage2Flags = new HashSet<>();
+    Set<Character> prefixContFlags = new HashSet<>();
+    Set<Character> suffixContFlags = new HashSet<>();
     Map<String, Integer> seenPatterns = new HashMap<>();
 
     // zero condition -> 0 ord
@@ -361,9 +362,9 @@ public class Dictionary {
       } else if ("AM".equals(firstWord)) {
         parseMorphAlias(line);
       } else if ("PFX".equals(firstWord)) {
-        parseAffix(prefixes, stage2Flags, line, reader, false, seenPatterns, seenStrips, flags);
+        parseAffix(prefixes, prefixContFlags, line, reader, false, seenPatterns, seenStrips, flags);
       } else if ("SFX".equals(firstWord)) {
-        parseAffix(suffixes, stage2Flags, line, reader, true, seenPatterns, seenStrips, flags);
+        parseAffix(suffixes, suffixContFlags, line, reader, true, seenPatterns, seenStrips, flags);
       } else if (line.equals("COMPLEXPREFIXES")) {
         complexPrefixes =
             true; // 2-stage prefix+1-stage suffix instead of 2-stage suffix+1-stage prefix
@@ -478,7 +479,8 @@ public class Dictionary {
 
     this.prefixes = affixFST(prefixes);
     this.suffixes = affixFST(suffixes);
-    secondStageAffixFlags = toSortedCharArray(stage2Flags);
+    secondStagePrefixFlags = toSortedCharArray(prefixContFlags);
+    secondStageSuffixFlags = toSortedCharArray(suffixContFlags);
 
     int totalChars = 0;
     for (String strip : seenStrips.keySet()) {
@@ -1624,8 +1626,12 @@ public class Dictionary {
     return chars;
   }
 
-  boolean isSecondStageAffix(char flag) {
-    return Arrays.binarySearch(secondStageAffixFlags, flag) >= 0;
+  boolean isSecondStagePrefix(char flag) {
+    return Arrays.binarySearch(secondStagePrefixFlags, flag) >= 0;
+  }
+
+  boolean isSecondStageSuffix(char flag) {
+    return Arrays.binarySearch(secondStageSuffixFlags, flag) >= 0;
   }
 
   /** folds single character (according to LANG if present) */

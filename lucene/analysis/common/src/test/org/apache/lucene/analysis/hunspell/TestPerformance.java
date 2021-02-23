@@ -77,7 +77,7 @@ public class TestPerformance extends LuceneTestCase {
 
   @Test
   public void fr() throws Exception {
-    checkAnalysisPerformance("fr", 80_000);
+    checkAnalysisPerformance("fr", 100_000);
   }
 
   @Test
