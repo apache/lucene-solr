@@ -140,7 +140,6 @@ public class SliceMutator {
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
     String leaderUrl = ZkCoreNodeProps.getCoreUrl(message);
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
-    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     DocCollection coll = clusterState.getCollectionOrNull(collectionName);
 
@@ -173,13 +172,13 @@ public class SliceMutator {
     slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
     if (coll.isPerReplicaState()) {
       PerReplicaStates prs = PerReplicaStates.fetch(coll.getZNode(), zkClient, coll.getPerReplicaStates());
-      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, configName, coll, slice),
+      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice),
           PerReplicaStatesOps.flipLeader(
               slice.getReplicaNames(),
               newLeader == null ? null : newLeader.getName(),
               prs), false);
     } else {
-      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, configName, coll, slice));
+      return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
     }
   }
 
@@ -221,7 +220,6 @@ public class SliceMutator {
   public ZkWriteCommand addRoutingRule(final ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
-    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String routeKey = message.getStr("routeKey");
     String range = message.getStr("range");
@@ -258,13 +256,12 @@ public class SliceMutator {
 
     Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props,collectionName);
     return new ZkWriteCommand(collectionName,
-        CollectionMutator.updateSlice(collectionName, configName, collection, newSlice));
+        CollectionMutator.updateSlice(collectionName, collection, newSlice));
   }
 
   public ZkWriteCommand removeRoutingRule(final ClusterState clusterState, ZkNodeProps message) {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
-    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String routeKeyStr = message.getStr("routeKey");
 
@@ -284,7 +281,7 @@ public class SliceMutator {
       props.put("routingRules", routingRules);
       Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props,collectionName);
       return new ZkWriteCommand(collectionName,
-          CollectionMutator.updateSlice(collectionName, configName, collection, newSlice));
+          CollectionMutator.updateSlice(collectionName, collection, newSlice));
     }
 
     return ZkStateWriter.NO_OP;
@@ -300,7 +297,7 @@ public class SliceMutator {
     Slice newSlice = new Slice(slice.getName(), replicasCopy, slice.getProperties(), collection.getName());
     log.debug("Old Slice: {}", slice);
     log.debug("New Slice: {}", newSlice);
-    return CollectionMutator.updateSlice(collection.getName(), collection.getConfigName(), collection, newSlice);
+    return CollectionMutator.updateSlice(collection.getName(), collection, newSlice);
   }
 }
 
