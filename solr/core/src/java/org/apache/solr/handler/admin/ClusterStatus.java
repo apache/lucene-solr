@@ -139,7 +139,7 @@ public class ClusterStatus {
       if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
         collectionStatus.put("aliases", collectionVsAliases.get(name));
       }
-      String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP, clusterStateCollection.getConfigName());
+      String configName = clusterStateCollection.getConfigName();
       collectionStatus.put(ZkStateReader.CONFIGNAME_PROP, configName);
       collectionProps.add(name, collectionStatus);
     }

@@ -91,7 +91,7 @@ public abstract class ManagedResourceStorage {
       zkClient = ((ZkSolrResourceLoader)resourceLoader).getZkController().getZkClient();
       try {
         zkConfigName = ((ZkSolrResourceLoader)resourceLoader).getZkController().
-            getZkStateReader().getClusterState().getCollection(collection).getConfigName();
+                getClusterState().getCollection(collection).getConfigName();
       } catch (Exception e) {
         log.error("Failed to get config name due to", e);
         throw new SolrException(ErrorCode.SERVER_ERROR,

@@ -307,6 +307,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return replicationFactor;
   }
 
+  /**
+   * Return non-null configName.
+   */
   public String getConfigName() { return configName; }
 
   public String getZNode(){

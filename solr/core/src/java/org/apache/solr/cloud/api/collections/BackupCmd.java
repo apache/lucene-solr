@@ -82,7 +82,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     boolean incremental = message.getBool(CoreAdminParams.BACKUP_INCREMENTAL, true);
-    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP);
+    String configName = ocmh.cloudManager.getClusterStateProvider().getCollection(collectionName).getConfigName();
 
     BackupProperties backupProperties = BackupProperties.create(backupName, collectionName,
             extCollectionName, configName);
