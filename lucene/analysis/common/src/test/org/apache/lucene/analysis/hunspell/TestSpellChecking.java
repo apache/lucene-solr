@@ -201,6 +201,10 @@ public class TestSpellChecking extends LuceneTestCase {
     doTest("sug2");
   }
 
+  public void testGeneratedSuggestions() throws Exception {
+    doTest("ngram");
+  }
+
   public void testMaxNGramSugsDefaultIsNotUnlimited() throws Exception {
     doTest("maxNGramSugsDefault");
   }
