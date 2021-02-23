@@ -73,6 +73,13 @@ public class ClusterAPI {
   }
 
   @EndPoint(method = GET,
+      path = "/cluster/aliases",
+      permission = COLL_READ_PERM)
+  public void aliases(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    CollectionsHandler.CollectionOperation.LISTALIASES_OP.execute(req, rsp, getCoreContainer().getCollectionsHandler());
+  }
+
+  @EndPoint(method = GET,
       path = "/cluster/overseer",
       permission = COLL_READ_PERM)
   public void getOverseerStatus(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
