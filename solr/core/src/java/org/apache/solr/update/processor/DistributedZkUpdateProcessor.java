@@ -663,11 +663,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
   }
 
-  @Override
-  boolean noDistrib() {
-    return !forwardToLeader && nodes == null && !isSubShardLeader; // MRM TODO: what about sub shard leader?
-  }
-
   protected List<SolrCmdDistributor.Node> setupRequest(String id, SolrInputDocument doc) {
     return setupRequest(id, doc, null);
   }

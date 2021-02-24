@@ -62,6 +62,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       AddUpdateCommand add = new AddUpdateCommand(req);
       for (int i = 0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
         add.clear();
+        add.setReq(req);
         add.solrDoc = new SolrInputDocument();
         add.solrDoc.addField("id", "" + i);
         add.solrDoc.addField("foo_s", "foo-" + i);

@@ -105,6 +105,7 @@ public class AddUpdateCommand extends UpdateCommand {
      prevVersion = -1;
      overwrite = true;
      commitWithin = -1;
+     req = null;
    }
 
   public void clearAll() {

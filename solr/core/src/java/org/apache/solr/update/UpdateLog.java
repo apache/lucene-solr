@@ -2107,6 +2107,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
                 AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
                 cmd.clear();
+                cmd.setReq(req);
                 execute(cmd, executor, pendingTasks, proc, exceptionOnExecuteUpdate, req, (SolrInputDocument) entry.get(entry.size() - 1), oper, version, prevVersion);
                 break;
               }

@@ -85,7 +85,6 @@ public class SolrRequestInfo {
       threadLocal.remove();
       AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clearAll();
       AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clearAll();
-      SolrInputDocument.THREAD_LOCAL_MaskCharSolrInputDocument.get().clear();
       SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get().clear();
     }
   }

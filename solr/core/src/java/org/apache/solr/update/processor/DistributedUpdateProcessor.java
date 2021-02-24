@@ -1034,12 +1034,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   // internal helper method to setup request by processors who use this class.
   // NOTE: not called by this class!
   protected void setupRequest(UpdateCommand cmd) {
+    if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+      throw new IllegalStateException();
+    }
+
     updateCommand = cmd;
     isLeader = getNonZkLeaderAssumption(req);
-  }
-
-  boolean noDistrib() {
-    return false;
   }
 
   protected List<SolrCmdDistributor.Node> getNodes() {
