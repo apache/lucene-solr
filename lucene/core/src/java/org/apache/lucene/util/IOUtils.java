@@ -195,6 +195,7 @@ public final class IOUtils {
    */
   public static void deleteFilesIgnoringExceptions(Directory dir, Collection<String> files) {
     for(String name : files) {
+      if (name == null) continue;
       try {
         dir.deleteFile(name);
       } catch (Throwable ignored) {

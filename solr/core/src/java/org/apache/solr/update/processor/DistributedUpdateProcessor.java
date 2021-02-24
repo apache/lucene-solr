@@ -1304,8 +1304,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           if (null != eMeta) {
             metadata.addAll(eMeta);
           }
+          String cause = metadata.get("cause");
+          if (cause != null) {
+            metadata.remove("cause");
+          } else {
+            cause = "";
+          }
+          metadata.add("cause", error.tag + " " + cause);
         }
       }
+
       if (0 < metadata.size()) {
         this.setMetadata(metadata);
       }

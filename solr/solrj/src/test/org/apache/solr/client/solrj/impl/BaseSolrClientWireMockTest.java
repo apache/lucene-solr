@@ -166,6 +166,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       qtp.close();
       qtp = null;
     }
+
     if (mockSolr != null) {
       mockSolr.stop();
       mockSolr = null;

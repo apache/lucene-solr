@@ -136,6 +136,13 @@ public class ConnectionManager implements Watcher, Closeable {
     public abstract boolean isClosed();
   }
 
+  public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, int zkSessionTimeout) {
+    this.name = name;
+    this.client = client;
+    this.zkServerAddress = zkServerAddress;
+    this.zkSessionTimeout = zkSessionTimeout;
+  }
+
   public ConnectionManager(String name, SolrZkClient client, String zkServerAddress, int zkSessionTimeout, OnReconnect onConnect, BeforeReconnect beforeReconnect) {
     this.name = name;
     this.client = client;

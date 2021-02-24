@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.xpath.XPathConstants;
 
@@ -35,6 +36,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.TimeOut;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
@@ -291,8 +294,16 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   @Test
   public void testCacheHit() throws IOException {
     try (SolrCore core = h.getCore()) {
-      Gauge parentFilterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegFilter"));
-      Gauge filterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache"));
+      Gauge parentFilterCache = null;
+      Gauge filterCache = null;
+      TimeOut timeout = new TimeOut(1, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      while (!timeout.hasTimedOut()) {
+        parentFilterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegFilter"));
+        filterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache"));
+        if (parentFilterCache != null && filterCache != null) {
+          break;
+        }
+      }
 
       Map<String,Object> parentsBefore = (Map<String,Object>) parentFilterCache.getValue();
 

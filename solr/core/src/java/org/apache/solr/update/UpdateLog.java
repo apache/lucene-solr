@@ -2207,6 +2207,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     }
 
     private void waitForAllUpdatesGetExecuted(OrderedExecutor executor, LongAdder pendingTasks) {
+      if (executor == null) return;
       executor.shutdown();
       while (pendingTasks.sum() > 0) {
         executor.awaitTermination();

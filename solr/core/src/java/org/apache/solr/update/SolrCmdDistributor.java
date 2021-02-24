@@ -95,7 +95,7 @@ public class SolrCmdDistributor implements Closeable {
       solrClient.waitForOutstandingRequests();
     } else {
       //cancels.forEach(cancellable -> cancellable.cancel());
-      Error error = new Error();
+      Error error = new Error("ac");
       error.t = new AlreadyClosedException();
       AlreadyClosedUpdateCmd cmd = new AlreadyClosedUpdateCmd(null);
       allErrors.put(cmd, error);
@@ -176,7 +176,7 @@ public class SolrCmdDistributor implements Closeable {
       } else {
         uReq.deleteByQuery(cmd.query);
       }
-      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker));
+      submit(new Req(cmd, node, uReq, sync, rollupTracker, leaderTracker), "del");
     }
   }
   
@@ -202,7 +202,7 @@ public class SolrCmdDistributor implements Closeable {
       if (cmd.isInPlaceUpdate()) {
         params.set(DistributedUpdateProcessor.DISTRIB_INPLACE_PREVVERSION, String.valueOf(cmd.prevVersion));
       }
-      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker));
+      submit(new Req(cmd, node, uReq, synchronous, rollupTracker, leaderTracker), "add");
     }
     
   }
@@ -221,7 +221,7 @@ public class SolrCmdDistributor implements Closeable {
       uReq.setParams(params);
 
       addCommit(uReq, cmd);
-      submit(new Req(cmd, node, uReq, false));
+      submit(new Req(cmd, node, uReq, false), "commit");
     }
   }
 
@@ -235,7 +235,7 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private void submit(final Req req) {
+  private void submit(final Req req, String tag) {
 
     if (cancelExeption != null) {
       Throwable exp = cancelExeption;
@@ -261,7 +261,7 @@ public class SolrCmdDistributor implements Closeable {
         solrClient.request(req.uReq);
       } catch (Exception e) {
         log.error("Exception sending synchronous dist update", e);
-        Error error = new Error();
+        Error error = new Error(tag);
         error.t = e;
         error.req = req;
         if (e instanceof SolrException) {
@@ -298,7 +298,7 @@ public class SolrCmdDistributor implements Closeable {
             return;
           }
 
-          Error error = new Error();
+          Error error = new Error(tag);
           error.t = t;
           error.req = req;
           if (t instanceof SolrException) {
@@ -313,7 +313,7 @@ public class SolrCmdDistributor implements Closeable {
           if (retry) {
             log.info("Retrying distrib update on error: {}", t.getMessage());
             try {
-              submit(req);
+              submit(req, tag);
             } catch (AlreadyClosedException e) {
               
             }
@@ -325,7 +325,7 @@ public class SolrCmdDistributor implements Closeable {
       });
     } catch (Exception e) {
       log.error("Exception sending dist update", e);
-      Error error = new Error();
+      Error error = new Error(tag);
       error.t = e;
       error.req = req;
       if (e instanceof SolrException) {
@@ -333,7 +333,7 @@ public class SolrCmdDistributor implements Closeable {
       }
       if (checkRetry(error)) {
         log.info("Retrying distrib update on error: {}", e.getMessage());
-        submit(req);
+        submit(req, "root");
       } else {
         allErrors.put(req.cmd, error);
       }
@@ -422,16 +422,22 @@ public class SolrCmdDistributor implements Closeable {
   public static volatile Diagnostics.Callable testing_errorHook;  // called on error when forwarding request.  Currently data=[this, Request]
 
   public static class Error {
+    public final String tag;
     public volatile Throwable t;
     public volatile int statusCode = -1;
 
     public volatile Req req;
+
+    public Error(String tag) {
+      this.tag = tag;
+    }
     
     public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("SolrCmdDistributor$Error: statusCode=").append(statusCode);
-      sb.append("; throwable=").append(String.valueOf(t));
-      sb.append("; req=").append(String.valueOf(req));
+      sb.append("; throwable=").append(t);
+      sb.append("; req=").append(req);
+      sb.append("; tag=").append(tag);
       return sb.toString();
     }
   }

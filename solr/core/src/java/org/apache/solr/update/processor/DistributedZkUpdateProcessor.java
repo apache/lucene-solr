@@ -246,13 +246,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             });
           }
 
-          if (log.isDebugEnabled()) log.debug(
-              "processCommit - Do a local commit for leader");
-          try {
-            doLocalCommit(cmd);
-          } catch (IOException e) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "processCommit - Do a local commit for leader");
           }
+
+          worker.collect("localCommit", () -> {
+            try {
+              doLocalCommit(cmd);
+            } catch (IOException e) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, e);
+            }
+          });
         } else {
           // zk
 
@@ -347,11 +352,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       } else {
         params.set(DISTRIB_UPDATE_PARAM, (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString() : DistribPhase.TOLEADER.toString()));
       }
+
+
       params.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
 
       if (req.getParams().get(UpdateRequest.MIN_REPFACT) != null) {
         // TODO: Kept for rolling upgrades only. Should be removed in Solr 9
         params.set(UpdateRequest.MIN_REPFACT, req.getParams().get(UpdateRequest.MIN_REPFACT));
+      }
+
+      for (SolrCmdDistributor.Node node : nodes) {
+        if (node.getCoreName().equals(desc.getName())) {
+          log.error("IllegalState, trying to send an update to ourself");
+          throw new IllegalStateException("IllegalState, trying to send an update to ourself");
+        }
       }
 
       if (cmd.isInPlaceUpdate()) {

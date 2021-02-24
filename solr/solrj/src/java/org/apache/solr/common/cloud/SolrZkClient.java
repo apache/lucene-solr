@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
@@ -128,7 +129,8 @@ public class SolrZkClient implements Closeable {
   public SolrZkClient() {
     assert (closeTracker = new CloseTracker()) != null;
     zkClientConnectTimeout = 0;
-    connManager = null;
+    connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
+        + zkServerAddress, this, zkServerAddress, zkClientTimeout);
   }
 
   public SolrZkClient(String zkServerAddress, int zkClientTimeout) {
@@ -1154,6 +1156,9 @@ public class SolrZkClient implements Closeable {
 
   public SolrZooKeeper getSolrZooKeeper() {
     ZooKeeper keeper = connManager.getKeeper();
+    if (keeper == null) {
+      throw new AlreadyClosedException("No ZooKeeper object");
+    }
     return (SolrZooKeeper) keeper;
   }
 

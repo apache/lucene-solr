@@ -75,17 +75,9 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
   @BeforeClass
   public static void beforeDocValuesNotIndexedTest() throws Exception {
     System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP, "true");
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "true");
+
     SolrTestCaseJ4.randomizeNumericTypesProperties();
-
-    System.setProperty("managed.schema.mutable", "true");
-    configureCluster(2)
-        .addConfig("conf1", SolrTestUtil.configset("cloud-managed"))
-        .configure();
-
-    // Need enough shards that we have some shards that don't have any docs on them.
-    CollectionAdminRequest.createCollection(COLLECTION, "conf1", 4, 1)
-        .setMaxShardsPerNode(3)
-        .process(cluster.getSolrClient());
 
     fieldsToTestSingle =
         Collections.unmodifiableList(Arrays.asList(
@@ -135,6 +127,16 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
             new FieldProps("boolGSL", "boolean"),
             new FieldProps("sortableGSL", "sortabletext")
         ));
+
+    System.setProperty("managed.schema.mutable", "true");
+    configureCluster(2)
+        .addConfig("conf1", SolrTestUtil.configset("cloud-managed"))
+        .configure();
+
+    // Need enough shards that we have some shards that don't have any docs on them.
+    CollectionAdminRequest.createCollection(COLLECTION, "conf1", 4, 1)
+        .setMaxShardsPerNode(3)
+        .process(cluster.getSolrClient());
 
     List<Update> updateList = new ArrayList<>(fieldsToTestSingle.size() +
         fieldsToTestMulti.size() + fieldsToTestGroupSortFirst.size() + fieldsToTestGroupSortLast.size() +
