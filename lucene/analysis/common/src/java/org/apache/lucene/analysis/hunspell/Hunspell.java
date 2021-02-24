@@ -565,9 +565,9 @@ public class Hunspell {
           }
         };
     ModifyingSuggester modifier = new ModifyingSuggester(suggestionSpeller, suggestions);
-    modifier.suggest(word, wordCase);
+    boolean hasGoodSuggestions = modifier.suggest(word, wordCase);
 
-    if (!modifier.hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
+    if (!hasGoodSuggestions && dictionary.maxNGramSuggestions > 0) {
       suggestions.addAll(
           new GeneratingSuggester(suggestionSpeller)
               .suggest(dictionary.toLowerCase(word), wordCase, suggestions));
