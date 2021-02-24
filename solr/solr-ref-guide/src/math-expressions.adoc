@@ -63,7 +63,7 @@ image::images/math-expressions/searchiris.png[]
 
 *<<machine-learning.adoc#,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
 
-*<<graph.adoc#,Graph>>*: Bipartite graphs, in-degree centrality, graph recommenders, temporal graphs, event correlation.
+*<<graph.adoc#,Graph>>*: Bipartite graphs, in-degree centrality, graph recommenders, temporal graphs and event correlation.
 
 *<<computational-geometry.adoc#,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
 
