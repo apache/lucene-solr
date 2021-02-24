@@ -30,11 +30,12 @@ import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.IntsRefFSTEnum;
+import org.apache.lucene.util.fst.IntsRefFSTEnum.InputOutput;
 
 /**
  * A class that traverses the entire dictionary and applies affix rules to check if those yield
@@ -44,6 +45,7 @@ class GeneratingSuggester {
   private static final int MAX_ROOTS = 100;
   private static final int MAX_WORDS = 100;
   private static final int MAX_GUESSES = 200;
+  private static final int MAX_ROOT_LENGTH_DIFF = 4;
   private final Dictionary dictionary;
   private final Hunspell speller;
 
@@ -63,47 +65,57 @@ class GeneratingSuggester {
       String word, WordCase originalCase) {
     Comparator<Weighted<Root<String>>> natural = Comparator.naturalOrder();
     PriorityQueue<Weighted<Root<String>>> roots = new PriorityQueue<>(natural.reversed());
-    processFST(
-        dictionary.words,
-        (key, forms) -> {
-          if (Math.abs(key.length - word.length()) > 4) return;
 
-          String root = toString(key);
-          List<Root<String>> entries = filterSuitableEntries(root, forms);
-          if (entries.isEmpty()) return;
+    IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(dictionary.words);
+    InputOutput<IntsRef> mapping;
+    while ((mapping = nextKey(fstEnum, word.length() + 4)) != null) {
+      speller.checkCanceled.run();
 
-          if (originalCase == WordCase.LOWER
-              && WordCase.caseOf(root) == WordCase.TITLE
-              && !dictionary.hasLanguage("de")) {
-            return;
-          }
+      IntsRef key = mapping.input;
+      if (Math.abs(key.length - word.length()) > MAX_ROOT_LENGTH_DIFF) {
+        assert key.length < word.length(); // nextKey takes care of longer keys
+        continue;
+      }
 
-          String lower = dictionary.toLowerCase(root);
-          int sc =
-              ngram(3, word, lower, EnumSet.of(NGramOptions.LONGER_WORSE))
-                  + commonPrefix(word, root);
+      String root = toString(key);
+      List<Root<String>> entries = filterSuitableEntries(root, mapping.output);
+      if (entries.isEmpty()) continue;
 
-          if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
-            return;
-          }
+      if (originalCase == WordCase.LOWER
+          && WordCase.caseOf(root) == WordCase.TITLE
+          && !dictionary.hasLanguage("de")) {
+        continue;
+      }
 
-          entries.forEach(e -> roots.add(new Weighted<>(e, sc)));
-          while (roots.size() > MAX_ROOTS) {
-            roots.poll();
-          }
-        });
+      String lower = dictionary.toLowerCase(root);
+      int sc =
+          ngram(3, word, lower, EnumSet.of(NGramOptions.LONGER_WORSE)) + commonPrefix(word, root);
+
+      if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
+        continue;
+      }
+
+      entries.forEach(e -> roots.add(new Weighted<>(e, sc)));
+      while (roots.size() > MAX_ROOTS) {
+        roots.poll();
+      }
+    }
     return roots.stream().sorted().collect(Collectors.toList());
   }
 
-  private void processFST(FST<IntsRef> fst, BiConsumer<IntsRef, IntsRef> keyValueConsumer) {
-    if (fst == null) return;
+  private static InputOutput<IntsRef> nextKey(IntsRefFSTEnum<IntsRef> fstEnum, int maxLen) {
     try {
-      IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(fst);
-      IntsRefFSTEnum.InputOutput<IntsRef> mapping;
-      while ((mapping = fstEnum.next()) != null) {
-        speller.checkCanceled.run();
-        keyValueConsumer.accept(mapping.input, mapping.output);
+      InputOutput<IntsRef> next = fstEnum.next();
+      while (next != null && next.input.length > maxLen) {
+        int offset = next.input.offset;
+        int[] ints = ArrayUtil.copyOfSubArray(next.input.ints, offset, offset + maxLen);
+        if (ints[ints.length - 1] == Integer.MAX_VALUE) {
+          throw new AssertionError("Too large char");
+        }
+        ints[ints.length - 1]++;
+        next = fstEnum.seekCeil(new IntsRef(ints, 0, ints.length));
       }
+      return next;
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
