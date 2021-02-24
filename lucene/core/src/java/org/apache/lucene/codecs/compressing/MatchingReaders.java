@@ -23,19 +23,21 @@ import org.apache.lucene.index.SegmentReader;
 /**
  * Computes which segments have identical field name to number mappings, which allows stored fields
  * and term vectors in this codec to be bulk-merged.
+ *
+ * @lucene.internal
  */
-class MatchingReaders {
+public class MatchingReaders {
 
   /**
    * {@link SegmentReader}s that have identical field name/number mapping, so their stored fields
    * and term vectors may be bulk merged.
    */
-  final boolean[] matchingReaders;
+  public final boolean[] matchingReaders;
 
   /** How many {@link #matchingReaders} are set. */
   final int count;
 
-  MatchingReaders(MergeState mergeState) {
+  public MatchingReaders(MergeState mergeState) {
     // If the i'th reader is a SegmentReader and has
     // identical fieldName -> number mapping, then this
     // array will be non-null at position i:

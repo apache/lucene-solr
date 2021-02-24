@@ -17,11 +17,13 @@
 package org.apache.lucene.backward_codecs.lucene87;
 
 import org.apache.lucene.backward_codecs.lucene50.Lucene50RWCompoundFormat;
+import org.apache.lucene.backward_codecs.lucene50.Lucene50RWTermVectorsFormat;
 import org.apache.lucene.backward_codecs.lucene80.Lucene80RWNormsFormat;
 import org.apache.lucene.backward_codecs.lucene84.Lucene84RWPostingsFormat;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /** RW impersonation of {@link Lucene87Codec}. */
@@ -49,5 +51,10 @@ public class Lucene87RWCodec extends Lucene87Codec {
   @Override
   public PostingsFormat postingsFormat() {
     return postingsFormat;
+  }
+
+  @Override
+  public TermVectorsFormat termVectorsFormat() {
+    return new Lucene50RWTermVectorsFormat();
   }
 }

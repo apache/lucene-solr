@@ -102,7 +102,7 @@ public abstract class CompressingCodec extends FilterCodec {
   }
 
   private final CompressingStoredFieldsFormat storedFieldsFormat;
-  private final CompressingTermVectorsFormat termVectorsFormat;
+  private final Lucene90CompressingTermVectorsFormat termVectorsFormat;
 
   /** Creates a compressing codec with a given segment suffix */
   public CompressingCodec(
@@ -117,7 +117,7 @@ public abstract class CompressingCodec extends FilterCodec {
         new CompressingStoredFieldsFormat(
             name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
     this.termVectorsFormat =
-        new CompressingTermVectorsFormat(
+        new Lucene90CompressingTermVectorsFormat(
             name, segmentSuffix, compressionMode, chunkSize, blockShift);
   }
 

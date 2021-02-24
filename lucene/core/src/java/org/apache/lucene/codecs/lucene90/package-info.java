@@ -165,7 +165,7 @@
  *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90NormsFormat Normalization factors}. For
  *       each field in each document, a value is stored that is multiplied into the score for hits
  *       on that field.
- *   <li>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vectors}. For each
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90TermVectorsFormat Term Vectors}. For each
  *       field in each document, the term vector (sometimes called document vector) may be stored. A
  *       term vector consists of term text and term frequency. To add Term Vectors to your index see
  *       the {@link org.apache.lucene.document.Field Field} constructors
@@ -290,12 +290,12 @@
  * <td>Encodes additional scoring factors or other per-document information.</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vector Index}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90TermVectorsFormat Term Vector Index}</td>
  * <td>.tvx</td>
  * <td>Stores offset into the document data file</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vector Data}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90TermVectorsFormat Term Vector Data}</td>
  * <td>.tvd</td>
  * <td>Contains term vector data.</td>
  * </tr>

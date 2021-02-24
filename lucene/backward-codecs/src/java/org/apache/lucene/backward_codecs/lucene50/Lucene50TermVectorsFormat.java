@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.backward_codecs.lucene50;
 
+import org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingTermVectorsFormat;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.compressing.CompressingTermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.FieldsIndexWriter;
 import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
@@ -151,7 +151,7 @@ import org.apache.lucene.util.packed.PackedInts;
  *
  * @lucene.experimental
  */
-public final class Lucene50TermVectorsFormat extends CompressingTermVectorsFormat {
+public final class Lucene50TermVectorsFormat extends Lucene50CompressingTermVectorsFormat {
 
   /** Sole constructor. */
   public Lucene50TermVectorsFormat() {

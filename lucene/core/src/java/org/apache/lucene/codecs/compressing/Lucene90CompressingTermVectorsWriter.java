@@ -51,11 +51,11 @@ import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link TermVectorsWriter} for {@link CompressingTermVectorsFormat}.
+ * {@link TermVectorsWriter} for {@link Lucene90CompressingTermVectorsFormat}.
  *
  * @lucene.experimental
  */
-public final class CompressingTermVectorsWriter extends TermVectorsWriter {
+public final class Lucene90CompressingTermVectorsWriter extends TermVectorsWriter {
 
   // hard limit on the maximum number of documents per chunk
   static final int MAX_DOCUMENTS_PER_CHUNK = 128;
@@ -63,14 +63,10 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   static final String VECTORS_EXTENSION = "tvd";
   static final String VECTORS_INDEX_EXTENSION = "tvx";
   static final String VECTORS_META_EXTENSION = "tvm";
-  static final String VECTORS_INDEX_CODEC_NAME = "Lucene85TermVectorsIndex";
+  static final String VECTORS_INDEX_CODEC_NAME = "Lucene90TermVectorsIndex";
 
-  static final int VERSION_START = 1;
-  static final int VERSION_OFFHEAP_INDEX = 2;
-  /** Version where all metadata were moved to the meta file. */
-  static final int VERSION_META = 3;
-
-  static final int VERSION_CURRENT = VERSION_META;
+  static final int VERSION_START = 0;
+  static final int VERSION_CURRENT = VERSION_START;
   static final int META_VERSION_START = 0;
 
   static final int PACKED_BLOCK_SIZE = 64;
@@ -227,7 +223,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   private final BlockPackedWriter writer;
 
   /** Sole constructor. */
-  CompressingTermVectorsWriter(
+  Lucene90CompressingTermVectorsWriter(
       Directory directory,
       SegmentInfo si,
       String segmentSuffix,
@@ -792,7 +788,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
   // we try to be extra safe with this impl, but add an escape hatch to
   // have a workaround for undiscovered bugs.
   static final String BULK_MERGE_ENABLED_SYSPROP =
-      CompressingTermVectorsWriter.class.getName() + ".enableBulkMerge";
+      Lucene90CompressingTermVectorsWriter.class.getName() + ".enableBulkMerge";
   static final boolean BULK_MERGE_ENABLED;
 
   static {
@@ -818,12 +814,13 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
     MatchingReaders matching = new MatchingReaders(mergeState);
 
     for (int readerIndex = 0; readerIndex < numReaders; readerIndex++) {
-      CompressingTermVectorsReader matchingVectorsReader = null;
+      Lucene90CompressingTermVectorsReader matchingVectorsReader = null;
       final TermVectorsReader vectorsReader = mergeState.termVectorsReaders[readerIndex];
       if (matching.matchingReaders[readerIndex]) {
         // we can only bulk-copy if the matching reader is also a CompressingTermVectorsReader
-        if (vectorsReader != null && vectorsReader instanceof CompressingTermVectorsReader) {
-          matchingVectorsReader = (CompressingTermVectorsReader) vectorsReader;
+        if (vectorsReader != null
+            && vectorsReader instanceof Lucene90CompressingTermVectorsReader) {
+          matchingVectorsReader = (Lucene90CompressingTermVectorsReader) vectorsReader;
         }
       }
 
@@ -936,7 +933,7 @@ public final class CompressingTermVectorsWriter extends TermVectorsWriter {
    * some worst-case situations (e.g. frequent reopen with tiny flushes), over time the compression
    * ratio can degrade. This is a safety switch.
    */
-  boolean tooDirty(CompressingTermVectorsReader candidate) {
+  boolean tooDirty(Lucene90CompressingTermVectorsReader candidate) {
     // more than 1% dirty, or more than hard limit of 1024 dirty chunks
     return candidate.getNumDirtyChunks() > 1024
         || candidate.getNumDirtyDocs() * 100 > candidate.getNumDocs();

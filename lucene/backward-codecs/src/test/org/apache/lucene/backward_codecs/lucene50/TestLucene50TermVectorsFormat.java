@@ -14,15 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
+package org.apache.lucene.backward_codecs.lucene50;
 
+import org.apache.lucene.backward_codecs.lucene87.Lucene87RWCodec;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestLucene50TermVectorsFormat extends BaseTermVectorsFormatTestCase {
+
   @Override
   protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
+    return new Lucene87RWCodec();
   }
 }
