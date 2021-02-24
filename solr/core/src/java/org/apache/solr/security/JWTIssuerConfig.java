@@ -353,7 +353,6 @@ public class JWTIssuerConfig {
     /**
      * While the class name is HttpsJwks, it actually works with plain http formatted url as well.
      * @param url the Url to connect to for JWK details.
-     * @return
      */
     private HttpsJwks create(String url) {
       try {
