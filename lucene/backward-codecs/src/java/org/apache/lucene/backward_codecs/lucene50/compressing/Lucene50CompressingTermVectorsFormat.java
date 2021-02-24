@@ -36,11 +36,11 @@ import org.apache.lucene.store.IOContext;
  */
 public class Lucene50CompressingTermVectorsFormat extends TermVectorsFormat {
 
-  private final String formatName;
-  private final String segmentSuffix;
-  private final CompressionMode compressionMode;
-  private final int chunkSize;
-  private final int blockSize;
+  protected final String formatName;
+  protected final String segmentSuffix;
+  protected final CompressionMode compressionMode;
+  protected final int chunkSize;
+  protected final int blockSize;
 
   /**
    * Create a new {@link Lucene50CompressingTermVectorsFormat}.
@@ -94,7 +94,7 @@ public class Lucene50CompressingTermVectorsFormat extends TermVectorsFormat {
   }
 
   @Override
-  public final TermVectorsWriter vectorsWriter(
+  public TermVectorsWriter vectorsWriter(
       Directory directory, SegmentInfo segmentInfo, IOContext context) throws IOException {
     throw new UnsupportedOperationException("Old formats can't be used for writing");
   }

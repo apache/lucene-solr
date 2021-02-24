@@ -15,5 +15,4 @@
  * limitations under the License.
  */
 
-/** Lucene50 TermsVectorFormat . */
 package org.apache.lucene.backward_codecs.lucene50.compressing;
