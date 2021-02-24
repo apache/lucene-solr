@@ -651,7 +651,7 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
 
 [source,bash]
 ----
-curl -X GET http://localhost:8983/api/cluster/overseer -H 'Content-Type: application/json'
+curl -X GET http://localhost:8983/api/cluster/overseer
 ----
 ====
 --
