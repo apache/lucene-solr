@@ -17,6 +17,9 @@
 
 package org.apache.solr.security;
 
+import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
+import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -28,24 +31,24 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.logging.LogWatcher;
+import org.apache.solr.logging.LogWatcherConfig;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 
-import static org.apache.solr.SolrTestCaseJ4.TEST_PATH;
-import static org.apache.solr.security.JWTAuthPluginTest.testJwk;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-public class JWTIssuerConfigTest {
+public class JWTIssuerConfigTest extends LuceneTestCase {
   private JWTIssuerConfig testIssuer;
   private Map<String, Object> testIssuerConfigMap;
   private String testIssuerJson;
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     testIssuer = new JWTIssuerConfig("name")
         .setJwksUrl("https://issuer/path")
         .setIss("issuer")
@@ -126,6 +129,31 @@ public class JWTIssuerConfigTest {
   }
 
   @Test
+  public void jwksUrlwithHttpLogsaWarning() {
+    HashMap<String, Object> issuerConfigMap = new HashMap<>();
+    issuerConfigMap.put("name", "myName");
+    issuerConfigMap.put("iss", "myIss");
+    issuerConfigMap.put("jwksUrl", "http://host/jwk");
+
+    JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
+
+    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
+    @SuppressWarnings({"rawtypes"})
+    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    
+    assertEquals(1, issuerConfig.getHttpsJwks().size());
+    assertEquals("http://host/jwk", issuerConfig.getHttpsJwks().get(0).getLocation());
+
+      
+    SolrDocumentList history = watcher.getHistory(-1, null);
+    
+    if (history.stream().filter(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))).count() == 0) {
+      fail("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url in: " + history.toString());
+    }  
+    
+  }
+  
+  @Test
   public void wellKnownConfigFromInputstream() throws IOException {
     Path configJson = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json");
     JWTIssuerConfig.WellKnownDiscoveryConfig config = JWTIssuerConfig.WellKnownDiscoveryConfig.parse(Files.newInputStream(configJson));
@@ -144,13 +172,29 @@ public class JWTIssuerConfigTest {
     assertEquals(Arrays.asList("code", "code id_token", "code token", "code id_token token", "token", "id_token", "id_token token"), config.getResponseTypesSupported());
   }
 
-  @Test(expected = SolrException.class)
-  public void wellKnownConfigNotHttps() {
-    JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config");
+  @Test
+  public void wellKnownConfigWithHttpLogsAWarning() {
+    
+    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
+    @SuppressWarnings({"rawtypes"})
+    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    
+    watcher.reset();
+    
+    // currently we throw an exception because we can't open a connection to this fake url and can't mock it.
+    expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
+        
+    SolrDocumentList history = watcher.getHistory(-1, null);
+    
+    if (history.stream().filter(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))).count() == 0) {
+      fail("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url in: " + history.toString());
+    }   
   }
-
-  @Test(expected = SolrException.class)
+  
+  @Test
   public void wellKnownConfigNotReachable() {
-    JWTIssuerConfig.WellKnownDiscoveryConfig.parse("https://127.0.0.1:45678/.well-known/config");
+    SolrException e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("https://127.0.0.1:45678/.well-known/config"));
+    assertEquals(500, e.code());
+    assertEquals("Well-known config could not be read from url https://127.0.0.1:45678/.well-known/config", e.getMessage());
   }
 }
