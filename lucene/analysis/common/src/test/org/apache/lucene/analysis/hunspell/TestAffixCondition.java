@@ -33,6 +33,8 @@ public class TestAffixCondition extends LuceneTestCase {
   public void testUniqueKey() {
     assertNotEquals(
         AffixCondition.uniqueKey(PREFIX, "", "x"), AffixCondition.uniqueKey(SUFFIX, "", "x"));
+    assertNotEquals(
+        AffixCondition.uniqueKey(SUFFIX, "y", "x"), AffixCondition.uniqueKey(SUFFIX, "", "x"));
     assertEquals(ALWAYS_TRUE_KEY, AffixCondition.uniqueKey(PREFIX, "", "."));
     assertEquals(ALWAYS_TRUE_KEY, AffixCondition.uniqueKey(SUFFIX, "abc", "abc"));
 
@@ -51,5 +53,8 @@ public class TestAffixCondition extends LuceneTestCase {
 
   public void testNonHunspellPatternCharacters() {
     assertEquals(ALWAYS_FALSE, AffixCondition.compile(SUFFIX, "x", "(^ax)", ""));
+    assertEquals(ALWAYS_FALSE, AffixCondition.compile(SUFFIX, "x", "(^.x)", ""));
+    assertEquals(ALWAYS_FALSE, AffixCondition.compile(SUFFIX, "x", "[z](^ax)", ""));
+    assertEquals(ALWAYS_FALSE, AffixCondition.compile(SUFFIX, "x", "(^ax)[z]", ""));
   }
 }
