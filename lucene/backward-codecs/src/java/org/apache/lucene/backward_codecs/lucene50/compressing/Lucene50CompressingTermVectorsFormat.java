@@ -36,10 +36,15 @@ import org.apache.lucene.store.IOContext;
  */
 public class Lucene50CompressingTermVectorsFormat extends TermVectorsFormat {
 
+  /** format name */
   protected final String formatName;
+  /** segment suffix */
   protected final String segmentSuffix;
+  /** compression mode */
   protected final CompressionMode compressionMode;
+  /** chunk size */
   protected final int chunkSize;
+  /** block size */
   protected final int blockSize;
 
   /**

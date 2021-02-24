@@ -26,6 +26,7 @@ import org.apache.lucene.store.IOContext;
 /** RW impersonation of Lucene50CompressingTermVectorsFormat. */
 public class Lucene50RWCompressingTermVectorsFormat extends Lucene50CompressingTermVectorsFormat {
 
+  /** Sole constructor. */
   public Lucene50RWCompressingTermVectorsFormat(
       String formatName,
       String segmentSuffix,

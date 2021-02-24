@@ -15,4 +15,5 @@
  * limitations under the License.
  */
 
+/** Lucene 5.0 compressing format. */
 package org.apache.lucene.backward_codecs.lucene50.compressing;
