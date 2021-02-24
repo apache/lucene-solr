@@ -17,7 +17,7 @@
 // under the License.
 
 
-This section of the user guide covers the syntax and theory behind *graph expressions*. Examples are presented for two key graph use cases: *bipartate graph recommenders* and *event correlation* with
+This section of the user guide covers the syntax and theory behind *graph expressions*. Examples are presented for two key graph use cases: *bipartite graph recommenders* and *event correlation* with
 *temporal graph queries*.
 
 == Graphs
