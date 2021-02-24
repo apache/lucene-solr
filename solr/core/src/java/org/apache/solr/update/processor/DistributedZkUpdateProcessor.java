@@ -342,17 +342,22 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
 
     } else {
-      if (log.isDebugEnabled()) log.debug("Not a shard or sub shard leader");
+      if (log.isDebugEnabled()) {
+        log.debug("Not a shard or sub shard leader");
+      }
     }
-    if (log.isDebugEnabled()) log.debug("Using nodes {}", nodes);
+    if (log.isDebugEnabled()) {
+      log.debug("Using nodes {}", nodes);
+    }
     if (nodes != null && nodes.size() > 0) {
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
       if (forwardToLeader) {
         params.set(DISTRIB_UPDATE_PARAM,  DistribPhase.TOLEADER.toString());
+        params.set("h",  "forwardToLeaderForShard" + nodes);
       } else {
         params.set(DISTRIB_UPDATE_PARAM, (isLeader || isSubShardLeader ? DistribPhase.FROMLEADER.toString() : DistribPhase.TOLEADER.toString()));
+        params.set("h",  "toReplicasForShard" + nodes);
       }
-
 
       params.set(DISTRIB_FROM, Replica.getCoreUrl(zkController.getBaseUrl(), req.getCore().getName()));
 

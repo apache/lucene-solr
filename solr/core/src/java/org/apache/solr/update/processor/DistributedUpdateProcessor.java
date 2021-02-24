@@ -423,12 +423,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         cmd.setVersion(version);
         cmd.getSolrInputDocument().setField(CommonParams.VERSION_FIELD, version);
 
-        if (shouldCloneCmdDoc()) {
-          cloneCmd = (AddUpdateCommand) cmd.clone();
-          SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
-          cloneCmd.solrDoc = clonedDoc;
-        }
-
         bucket.updateHighest(version);
       } else {
         // The leader forwarded us this update.
@@ -511,9 +505,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     Future<?> distFuture = null;
 
-
     AddUpdateCommand finalCloneCmd;
-    if (forwardToLeader || getNodes() != null && getNodes().size() > 0) {
+    if (getNodes() != null && getNodes().size() > 0) {
+
+      if (shouldCloneCmdDoc()) {
+        cloneCmd = (AddUpdateCommand) cmd.clone();
+        SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+        cloneCmd.solrDoc = clonedDoc;
+      }
 
       if (cloneCmd != null) {
         finalCloneCmd = cloneCmd;
