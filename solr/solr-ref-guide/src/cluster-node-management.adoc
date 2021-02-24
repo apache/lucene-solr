@@ -225,31 +225,13 @@ It is possible to set cluster-wide default values for certain attributes of a co
 ====
 [.tab-label]*V1 API*
 
-[source,bash]
-----
-curl -X POST -H 'Content-type:application/json' --data-binary '
-{
-  "set-obj-property": {
-    "defaults" : {
-      "collection": {
-        "numShards": 2,
-        "nrtReplicas": 1,
-        "tlogReplicas": 1,
-        "pullReplicas": 1
-      }
-    }
-  }
-}' http://localhost:8983/api/cluster
-----
+There is no V1 equivalent of this action.
+
 ====
 
 [example.tab-pane#v2setobjproperty]
 ====
 [.tab-label]*V2 API*
-
-This and the v1 example may actually BOTH be the same?  Or both be V2?
-
-Need to clarify this, for both this and the next two examples.
 
 [source,bash]
 ----
