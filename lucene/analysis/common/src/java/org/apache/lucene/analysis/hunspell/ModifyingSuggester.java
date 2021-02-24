@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
 
 /** A class that modifies the given misspelled word in various ways to get correct suggestions */
 class ModifyingSuggester {
@@ -29,7 +28,6 @@ class ModifyingSuggester {
   private final LinkedHashSet<String> result;
   private final char[] tryChars;
   private final Hunspell speller;
-  boolean hasGoodSuggestions;
 
   ModifyingSuggester(Hunspell speller, LinkedHashSet<String> result) {
     this.speller = speller;
@@ -37,19 +35,20 @@ class ModifyingSuggester {
     this.result = result;
   }
 
-  void suggest(String word, WordCase wordCase) {
+  /** @return whether any of the added suggestions are considered "good" */
+  boolean suggest(String word, WordCase wordCase) {
     String low = wordCase != WordCase.LOWER ? speller.dictionary.toLowerCase(word) : word;
     if (wordCase == WordCase.UPPER || wordCase == WordCase.MIXED) {
       trySuggestion(low);
     }
 
-    tryVariationsOf(word);
+    boolean hasGoodSuggestions = tryVariationsOf(word);
 
     if (wordCase == WordCase.TITLE) {
-      tryVariationsOf(low);
+      hasGoodSuggestions |= tryVariationsOf(low);
     } else if (wordCase == WordCase.UPPER) {
-      tryVariationsOf(low);
-      tryVariationsOf(speller.dictionary.toTitleCase(word));
+      hasGoodSuggestions |= tryVariationsOf(low);
+      hasGoodSuggestions |= tryVariationsOf(speller.dictionary.toTitleCase(word));
     } else if (wordCase == WordCase.MIXED) {
       int dot = word.indexOf('.');
       if (dot > 0
@@ -60,20 +59,26 @@ class ModifyingSuggester {
 
       boolean capitalized = Character.isUpperCase(word.charAt(0));
       if (capitalized) {
-        tryVariationsOf(speller.dictionary.caseFold(word.charAt(0)) + word.substring(1));
+        hasGoodSuggestions |=
+            tryVariationsOf(speller.dictionary.caseFold(word.charAt(0)) + word.substring(1));
       }
 
-      tryVariationsOf(low);
+      hasGoodSuggestions |= tryVariationsOf(low);
 
       if (capitalized) {
-        tryVariationsOf(speller.dictionary.toTitleCase(low));
+        hasGoodSuggestions |= tryVariationsOf(speller.dictionary.toTitleCase(low));
       }
 
-      List<String> adjusted =
-          result.stream().map(s -> capitalizeAfterSpace(word, s)).collect(Collectors.toList());
+      List<String> adjusted = new ArrayList<>();
+      for (String candidate : result) {
+        String s = capitalizeAfterSpace(word, candidate);
+        adjusted.add(s.equals(candidate) ? adjusted.size() : 0, s);
+      }
+
       result.clear();
       result.addAll(adjusted);
     }
+    return hasGoodSuggestions;
   }
 
   // aNew -> "a New" (instead of "a new")
@@ -89,8 +94,8 @@ class ModifyingSuggester {
     return candidate;
   }
 
-  private void tryVariationsOf(String word) {
-    hasGoodSuggestions |= trySuggestion(word.toUpperCase(Locale.ROOT));
+  private boolean tryVariationsOf(String word) {
+    boolean hasGoodSuggestions = trySuggestion(word.toUpperCase(Locale.ROOT));
     hasGoodSuggestions |= tryRep(word);
 
     if (!speller.dictionary.mapTable.isEmpty()) {
@@ -120,6 +125,7 @@ class ModifyingSuggester {
     if (!hasGoodSuggestions && speller.dictionary.enableSplitSuggestions) {
       trySplitting(word);
     }
+    return hasGoodSuggestions;
   }
 
   private boolean tryRep(String word) {
