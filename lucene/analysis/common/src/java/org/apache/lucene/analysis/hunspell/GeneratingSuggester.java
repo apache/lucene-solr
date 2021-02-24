@@ -355,12 +355,20 @@ class GeneratingSuggester {
     if (l2 == 0) {
       return 0;
     }
+
+    int[] lastStarts = new int[l1];
     for (int j = 1; j <= n; j++) {
       int ns = 0;
       for (int i = 0; i <= (l1 - j); i++) {
-        if (s2.contains(s1.substring(i, i + j))) {
-          ns++;
-        } else if (opt.contains(NGramOptions.WEIGHTED)) {
+        if (lastStarts[i] >= 0) {
+          int pos = indexOfSubstring(s2, lastStarts[i], s1, i, j);
+          lastStarts[i] = pos;
+          if (pos >= 0) {
+            ns++;
+            continue;
+          }
+        }
+        if (opt.contains(NGramOptions.WEIGHTED)) {
           ns--;
           if (i == 0 || i == l1 - j) {
             ns--; // side weight
@@ -381,6 +389,19 @@ class GeneratingSuggester {
       ns = Math.abs(l2 - l1) - 2;
     }
     return score - Math.max(ns, 0);
+  }
+
+  private static int indexOfSubstring(
+      String haystack, int haystackPos, String needle, int needlePos, int len) {
+    char c = needle.charAt(needlePos);
+    int limit = haystack.length() - len;
+    for (int i = haystackPos; i <= limit; i++) {
+      if (haystack.charAt(i) == c
+          && haystack.regionMatches(i + 1, needle, needlePos + 1, len - 1)) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   private static int lcs(String s1, String s2) {

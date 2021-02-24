@@ -62,7 +62,7 @@ public class TestPerformance extends LuceneTestCase {
 
   @Test
   public void en_suggest() throws Exception {
-    checkSuggestionPerformance("en", 1_000);
+    checkSuggestionPerformance("en", 1_200);
   }
 
   @Test
