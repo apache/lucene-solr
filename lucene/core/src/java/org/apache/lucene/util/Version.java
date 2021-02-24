@@ -149,6 +149,7 @@ public final class Version {
 
   /**
    * Match settings and bugs in Lucene's 8.8.1 release.
+   *
    * @deprecated Use latest
    */
   @Deprecated public static final Version LUCENE_8_8_1 = new Version(8, 8, 1);

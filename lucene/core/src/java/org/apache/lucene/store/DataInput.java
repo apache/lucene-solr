@@ -41,8 +41,8 @@ public abstract class DataInput implements Cloneable {
 
   private static final int SKIP_BUFFER_SIZE = 1024;
 
-  /* This buffer is used to skip over bytes with the default implementation of
-   * skipBytes. The reason why we need to use an instance member instead of
+  /* This buffer is used to skip over bytes with the slow implementation of
+   * skipBytesSlowly. The reason why we need to use an instance member instead of
    * sharing a single instance across threads is that some delegating
    * implementations of DataInput might want to reuse the provided buffer in
    * order to eg. update the checksum. If we shared the same buffer across

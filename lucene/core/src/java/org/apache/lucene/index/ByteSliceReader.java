@@ -140,7 +140,19 @@ final class ByteSliceReader extends DataInput {
   }
 
   @Override
-  public void skipBytes(long numBytes) throws IOException {
-    skipBytesSlowly(numBytes);
+  public void skipBytes(long numBytes) {
+    if (numBytes < 0) {
+      throw new IllegalArgumentException("numBytes must be >= 0, got " + numBytes);
+    }
+    while (numBytes > 0) {
+      final int numLeft = limit - upto;
+      if (numLeft < numBytes) {
+        numBytes -= numLeft;
+        nextSlice();
+      } else {
+        upto += numBytes;
+        break;
+      }
+    }
   }
 }
