@@ -281,8 +281,11 @@ public class PrometheusMetricsServletTest {
         "      \"INDEX.merge.minor.running\":7,\n" +
         "      \"INDEX.merge.minor.running.docs\":8,\n" +
         "      \"INDEX.merge.minor.running.segments\":9,\n" +
+        "      \"QUERY./get.distrib.requestTimes\":{\"count\":35},\n" +
         "      \"QUERY./get.local.requestTimes\":{\"count\":10},\n" +
+        "      \"QUERY./select.distrib.requestTimes\":{\"count\":36},\n" +
         "      \"QUERY./select.local.requestTimes\":{\"count\":11},\n" +
+        "      \"UPDATE./update.distrib.requestTimes\":{\"count\":37},\n" +
         "      \"UPDATE./update.local.requestTimes\":{\"count\":12},\n" +
         "      \"UPDATE.updateHandler.autoCommits\":13,\n" +
         "      \"UPDATE.updateHandler.commits\":{\"count\":33}," +
@@ -299,8 +302,11 @@ public class PrometheusMetricsServletTest {
         "      \"INDEX.merge.minor.running\":23,\n" +
         "      \"INDEX.merge.minor.running.docs\":24,\n" +
         "      \"INDEX.merge.minor.running.segments\":25,\n" +
+        "      \"QUERY./get.distrib.requestTimes\":{\"count\":38},\n" +
         "      \"QUERY./get.local.requestTimes\":{\"count\":26},\n" +
+        "      \"QUERY./select.distrib.requestTimes\":{\"count\":39},\n" +
         "      \"QUERY./select.local.requestTimes\":{\"count\":27},\n" +
+        "      \"UPDATE./update.distrib.requestTimes\":{\"count\":40},\n" +
         "      \"UPDATE./update.local.requestTimes\":{\"count\":28},\n" +
         "      \"UPDATE.updateHandler.autoCommits\":29,\n" +
         "      \"UPDATE.updateHandler.commits\":{\"count\":34}," +
@@ -319,12 +325,21 @@ public class PrometheusMetricsServletTest {
         "# HELP merges_minor_current_docs current number of docs in minor merges across cores\n" +
         "# TYPE merges_minor_current_docs gauge\n" +
         "merges_minor_current_docs 32\n" +
+        "# HELP distributed_requests_get cumulative number of distributed gets across cores\n" +
+        "# TYPE distributed_requests_get counter\n" +
+        "distributed_requests_get 73\n" +
         "# HELP local_requests_get cumulative number of local gets across cores\n" +
         "# TYPE local_requests_get counter\n" +
         "local_requests_get 36\n" +
+        "# HELP distributed_requests_select cumulative number of distributed selects across cores\n" +
+        "# TYPE distributed_requests_select counter\n" +
+        "distributed_requests_select 75\n" +
         "# HELP local_requests_select cumulative number of local selects across cores\n" +
         "# TYPE local_requests_select counter\n" +
         "local_requests_select 38\n" +
+        "# HELP distributed_requests_update cumulative number of distributed updates across cores\n" +
+        "# TYPE distributed_requests_update counter\n" +
+        "distributed_requests_update 77\n" +
         "# HELP local_requests_update cumulative number of local updates across cores\n" +
         "# TYPE local_requests_update counter\n" +
         "local_requests_update 40\n" +
@@ -354,32 +369,44 @@ public class PrometheusMetricsServletTest {
         "    \"QTime\":25},\n" +
         "  \"metrics\":{\n" +
         "    \"solr.core.loadtest.shard1_1.replica_n8\":{\n" +
+        "      \"QUERY./get.distrib.requestTimes\":{\"count\":29},\n" +
         "      \"QUERY./get.local.requestTimes\":{\"count\":1},\n" +
+        "      \"QUERY./select.distrib.requestTimes\":{\"count\":30},\n" +
         "      \"QUERY./select.local.requestTimes\":{\"count\":2},\n" +
+        "      \"UPDATE./update.distrib.requestTimes\":{\"count\":31},\n" +
         "      \"UPDATE./update.local.requestTimes\":{\"count\":3},\n" +
         "      \"UPDATE.updateHandler.autoCommits\":4,\n" +
         "      \"UPDATE.updateHandler.cumulativeDeletesById\":{\"count\":5},\n" +
         "      \"UPDATE.updateHandler.cumulativeDeletesByQuery\":{\"count\":6},\n" +
         "      \"UPDATE.updateHandler.softAutoCommits\":7},\n" +
         "    \"solr.core.testdrive.shard1.replica_n1\":{\n" +
+        "      \"QUERY./get.distrib.requestTimes\":{\"count\":32},\n" +
         "      \"QUERY./get.local.requestTimes\":{\"count\":8},\n" +
+        "      \"QUERY./select.distrib.requestTimes\":{\"count\":33},\n" +
         "      \"QUERY./select.local.requestTimes\":{\"count\":9},\n" +
+        "      \"UPDATE./update.distrib.requestTimes\":{\"count\":34},\n" +
         "      \"UPDATE./update.local.requestTimes\":{\"count\":10},\n" +
         "      \"UPDATE.updateHandler.autoCommits\":11,\n" +
         "      \"UPDATE.updateHandler.cumulativeDeletesById\":{\"count\":12},\n" +
         "      \"UPDATE.updateHandler.cumulativeDeletesByQuery\":{\"count\":13},\n" +
         "      \"UPDATE.updateHandler.softAutoCommits\":14},\n" +
         "    \"solr.core.loadtest.shard1_0.replica_n7\":{\n" +
+        "      \"QUERY./get.distrib.requestTimes\":{\"count\":35},\n" +
         "      \"QUERY./get.local.requestTimes\":{\"count\":15},\n" +
+        "      \"QUERY./select.distrib.requestTimes\":{\"count\":36},\n" +
         "      \"QUERY./select.local.requestTimes\":{\"count\":16},\n" +
+        "      \"UPDATE./update.distrib.requestTimes\":{\"count\":37},\n" +
         "      \"UPDATE./update.local.requestTimes\":{\"count\":17},\n" +
         "      \"UPDATE.updateHandler.autoCommits\":18,\n" +
         "      \"UPDATE.updateHandler.cumulativeDeletesById\":{\"count\":19},\n" +
         "      \"UPDATE.updateHandler.cumulativeDeletesByQuery\":{\"count\":20},\n" +
         "      \"UPDATE.updateHandler.softAutoCommits\":21},\n" +
         "    \"solr.core.local.shard1.replica_n1\":{\n" +
+        "      \"QUERY./get.distrib.requestTimes\":{\"count\":38},\n" +
         "      \"QUERY./get.local.requestTimes\":{\"count\":22},\n" +
+        "      \"QUERY./select.distrib.requestTimes\":{\"count\":39},\n" +
         "      \"QUERY./select.local.requestTimes\":{\"count\":23},\n" +
+        "      \"UPDATE./update.distrib.requestTimes\":{\"count\":40},\n" +
         "      \"UPDATE./update.local.requestTimes\":{\"count\":24},\n" +
         "      \"UPDATE.updateHandler.autoCommits\":25,\n" +
         "      \"UPDATE.updateHandler.cumulativeDeletesById\":{\"count\":26},\n" +
@@ -397,12 +424,21 @@ public class PrometheusMetricsServletTest {
         "# HELP merges_minor_current_docs current number of docs in minor merges across cores\n" +
         "# TYPE merges_minor_current_docs gauge\n" +
         "merges_minor_current_docs -4\n" +
+        "# HELP distributed_requests_get cumulative number of distributed gets across cores\n" +
+        "# TYPE distributed_requests_get counter\n" +
+        "distributed_requests_get 134\n" +
         "# HELP local_requests_get cumulative number of local gets across cores\n" +
         "# TYPE local_requests_get counter\n" +
         "local_requests_get 46\n" +
+        "# HELP distributed_requests_select cumulative number of distributed selects across cores\n" +
+        "# TYPE distributed_requests_select counter\n" +
+        "distributed_requests_select 138\n" +
         "# HELP local_requests_select cumulative number of local selects across cores\n" +
         "# TYPE local_requests_select counter\n" +
         "local_requests_select 50\n" +
+        "# HELP distributed_requests_update cumulative number of distributed updates across cores\n" +
+        "# TYPE distributed_requests_update counter\n" +
+        "distributed_requests_update 142\n" +
         "# HELP local_requests_update cumulative number of local updates across cores\n" +
         "# TYPE local_requests_update counter\n" +
         "local_requests_update 54\n" +

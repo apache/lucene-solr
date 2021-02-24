@@ -325,7 +325,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
   static class CoresMetricsApiCaller extends MetricsApiCaller {
 
     CoresMetricsApiCaller() {
-      super("core", "INDEX.merge.,QUERY./get.local.requestTimes,QUERY./select.local.requestTimes,UPDATE./update.local.requestTimes,UPDATE.updateHandler.autoCommits,UPDATE.updateHandler.commits,UPDATE.updateHandler.cumulativeDeletesBy,UPDATE.updateHandler.softAutoCommits", "count");
+      super("core", "INDEX.merge.,QUERY./get.distrib.requestTimes,QUERY./get.local.requestTimes,QUERY./select.distrib.requestTimes,QUERY./select.local.requestTimes,UPDATE./update.distrib.requestTimes,UPDATE./update.local.requestTimes,UPDATE.updateHandler.autoCommits,UPDATE.updateHandler.commits,UPDATE.updateHandler.cumulativeDeletesBy,UPDATE.updateHandler.softAutoCommits", "count");
     }
 
     /*
@@ -340,8 +340,11 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       "INDEX.merge.minor.running":0,
       "INDEX.merge.minor.running.docs":0,
       "INDEX.merge.minor.running.segments":0,
+      "QUERY./get.distrib.requestTimes":{"count":0},
       "QUERY./get.local.requestTimes":{"count":0},
+      "QUERY./select.distrib.requestTimes":{"count":2},
       "QUERY./select.local.requestTimes":{"count":0},
+      "UPDATE./update.distrib.requestTimes":{"count":0},
       "UPDATE./update.local.requestTimes":{"count":0},
       "UPDATE.updateHandler.autoCommits":0,
       "UPDATE.updateHandler.commits":{"count":14877},
@@ -356,9 +359,12 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       long mergeMajorDocs = 0;
       long mergeMinor = 0;
       long mergeMinorDocs = 0;
-      long get = 0;
-      long select = 0;
-      long update = 0;
+      long distribGet = 0;
+      long localGet = 0;
+      long distribSelect = 0;
+      long localSelect = 0;
+      long distribUpdate = 0;
+      long localUpdate = 0;
       long hardAutoCommit = 0;
       long commit = 0;
       long deleteById = 0;
@@ -369,9 +375,12 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         mergeMajorDocs += getNumber(core, "INDEX.merge.major.running.docs").longValue();
         mergeMinor += getNumber(core, "INDEX.merge.minor", property).longValue();
         mergeMinorDocs += getNumber(core, "INDEX.merge.minor.running.docs").longValue();
-        get += getNumber(core, "QUERY./get.local.requestTimes", property).longValue();
-        select += getNumber(core, "QUERY./select.local.requestTimes", property).longValue();
-        update += getNumber(core, "UPDATE./update.local.requestTimes", property).longValue();
+        distribGet += getNumber(core, "QUERY./get.distrib.requestTimes", property).longValue();
+        localGet += getNumber(core, "QUERY./get.local.requestTimes", property).longValue();
+        distribSelect += getNumber(core, "QUERY./select.distrib.requestTimes", property).longValue();
+        localSelect += getNumber(core, "QUERY./select.local.requestTimes", property).longValue();
+        distribUpdate += getNumber(core, "UPDATE./update.distrib.requestTimes", property).longValue();
+        localUpdate += getNumber(core, "UPDATE./update.local.requestTimes", property).longValue();
         hardAutoCommit += getNumber(core, "UPDATE.updateHandler.autoCommits").longValue();
         commit += getNumber(core, "UPDATE.updateHandler.commits", property).longValue();
         deleteById += getNumber(core, "UPDATE.updateHandler.cumulativeDeletesById", property).longValue();
@@ -382,9 +391,12 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
       results.add(new PrometheusMetric("merges_major_current_docs", PrometheusMetricType.GAUGE, "current number of docs in major merges across cores", mergeMajorDocs));
       results.add(new PrometheusMetric("merges_minor", PrometheusMetricType.COUNTER, "cumulative number of minor merges across cores", mergeMinor));
       results.add(new PrometheusMetric("merges_minor_current_docs", PrometheusMetricType.GAUGE, "current number of docs in minor merges across cores", mergeMinorDocs));
-      results.add(new PrometheusMetric("local_requests_get", PrometheusMetricType.COUNTER, "cumulative number of local gets across cores", get));
-      results.add(new PrometheusMetric("local_requests_select", PrometheusMetricType.COUNTER, "cumulative number of local selects across cores", select));
-      results.add(new PrometheusMetric("local_requests_update", PrometheusMetricType.COUNTER, "cumulative number of local updates across cores", update));
+      results.add(new PrometheusMetric("distributed_requests_get", PrometheusMetricType.COUNTER, "cumulative number of distributed gets across cores", distribGet));
+      results.add(new PrometheusMetric("local_requests_get", PrometheusMetricType.COUNTER, "cumulative number of local gets across cores", localGet));
+      results.add(new PrometheusMetric("distributed_requests_select", PrometheusMetricType.COUNTER, "cumulative number of distributed selects across cores", distribSelect));
+      results.add(new PrometheusMetric("local_requests_select", PrometheusMetricType.COUNTER, "cumulative number of local selects across cores", localSelect));
+      results.add(new PrometheusMetric("distributed_requests_update", PrometheusMetricType.COUNTER, "cumulative number of distributed updates across cores", distribUpdate));
+      results.add(new PrometheusMetric("local_requests_update", PrometheusMetricType.COUNTER, "cumulative number of local updates across cores", localUpdate));
       results.add(new PrometheusMetric("auto_commits_hard", PrometheusMetricType.COUNTER, "cumulative number of hard auto commits across cores", hardAutoCommit));
       results.add(new PrometheusMetric("auto_commits_soft", PrometheusMetricType.COUNTER, "cumulative number of soft auto commits across cores", softAutoCommit));
       results.add(new PrometheusMetric("commits", PrometheusMetricType.COUNTER, "cumulative number of commits across cores", commit));
@@ -456,7 +468,7 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
     if (node.isNumber()) {
       return node.numberValue();
     } else {
-      LOGGER.error("node {} does not have a number at the path {}.", originalNode, Arrays.toString(names));
+      LOGGER.warn("node {} does not have a number at the path {}.", originalNode, Arrays.toString(names));
       return INVALID_NUMBER;
     }
   }
