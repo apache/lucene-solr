@@ -153,7 +153,7 @@ Add, edit or delete a cluster-wide property.
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=propertyName&val=propertyValue
+http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&val=https
 
 ----
 ====
