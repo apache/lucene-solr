@@ -358,7 +358,9 @@ public class JWTIssuerConfig {
       try {
         URL jwksUrl = new URL(url);
         if ("http".equalsIgnoreCase(jwksUrl.getProtocol())) {
-          log.warn(PARAM_JWKS_URL + " should use HTTPS protocol. Consider enabling SSL to protect user credentials and data with encryption.");
+          if (log.isWarnEnabled()) {
+            log.warn(PARAM_JWKS_URL + " should use HTTPS protocol. Consider enabling SSL to protect user credentials and data with encryption.");
+          }
         }
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
@@ -392,7 +394,9 @@ public class JWTIssuerConfig {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be one of HTTPS or HTTP or file");          
         }
         if ("http".equalsIgnoreCase(url.getProtocol())) {
-          log.warn("Well-known config URL is using HTTP protocol. Consider enabling SSL to protect user credentials and data with encryption.");
+          if (log.isWarnEnabled()) {
+            log.warn("Well-known config URL is using HTTP protocol. Consider enabling SSL to protect user credentials and data with encryption.");
+          }
         }
         return parse(url.openStream());
       } catch (MalformedURLException e) {
