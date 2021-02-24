@@ -1,5 +1,5 @@
 = Streaming Expressions and Math Expressions
-:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, probability-distributions, statistics, regression, curve-fitting, time-series, numerical-analysis, dsp, simulations, machine-learning, computational-geometry, logs
+:page-children: visualization, math-start, loading, search-sample, transform, scalar-math, vector-math, variables, matrix-math, term-vectors, probability-distributions, statistics, regression, curve-fitting, time-series, numerical-analysis, dsp, simulations, machine-learning, graph, computational-geometry, logs
 :page-show-toc: false
 
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -62,6 +62,8 @@ image::images/math-expressions/searchiris.png[]
 *<<simulations.adoc#,Simulations>>*: Monte Carlo simulations and random walks
 
 *<<machine-learning.adoc#,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
+
+*<<graph.adoc#,Graph>>*: Bipartite graphs, in-degree centrality, graph recommenders, temporal graphs, event correlation
 
 *<<computational-geometry.adoc#,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
 
