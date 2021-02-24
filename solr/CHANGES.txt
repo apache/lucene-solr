@@ -35,6 +35,9 @@ Improvements
 * SOLR-15038: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters to query elevation.
   (Dennis Berger, Tobias Kässmann via Bruno Roustant)
 
+* SOLR-15191: Enhance hash method of JSON faceting to supports enum field types and perhaps some numeric aware
+  field types to. (David Smiley, Thomas Wöckinger)
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
@@ -52,6 +55,7 @@ Bug Fixes
   cache and not know hot to deal with them when writing the updated doc to the update log.
   (David Smiley)
 
+* SOLR-15191: Fix Faceting on EnumFieldType if allBuckets, numBuckets or missing is set. (David Smiley, Thomas Wöckinger)
 
 Other Changes
 ---------------------
