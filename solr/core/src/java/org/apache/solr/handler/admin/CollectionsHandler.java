@@ -215,8 +215,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       CollectionOperation operation = CollectionOperation.get(action);
       if (log.isDebugEnabled()) {
-        log.debug("Invoked Collection Action :{} with params {} and sendToOCPQueue={}"
-            , action.toLower(), req.getParamString(), operation.sendToOCPQueue);
+        log.debug("Invoked Collection Action: {} with params {}", action.toLower(), req.getParamString());
       }
       MDCLoggingContext.setCollection(req.getParams().get(COLLECTION));
       invokeAction(req, rsp, cores, action, operation);
@@ -259,38 +258,22 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
     props.put(QUEUE_OPERATION, operation.action.toLower());
 
-    if (operation.sendToOCPQueue) {
-      ZkNodeProps zkProps = new ZkNodeProps(props);
-      SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
-      rsp.getValues().addAll(overseerResponse.getResponse());
-      Exception exp = overseerResponse.getException();
-      if (exp != null) {
-        rsp.setException(exp);
-      }
-
-      // Even if Overseer does wait for the collection to be created, it sees a different cluster state than this node,
-      // so this wait is required to make sure the local node Zookeeper watches fired and now see the collection.
-      if (action.equals(CollectionAction.CREATE) && asyncId == null) {
-        if (rsp.getException() == null) {
-          waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
-        }
-      }
-
-    } else {
-      if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
-        DistributedClusterStateUpdater.MutatingCommand command = DistributedClusterStateUpdater.MutatingCommand.getCommandFor(operation.action);
-        ZkNodeProps message = new ZkNodeProps(props);
-        // We do the state change synchronously but do not wait for it to be visible in this node's cluster state updated via ZK watches
-        distributedClusterStateUpdater.doSingleStateUpdate(command, message,
-            coreContainer.getZkController().getSolrCloudManager(), coreContainer.getZkController().getZkStateReader());
-      } else {
-        // submits and doesn't wait for anything (no response)
-        coreContainer.getZkController().getOverseer().offerStateUpdate(Utils.toJSON(props));
-      }
+    ZkNodeProps zkProps = new ZkNodeProps(props);
+    SolrResponse overseerResponse = sendToOCPQueue(zkProps, operation.timeOut);
+    rsp.getValues().addAll(overseerResponse.getResponse());
+    Exception exp = overseerResponse.getException();
+    if (exp != null) {
+      rsp.setException(exp);
     }
 
+    // Even if Overseer does wait for the collection to be created, it sees a different cluster state than this node,
+    // so this wait is required to make sure the local node Zookeeper watches fired and now see the collection.
+    if (action.equals(CollectionAction.CREATE) && asyncId == null) {
+      if (rsp.getException() == null) {
+        waitForActiveCollection(zkProps.getStr(NAME), cores, overseerResponse);
+      }
+    }
   }
-
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
@@ -699,7 +682,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
       return null;
     }),
-    SPLITSHARD_OP(SPLITSHARD, DEFAULT_COLLECTION_OP_TIMEOUT * 5, true, (req, rsp, h) -> {
+    SPLITSHARD_OP(SPLITSHARD, DEFAULT_COLLECTION_OP_TIMEOUT * 5, (req, rsp, h) -> {
       String name = req.getParams().required().get(COLLECTION_PROP);
       // TODO : add support for multiple shards
       String shard = req.getParams().get(SHARD_ID_PROP);
@@ -1359,16 +1342,14 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     public final CollectionOp fun;
     CollectionAction action;
     long timeOut;
-    boolean sendToOCPQueue;
 
     CollectionOperation(CollectionAction action, CollectionOp fun) {
-      this(action, DEFAULT_COLLECTION_OP_TIMEOUT, true, fun);
+      this(action, DEFAULT_COLLECTION_OP_TIMEOUT, fun);
     }
 
-    CollectionOperation(CollectionAction action, long timeOut, boolean sendToOCPQueue, CollectionOp fun) {
+    CollectionOperation(CollectionAction action, long timeOut, CollectionOp fun) {
       this.action = action;
       this.timeOut = timeOut;
-      this.sendToOCPQueue = sendToOCPQueue;
       this.fun = fun;
 
     }
