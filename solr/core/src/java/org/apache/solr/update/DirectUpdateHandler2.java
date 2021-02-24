@@ -55,6 +55,8 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -839,6 +841,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     }
     super.close();
     numDocsPending.reset();
+
     assert ObjectReleaseTracker.release(this);
   }
 

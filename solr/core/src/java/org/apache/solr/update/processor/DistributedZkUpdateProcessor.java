@@ -637,7 +637,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   @Override
-  void setupRequest(UpdateCommand cmd) {
+  protected void setupRequest(UpdateCommand cmd) {
     updateCommand = cmd;
     zkCheck();
     if (cmd instanceof AddUpdateCommand) {
@@ -786,6 +786,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         List<SolrCmdDistributor.Node> nodes = Collections.singletonList(
                 new SolrCmdDistributor.ForwardNode(zkController.getZkStateReader(), leaderReplica, collection, shardId));
         if (log.isDebugEnabled()) log.debug("Forward update to leader {}", nodes);
+
+        if (desc.getName().equals(leaderReplica.getName())) {
+          throw new IllegalStateException("We were asked to forward an update to ourself, which should not happen name=" + desc.getName());
+        }
         return nodes;
       }
 

@@ -31,7 +31,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
@@ -769,26 +768,26 @@ public class SolrMetricManager {
     registerMetric(context, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
   }
 
-  public int unregisterGauges(String registryName, String tagSegment) {
+  public void unregisterGauges(String registryName, String tagSegment) {
     if (tagSegment == null) {
-      return 0;
+      return;
     }
     MetricRegistry registry = registry(registryName);
-    if (registry == null) return 0;
-    AtomicInteger removed = new AtomicInteger();
-    registry.removeMatching((name, metric) -> {
-      if (metric instanceof GaugeWrapper) {
-        GaugeWrapper wrapper = (GaugeWrapper) metric;
-        boolean toRemove = wrapper.getTag().contains(tagSegment);
-        if (toRemove) {
-          removed.incrementAndGet();
-        }
-        return toRemove;
-      }
-      return false;
+    if (registry == null) return;
 
+    ParWork.getRootSharedExecutor().submit(() -> {
+      registry.removeMatching((name, metric) -> {
+        if (metric instanceof GaugeWrapper) {
+          GaugeWrapper wrapper = (GaugeWrapper) metric;
+          boolean toRemove = wrapper.getTag().contains(tagSegment);
+          return toRemove;
+        }
+        return false;
+
+      });
     });
-    return removed.get();
+
+    return;
   }
 
   /**

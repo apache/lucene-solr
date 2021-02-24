@@ -18,6 +18,7 @@ package org.apache.solr.common.cloud;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.solr.common.util.Utils;
@@ -150,14 +151,16 @@ public class Replica extends ZkNodeProps {
     this.collection = collection;
     this.slice = slice;
     this.name = name;
+
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
+
     this.baseUrl = nodeNameToBaseUrl.getBaseUrlForNodeName(this.nodeName);
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
-//    Objects.requireNonNull(this.collection, "'collection' must not be null");
-//    Objects.requireNonNull(this.slice, "'slice' must not be null");
-//    Objects.requireNonNull(this.name, "'name' must not be null");
-//    Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
-//    Objects.requireNonNull(this.type, "'type' must not be null");
+    Objects.requireNonNull(this.collection, "'collection' must not be null");
+    Objects.requireNonNull(this.slice, "'slice' must not be null");
+    Objects.requireNonNull(this.name, "'name' must not be null");
+    Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
+    Objects.requireNonNull(this.type, "'type' must not be null");
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
       if (propMap.get(ZkStateReader.STATE_PROP) instanceof  State) {
         this.state = (State) propMap.get(ZkStateReader.STATE_PROP);

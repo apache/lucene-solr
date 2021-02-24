@@ -1535,8 +1535,8 @@ public class ZkController implements Closeable, Runnable {
 
       byte[] data = zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
       ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
-      // MRM TODO: - right key for leader name?
-      return new Replica(leaderProps.getNodeProps().getStr("name"), leaderProps.getNodeProps().getProperties(), collection, slice, zkStateReader);
+
+      return new Replica(leaderProps.getNodeProps().getStr(CORE_NAME_PROP), leaderProps.getNodeProps().getProperties(), collection, slice, zkStateReader);
 
     } catch (Exception e) {
       SolrZkClient.checkInterrupted(e);

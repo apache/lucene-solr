@@ -923,10 +923,10 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   }
 
   public Replica getLeader(String collection, String shard) {
-    return getLeader(liveNodes, getClusterState().getCollection(collection), shard);
+    return getLeader(getClusterState().getCollection(collection), shard);
   }
 
-  public Replica getLeader(Set<String> liveNodes, DocCollection docCollection, String shard) {
+  private Replica getLeader(DocCollection docCollection, String shard) {
     Replica replica = docCollection != null ? docCollection.getLeader(shard) : null;
     if (replica != null && replica.getState() == Replica.State.ACTIVE) {
       return replica;
@@ -1023,13 +1023,15 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           + " with live_nodes=" + liveNodes + " zkLeaderNode=" + getLeaderProps(collection, shard));
     }
 
-    if (returnLeader.get() == null) {
+    Replica leader = returnLeader.get();
+
+    if (leader == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "No registered leader was found "
           + "collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
           + " with live_nodes=" + liveNodes + " zkLeaderNode=" + getLeaderProps(collection, shard));
     }
 
-    return returnLeader.get();
+    return leader;
   }
 
   public Replica getLeaderProps(final String collection, final String slice) {

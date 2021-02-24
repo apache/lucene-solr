@@ -96,6 +96,7 @@ UpdateHandler implements SolrInfoBean, Closeable {
   @Override
   public void close() throws IOException {
     this.closed = true;
+    SolrInfoBean.super.close();
     assert ObjectReleaseTracker.release(this);
   }
 

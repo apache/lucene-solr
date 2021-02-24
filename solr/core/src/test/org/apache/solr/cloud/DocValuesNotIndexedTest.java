@@ -197,6 +197,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
       prop.resetBase();
     }
   }
+
   @Test
   public void testDistribFaceting() throws IOException, SolrServerException {
     // For this test, I want to insure that there are shards that do _not_ have a doc with any of the DV_only 

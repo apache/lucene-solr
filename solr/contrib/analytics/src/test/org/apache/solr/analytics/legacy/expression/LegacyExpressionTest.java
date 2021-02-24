@@ -26,6 +26,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@LuceneTestCase.Nightly
 public class LegacyExpressionTest extends LegacyAbstractAnalyticsTest {
   private static final String fileName = "expressions.txt";
 

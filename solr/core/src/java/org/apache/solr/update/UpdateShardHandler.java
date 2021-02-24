@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
@@ -237,6 +238,11 @@ public class UpdateShardHandler implements SolrInfoBean {
         SolrInfoBean.super.close();
         return this;
       });
+    }
+    try {
+      SolrInfoBean.super.close();
+    } catch (IOException e) {
+      log.warn("Error closing", e);
     }
     assert ObjectReleaseTracker.release(this);
   }

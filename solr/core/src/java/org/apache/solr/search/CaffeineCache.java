@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -40,7 +41,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
@@ -113,7 +113,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     str = (String) args.get(CLEANUP_THREAD_PARAM);
     cleanupThread = str != null && Boolean.parseBoolean(str);
     if (cleanupThread) {
-      executor = ForkJoinPool.commonPool();
+      executor = ParWork.getRootSharedExecutor();
     } else {
       executor = Runnable::run;
     }
@@ -228,18 +228,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   @Override
   public void close() throws IOException {
     SolrCache.super.close();
-//    try (ParWork closer = new ParWork(this, true)) {
-//      closer.collect("superClose", () -> {
-//        try {
-//          SolrCache.super.close();
-//        } catch (IOException e) {
-//          log.warn("IOException on close", e);
-//        }
-//      });
-//      closer.collect("invalidateAll", () -> {
-//        cache.invalidateAll();
-//      });
-//    }
+    ParWork.getRootSharedExecutor().submit(()->{
+      cache.invalidateAll();
+      cache.cleanUp();
+    });
+
     ramBytes.reset();
   }
 

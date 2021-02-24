@@ -104,7 +104,7 @@ allprojects {
       workingDir testsCwd
       useJUnit()
 
-      minHeapSize = propertyOrDefault("tests.minheapsize", "512m")
+      minHeapSize = propertyOrDefault("tests.minheapsize", "256m")
       maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
 
       jvmArgs Commandline.translateCommandline(propertyOrDefault(
