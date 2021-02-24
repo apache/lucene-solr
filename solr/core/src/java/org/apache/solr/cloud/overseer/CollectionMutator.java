@@ -145,6 +145,7 @@ public class CollectionMutator {
     if (!hasAnyOps) {
       return ZkStateWriter.NO_OP;
     }
+
     DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion());
     if (replicaOps == null){
       return new ZkWriteCommand(coll.getName(), collection);

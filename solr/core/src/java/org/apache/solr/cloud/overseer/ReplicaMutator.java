@@ -261,6 +261,7 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
     boolean forceSetState = message.getBool(ZkStateReader.FORCE_SET_STATE_PROP, true);
+
     DocCollection collection = prevState.getCollectionOrNull(collectionName);
     if (!forceSetState && !CloudUtil.replicaExists(prevState, collectionName, sliceName, coreNodeName)) {
       log.info("Failed to update state because the replica does not exist, {}", message);
