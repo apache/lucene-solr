@@ -261,7 +261,11 @@ public final class ByteBuffersDataInput extends DataInput
 
   @Override
   public void skipBytes(long numBytes) throws IOException {
-    skipBytesSlowly(numBytes);
+    if (numBytes < 0) {
+      throw new IllegalArgumentException("numBytes must be >= 0, got " + numBytes);
+    }
+    long skipTo = position() + numBytes;
+    seek(skipTo);
   }
 
   public ByteBuffersDataInput slice(long offset, long length) {

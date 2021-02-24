@@ -139,7 +139,7 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
   }
 
   @Test
-  public void testSeek() throws Exception {
+  public void testSeekAndSkip() throws Exception {
     for (int reps = randomIntBetween(1, 200); --reps > 0; ) {
       ByteBuffersDataOutput dst = new ByteBuffersDataOutput();
 
@@ -169,12 +169,26 @@ public final class TestByteBuffersDataInput extends RandomizedTest {
       byte[] array = dst.toArrayCopy();
       array = ArrayUtil.copyOfSubArray(array, prefix.length, array.length);
 
+      // test seeking
       for (int i = 0; i < 1000; i++) {
         int offs = randomIntBetween(0, array.length - 1);
         in.seek(offs);
         assertEquals(offs, in.position());
         assertEquals(array[offs], in.readByte());
       }
+
+      // test skipping
+      int maxSkipTo = array.length - 1;
+      in.seek(0);
+      // skip chunks of bytes until exhausted
+      for (int curr = 0; curr < maxSkipTo; ) {
+        int skipTo = randomIntBetween(curr, maxSkipTo);
+        int step = skipTo - curr;
+        in.skipBytes(step);
+        assertEquals(array[skipTo], in.readByte());
+        curr = skipTo + 1; // +1 for read byte
+      }
+
       in.seek(in.size());
       assertEquals(in.size(), in.position());
       LuceneTestCase.expectThrows(

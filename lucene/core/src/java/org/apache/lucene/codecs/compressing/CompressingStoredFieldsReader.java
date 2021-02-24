@@ -654,7 +654,15 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
 
               @Override
               public void skipBytes(long numBytes) throws IOException {
-                skipBytesSlowly(numBytes);
+                if (numBytes < 0) {
+                  throw new IllegalArgumentException("numBytes must be >= 0, got " + numBytes);
+                }
+                while (numBytes > bytes.length) {
+                  numBytes -= bytes.length;
+                  fillBuffer();
+                }
+                bytes.offset += numBytes;
+                bytes.length -= numBytes;
               }
             };
       } else {

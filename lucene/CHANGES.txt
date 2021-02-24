@@ -194,6 +194,8 @@ Improvements
 * LUCENE-9663: Adding compression to terms dict from SortedSet/Sorted DocValues.
   (Jaison Bi via Bruno Roustant)
 
+* LUCENE-9794: Speed up implementations of DataInput.skipBytes(). (Greg Miller)
+
 Bug fixes
 
 
