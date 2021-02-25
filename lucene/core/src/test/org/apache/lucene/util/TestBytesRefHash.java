@@ -26,6 +26,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
 import org.junit.Before;
@@ -274,28 +275,38 @@ public class TestBytesRefHash extends LuceneTestCase {
   public void testConcurrentFind() throws Exception {
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      List<String> strings = new ArrayList<>();
-      for (int i = 0; i < 797; i++) {
+      int numStrings = 797;
+      List<String> strings = new ArrayList<>(numStrings);
+      for (int i = 0; i < numStrings; i++) {
         final String str = TestUtil.randomRealisticUnicodeString(random(), 1, 1000);
         hash.add(new BytesRef(str));
         assertTrue(strings.add(str));
       }
 
       AtomicInteger miss = new AtomicInteger();
-      Thread[] threads = new Thread[10];
+      int numThreads = 10;
+      CountDownLatch latch = new CountDownLatch(numThreads);
+      Thread[] threads = new Thread[numThreads];
       for (int i = 0; i < threads.length; i++) {
         int loops = atLeast(100);
         threads[i] =
-            new Thread("t" + i) {
-              public void run() {
-                for (int k = 0; k < loops; k++) {
-                  BytesRef find = new BytesRef(strings.get(k % strings.size()));
-                  if (hash.find(find) < 0) {
-                    miss.incrementAndGet();
+            new Thread(
+                () -> {
+                  latch.countDown();
+                  try {
+                    latch.await();
+                  } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    e.printStackTrace();
                   }
-                }
-              }
-            };
+                  for (int k = 0; k < loops; k++) {
+                    BytesRef find = new BytesRef(strings.get(k % strings.size()));
+                    if (hash.find(find) < 0) {
+                      miss.incrementAndGet();
+                    }
+                  }
+                },
+                "t" + i);
       }
 
       for (Thread t : threads) t.start();
