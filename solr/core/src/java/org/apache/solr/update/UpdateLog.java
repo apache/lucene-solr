@@ -61,6 +61,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.OrderedExecutor;
 import org.apache.solr.common.util.SysStats;
@@ -214,8 +215,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   }
 
   long id = -1;
-  protected volatile State
-      state = State.ACTIVE;
+  protected volatile State state = State.ACTIVE;
 
   protected volatile TransactionLog bufferTlog;
   protected volatile TransactionLog tlog;
@@ -2017,13 +2017,15 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         UpdateRequestProcessorChain processorChain = req.getCore().getUpdateProcessingChain(null);
         proc = processorChain.createProcessor(req, rsp);
         OrderedExecutor executor = inSortedOrder ? null : req.getCore().getCoreContainer().getReplayUpdatesExecutor();
+        OrderedExecutor ogexecutor = executor;
         LongAdder pendingTasks = new LongAdder();
-        AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
+       // AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
 
         long commitVersion = 0;
         int operationAndFlags = 0;
         long nextCount = 0;
 
+        AtomicReference<SolrException> exceptionOnExecuteUpdate = null;
         for (; ; ) {
           Object o = null;
           if (cancelApplyBufferUpdate) break;
@@ -2077,7 +2079,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
           if (o == null) break;
           // fail fast
-          if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
+         // if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
 
           try {
 
@@ -2154,8 +2156,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           assert TestInjection.injectUpdateLogReplayRandomPause();
         }
 
-        waitForAllUpdatesGetExecuted(executor, pendingTasks);
-        if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
+        waitForAllUpdatesGetExecuted(ogexecutor, pendingTasks);
+       // if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
         cmd.setVersion(commitVersion);
@@ -2188,21 +2190,16 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
           if (tlogReader != null) tlogReader.close();
           if (translog != null) translog.decref();
         } finally {
-          ParWork.close(proc);
+          IOUtils.closeQuietly(proc);
         }
       }
     }
 
     private void waitForAllUpdatesGetExecuted(OrderedExecutor executor, LongAdder pendingTasks) {
       if (executor == null) return;
-      executor.waitForTasks();
-    }
-
-    private Integer getBucketHash(BytesRef idBytes) {
-
-      if (idBytes == null) return null;
-      return DistributedUpdateProcessor.bucketHash(idBytes);
-
+      while (pendingTasks.sum() > 0) {
+        executor.waitForTasks();
+      }
     }
 
     private Integer getBucketHash(UpdateCommand cmd) {
@@ -2232,7 +2229,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         executor.submit(getBucketHash(cmd), () -> {
           try {
             // fail fast
-            if (exceptionHolder.get() != null) return;
+         //   if (exceptionHolder.get() != null) return;
             if (cmd instanceof AddUpdateCommand) {
               proc.processAdd((AddUpdateCommand) cmd);
             } else {
@@ -2243,11 +2240,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             loglog.warn("REPLAY_ERR: IOException reading log", e);
             // could be caused by an incomplete flush if recovering from log
           } catch (Exception e) {
-
-            if (e instanceof SolrException && ((SolrException) e).code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
-              exceptionHolder.compareAndSet(null, (SolrException) e);
-              return;
-            }
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Exception reading log", e);
           } finally {

@@ -65,7 +65,8 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
 
   @Override
   public void distribTearDown() throws Exception {
-    ALL_STATS.clear();
+    super.distribTearDown();
+    ALL_STATS = null;
     ALL_STATS_JSON = "";
   }
   

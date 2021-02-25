@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest.Field;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -183,7 +182,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
     for (int i=0; i<clients.size(); i++) {
-      if (((HttpSolrClient)clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
+      if (((Http2SolrClient)clients.get(i)).getBaseURL().startsWith(leaderBaseUrl))
         LEADER = clients.get(i);
     }
     
@@ -194,7 +193,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
       }
       String baseUrl = zkStateReader.getBaseUrlForNodeName(rep.getNodeName());
       for (int i=0; i<clients.size(); i++) {
-        if (((HttpSolrClient)clients.get(i)).getBaseURL().startsWith(baseUrl))
+        if (((Http2SolrClient)clients.get(i)).getBaseURL().startsWith(baseUrl))
           NONLEADERS.add(clients.get(i));
       }
     }

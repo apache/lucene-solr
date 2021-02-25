@@ -81,9 +81,9 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       node2.start();
 
-      cluster.waitForActiveCollection(COLLECTION, 1, 2, true);
-
       cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
+
+      cluster.waitForActiveCollection(COLLECTION, 1, 2, true);
 
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         long numFound = client.query(COLLECTION, new SolrQuery("q","*:*", "distrib", "false")).getResults().getNumFound();
@@ -95,16 +95,18 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       new UpdateRequest().add("id", "1", "num", "10")
           .commit(client1, COLLECTION);
 
-      new UpdateRequest()
-          .commit(client1, COLLECTION);
+      Object v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "true")).getResults().get(0).get("num");
+      assertEquals("10", v.toString());
+
+
+      v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
+      assertEquals("10", v.toString());
 
 
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
-        Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
+        v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "true")).getResults().get(0).get("num");
         assertEquals("10", v.toString());
       }
-      Object v = client1.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");
-      assertEquals("10", v.toString());
 
       //
       node2.stop();

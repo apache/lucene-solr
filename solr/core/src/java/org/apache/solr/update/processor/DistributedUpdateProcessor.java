@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -228,6 +229,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // the request right here but for now I think it is better to just return the status
     // to the client that the minRf wasn't reached and let them handle it    
 
+    log.info("docid={} isLeader={} forwardToLeader={} nodes={}, params={}", cmd.getPrintableId(), isLeader, forwardToLeader, getNodes(), req.getParams());
+
     if (!forwardToLeader) {
       Future distFuture = versionAdd(cmd);
       if (distFuture != null) {
@@ -244,6 +247,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         }
+      } else {
+        // drop it
+        log.info("drop docid={}", cmd.getPrintableId());
+        return;
       }
     } else {
       doDistribAdd(cmd);
@@ -297,7 +304,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (idBytes == null) {
       super.processAdd(cmd);
-      return null;
+      return CompletableFuture.completedFuture(null);
     }
 
     if (vinfo == null) {
@@ -306,7 +313,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             "Atomic document updates are not supported unless <updateLog/> is configured");
       } else {
         super.processAdd(cmd);
-        return null;
+        return CompletableFuture.completedFuture(null);
       }
     }
 
@@ -345,6 +352,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       dependentVersionFound = waitForDependentUpdates(cmd, versionOnUpdate, isReplayOrPeersync, bucket);
       if (dependentVersionFound == -1) {
         // it means the document has been deleted by now at the leader. drop this update
+        log.info("docid={} it means the document has been deleted by now at the leader. drop this update", cmd.getPrintableId());
         return null;
       }
     }
@@ -393,7 +401,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         getUpdatedDocument(cmd, versionOnUpdate);
 
         // leaders can also be in buffering state during "migrate" API call, see SOLR-5308
-        if (ulog.getState() != UpdateLog.State.ACTIVE && isReplayOrPeersync == false) {
+        if (ulog.getState() == UpdateLog.State.BUFFERING && isReplayOrPeersync == false) {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           if (log.isInfoEnabled()) {
             log.info("Leader logic applied but update log is buffering: {}", cmd.getPrintableId());
@@ -410,11 +418,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // we're ok if versions match, or if both are negative (all missing docs are equal), or if cmd
             // specified it must exist (versionOnUpdate==1) and it does.
           } else {
-            if (cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
+            if(cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
               return null;
             }
-            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId() + " expected=" + versionOnUpdate +
-                " actual=" + foundVersion + " params=" + req.getParams());
+
+            throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId()
+                + " expected=" + versionOnUpdate + " actual=" + foundVersion);
           }
         }
 
@@ -431,6 +440,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // we're not in an active state, and this update isn't from a replay, so buffer it.
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.add(cmd);
+          log.info("docid={} dropped because not active and buffering and not a replay update", cmd.getPrintableId());
           return null;
         }
 
@@ -450,6 +460,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                 log.info("In-place update of {} failed to find valid lastVersion to apply to, and the document was deleted at the leader subsequently.", idBytes.utf8ToString());
               }
               versionDelete((DeleteUpdateCommand) fetchedFromLeader);
+              log.info("docid={} dropped due to missing dependent update", cmd.getPrintableId());
               return null;
             } else {
               assert fetchedFromLeader instanceof AddUpdateCommand;
@@ -469,7 +480,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             if (lastVersion != null && Math.abs(lastVersion) > prev) {
               // this means we got a newer full doc update and in that case it makes no sense to apply the older
               // inplace update. Drop this update
-              log.info("Update was applied on version: {}, but last version I have is: {}. Dropping current update", prev, lastVersion);
+              log.info("Update was applied on version: {}, but last version I have is: {}. Dropping current update, docid={}", prev, lastVersion, cmd.getPrintableId());
               return null;
             } else {
               // We're good, we should apply this update. First, update the bucket's highest.
@@ -490,9 +501,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             Long lastVersion = vinfo.lookupVersion(idBytes);
             if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
               // This update is a repeat, or was reordered. We need to drop this update.
-              if (log.isDebugEnabled()) {
-                log.debug("Dropping add update due to version {}", idBytes.utf8ToString());
-              }
+
+              log.info("Dropping add update due to version docid={} lastVersion={} versionOnUpdate={}", idBytes.utf8ToString(), lastVersion, versionOnUpdate);
+
               return null;
             }
           }
@@ -504,7 +515,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
     }
 
-    Future<?> distFuture = null;
+    Future<?> distFuture = CompletableFuture.completedFuture(null);
 
     AddUpdateCommand finalCloneCmd;
     if (getNodes() != null && getNodes().size() > 0) {
@@ -532,6 +543,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // This refresh makes RTG handler aware of this update.q
 
       try {
+        log.info("do local add for docid={}", cmd. getPrintableId());
         doLocalAdd(cmd);
       } catch (Exception e) {
         Throwable t;
@@ -807,7 +819,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     setupRequest(cmd);
     if (log.isDebugEnabled()) log.debug("deletebyid {}", cmd.id);
 
-
     if (!forwardToLeader) {
       Future future = versionDelete(cmd);
       if (future != null) {
@@ -828,6 +839,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
           throw new SolrException(ErrorCode.SERVER_ERROR, t);
         }
+      } else {
+        // drop
+        return;
       }
     } else {
       doDistribDeleteById(cmd);
@@ -989,10 +1003,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         long version = vinfo.getNewClock();
         cmd.setVersion(-version);
         // TODO update versions in all buckets
-
+        DeleteUpdateCommand clonedCmd = (DeleteUpdateCommand) cmd.clone();
        future = ParWork.getRootSharedExecutor().submit(() -> {
           try {
-            doDistribDeleteByQuery(cmd, replicas, coll);
+            doDistribDeleteByQuery(clonedCmd, replicas, coll);
           } catch (IOException e) {
             log.error("", e); // MRM TODO:
           }
@@ -1010,10 +1024,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           ulog.deleteByQuery(cmd);
           return null; // MRM TODO:
         }
-
+        DeleteUpdateCommand clonedCmd = (DeleteUpdateCommand) cmd.clone();
         future = ParWork.getRootSharedExecutor().submit(() -> {
           try {
-            DeleteUpdateCommand clonedCmd = (DeleteUpdateCommand) cmd.clone();
             doDistribDeleteByQuery(clonedCmd, replicas, coll);
           } catch (IOException e) {
             log.error("", e); // MRM TODO:
@@ -1061,7 +1074,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
     if (vinfo == null || idBytes == null) {
       super.processDelete(cmd);
-      return null;
+      return CompletableFuture.completedFuture(null);
     }
 
     // This is only the hash for the bucket, and must be based only on the uniqueKey (i.e. do not use a pluggable hash
@@ -1105,7 +1118,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       throws IOException {
 
     BytesRef idBytes = cmd.getIndexedId();
-    Future<?> distFuture = null;
+    Future<?> distFuture = CompletableFuture.completedFuture(null);
     if (versionsStored) {
       long bucketVersion = bucket.highest;
 

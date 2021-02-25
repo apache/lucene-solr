@@ -1274,15 +1274,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
       timeReloadAndDirChange.done();
-      if (!isReloaded || dirChanged) { // MRM TODO: reload could move to a different index?
-        StopWatch timeSeedVers = StopWatch.getStopWatch(this + "-seedVersionBuckets");
 
+     // if (!isReloaded || dirChanged) { // MRM TODO: reload could move to a different index?
         StopWatch timeSeedVersions = StopWatch.getStopWatch(this + "-startCore-seedVersions");
         seedVersionBuckets();
         timeSeedVersions.done();
-
-        timeSeedVers.done();
-      }
+     // }
 
       StopWatch timeRegConfListener = StopWatch.getStopWatch(this + "-startCore-regConfListener");
       registerConfListener();

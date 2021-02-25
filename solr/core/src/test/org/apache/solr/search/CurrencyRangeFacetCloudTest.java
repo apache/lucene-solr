@@ -45,12 +45,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 @LuceneTestCase.Nightly // MRM TODO: - debug this on low end hardware
+// MRM TODO: debug this
 public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
-  private static final String CONF = COLLECTION + "_configSet";
+  private static final String CONF = "_configSet";
   
   private static String FIELD = null; // randomized
 
@@ -82,8 +83,6 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
                      .setMaxShardsPerNode(maxShardsPerNode)
                      .setProperties(Collections.singletonMap(CoreAdminParams.CONFIG, "solrconfig-minimal.xml"))
                      .process(cluster.getSolrClient())).getStatus());
-
-    cluster.waitForActiveCollection(COLLECTION, numShards, numShards * numReplicas);
     
     cluster.getSolrClient().setDefaultCollection(COLLECTION);
     

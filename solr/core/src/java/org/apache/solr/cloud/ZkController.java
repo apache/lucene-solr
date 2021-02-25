@@ -1420,10 +1420,10 @@ public class ZkController implements Closeable, Runnable {
           }
         }
         // we will call register again after zk expiration and on reload
-        if (!afterExpiration && ulog != null && !isTlogReplicaAndNotLeader) {
+        if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
           Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
-          if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
+          if (slice.getState() != Slice.State.CONSTRUCTION || (slice.getState() == Slice.State.CONSTRUCTION  && !isLeader)) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {
               log.info("Replaying tlog for {} during startup... NOTE: This can take a while.", core);
@@ -1449,6 +1449,7 @@ public class ZkController implements Closeable, Runnable {
 
         if (replica.getType() == Type.PULL) {
           startReplicationFromLeader(coreName, false);
+          publish(desc, Replica.State.ACTIVE);
         }
 
         if (replica.getType() != Type.PULL) {
@@ -1664,16 +1665,16 @@ public class ZkController implements Closeable, Runnable {
       }
 
       // pull replicas are excluded because their terms are not considered
-      if (state == Replica.State.RECOVERING && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
+      if ((state == Replica.State.RECOVERING || state == Replica.State.BUFFERING) && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
         // state is used by client, state of replica can change from RECOVERING to DOWN without needed to finish recovery
         // by calling this we will know that a replica actually finished recovery or not
         ZkShardTerms shardTerms = getShardTerms(collection, shardId);
         shardTerms.startRecovering(cd.getName());
+        shardTerms.setTermEqualsToLeader(cd.getName());
       }
       if (state == Replica.State.ACTIVE && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
         ZkShardTerms shardTerms = getShardTerms(collection, shardId);
         shardTerms.doneRecovering(cd.getName());
-        shardTerms.setTermEqualsToLeader(cd.getName());
       }
 
       ZkNodeProps m = new ZkNodeProps(props);

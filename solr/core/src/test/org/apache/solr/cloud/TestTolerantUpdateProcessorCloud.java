@@ -69,6 +69,7 @@ import java.util.concurrent.TimeUnit;
  *
  */
 @LuceneTestCase.Nightly
+@Ignore // MRM TODO:
 public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

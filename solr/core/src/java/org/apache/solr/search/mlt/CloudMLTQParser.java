@@ -64,7 +64,7 @@ public class CloudMLTQParser extends QParser {
     String id = localParams.get(QueryParsing.V);
     // Do a Real Time Get for the document
     SolrDocument doc = getDocument(id);
-    if(doc == null) {
+    if (doc == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request. Could not fetch " +
           "document with id [" + id + "]");

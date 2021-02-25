@@ -33,6 +33,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.cloud.MetricsHistoryIntegrationTest.createHistoryRequest;
@@ -43,6 +44,7 @@ import static org.apache.solr.cloud.MetricsHistoryIntegrationTest.createHistoryR
  */
 @LogLevel("org.apache.solr.handler.admin=DEBUG,org.apache.solr.security=DEBUG")
 @LuceneTestCase.Nightly // this stuff is still a little slow
+@Ignore // MRM TODO:
 public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
 
   private static SolrCloudManager cloudManager;
@@ -63,7 +65,7 @@ public class MetricsHistoryWithAuthIntegrationTest extends SolrCloudTestCase {
       "</history>\n";
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeMetricsHistoryWithAuthIntegrationTest() throws Exception {
     System.setProperty("solr.enableMetrics", "true");
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML.replace("<metrics>\n",

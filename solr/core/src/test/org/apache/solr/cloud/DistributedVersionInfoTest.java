@@ -155,20 +155,26 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         // brief delay before sending docs
         try {
           Thread.sleep(rand.nextInt(30)+1);
-        } catch (InterruptedException e) {}
+        } catch (InterruptedException e) {
+          return;
+        }
 
         for (int i=0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
           if (i % (rand.nextInt(20)+1) == 0) {
             try {
               Thread.sleep(rand.nextInt(50)+1);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException e) {
+              return;
+            }
           }
 
           int docId = i+1;
           try {
             sendDoc(docId);
             docsSent.incrementAndGet();
-          } catch (Exception e) {}
+          } catch (Exception e) {
+            log.error("id=" + docId, e);
+          }
         }
       }
     };
@@ -335,7 +341,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
-    AbstractFullDistribZkTestBase.sendDocsWithRetry(cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc), 2, 3, 100);
+    log.info("Send id={}", docId);
+    AbstractFullDistribZkTestBase.sendDocs(cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc));
   }
 
   /**

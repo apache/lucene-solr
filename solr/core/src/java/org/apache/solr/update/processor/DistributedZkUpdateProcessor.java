@@ -325,8 +325,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
-    if (log.isDebugEnabled()) log.debug("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
-
+   // if (log.isDebugEnabled()) log.debug("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
+    log.info("Distribute add docid={} cmd={} to {} {}", cmd.getPrintableId(), cmd, nodes, isLeader);
     if (isLeader && !isSubShardLeader) {
       DocCollection coll = clusterState.getCollection(collection);
       List<SolrCmdDistributor.Node> subShardLeaders = getSubShardLeaders(coll, cloudDesc.getShardId(), cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
@@ -760,11 +760,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         // that means I want to forward onto my replicas...
         // so get the replicas...
         forwardToLeader = false;
-        String leaderCoreName = leaderReplica.getName();
+
         List<Replica> replicas = clusterState.getCollection(collection)
             .getSlice(shardId)
             .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
-        replicas.removeIf((replica) -> replica.getName().equals(leaderCoreName));
+        replicas.removeIf((replica) -> replica.getName().equals(desc.getName()));
         if (replicas.isEmpty()) {
           return null;
         }
@@ -792,13 +792,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             if (log.isInfoEnabled()) {
               log.info("check url:{} against:{} result:true", replica.getCoreUrl(), skipListSet);
             }
-          } else if(zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
-            if (log.isDebugEnabled()) {
-              log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
-            }
+          } else if(zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName) && replica.getState().equals(Replica.State.ACTIVE)) {
+
+            log.info("skip url:{} cause its term is less than leader", replica.getCoreUrl());
+
             skippedCoreNodeNames.add(replica.getName());
-          } else if (!zkController.getZkStateReader().getLiveNodes().contains(replica.getNodeName()) || (replica.getState() != Replica.State.ACTIVE &&
-              replica.getState() != Replica.State.BUFFERING)) {
+          } else if (!zkController.getZkStateReader().getLiveNodes().contains(replica.getNodeName())) {
+            log.info("skip url:{} cause its not on live node={}", replica.getCoreUrl(), replica.getNodeName());
             skippedCoreNodeNames.add(replica.getName());
           } else {
             nodes.add(new SolrCmdDistributor.StdNode(zkController.getZkStateReader(), replica, collection, shardId, maxRetriesToFollowers));

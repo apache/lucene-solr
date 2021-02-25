@@ -118,6 +118,11 @@ public class VersionBucket {
   }
 
   public void awaitNanos(long nanosTimeout) {
+    boolean locked = false;
+    if (!lock.isHeldByCurrentThread()) {
+      lock.lock();
+      locked = true;
+    }
     try {
       if (nanosTimeout > 0) {
         lockCondition.awaitNanos(nanosTimeout);
@@ -125,6 +130,10 @@ public class VersionBucket {
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new RuntimeException(e);
+    } finally {
+      if (locked) {
+        lock.unlock();
+      }
     }
   }
 }

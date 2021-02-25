@@ -634,14 +634,10 @@ public class PeerSync implements SolrMetricProducer {
             {
               // byte[] idBytes = (byte[]) entry.get(2);
               SolrInputDocument sdoc = (SolrInputDocument)entry.get(entry.size()-1);
-              AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
-              cmd.clear();
+              AddUpdateCommand cmd = new AddUpdateCommand(req);
               // cmd.setIndexedId(new BytesRef(idBytes));
               cmd.solrDoc = sdoc;
-              cmd.setReq(req);
               cmd.setVersion(version);
-              BytesRef indexedId = UpdateLog.getIndexedId(sdoc, req);
-              cmd.setIndexedId(indexedId);
               cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
                 log.debug("{} add {} id {}", logPrefix, cmd, sdoc.getField(ID));
