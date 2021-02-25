@@ -814,7 +814,8 @@ public class RealTimeGetComponent extends SearchComponent
       }
       for (Object val: doc.getFieldValues(fname)) {
         if (val instanceof IndexableField) {
-          IndexableField f = materialize((IndexableField) val);
+          IndexableField f = (IndexableField) val;
+          // materialize:
           if (sf != null) {
             val = sf.getType().toObject(f);   // object or external string?
           } else {
