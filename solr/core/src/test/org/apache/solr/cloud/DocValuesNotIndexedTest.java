@@ -59,7 +59,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-@SolrTestCaseJ4.SuppressPointFields(bugUrl = "try to harden")
 public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -262,6 +261,9 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
     new UpdateRequest()
         .add(docs)
+        .process(client, COLLECTION);
+
+    new UpdateRequest()
         .commit(client, COLLECTION);
 
     checkSortOrder(client, fieldsToTestGroupSortFirst, "asc", new String[]{"4", "2", "1", "3"}, new String[]{"4", "1", "2", "3"});
