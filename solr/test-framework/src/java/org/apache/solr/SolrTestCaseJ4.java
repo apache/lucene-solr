@@ -2500,7 +2500,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       if (newestSearcher != null) {
         newestSearcher.decref();
       }
-      Thread.sleep(10);
+      Thread.sleep(30);
       registeredSearcher = core.getRegisteredSearcher();
       newestSearcher = core.getNewestSearcher(false);
     }
