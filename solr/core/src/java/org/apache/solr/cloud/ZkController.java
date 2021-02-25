@@ -1342,7 +1342,8 @@ public class ZkController implements Closeable, Runnable {
       if (replica == null) {
         replica = zkStateReader.getClusterState().getCollection(collection).getReplica(coreName);
         if (replica == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica is removed from clusterstate \n" + zkStateReader.getClusterState().getCollectionOrNull(collection));
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica=" + coreName + " is removed from clusterstate \n"
+              + zkStateReader.getClusterState().getCollectionOrNull(collection));
         }
       }
 

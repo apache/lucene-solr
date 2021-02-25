@@ -234,7 +234,7 @@ public class Http2SolrClient extends SolrClient {
 
     int maxThreads = Math.max(builder.maxThreadPoolSize, minThreads);
 
-    int capacity = Math.max(minThreads, 8) * 32;
+    int capacity = Math.max(minThreads, 8) * 128;
     BlockingQueue<Runnable> queue = new BlockingArrayQueue<>(capacity, capacity);
 
     httpClientExecutor = new SolrQueuedThreadPool("http2Client", maxThreads, minThreads,

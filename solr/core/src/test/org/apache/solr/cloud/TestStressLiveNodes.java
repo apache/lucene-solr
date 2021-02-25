@@ -54,9 +54,6 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
   /** A basic cloud client, we'll be testing the behavior of it's ZkStateReader */
   private static CloudHttp2SolrClient CLOUD_CLIENT;
-  
-  /** The addr of the zk server used in this test */
-  private static String ZK_SERVER_ADDR;
 
   /* how many seconds we're willing to wait for our executor tasks to finish before failing the test */
   private final static int WAIT_TIME = TEST_NIGHTLY ? 60 : 30;
@@ -70,14 +67,12 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.connect(); // force connection even though we aren't sending any requests
-
-    ZK_SERVER_ADDR = cluster.getZkServer().getZkAddress();
-
   }
   
   @AfterClass
   public static void afterClass() throws Exception {
     shutdownCluster();
+    CLOUD_CLIENT = null;
   }
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */

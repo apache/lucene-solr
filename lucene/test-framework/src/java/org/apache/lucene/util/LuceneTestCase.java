@@ -595,7 +595,7 @@ public abstract class LuceneTestCase extends Assert {
   private final static long STATIC_LEAK_THRESHOLD = 600; // MRM TODO: I dropped this down hard and enabled it again
 
   /** By-name list of ignored types like loggers etc. */
-  private final static Set<String> STATIC_LEAK_IGNORED_TYPES = Set.of(
+  public final static Set<String> STATIC_LEAK_IGNORED_TYPES = Set.of(
       "org.slf4j.Logger",
       "org.apache.solr.SolrLogFormatter",
       "java.io.File", // Solr sometimes refers to this in a static way, but it has a "java.nio.fs.Path" inside

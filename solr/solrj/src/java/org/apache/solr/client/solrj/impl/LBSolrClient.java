@@ -557,7 +557,7 @@ public abstract class LBSolrClient extends SolrClient {
         }
       }
     } catch (Exception e) {
-      ParWork.propagateInterrupt(e);
+      log.info("Zombie server check failed for {} exception={} message={}", zombieServer.getBaseUrl(), e.getClass().getName(), e.getMessage());
       //Expected. The server is still down.
       zombieServer.failedPings++;
 

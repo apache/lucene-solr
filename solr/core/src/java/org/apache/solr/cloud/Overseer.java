@@ -883,7 +883,7 @@ public class Overseer implements SolrCloseable {
           try {
             zkController.getZkClient().delete(fullPaths, true);
           } catch (Exception e) {
-            log.error("Failed deleting processed items", e);
+            log.warn("Failed deleting processed items", e);
           }
         }
 

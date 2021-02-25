@@ -44,6 +44,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -85,7 +86,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
     initCore("solrconfig-tlog.xml","schema15.xml");
     
     // validate that the schema was not changed to an unexpected state
-    IndexSchema schema = h.getCore().getLatestSchema();
+    SolrCore core = h.getCore();
+    IndexSchema schema = core.getLatestSchema();
+    core.close();
     assertTrue(schema.getFieldOrNull("_version_").hasDocValues() && !schema.getFieldOrNull("_version_").indexed()
         && !schema.getFieldOrNull("_version_").stored());
 
@@ -107,7 +110,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   private Map<String, Metric> getMetrics() {
     SolrMetricManager manager = h.getCoreContainer().getMetricManager();
-    MetricRegistry registry = manager.registry(h.getCore().getCoreMetricManager().getRegistryName());
+    SolrCore core = h.getCore();
+    MetricRegistry registry = manager.registry(core.getCoreMetricManager().getRegistryName());
+    core.close();
     return registry.getMetrics();
   }
 
@@ -239,7 +244,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // make sure we can still access versions after a restart
       assertJQ(req("qt","/get", "getVersions",""+versions.size()),"/versions==" + versions);
 
-      assertEquals(UpdateLog.State.REPLAYING, h.getCore().getUpdateHandler().getUpdateLog().getState());
+      SolrCore core = h.getCore();
+      assertEquals(UpdateLog.State.REPLAYING, core.getUpdateHandler().getUpdateLog().getState());
+      core.close();
       // check metrics
       Gauge<Integer> state = (Gauge<Integer>)metrics.get("TLOG.state");
       assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
@@ -298,7 +305,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       Thread.sleep(100);
       assertEquals(permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
 
-      assertEquals(UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
+      core = h.getCore();
+      assertEquals(UpdateLog.State.ACTIVE, core.getUpdateHandler().getUpdateLog().getState());
+      core.close();
 
     } finally {
       UpdateLog.testing_logReplayHook = null;
@@ -1060,8 +1069,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       ulog.applyBufferedUpdates();
       
       TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      timeout.waitFor("Timeout waiting for finish replay updates",
-          () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
+      try ( SolrCore core = h.getCore()) {
+        timeout.waitFor("Timeout waiting for finish replay updates", () -> core.getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
+      }
       
       updateJ(jsonAdd(sdoc("id","Q7", "_version_",v117)), params(DISTRIB_UPDATE_PARAM,FROM_LEADER)); // do another add to make sure flags are back to normal
 
@@ -1079,8 +1089,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       
       // Timeout for Q7 get replayed, because it was added on tlog, therefore it will be replayed on restart
       timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      timeout.waitFor("Timeout waiting for finish replay updates",
-          () -> h.getCore().getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
+      try ( SolrCore core = h.getCore()) {
+        timeout.waitFor("Timeout waiting for finish replay updates", () -> core.getUpdateHandler().getUpdateLog().getState() == UpdateLog.State.ACTIVE);
+      }
       
       assertJQ(req("qt","/get", "id", "Q7") ,"/doc/id==Q7");
     } finally {
@@ -1202,8 +1213,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
-      UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      SolrCore core = h.getCore();
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      File logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+      core.close();
 
       h.close();
 
@@ -1321,8 +1334,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
-      UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      SolrCore core = h.getCore();
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      File logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+      core.close();
 
       clearIndex();
       assertU(commit());
@@ -1379,8 +1394,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
     try {
       TestInjection.skipIndexWriterCommitOnClose = true;
 
-      UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      SolrCore core = h.getCore();
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      File logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+      core.close();
 
       clearIndex();
       assertU(commit());
@@ -1456,8 +1473,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
-      UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-      File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+      SolrCore core = h.getCore();
+      UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+      File logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+      core.close();
 
       clearIndex();
       assertU(commit());
@@ -1628,8 +1647,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       Thread.sleep(100);
       assertEquals(permits, logReplay.availablePermits()); // no updates, so insure that recovery didn't run
 
-      assertEquals(UpdateLog.State.ACTIVE, h.getCore().getUpdateHandler().getUpdateLog().getState());
-
+      SolrCore core = h.getCore();
+      assertEquals(UpdateLog.State.ACTIVE, core.getUpdateHandler().getUpdateLog().getState());
+      core.close();
     } finally {
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;
@@ -1661,8 +1681,10 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   // stops the core, removes the transaction logs, restarts the core.
   void deleteLogs() throws Exception {
-    UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
-    File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
+    SolrCore core = h.getCore();
+    UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+    File logDir = new File(core.getUpdateHandler().getUpdateLog().getLogDir());
+    core.close();
 
     h.close();
 

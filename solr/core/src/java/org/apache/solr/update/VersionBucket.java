@@ -63,7 +63,6 @@ public class VersionBucket {
         LongAdder adder = new LongAdder();
         adder.increment();
         blockedIds.put(idBytes, adder);
-        lock.unlock();
       } else {
         LongAdder adder = blockedIds.get(idBytes);
         adder.increment();
@@ -71,14 +70,12 @@ public class VersionBucket {
       return function.apply();
     } finally {
       try {
-        if (!lock.isHeldByCurrentThread()) {
-          lock.lock();
-          LongAdder adder = blockedIds.get(idBytes);
-          adder.decrement();
-          if (adder.longValue() == 0L) {
-            blockedIds.remove(idBytes);
-          }
+        LongAdder adder = blockedIds.get(idBytes);
+        adder.decrement();
+        if (adder.longValue() == 0L) {
+          blockedIds.remove(idBytes);
         }
+
       } finally {
         if (lock.isHeldByCurrentThread()) lock.unlock();
       }
@@ -86,11 +83,15 @@ public class VersionBucket {
   }
 
   public void signalAll() {
+    boolean locked = false;
     if (!lock.isHeldByCurrentThread()) {
       lock.lock();
-      try {
-        lockCondition.signalAll();
-      } finally {
+      locked = true;
+    }
+    try {
+      lockCondition.signalAll();
+    } finally {
+      if (locked) {
         lock.unlock();
       }
     }

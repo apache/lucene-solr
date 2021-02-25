@@ -26,6 +26,7 @@ import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.FailureMarker;
@@ -136,6 +137,7 @@ import java.util.concurrent.TimeUnit;
 public class SolrTestCase extends Assert {
 
   protected static final boolean VERBOSE = false;
+
   /**
    * <b>DO NOT REMOVE THIS LOGGER</b>
    * <p>
@@ -149,6 +151,12 @@ public class SolrTestCase extends Assert {
    */
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String[] EMPTY_STRING_ARRAY = new String[0];
+
+  /**
+   * Max 10mb of static data stored in a test suite class after the suite is complete.
+   * Prevents static data structures leaking and causing OOMs in subsequent tests.
+   */
+  private final static long STATIC_LEAK_THRESHOLD = 600; // MRM TODO: I dropped this down hard and enabled it again
 
   public static final boolean TEST_NIGHTLY = LuceneTestCase.TEST_NIGHTLY;
 
@@ -165,7 +173,20 @@ public class SolrTestCase extends Assert {
   public static TestRule solrClassRules =
       RuleChain.outerRule(new SystemPropertiesRestoreRule())
           .around(suiteFailureMarker = new TestRuleMarkFailure())
-          .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker))
+          .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker)).around(new StaticFieldsInvariantRule(STATIC_LEAK_THRESHOLD, true) {
+    @Override
+    protected boolean accept(java.lang.reflect.Field field) {
+      // Don't count known classes that consume memory once.
+      if (LuceneTestCase.STATIC_LEAK_IGNORED_TYPES.contains(field.getType().getName())) {
+        return false;
+      }
+      // Don't count references from ourselves, we're top-level.
+      if (field.getDeclaringClass() == SolrTestCase.class) {
+        return false;
+      }
+      return super.accept(field);
+    }
+  })
           .around(classEnvRule = new TestRuleSetupAndRestoreClassEnv()).around(new RevertDefaultThreadHandlerRule());
   private final SolrTestUtil solrTestUtil = new SolrTestUtil();
 

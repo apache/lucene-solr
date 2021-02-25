@@ -86,7 +86,7 @@ public class MiniSolrCloudCluster {
 
   private static final String SOLR_XML = "/solr.xml";
 
-  private static final String SOLR_SECURITY_JSON = "/solr/security.json";
+  private static final String SOLR_SECURITY_JSON = "/security.json";
 
   private static final int STARTUP_WAIT_SECONDS = 10;
 

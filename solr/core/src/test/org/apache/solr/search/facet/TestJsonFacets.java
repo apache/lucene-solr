@@ -54,13 +54,13 @@ import org.junit.Test;
 @LuceneTestCase.Nightly // MRM TODO: - figure out why this test can sometimes take 20 seconds - it's facet executor use?
 public class TestJsonFacets extends SolrTestCaseHS {
   
-  private static SolrInstances servers;  // for distributed testing
+  private static volatile SolrInstances servers;  // for distributed testing
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
 
   @SuppressWarnings("deprecation")
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeTestJsonFacets() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
     JSONTestUtil.failRepeatedKeys = true;
 
@@ -88,7 +88,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   @SuppressWarnings("deprecation")
   @AfterClass
-  public static void afterTests() throws Exception {
+  public static void afterTestJsonFacets() throws Exception {
     JSONTestUtil.failRepeatedKeys = false;
     FacetFieldProcessorByHashDV.MAXIMUM_STARTING_TABLE_SIZE=origTableSize;
     FacetField.FacetMethod.DEFAULT_METHOD = origDefaultFacetMethod;
@@ -97,6 +97,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
       servers = null;
     }
     deleteCore();
+    origDefaultFacetMethod = null;
   }
 
   // tip: when debugging failures, change this variable to DEFAULT_METHOD

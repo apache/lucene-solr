@@ -44,8 +44,7 @@ import org.junit.Test;
 @LuceneTestCase.Nightly // can be slow
 public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistributedSearchTestCase {
 
-  private static List<String> ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique",
-      "missing", "countvals", "percentile", "variance", "hll");
+  private static List<String> ALL_STATS;
                                                         
   private final String STAT_FIELD;
   private String ALL_STATS_JSON = "";
@@ -55,11 +54,19 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
 
     STAT_FIELD = random().nextBoolean() ? "stat_is" : "stat_i";
+    ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique",
+        "missing", "countvals", "percentile", "variance", "hll");
 
     for (String stat : ALL_STATS) {
       String val = stat.equals("percentile")? STAT_FIELD+",90": STAT_FIELD;
       ALL_STATS_JSON += stat + ":'" + stat + "(" + val + ")',";
     }
+  }
+
+  @Override
+  public void distribTearDown() throws Exception {
+    ALL_STATS.clear();
+    ALL_STATS_JSON = "";
   }
   
   @Test

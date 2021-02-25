@@ -41,7 +41,8 @@ import org.junit.Test;
 public class CloudMLTQParserTest extends SolrCloudTestCase {
   
   @Before
-  public void setupCluster() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     configureCluster(2)
     .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
     .configure();
@@ -94,10 +95,11 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   }
   
   @After
-  public void cleanCluster() throws Exception {
+  public void tearDown() throws Exception {
     if (null != cluster) {
       cluster.shutdown();
     }
+    super.tearDown();
   }
 
   public static final String COLLECTION = "mlt-collection";

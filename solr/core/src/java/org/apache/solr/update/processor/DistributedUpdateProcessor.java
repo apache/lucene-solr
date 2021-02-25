@@ -487,7 +487,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           } else {
             // there have been updates higher than the current update. we need to check
             // the specific version for this id.
-            Long lastVersion = vinfo.lookupVersion(cmd.getIndexedId());
+            Long lastVersion = vinfo.lookupVersion(idBytes);
             if (lastVersion != null && Math.abs(lastVersion) >= versionOnUpdate) {
               // This update is a repeat, or was reordered. We need to drop this update.
               if (log.isDebugEnabled()) {

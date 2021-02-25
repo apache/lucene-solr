@@ -680,19 +680,12 @@ public class PeerSync implements SolrMetricProducer {
             }
             case UpdateLog.UPDATE_INPLACE:
             {
-
-              SolrInputDocument sdoc = (SolrInputDocument) entry.get(entry.size() - 1);
-              Long prevVersion = (Long) entry.get(UpdateLog.PREV_VERSION_IDX);
-              AddUpdateCommand ucmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get();
-              ucmd.clear();
-              ucmd.setReq(req);
-              ucmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
-              UpdateLog.convertTlogEntryToAddUpdateCommand(req, sdoc, oper, prevVersion, version, ucmd);
-
+              AddUpdateCommand cmd = UpdateLog.convertTlogEntryToAddUpdateCommand(req, entry, oper, version);
+              cmd.setFlags(UpdateCommand.PEER_SYNC | UpdateCommand.IGNORE_AUTOCOMMIT);
               if (debug) {
-                log.debug("{} inplace update {} prevVersion={} doc={}", logPrefix, ucmd, ucmd.prevVersion, ucmd.solrDoc);
+                log.debug("{} inplace update {} prevVersion={} doc={}", logPrefix, cmd, cmd.prevVersion, cmd.solrDoc);
               }
-              proc.processAdd(ucmd);
+              proc.processAdd(cmd);
               break;
             }
 

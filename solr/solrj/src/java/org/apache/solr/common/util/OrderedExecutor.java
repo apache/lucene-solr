@@ -88,6 +88,16 @@ public class OrderedExecutor extends ExecutorCompletionService {
     ExecutorUtil.awaitTermination(delegate);
   }
 
+  public void waitForTasks() {
+    while (sparseStripedLock.map.size() > 0) {
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      }
+    }
+  }
+
   public void shutdownNow() {
     delegate.shutdownNow();
   }

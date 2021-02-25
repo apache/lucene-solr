@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.Utils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,14 +38,17 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
   private static final String COLLECTION = "schema-api-failure";
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeSchemaApiFailureTest() throws Exception {
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster(1).configure();
     CollectionAdminRequest.createCollection(COLLECTION, 2, 1) // _default configset
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
-    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+  }
+
+  @AfterClass
+  public static void afterSchemaApiFailureTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -55,9 +59,9 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
         (Utils.makeMap("name","myfield", "type","string"));
     SchemaResponse.UpdateResponse updateResponse = fieldAddition.process(client, COLLECTION);
 
-    BaseHttpSolrClient.RemoteExecutionException ex = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, () -> fieldAddition.process(client, COLLECTION));
+    BaseHttpSolrClient.RemoteSolrException ex = SolrTestCaseUtil.expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> fieldAddition.process(client, COLLECTION));
 
-    assertTrue("expected error message 'Field 'myfield' already exists'.",Utils.getObjectByPath(ex.getMetaData(), false, "error/details[0]/errorMessages[0]").toString().contains("Field 'myfield' already exists.") );
+    assertTrue("expected error message 'Field 'myfield' already exists'.", ex.getMessage().contains("Field 'myfield' already exists."));
 
   }
 
