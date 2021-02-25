@@ -355,7 +355,7 @@ public class SolrTestCase extends Assert {
      // System.setProperty("solr.zkstatewriter.throttle", "30");
       System.setProperty("solr.stateworkqueue.throttle", "0");
 
-      System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "300");
+      System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "800");
 
       System.setProperty("solr.enablePublicKeyHandler", "false");
       System.setProperty("solr.zkregister.leaderwait", "3000");

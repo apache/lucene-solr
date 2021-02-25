@@ -28,6 +28,8 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -78,11 +80,28 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
   @Test
   // MRM TODO: is this a bit slow?
+  @LuceneTestCase.Nightly
   public void testSimpleQuery() throws Exception {
 
     //3 shards. 3rd shard won't have any data.
-    createCollection("onecollection", "conf1", ImplicitDocRouter.NAME);
-    createCollection("onecollection_local", "conf2", ImplicitDocRouter.NAME);
+
+    try (ParWork work = new ParWork(this)) {
+      work.collect("", ()->{
+        try {
+          createCollection("onecollection", "conf1", ImplicitDocRouter.NAME);
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      });
+      work.collect("", ()->{
+        try {
+          createCollection("onecollection_local", "conf2", ImplicitDocRouter.NAME);
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      });
+
+    }
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
@@ -163,10 +182,36 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
     // But should be different when querying across collection1_local and collection2_local
     // since the idf is calculated per shard
 
-    createCollection("collection1", "conf1");
-    createCollection("collection1_local", "conf2");
-    createCollection("collection2", "conf1");
-    createCollection("collection2_local", "conf2");
+    try (ParWork work = new ParWork(this)) {
+      work.collect("", ()->{
+        try {
+          createCollection("collection1", "conf1");
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      });
+      work.collect("", ()->{
+        try {
+          createCollection("collection1_local", "conf2");
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      });
+      work.collect("", ()->{
+        try {
+          createCollection("collection2", "conf1");
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      });
+      work.collect("", ()->{
+        try {
+          createCollection("collection2_local", "conf2");
+        } catch (Exception e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+      });
+    }
 
     addDocsRandomly();
 

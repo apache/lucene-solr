@@ -976,7 +976,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       Slice slice = coll.getSlice(shard);
       if (slice  != null) {
         Replica leader = slice.getLeader();
-        if (leader != null) {
+        if (leader != null && isNodeLive(leader.getNodeName())) {
           return leader;
         }
       }
