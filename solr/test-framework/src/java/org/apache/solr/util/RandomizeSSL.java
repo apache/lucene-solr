@@ -112,6 +112,10 @@ public @interface RandomizeSSL {
       useClientAuth = TestUtil.nextInt(SolrTestCase.random(), 0, 999) <
               (int) (1000 * getEffectiveOdds(clientAuth, LuceneTestCase.TEST_NIGHTLY, LuceneTestCase.RANDOM_MULTIPLIER));
 
+      if (useSSL || useClientAuth) {
+        System.setProperty("solr.jetty.ssl.verifyClientHostName", "HTTPS");
+      }
+
       return new SSLTestConfig(useSSL, useClientAuth);
     }
     

@@ -84,7 +84,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
         "old haven was blue.");
      List<Replica> replicas = new ArrayList<>();
 
-   replicas.addAll(cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION).getSlice("shard1").getReplicas());
+   replicas.addAll(cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION).getSlice("s1").getReplicas());
 
     skipServers.add(getJettyOnPort(getReplicaPort(replicas.get(0))));
     
@@ -107,7 +107,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.SYNCSHARD.toString());
     params.set("collection", "collection1");
-    params.set("shard", "shard1");
+    params.set("shard", "s1");
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     
@@ -129,7 +129,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     
     
     // kill the leader - new leader could have all the docs or be missing one
-    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "shard1", 10000)));
+    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 10000)));
     
     skipServers = getRandomOtherJetty(leaderJetty, null); // but not the leader
     
@@ -149,7 +149,7 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     // let's get the latest leader
     while (deadJetty == leaderJetty) {
    //   updateMappingsFromZk(this.jettys, this.clients);
-      leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "shard1", 5000)));
+      leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 5000)));
       if (deadJetty == leaderJetty) {
         Thread.sleep(250);
       }

@@ -531,7 +531,7 @@ public class SolrXmlConfig {
       }
     }
     // if there's an MBean server running but there was no JMX reporter then add a default one
-    boolean disableDefaultJmxReporter = Boolean.parseBoolean(System.getProperty("solr.disableDefaultJmxReporter", "false"));
+    boolean disableDefaultJmxReporter = Boolean.parseBoolean(System.getProperty("solr.disableDefaultJmxReporter", "true"));
     if (!disableDefaultJmxReporter && !hasJmxReporter) {
       MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
       if (mBeanServer != null ) {

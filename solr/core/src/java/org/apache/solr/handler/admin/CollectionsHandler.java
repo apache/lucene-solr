@@ -22,6 +22,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -633,9 +634,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       Replica leaderProps = docCollection.getLeader(shard);
       ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
-      try (HttpSolrClient client = new Builder(leaderProps.getBaseUrl())
-          .withConnectionTimeout(15000)
-          .withSocketTimeout(60000)
+      try (Http2SolrClient client = new Http2SolrClient.Builder(leaderProps.getBaseUrl())
+          .idleTimeout(60000)
           .markInternalRequest()
           .build()) {
         RequestSyncShard reqSyncShard = new RequestSyncShard();

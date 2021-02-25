@@ -120,7 +120,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     // TODO: really should be in solr base classes, but some extend LTC directly.
     // we do this in beforeClass, because some tests currently disable it
     if (System.getProperty("solr.directoryFactory") == null) {
-      System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
+      //System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockDirectoryFactory");
     }
 
     // if verbose: print some debugging stuff about which codecs are loaded.

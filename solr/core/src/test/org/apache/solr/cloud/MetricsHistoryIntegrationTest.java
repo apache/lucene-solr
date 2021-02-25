@@ -59,7 +59,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   private static TimeSource timeSource;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeMetricsHistoryIntegrationTest() throws Exception {
     System.setProperty("solr.disableDefaultJmxReporter", "false");
     System.setProperty("solr.enableMetrics", "true");
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
@@ -80,7 +80,8 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void teardown() throws Exception {
+  public static void afterMetricsHistoryIntegrationTest() throws Exception {
+    shutdownCluster();
     solrClient = null;
     cloudManager = null;
   }

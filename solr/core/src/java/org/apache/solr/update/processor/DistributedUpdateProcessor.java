@@ -318,7 +318,6 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // we may or may not be the leader.
 
     // Find any existing version in the document
-    // TODO: don't reuse update commands any more!
     long versionOnUpdate = cmd.getVersion();
 
     if (versionOnUpdate == 0) {
@@ -510,7 +509,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       if (shouldCloneCmdDoc()) {
         cloneCmd = (AddUpdateCommand) cmd.clone();
-        SolrInputDocument clonedDoc = cmd.solrDoc.deepCopy();
+        SolrInputDocument clonedDoc = cloneCmd.solrDoc.deepCopy();
         cloneCmd.solrDoc = clonedDoc;
       }
 

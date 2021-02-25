@@ -239,7 +239,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
 
   // check that .system exists
   public void checkSystemCollection() {
-    if (this.overseer == null) {
+    if (overseer == null || !overseer.getCoreContainer().getZkController().isOverseerLeader()) {
       return;
     }
     if (cloudManager != null) {

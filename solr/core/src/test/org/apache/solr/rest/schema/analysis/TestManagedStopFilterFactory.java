@@ -37,7 +37,6 @@ import org.junit.Test;
  */
 public class TestManagedStopFilterFactory extends RestTestBase {
   private File tmpSolrHome;
-  private File tmpConfDir;
 
   private final String collection = "collection1";
   private final String confDir = collection + "/conf";
@@ -45,7 +44,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   @Before
   public void setUp() throws Exception {
     tmpSolrHome = SolrTestUtil.createTempDir().toFile();
-    tmpConfDir = new File(tmpSolrHome, confDir);
+
     FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
@@ -53,13 +52,16 @@ public class TestManagedStopFilterFactory extends RestTestBase {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
 
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
                           "/solr", true, extraServlets);
     super.setUp();
   }
 
   @After
   public void tearDown() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+    }
     super.tearDown();
     System.clearProperty("managed.schema.mutable");
     System.clearProperty("enable.update.log");

@@ -54,32 +54,16 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
-
-
-   // long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());
 
-//    RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
-//      long restartTime = 0;
-//      try {
-//        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
-//      } catch (Exception e) {
-//        log.warn("Exception getting core start time: {}", e.getMessage());
-//        return false;
-//      }
-//      return restartTime > coreStartTime;
-//    });
-
-    final int initialStateVersion = getCollectionState(testCollectionName).getZNodeVersion();
-
      Replica leader
-            = cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 15000);
+            = cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "s1", 15000);
     cluster.expireZkSession(cluster.getReplicaJetty(leader));
 
     waitForState("Timed out waiting for core to re-register as ACTIVE after session expiry", testCollectionName, (n, c) -> {
       log.info("Collection state: {}", c);
       Replica expiredReplica = c.getReplica(leader.getName());
-      return expiredReplica.getState() == Replica.State.ACTIVE && c.getZNodeVersion() > initialStateVersion;
+      return expiredReplica.getState() == Replica.State.ACTIVE;
     });
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");

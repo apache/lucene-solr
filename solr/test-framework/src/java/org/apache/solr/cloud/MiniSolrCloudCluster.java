@@ -130,17 +130,17 @@ public class MiniSolrCloudCluster {
       "</solr>\n";
 
   private final Object startupWait = new Object();
-  private SolrZkClient solrZkClient;
+  private volatile SolrZkClient solrZkClient;
   private volatile ZkTestServer zkServer; // non-final due to injectChaos()
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
-  private CloudHttp2SolrClient solrClient;
+  private volatile CloudHttp2SolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
-  private boolean isShutDown;
+
   private volatile ZkStateReader zkStateReader;
 
   /**
@@ -609,7 +609,7 @@ public class MiniSolrCloudCluster {
     reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
 
     final Set<String> collections = reader.getClusterState().getCollectionsMap().keySet();
-    try (ParWork work = new ParWork(this, false, true)) {
+    try (ParWork work = new ParWork(this, false, false)) {
       collections.forEach(collection -> {
          work.collect("", ()->{
            try {
@@ -619,15 +619,6 @@ public class MiniSolrCloudCluster {
            }
          });
       });
-    }
-
-
-    // may be deleted, but may not be gone yet - we only wait to not see it in ZK, not for core unloads
-    for (JettySolrRunner jetty : jettys) {
-      CoreContainer cc = jetty.getCoreContainer();
-      if (cc != null) {
-        cc.waitForCoresToFinish();
-      }
     }
   }
   
@@ -649,8 +640,6 @@ public class MiniSolrCloudCluster {
    * Shut down the cluster, including all Solr nodes and ZooKeeper
    */
   public synchronized void shutdown() throws Exception {
-    this.isShutDown = true;
-
     try {
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {

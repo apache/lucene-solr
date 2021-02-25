@@ -32,7 +32,7 @@ import org.junit.Test;
 public class ConfigSetsAPITest extends SolrCloudTestCase {
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeConfigSetsAPITest() throws Exception {
     System.setProperty("shareSchema", "true");  // see testSharedSchema
 
     configureCluster(1) // some tests here assume 1 node
@@ -40,13 +40,15 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
         .addConfig("cShare", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .formatZk(true).configure();
   }
+
   @After
-  public void doAfter() throws Exception {
+  public void tearDown() throws Exception {
     cluster.deleteAllCollections();
+    super.tearDown();
   }
 
   @AfterClass
-  public static void doAfterClass() {
+  public static void afterConfigSetsAPITest() {
     System.clearProperty("shareSchema");
   }
 

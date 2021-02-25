@@ -28,6 +28,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -46,7 +47,7 @@ public class RecoveryZkTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeRecoveryZkTest() throws Exception {
     useFactory(null);
     System.setProperty("solr.skipCommitOnClose", "false");
 
@@ -63,6 +64,12 @@ public class RecoveryZkTest extends SolrCloudTestCase {
     configureCluster(2).formatZk(true)
         .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
+  }
+
+
+  @AfterClass
+  public static void afterRecoveryZkTest() throws Exception {
+    shutdownCluster();
   }
 
   private final List<StoppableIndexingThread> threads = Collections.synchronizedList(new ArrayList<>());

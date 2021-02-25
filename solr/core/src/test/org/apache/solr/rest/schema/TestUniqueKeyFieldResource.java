@@ -17,18 +17,27 @@
 package org.apache.solr.rest.schema;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.rest.SolrRestletTestBase;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestUniqueKeyFieldResource extends SolrRestletTestBase {
 
-
   @Before
-  public void beforeTest() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     JettyConfig jettyConfig = JettyConfig.builder()
         .withSSLConfig(sslConfig.buildServerSSLConfig())
         .build();
     jetty = createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    if (jetty != null) {
+      jetty.stop();
+    }
   }
 
   @Test

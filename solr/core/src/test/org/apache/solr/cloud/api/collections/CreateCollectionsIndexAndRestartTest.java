@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.common.ParWork;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,11 +43,16 @@ public class CreateCollectionsIndexAndRestartTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCreateCollectionsIndexAndRestartTest() throws Exception {
     useFactory(null);
     configureCluster(5)
         .addConfig("conf", SolrTestUtil.configset("cloud-minimal"))
         .configure();
+  }
+
+  @AfterClass
+  public static void afterCreateCollectionsIndexAndRestartTest() throws Exception {
+    shutdownCluster();
   }
 
   @Before

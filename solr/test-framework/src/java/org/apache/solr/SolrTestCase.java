@@ -331,7 +331,23 @@ public class SolrTestCase extends Assert {
     System.setProperty("solr.tests.numeric.dv", "true");
 
     System.setProperty("solr.tests.ramBufferSizeMB", "100");
+    System.setProperty("solr.tests.ramPerThreadHardLimitMB", "100");
+
+    System.setProperty("solr.tests.mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
+    System.setProperty("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
+    System.setProperty("solr.mscheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
     //enableReuseOfCryptoKeys();
+
+
+    // default field types
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
+    System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.TrieIntField");
+    System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.TrieFloatField");
+    System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.TrieLongField");
+    System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.TrieDoubleField");
+    System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.TrieDateField");
+    System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
+    System.setProperty("solr.tests.numeric.dv", "true");
 
     if (!LuceneTestCase.TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
@@ -348,14 +364,6 @@ public class SolrTestCase extends Assert {
       System.setProperty("solr.lbclient.live_check_interval", "3000");
       System.setProperty("solr.httpShardHandler.completionTimeout", "10000");
       System.setProperty("zookeeper.request.timeout", "15000");
-      System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "false");
-      System.setProperty("solr.tests.IntegerFieldType", "org.apache.solr.schema.TrieIntField");
-      System.setProperty("solr.tests.FloatFieldType", "org.apache.solr.schema.TrieFloatField");
-      System.setProperty("solr.tests.LongFieldType", "org.apache.solr.schema.TrieLongField");
-      System.setProperty("solr.tests.DoubleFieldType", "org.apache.solr.schema.TrieDoubleField");
-      System.setProperty("solr.tests.DateFieldType", "org.apache.solr.schema.TrieDateField");
-      System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
-      System.setProperty("solr.tests.numeric.dv", "true");
 
 
       System.setProperty("solr.concurrentRequests.max", "15");
@@ -454,10 +462,6 @@ public class SolrTestCase extends Assert {
       SolrTestCaseJ4.useFactory("org.apache.solr.core.RAMDirectoryFactory");
       System.setProperty("solr.lock.type", "single");
       System.setProperty("solr.tests.lockType", "single");
-
-      System.setProperty("solr.tests.mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
-      System.setProperty("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
-      System.setProperty("solr.mscheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
 
       System.setProperty("solr.codec", "solr.SchemaCodecFactory");
       System.setProperty("tests.COMPRESSION_MODE", "BEST_COMPRESSION");

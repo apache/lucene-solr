@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -775,7 +776,19 @@ public class SolrMetricManager {
     MetricRegistry registry = registry(registryName);
     if (registry == null) return;
 
-    ParWork.getRootSharedExecutor().submit(() -> {
+    try {
+      ParWork.getRootSharedExecutor().submit(() -> {
+        registry.removeMatching((name, metric) -> {
+          if (metric instanceof GaugeWrapper) {
+            GaugeWrapper wrapper = (GaugeWrapper) metric;
+            boolean toRemove = wrapper.getTag().contains(tagSegment);
+            return toRemove;
+          }
+          return false;
+
+        });
+      });
+    } catch (RejectedExecutionException e) {
       registry.removeMatching((name, metric) -> {
         if (metric instanceof GaugeWrapper) {
           GaugeWrapper wrapper = (GaugeWrapper) metric;
@@ -783,9 +796,8 @@ public class SolrMetricManager {
           return toRemove;
         }
         return false;
-
       });
-    });
+    }
 
     return;
   }

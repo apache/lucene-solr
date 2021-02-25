@@ -49,6 +49,7 @@ import org.apache.solr.common.util.SolrInternalHttpClient;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SolrScheduledExecutorScheduler;
 import org.apache.solr.common.util.Utils;
+import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
@@ -232,10 +233,12 @@ public class Http2SolrClient extends SolrClient {
 
     minThreads = Math.min( builder.maxThreadPoolSize, minThreads);
 
+    int maxThreads = Math.max(builder.maxThreadPoolSize, minThreads);
+
     int capacity = Math.max(minThreads, 8) * 32;
     BlockingQueue<Runnable> queue = new BlockingArrayQueue<>(capacity, capacity);
 
-    httpClientExecutor = new SolrQueuedThreadPool("http2Client", builder.maxThreadPoolSize, minThreads,
+    httpClientExecutor = new SolrQueuedThreadPool("http2Client", maxThreads, minThreads,
         this.headers != null && this.headers.containsKey(QoSParams.REQUEST_SOURCE) && this.headers.get(QoSParams.REQUEST_SOURCE).equals(QoSParams.INTERNAL) ? 1000 : 1000,
         queue, -1, null);
     httpClientExecutor.setLowThreadsThreshold(-1);
@@ -247,12 +250,12 @@ public class Http2SolrClient extends SolrClient {
       } else {
         if (log.isTraceEnabled()) log.trace("Create Http2SolrClient with HTTP/1.1 transport");
       }
-      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(6);
+      SolrHttpClientTransportOverHTTP transport = new SolrHttpClientTransportOverHTTP(3);
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     } else {
       if (log.isTraceEnabled()) log.trace("Create Http2SolrClient with HTTP/2 transport");
       HTTP2Client http2client = new HTTP2Client();
-      http2client.setSelectors(6);
+      http2client.setSelectors(3);
       http2client.setMaxConcurrentPushedStreams(512);
       http2client.setInputBufferSize(8192);
       HttpClientTransportOverHTTP2 transport = new HttpClientTransportOverHTTP2(http2client);
@@ -308,11 +311,6 @@ public class Http2SolrClient extends SolrClient {
     closed = true;
     if (closeClient) {
       try {
-        httpClient.stop();
-      } catch (Exception e) {
-        log.error("Exception closing httpClient", e);
-      }
-      try {
         scheduler.stop();
       } catch (Exception e) {
         log.error("Exception closing httpClient scheduler", e);
@@ -321,6 +319,18 @@ public class Http2SolrClient extends SolrClient {
         httpClientExecutor.stop();
       } catch (Exception e) {
         log.error("Exception closing httpClient httpClientExecutor", e);
+      }
+      try {
+        if (httpClient.getTransport() instanceof AbstractHttpClientTransport) {
+          ((AbstractHttpClientTransport) httpClient.getTransport()).stop();
+        }
+      } catch (Exception e) {
+        log.error("Exception closing httpClient", e);
+      }
+      try {
+        httpClient.stop();
+      } catch (Exception e) {
+        log.error("Exception closing httpClient", e);
       }
     }
     if (log.isTraceEnabled()) log.trace("Done closing {}", this.getClass().getSimpleName());
@@ -1139,7 +1149,7 @@ public class Http2SolrClient extends SolrClient {
 
   public static class Builder {
 
-    public static int DEFAULT_MAX_THREADS = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(7, PROC_COUNT * 2));
+    public static int DEFAULT_MAX_THREADS = Integer.getInteger("solr.maxHttp2ClientThreads", Math.max(12, PROC_COUNT * 2));
     private static final Integer DEFAULT_IDLE_TIME = Integer.getInteger("solr.http2solrclient.default.idletimeout", 120000);
     public int maxThreadPoolSize = DEFAULT_MAX_THREADS;
     public int maxRequestsQueuedPerDestination = 1600;

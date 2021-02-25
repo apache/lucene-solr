@@ -108,11 +108,6 @@ public class AddUpdateCommand extends UpdateCommand {
      req = null;
    }
 
-  public void clearAll() {
-    clear();
-    req = null;
-  }
-
    public SolrInputDocument getSolrInputDocument() {
      return solrDoc;
    }

@@ -18,6 +18,7 @@ package org.apache.solr.rest.schema;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.util.RestTestBase;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -28,11 +29,21 @@ import java.util.TreeMap;
 public class TestSerializedLuceneMatchVersion extends RestTestBase {
 
   @Before
-  public void init() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     final SortedMap<ServletHolder,String> extraServlets = new TreeMap<>();
 
     jetty = createJettyAndHarness(SolrTestUtil.TEST_HOME(), "solrconfig-minimal.xml", "schema-rest-lucene-match-version.xml",
                           "/solr", true, extraServlets);
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+      jetty = null;
+    }
+    super.tearDown();
   }
 
   @Test

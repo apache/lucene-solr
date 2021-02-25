@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -46,17 +47,22 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 4;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCustomCollectionTest() throws Exception {
     useFactory(null);
     configureCluster(NODE_COUNT)
         .addConfig("conf", SolrTestUtil.configset("cloud-dynamic"))
         .configure();
   }
 
+  @AfterClass
+  public static void afterCustomCollectionTest() throws Exception {
+    shutdownCluster();
+  }
+
   @After
   public void ensureClusterEmpty() throws Exception {
       // figure out why this is flakey - think it hits a 404
-      // cluster.deleteAllCollections();
+      cluster.deleteAllCollections();
   }
 
   @Test
@@ -74,8 +80,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     DocCollection coll = getCollectionState(collection);
     assertEquals("implicit", ((Map) coll.get(DOC_ROUTER)).get("name"));
-    assertNotNull(coll.getStr(REPLICATION_FACTOR));
-    assertNotNull(coll.getStr(MAX_SHARDS_PER_NODE));
+
     assertNull("A shard of a Collection configured with implicit router must have null range",
         coll.getSlice("a").getRange());
 
@@ -132,13 +137,12 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     int numShards = 4;
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
-    int maxShardsPerNode = ((numShards * replicationFactor) / NODE_COUNT) + 1;
+
     String shard_fld = "shard_s";
 
     final String collection = "withShardField";
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c,d", replicationFactor)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
 

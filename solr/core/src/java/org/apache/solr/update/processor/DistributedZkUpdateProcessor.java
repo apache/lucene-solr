@@ -413,7 +413,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDeleteById(DeleteUpdateCommand cmd) throws IOException {
-    setupRequest(cmd);
+
     log.info("deletebyid {}", cmd.id);
     // check if client has requested minimum replication factor information. will set replicationTracker to null if
     // we aren't the leader or subShardLeader
@@ -716,18 +716,18 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     String shardId = slice.getName();
-    Replica leaderReplica = null;
+    Replica leaderReplica;
     try {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
-      leaderReplica = clusterState.getCollection(collection).getSlice(shardId).getLeader();
-      isLeader = leaderReplica != null && leaderReplica.getName().equals(desc.getName());
-      if (log.isTraceEnabled()) log.trace("Are we leader for sending to replicas? {} phase={}", isLeader, phase);
+      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
+      isLeader = leaderReplica.getName().equals(desc.getName());
+
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
           shardId = cloudDesc.getShardId();
-          leaderReplica = clusterState.getCollection(collection).getSlice(shardId).getLeader();
+          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
         }
       }
 
@@ -802,7 +802,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         if (log.isDebugEnabled()) log.debug("Forward update to leader {}", nodes);
 
         if (desc.getName().equals(leaderReplica.getName())) {
-          throw new IllegalStateException("We were asked to forward an update to ourself, which should not happen name=" + desc.getName());
+          throw new IllegalStateException("We were asked to forward an update to ourself, which should not happen name=" + desc.getName() + " isLeader=" + isLeader);
         }
         return nodes;
       }

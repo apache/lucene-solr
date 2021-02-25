@@ -83,8 +83,8 @@ public class SolrRequestInfo {
       }
     } finally {
       threadLocal.remove();
-      AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clearAll();
-      AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clearAll();
+      AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get().clear();
+      AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand_TLOG.get().clear();
       SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get().clear();
     }
   }

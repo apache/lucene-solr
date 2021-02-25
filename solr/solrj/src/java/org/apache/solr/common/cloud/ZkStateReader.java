@@ -971,6 +971,16 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
    * Get shard leader properties, with retry if none exist.
    */
   public Replica getLeaderRetry(String collection, String shard, int timeout, boolean mustBeLive) throws InterruptedException, TimeoutException {
+    DocCollection coll = clusterState.getCollectionOrNull(collection);
+    if (coll != null) {
+      Slice slice = coll.getSlice(shard);
+      if (slice  != null) {
+        Replica leader = slice.getLeader();
+        if (leader != null) {
+          return leader;
+        }
+      }
+    }
     AtomicReference<Replica> returnLeader = new AtomicReference<>();
     try {
       waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c) -> {

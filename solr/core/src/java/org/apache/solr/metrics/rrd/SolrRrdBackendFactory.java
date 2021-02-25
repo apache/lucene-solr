@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrCloseable;
@@ -338,6 +339,11 @@ public class SolrRrdBackendFactory extends RrdBackendFactory implements SolrClos
       return;
     }
     // remove Solr doc
+    if (solrClient instanceof BaseCloudSolrClient) {
+      if (((BaseCloudSolrClient) solrClient).getZkStateReader().getClusterState().getCollectionOrNull(collection) == null) {
+        return;
+      }
+    }
     try {
       solrClient.deleteByQuery(collection, "{!term f=id}" + ID_PREFIX + ID_SEP + path);
     } catch (SolrServerException | SolrException e) {

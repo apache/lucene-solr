@@ -18,7 +18,9 @@ public class SolrInternalHttpClient extends HttpClient {
 
   @Override
   protected void doStop() throws Exception {
-    if (log.isDebugEnabled()) log.debug("Stopping {}", this.getClass().getSimpleName());
+    if (log.isDebugEnabled()) {
+      log.debug("Stopping {}", this.getClass().getSimpleName());
+    }
     super.doStop();
     assert ObjectReleaseTracker.release(this);
   }

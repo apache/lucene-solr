@@ -61,8 +61,10 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
         Map<String, Object> props = new HashMap<>();
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
+        String collection = params.get("collection");
+        String shard = params.get("shard");
 
-        Replica replica = new Replica(cname, props, null, null, zkController.zkStateReader);
+        Replica replica = new Replica(cname, props, collection, shard, zkController.zkStateReader);
 
         boolean success = syncStrategy.sync(zkController, core, replica, true).isSuccess();
         // solrcloud_debug
