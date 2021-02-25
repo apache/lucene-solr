@@ -242,8 +242,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     if (router == null) {
       router = DocRouter.DEFAULT;
     }
-
-    String configName = message.getStr(ZkStateReader.COLLECTION_CONFIG_PROP, coll.getConfigName());
+    String configName = coll.getConfigName();
     String targetCollection;
     int seq = tmpCollectionSeq.getAndIncrement();
     if (sameTarget) {

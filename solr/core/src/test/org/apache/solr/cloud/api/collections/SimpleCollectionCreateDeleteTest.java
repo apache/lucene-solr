@@ -109,7 +109,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
             // collection exists now
             assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, false));
 
-            String configName = cloudClient.getZkStateReader().readConfigName(collectionName);
+            String configName = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName).getConfigName();
 
             // config for this collection is '.AUTOCREATED', and exists globally
             assertTrue(configName.endsWith(".AUTOCREATED"));
@@ -137,7 +137,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
             // collection exists now
             assertTrue(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameInitial, false));
 
-            String configName = cloudClient.getZkStateReader().readConfigName(collectionNameInitial);
+            String configName = cloudClient.getZkStateReader().getClusterState().getCollection(collectionNameInitial).getConfigName();
 
             // config for this collection is '.AUTOCREATED', and exists globally
             assertTrue(configName.endsWith(".AUTOCREATED"));
@@ -151,7 +151,7 @@ public class SimpleCollectionCreateDeleteTest extends AbstractFullDistribZkTestB
             assertTrue("The collection with shared config set should have been created", requestWithSharedConfig.get("success") != null);
             assertTrue("The new collection should exist after a successful creation", cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionNameWithSharedConfig, false));
 
-            String configNameOfSecondCollection = cloudClient.getZkStateReader().readConfigName(collectionNameWithSharedConfig);
+            String configNameOfSecondCollection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionNameWithSharedConfig).getConfigName();
 
             assertEquals("Both collections should be using the same config", configName, configNameOfSecondCollection);
 
