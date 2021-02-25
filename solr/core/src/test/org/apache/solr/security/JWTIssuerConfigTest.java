@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcher;
@@ -41,7 +41,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONUtil;
 
-public class JWTIssuerConfigTest extends LuceneTestCase {
+public class JWTIssuerConfigTest extends SolrTestCase {
   private JWTIssuerConfig testIssuer;
   private Map<String, Object> testIssuerConfigMap;
   private String testIssuerJson;
