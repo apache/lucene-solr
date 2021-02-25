@@ -362,10 +362,10 @@ to this subgraph, and a better recommendation to be paired with butter.
 
 == Temporal Graph Expressions
 
-The examples above lay the groundwork for Solr's new temporal graph queries.
-Temporal graph queries allow Solr to walk the graph using *windows of time*.
-The initial release supports graph walks using ten second increments which is useful
-for *event correlation* and *root cause analysis* use cases in log analytics.
+The examples above lay the groundwork for temporal graph queries.
+Temporal graph queries allow the `nodes` function to walk the graph using *windows of time* to surface
+*cross-correlations* within the data. The nodes function currently supports graph walks using *ten second increments*
+which is useful for *event correlation* and *root cause analysis* in log analytics.
 
 In order to support temporal graph queries a ten second truncated timestamp in *ISO 8601* format must
 be added to the log records as a string field at indexing time. Here is a sample ten second
