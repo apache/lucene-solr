@@ -183,7 +183,7 @@ public class ExportTool extends SolrCLI.ToolBase {
   static Set<String> formats = ImmutableSet.of(JAVABIN, "jsonl");
 
   @Override
-  protected void runImpl(CommandLine cli) throws Exception {
+  protected void runImpl(CommandLine cli, Http2SolrClient httpClient) throws Exception {
     String url = cli.getOptionValue("url");
     Info info = new MultiThreadedRunner(null, url);
     info.query = cli.getOptionValue("query", "*:*");

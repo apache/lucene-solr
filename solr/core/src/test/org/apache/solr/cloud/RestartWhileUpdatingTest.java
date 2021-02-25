@@ -26,10 +26,12 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
 @Nightly
+@Ignore // MRM TODO: bridge base test class
 public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
 
   //private static final String DISTRIB_UPDATE_CHAIN = "distrib-update-chain";

@@ -476,21 +476,23 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         });
       });
       // add node-level stats
-      Map<String, Object> nodeValues = nodeStateProvider.getNodeValues(node, nodeTags);
-      for (Group g : Arrays.asList(Group.node, Group.jvm)) {
-        String registry = SolrMetricManager.getRegistryName(g);
-        Map<String, Number> perReg = totals
-            .computeIfAbsent(g, gr -> new HashMap<>())
-            .computeIfAbsent(registry, r -> new HashMap<>());
-        Set<String> names = new HashSet<>();
-        names.addAll(counters.get(g.toString()));
-        names.addAll(gauges.get(g.toString()));
-        names.forEach(name -> {
-          String tag = "metrics:" + registry + ":" + name;
-          double value = ((Number)nodeValues.getOrDefault(tag, 0.0)).doubleValue();
-          DoubleAdder adder = (DoubleAdder)perReg.computeIfAbsent(name, t -> new DoubleAdder());
-          adder.add(value);
-        });
+      try {
+        Map<String,Object> nodeValues = nodeStateProvider.getNodeValues(node, nodeTags);
+        for (Group g : Arrays.asList(Group.node, Group.jvm)) {
+          String registry = SolrMetricManager.getRegistryName(g);
+          Map<String,Number> perReg = totals.computeIfAbsent(g, gr -> new HashMap<>()).computeIfAbsent(registry, r -> new HashMap<>());
+          Set<String> names = new HashSet<>();
+          names.addAll(counters.get(g.toString()));
+          names.addAll(gauges.get(g.toString()));
+          names.forEach(name -> {
+            String tag = "metrics:" + registry + ":" + name;
+            double value = ((Number) nodeValues.getOrDefault(tag, 0.0)).doubleValue();
+            DoubleAdder adder = (DoubleAdder) perReg.computeIfAbsent(name, t -> new DoubleAdder());
+            adder.add(value);
+          });
+        }
+      } catch (Exception e) {
+        log.error("Exception getting node level stats", e);
       }
     }
 

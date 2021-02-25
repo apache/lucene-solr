@@ -20,7 +20,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,6 +105,21 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         old.shutdown();
       }
     }
+  }
+
+  @BeforeClass
+  public static void beforeSolrCloudTestCase() throws Exception {
+    SolrCloudTestCase.qtp = getQtp();
+    SolrCloudTestCase.qtp.start();
+  }
+
+  @AfterClass
+  public static void afterSolrCloudTestCase() throws Exception {
+    if (SolrCloudTestCase.qtp != null) {
+      SolrCloudTestCase.qtp.stop();
+      SolrCloudTestCase.qtp = null;
+    }
+
   }
 
   @Before

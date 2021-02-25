@@ -120,7 +120,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         int leaderVoteWait = cc.getZkController().getLeaderVoteWait();
 
-        if (log.isDebugEnabled()) log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
+        if (log.isDebugEnabled()) {
+          log.debug("Running the leader process for shard={} and weAreReplacement={} and leaderVoteWait={}", shardId, weAreReplacement, leaderVoteWait);
+        }
 
         if (core.getUpdateHandler().getUpdateLog() == null) {
           log.error("No UpdateLog found - cannot sync");
@@ -135,7 +137,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         replicaType = cloudCd.getReplicaType();
         // should I be leader?
 
-        if (log.isDebugEnabled()) log.debug("Check zkShardTerms");
+        if (log.isDebugEnabled()) {
+          log.debug("Check zkShardTerms");
+        }
         ZkShardTerms zkShardTerms = zkController.getShardTermsOrNull(collection, shardId);
         try {
           if (zkShardTerms != null) {

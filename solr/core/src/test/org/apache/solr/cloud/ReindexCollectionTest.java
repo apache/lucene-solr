@@ -49,6 +49,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -56,6 +57,7 @@ import org.junit.Test;
  */
 @LogLevel("org.apache.solr.cloud.api.collections.ReindexCollectionCmd=DEBUG")
 @LuceneTestCase.Nightly // MRM TODO: speed up
+@Ignore // MRM TODO:
 public class ReindexCollectionTest extends SolrCloudTestCase {
 
   @BeforeClass

@@ -19,7 +19,9 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,7 +62,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   private final static int WAIT_TIME = TEST_NIGHTLY ? 60 : 30;
 
   @BeforeClass
-  private static void createMiniSolrCloudCluster() throws Exception {
+  public static void createMiniSolrCloudCluster() throws Exception {
 
     // we only need 1 node, and we don't care about any configs or collections
     // we're going to fake all the live_nodes changes we want to fake.
@@ -74,8 +76,8 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   }
   
   @AfterClass
-  private static void afterClass() throws Exception {
-
+  public static void afterClass() throws Exception {
+    shutdownCluster();
   }
 
   /** returns the true set of live nodes (currently in zk) as a sorted list */
@@ -195,6 +197,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
 
     private boolean running = false;;
     private int numAdded = 0;
+    private Set<String> nodePaths = new HashSet<>();
     
     /** ID should ideally be unique amongst any other instances */
     public LiveNodeTrasher(String id, int numNodesToAdd) {
@@ -208,6 +211,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
       // NOTE: test includes 'running'
       for (int i = 0; running && i < numNodesToAdd; i++) {
         final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/thrasher-" + id + "-" + i;
+        nodePaths.add(nodePath);
         try {
           client.makePath(nodePath, CreateMode.EPHEMERAL, true);
           numAdded++;
@@ -220,7 +224,15 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     public int getNumAdded() {
       return numAdded;
     }
-    public void close() { }
+    public void close() {
+      for (String nodePath : nodePaths) {
+        try {
+          client.delete(nodePath, -1);
+        } catch (Exception e) {
+          log.error("failed to delete: {}", nodePath, e);
+        }
+      }
+    }
     public void stop() {
       running = false;
     }

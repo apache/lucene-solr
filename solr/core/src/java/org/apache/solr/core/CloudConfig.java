@@ -132,7 +132,7 @@ public class CloudConfig {
   public static class CloudConfigBuilder {
 
     private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 45000;
-    private static final int DEFAULT_LEADER_VOTE_WAIT = 180000;  // 3 minutes
+    private static final int DEFAULT_LEADER_VOTE_WAIT = 15000;  // 15 SECONDS
     private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 10000;
     private final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = Integer.getInteger("solr.defaultCollectionActiveWait", 45);  // 45 seconds
     private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false;

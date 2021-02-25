@@ -938,20 +938,18 @@ public class Overseer implements SolrCloseable {
 
           Map<String,byte[]> data = zkController.getZkClient().getData(fullPaths);
 
-          try {
-            zkController.getZkClient().delete(fullPaths, true);
-          } catch (Exception e) {
-            log.warn("Delete items failed {}", e.getMessage());
-          }
+          if (fullPaths.size() > 0) {
+            try {
+              zkController.getZkClient().delete(fullPaths, true);
+            } catch (Exception e) {
+              log.warn("Delete items failed {}", e.getMessage());
+            }
 
-          try {
-            log.info("items in queue {} after delete {} {}", path, zkController.getZkClient().listZnode(path, false));
-          } catch (KeeperException e) {
-            log.warn("Check items failed {}", e.getMessage());
-          } catch (InterruptedException e) {
-            log.warn("Check items failed {}", e.getMessage());
-          } catch (SolrServerException e) {
-            log.warn("Check items failed {}", e.getMessage());
+            try {
+              log.info("items in queue {} after delete {} {}", path, zkController.getZkClient().listZnode(path, false));
+            } catch (Exception e) {
+              log.warn("Check items failed {}", e.getMessage());
+            }
           }
 
           overseer.getTaskZkWriterExecutor().submit(() -> {

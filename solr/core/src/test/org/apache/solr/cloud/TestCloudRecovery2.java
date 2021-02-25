@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.Replica;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -41,7 +42,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
   private static final String COLLECTION = "collection1";
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeTestCloudRecovery2() throws Exception {
     useFactory(null);
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
 
@@ -53,8 +54,11 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
         .createCollection(COLLECTION, "config", 1,2)
         .setMaxShardsPerNode(100)
         .process(cluster.getSolrClient());
+  }
 
-    cluster.waitForActiveCollection(COLLECTION, 1, 2, true);
+  @AfterClass
+  public static void afterTestCloudRecovery2() throws Exception {
+    shutdownCluster();
   }
 
   @Test
@@ -69,9 +73,6 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
 
-      // we need to be sure the jetty has the up to date state, but we are not using a smart client here
-      Thread.sleep(250);
-
       UpdateRequest req = new UpdateRequest();
       for (int i = 0; i < 100; i++) {
         req = req.add("id", i+"", "num", i+"");
@@ -80,9 +81,9 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       node2.start();
 
-      Thread.sleep(250);
-
       cluster.waitForActiveCollection(COLLECTION, 1, 2, true);
+
+      cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 2);
 
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         long numFound = client.query(COLLECTION, new SolrQuery("q","*:*", "distrib", "false")).getResults().getNumFound();
@@ -93,6 +94,10 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       new UpdateRequest().add("id", "1", "num", "10")
           .commit(client1, COLLECTION);
+
+      new UpdateRequest()
+          .commit(client1, COLLECTION);
+
 
       try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(node2.getBaseUrl().toString())) {
         Object v = client.query(COLLECTION, new SolrQuery("q","id:1", "distrib", "false")).getResults().get(0).get("num");

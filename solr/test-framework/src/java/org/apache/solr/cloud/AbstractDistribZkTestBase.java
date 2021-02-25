@@ -196,14 +196,14 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     log.info("Collection has disappeared - collection:{}", collection);
   }
 
-  static void waitForNewLeader(CloudHttp2SolrClient cloudClient, String shardName, Replica oldLeader, TimeOut timeOut)
+  static void waitForNewLeader(CloudHttp2SolrClient cloudClient, String collection, String shardName, Replica oldLeader, TimeOut timeOut)
       throws Exception {
     log.info("Will wait for a node to become leader for {} secs", timeOut.timeLeft(SECONDS));
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
 
     for (; ; ) {
       ClusterState clusterState = zkStateReader.getClusterState();
-      DocCollection coll = clusterState.getCollection("collection1");
+      DocCollection coll = clusterState.getCollection(collection);
       Slice slice = coll.getSlice(shardName);
       if (slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
         if (log.isInfoEnabled()) {
@@ -222,7 +222,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       Thread.sleep(100);
     }
 
-    zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (l, docCollection) -> {
+    zkStateReader.waitForState(collection, timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (l, docCollection) -> {
       if (docCollection == null)
         return false;
 

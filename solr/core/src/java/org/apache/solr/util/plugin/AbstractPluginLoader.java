@@ -150,7 +150,7 @@ public abstract class AbstractPluginLoader<T>
     XPath xpath = loader.getXPath();
     if (nodes !=null ) {
       for (int i=0; i<nodes.size(); i++) {
-        try (ParWork parWork = new ParWork(this, false, false)) {
+        try (ParWork parWork = new ParWork(this, false, true)) {
           NodeInfo node = nodes.get(i);
 
           String name = null;

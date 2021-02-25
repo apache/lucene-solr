@@ -118,6 +118,7 @@ public class SolrCloudTestCase extends SolrTestCase {
   public static void afterSolrCloudTestCase() throws Exception {
     if (qtp != null) {
       IOUtils.closeQuietly(qtp);
+      qtp = null;
     }
   }
 
@@ -241,10 +242,6 @@ public class SolrCloudTestCase extends SolrTestCase {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster configure() throws Exception {
-      if (qtp == null) {
-        qtp = getQtp();
-        qtp.start();
-      }
       return cluster = build();
     }
 
@@ -309,10 +306,6 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   @AfterClass
   public static void shutdownCluster() throws Exception {
-    if (qtp != null) {
-      qtp.close();
-      qtp = null;
-    }
     if (cluster != null) {
       try {
         cluster.shutdown();

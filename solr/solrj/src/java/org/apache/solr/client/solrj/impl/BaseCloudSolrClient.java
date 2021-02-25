@@ -1078,7 +1078,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           });
         } catch (TimeoutException | InterruptedException e) {
           ParWork.propagateInterrupt(e);
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout waiting for collection version " + ver, e);
         }
       } else if (request.getParams().get(CoreAdminParams.ACTION).equals(CollectionParams.CollectionAction.DELETE.toString())) {
 //        try {

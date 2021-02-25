@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrCLI;
 import org.junit.BeforeClass;
@@ -47,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Emulates bin/solr -e cloud -noprompt; bin/post -c gettingstarted example/exampledocs/*.xml;
@@ -192,7 +190,9 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
     CommandLine cli =
         SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args);
     assertTrue("Delete action failed!", tool.runTool(cli) == 0);
-    assertTrue(!SolrCLI.safeCheckCollectionExists(solrUrl, testCollectionName)); // it should not exist anymore
+    try (Http2SolrClient httpClient = SolrCLI.getHttpClient()) {
+      assertTrue(!SolrCLI.safeCheckCollectionExists(solrUrl, testCollectionName, httpClient)); // it should not exist anymore
+    }
   }
 
   /**
@@ -203,10 +203,14 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
       solrUrl += "/";
     String configUrl = solrUrl + testCollectionName + "/config";
 
-    Map<String, Object> configJson = SolrCLI.getJson(configUrl);
-    Object maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
-    assertNotNull(maxTimeFromConfig);
-    assertEquals(-1L, maxTimeFromConfig);
+    Map<String,Object> configJson;
+    Object maxTimeFromConfig;
+    try (Http2SolrClient httpClient = SolrCLI.getHttpClient()) {
+      configJson = SolrCLI.getJson(configUrl, httpClient);
+      maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
+      assertNotNull(maxTimeFromConfig);
+      assertEquals(-1L, maxTimeFromConfig);
+    }
 
     String prop = "updateHandler.autoSoftCommit.maxTime";
     Long maxTime = 3000L;
@@ -224,8 +228,10 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
     log.info("Sending set-property '{}'={} to SolrCLI.ConfigTool.", prop, maxTime);
     assertTrue("Set config property failed!", tool.runTool(cli) == 0);
 
-    configJson = SolrCLI.getJson(configUrl);
-    maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
+    try (Http2SolrClient httpClient = SolrCLI.getHttpClient()) {
+      configJson = SolrCLI.getJson(configUrl, httpClient);
+      maxTimeFromConfig = SolrCLI.atPath("/config/updateHandler/autoSoftCommit/maxTime", configJson);
+    }
     assertNotNull(maxTimeFromConfig);
     assertEquals(maxTime, maxTimeFromConfig);
 

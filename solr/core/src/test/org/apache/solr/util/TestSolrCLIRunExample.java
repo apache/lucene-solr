@@ -462,9 +462,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // verify Solr is running on the expected port and verify the collection exists
     String solrUrl = "http://localhost:"+bindPort+"/solr";
     String collectionListUrl = solrUrl+"/admin/collections?action=list";
-    if (!SolrCLI.safeCheckCollectionExists(collectionListUrl, collectionName)) {
-      fail("After running Solr cloud example, test collection '"+collectionName+
-          "' not found in Solr at: "+solrUrl+"; tool output: "+toolOutput);
+
+    try (Http2SolrClient httpClient = SolrCLI.getHttpClient()) {
+      if (!SolrCLI.safeCheckCollectionExists(collectionListUrl, collectionName, httpClient)) {
+        fail("After running Solr cloud example, test collection '" + collectionName + "' not found in Solr at: " + solrUrl + "; tool output: " + toolOutput);
+      }
     }
 
     // index some docs - to verify all is good for both shards

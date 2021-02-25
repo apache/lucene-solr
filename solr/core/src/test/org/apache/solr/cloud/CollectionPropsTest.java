@@ -39,6 +39,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -164,6 +165,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
   @Test
   @LuceneTestCase.Nightly // ugly retry - properties should be implemented better than this ...
+  @Ignore // MRM TODO:
   public void testWatcher() throws KeeperException, InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());
@@ -203,6 +205,7 @@ public class CollectionPropsTest extends SolrCloudTestCase {
 
   @Test
   @LuceneTestCase.Nightly
+  @Ignore // MRM TODO:
   public void testMultipleWatchers() throws InterruptedException, IOException {
     final ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     CollectionProperties collectionProps = new CollectionProperties(cluster.getSolrClient().getZkStateReader());

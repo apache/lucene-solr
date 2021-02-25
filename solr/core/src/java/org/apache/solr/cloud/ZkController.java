@@ -63,6 +63,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.admin.ConfigSetsHandlerApi;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.servlet.SolrLifcycleListener;
 import org.apache.solr.update.UpdateLog;
@@ -83,6 +84,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.packagemanager.PackageUtils.getMapper;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -866,7 +869,9 @@ public class ZkController implements Closeable, Runnable {
 
 //
     //   operations.add(zkClient.createPathOp(ZkStateReader.CLUSTER_PROPS, emptyJson));
-    paths.put(ZkStateReader.SOLR_PKGS_PATH, null);
+    paths.put(ZkStateReader.SOLR_PKGS_PATH, getMapper().writeValueAsString(Collections.emptyMap()).getBytes("UTF-8"));
+    paths.put(PackageUtils.REPOSITORIES_ZK_PATH, "[]".getBytes(StandardCharsets.UTF_8));
+
     paths.put(ZkStateReader.ROLES, emptyJson);
 
 
@@ -1664,7 +1669,9 @@ public class ZkController implements Closeable, Runnable {
         shardTerms.startRecovering(cd.getName());
       }
       if (state == Replica.State.ACTIVE && cd.getCloudDescriptor().getReplicaType() != Type.PULL) {
-        getShardTerms(collection, shardId).doneRecovering(cd.getName());
+        ZkShardTerms shardTerms = getShardTerms(collection, shardId);
+        shardTerms.doneRecovering(cd.getName());
+        shardTerms.setTermEqualsToLeader(cd.getName());
       }
 
       ZkNodeProps m = new ZkNodeProps(props);

@@ -65,7 +65,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
   
   public void testConcurrentCreateAndDeleteDoesNotFail() {
     final AtomicReference<Exception> failure = new AtomicReference<>();
-    final int timeToRunSec = 30;
+    final int timeToRunSec = 15;
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[10];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;
@@ -87,7 +87,7 @@ public class ConcurrentDeleteAndCreateCollectionTest extends SolrTestCaseJ4 {
     uploadConfig(SolrTestUtil.configset("configset-2"), configName); // upload config once, to be used by all collections
     final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
     final AtomicReference<Exception> failure = new AtomicReference<>();
-    final int timeToRunSec = 30;
+    final int timeToRunSec = 15;
     final CreateDeleteCollectionThread[] threads = new CreateDeleteCollectionThread[2];
     for (int i = 0; i < threads.length; i++) {
       final String collectionName = "collection" + i;

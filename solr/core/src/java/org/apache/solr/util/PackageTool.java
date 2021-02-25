@@ -70,7 +70,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   @SuppressForbidden(reason = "We really need to print the stacktrace here, otherwise "
       + "there shall be little else information to debug problems. Other SolrCLI tools "
       + "don't print stack traces, hence special treatment is needed here.")
-  protected void runImpl(CommandLine cli) throws Exception {
+  protected void runImpl(CommandLine cli, Http2SolrClient httpClient) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
       solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"

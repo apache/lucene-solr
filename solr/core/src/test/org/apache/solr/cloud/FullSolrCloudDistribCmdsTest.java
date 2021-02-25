@@ -174,6 +174,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
   }
 
   @LuceneTestCase.Nightly
+  @Ignore // MRM TODO:
   public void testThatCantForwardToLeaderFails() throws Exception {
     final CloudHttp2SolrClient cloudClient = cluster.getSolrClient();
     final String collectionName = "test_collection_" + NAME_COUNTER.getAndIncrement();

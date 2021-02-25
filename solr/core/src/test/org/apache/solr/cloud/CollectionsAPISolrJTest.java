@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
@@ -90,7 +89,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     System.setProperty("solr.zkclienttimeout", "4000");
     System.setProperty("zkClientTimeout", "4000");
 
-
     System.setProperty("solr.http2solrclient.default.idletimeout", "60000");
     System.setProperty("distribUpdateSoTimeout", "60000");
     System.setProperty("socketTimeout", "60000");
@@ -101,8 +99,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     System.setProperty("solr.httpclient.defaultConnectTimeout", "60000");
     System.setProperty("solr.httpclient.defaultSoTimeout", "60000");
     System.setProperty("solr.default.collection_op_timeout", "60000");
-
-
 
     System.setProperty("solr.createCollectionTimeout", "60000");
 
@@ -189,7 +185,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       clusterProperty = cluster.getSolrClient().getZkStateReader().getClusterProperty(ImmutableList.of(DEFAULTS, COLLECTION, NRT_REPLICAS), null);
       assertEquals("2", String.valueOf(clusterProperty));
       CollectionAdminResponse response = CollectionAdminRequest
-          .createCollection(COLL_NAME, "conf", null, null, null, null)
+          .createCollection(COLL_NAME, "conf", 2, 2, null, null)
           .process(cluster.getSolrClient());
       assertEquals(0, response.getStatus());
       assertTrue(response.isSuccess());
@@ -293,8 +289,6 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .setMaxShardsPerNode(3)
         .process(cluster.getSolrClient());
-
-    cluster.waitForActiveCollection(collectionName, 2,4);
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -596,21 +590,21 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     List<Object> nonCompliant = (List<Object>)rsp.getResponse().findRecursive(collectionName, "schemaNonCompliant");
     assertEquals(nonCompliant.toString(), 1, nonCompliant.size());
     assertTrue(nonCompliant.toString(), nonCompliant.contains("(NONE)"));
-    NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "leader", "segInfos");
+    NamedList<Object> segInfos = (NamedList<Object>) rsp.getResponse().findRecursive(collectionName, "shards", "s1", "leader", "segInfos");
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("info", "core", "startTime"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "ramBytesUsed"));
     // test for replicas not active - SOLR-13882
     DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(collectionName);
-    Replica firstReplica = coll.getSlice("shard1").getReplicas().iterator().next();
+    Replica firstReplica = coll.getSlice("s1").getReplicas().iterator().next();
     String firstNode = firstReplica.getNodeName();
 
-    JettySolrRunner jetty = cluster.getJettyForShard(collectionName, "shard1");
+    JettySolrRunner jetty = cluster.getJettyForShard(collectionName, "s1");
     jetty.stop();
     rsp = req.process(cluster.getSolrClient());
     assertEquals(0, rsp.getStatus());
-    Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
+    Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "s1", "replicas", "down");
     assertTrue("should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
     jetty.start();
   }

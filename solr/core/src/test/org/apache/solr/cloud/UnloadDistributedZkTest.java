@@ -110,14 +110,14 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     final String coreName2 = collection+"_2";
 
     assertEquals(0, CollectionAdminRequest.createCollection(collection, "_default", numShards, 1)
-            .setCreateNodeSet("")
+            .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY)
             .process(cloudClient).getStatus());
-    CollectionAdminRequest.addReplicaToShard(collection, "shard1")
+    CollectionAdminRequest.addReplicaToShard(collection, "s1")
             .setCoreName(coreName1)
             .setNode(cluster.getJettySolrRunner(0).getNodeName())
             .process(cloudClient);
 
-    CollectionAdminRequest.addReplicaToShard(collection, "shard2")
+    CollectionAdminRequest.addReplicaToShard(collection, "s2")
             .setCoreName(coreName2)
             .setNode(cluster.getJettySolrRunner(0).getNodeName())
             .process(cloudClient);
@@ -177,8 +177,8 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     String core1DataDir = solrCore.getDataDir();
 
     assertTrue(CollectionAdminRequest
-            .addReplicaToShard("unloadcollection", "shard1")
-            .setCoreName("unloadcollection_shard1_replica2")
+            .addReplicaToShard("unloadcollection", "s1")
+            .setCoreName("unloadcollection_s1_r2")
             .setNode(cluster.getJettySolrRunner(1).getNodeName())
             .process(cloudClient).isSuccess());
     slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
@@ -186,7 +186,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
     waitForRecoveriesToFinish("unloadcollection");
 
-    Replica leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
+    Replica leaderProps = getLeaderUrlFromZk("unloadcollection", "s1");
 
     Random random = random();
     if (random.nextBoolean()) {
@@ -207,8 +207,8 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     }
 
     assertTrue(CollectionAdminRequest
-            .addReplicaToShard("unloadcollection", "shard1")
-            .setCoreName("unloadcollection_shard1_replica3")
+            .addReplicaToShard("unloadcollection", "s1")
+            .setCoreName("unloadcollection_s1_r3")
             .setNode(cluster.getJettySolrRunner(2).getNodeName())
             .process(cloudClient).isSuccess());
 
@@ -217,7 +217,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     // so that we start with some versions when we reload...
     TestInjection.skipIndexWriterCommitOnClose = true;
 
-    try (Http2SolrClient addClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(2).getBaseUrl() + "/unloadcollection_shard1_replica3", 30000)) {
+    try (Http2SolrClient addClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(2).getBaseUrl() + "/unloadcollection_s1_r3", 30000)) {
 
       // add a few docs
       for (int x = 20; x < 100; x++) {
@@ -230,7 +230,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     //collectionClient.commit();
 
     // unload the leader
-    leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
+    leaderProps = getLeaderUrlFromZk("unloadcollection", "s1");
     try (Http2SolrClient collectionClient = SolrTestCaseJ4.getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
 
       Unload unloadCmd = new Unload(false);
@@ -244,7 +244,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
     cluster.waitForActiveCollection("unloadcollection", 1, 2);
 
-    try (Http2SolrClient addClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 30000, 90000)) {
+    try (Http2SolrClient addClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(1).getBaseUrl() + "/unloadcollection_s1_r2", 30000, 90000)) {
 
       // add a few docs while the leader is down
       for (int x = 101; x < 200; x++) {
@@ -255,7 +255,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     }
 
     assertTrue(CollectionAdminRequest
-            .addReplicaToShard("unloadcollection", "shard1")
+            .addReplicaToShard("unloadcollection", "s1")
             .setCoreName("unloadcollection_shard1_replica4")
             .setNode(cluster.getJettySolrRunner(3).getNodeName())
             .process(cloudClient).isSuccess());
@@ -263,7 +263,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     cluster.waitForActiveCollection("unloadcollection", 1, 3);
 
     // unload the leader again
-    leaderProps = getLeaderUrlFromZk("unloadcollection", "shard1");
+    leaderProps = getLeaderUrlFromZk("unloadcollection", "s1");
     try (Http2SolrClient collectionClient = SolrTestCaseJ4.getHttpSolrClient(leaderProps.getBaseUrl(), 15000, 30000)) {
 
       Unload unloadCmd = new Unload(false);
@@ -276,7 +276,7 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
     // set this back
     TestInjection.skipIndexWriterCommitOnClose = false; // set this back
     assertTrue(CollectionAdminRequest
-            .addReplicaToShard("unloadcollection", "shard1")
+            .addReplicaToShard("unloadcollection", "s1")
             .setCoreName(leaderProps.getName())
             .setDataDir(core1DataDir)
             .setNode(leaderProps.getNodeName())
@@ -286,21 +286,21 @@ public class UnloadDistributedZkTest extends SolrCloudBridgeTestCase {
 
     long found1, found3;
 
-    try (Http2SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 15000, 30000)) {
+    try (Http2SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(1).getBaseUrl() + "/unloadcollection_s1_r2", 15000, 30000)) {
       adminClient.commit();
       SolrQuery q = new SolrQuery("*:*");
       q.set("distrib", false);
       found1 = adminClient.query(q).getResults().getNumFound();
     }
 
-    try (Http2SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(2).getBaseUrl() + "/unloadcollection_shard1_replica3", 15000, 30000)) {
+    try (Http2SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(2).getBaseUrl() + "/unloadcollection_s1_r3", 15000, 30000)) {
       adminClient.commit();
       SolrQuery q = new SolrQuery("*:*");
       q.set("distrib", false);
       found3 = adminClient.query(q).getResults().getNumFound();
     }
 
-    try (Http2SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(3).getBaseUrl() + "/unloadcollection_shard1_replica4", 15000, 30000)) {
+    try (Http2SolrClient adminClient = SolrTestCaseJ4.getHttpSolrClient(cluster.getJettySolrRunner(3).getBaseUrl() + "/unloadcollection_s1_r4", 15000, 30000)) {
       adminClient.commit();
       SolrQuery q = new SolrQuery("*:*");
       q.set("distrib", false);

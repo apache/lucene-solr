@@ -46,10 +46,14 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.Nightly
+
+@Ignore // MRM TODO:
 public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -116,7 +120,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.Nightly
   public void basicTest() throws Exception {
     final String collectionName = "basicTest";
     CollectionAdminRequest.createCollection(collectionName, 1, 1)
@@ -169,7 +172,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LuceneTestCase.Nightly
   public void testMostInSyncReplicasCanWinElection() throws Exception {
     final String collectionName = "collection1";
     CollectionAdminRequest.createCollection(collectionName, 1, 3)

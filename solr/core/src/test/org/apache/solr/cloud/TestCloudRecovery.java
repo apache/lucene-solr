@@ -76,7 +76,8 @@ public class TestCloudRecovery extends SolrCloudTestCase {
         .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
 
-    onlyLeaderIndexes = random().nextBoolean();
+    // MRM TODO:
+    onlyLeaderIndexes = false;//random().nextBoolean();
     nrtReplicas = 2; // onlyLeaderIndexes?0:2;
     tlogReplicas = 0; // onlyLeaderIndexes?2:0; TODO: SOLR-12313 tlog replicas break tests because
                           // TestInjection#waitForInSyncWithLeader is broken

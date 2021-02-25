@@ -32,7 +32,8 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
   private int nodesPerCluster;
 
   @Before
-  public void setupClusters() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     numClouds = random().nextInt(TEST_NIGHTLY ? 4 : 2); //  0..3
     final String[] clusterIds = new String[numClouds];
     for (int ii=0; ii<numClouds; ++ii) {
@@ -73,7 +74,8 @@ public class MultiSolrCloudTestCaseTest extends MultiSolrCloudTestCase {
   }
 
   @After
-  public void afterMultiSolrCloudTestCaseTest() {
+  public void tearDown() throws Exception {
+    super.tearDown();
     numClouds = 0;
     numCollectionsPerCloud = 0;
 

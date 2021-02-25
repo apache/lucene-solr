@@ -1022,12 +1022,12 @@ public class CoreContainer implements Closeable {
       name = getZkController().getNodeName();
       cloudManager = getZkController().getSolrCloudManager();
       client = new CloudHttp2SolrClient.Builder(getZkController().getZkStateReader())
-          .withHttpClient(updateShardHandler.getTheSharedHttpClient()).build();
+          .withHttpClient(updateShardHandler.getTheSharedHttpClient()).markInternalRequest().build();
       ((CloudHttp2SolrClient)client).connect();
     } else {
       name = getNodeConfig().getNodeName();
       if (name == null || name.isEmpty()) {
-        name = "localhost";
+        name = "127.0.0.1";
       }
       cloudManager = null;
       client = new EmbeddedSolrServer();

@@ -956,7 +956,7 @@ public class SolrZkClient implements Closeable {
   public List<OpResult> multi(final Iterable<Op> ops, boolean retryOnConnLoss, boolean retryOnSessionExp) throws InterruptedException, KeeperException  {
       ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.multi(ops));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.multi(ops), retryOnSessionExp);
     } else {
       return keeper.multi(ops);
     }

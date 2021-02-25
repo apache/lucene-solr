@@ -35,6 +35,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ import java.util.Set;
 
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.Nightly // TODO: bridge this test
+@Ignore // MRM TODO: bridge it
 public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

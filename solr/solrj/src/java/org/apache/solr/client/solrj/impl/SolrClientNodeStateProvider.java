@@ -344,7 +344,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
      * Will attempt to call {@link #invoke(String, String, SolrParams)}, retrying on any IO Exceptions
      */
     public SimpleSolrResponse invokeWithRetry(String solrNode, String path, SolrParams params) throws InterruptedException, IOException, SolrServerException {
-      int retries = 2;
+      int retries = 1;
       int cnt = 0;
 
       while (cnt++ < retries) {
@@ -380,7 +380,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       String url = zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
       try {
-        GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.POST, path, params);
+        GenericSolrRequest request = new GenericSolrRequest(SolrRequest.METHOD.GET, path, params);
         try (Http2SolrClient client = new Http2SolrClient.Builder().withHttpClient(httpClient).withBaseUrl(url).markInternalRequest().build()) {
           NamedList<Object> rsp = client.request(request);
           request.response.nl = rsp;

@@ -43,6 +43,7 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
 
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
+    useFactory(null);
     //setErrorHook();
   }
   

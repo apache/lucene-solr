@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -80,14 +81,13 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
   @Test
   public void testReplicaVersionHandling() throws Exception {
 
-    final String shardId = "shard1";
+    final String shardId = "s1";
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 3)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     final ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
-    stateReader.waitForState(COLLECTION, DEFAULT_TIMEOUT, DEFAULT_TIMEOUT_UNIT,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 3));
+
 
     final Replica leader = stateReader.getLeaderRetry(COLLECTION, shardId);
 
@@ -146,7 +146,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     SolrTestCaseJ4.delQ("*:*");
     SolrTestCaseJ4.commit();
 
-    final Set<Integer> deletedDocs = new HashSet<>();
+    final Set<Integer> deletedDocs = ConcurrentHashMap.newKeySet();
     final AtomicInteger docsSent = new AtomicInteger(0);
     final Random rand = new Random(5150);
     Thread docSenderThread = new Thread() {
@@ -250,6 +250,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     if (log.isInfoEnabled()) {
       log.info("Total of {} docs deleted", deletedDocs.size());
     }
+
+    assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, TEST_NIGHTLY ? 1000 : 100, deletedDocs);
 
     maxOnLeader = getMaxVersionFromIndex(leader);
     maxOnReplica = getMaxVersionFromIndex(replica);
@@ -370,20 +372,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       log.info("Sending RELOAD command for {}", testCollectionName);
       CollectionAdminRequest.reloadCollection(testCollectionName)
           .process(client);
-      Thread.sleep(2000); // reload can take a short while
-
-      // verify reload is done, waiting up to 30 seconds for slow test environments
-      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
-      while (System.nanoTime() < timeout) {
-        statusResp = CoreAdminRequest.getStatus(coreName, client);
-        long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
-        if (startTimeAfterReload > leaderCoreStartTime) {
-          reloadedOk = true;
-          break;
-        }
-        // else ... still waiting to see the reloaded core report a later start time
-        Thread.sleep(1000);
-      }
     }
     return reloadedOk;
   }

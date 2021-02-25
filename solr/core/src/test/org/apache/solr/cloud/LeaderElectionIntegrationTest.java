@@ -40,7 +40,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private final static int NUM_REPLICAS_OF_SHARD1 = 5;
 
   @BeforeClass
-  public static void beforeClass() {
+  public static void beforeLeaderElectionIntegrationTest() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
   }
 
@@ -60,7 +60,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(3).process(cluster.getSolrClient()).getStatus());
     for (int i = 1; i < NUM_REPLICAS_OF_SHARD1; i++) {
       assertTrue(
-          CollectionAdminRequest.addReplicaToShard(collection, "shard1").process(cluster.getSolrClient()).isSuccess()
+          CollectionAdminRequest.addReplicaToShard(collection, "s1").process(cluster.getSolrClient()).isSuccess()
       );
     }
   }
@@ -78,7 +78,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
       String leader = getLeader(collection);
       JettySolrRunner jetty = getRunner(leader);
       assertNotNull(jetty);
-      assertTrue("shard1".equals(jetty.getCoreContainer().getCores().iterator().next()
+      assertTrue("s1".equals(jetty.getCoreContainer().getCores().iterator().next()
           .getCoreDescriptor().getCloudDescriptor().getShardId()));
       jetty.stop();
       stoppedRunners.add(jetty);
@@ -146,14 +146,14 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
 
   private String getLeader(String collection) throws InterruptedException, TimeoutException {
 
-    ZkNodeProps props = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collection, "shard1", 30000);
+    ZkNodeProps props = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collection, "s1", 30000);
     String leader = props.getStr(ZkStateReader.NODE_NAME_PROP);
 
     return leader;
   }
 
   @AfterClass
-  public static void afterClass() throws InterruptedException {
+  public static void afterLeaderElectionIntegrationTest() throws InterruptedException {
     System.clearProperty("solrcloud.skip.autorecovery");
   }
 }

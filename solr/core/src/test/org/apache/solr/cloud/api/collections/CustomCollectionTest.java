@@ -45,7 +45,7 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
 @LuceneTestCase.Nightly // MRM TODO: look into this test sometimes being very slow to finish
 public class CustomCollectionTest extends SolrCloudTestCase {
 
-  private static final int NODE_COUNT = 4;
+  private static final int NODE_COUNT = 3;
 
   @BeforeClass
   public static void beforeCustomCollectionTest() throws Exception {
@@ -66,7 +66,6 @@ public class CustomCollectionTest extends SolrCloudTestCase {
 
     final String collection = "implicitcoll";
     int replicationFactor = TestUtil.nextInt(random(), 0, 3) + 2;
-    int numShards = 3;
 
     CollectionAdminRequest.createCollectionWithImplicitRouter(collection, "conf", "a,b,c", replicationFactor)
         .process(cluster.getSolrClient());

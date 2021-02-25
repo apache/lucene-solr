@@ -29,9 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -61,33 +59,26 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
   @Test
   public void test() throws IOException, SolrServerException, KeeperException, InterruptedException {
     Set<String> coreNames = new HashSet<>();
-    Set<String> coreNodeNames = new HashSet<>();
 
     int numOperations = random().nextInt(15) + 15;
     int numLiveReplicas = 4;
 
-    boolean clearedCounter = false;
+
     for (int i = 0; i < numOperations; i++) {
       if (log.isInfoEnabled()) {
-        log.info("Collection counter={} i={}", getCounter(), i);
+        log.info("Collection i={}", i);
       }
       boolean deleteReplica = random().nextBoolean() && numLiveReplicas > 1;
-      // No need to clear counter more than one time
-      if (random().nextBoolean() && i > 5 && !clearedCounter) {
-        log.info("Clear collection counter");
-        // clear counter
-        cluster.getZkClient().delete("/collections/"+COLLECTION+"/counter", -1);
-        clearedCounter = true;
-      }
+
       if (deleteReplica) {
         cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
         DocCollection dc = getCollectionState(COLLECTION);
-        Replica replica = getRandomReplica(dc.getSlice("shard1"), (r) -> r.getState() == Replica.State.ACTIVE);
-        CollectionAdminRequest.deleteReplica(COLLECTION, "shard1", replica.getName()).process(cluster.getSolrClient());
+        Replica replica = getRandomReplica(dc.getSlice("s1"), (r) -> r.getState() == Replica.State.ACTIVE);
+        CollectionAdminRequest.deleteReplica(COLLECTION, "s1", replica.getName()).process(cluster.getSolrClient());
         coreNames.remove(replica.getName());
         numLiveReplicas--;
       } else {
-        CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(COLLECTION, "shard1")
+        CollectionAdminResponse response = CollectionAdminRequest.addReplicaToShard(COLLECTION, "s1")
             .process(cluster.getSolrClient());
         assertTrue(response.isSuccess());
         String coreName = response.getCollectionCoresStatus()
@@ -96,25 +87,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
         coreNames.add(coreName);
         numLiveReplicas++;
         cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
-
-        Replica newReplica = getCollectionState(COLLECTION).getReplicas().stream()
-            .filter(r -> r.getName().equals(coreName))
-            .findAny().get();
-        String coreNodeName = newReplica.getName();
-        assertFalse("Core node name is not unique", coreNodeNames.contains(coreName));
-        coreNodeNames.add(coreNodeName);
       }
-    }
-  }
-
-  private int getCounter() throws KeeperException, InterruptedException {
-    try {
-      byte[] data = cluster.getZkClient().getData("/collections/"+COLLECTION+"/counter", null, new Stat());
-      int count = NumberUtils.bytesToInt(data);
-      if (count < 0) throw new AssertionError("Found negative collection counter " + count);
-      return count;
-    } catch (KeeperException e) {
-      return -1;
     }
   }
 }

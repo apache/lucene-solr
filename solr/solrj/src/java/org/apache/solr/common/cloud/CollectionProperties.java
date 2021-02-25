@@ -117,12 +117,6 @@ public class CollectionProperties {
 
       } catch (KeeperException.BadVersionException e) {
         //race condition
-        try {
-          Thread.sleep(50);
-        } catch (InterruptedException e1) {
-          ParWork.propagateInterrupt(e1);
-          return;
-        }
         continue;
       } catch (InterruptedException | KeeperException e) {
         throw new IOException("Error setting property for collection " + collection, SolrZkClient.checkInterrupted(e));

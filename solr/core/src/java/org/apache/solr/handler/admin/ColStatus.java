@@ -149,7 +149,7 @@ public class ColStatus {
         replicaMap.add("recovering", recoveringReplicas);
         replicaMap.add("recovery_failed", recoveryFailedReplicas);
         sliceMap.add("state", s.getState().toString());
-        sliceMap.add("range", s.getRange().toString());
+        sliceMap.add("range", String.valueOf(s.getRange()));
         Map<String, RoutingRule> rules = s.getRoutingRules();
         if (rules != null && !rules.isEmpty()) {
           sliceMap.add("routingRules", rules);

@@ -76,7 +76,7 @@ public class ZkCmdExecutor {
         if (exception == null) {
           exception = e;
         }
-        if (zkCmdExecutor.solrZkClient.isClosed()) {
+        if (tryCnt > 2 && zkCmdExecutor.solrZkClient.isClosed()) {
           throw e;
         }
         zkCmdExecutor.retryDelay(tryCnt);
