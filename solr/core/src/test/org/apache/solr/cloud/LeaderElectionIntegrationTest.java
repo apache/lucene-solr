@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -51,7 +52,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private void createCollection(String collection) throws IOException, SolrServerException {
     assertEquals(0, CollectionAdminRequest.createCollection(collection,
         "conf", 2, 1)
-        .setMaxShardsPerNode(1).process(cluster.getSolrClient()).getStatus());
+        .process(cluster.getSolrClient()).getStatus());
     for (int i = 1; i < NUM_REPLICAS_OF_SHARD1; i++) {
       assertTrue(
           CollectionAdminRequest.addReplicaToShard(collection, "shard1").process(cluster.getSolrClient()).isSuccess()
@@ -66,51 +67,24 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     String collection = "collection1";
     createCollection(collection);
 
+    cluster.waitForActiveCollection(collection, 10, TimeUnit.SECONDS, 2, 6);
     List<JettySolrRunner> stoppedRunners = new ArrayList<>();
     for (int i = 0; i < 4; i++) {
       // who is the leader?
       String leader = getLeader(collection);
       JettySolrRunner jetty = getRunner(leader);
       assertNotNull(jetty);
-      assertTrue("shard1".equals(jetty.getCoreContainer().getCores().iterator().next()
-          .getCoreDescriptor().getCloudDescriptor().getShardId()));
+      assertEquals("shard1", jetty.getCoreContainer().getCores().iterator().next()
+              .getCoreDescriptor().getCloudDescriptor().getShardId());
       jetty.stop();
       stoppedRunners.add(jetty);
-
-      // poll until leader change is visible
-      for (int j = 0; j < 90; j++) {
-        String currentLeader = getLeader(collection);
-        if(!leader.equals(currentLeader)) {
-          break;
-        }
-        Thread.sleep(500);
-      }
-
-      leader = getLeader(collection);
-      int retry = 0;
-      while (jetty == getRunner(leader)) {
-        if (retry++ == 60) {
-          break;
-        }
-        Thread.sleep(1000);
-      }
-
-      if (jetty == getRunner(leader)) {
-        cluster.getZkClient().printLayoutToStream(System.out);
-        fail("We didn't find a new leader! " + jetty + " was close, but it's still showing as the leader");
-      }
-
-      assertTrue("shard1".equals(getRunner(leader).getCoreContainer().getCores().iterator().next()
-          .getCoreDescriptor().getCloudDescriptor().getShardId()));
     }
 
     for (JettySolrRunner runner : stoppedRunners) {
       runner.start();
     }
     waitForState("Expected to see nodes come back " + collection, collection,
-        (n, c) -> {
-          return n.size() == 6;
-        });
+        (n, c) -> n.size() == 6);
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
 
     // testLeaderElectionAfterClientTimeout

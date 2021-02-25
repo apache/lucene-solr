@@ -16,20 +16,6 @@
  */
 package org.apache.solr;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -49,6 +35,20 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class TestGroupingSearch extends SolrTestCaseJ4 {
 
@@ -245,11 +245,11 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     assertJQ(
         req("q", "*:*", "start", "1", "group", "true", "group.field", "id", "group.main", "true"),
-        "/response=={'numFound':3,'start':1,'docs':[{'id':'2'},{'id':'3'}]}"
+        "/response=={'numFound':3,'start':1,'numFoundExact':true,'docs':[{'id':'2'},{'id':'3'}]}"
     );
     assertJQ(
         req("q", "*:*", "start", "1", "rows", "1", "group", "true", "group.field", "id", "group.main", "true"),
-        "/response=={'numFound':3,'start':1,'docs':[{'id':'2'}]}"
+        "/response=={'numFound':3,'start':1,'numFoundExact':true,'docs':[{'id':'2'}]}"
     );
   }
 
@@ -264,7 +264,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     assertJQ(
         req("q", "*:*", "start", "2", "rows", "1", "group", "true", "group.field", "id", "group.main", "true"),
-        "/response=={'numFound':5,'start':2,'docs':[{'id':'3'}]}"
+        "/response=={'numFound':5,'start':2,'numFoundExact':true,'docs':[{'id':'3'}]}"
     );
   }
 
@@ -323,12 +323,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     assertJQ(
         req("q", "*:*", "sort", "sum(value1_i, value2_i) desc", "rows", "1", "group", "true", "group.field", "id", "fl", "id"),
-        "/grouped=={'id':{'matches':5,'groups':[{'groupValue':'5','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}"
+        "/grouped=={'id':{'matches':5,'groups':[{'groupValue':'5','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'5'}]}}]}}"
     );
 
     assertJQ(
         req("q", "*:*", "sort", "geodist(45.18014,-93.87742,store) asc", "rows", "1", "group", "true", "group.field", "id", "fl", "id"),
-        "/grouped=={'id':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':1,'start':0,'docs':[{'id':'1'}]}}]}}"
+        "/grouped=={'id':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'1'}]}}]}}"
     );
   }
 
@@ -347,7 +347,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "value1_s1", "fl", "id", "facet", "true", "facet.field", "value3_s1", "group.truncate", "false");
     assertJQ(
         req,
-        "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
+        "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'1'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]}," + EMPTY_FACETS + "}"
     );
 
@@ -356,7 +356,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "value1_s1", "fl", "id", "facet", "true", "facet.field", "value3_s1", "group.truncate", "true");
     assertJQ(
         req,
-        "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
+        "/grouped=={'value1_s1':{'matches':5,'groups':[{'groupValue':'1','doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'1'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
@@ -365,7 +365,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "strdist(1,value1_s1,edit)", "fl", "id", "facet", "true", "facet.field", "value3_s1", "group.truncate", "true");
     assertJQ(
         req,
-        "/grouped=={'strdist(1,value1_s1,edit)':{'matches':5,'groups':[{'groupValue':1.0,'doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
+        "/grouped=={'strdist(1,value1_s1,edit)':{'matches':5,'groups':[{'groupValue':1.0,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'1'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
@@ -374,7 +374,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "facet.field", "value3_s1", "group.truncate", "true");
     assertJQ(
         req,
-        "/grouped=={'value4_i':{'matches':5,'groups':[{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'1'}]}}]}}",
+        "/grouped=={'value4_i':{'matches':5,'groups':[{'groupValue':1,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'1'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
@@ -383,7 +383,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "facet.field", "{!ex=v}value3_s1", "group.truncate", "true", "fq", "{!tag=v}value3_s1:b");
     assertJQ(
         req,
-        "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
+        "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
 
@@ -392,7 +392,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "facet.field", "{!ex=v}value3_s1", "group.truncate", "false", "fq", "{!tag=v}value3_s1:b");
     assertJQ(
         req,
-        "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
+        "/grouped=={'value4_i':{'matches':2,'groups':[{'groupValue':2,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',3,'b',2]}," + EMPTY_FACETS + "}"
     );
 
@@ -401,7 +401,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "facet.field", "{!ex=v}value3_s1", "group.truncate", "true", "fq", "{!tag=v}value3_s1:b");
     assertJQ(
         req,
-        "/grouped=={'sub(value4_i,1)':{'matches':2,'groups':[{'groupValue':1.0,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}]}}",
+        "/grouped=={'sub(value4_i,1)':{'matches':2,'groups':[{'groupValue':1.0,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'}]}}]}}",
         "/facet_counts=={'facet_queries':{},'facet_fields':{'value3_s1':['a',1,'b',1]}," + EMPTY_FACETS + "}"
     );
   }
@@ -424,7 +424,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "facet.query", "{!ex=chk key=LM3}bday:[2012-10-18T00:00:00Z TO 2013-01-17T23:59:59Z]");
     assertJQ(
         req,
-        "/grouped=={'cat_sI':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
+        "/grouped=={'cat_sI':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'5'}]}}]}}",
         "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{}," + EMPTY_FACETS + "}"
     );
   }
@@ -463,33 +463,33 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       ,"/responseHeader=={'_SKIP_':'QTime', 'status':0}"   // partial match by skipping some elements
       ,"/responseHeader=={'_MATCH_':'status', 'status':0}" // partial match by only including some elements
       ,"/grouped=={'"+f+"':{'matches':10,'groups':[\n" +
-              "{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'}]}}," +
-              "{'groupValue':3,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}," +
-              "{'groupValue':2,'doclist':{'numFound':3,'start':0,'docs':[{'id':'4'}]}}," +
-              "{'groupValue':5,'doclist':{'numFound':1,'start':0,'docs':[{'id':'1'}]}}," +
-              "{'groupValue':4,'doclist':{'numFound':1,'start':0,'docs':[{'id':'2'}]}}" +
+              "{'groupValue':1,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'8'}]}}," +
+              "{'groupValue':3,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'}]}}," +
+              "{'groupValue':2,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'4'}]}}," +
+              "{'groupValue':5,'doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'1'}]}}," +
+              "{'groupValue':4,'doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'2'}]}}" +
             "]}}"
     );
 
     // test that filtering cuts down the result set
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "fq",f+":2")
       ,"/grouped=={'"+f+"':{'matches':3,'groups':[" +
-            "{'groupValue':2,'doclist':{'numFound':3,'start':0,'docs':[{'id':'4'}]}}" +
+            "{'groupValue':2,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'4'}]}}" +
             "]}}"
     );
 
     // test limiting the number of groups returned
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2")
       ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
-              "{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'}]}}," +
-              "{'groupValue':3,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}" +
+              "{'groupValue':1,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'8'}]}}," +
+              "{'groupValue':3,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'}]}}" +
             "]}}"
     );
 
     // test offset into group list
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","1", "start","1")
       ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
-              "{'groupValue':3,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}" +
+              "{'groupValue':3,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'}]}}" +
             "]}}"
     );
 
@@ -502,24 +502,24 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     // test increasing the docs per group returned
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2", "group.limit","3")
       ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
-            "{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'},{'id':'10'},{'id':'5'}]}}," +
-            "{'groupValue':3,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'6'}]}}" +
+            "{'groupValue':1,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'8'},{'id':'10'},{'id':'5'}]}}," +
+            "{'groupValue':3,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'},{'id':'6'}]}}" +
           "]}}"
     );
 
     // test offset into each group
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2", "group.limit","3", "group.offset","1")
       ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
-            "{'groupValue':1,'doclist':{'numFound':3,'start':1,'docs':[{'id':'10'},{'id':'5'}]}}," +
-            "{'groupValue':3,'doclist':{'numFound':2,'start':1,'docs':[{'id':'6'}]}}" +
+            "{'groupValue':1,'doclist':{'numFound':3,'start':1,'numFoundExact':true,'docs':[{'id':'10'},{'id':'5'}]}}," +
+            "{'groupValue':3,'doclist':{'numFound':2,'start':1,'numFoundExact':true,'docs':[{'id':'6'}]}}" +
           "]}}"
     );
 
     // test big offset into each group
      assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2", "group.limit","3", "group.offset","10")
       ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
-            "{'groupValue':1,'doclist':{'numFound':3,'start':10,'docs':[]}}," +
-            "{'groupValue':3,'doclist':{'numFound':2,'start':10,'docs':[]}}" +
+            "{'groupValue':1,'doclist':{'numFound':3,'start':10,'numFoundExact':true,'docs':[]}}," +
+            "{'groupValue':3,'doclist':{'numFound':2,'start':10,'numFoundExact':true,'docs':[]}}" +
           "]}}"
     );
 
@@ -527,8 +527,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id,score", "rows","2", "group.limit","2", "indent","off")
       ,"/grouped/"+f+"/groups==" +
             "[" +
-              "{'groupValue':1,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}}," +
-              "{'groupValue':3,'doclist':{'numFound':2,'start':0,'maxScore':7.0,'docs':[{'id':'3','score':7.0},{'id':'6','score':2.0}]}}" +
+              "{'groupValue':1,'doclist':{'numFound':3,'start':0,numFoundExact:true,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}}," +
+              "{'groupValue':3,'doclist':{'numFound':2,'start':0,numFoundExact:true,'maxScore':7.0,'docs':[{'id':'3','score':7.0},{'id':'6','score':2.0}]}}" +
             "]"
 
     );
@@ -537,8 +537,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     String func = "add("+f+","+f+")";
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.func", func  , "fl","id", "rows","2")
       ,"/grouped=={'"+func+"':{'matches':10,'groups':[" +
-              "{'groupValue':2.0,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'}]}}," +
-              "{'groupValue':6.0,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}" +
+              "{'groupValue':2.0,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'8'}]}}," +
+              "{'groupValue':6.0,'doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'3'}]}}" +
             "]}}"
     );
 
@@ -560,7 +560,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
      ///////////////////////// group.query
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "group.limit","3")
        ,"/grouped=={'id:[2 TO 5]':{'matches':10," +
-           "'doclist':{'numFound':4,'start':0,'docs':[{'id':'3'},{'id':'4'},{'id':'2'}]}}}"
+           "'doclist':{'numFound':4,'start':0,numFoundExact:true,'docs':[{'id':'3'},{'id':'4'},{'id':'2'}]}}}"
     );
 
     // group.query that matches nothing
@@ -571,50 +571,50 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
                  "group.query","id:1000", 
                  "fl","id", 
                  "group.limit","3")
-             ,"/grouped/id:[2 TO 5]=={'matches':10,'doclist':{'numFound':4,'start':0,'docs':[{'id':'3'},{'id':'4'},{'id':'2'}]}}"
-             ,"/grouped/id:1000=={'matches':10,'doclist':{'numFound':0,'start':0,'docs':[]}}"
+             ,"/grouped/id:[2 TO 5]=={'matches':10,'doclist':{'numFound':4,'start':0,numFoundExact:true,'docs':[{'id':'3'},{'id':'4'},{'id':'2'}]}}"
+             ,"/grouped/id:1000=={'matches':10,'doclist':{'numFound':0,'start':0,numFoundExact:true,'docs':[]}}"
     );
 
     // group.query and sort
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id,score", "rows","2", "group.limit","2", "sort",f+" desc, score desc", "indent","off")
         ,"/grouped/"+f+":1==" +
-            "{'matches':10,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
+            "{'matches':10,'doclist':{'numFound':3,'start':0,numFoundExact:true,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
     );
     // group.query with fl=score and default sort
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id,score", "rows","2", "group.limit","2", "sort", "score desc", "indent","off")
         ,"/grouped/"+f+":1==" +
-            "{'matches':10,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
+            "{'matches':10,'doclist':{'numFound':3,'start':0,numFoundExact:true,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
     );
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id", "rows","2", "group.limit","2", "indent","off")
         ,"/grouped/"+f+":1==" +
-            "{'matches':10,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'},{'id':'10'}]}},"
+            "{'matches':10,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'8'},{'id':'10'}]}},"
     );
 
     // group.query and offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "group.limit","3", "group.offset","2")
        ,"/grouped=={'id:[2 TO 5]':{'matches':10," +
-           "'doclist':{'numFound':4,'start':2,'docs':[{'id':'2'},{'id':'5'}]}}}"
+           "'doclist':{'numFound':4,'start':2,'numFoundExact':true,'docs':[{'id':'2'},{'id':'5'}]}}}"
     );
 
     // group.query and big offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "group.limit","3", "group.offset","10")
        ,"/grouped=={'id:[2 TO 5]':{'matches':10," +
-           "'doclist':{'numFound':4,'start':10,'docs':[]}}}"
+           "'doclist':{'numFound':4,'start':10,'numFoundExact':true,'docs':[]}}}"
     );
 
     ///////////////////////// group.query as main result
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "rows","3", "group.main","true")
-       ,"/response=={'numFound':4,'start':0,'docs':[{'id':'3'},{'id':'4'},{'id':'2'}]}"
+       ,"/response=={'numFound':4,'start':0,numFoundExact:true,'docs':[{'id':'3'},{'id':'4'},{'id':'2'}]}"
     );
 
     // group.query and offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "rows","3", "start","2", "group.main","true")
-       ,"/response=={'numFound':4,'start':2,'docs':[{'id':'2'},{'id':'5'}]}"
+       ,"/response=={'numFound':4,'start':2,'numFoundExact':true,'docs':[{'id':'2'},{'id':'5'}]}"
     );
 
     // group.query and big offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "rows","3", "start","10", "group.main","true")
-       ,"/response=={'numFound':4,'start':10,'docs':[]}"
+       ,"/response=={'numFound':4,'start':10,'numFoundExact':true,'docs':[]}"
     );
 
 
@@ -625,46 +625,46 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "group.field",f,
         "rows","1",
         "fl","id", "group.limit","2")
-       ,"/grouped/id:[2 TO 5]=={'matches':10,'doclist':{'numFound':4,'start':0,'docs':[{'id':'3'},{'id':'4'}]}}"
-       ,"/grouped/id:[5 TO 5]=={'matches':10,'doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}"        
-       ,"/grouped/"+f+"=={'matches':10,'groups':[{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'},{'id':'10'}]}}]}"
+       ,"/grouped/id:[2 TO 5]=={'matches':10,'doclist':{'numFound':4,'start':0,numFoundExact:true,'docs':[{'id':'3'},{'id':'4'}]}}"
+       ,"/grouped/id:[5 TO 5]=={'matches':10,'doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'5'}]}}"        
+       ,"/grouped/"+f+"=={'matches':10,'groups':[{'groupValue':1,'doclist':{'numFound':3,'start':0,numFoundExact:true,'docs':[{'id':'8'},{'id':'10'}]}}]}"
     );
 
 
     ///////////////////////// group.field as main result
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "group.main","true")
-        ,"/response=={'numFound':10,'start':0,'docs':[{'id':'8'},{'id':'3'},{'id':'4'},{'id':'1'},{'id':'2'}]}"
+        ,"/response=={'numFound':10,'start':0,numFoundExact:true,'docs':[{'id':'8'},{'id':'3'},{'id':'4'},{'id':'1'},{'id':'2'}]}"
     );
     // test that rows limits #docs
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","3", "group.main","true")
-        ,"/response=={'numFound':10,'start':0,'docs':[{'id':'8'},{'id':'3'},{'id':'4'}]}"
+        ,"/response=={'numFound':10,'start':0,numFoundExact:true,'docs':[{'id':'8'},{'id':'3'},{'id':'4'}]}"
     );
     // small  offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2", "start","1", "group.main","true")
-        ,"/response=={'numFound':10,'start':1,'docs':[{'id':'3'},{'id':'4'}]}"
+        ,"/response=={'numFound':10,'start':1,'numFoundExact':true,'docs':[{'id':'3'},{'id':'4'}]}"
     );
     // large offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2", "start","20", "group.main","true")
-        ,"/response=={'numFound':10,'start':20,'docs':[]}"
+        ,"/response=={'numFound':10,'start':20,'numFoundExact':true,'docs':[]}"
     );
     // group.limit>1
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","3", "group.limit","2", "group.main","true")
-        ,"/response=={'numFound':10,'start':0,'docs':[{'id':'8'},{'id':'10'},{'id':'3'}]}"
+        ,"/response=={'numFound':10,'start':0,numFoundExact:true,'docs':[{'id':'8'},{'id':'10'},{'id':'3'}]}"
     );
     // group.limit>1 with start>0
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","3", "start","1", "group.limit","2", "group.main","true")
-        ,"/response=={'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}"
+        ,"/response=={'numFound':10,'start':1,'numFoundExact':true,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}"
     );
 
     ///////////////////////// group.format == simple
     assertJQ(req("fq", filt, "q", "{!func}" + f2, "group", "true", "group.field", f, "fl", "id", "rows", "3", "start", "1", "group.limit", "2", "group.format", "simple")
         , "/grouped/foo_i=={'matches':10,'doclist':"
-        + "{'numFound':10,'start':1,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}}"
+        + "{'numFound':10,'start':1,'numFoundExact':true,'docs':[{'id':'10'},{'id':'3'},{'id':'6'}]}}"
     );
 
     //////////////////////// grouping where main query matches nothing
     assertJQ(req("fq", filt, "q", "bogus_s:nothing", "group", "true", "group.field", f, "fl", "id", "group.limit", "2", "group.format", "simple")
-        , "/grouped/foo_i=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
+        , "/grouped/foo_i=={'matches':0,'doclist':{'numFound':0,'start':0,numFoundExact:true,'docs':[]}}"
     );
     assertJQ(req("fq",filt,  "q","bogus_s:nothing", "group","true",
         "group.query","id:[2 TO 5]",
@@ -672,8 +672,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "group.field",f,
         "rows","1",
         "fl","id", "group.limit","2")
-       ,"/grouped/id:[2 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
-       ,"/grouped/id:[5 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"        
+       ,"/grouped/id:[2 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,numFoundExact:true,'docs':[]}}"
+       ,"/grouped/id:[5 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,numFoundExact:true,'docs':[]}}"        
        ,"/grouped/"+f+"=={'matches':0,'groups':[]}"
     );
     assertJQ(req("fq",filt,  
@@ -683,8 +683,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
                  "group.query","id:1000", 
                  "fl","id", 
                  "group.limit","3")
-             ,"/grouped/id:[2 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
-             ,"/grouped/id:1000=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
+             ,"/grouped/id:[2 TO 5]=={'matches':0,'doclist':{'numFound':0,'start':0,numFoundExact:true,'docs':[]}}"
+             ,"/grouped/id:1000=={'matches':0,'doclist':{'numFound':0,'start':0,numFoundExact:true,'docs':[]}}"
     );
 
   }
@@ -709,7 +709,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         "facet.query", "{!ex=chk key=LM3}bday:[2012-10-18T00:00:00Z TO 2013-01-17T23:59:59Z]");
     assertJQ(
         req,
-        "/grouped=={'"+FOO_STRING_DOCVAL_FIELD+"':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
+        "/grouped=={'"+FOO_STRING_DOCVAL_FIELD+"':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'5'}]}}]}}",
         "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{}," + EMPTY_FACETS + "}"
     );
   }
@@ -730,10 +730,10 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     assertJQ(req(params, "group.field", "date_dt", "sort", "id asc"),
         "/grouped=={'date_dt':{'matches':5,'ngroups':4, 'groups':" +
-            "[{'groupValue':'2012-11-20T00:00:00Z','doclist':{'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'3'}]}}," +
-            "{'groupValue':'2012-11-21T00:00:00Z','doclist':{'numFound':1,'start':0,'docs':[{'id':'2'}]}}," +
-            "{'groupValue':'2013-01-15T00:00:00Z','doclist':{'numFound':1,'start':0,'docs':[{'id':'4'}]}}," +
-            "{'groupValue':null,'doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}" +
+            "[{'groupValue':'2012-11-20T00:00:00Z','doclist':{'numFound':2,'start':0,numFoundExact:true,'docs':[{'id':'1'},{'id':'3'}]}}," +
+            "{'groupValue':'2012-11-21T00:00:00Z','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'2'}]}}," +
+            "{'groupValue':'2013-01-15T00:00:00Z','doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'4'}]}}," +
+            "{'groupValue':null,'doclist':{'numFound':1,'start':0,numFoundExact:true,'docs':[{'id':'5'}]}}" +
             "]}}"
     );
   }
@@ -772,6 +772,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       types.add(new FldType("foo_bdv", ZERO_ONE, new BVal()));
 
       clearIndex();
+      @SuppressWarnings({"rawtypes"})
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
       //System.out.println("############### model=" + model);
 
@@ -848,6 +849,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
           rows=1; start=0; group_offset=1; group_limit=1;
         }
 
+        @SuppressWarnings({"rawtypes"})
         Map<Comparable, Grp> groups = groupBy(model.values(), groupField);
 
         // first sort the docs in each group
@@ -888,7 +890,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
               continue;
             }
 
-            for (Comparable field : doc.getValues(FOO_STRING_FIELD)) {
+            for (@SuppressWarnings({"rawtypes"})Comparable field : doc.getValues(FOO_STRING_FIELD)) {
               String key = field.toString();
               boolean exists = facetCounts.containsKey(key);
               int count = exists ? facetCounts.get(key) : 0;
@@ -896,6 +898,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             }
           }
         }
+        @SuppressWarnings({"rawtypes"})
         List<Comparable> expectedFacetResponse = new ArrayList<>();
         for (Map.Entry<String, Integer> stringIntegerEntry : facetCounts.entrySet()) {
           expectedFacetResponse.add(stringIntegerEntry.getKey());
@@ -918,12 +921,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/grouped/" + groupField, realResponse, modelResponse);
         if (err != null) {
-          log.error("GROUPING MISMATCH (" + queryIter + "): " + err
-           + "\n\trequest="+req
-           + "\n\tresult="+strResponse
-           + "\n\texpected="+ Utils.toJSONString(modelResponse)
-           + "\n\tsorted_model="+ sortedGroups
-          );
+          log.error("GROUPING MISMATCH ({}}): {}\n\trequest={}\n\tresult={}\n\texpected={}\n\tsorted_model={}"
+              , queryIter, err, req, strResponse, Utils.toJSONString(modelResponse), sortedGroups);
 
           // re-execute the request... good for putting a breakpoint here for debugging
           String rsp = h.query(req);
@@ -934,12 +933,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         // assert post / pre grouping facets
         err = JSONTestUtil.matchObj("/facet_counts/facet_fields/"+FOO_STRING_FIELD, realResponse, expectedFacetResponse);
         if (err != null) {
-          log.error("GROUPING MISMATCH (" + queryIter + "): " + err
-           + "\n\trequest="+req
-           + "\n\tresult="+strResponse
-           + "\n\texpected="+ Utils.toJSONString(expectedFacetResponse)
-          );
-
+          log.error("GROUPING MISMATCH ({}): {}\n\trequest={}\n\tresult={}\n\texpected={}"
+              , queryIter, err, req, strResponse, Utils.toJSONString(expectedFacetResponse));
           // re-execute the request... good for putting a breakpoint here for debugging
           h.query(req);
           fail(err);
@@ -947,6 +942,31 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       } // end query iter
     } // end index iter
 
+  }
+  
+  @Test
+  public void testGroupWithMinExactHitCount() throws Exception {
+    final int NUM_DOCS = 20;
+    for (int i = 0; i < NUM_DOCS ; i++) {
+      assertU(adoc("id", String.valueOf(i), FOO_STRING_FIELD, "Book1"));
+      assertU(commit());
+    }
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("q", FOO_STRING_FIELD + ":Book1");
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2")
+        ,"/response/result[@numFoundExact='false']"
+    );
+    params.set("group", true);
+    params.set("group.field", FOO_STRING_FIELD);
+    assertQ(req(params)
+        ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@numFoundExact='true']"
+    );
+    
+    assertQ(req(params, CommonParams.MIN_EXACT_COUNT, "2", CommonParams.ROWS, "2")
+        ,"/response/lst[@name='grouped']/lst[@name='"+FOO_STRING_FIELD+"']/arr[@name='groups']/lst[1]/result[@numFoundExact='true']"
+    );
+    
+    
   }
 
   public static Object buildGroupedResult(IndexSchema schema, List<Grp> sortedGroups, int start, int rows, int group_offset, int group_limit, boolean includeNGroups) {
@@ -960,7 +980,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     if (includeNGroups) {
       result.put("ngroups", sortedGroups.size());
     }
-    List groupList = new ArrayList();
+    List<Map<String,Object>> groupList = new ArrayList<>();
     result.put("groups", groupList);
 
     for (int i=start; i<sortedGroups.size(); i++) {
@@ -975,7 +995,8 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       group.put("doclist", resultSet);
       resultSet.put("numFound", grp.docs.size());
       resultSet.put("start", group_offset);
-      List docs = new ArrayList();
+      resultSet.put("numFoundExact", true);
+      List<Map<String,Object>> docs = new ArrayList<>();
       resultSet.put("docs", docs);
       for (int j=group_offset; j<grp.docs.size(); j++) {
         if (group_limit != -1 && docs.size() >= group_limit) break;
@@ -1005,6 +1026,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     };
   }
 
+  @SuppressWarnings({"rawtypes"})
   public static Map<Comparable, Grp> groupBy(Collection<Doc> docs, String field) {
     Map<Comparable, Grp> groups = new HashMap<>();
     for (Doc doc : docs) {
@@ -1037,6 +1059,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
 
   public static class Grp {
+    @SuppressWarnings({"rawtypes"})
     public Comparable groupValue;
     public List<Doc> docs;
     public Doc maxDoc;  // the document highest according to the "sort" param

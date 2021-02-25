@@ -40,6 +40,8 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.ClusterAPI;
+import org.apache.solr.handler.CollectionsAPI;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -79,31 +81,40 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   }
 
   public void testCommands() throws Exception {
-    MockCollectionsHandler collectionsHandler = new MockCollectionsHandler();
-    ApiBag apiBag = new ApiBag(false);
-    Collection<Api> apis = collectionsHandler.getApis();
-    for (Api api : apis) apiBag.register(api, Collections.emptyMap());
+    ApiBag apiBag;
+    try (MockCollectionsHandler collectionsHandler = new MockCollectionsHandler()) {
+      apiBag = new ApiBag(false);
+      final CollectionsAPI collectionsAPI = new CollectionsAPI(collectionsHandler);
+      apiBag.registerObject(new CollectionsAPI(collectionsHandler));
+      apiBag.registerObject(collectionsAPI.collectionsCommands);
+      Collection<Api> apis = collectionsHandler.getApis();
+      for (Api api : apis) apiBag.register(api, Collections.emptyMap());
+
+      ClusterAPI clusterAPI = new ClusterAPI(collectionsHandler,null);
+      apiBag.registerObject(clusterAPI);
+      apiBag.registerObject(clusterAPI.commands);
+    }
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}", null,
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
     
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}", null,
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', operation:create}");
     
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}", null,
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create}");
 
     //test a create collection with custom properties
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}", null,
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
+        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
 
 
     compareOutput(apiBag, "/collections", POST,
-        "{create-alias:{name: aliasName , collections:[c1,c2] }}", null, "{operation : createalias, name: aliasName, collections:[c1,c2] }");
+        "{create-alias:{name: aliasName , collections:[c1,c2] }}", null, "{operation : createalias, name: aliasName, collections:\"c1,c2\" }");
 
     compareOutput(apiBag, "/collections", POST,
         "{delete-alias:{ name: aliasName}}", null, "{operation : deletealias, name: aliasName}");
@@ -164,10 +175,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{collection: collName, shard: shard1, replica : replica1 , property : propA , operation : deletereplicaprop}"
     );
 
-    compareOutput(apiBag, "/collections/collName", POST,
-        "{modify : {rule : ['replica:*, cores:<5'], autoAddReplicas : false} }", null,
-        "{collection: collName, operation : modifycollection , autoAddReplicas : 'false', rule : [{replica: '*', cores : '<5' }]}"
-    );
     compareOutput(apiBag, "/cluster", POST,
         "{add-role : {role : overseer, node : 'localhost_8978'} }", null,
         "{operation : addrole ,role : overseer, node : 'localhost_8978'}"
@@ -199,6 +206,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
                             final String payload, final CoreContainer cc, String expectedOutputMapJson) throws Exception {
     Pair<SolrQueryRequest, SolrQueryResponse> ctx = makeCall(apiBag, path, method, payload, cc);
     ZkNodeProps output = (ZkNodeProps) ctx.second().getValues().get(ZkNodeProps.class.getName());
+    @SuppressWarnings({"rawtypes"})
     Map expected = (Map) fromJSONString(expectedOutputMapJson);
     assertMapEqual(expected, output);
     return output;
@@ -250,9 +258,10 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     return new Pair<>(req, rsp);
   }
 
-  private static void assertMapEqual(Map expected, ZkNodeProps actual) {
+  private static void assertMapEqual(@SuppressWarnings({"rawtypes"})Map expected, ZkNodeProps actual) {
     assertEquals(errorMessage(expected, actual), expected.size(), actual.getProperties().size());
     for (Object o : expected.entrySet()) {
+      @SuppressWarnings({"rawtypes"})
       Map.Entry e = (Map.Entry) o;
       Object actualVal = actual.get((String) e.getKey());
       if (actualVal instanceof String[]) {
@@ -262,7 +271,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     }
   }
 
-  private static String errorMessage(Map expected, ZkNodeProps actual) {
+  private static String errorMessage(@SuppressWarnings({"rawtypes"})Map expected, ZkNodeProps actual) {
     return "expected: " + Utils.toJSONString(expected) + "\nactual: " + Utils.toJSONString(actual);
 
   }
@@ -271,6 +280,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     LocalSolrQueryRequest req;
 
     MockCollectionsHandler() {
+    }
+
+    @Override
+    protected CoreContainer checkErrors() {
+      return null;
     }
 
     @Override

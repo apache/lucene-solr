@@ -80,37 +80,37 @@ public class TestJoin extends SolrTestCaseJ4 {
     ModifiableSolrParams p = params("sort","id asc");
 
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "title:MTS"), "fl","id")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
     // empty from
     assertJQ(req(p, "q", buildJoinRequest("noexist_ss_dv", DEPT_ID_FIELD, "*:*", "fl","id"))
-        ,"/response=={'numFound':0,'start':0,'docs':[]}"
+        ,"/response=={'numFound':0,'start':0,'numFoundExact':true,'docs':[]}"
     );
 
     // empty to
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, "noexist_ss_dv", "*:*"), "fl","id")
-        ,"/response=={'numFound':0,'start':0,'docs':[]}"
+        ,"/response=={'numFound':0,'start':0,'numFoundExact':true,'docs':[]}"
     );
 
     // self join... return everyone in same dept(s) as Dave
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_FIELD, "name:dave"), "fl","id")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // from single-value to multi-value
     assertJQ(req(p, "q", buildJoinRequest(DEPT_ID_FIELD, DEPT_FIELD, "text:develop"), "fl","id")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
     );
 
     // from multi-value to single-value
     assertJQ(req(p, "q",buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "title:MTS"), "fl","id", "debugQuery","true")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
+        ,"/response=={'numFound':3,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
     // expected outcome for a sub query matching dave joined against departments
     final String davesDepartments =
-        "/response=={'numFound':2,'start':0,'docs':[{'id':'10'},{'id':'13'}]}";
+        "/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'10'},{'id':'13'}]}";
 
     // straight forward query
     assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "name:dave"), "fl","id"),
@@ -134,7 +134,7 @@ public class TestJoin extends SolrTestCaseJ4 {
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
     assertJQ(req(p, "q", buildJoinRequest(DEPT_ID_FIELD, DEPT_FIELD, "text:develop"), "fl","id", "fq", "name:john")
-        ,"/response=={'numFound':1,'start':0,'docs':[{'id':'1'}]}"
+        ,"/response=={'numFound':1,'start':0,'numFoundExact':true,'docs':[{'id':'1'}]}"
     );
   }
 
@@ -171,12 +171,13 @@ public class TestJoin extends SolrTestCaseJ4 {
 
     // non-DV/text field.
     assertJQ(req(p, "q","{!join from=title to=title}name:dave", "fl","id")
-        ,"/response=={'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'4'}]}"
+        ,"/response=={'numFound':2,'start':0,'numFoundExact':true,'docs':[{'id':'3'},{'id':'4'}]}"
     );
   }
 
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testRandomJoin() throws Exception {
     int indexIter=50 * RANDOM_MULTIPLIER;
     int queryIter=50 * RANDOM_MULTIPLIER;
@@ -207,7 +208,9 @@ public class TestJoin extends SolrTestCaseJ4 {
       types.add(new FldType("small_is_dv",ZERO_ONE, new IRange(0,5+indexSize/3)));
 
       clearIndex();
+      @SuppressWarnings({"rawtypes"})
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
+      @SuppressWarnings({"rawtypes"})
       Map<String, Map<Comparable, Set<Comparable>>> pivots = new HashMap<>();
 
       for (int qiter=0; qiter<queryIter; qiter++) {
@@ -228,6 +231,7 @@ public class TestJoin extends SolrTestCaseJ4 {
           toField = group[random().nextInt(group.length)];
         }
 
+        @SuppressWarnings({"rawtypes"})
         Map<Comparable, Set<Comparable>> pivot = pivots.get(fromField+"/"+toField);
         if (pivot == null) {
           pivot = createJoinMap(model, fromField, toField);
@@ -235,10 +239,12 @@ public class TestJoin extends SolrTestCaseJ4 {
         }
 
         Collection<Doc> fromDocs = model.values();
+        @SuppressWarnings({"rawtypes"})
         Set<Comparable> docs = join(fromDocs, pivot);
         List<Doc> docList = new ArrayList<>(docs.size());
-        for (Comparable id : docs) docList.add(model.get(id));
+        for (@SuppressWarnings({"rawtypes"})Comparable id : docs) docList.add(model.get(id));
         Collections.sort(docList, createComparator("_docid_",true,false,false,false));
+        @SuppressWarnings({"rawtypes"})
         List sortedDocs = new ArrayList();
         for (Doc doc : docList) {
           if (sortedDocs.size() >= 10) break;
@@ -248,6 +254,7 @@ public class TestJoin extends SolrTestCaseJ4 {
         Map<String,Object> resultSet = new LinkedHashMap<>();
         resultSet.put("numFound", docList.size());
         resultSet.put("start", 0);
+        resultSet.put("numFoundExact", true);
         resultSet.put("docs", sortedDocs);
 
         // todo: use different join queries for better coverage
@@ -263,11 +270,8 @@ public class TestJoin extends SolrTestCaseJ4 {
         Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/response", realResponse, resultSet);
         if (err != null) {
-          log.error("JOIN MISMATCH: " + err
-           + "\n\trequest="+req
-           + "\n\tresult="+strResponse
-           + "\n\texpected="+ Utils.toJSONString(resultSet)
-           + "\n\tmodel="+ model
+          log.error("JOIN MISMATCH: {}\n\trequest={}\n\tresult={}\n\texpected={}\n\tmodel={}"
+              , err, req, strResponse, Utils.toJSONString(resultSet), model
           );
 
           // re-execute the request... good for putting a breakpoint here for debugging
@@ -281,6 +285,7 @@ public class TestJoin extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"rawtypes"})
   Map<Comparable, Set<Comparable>> createJoinMap(Map<Comparable, Doc> model, String fromField, String toField) {
     Map<Comparable, Set<Comparable>> id_to_id = new HashMap<>();
 
@@ -307,9 +312,12 @@ public class TestJoin extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings({"rawtypes"})
   Set<Comparable> join(Collection<Doc> input, Map<Comparable, Set<Comparable>> joinMap) {
+    @SuppressWarnings({"rawtypes"})
     Set<Comparable> ids = new HashSet<>();
     for (Doc doc : input) {
+      @SuppressWarnings({"rawtypes"})
       Collection<Comparable> output = joinMap.get(doc.id);
       if (output == null) continue;
       ids.addAll(output);

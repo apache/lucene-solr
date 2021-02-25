@@ -38,7 +38,13 @@ public interface Preferences {
 
   boolean isKeepAllCommits();
 
-  void setIndexOpenerPrefs(boolean readOnly, String dirImpl, boolean noReader, boolean useCompound, boolean keepAllCommits) throws IOException;
+  void setIndexOpenerPrefs(
+      boolean readOnly,
+      String dirImpl,
+      boolean noReader,
+      boolean useCompound,
+      boolean keepAllCommits)
+      throws IOException;
 
   ColorTheme getColorTheme();
 

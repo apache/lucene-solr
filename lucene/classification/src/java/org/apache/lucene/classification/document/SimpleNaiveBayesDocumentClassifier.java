@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.classification.document;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +24,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -46,27 +44,33 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A simplistic Lucene based NaiveBayes classifier, see {@code http://en.wikipedia.org/wiki/Naive_Bayes_classifier}
+ * A simplistic Lucene based NaiveBayes classifier, see {@code
+ * http://en.wikipedia.org/wiki/Naive_Bayes_classifier}
  *
  * @lucene.experimental
  */
-public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifier implements DocumentClassifier<BytesRef> {
-  /**
-   * {@link org.apache.lucene.analysis.Analyzer} to be used for tokenizing document fields
-   */
+public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifier
+    implements DocumentClassifier<BytesRef> {
+  /** {@link org.apache.lucene.analysis.Analyzer} to be used for tokenizing document fields */
   protected final Map<String, Analyzer> field2analyzer;
 
   /**
    * Creates a new NaiveBayes classifier.
    *
-   * @param indexReader     the reader on the index to be used for classification
-   * @param query          a {@link org.apache.lucene.search.Query} to eventually filter the docs used for training the classifier, or {@code null}
-   *                       if all the indexed docs should be used
-   * @param classFieldName the name of the field used as the output for the classifier NOTE: must not be heavely analyzed
-   *                       as the returned class will be a token indexed for this field
-   * @param textFieldNames the name of the fields used as the inputs for the classifier, they can contain boosting indication e.g. title^10
+   * @param indexReader the reader on the index to be used for classification
+   * @param query a {@link org.apache.lucene.search.Query} to eventually filter the docs used for
+   *     training the classifier, or {@code null} if all the indexed docs should be used
+   * @param classFieldName the name of the field used as the output for the classifier NOTE: must
+   *     not be heavely analyzed as the returned class will be a token indexed for this field
+   * @param textFieldNames the name of the fields used as the inputs for the classifier, they can
+   *     contain boosting indication e.g. title^10
    */
-  public SimpleNaiveBayesDocumentClassifier(IndexReader indexReader, Query query, String classFieldName, Map<String, Analyzer> field2analyzer, String... textFieldNames) {
+  public SimpleNaiveBayesDocumentClassifier(
+      IndexReader indexReader,
+      Query query,
+      String classFieldName,
+      Map<String, Analyzer> field2analyzer,
+      String... textFieldNames) {
     super(indexReader, null, query, classFieldName, textFieldNames);
     this.field2analyzer = field2analyzer;
   }
@@ -93,13 +97,15 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   }
 
   @Override
-  public List<ClassificationResult<BytesRef>> getClasses(Document document, int max) throws IOException {
+  public List<ClassificationResult<BytesRef>> getClasses(Document document, int max)
+      throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = assignNormClasses(document);
     Collections.sort(assignedClasses);
     return assignedClasses.subList(0, max);
   }
 
-  private List<ClassificationResult<BytesRef>> assignNormClasses(Document inputDocument) throws IOException {
+  private List<ClassificationResult<BytesRef>> assignNormClasses(Document inputDocument)
+      throws IOException {
     List<ClassificationResult<BytesRef>> assignedClasses = new ArrayList<>();
     Map<String, List<String[]>> fieldName2tokensArray = new LinkedHashMap<>();
     Map<String, Float> fieldName2boost = new LinkedHashMap<>();
@@ -118,7 +124,10 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
           List<String[]> tokensArrays = fieldName2tokensArray.get(fieldName);
           double fieldScore = 0;
           for (String[] fieldTokensArray : tokensArrays) {
-            fieldScore += calculateLogPrior(term, docsWithClassSize) + calculateLogLikelihood(fieldTokensArray, fieldName, term, docsWithClassSize) * fieldName2boost.get(fieldName);
+            fieldScore +=
+                calculateLogPrior(term, docsWithClassSize)
+                    + calculateLogLikelihood(fieldTokensArray, fieldName, term, docsWithClassSize)
+                        * fieldName2boost.get(fieldName);
           }
           classScore += fieldScore;
         }
@@ -132,12 +141,17 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
    * This methods performs the analysis for the seed document and extract the boosts if present.
    * This is done only one time for the Seed Document.
    *
-   * @param inputDocument         the seed unseen document
-   * @param fieldName2tokensArray a map that associated to a field name the list of token arrays for all its values
-   * @param fieldName2boost       a map that associates the boost to the field
+   * @param inputDocument the seed unseen document
+   * @param fieldName2tokensArray a map that associated to a field name the list of token arrays for
+   *     all its values
+   * @param fieldName2boost a map that associates the boost to the field
    * @throws IOException If there is a low-level I/O error
    */
-  private void analyzeSeedDocument(Document inputDocument, Map<String, List<String[]>> fieldName2tokensArray, Map<String, Float> fieldName2boost) throws IOException {
+  private void analyzeSeedDocument(
+      Document inputDocument,
+      Map<String, List<String[]>> fieldName2tokensArray,
+      Map<String, Float> fieldName2boost)
+      throws IOException {
     for (int i = 0; i < textFieldNames.length; i++) {
       String fieldName = textFieldNames[i];
       float boost = 1;
@@ -180,13 +194,14 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
 
   /**
    * @param tokenizedText the tokenized content of a field
-   * @param fieldName     the input field name
-   * @param term          the {@link Term} referring to the class to calculate the score of
+   * @param fieldName the input field name
+   * @param term the {@link Term} referring to the class to calculate the score of
    * @param docsWithClass the total number of docs that have a class
    * @return a normalized score for the class
    * @throws IOException If there is a low-level I/O error
    */
-  private double calculateLogLikelihood(String[] tokenizedText, String fieldName, Term term, int docsWithClass) throws IOException {
+  private double calculateLogLikelihood(
+      String[] tokenizedText, String fieldName, Term term, int docsWithClass) throws IOException {
     // for each word
     double result = 0d;
     for (String word : tokenizedText) {
@@ -196,7 +211,8 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
       // num : count the no of times the word appears in documents of class c (+1)
       double num = hits + 1; // +1 is added because of add 1 smoothing
 
-      // den : for the whole dictionary, count the no of times a word appears in documents of class c (+|V|)
+      // den : for the whole dictionary, count the no of times a word appears in documents of class
+      // c (+|V|)
       double den = getTextTermFreqForClass(term, fieldName) + docsWithClass;
 
       // P(w|c) = num/den
@@ -209,9 +225,10 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   }
 
   /**
-   * Returns the average number of unique terms times the number of docs belonging to the input class
+   * Returns the average number of unique terms times the number of docs belonging to the input
+   * class
    *
-   * @param  term the class term
+   * @param term the class term
    * @return the average number of unique terms
    * @throws java.io.IOException If there is a low-level I/O error
    */
@@ -219,25 +236,28 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
     double avgNumberOfUniqueTerms;
     Terms terms = MultiTerms.getTerms(indexReader, fieldName);
     long numPostings = terms.getSumDocFreq(); // number of term/doc pairs
-    avgNumberOfUniqueTerms = numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
+    avgNumberOfUniqueTerms =
+        numPostings / (double) terms.getDocCount(); // avg # of unique terms per doc
     int docsWithC = indexReader.docFreq(term);
-    return avgNumberOfUniqueTerms * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
+    return avgNumberOfUniqueTerms
+        * docsWithC; // avg # of unique terms in text fields per doc * # docs with c
   }
 
   /**
    * Returns the number of documents of the input class ( from the whole index or from a subset)
    * that contains the word ( in a specific field or in all the fields if no one selected)
    *
-   * @param word      the token produced by the analyzer
+   * @param word the token produced by the analyzer
    * @param fieldName the field the word is coming from
-   * @param term      the class term
+   * @param term the class term
    * @return number of documents of the input class
    * @throws java.io.IOException If there is a low-level I/O error
    */
   private int getWordFreqForClass(String word, String fieldName, Term term) throws IOException {
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
     BooleanQuery.Builder subQuery = new BooleanQuery.Builder();
-    subQuery.add(new BooleanClause(new TermQuery(new Term(fieldName, word)), BooleanClause.Occur.SHOULD));
+    subQuery.add(
+        new BooleanClause(new TermQuery(new Term(fieldName, word)), BooleanClause.Occur.SHOULD));
     booleanQuery.add(new BooleanClause(subQuery.build(), BooleanClause.Occur.MUST));
     booleanQuery.add(new BooleanClause(new TermQuery(term), BooleanClause.Occur.MUST));
     if (query != null) {

@@ -59,6 +59,7 @@ class CloudReplicaSource implements ReplicaSource {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void withClusterState(Builder builder, SolrParams params) {
     ClusterState clusterState = builder.zkStateReader.getClusterState();
     String shardKeys = params.get(ShardParams._ROUTE_);
@@ -98,6 +99,7 @@ class CloudReplicaSource implements ReplicaSource {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private void withShardsParam(Builder builder, String shardsParam) {
     List<String> sliceOrUrls = StrUtils.splitSmart(shardsParam, ",", true);
     this.slices = new String[sliceOrUrls.size()];

@@ -241,17 +241,20 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       checkNotInCores(cc, Arrays.asList("collection2", "collection3"));
 
       // verify that getting metrics from an unloaded core doesn't cause exceptions (SOLR-12541)
-      MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+      try (MetricsHandler handler = new MetricsHandler(h.getCoreContainer())) {
 
-      SolrQueryResponse resp = new SolrQueryResponse();
-      handler.handleRequest(makeReq(core1, CommonParams.QT, "/admin/metrics"), resp);
-      NamedList values = resp.getValues();
-      assertNotNull(values.get("metrics"));
-      values = (NamedList) values.get("metrics");
-      NamedList nl = (NamedList) values.get("solr.core.collection2");
-      assertNotNull(nl);
-      Object o = nl.get("REPLICATION./replication.indexPath");
-      assertNotNull(o);
+        SolrQueryResponse resp = new SolrQueryResponse();
+        handler.handleRequest(makeReq(core1, CommonParams.QT, "/admin/metrics"), resp);
+        @SuppressWarnings({"rawtypes"})
+        NamedList values = resp.getValues();
+        assertNotNull(values.get("metrics"));
+        values = (NamedList) values.get("metrics");
+        @SuppressWarnings({"rawtypes"})
+        NamedList nl = (NamedList) values.get("solr.core.collection2");
+        assertNotNull(nl);
+        Object o = nl.get("REPLICATION./replication.indexPath");
+        assertNotNull(o);
+      }
 
 
       // Note decrementing the count when the core is removed from the lazyCores list is appropriate, since the
@@ -361,28 +364,29 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private void createViaAdmin(CoreContainer cc, String name, boolean isTransient,
                               boolean loadOnStartup) throws Exception {
 
-    final CoreAdminHandler admin = new CoreAdminHandler(cc);
-    SolrQueryResponse resp = new SolrQueryResponse();
-    admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.CREATE.toString(),
-            CoreAdminParams.NAME, name,
-            CoreAdminParams.TRANSIENT, Boolean.toString(isTransient),
-            CoreAdminParams.LOAD_ON_STARTUP, Boolean.toString(loadOnStartup)),
-            resp);
+    try (final CoreAdminHandler admin = new CoreAdminHandler(cc)) {
+      SolrQueryResponse resp = new SolrQueryResponse();
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.CREATE.toString(),
+              CoreAdminParams.NAME, name,
+              CoreAdminParams.TRANSIENT, Boolean.toString(isTransient),
+              CoreAdminParams.LOAD_ON_STARTUP, Boolean.toString(loadOnStartup)),
+              resp);
+    }
 
   }
 
   private void unloadViaAdmin(CoreContainer cc, String name) throws Exception {
 
-    final CoreAdminHandler admin = new CoreAdminHandler(cc);
-    SolrQueryResponse resp = new SolrQueryResponse();
-    admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.UNLOAD.toString(),
-            CoreAdminParams.CORE, name),
-            resp);
-
+    try (final CoreAdminHandler admin = new CoreAdminHandler(cc)) {
+      SolrQueryResponse resp = new SolrQueryResponse();
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.UNLOAD.toString(),
+              CoreAdminParams.CORE, name),
+              resp);
+    }
   }
   
   // Make sure that creating a transient core from the admin handler correctly respects the transient limits etc.
@@ -634,13 +638,15 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // if ok==false, the core being examined should have a failure in the list.
   private void checkStatus(CoreContainer cc, Boolean ok, String core) throws Exception {
     SolrQueryResponse resp = new SolrQueryResponse();
-    final CoreAdminHandler admin = new CoreAdminHandler(cc);
-    admin.handleRequestBody
-        (req(CoreAdminParams.ACTION,
-            CoreAdminParams.CoreAdminAction.STATUS.toString(),
-            CoreAdminParams.CORE, core),
-            resp);
+    try (final CoreAdminHandler admin = new CoreAdminHandler(cc)) {
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.STATUS.toString(),
+              CoreAdminParams.CORE, core),
+              resp);
+    }
 
+    @SuppressWarnings({"unchecked"})
     Map<String, Exception> failures =
         (Map<String, Exception>) resp.getValues().get("initFailures");
 
@@ -662,6 +668,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     Collection<String> loadedNames = cc.getLoadedCoreNames();
     for (String name : nameCheck) {
       assertFalse("core " + name + " was found in the list of cores", loadedNames.contains(name));
+      assertFalse(cc.isLoaded(name));
     }
     
     // There was a problem at one point exacerbated by the poor naming conventions. So parallel to loaded cores, there
@@ -675,26 +682,33 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     List<CoreDescriptor> descriptors = cc.getCoreDescriptors();
 
     assertEquals("There should be as many coreDescriptors as coreNames", allNames.size(), descriptors.size());
+    assertEquals(allNames.size(), cc.getNumAllCores());
     for (CoreDescriptor desc : descriptors) {
       assertTrue("Name should have a corresponding descriptor", allNames.contains(desc.getName()));
+      assertNotNull(cc.getCoreDescriptor(desc.getName()));
     }
     
     // First check that all loaded cores are in allNames.
     for (String name : loadedNames) {                                                                                        
       assertTrue("Loaded core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
+      assertNotNull(cc.getCoreDescriptor(name));
+      assertTrue(cc.isLoaded(name));
     }
 
-    // failed cores should have had their descriptors removed.
+    // Unloaded cores should be in allNames.
     for (String name : nameCheck) {
       assertTrue("Not-currently-loaded core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
+      assertNotNull(cc.getCoreDescriptor(name));
     }
 
     // Failed cores should not be in coreDescriptors.
     for (String name : namesBad) {
       assertFalse("Failed core " + name + " should have been found in the list of all possible core names",
           allNames.contains(name));
+      assertNull(cc.getCoreDescriptor(name));
+      assertFalse(cc.isLoaded(name));
     }
 
   }
@@ -717,6 +731,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     updater.addDoc(cmd);
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private LocalSolrQueryRequest makeReq(SolrCore core, String... q) {
     if (q.length == 1) {
       return new LocalSolrQueryRequest(core,

@@ -22,28 +22,27 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.mutable.MutableValue;
 
-/**
- * A GroupSelector that groups via a ValueSource
- */
+/** A GroupSelector that groups via a ValueSource */
 public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
 
   private final ValueSource valueSource;
-  private final Map<?, ?> context;
+  private final Map<Object, Object> context;
 
   private Set<MutableValue> secondPassGroups;
 
   /**
    * Create a new ValueSourceGroupSelector
+   *
    * @param valueSource the ValueSource to group by
-   * @param context     a context map for the ValueSource
+   * @param context a context map for the ValueSource
    */
-  public ValueSourceGroupSelector(ValueSource valueSource, Map<?, ?> context) {
+  public ValueSourceGroupSelector(ValueSource valueSource, Map<Object, Object> context) {
     this.valueSource = valueSource;
     this.context = context;
   }
@@ -57,17 +56,21 @@ public class ValueSourceGroupSelector extends GroupSelector<MutableValue> {
   }
 
   @Override
+  public void setScorer(Scorable scorer) throws IOException {}
+
+  @Override
   public State advanceTo(int doc) throws IOException {
     this.filler.fillValue(doc);
     if (secondPassGroups != null) {
-      if (secondPassGroups.contains(filler.getValue()) == false)
+      if (secondPassGroups.contains(filler.getValue()) == false) {
         return State.SKIP;
+      }
     }
     return State.ACCEPT;
   }
 
   @Override
-  public MutableValue currentValue() {
+  public MutableValue currentValue() throws IOException {
     return filler.getValue();
   }
 

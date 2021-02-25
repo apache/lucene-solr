@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LazyDocument;
+import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.IndexSchema;
@@ -36,6 +36,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   private static final String BIG_FIELD = "bigField";
 
   @BeforeClass
+  @SuppressWarnings({"unchecked"})
   public static void initManagedSchemaCore() throws Exception {
     // This testing approach means no schema file or per-test temp solr-home!
     System.setProperty("managed.schema.mutable", "true");

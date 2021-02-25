@@ -35,6 +35,7 @@ REM set GC_LOG_OPTS=-verbose:gc -XX:+PrintHeapAtGC -XX:+PrintGCDetails -XX:+Prin
 
 REM Various GC settings have shown to work well for a number of common Solr workloads.
 REM See solr.cmd GC_TUNE for the default list.
+REM set GC_TUNE=-XX:+ExplicitGCInvokesConcurrent
 REM set GC_TUNE=-XX:SurvivorRatio=4
 REM set GC_TUNE=%GC_TUNE% -XX:TargetSurvivorRatio=90
 REM set GC_TUNE=%GC_TUNE% -XX:MaxTenuringThreshold=8
@@ -55,7 +56,7 @@ REM Leave empty if not using SolrCloud
 REM set ZK_HOST=
 
 REM Set the ZooKeeper client timeout (for SolrCloud mode)
-REM set ZK_CLIENT_TIMEOUT=15000
+REM set ZK_CLIENT_TIMEOUT=30000
 
 REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
@@ -131,9 +132,9 @@ REM to enable https module with custom jetty configuration.
 REM set SOLR_SSL_ENABLED=true
 REM Uncomment to set SSL-related system properties
 REM Be sure to update the paths to the correct keystore for your environment
-REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_KEY_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_KEY_STORE_PASSWORD=secret
-REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.jks
+REM set SOLR_SSL_TRUST_STORE=etc/solr-ssl.keystore.p12
 REM set SOLR_SSL_TRUST_STORE_PASSWORD=secret
 REM Require clients to authenticate
 REM set SOLR_SSL_NEED_CLIENT_AUTH=false
@@ -203,3 +204,12 @@ REM Runtime properties are passed to the security policy file (server\etc\securi
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
 REM set SOLR_SECURITY_MANAGER_ENABLED=true
+REM This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
+REM change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+REM scripts.
+REM set SOLR_ADMIN_UI_DISABLED=false
+
+REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
+REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
+REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
+REM SOLR_OPTS="%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path"

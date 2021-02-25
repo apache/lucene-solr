@@ -16,36 +16,40 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexSorter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortFieldProvider;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 
-/** 
+/**
  * SortField for {@link SortedSetDocValues}.
- * <p>
- * A SortedSetDocValues contains multiple values for a field, so sorting with
- * this technique "selects" a value as the representative sort value for the document.
- * <p>
- * By default, the minimum value in the set is selected as the sort value, but
- * this can be customized. Selectors other than the default do have some limitations
- * to ensure that all selections happen in constant-time for performance.
- * <p>
- * Like sorting by string, this also supports sorting missing values as first or last,
- * via {@link #setMissingValue(Object)}.
+ *
+ * <p>A SortedSetDocValues contains multiple values for a field, so sorting with this technique
+ * "selects" a value as the representative sort value for the document.
+ *
+ * <p>By default, the minimum value in the set is selected as the sort value, but this can be
+ * customized. Selectors other than the default do have some limitations to ensure that all
+ * selections happen in constant-time for performance.
+ *
+ * <p>Like sorting by string, this also supports sorting missing values as first or last, via {@link
+ * #setMissingValue(Object)}.
+ *
  * @see SortedSetSelector
  */
 public class SortedSetSortField extends SortField {
-  
+
   private final SortedSetSelector.Type selector;
-  
+
   /**
-   * Creates a sort, possibly in reverse, by the minimum value in the set 
-   * for the document.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, possibly in reverse, by the minimum value in the set for the document.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param reverse True if natural order should be reversed.
    */
   public SortedSetSortField(String field, boolean reverse) {
@@ -53,13 +57,14 @@ public class SortedSetSortField extends SortField {
   }
 
   /**
-   * Creates a sort, possibly in reverse, specifying how the sort value from 
-   * the document's set is selected.
-   * @param field Name of field to sort by.  Must not be null.
+   * Creates a sort, possibly in reverse, specifying how the sort value from the document's set is
+   * selected.
+   *
+   * @param field Name of field to sort by. Must not be null.
    * @param reverse True if natural order should be reversed.
    * @param selector custom selector type for choosing the sort value from the set.
-   * <p>
-   * NOTE: selectors other than {@link SortedSetSelector.Type#MIN} require optional codec support.
+   *     <p>NOTE: selectors other than {@link SortedSetSelector.Type#MIN} require optional codec
+   *     support.
    */
   public SortedSetSortField(String field, boolean reverse, SortedSetSelector.Type selector) {
     super(field, SortField.Type.CUSTOM, reverse);
@@ -68,7 +73,60 @@ public class SortedSetSortField extends SortField {
     }
     this.selector = selector;
   }
-  
+
+  /** A SortFieldProvider for this sort */
+  public static final class Provider extends SortFieldProvider {
+
+    /** The name this provider is registered under */
+    public static final String NAME = "SortedSetSortField";
+
+    /** Creates a new Provider */
+    public Provider() {
+      super(NAME);
+    }
+
+    @Override
+    public SortField readSortField(DataInput in) throws IOException {
+      SortField sf =
+          new SortedSetSortField(in.readString(), in.readInt() == 1, readSelectorType(in));
+      int missingValue = in.readInt();
+      if (missingValue == 1) {
+        sf.setMissingValue(SortField.STRING_FIRST);
+      } else if (missingValue == 2) {
+        sf.setMissingValue(SortField.STRING_LAST);
+      }
+      return sf;
+    }
+
+    @Override
+    public void writeSortField(SortField sf, DataOutput out) throws IOException {
+      assert sf instanceof SortedSetSortField;
+      ((SortedSetSortField) sf).serialize(out);
+    }
+  }
+
+  private static SortedSetSelector.Type readSelectorType(DataInput in) throws IOException {
+    int type = in.readInt();
+    if (type >= SortedSetSelector.Type.values().length) {
+      throw new IllegalArgumentException(
+          "Cannot deserialize SortedSetSortField: unknown selector type " + type);
+    }
+    return SortedSetSelector.Type.values()[type];
+  }
+
+  private void serialize(DataOutput out) throws IOException {
+    out.writeString(getField());
+    out.writeInt(reverse ? 1 : 0);
+    out.writeInt(selector.ordinal());
+    if (missingValue == SortField.STRING_FIRST) {
+      out.writeInt(1);
+    } else if (missingValue == SortField.STRING_LAST) {
+      out.writeInt(2);
+    } else {
+      out.writeInt(0);
+    }
+  }
+
   /** Returns the selector in use for this sort */
   public SortedSetSelector.Type getSelector() {
     return selector;
@@ -88,7 +146,7 @@ public class SortedSetSortField extends SortField {
     if (selector != other.selector) return false;
     return true;
   }
-  
+
   @Override
   public String toString() {
     StringBuilder buffer = new StringBuilder();
@@ -106,24 +164,36 @@ public class SortedSetSortField extends SortField {
 
   /**
    * Set how missing values (the empty set) are sorted.
-   * <p>
-   * Note that this must be {@link #STRING_FIRST} or {@link #STRING_LAST}.
+   *
+   * <p>Note that this must be {@link #STRING_FIRST} or {@link #STRING_LAST}.
    */
   @Override
   public void setMissingValue(Object missingValue) {
     if (missingValue != STRING_FIRST && missingValue != STRING_LAST) {
-      throw new IllegalArgumentException("For SORTED_SET type, missing value must be either STRING_FIRST or STRING_LAST");
+      throw new IllegalArgumentException(
+          "For SORTED_SET type, missing value must be either STRING_FIRST or STRING_LAST");
     }
     this.missingValue = missingValue;
   }
-  
+
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
+    return new FieldComparator.TermOrdValComparator(
+        numHits, getField(), missingValue == STRING_LAST) {
       @Override
-      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
+      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field)
+          throws IOException {
         return SortedSetSelector.wrap(DocValues.getSortedSet(context.reader(), field), selector);
       }
     };
+  }
+
+  private SortedDocValues getValues(LeafReader reader) throws IOException {
+    return SortedSetSelector.wrap(DocValues.getSortedSet(reader, getField()), selector);
+  }
+
+  @Override
+  public IndexSorter getIndexSorter() {
+    return new IndexSorter.StringSorter(Provider.NAME, missingValue, reverse, this::getValues);
   }
 }

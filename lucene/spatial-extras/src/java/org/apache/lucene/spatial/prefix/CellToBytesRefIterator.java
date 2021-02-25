@@ -17,17 +17,15 @@
 package org.apache.lucene.spatial.prefix;
 
 import java.util.Iterator;
-
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 
 /**
- * A reset'able {@link org.apache.lucene.util.BytesRefIterator} wrapper around
- * an {@link java.util.Iterator} of {@link org.apache.lucene.spatial.prefix.tree.Cell}s.
+ * A reset'able {@link org.apache.lucene.util.BytesRefIterator} wrapper around an {@link
+ * java.util.Iterator} of {@link org.apache.lucene.spatial.prefix.tree.Cell}s.
  *
  * @see PrefixTreeStrategy#newCellToBytesRefIterator()
- *
  * @lucene.internal
  */
 public class CellToBytesRefIterator implements BytesRefIterator {

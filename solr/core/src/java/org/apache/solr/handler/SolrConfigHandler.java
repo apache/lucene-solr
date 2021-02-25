@@ -48,6 +48,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -60,15 +61,16 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -77,7 +79,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -151,6 +152,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
   }
 
   public static boolean getImmutable(SolrCore core) {
+    @SuppressWarnings({"rawtypes"})
     NamedList configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
@@ -178,6 +180,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return "/config";
     }
 
+    @SuppressWarnings({"unchecked"})
     private void handleGET() {
       if (parts.size() == 1) {
         //this is the whole config. sent out the whole payload
@@ -189,6 +192,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           if (parts.size() == 3) {
             RequestParams params = req.getCore().getSolrConfig().getRequestParams();
             RequestParams.ParamSet p = params.getParams(parts.get(2));
+            @SuppressWarnings({"rawtypes"})
             Map m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
@@ -247,24 +251,29 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             Map<String, Object> val = makeMap(parts.get(1), m.get(parts.get(1)));
             String componentName = req.getParams().get("componentName");
             if (componentName != null) {
-              Map map = (Map) val.get(parts.get(1));
-              if (map != null) {
-                Object o = map.get(componentName);
-                val.put(parts.get(1), makeMap(componentName, o));
+              @SuppressWarnings({"rawtypes"})
+              Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
+              if (pluginNameVsPluginInfo != null) {
+                @SuppressWarnings({"rawtypes"})
+                Object o = pluginNameVsPluginInfo instanceof MapSerializable ?
+                       pluginNameVsPluginInfo:
+                        pluginNameVsPluginInfo.get(componentName);
+                @SuppressWarnings({"rawtypes"})
+                Map pluginInfo = o instanceof  MapSerializable? ((MapSerializable) o).toMap(new LinkedHashMap<>()): (Map) o;
+                val.put(parts.get(1),pluginNameVsPluginInfo instanceof PluginInfo? pluginInfo :  makeMap(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
                   // meta=true is asking for the package info of the plugin
                   // We go through all the listeners and see if there is one registered for this plugin
                   List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
                   for (PackageListeners.Listener listener :
                       listeners) {
-                    PluginInfo info = listener.pluginInfo();
-                    if(info == null) continue;
-                    if (info.type.equals(parts.get(1)) && info.name.equals(componentName)) {
-                      if (o instanceof Map) {
-                        Map m1 = (Map) o;
-                        m1.put("_packageinfo_", listener.getPackageVersion());
+                    Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
+                    if(infos == null || infos.isEmpty()) continue;
+                    infos.forEach((s, mapWriter) -> {
+                      if(s.equals(pluginInfo.get("class"))) {
+                        (pluginInfo).put("_packageinfo_", mapWriter);
                       }
-                    }
+                    });
                   }
                 }
               }
@@ -275,11 +284,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
     }
 
+    @SuppressWarnings({"unchecked"})
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
       boolean showParams = req.getParams().getBool("expandParams", false);
       Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
+      @SuppressWarnings({"rawtypes"})
       Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
       if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
       List<PluginInfo> plugins = this.req.getCore().getImplicitHandlers();
@@ -292,6 +303,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
       if (!showParams) return map;
       for (Object o : reqHandlers.entrySet()) {
+        @SuppressWarnings({"rawtypes"})
         Map.Entry e = (Map.Entry) o;
         if (componentName == null || e.getKey().equals(componentName)) {
           Map<String, Object> m = expandUseParams(req, e.getValue());
@@ -302,6 +314,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return map;
     }
 
+    @SuppressWarnings({"unchecked"})
     private Map<String, Object> expandUseParams(SolrQueryRequest req,
                                                 Object plugin) {
 
@@ -311,9 +324,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       } else if (plugin instanceof PluginInfo) {
         pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
       }
+      @SuppressWarnings({"rawtypes"})
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
       if (useParams != null || useParamsInReq != null) {
+        @SuppressWarnings({"rawtypes"})
         Map m = new LinkedHashMap<>();
         pluginInfo.put("_useParamsExpanded_", m);
         List<String> params = new ArrayList<>();
@@ -331,6 +346,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         LocalSolrQueryRequest r = new LocalSolrQueryRequest(req.getCore(), req.getOriginalParams());
         r.getContext().put(USEPARAM, useParams);
+        @SuppressWarnings({"rawtypes"})
         NamedList nl = new PluginInfo(SolrRequestHandler.TYPE, pluginInfo).initArgs;
         SolrPluginUtils.setDefaults(r,
             getSolrParamsFromNamedList(nl, DEFAULTS),
@@ -368,7 +384,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           } catch (ZkController.ResourceModifiedInZkException e) {
             //retry
             if (log.isInfoEnabled()) {
-              log.info("Race condition, the node is modified in ZK by someone else {}", e.getMessage());
+              log.info("Race condition, the node is modified in ZK by someone else", e);
             }
           }
         }
@@ -380,6 +396,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
 
 
+    @SuppressWarnings({"unchecked"})
     private void handleParams(ArrayList<CommandOperation> ops, RequestParams params) {
       for (CommandOperation op : ops) {
         switch (op.name) {
@@ -390,6 +407,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
             for (Map.Entry<String, Object> entry : map.entrySet()) {
 
+              @SuppressWarnings({"rawtypes"})
               Map val;
               String key = entry.getKey();
               if (isNullOrEmpty(key)) {
@@ -449,6 +467,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
 
 
+      @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
@@ -478,6 +497,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     }
 
+    @SuppressWarnings({"unchecked"})
     private void handleCommands(List<CommandOperation> ops, ConfigOverlay overlay) throws IOException {
       for (CommandOperation op : ops) {
         switch (op.name) {
@@ -514,6 +534,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           }
         }
       }
+      @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
         log.error("ERROR:{}", Utils.toJSONString(errs));
@@ -531,7 +552,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             latestVersion, 30);
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
-        req.getCore().getCoreContainer().reload(req.getCore().getName());
+        req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
@@ -555,19 +576,6 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
-      if (info.clazz == PluginBag.RuntimeLib.class) {
-        if (!PluginBag.RuntimeLib.isEnabled()) {
-          op.addError("Solr not started with -Denable.runtime.lib=true");
-          return overlay;
-        }
-        try {
-          new PluginBag.RuntimeLib(req.getCore()).init(new PluginInfo(info.tag, op.getDataMap()));
-        } catch (Exception e) {
-          op.addError(e.getMessage());
-          log.error("can't load this plugin ", e);
-          return overlay;
-        }
-      }
       if (!verifyClass(op, clz, info.clazz)) return overlay;
       if (pluginExists(info, overlay, name)) {
         if (isCeate) {
@@ -592,27 +600,26 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
-    private boolean verifyClass(CommandOperation op, String clz, Class expected) {
+    @SuppressWarnings({"unchecked"})
+    private boolean verifyClass(CommandOperation op, String clz, @SuppressWarnings({"rawtypes"})Class expected) {
       if (clz == null) return true;
-      if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
-        PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
-        //this is not dynamically loaded so we can verify the class right away
-        try {
-          if(expected == Expressible.class) {
-            SolrResourceLoader resourceLoader = info.pkgName == null ?
-                req.getCore().getResourceLoader() :
-                req.getCore().getResourceLoader(info.pkgName);
-            resourceLoader.findClass(info.className, expected);
-          } else {
-            req.getCore().createInitInstance(info, expected, clz, "");
-          }
-        } catch (Exception e) {
-          log.error("Error checking plugin : ", e);
-          op.addError(e.getMessage());
-          return false;
+      PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
+      try {
+        if (expected == Expressible.class) {
+          @SuppressWarnings("resource")
+          SolrResourceLoader resourceLoader = info.pkgName == null ?
+              req.getCore().getResourceLoader() :
+              req.getCore().getResourceLoader(info.pkgName);
+          resourceLoader.findClass(info.className, expected);
+        } else {
+          req.getCore().createInitInstance(info, expected, clz, "");
         }
-
+      } catch (Exception e) {
+        log.error("Error checking plugin : ", e);
+        op.addError(e.getMessage());
+        return false;
       }
+
       return true;
     }
 
@@ -661,6 +668,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       for (Map.Entry<String, Object> e : m.entrySet()) {
         String name = e.getKey();
         Object val = e.getValue();
+        @SuppressWarnings({"rawtypes"})
         Class typ = ConfigOverlay.checkEditable(name, false, null);
         if (typ == null) {
           op.addError(formatString(NOT_EDITABLE, name));
@@ -871,6 +879,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private static class PerReplicaCallable extends SolrRequest implements Callable<Boolean> {
     String coreUrl;
     String prop;
@@ -909,6 +918,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             Thread.sleep(100);
             NamedList<Object> resp = solr.httpUriRequest(this).future.get();
             if (resp != null) {
+              @SuppressWarnings({"rawtypes"})
               Map m = (Map) resp.get(ZNODEVER);
               if (m != null) {
                 remoteVersion = (Number) m.get(prop);
@@ -936,6 +946,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     @Override
     protected SolrResponse createResponse(SolrClient client) {
       return null;
+    }
+
+    @Override
+    public String getRequestType() {
+      return SolrRequest.SolrRequestType.ADMIN.toString();
     }
   }
 

@@ -16,11 +16,16 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -31,6 +36,10 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.backup.BackupFilePaths;
+import org.apache.solr.core.backup.Checksum;
+import org.apache.solr.core.backup.ShardBackupId;
+import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,16 +48,25 @@ public class RestoreCore implements Callable<Boolean> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final String backupName;
-  private final URI backupLocation;
   private final SolrCore core;
-  private final BackupRepository backupRepo;
+  private RestoreRepository repository;
 
-  public RestoreCore(BackupRepository backupRepo, SolrCore core, URI location, String name) {
-    this.backupRepo = backupRepo;
+  private RestoreCore(SolrCore core, RestoreRepository repository) {
     this.core = core;
-    this.backupLocation = location;
-    this.backupName = name;
+    this.repository = repository;
+  }
+
+  public static RestoreCore create(BackupRepository backupRepo, SolrCore core, URI location, String backupname) {
+    RestoreRepository repository = new BasicRestoreRepository(backupRepo.resolve(location, backupname), backupRepo);
+    return new RestoreCore(core, repository);
+  }
+
+  public static RestoreCore createWithMetaFile(BackupRepository repo, SolrCore core, URI location, ShardBackupId shardBackupId) throws IOException {
+    BackupFilePaths incBackupFiles = new BackupFilePaths(repo, location);
+    URI shardBackupMetadataDir = incBackupFiles.getShardBackupMetadataDir();
+    ShardBackupIdRestoreRepository resolver = new ShardBackupIdRestoreRepository(location, incBackupFiles.getIndexDir(),
+            repo, ShardBackupMetadata.from(repo, shardBackupMetadataDir, shardBackupId));
+    return new RestoreCore(core, resolver);
   }
 
   @Override
@@ -57,8 +75,6 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   public boolean doRestore() throws Exception {
-
-    URI backupPath = backupRepo.resolve(backupLocation, backupName);
     SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
     String restoreIndexName = "restore." + dateFormat.format(new Date());
     String restoreIndexPath = core.getDataDir() + restoreIndexName;
@@ -69,31 +85,34 @@ public class RestoreCore implements Callable<Boolean> {
     try {
 
       restoreIndexDir = core.getDirectoryFactory().get(restoreIndexPath,
-          DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+              DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
 
       //Prefer local copy.
       indexDir = core.getDirectoryFactory().get(indexDirPath,
-          DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-
+              DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
+      Set<String> indexDirFiles = new HashSet<>(Arrays.asList(indexDir.listAll()));
       //Move all files from backupDir to restoreIndexDir
-      for (String filename : backupRepo.listAll(backupPath)) {
+      for (String filename : repository.listAllFiles()) {
         checkInterrupted();
-        log.info("Copying file {} to restore directory ", filename);
-        try (IndexInput indexInput = backupRepo.openInput(backupPath, filename, IOContext.READONCE)) {
-          Long checksum = null;
-          try {
-            checksum = CodecUtil.retrieveChecksum(indexInput);
-          } catch (Exception e) {
-            log.warn("Could not read checksum from index file: {}", filename, e);
-          }
-          long length = indexInput.length();
-          IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
-          if (!compareResult.equal ||
-              (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, length, compareResult))) {
-            backupRepo.copyFileTo(backupPath, filename, restoreIndexDir);
+        try {
+          if (indexDirFiles.contains(filename)) {
+            Checksum cs = repository.checksum(filename);
+            IndexFetcher.CompareResult compareResult;
+            if (cs == null) {
+              compareResult = new IndexFetcher.CompareResult();
+              compareResult.equal = false;
+            } else {
+              compareResult = IndexFetcher.compareFile(indexDir, filename, cs.size, cs.checksum);
+            }
+            if (!compareResult.equal ||
+                    (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, cs.size, compareResult))) {
+              repository.repoCopy(filename, restoreIndexDir);
+            } else {
+              //prefer local copy
+              repository.localCopy(indexDir, filename, restoreIndexDir);
+            }
           } else {
-            //prefer local copy
-            restoreIndexDir.copyFrom(indexDir, filename, filename, IOContext.READONCE);
+            repository.repoCopy(filename, restoreIndexDir);
           }
         } catch (Exception e) {
           log.warn("Exception while restoring the backup index ", e);
@@ -115,7 +134,7 @@ public class RestoreCore implements Callable<Boolean> {
         Directory dir = null;
         try {
           dir = core.getDirectoryFactory().get(core.getDataDir(), DirectoryFactory.DirContext.META_DATA,
-              core.getSolrConfig().indexConfig.lockType);
+                  core.getSolrConfig().indexConfig.lockType);
           dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
         } finally {
           if (dir != null) {
@@ -153,10 +172,113 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   private void openNewSearcher() throws Exception {
+    @SuppressWarnings({"rawtypes"})
     Future[] waitSearcher = new Future[1];
     core.getSearcher(true, false, waitSearcher, true);
     if (waitSearcher[0] != null) {
       waitSearcher[0].get();
+    }
+  }
+
+  /**
+   * A minimal version of {@link BackupRepository} used for restoring
+   */
+  private interface RestoreRepository {
+    String[] listAllFiles() throws IOException;
+    IndexInput openInput(String filename) throws IOException;
+    void repoCopy(String filename, Directory dest) throws IOException;
+    void localCopy(Directory src, String filename, Directory dest) throws IOException;
+    Checksum checksum(String filename) throws IOException;
+  }
+
+  /**
+   * A basic {@link RestoreRepository} simply delegates all calls to {@link BackupRepository}
+   */
+  private static class BasicRestoreRepository implements RestoreRepository {
+    protected final URI backupPath;
+    protected final BackupRepository repository;
+
+    public BasicRestoreRepository(URI backupPath, BackupRepository repository) {
+      this.backupPath = backupPath;
+      this.repository = repository;
+    }
+
+    public String[] listAllFiles() throws IOException {
+      return repository.listAll(backupPath);
+    }
+
+    public IndexInput openInput(String filename) throws IOException {
+      return repository.openInput(backupPath, filename, IOContext.READONCE);
+    }
+
+    public void repoCopy(String filename, Directory dest) throws IOException {
+      repository.copyFileTo(backupPath, filename, dest);
+    }
+
+    public void localCopy(Directory src, String filename, Directory dest) throws IOException {
+      dest.copyFrom(src, filename, filename, IOContext.READONCE);
+    }
+
+    public Checksum checksum(String filename) throws IOException {
+      try (IndexInput indexInput = repository.openInput(backupPath, filename, IOContext.READONCE)) {
+        try {
+          long checksum = CodecUtil.retrieveChecksum(indexInput);
+          long length = indexInput.length();
+          return new Checksum(checksum, length);
+        } catch (Exception e) {
+          log.warn("Could not read checksum from index file: {}", filename, e);
+        }
+      }
+      return null;
+    }
+  }
+
+  /**
+   * A {@link RestoreRepository} based on information stored in {@link ShardBackupMetadata}
+   */
+  private static class ShardBackupIdRestoreRepository implements RestoreRepository {
+
+    private final ShardBackupMetadata shardBackupMetadata;
+    private final URI indexURI;
+    protected final URI backupPath;
+    protected final BackupRepository repository;
+
+    public ShardBackupIdRestoreRepository(URI backupPath, URI indexURI, BackupRepository repository, ShardBackupMetadata shardBackupMetadata) {
+      this.shardBackupMetadata = shardBackupMetadata;
+      this.indexURI = indexURI;
+      this.backupPath = backupPath;
+      this.repository = repository;
+    }
+
+    @Override
+    public String[] listAllFiles() {
+      return shardBackupMetadata.listOriginalFileNames().toArray(new String[0]);
+    }
+
+    @Override
+    public IndexInput openInput(String filename) throws IOException {
+      String storedFileName = getStoredFilename(filename);
+      return repository.openInput(indexURI, storedFileName, IOContext.READONCE);
+    }
+
+    @Override
+    public void repoCopy(String filename, Directory dest) throws IOException {
+      String storedFileName = getStoredFilename(filename);
+      repository.copyIndexFileTo(this.indexURI, storedFileName, dest, filename);
+    }
+
+    @Override
+    public void localCopy(Directory src, String filename, Directory dest) throws IOException {
+      dest.copyFrom(src, filename, filename, IOContext.READONCE);
+    }
+
+    public Checksum checksum(String filename) {
+      Optional<ShardBackupMetadata.BackedFile> backedFile = shardBackupMetadata.getFile(filename);
+      return backedFile.map(bf -> bf.fileChecksum).orElse(null);
+    }
+
+    private String getStoredFilename(String filename) {
+      return shardBackupMetadata.getFile(filename).get().uniqueFileName;
     }
   }
 }

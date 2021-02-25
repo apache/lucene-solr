@@ -286,7 +286,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     try {
       code = conn.getResponseCode();
     } catch (Throwable th) {
-      log.error("ERROR DURING conn.getResponseCode():",th);
+      log.error("ERROR DURING conn.getResponseCode():", th);
     }
 
 /***

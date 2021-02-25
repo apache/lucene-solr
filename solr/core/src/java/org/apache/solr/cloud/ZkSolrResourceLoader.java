@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.SolrResourceNotFoundException;
 import org.apache.solr.schema.ZkIndexSchemaReader;
@@ -80,7 +81,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
         if (zkController.pathExists(file)) {
           Stat stat = new Stat();
           byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
-          return new ZkByteArrayInputStream(bytes, stat);
+          return new ZkByteArrayInputStream(bytes, file, stat);
         } else {
           //Path does not exists. We only retry for session expired exceptions.
           break;
@@ -125,11 +126,12 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   public static class ZkByteArrayInputStream extends ByteArrayInputStream{
 
+    public final String fileName;
     private final Stat stat;
-    public ZkByteArrayInputStream(byte[] buf, Stat stat) {
+    public ZkByteArrayInputStream(byte[] buf, String fileName, Stat stat) {
       super(buf);
+      this.fileName = fileName;
       this.stat = stat;
-
     }
 
     public Stat getStat(){
@@ -157,4 +159,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   }
 
   public ZkIndexSchemaReader getZkIndexSchemaReader() { return zkIndexSchemaReader; }
+
+  @Override
+  public CoreContainer getCoreContainer() {
+    return zkController.getCoreContainer();
+  }
 }

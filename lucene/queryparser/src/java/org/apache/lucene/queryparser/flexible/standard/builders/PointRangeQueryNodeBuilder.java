@@ -37,30 +37,28 @@ import org.apache.lucene.search.Query;
  * @see PointRangeQueryNode
  */
 public class PointRangeQueryNodeBuilder implements StandardQueryBuilder {
-  
-  /**
-   * Constructs a {@link PointRangeQueryNodeBuilder} object.
-   */
+
+  /** Constructs a {@link PointRangeQueryNodeBuilder} object. */
   public PointRangeQueryNodeBuilder() {
-  // empty constructor
+    // empty constructor
   }
-  
+
   @Override
   public Query build(QueryNode queryNode) throws QueryNodeException {
     PointRangeQueryNode numericRangeNode = (PointRangeQueryNode) queryNode;
-    
+
     PointQueryNode lowerNumericNode = numericRangeNode.getLowerBound();
     PointQueryNode upperNumericNode = numericRangeNode.getUpperBound();
-    
+
     Number lowerNumber = lowerNumericNode.getValue();
     Number upperNumber = upperNumericNode.getValue();
-    
+
     PointsConfig pointsConfig = numericRangeNode.getPointsConfig();
     Class<? extends Number> numberType = pointsConfig.getType();
     String field = StringUtils.toString(numericRangeNode.getField());
     boolean minInclusive = numericRangeNode.isLowerInclusive();
     boolean maxInclusive = numericRangeNode.isUpperInclusive();
-    
+
     // TODO: push down cleaning up of crazy nulls and inclusive/exclusive elsewhere
     if (Integer.class.equals(numberType)) {
       Integer lower = (Integer) lowerNumber;
@@ -70,7 +68,7 @@ public class PointRangeQueryNodeBuilder implements StandardQueryBuilder {
       if (minInclusive == false) {
         lower = lower + 1;
       }
-      
+
       Integer upper = (Integer) upperNumber;
       if (upper == null) {
         upper = Integer.MAX_VALUE;
@@ -87,7 +85,7 @@ public class PointRangeQueryNodeBuilder implements StandardQueryBuilder {
       if (minInclusive == false) {
         lower = lower + 1;
       }
-      
+
       Long upper = (Long) upperNumber;
       if (upper == null) {
         upper = Long.MAX_VALUE;
@@ -104,7 +102,7 @@ public class PointRangeQueryNodeBuilder implements StandardQueryBuilder {
       if (minInclusive == false) {
         lower = Math.nextUp(lower);
       }
-      
+
       Float upper = (Float) upperNumber;
       if (upper == null) {
         upper = Float.POSITIVE_INFINITY;
@@ -121,7 +119,7 @@ public class PointRangeQueryNodeBuilder implements StandardQueryBuilder {
       if (minInclusive == false) {
         lower = Math.nextUp(lower);
       }
-      
+
       Double upper = (Double) upperNumber;
       if (upper == null) {
         upper = Double.POSITIVE_INFINITY;
@@ -131,7 +129,8 @@ public class PointRangeQueryNodeBuilder implements StandardQueryBuilder {
       }
       return DoublePoint.newRangeQuery(field, lower, upper);
     } else {
-      throw new QueryNodeException(new MessageImpl(QueryParserMessages.UNSUPPORTED_NUMERIC_DATA_TYPE, numberType));
+      throw new QueryNodeException(
+          new MessageImpl(QueryParserMessages.UNSUPPORTED_NUMERIC_DATA_TYPE, numberType));
     }
   }
 }

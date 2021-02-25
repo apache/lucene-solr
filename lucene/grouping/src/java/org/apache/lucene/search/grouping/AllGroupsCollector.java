@@ -20,17 +20,14 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.SimpleCollector;
 
 /**
- * A collector that collects all groups that match the
- * query. Only the group value is collected, and the order
- * is undefined.  This collector does not determine
- * the most relevant document of a group.
+ * A collector that collects all groups that match the query. Only the group value is collected, and
+ * the order is undefined. This collector does not determine the most relevant document of a group.
  *
  * @lucene.experimental
  */
@@ -42,6 +39,7 @@ public class AllGroupsCollector<T> extends SimpleCollector {
 
   /**
    * Create a new AllGroupsCollector
+   *
    * @param groupSelector the GroupSelector to determine groups
    */
   public AllGroupsCollector(GroupSelector<T> groupSelector) {
@@ -49,8 +47,10 @@ public class AllGroupsCollector<T> extends SimpleCollector {
   }
 
   /**
-   * Returns the total number of groups for the executed search.
-   * This is a convenience method. The following code snippet has the same effect: <pre>getGroups().size()</pre>
+   * Returns the total number of groups for the executed search. This is a convenience method. The
+   * following code snippet has the same effect:
+   *
+   * <pre>getGroups().size()</pre>
    *
    * @return The total number of groups for the executed search
    */
@@ -60,8 +60,8 @@ public class AllGroupsCollector<T> extends SimpleCollector {
 
   /**
    * Returns the group values
-   * <p>
-   * This is an unordered collections of group values.
+   *
+   * <p>This is an unordered collections of group values.
    *
    * @return the group values
    */
@@ -80,8 +80,9 @@ public class AllGroupsCollector<T> extends SimpleCollector {
   @Override
   public void collect(int doc) throws IOException {
     groupSelector.advanceTo(doc);
-    if (groups.contains(groupSelector.currentValue()))
+    if (groups.contains(groupSelector.currentValue())) {
       return;
+    }
     groups.add(groupSelector.copyValue());
   }
 

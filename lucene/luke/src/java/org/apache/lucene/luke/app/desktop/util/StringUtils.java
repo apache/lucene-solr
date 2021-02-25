@@ -26,6 +26,5 @@ public class StringUtils {
     return Objects.isNull(s) || s.equals("");
   }
 
-  private StringUtils() {
-  }
+  private StringUtils() {}
 }

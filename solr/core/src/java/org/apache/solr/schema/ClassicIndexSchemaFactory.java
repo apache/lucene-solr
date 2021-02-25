@@ -27,7 +27,7 @@ public class ClassicIndexSchemaFactory extends IndexSchemaFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     // no arguments expected
     if (args.size() > 0) {
       String msg = "Unexpected arg(s): " + args;

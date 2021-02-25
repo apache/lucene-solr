@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.analysis.br;
 
-
 import java.io.IOException;
 import java.util.Set;
-
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
@@ -28,33 +26,31 @@ import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 
 /**
  * A {@link TokenFilter} that applies {@link BrazilianStemmer}.
- * <p>
- * To prevent terms from being stemmed use an instance of
- * {@link SetKeywordMarkerFilter} or a custom {@link TokenFilter} that sets
- * the {@link KeywordAttribute} before this {@link TokenStream}.
- * </p>
+ *
+ * <p>To prevent terms from being stemmed use an instance of {@link SetKeywordMarkerFilter} or a
+ * custom {@link TokenFilter} that sets the {@link KeywordAttribute} before this {@link
+ * TokenStream}.
+ *
  * @see SetKeywordMarkerFilter
- * 
  */
 public final class BrazilianStemFilter extends TokenFilter {
 
-  /**
-   * {@link BrazilianStemmer} in use by this filter.
-   */
+  /** {@link BrazilianStemmer} in use by this filter. */
   private BrazilianStemmer stemmer = new BrazilianStemmer();
+
   private Set<?> exclusions = null;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
   /**
-   * Creates a new BrazilianStemFilter 
-   * 
-   * @param in the source {@link TokenStream} 
+   * Creates a new BrazilianStemFilter
+   *
+   * @param in the source {@link TokenStream}
    */
   public BrazilianStemFilter(TokenStream in) {
     super(in);
   }
-  
+
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
@@ -63,8 +59,7 @@ public final class BrazilianStemFilter extends TokenFilter {
       if (!keywordAttr.isKeyword() && (exclusions == null || !exclusions.contains(term))) {
         final String s = stemmer.stem(term);
         // If not stemmed, don't waste the time adjusting the token.
-        if ((s != null) && !s.equals(term))
-          termAtt.setEmpty().append(s);
+        if ((s != null) && !s.equals(term)) termAtt.setEmpty().append(s);
       }
       return true;
     } else {
@@ -72,5 +67,3 @@ public final class BrazilianStemFilter extends TokenFilter {
     }
   }
 }
-
-

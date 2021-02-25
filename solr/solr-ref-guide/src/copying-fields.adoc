@@ -25,7 +25,7 @@ The name of the field you want to copy is the _source_, and the name of the copy
 <copyField source="cat" dest="text" maxChars="30000" />
 ----
 
-In this example, we want Solr to copy the `cat` field to a field named `text`. Fields are copied before <<understanding-analyzers-tokenizers-and-filters.adoc#understanding-analyzers-tokenizers-and-filters,analysis>> is done, meaning you can have two fields with identical original content, but which use different analysis chains and are stored in the index differently.
+In this example, we want Solr to copy the `cat` field to a field named `text`. Fields are copied before <<understanding-analyzers-tokenizers-and-filters.adoc#,analysis>> is done, meaning you can have two fields with identical original content, but which use different analysis chains and are stored in the index differently.
 
 In the example above, if the `text` destination field has data of its own in the input documents, the contents of the `cat` field will be added as additional values – just as if all of the values had originally been specified by the client. Remember to configure your fields as `multivalued="true"` if they will ultimately get multiple values (either from a multivalued source or from multiple `copyField` directives).
 

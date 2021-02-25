@@ -68,7 +68,7 @@ public class FuzzyLookupFactory extends LookupFactory {
   private static final String FILENAME = "fwfsta.bin";
   
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
+  public Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core) {
     
     // mandatory parameter
     Object fieldTypeName = params.get(AnalyzingLookupFactory.QUERY_ANALYZER);

@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.ArrayList;
 import java.util.HashSet;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -31,15 +29,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests the uniqueTermCount statistic in FieldInvertState
- */
-public class TestUniqueTermCount extends LuceneTestCase { 
+/** Tests the uniqueTermCount statistic in FieldInvertState */
+public class TestUniqueTermCount extends LuceneTestCase {
   Directory dir;
   IndexReader reader;
   /* expected uniqueTermCount values for our documents */
   ArrayList<Integer> expected = new ArrayList<>();
-  
+
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -59,14 +55,14 @@ public class TestUniqueTermCount extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
     reader.close();
     dir.close();
     super.tearDown();
   }
-  
+
   public void test() throws Exception {
     NumericDocValues fooNorms = MultiDocValues.getNormValues(reader, "foo");
     assertNotNull(fooNorms);
@@ -77,8 +73,8 @@ public class TestUniqueTermCount extends LuceneTestCase {
   }
 
   /**
-   * Makes a bunch of single-char tokens (the max # unique terms will at most be 26).
-   * puts the # unique terms into expected, to be checked against the norm.
+   * Makes a bunch of single-char tokens (the max # unique terms will at most be 26). puts the #
+   * unique terms into expected, to be checked against the norm.
    */
   private String addValue() {
     StringBuilder sb = new StringBuilder();
@@ -93,10 +89,8 @@ public class TestUniqueTermCount extends LuceneTestCase {
     expected.add(terms.size());
     return sb.toString();
   }
-  
-  /**
-   * Simple similarity that encodes maxTermFrequency directly
-   */
+
+  /** Simple similarity that encodes maxTermFrequency directly */
   static class TestSimilarity extends Similarity {
 
     @Override
@@ -105,7 +99,8 @@ public class TestUniqueTermCount extends LuceneTestCase {
     }
 
     @Override
-    public SimScorer scorer(float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
+    public SimScorer scorer(
+        float boost, CollectionStatistics collectionStats, TermStatistics... termStats) {
       throw new UnsupportedOperationException();
     }
   }

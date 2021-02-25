@@ -50,7 +50,7 @@ public class FSTLookupFactory extends LookupFactory {
   public static final String EXACT_MATCH_FIRST = "exactMatchFirst";
 
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
+  public Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core) {
     int buckets = params.get(WEIGHT_BUCKETS) != null
     ? Integer.parseInt(params.get(WEIGHT_BUCKETS).toString())
     : 10;

@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Geospatial search'
+
 dependencies {
   api project(':lucene:core')
   api project(':lucene:spatial3d')
@@ -29,3 +31,5 @@ dependencies {
   testImplementation 'org.locationtech.jts:jts-core'
   testImplementation 'org.locationtech.spatial4j:spatial4j::tests'
 }
+
+

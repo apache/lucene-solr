@@ -264,12 +264,11 @@ limitations under the License.
 
 #menu #collections.global p a { background-image: url( ../../img/ico/documents-stack.png ); }
 #menu #cores.global p a { background-image: url( ../../img/ico/databases.png ); }
-#menu #cluster-suggestions.global p a { background-image: url( ../../img/ico/idea.png ); }
 
 #menu #cloud.global p a { background-image: url( ../../img/ico/network-cloud.png ); }
 #menu #cloud.global .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
 #menu #cloud.global .nodes a { background-image: url( ../../img/solr-ico.png ); }
-#menu #cloud.global .zkstatus a { background-image: url( ../../img/ico/node-master.png ); }
+#menu #cloud.global .zkstatus a { background-image: url( ../../img/ico/node-leader.png ); }
 #menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
 
 .sub-menu .ping.error a
@@ -283,6 +282,7 @@ limitations under the License.
 
 .sub-menu .overview a { background-image: url( ../../img/ico/home.png ); }
 .sub-menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
+.sub-menu .sqlquery a { background-image: url( ../../img/ico/sql.png ); }
 .sub-menu .stream a { background-image: url( ../../img/ico/node.png ); }
 .sub-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
 .sub-menu .documents a { background-image: url( ../../img/ico/documents-stack.png ); }
@@ -293,7 +293,6 @@ limitations under the License.
 .sub-menu .ping a { background-image: url( ../../img/ico/system-monitor.png ); }
 .sub-menu .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
 .sub-menu .plugins a { background-image: url( ../../img/ico/block.png ); }
-.sub-menu .dataimport a { background-image: url( ../../img/ico/document-import.png ); }
 .sub-menu .segments a { background-image: url( ../../img/ico/construction.png ); }
 
 

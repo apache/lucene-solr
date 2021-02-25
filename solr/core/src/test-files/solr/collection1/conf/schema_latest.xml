@@ -260,6 +260,10 @@
 
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
   <dynamicField name="*_bs" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  <dynamicField name="*_bd" type="boolean" indexed="true" docValues="true" stored="false"/>
+  <dynamicField name="*_bds" type="boolean" indexed="true" docValues="true" stored="false" multiValued="true"/>
+  <dynamicField name="*_bdS" type="boolean" indexed="true" docValues="true" stored="true"/>
+  <dynamicField name="*_bdsS" type="boolean" indexed="true" docValues="true" stored="true" multiValued="true"/>
 
   <dynamicField name="*_t" type="text_general" indexed="true" stored="true"/>
   <dynamicField name="*_txt" type="text_general" indexed="true" stored="true" multiValued="true"/>

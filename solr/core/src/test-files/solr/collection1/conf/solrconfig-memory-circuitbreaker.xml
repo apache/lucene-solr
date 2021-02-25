@@ -1,0 +1,94 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<config>
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+  <dataDir>${solr.data.dir:}</dataDir>
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+  <requestHandler name="/select" class="solr.SearchHandler" />
+
+  <query>
+    <!-- Maximum number of clauses in a boolean query... can affect
+        range or wildcard queries that expand to big boolean
+        queries.  An exception is thrown if exceeded.
+    -->
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
+
+    <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
+         that match a particular query.
+      -->
+    <filterCache
+      enabled="${filterCache.enabled}"
+      size="512"
+      initialSize="512"
+      autowarmCount="2"/>
+
+    <queryResultCache
+      enabled="${queryResultCache.enabled}"
+      size="512"
+      initialSize="512"
+      autowarmCount="2"/>
+
+    <documentCache
+      enabled="${documentCache.enabled}"
+      size="512"
+      initialSize="512"
+      autowarmCount="0"/>
+
+    <cache
+      name="user_defined_cache_XXX"
+      enabled="${user_defined_cache_XXX.enabled:false}"
+      />
+    <cache
+      name="user_defined_cache_ZZZ"
+      enabled="${user_defined_cache_ZZZ.enabled:false}"
+      />
+
+
+
+    <!-- If true, stored fields that are not requested will be loaded lazily.
+    -->
+    <enableLazyFieldLoading>true</enableLazyFieldLoading>
+
+    <queryResultWindowSize>10</queryResultWindowSize>
+
+    <!-- boolToFilterOptimizer converts boolean clauses with zero boost
+         into cached filters if the number of docs selected by the clause exceeds
+         the threshold (represented as a fraction of the total index)
+    -->
+    <boolTofilterOptimizer enabled="false" cacheSize="32" threshold=".05"/>
+
+  </query>
+
+  <circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
+    <str name="memEnabled">true</str>
+    <str name="memThreshold">75</str>
+    <str name="cpuEnabled">true</str>
+    <str name="cpuThreshold">75</str>
+  </circuitBreaker>
+
+  <initParams path="/select">
+    <lst name="defaults">
+      <str name="df">text</str>
+    </lst>
+  </initParams>
+
+</config>

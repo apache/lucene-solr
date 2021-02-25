@@ -16,18 +16,15 @@
  */
 package org.apache.lucene.index;
 
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -40,16 +37,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
 
   private static final class MySimilarity extends ClassicSimilarity {
     // Does not implement anything - used only for type checking on IndexWriterConfig.
-  }
-
-  private static final class MyIndexingChain extends IndexingChain {
-    // Does not implement anything - used only for type checking on IndexWriterConfig.
-
-    @Override
-    DocConsumer getChain(DocumentsWriterPerThread documentsWriter) {
-      return null;
-    }
-
   }
 
   @Test
@@ -65,11 +52,11 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, conf.getRAMBufferSizeMB(), 0.0);
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS, conf.getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
-    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     assertEquals(FlushByRamOrCountsPolicy.class, conf.getFlushPolicy().getClass());
-    assertEquals(IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
+    assertEquals(
+        IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB, conf.getRAMPerThreadHardLimitMB());
     assertEquals(Codec.getDefault(), conf.getCodec());
     assertEquals(InfoStream.getDefault(), conf.getInfoStream());
     assertEquals(IndexWriterConfig.DEFAULT_USE_COMPOUND_FILE_SYSTEM, conf.getUseCompoundFile());
@@ -100,10 +87,11 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getUseCompoundFile");
     getters.add("isCheckPendingFlushOnUpdate");
     getters.add("getSoftDeletesField");
-    
+
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {
-        assertTrue("method " + m.getName() + " is not tested for defaults", getters.contains(m.getName()));
+        assertTrue(
+            "method " + m.getName() + " is not tested for defaults", getters.contains(m.getName()));
       }
     }
   }
@@ -116,20 +104,24 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getName().startsWith("set") && !Modifier.isStatic(m.getModifiers())) {
         allSetters.add(m.getName());
-        // setters overridden from LiveIndexWriterConfig are returned twice, once with 
+        // setters overridden from LiveIndexWriterConfig are returned twice, once with
         // IndexWriterConfig return type and second with LiveIndexWriterConfig. The ones
         // from LiveIndexWriterConfig are marked 'synthetic', so just collect them and
         // assert in the end that we also received them from IWC.
         if (m.isSynthetic()) {
           liveSetters.add(m.getName());
         } else {
-          assertEquals("method " + m.getName() + " does not return IndexWriterConfig",
-              IndexWriterConfig.class, m.getReturnType());
+          assertEquals(
+              "method " + m.getName() + " does not return IndexWriterConfig",
+              IndexWriterConfig.class,
+              m.getReturnType());
         }
       }
     }
     for (String setter : liveSetters) {
-      assertTrue("setter method not overridden by IndexWriterConfig: " + setter, allSetters.contains(setter));
+      assertTrue(
+          "setter method not overridden by IndexWriterConfig: " + setter,
+          allSetters.contains(setter));
     }
   }
 
@@ -141,13 +133,15 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     new RandomIndexWriter(random(), dir, conf).close();
 
     // this should fail
-    expectThrows(IllegalStateException.class, () -> {
-      assertNotNull(new RandomIndexWriter(random(), dir, conf));
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          assertNotNull(new RandomIndexWriter(random(), dir, conf));
+        });
 
     dir.close();
   }
-  
+
   @Test
   public void testOverrideGetters() throws Exception {
     // Test that IndexWriterConfig overrides all getters, so that javadocs
@@ -159,22 +153,26 @@ public class TestIndexWriterConfig extends LuceneTestCase {
         liveGetters.add(m.getName());
       }
     }
-    
+
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getName().startsWith("get") && !Modifier.isStatic(m.getModifiers())) {
-        assertEquals("method " + m.getName() + " not overrided by IndexWriterConfig", 
-            IndexWriterConfig.class, m.getDeclaringClass());
-        assertTrue("method " + m.getName() + " not declared on LiveIndexWriterConfig", 
+        assertEquals(
+            "method " + m.getName() + " not overrided by IndexWriterConfig",
+            IndexWriterConfig.class,
+            m.getDeclaringClass());
+        assertTrue(
+            "method " + m.getName() + " not declared on LiveIndexWriterConfig",
             liveGetters.contains(m.getName()));
       }
     }
   }
-  
+
   @Test
   public void testConstants() throws Exception {
     // Tests that the values of the constants does not change
     assertEquals(-1, IndexWriterConfig.DISABLE_AUTO_FLUSH);
-    assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);
+    assertEquals(
+        IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
     assertEquals(16.0, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 0.0);
     assertEquals(true, IndexWriterConfig.DEFAULT_READER_POOLING);
@@ -209,62 +207,77 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(null));
     assertEquals(SnapshotDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setIndexDeletionPolicy(null);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setIndexDeletionPolicy(null);
+        });
 
     // Test MergeScheduler
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
     conf.setMergeScheduler(new SerialMergeScheduler());
     assertEquals(SerialMergeScheduler.class, conf.getMergeScheduler().getClass());
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setMergeScheduler(null);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setMergeScheduler(null);
+        });
 
-    // Test Similarity: 
+    // Test Similarity:
     // we shouldnt assert what the default is, just that it's not null.
     assertTrue(IndexSearcher.getDefaultSimilarity() == conf.getSimilarity());
     conf.setSimilarity(new MySimilarity());
     assertEquals(MySimilarity.class, conf.getSimilarity().getClass());
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setSimilarity(null);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setSimilarity(null);
+        });
 
-    // Test IndexingChain
-    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setMaxBufferedDocs(1);
+        });
 
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setMaxBufferedDocs(1);
-    });
-
-    expectThrows(IllegalArgumentException.class, () -> {
-      // Disable both MAX_BUF_DOCS and RAM_SIZE_MB
-      conf.setMaxBufferedDocs(4);
-      conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          // Disable both MAX_BUF_DOCS and RAM_SIZE_MB
+          conf.setMaxBufferedDocs(4);
+          conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+          conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        });
 
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
     conf.setMaxBufferedDocs(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setRAMPerThreadHardLimitMB(2048);
-    });
-    
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setRAMPerThreadHardLimitMB(0);
-    });
-    
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setRAMPerThreadHardLimitMB(2048);
+        });
+
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setRAMPerThreadHardLimitMB(0);
+        });
+
     // Test MergePolicy
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     conf.setMergePolicy(new LogDocMergePolicy());
     assertEquals(LogDocMergePolicy.class, conf.getMergePolicy().getClass());
-    expectThrows(IllegalArgumentException.class, () -> {
-      conf.setMergePolicy(null);
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          conf.setMergePolicy(null);
+        });
   }
 
   public void testLiveChangeToCFS() throws Exception {
@@ -272,7 +285,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMergePolicy(newLogMergePolicy(true));
     // Start false:
-    iwc.setUseCompoundFile(false); 
+    iwc.setUseCompoundFile(false);
     iwc.getMergePolicy().setNoCFSRatio(0.0d);
     IndexWriter w = new IndexWriter(dir, iwc);
     // Change to true:
@@ -283,20 +296,20 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     w.addDocument(doc);
     w.commit();
     assertTrue("Expected CFS after commit", w.newestSegment().info.getUseCompoundFile());
-    
+
     doc.add(newStringField("field", "foo", Store.NO));
     w.addDocument(doc);
     w.commit();
     w.forceMerge(1);
     w.commit();
-   
+
     // no compound files after merge
     assertFalse("Expected Non-CFS after merge", w.newestSegment().info.getUseCompoundFile());
-    
+
     MergePolicy lmp = w.getConfig().getMergePolicy();
     lmp.setNoCFSRatio(1.0);
     lmp.setMaxCFSSegmentSizeMB(Double.POSITIVE_INFINITY);
-    
+
     w.addDocument(doc);
     w.forceMerge(1);
     w.commit();
@@ -304,5 +317,4 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     w.close();
     dir.close();
   }
-
 }

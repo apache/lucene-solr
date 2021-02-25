@@ -19,10 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-/**
- * Wraps another Scorable and asserts that scores are reasonable
- * and only called when positioned
- */
+/** Wraps another Scorable and asserts that scores are reasonable and only called when positioned */
 public class AssertingScorable extends FilterScorable {
 
   public AssertingScorable(Scorable in) {
@@ -32,9 +29,10 @@ public class AssertingScorable extends FilterScorable {
   @Override
   public float score() throws IOException {
     int docId = docID();
-    assert docId != -1 && docId != DocIdSetIterator.NO_MORE_DOCS : "score() called on unpositioned Scorable docid=" + docID();
+    assert docId != -1 && docId != DocIdSetIterator.NO_MORE_DOCS
+        : "score() called on unpositioned Scorable docid=" + docID();
     final float score = in.score();
-    assert !Float.isNaN(score) : "NaN score for in="+in;
+    assert !Float.isNaN(score) : "NaN score for in=" + in;
     return score;
   }
 
@@ -52,13 +50,9 @@ public class AssertingScorable extends FilterScorable {
 
   public static Scorable unwrap(Scorable in) {
     while (true) {
-      if (in instanceof AssertingScorable)
-        in = ((AssertingScorable)in).in;
-      else if (in instanceof AssertingScorer)
-        in = ((AssertingScorer)in).in;
-      else
-        return in;
+      if (in instanceof AssertingScorable) in = ((AssertingScorable) in).in;
+      else if (in instanceof AssertingScorer) in = ((AssertingScorer) in).in;
+      else return in;
     }
   }
-
 }

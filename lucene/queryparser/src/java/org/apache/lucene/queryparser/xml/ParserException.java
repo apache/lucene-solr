@@ -16,10 +16,7 @@
  */
 package org.apache.lucene.queryparser.xml;
 
-/**
- * Thrown when the xml queryparser encounters 
- * invalid syntax/configuration.
- */
+/** Thrown when the xml queryparser encounters invalid syntax/configuration. */
 public class ParserException extends Exception {
 
   public ParserException() {

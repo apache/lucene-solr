@@ -40,6 +40,7 @@ public abstract class ConfigSetAdminRequest
 
   protected ConfigSetAction action = null;
 
+  @SuppressWarnings({"rawtypes"})
   protected ConfigSetAdminRequest setAction(ConfigSetAction action) {
     this.action = action;
     return this;
@@ -99,6 +100,11 @@ public abstract class ConfigSetAdminRequest
     }
   }
 
+  @Override
+  public String getRequestType() {
+    return SolrRequestType.ADMIN.toString();
+  }
+
   // CREATE request
   public static class Create extends ConfigSetSpecificAdminRequest<Create> {
     protected static String PROPERTY_PREFIX = "configSetProp";
@@ -139,7 +145,7 @@ public abstract class ConfigSetAdminRequest
         params.set("baseConfigSet", baseConfigSetName);
       }
       if (properties != null) {
-        for (Map.Entry entry : properties.entrySet()) {
+        for (@SuppressWarnings({"rawtypes"})Map.Entry entry : properties.entrySet()) {
           params.set(PROPERTY_PREFIX + "." + entry.getKey().toString(),
               entry.getValue().toString());
         }

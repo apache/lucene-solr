@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.index;
 
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,16 +29,18 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Simple test that adds numeric terms, where each term has the 
- * totalTermFreq of its integer value, and checks that the totalTermFreq is correct. 
+ * Simple test that adds numeric terms, where each term has the totalTermFreq of its integer value,
+ * and checks that the totalTermFreq is correct.
  */
 // TODO: somehow factor this with BagOfPostings? it's almost the same
-@SuppressCodecs({"Direct"}) // at night this makes like 200k/300k docs and will make Direct's heart beat!
+@SuppressCodecs({
+  "Direct"
+}) // at night this makes like 200k/300k docs and will make Direct's heart beat!
 public class TestBagOfPositions extends LuceneTestCase {
   public void test() throws Exception {
     List<String> postingsList = new ArrayList<>();
@@ -50,7 +50,8 @@ public class TestBagOfPositions extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig(random(), new MockAnalyzer(random()));
 
-    if ((isSimpleText || iwc.getMergePolicy() instanceof MockRandomMergePolicy) && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
+    if ((isSimpleText || iwc.getMergePolicy() instanceof MockRandomMergePolicy)
+        && (TEST_NIGHTLY || RANDOM_MULTIPLIER > 1)) {
       // Otherwise test can take way too long (> 2 hours)
       numTerms /= 2;
     }
@@ -77,7 +78,7 @@ public class TestBagOfPositions extends LuceneTestCase {
       System.out.println("config: " + iw.w.getConfig());
       System.out.println("threadCount=" + threadCount);
     }
-    
+
     FieldType fieldType = new FieldType(TextField.TYPE_NOT_STORED);
     if (random().nextBoolean()) {
       fieldType.setOmitNorms(true);
@@ -85,7 +86,8 @@ public class TestBagOfPositions extends LuceneTestCase {
     int options = random().nextInt(3);
     if (options == 0) {
       fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS); // we dont actually need positions
-      fieldType.setStoreTermVectors(true); // but enforce term vectors when we do this so we check SOMETHING
+      fieldType.setStoreTermVectors(
+          true); // but enforce term vectors when we do this so we check SOMETHING
     } else if (options == 1) {
       fieldType.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
     }
@@ -94,49 +96,50 @@ public class TestBagOfPositions extends LuceneTestCase {
     Thread[] threads = new Thread[threadCount];
     final CountDownLatch startingGun = new CountDownLatch(1);
 
-    for(int threadID=0;threadID<threadCount;threadID++) {
+    for (int threadID = 0; threadID < threadCount; threadID++) {
       final Random threadRandom = new Random(random().nextLong());
       final Document document = new Document();
       final Field field = new Field("field", "", fieldType);
       document.add(field);
-      threads[threadID] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              startingGun.await();
-              while (!postings.isEmpty()) {
-                StringBuilder text = new StringBuilder();
-                int numTerms = threadRandom.nextInt(maxTermsPerDoc);
-                for (int i = 0; i < numTerms; i++) {
-                  String token = postings.poll();
-                  if (token == null) {
-                    break;
+      threads[threadID] =
+          new Thread() {
+            @Override
+            public void run() {
+              try {
+                startingGun.await();
+                while (!postings.isEmpty()) {
+                  StringBuilder text = new StringBuilder();
+                  int numTerms = threadRandom.nextInt(maxTermsPerDoc);
+                  for (int i = 0; i < numTerms; i++) {
+                    String token = postings.poll();
+                    if (token == null) {
+                      break;
+                    }
+                    text.append(' ');
+                    text.append(token);
                   }
-                  text.append(' ');
-                  text.append(token);
+                  field.setStringValue(text.toString());
+                  iw.addDocument(document);
                 }
-                field.setStringValue(text.toString());
-                iw.addDocument(document);
+              } catch (Exception e) {
+                throw new RuntimeException(e);
               }
-            } catch (Exception e) {
-              throw new RuntimeException(e);
             }
-          }
-        };
+          };
       threads[threadID].start();
     }
     startingGun.countDown();
-    for(Thread t : threads) {
+    for (Thread t : threads) {
       t.join();
     }
-    
+
     iw.forceMerge(1);
     DirectoryReader ir = iw.getReader();
     assertEquals(1, ir.leaves().size());
     LeafReader air = ir.leaves().get(0).reader();
     Terms terms = air.terms("field");
     // numTerms-1 because there cannot be a term 0 with 0 postings:
-    assertEquals(numTerms-1, terms.size());
+    assertEquals(numTerms - 1, terms.size());
     TermsEnum termsEnum = terms.iterator();
     BytesRef term;
     while ((term = termsEnum.next()) != null) {

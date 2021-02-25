@@ -16,60 +16,60 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.util.ThreadInterruptedException;
 
-/** 
- * Directory that wraps another, and that sleeps and retries
- * if obtaining the lock fails.
- * <p>
- * This is not a good idea.
+/**
+ * Directory that wraps another, and that sleeps and retries if obtaining the lock fails.
+ *
+ * <p>This is not a good idea.
  */
 public final class SleepingLockWrapper extends FilterDirectory {
- 
-  /** 
-   * Pass this lockWaitTimeout to try forever to obtain the lock. 
-   */
+
+  /** Pass this lockWaitTimeout to try forever to obtain the lock. */
   public static final long LOCK_OBTAIN_WAIT_FOREVER = -1;
-  
-  /** 
-   * How long {@link #obtainLock} waits, in milliseconds,
-   * in between attempts to acquire the lock. 
+
+  /**
+   * How long {@link #obtainLock} waits, in milliseconds, in between attempts to acquire the lock.
    */
   public static long DEFAULT_POLL_INTERVAL = 1000;
-  
+
   private final long lockWaitTimeout;
   private final long pollInterval;
-  
+
   /**
    * Create a new SleepingLockFactory
-   * @param delegate        underlying directory to wrap
-   * @param lockWaitTimeout length of time to wait in milliseconds 
-   *                        or {@link #LOCK_OBTAIN_WAIT_FOREVER} to retry forever.
+   *
+   * @param delegate underlying directory to wrap
+   * @param lockWaitTimeout length of time to wait in milliseconds or {@link
+   *     #LOCK_OBTAIN_WAIT_FOREVER} to retry forever.
    */
   public SleepingLockWrapper(Directory delegate, long lockWaitTimeout) {
     this(delegate, lockWaitTimeout, DEFAULT_POLL_INTERVAL);
   }
-  
+
   /**
    * Create a new SleepingLockFactory
-   * @param delegate        underlying directory to wrap
-   * @param lockWaitTimeout length of time to wait in milliseconds 
-   *                        or {@link #LOCK_OBTAIN_WAIT_FOREVER} to retry forever.
-   * @param pollInterval    poll once per this interval in milliseconds until
-   *                        {@code lockWaitTimeout} is exceeded.
+   *
+   * @param delegate underlying directory to wrap
+   * @param lockWaitTimeout length of time to wait in milliseconds or {@link
+   *     #LOCK_OBTAIN_WAIT_FOREVER} to retry forever.
+   * @param pollInterval poll once per this interval in milliseconds until {@code lockWaitTimeout}
+   *     is exceeded.
    */
   public SleepingLockWrapper(Directory delegate, long lockWaitTimeout, long pollInterval) {
     super(delegate);
     this.lockWaitTimeout = lockWaitTimeout;
     this.pollInterval = pollInterval;
     if (lockWaitTimeout < 0 && lockWaitTimeout != LOCK_OBTAIN_WAIT_FOREVER) {
-      throw new IllegalArgumentException("lockWaitTimeout should be LOCK_OBTAIN_WAIT_FOREVER or a non-negative number (got " + lockWaitTimeout + ")");
+      throw new IllegalArgumentException(
+          "lockWaitTimeout should be LOCK_OBTAIN_WAIT_FOREVER or a non-negative number (got "
+              + lockWaitTimeout
+              + ")");
     }
     if (pollInterval < 0) {
-      throw new IllegalArgumentException("pollInterval must be a non-negative number (got " + pollInterval + ")");
+      throw new IllegalArgumentException(
+          "pollInterval must be a non-negative number (got " + pollInterval + ")");
     }
   }
 
@@ -78,7 +78,7 @@ public final class SleepingLockWrapper extends FilterDirectory {
     LockObtainFailedException failureReason = null;
     long maxSleepCount = lockWaitTimeout / pollInterval;
     long sleepCount = 0;
-    
+
     do {
       try {
         return in.obtainLock(lockName);
@@ -93,7 +93,7 @@ public final class SleepingLockWrapper extends FilterDirectory {
         throw new ThreadInterruptedException(ie);
       }
     } while (sleepCount++ < maxSleepCount || lockWaitTimeout == LOCK_OBTAIN_WAIT_FOREVER);
-    
+
     // we failed to obtain the lock in the required time
     String reason = "Lock obtain timed out: " + this.toString();
     if (failureReason != null) {

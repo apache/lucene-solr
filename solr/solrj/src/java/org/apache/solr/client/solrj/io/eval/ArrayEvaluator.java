@@ -31,8 +31,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class ArrayEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
   
+  @SuppressWarnings({"rawtypes"})
   private Comparator<Comparable> sortComparator;
   
+  @SuppressWarnings({"unchecked"})
   public ArrayEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
     super(expression, factory, Arrays.asList("sort"));
     

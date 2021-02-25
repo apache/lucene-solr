@@ -45,7 +45,9 @@ public class ZkNodePropsTest extends SolrTestCaseJ4 {
 
     props.forEach((s, o) -> assertEquals(o, props2.get(s)));
     SimplePostTool.BAOS baos = new SimplePostTool.BAOS();
-    new JavaBinCodec().marshal(zkProps.getProperties(), baos);
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.marshal(zkProps.getProperties(), baos);
+    }
     bytes = baos.toByteArray();
     System.out.println("BIN size : " + bytes.length);
     ZkNodeProps props3 = ZkNodeProps.load(bytes);

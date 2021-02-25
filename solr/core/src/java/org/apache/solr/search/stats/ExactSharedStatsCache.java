@@ -40,7 +40,7 @@ public class ExactSharedStatsCache extends ExactStatsCache {
   // local stats obtained from shard servers
   private final Map<String,Map<String,TermStats>> perShardTermStats = new ConcurrentHashMap<>();
   private final Map<String,Map<String,CollectionStats>> perShardColStats = new ConcurrentHashMap<>();
-  // global stats synchronized from the master
+  // global stats synchronized from the leader
   private final Map<String,TermStats> currentGlobalTermStats = new ConcurrentHashMap<>();
   private final Map<String,CollectionStats> currentGlobalColStats = new ConcurrentHashMap<>();
 

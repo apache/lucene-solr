@@ -19,11 +19,8 @@ package org.apache.solr.core;
 
 import java.util.Arrays;
 
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.handler.TestBlobHandler;
 import org.apache.solr.util.RestTestHarness;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -31,25 +28,9 @@ import org.junit.Test;
  */
 public class TestCustomStream extends AbstractFullDistribZkTestBase {
 
-  @BeforeClass
-  public static void enableRuntimeLib() throws Exception {
-    System.setProperty("enable.runtime.lib", "true");
-  }
-
   @Test
   public void testDynamicLoadingCustomStream() throws Exception {
-    System.setProperty("enable.runtime.lib", "true");
     setupRestTestHarnesses();
-
-    String blobName = "colltest";
-
-    HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
-    String baseURL = randomClient.getBaseURL();
-    baseURL = baseURL.substring(0, baseURL.lastIndexOf('/'));
-
-    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
-    waitForRecoveriesToFinish(".system", true);
-
     String payload = "{\n" +
         "'create-expressible' : { 'name' : 'hello', 'class': 'org.apache.solr.core.HelloStream' }\n" +
         "}";

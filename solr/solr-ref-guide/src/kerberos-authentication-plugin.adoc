@@ -18,13 +18,13 @@
 
 If you are using Kerberos to secure your network environment, the Kerberos authentication plugin can be used to secure a Solr cluster.
 
-This allows Solr to use a Kerberos service principal and keytab file to authenticate with ZooKeeper and between nodes of the Solr cluster (if applicable). Users of the Admin UI and all clients (such as <<using-solrj.adoc#using-solrj,SolrJ>>) would also need to have a valid ticket before being able to use the UI or send requests to Solr.
+This allows Solr to use a Kerberos service principal and keytab file to authenticate with ZooKeeper and between nodes of the Solr cluster (if applicable). Users of the Admin UI and all clients (such as <<using-solrj.adoc#,SolrJ>>) would also need to have a valid ticket before being able to use the UI or send requests to Solr.
 
 Support for the Kerberos authentication plugin is available in SolrCloud mode or standalone mode.
 
 [TIP]
 ====
-If you are using Solr with a Hadoop cluster secured with Kerberos and intend to store your Solr indexes in HDFS, also see the section <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,Running Solr on HDFS>> for additional steps to configure Solr for that purpose. The instructions on this page apply only to scenarios where Solr will be secured with Kerberos. If you only need to store your indexes in a Kerberized HDFS system, please see the other section referenced above.
+If you are using Solr with a Hadoop cluster secured with Kerberos and intend to store your Solr indexes in HDFS, also see the section <<running-solr-on-hdfs.adoc#,Running Solr on HDFS>> for additional steps to configure Solr for that purpose. The instructions on this page apply only to scenarios where Solr will be secured with Kerberos. If you only need to store your indexes in a Kerberized HDFS system, please see the other section referenced above.
 ====
 
 == How Solr Works With Kerberos
@@ -33,7 +33,7 @@ When setting up Solr to use Kerberos, configurations are put in place for Solr t
 
 === security.json
 
-The Solr authentication model uses a file called `security.json`. A description of this file and how it is created and maintained is covered in the section <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Authentication and Authorization Plugins>>. If this file is created after an initial startup of Solr, a restart of each node of the system is required.
+The Solr authentication model uses a file called `security.json`. A description of this file and how it is created and maintained is covered in the section <<authentication-and-authorization-plugins.adoc#,Authentication and Authorization Plugins>>. If this file is created after an initial startup of Solr, a restart of each node of the system is required.
 
 === Service Principals and Keytab Files
 
@@ -176,11 +176,11 @@ server/scripts/cloud-scripts/zkcli.sh -zkhost localhost:2181 -cmd put /security.
 
 If you are using Solr in standalone mode, you need to create the `security.json` file and put it in your `$SOLR_HOME` directory.
 
-More details on how to use a `/security.json` file in Solr are available in the section <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,Authentication and Authorization Plugins>>.
+More details on how to use a `/security.json` file in Solr are available in the section <<authentication-and-authorization-plugins.adoc#,Authentication and Authorization Plugins>>.
 
 [IMPORTANT]
 ====
-If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<command-line-utilities.adoc#command-line-utilities,Command Line Utilities>> available in Solr.
+If you already have a `/security.json` file in ZooKeeper, download the file, add or modify the authentication section and upload it back to ZooKeeper using the <<command-line-utilities.adoc#,Command Line Utilities>> available in Solr.
 ====
 
 === Define a JAAS Configuration File
@@ -217,7 +217,7 @@ The main properties we are concerned with are the `keyTab` and `principal` prope
 
 === Solr Startup Parameters
 
-While starting up Solr, the following host-specific parameters need to be passed. These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
+While starting up Solr, the following host-specific parameters need to be passed. These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
 
 `solr.kerberos.name.rules`::
 Used to map Kerberos principals to short names. Default value is `DEFAULT`. Example of a name rule: `RULE:[1:$1@$0](.\*EXAMPLE.COM)s/@.*//`.
@@ -269,7 +269,7 @@ There are a few use cases for Solr where this might be helpful:
 * When load on the Kerberos server is high. Delegation tokens can reduce the load because they do not access the server after the first request.
 * If requests or permissions need to be delegated to another user.
 
-To enable delegation tokens, several parameters must be defined. These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
+To enable delegation tokens, several parameters must be defined. These parameters can be passed at the command line with the `bin/solr` start command (see <<solr-control-script-reference.adoc#,Solr Control Script Reference>> for details on how to pass system parameters) or defined in `bin/solr.in.sh` or `bin/solr.in.cmd` as appropriate for your operating system.
 
 `solr.kerberos.delegation.token.enabled`::
 This is `false` by default, set to `true` to enable delegation tokens. This parameter is required if you want to enable tokens.
@@ -342,7 +342,7 @@ SolrJClient {
 Delegation tokens are also supported with SolrJ, in the following ways:
 
 * `DelegationTokenRequest` and `DelegationTokenResponse` can be used to get, cancel, and renew delegation tokens.
-* `HttpSolrClient.Builder` includes a `withDelegationToken` function for creating an HttpSolrClient that uses a delegation token to authenticate.
+* `HttpSolrClient.Builder` includes a `withKerberosDelegationToken` function for creating an HttpSolrClient that uses a delegation token to authenticate.
 
 Sample code to get a delegation token:
 
@@ -366,15 +366,14 @@ To create a `HttpSolrClient` that uses delegation tokens:
 
 [source,java]
 ----
-HttpSolrClient client = new HttpSolrClient.Builder("http://localhost:8983/solr").withDelegationToken(token).build();
+HttpSolrClient client = new HttpSolrClient.Builder("http://localhost:8983/solr").withKerberosDelegationToken(token).build();
 ----
 
 To create a `CloudSolrClient` that uses delegation tokens:
 
 [source,java]
 ----
-CloudSolrClient client = new CloudSolrClient.Builder()
-                .withZkHost("localhost:2181")
+CloudSolrClient client = new CloudSolrClient.Builder(Collections.singletonList("localhost:2181"),Optional.empty())
                 .withLBHttpSolrClientBuilder(new LBHttpSolrClient.Builder()
                     .withResponseParser(client.getParser())
                     .withHttpSolrClientBuilder(

@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +27,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
@@ -34,11 +34,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -46,9 +46,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-
 
 public class TestMixedDocValuesUpdates extends LuceneTestCase {
 
@@ -69,14 +66,14 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       writer.commit();
       reader = DirectoryReader.open(dir);
     }
-    
+
     final int numFields = random.nextInt(4) + 3; // 3-7
-    final int numNDVFields = random.nextInt(numFields/2) + 1; // 1-3
+    final int numNDVFields = random.nextInt(numFields / 2) + 1; // 1-3
     final long[] fieldValues = new long[numFields];
     for (int i = 0; i < fieldValues.length; i++) {
       fieldValues[i] = 1;
     }
-    
+
     int numRounds = atLeast(15);
     int docID = 0;
     for (int i = 0; i < numRounds; i++) {
@@ -91,43 +88,52 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
           if (f < numNDVFields) {
             doc.add(new NumericDocValuesField("f" + f, fieldValues[f]));
           } else {
-            doc.add(new BinaryDocValuesField("f" + f, TestBinaryDocValuesUpdates.toBytes(fieldValues[f])));
+            doc.add(
+                new BinaryDocValuesField(
+                    "f" + f, TestBinaryDocValuesUpdates.toBytes(fieldValues[f])));
           }
         }
         writer.addDocument(doc);
         ++docID;
       }
-      
+
       int fieldIdx = random.nextInt(fieldValues.length);
       String updateField = "f" + fieldIdx;
       if (fieldIdx < numNDVFields) {
         writer.updateNumericDocValue(new Term("key", "all"), updateField, ++fieldValues[fieldIdx]);
       } else {
-        writer.updateBinaryDocValue(new Term("key", "all"), updateField, TestBinaryDocValuesUpdates.toBytes(++fieldValues[fieldIdx]));
+        writer.updateBinaryDocValue(
+            new Term("key", "all"),
+            updateField,
+            TestBinaryDocValuesUpdates.toBytes(++fieldValues[fieldIdx]));
       }
-      //System.out.println("TEST: updated field '" + updateField + "' to value " + fieldValues[fieldIdx]);
+      // System.out.println("TEST: updated field '" + updateField + "' to value " +
+      // fieldValues[fieldIdx]);
 
       if (random.nextDouble() < 0.2) {
         int deleteDoc = random.nextInt(docID); // might also delete an already deleted document, ok!
         writer.deleteDocuments(new Term("id", "doc-" + deleteDoc));
-//        System.out.println("[" + Thread.currentThread().getName() + "]: deleted document: doc-" + deleteDoc);
+        //        System.out.println("[" + Thread.currentThread().getName() + "]: deleted document:
+        // doc-" + deleteDoc);
       }
-      
+
       // verify reader
       if (!isNRT) {
         writer.commit();
       }
-      
-//      System.out.println("[" + Thread.currentThread().getName() + "]: reopen reader: " + reader);
+
+      //      System.out.println("[" + Thread.currentThread().getName() + "]: reopen reader: " +
+      // reader);
       DirectoryReader newReader = DirectoryReader.openIfChanged(reader);
       assertNotNull(newReader);
       reader.close();
       reader = newReader;
-//      System.out.println("[" + Thread.currentThread().getName() + "]: reopened reader: " + reader);
+      //      System.out.println("[" + Thread.currentThread().getName() + "]: reopened reader: " +
+      // reader);
       assertTrue(reader.numDocs() > 0); // we delete at most one document per round
       for (LeafReaderContext context : reader.leaves()) {
         LeafReader r = context.reader();
-//        System.out.println(((SegmentReader) r).getSegmentName());
+        //        System.out.println(((SegmentReader) r).getSegmentName());
         Bits liveDocs = r.getLiveDocs();
         for (int field = 0; field < fieldValues.length; field++) {
           String f = "f" + field;
@@ -143,30 +149,37 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
           int maxDoc = r.maxDoc();
           for (int doc = 0; doc < maxDoc; doc++) {
             if (liveDocs == null || liveDocs.get(doc)) {
-//              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "' vslue=" + getValue(bdv, doc, scratch));
+              //              System.out.println("doc=" + (doc + context.docBase) + " f='" + f + "'
+              // vslue=" + getValue(bdv, doc, scratch));
               if (field < numNDVFields) {
                 assertEquals(doc, ndv.advance(doc));
-                assertEquals("invalid numeric value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], ndv.longValue());
+                assertEquals(
+                    "invalid numeric value for doc=" + doc + ", field=" + f + ", reader=" + r,
+                    fieldValues[field],
+                    ndv.longValue());
               } else {
                 assertEquals(doc, bdv.advance(doc));
-                assertEquals("invalid binary value for doc=" + doc + ", field=" + f + ", reader=" + r, fieldValues[field], TestBinaryDocValuesUpdates.getValue(bdv));
+                assertEquals(
+                    "invalid binary value for doc=" + doc + ", field=" + f + ", reader=" + r,
+                    fieldValues[field],
+                    TestBinaryDocValuesUpdates.getValue(bdv));
               }
             }
           }
         }
       }
-//      System.out.println();
+      //      System.out.println();
     }
-    
+
     writer.close();
     IOUtils.close(reader, dir);
   }
-  
+
   public void testStressMultiThreading() throws Exception {
     final Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     final IndexWriter writer = new IndexWriter(dir, conf);
-    
+
     // create index
     final int numFields = TestUtil.nextInt(random(), 2, 4);
     final int numThreads = TestUtil.nextInt(random(), 3, 6);
@@ -188,86 +201,97 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       }
       writer.addDocument(doc);
     }
-    
+
     final CountDownLatch done = new CountDownLatch(numThreads);
     final AtomicInteger numUpdates = new AtomicInteger(atLeast(100));
-    
+
     // same thread updates a field as well as reopens
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread("UpdateThread-" + i) {
-        @Override
-        public void run() {
-          DirectoryReader reader = null;
-          boolean success = false;
-          try {
-            Random random = random();
-            while (numUpdates.getAndDecrement() > 0) {
-              double group = random.nextDouble();
-              Term t;
-              if (group < 0.1) t = new Term("updKey", "g0");
-              else if (group < 0.5) t = new Term("updKey", "g1");
-              else if (group < 0.8) t = new Term("updKey", "g2");
-              else t = new Term("updKey", "g3");
-//              System.out.println("[" + Thread.currentThread().getName() + "] numUpdates=" + numUpdates + " updateTerm=" + t);
-              int field = random().nextInt(numFields);
-              final String f = "f" + field;
-              final String cf = "cf" + field;
-              long updValue = random.nextInt();
-//              System.err.println("[" + Thread.currentThread().getName() + "] t=" + t + ", f=" + f + ", updValue=" + updValue);
-              writer.updateDocValues(t, new BinaryDocValuesField(f, TestBinaryDocValuesUpdates.toBytes(updValue)),
-                  new NumericDocValuesField(cf, updValue*2));
-              
-              if (random.nextDouble() < 0.2) {
-                // delete a random document
-                int doc = random.nextInt(numDocs);
-//                System.out.println("[" + Thread.currentThread().getName() + "] deleteDoc=doc" + doc);
-                writer.deleteDocuments(new Term("id", "doc" + doc));
-              }
-  
-              if (random.nextDouble() < 0.05) { // commit every 20 updates on average
-//                  System.out.println("[" + Thread.currentThread().getName() + "] commit");
-                writer.commit();
-              }
-              
-              if (random.nextDouble() < 0.1) { // reopen NRT reader (apply updates), on average once every 10 updates
-                if (reader == null) {
-//                  System.out.println("[" + Thread.currentThread().getName() + "] open NRT");
-                  reader = DirectoryReader.open(writer);
-                } else {
-//                  System.out.println("[" + Thread.currentThread().getName() + "] reopen NRT");
-                  DirectoryReader r2 = DirectoryReader.openIfChanged(reader, writer);
-                  if (r2 != null) {
-                    reader.close();
-                    reader = r2;
+      threads[i] =
+          new Thread("UpdateThread-" + i) {
+            @Override
+            public void run() {
+              DirectoryReader reader = null;
+              boolean success = false;
+              try {
+                Random random = random();
+                while (numUpdates.getAndDecrement() > 0) {
+                  double group = random.nextDouble();
+                  Term t;
+                  if (group < 0.1) t = new Term("updKey", "g0");
+                  else if (group < 0.5) t = new Term("updKey", "g1");
+                  else if (group < 0.8) t = new Term("updKey", "g2");
+                  else t = new Term("updKey", "g3");
+                  //              System.out.println("[" + Thread.currentThread().getName() + "]
+                  // numUpdates=" + numUpdates + " updateTerm=" + t);
+                  int field = random().nextInt(numFields);
+                  final String f = "f" + field;
+                  final String cf = "cf" + field;
+                  long updValue = random.nextInt();
+                  //              System.err.println("[" + Thread.currentThread().getName() + "] t="
+                  // + t + ", f=" + f + ", updValue=" + updValue);
+                  writer.updateDocValues(
+                      t,
+                      new BinaryDocValuesField(f, TestBinaryDocValuesUpdates.toBytes(updValue)),
+                      new NumericDocValuesField(cf, updValue * 2));
+
+                  if (random.nextDouble() < 0.2) {
+                    // delete a random document
+                    int doc = random.nextInt(numDocs);
+                    //                System.out.println("[" + Thread.currentThread().getName() + "]
+                    // deleteDoc=doc" + doc);
+                    writer.deleteDocuments(new Term("id", "doc" + doc));
+                  }
+
+                  if (random.nextDouble() < 0.05) { // commit every 20 updates on average
+                    //                  System.out.println("[" + Thread.currentThread().getName() +
+                    // "] commit");
+                    writer.commit();
+                  }
+
+                  if (random.nextDouble()
+                      < 0.1) { // reopen NRT reader (apply updates), on average once every 10
+                    // updates
+                    if (reader == null) {
+                      //                  System.out.println("[" + Thread.currentThread().getName()
+                      // + "] open NRT");
+                      reader = DirectoryReader.open(writer);
+                    } else {
+                      //                  System.out.println("[" + Thread.currentThread().getName()
+                      // + "] reopen NRT");
+                      DirectoryReader r2 = DirectoryReader.openIfChanged(reader, writer);
+                      if (r2 != null) {
+                        reader.close();
+                        reader = r2;
+                      }
+                    }
                   }
                 }
-              }
-            }
-//            System.out.println("[" + Thread.currentThread().getName() + "] DONE");
-            success = true;
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          } finally {
-            if (reader != null) {
-              try {
-                reader.close();
+                //            System.out.println("[" + Thread.currentThread().getName() + "] DONE");
+                success = true;
               } catch (IOException e) {
-                if (success) { // suppress this exception only if there was another exception
-                  throw new RuntimeException(e);
+                throw new RuntimeException(e);
+              } finally {
+                if (reader != null) {
+                  try {
+                    reader.close();
+                  } catch (IOException e) {
+                    if (success) { // suppress this exception only if there was another exception
+                      throw new RuntimeException(e);
+                    }
+                  }
                 }
+                done.countDown();
               }
             }
-            done.countDown();
-          }
-        }
-      };
+          };
     }
-    
+
     for (Thread t : threads) t.start();
     done.await();
     writer.close();
-    
+
     DirectoryReader reader = DirectoryReader.open(dir);
     for (LeafReaderContext context : reader.leaves()) {
       LeafReader r = context.reader();
@@ -281,16 +305,18 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
             long ctrlValue = control.longValue();
             assertEquals(j, bdv.advance(j));
             long bdvValue = TestBinaryDocValuesUpdates.getValue(bdv) * 2;
-//              if (ctrlValue != bdvValue) {
-//                System.out.println("seg=" + r + ", f=f" + i + ", doc=" + j + ", group=" + r.document(j).get("updKey") + ", ctrlValue=" + ctrlValue + ", bdvBytes=" + scratch);
-//              }
+            //              if (ctrlValue != bdvValue) {
+            //                System.out.println("seg=" + r + ", f=f" + i + ", doc=" + j + ",
+            // group=" + r.document(j).get("updKey") + ", ctrlValue=" + ctrlValue + ", bdvBytes=" +
+            // scratch);
+            //              }
             assertEquals(ctrlValue, bdvValue);
           }
         }
       }
     }
     reader.close();
-    
+
     dir.close();
   }
 
@@ -309,18 +335,23 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       doc.add(new NumericDocValuesField("cf", value * 2));
       writer.addDocument(doc);
     }
-    
+
     int numGens = atLeast(5);
     for (int i = 0; i < numGens; i++) {
       int doc = random().nextInt(numDocs);
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
       if (random().nextBoolean()) {
-        doUpdate(t, writer, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
-            new NumericDocValuesField("cf", value*2));
+        doUpdate(
+            t,
+            writer,
+            new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
+            new NumericDocValuesField("cf", value * 2));
       } else {
-        writer.updateDocValues(t, new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
-            new NumericDocValuesField("cf", value*2));
+        writer.updateDocValues(
+            t,
+            new BinaryDocValuesField("f", TestBinaryDocValuesUpdates.toBytes(value)),
+            new NumericDocValuesField("cf", value * 2));
       }
 
       DirectoryReader reader = DirectoryReader.open(writer);
@@ -349,7 +380,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
     conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH); // don't flush by doc
     IndexWriter writer = new IndexWriter(dir, conf);
-    
+
     // test data: lots of documents (few 10Ks) and lots of update terms (few hundreds)
     final int numDocs = atLeast(20000);
     final int numBinaryFields = atLeast(5);
@@ -359,8 +390,9 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       updateTerms.add(TestUtil.randomSimpleString(random));
     }
 
-//    System.out.println("numDocs=" + numDocs + " numBinaryFields=" + numBinaryFields + " numTerms=" + numTerms);
-    
+    //    System.out.println("numDocs=" + numDocs + " numBinaryFields=" + numBinaryFields + "
+    // numTerms=" + numTerms);
+
     // build a large index with many BDV fields and update terms
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
@@ -375,24 +407,26 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       }
       writer.addDocument(doc);
     }
-    
+
     writer.commit(); // commit so there's something to apply to
-    
+
     // set to flush every 2048 bytes (approximately every 12 updates), so we get
     // many flushes during binary updates
     writer.getConfig().setRAMBufferSizeMB(2048.0 / 1024 / 1024);
     final int numUpdates = atLeast(100);
-//    System.out.println("numUpdates=" + numUpdates);
+    //    System.out.println("numUpdates=" + numUpdates);
     for (int i = 0; i < numUpdates; i++) {
       int field = random.nextInt(numBinaryFields);
       Term updateTerm = new Term("upd", RandomPicks.randomFrom(random, updateTerms));
       long value = random.nextInt();
-      writer.updateDocValues(updateTerm, new BinaryDocValuesField("f"+field, TestBinaryDocValuesUpdates.toBytes(value)),
-          new NumericDocValuesField("cf"+field, value*2));
+      writer.updateDocValues(
+          updateTerm,
+          new BinaryDocValuesField("f" + field, TestBinaryDocValuesUpdates.toBytes(value)),
+          new NumericDocValuesField("cf" + field, value * 2));
     }
 
     writer.close();
-    
+
     DirectoryReader reader = DirectoryReader.open(dir);
     for (LeafReaderContext context : reader.leaves()) {
       for (int i = 0; i < numBinaryFields; i++) {
@@ -402,12 +436,15 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         for (int j = 0; j < r.maxDoc(); j++) {
           assertEquals(j, cf.nextDoc());
           assertEquals(j, f.nextDoc());
-          assertEquals("reader=" + r + ", field=f" + i + ", doc=" + j, cf.longValue(), TestBinaryDocValuesUpdates.getValue(f) * 2);
+          assertEquals(
+              "reader=" + r + ", field=f" + i + ", doc=" + j,
+              cf.longValue(),
+              TestBinaryDocValuesUpdates.getValue(f) * 2);
         }
       }
     }
     reader.close();
-    
+
     dir.close();
   }
 
@@ -420,20 +457,24 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new StringField("id", "" + i, Store.YES));
       doc.add(new NumericDocValuesField("id", i));
-      doc.add(new BinaryDocValuesField("binaryId", new BytesRef(new byte[] {(byte)i})));
+      doc.add(new BinaryDocValuesField("binaryId", new BytesRef(new byte[] {(byte) i})));
       writer.addDocument(doc);
       if (random().nextBoolean()) {
         writer.flush();
       }
     }
     int doc = random().nextInt(numDocs);
-    doUpdate(new Term("id", "" + doc), writer, new NumericDocValuesField("id", doc + 1),
-        new BinaryDocValuesField("binaryId", new BytesRef(new byte[]{(byte) (doc + 1)})));
+    doUpdate(
+        new Term("id", "" + doc),
+        writer,
+        new NumericDocValuesField("id", doc + 1),
+        new BinaryDocValuesField("binaryId", new BytesRef(new byte[] {(byte) (doc + 1)})));
     IndexReader reader = writer.getReader();
     NumericDocValues idValues = null;
     BinaryDocValues binaryIdValues = null;
     for (LeafReaderContext c : reader.leaves()) {
-      TopDocs topDocs = new IndexSearcher(c.reader()).search(new TermQuery(new Term("id", "" + doc)), 10);
+      TopDocs topDocs =
+          new IndexSearcher(c.reader()).search(new TermQuery(new Term("id", "" + doc)), 10);
       if (topDocs.totalHits.value == 1) {
         assertNull(idValues);
         assertNull(binaryIdValues);
@@ -449,12 +490,13 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     assertNotNull(idValues);
     assertNotNull(binaryIdValues);
 
-    assertEquals(doc+1, idValues.longValue());
-    assertEquals(new BytesRef(new byte[] {(byte)(doc+1)}), binaryIdValues.binaryValue());
+    assertEquals(doc + 1, idValues.longValue());
+    assertEquals(new BytesRef(new byte[] {(byte) (doc + 1)}), binaryIdValues.binaryValue());
     IOUtils.close(reader, writer, dir);
   }
 
-  public void testTryUpdateMultiThreaded() throws IOException, BrokenBarrierException, InterruptedException {
+  public void testTryUpdateMultiThreaded()
+      throws IOException, BrokenBarrierException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -474,33 +516,39 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     Thread[] threads = new Thread[numThreads];
     CyclicBarrier barrier = new CyclicBarrier(threads.length + 1);
     for (int i = 0; i < threads.length; i++) {
-      threads[i] = new Thread(() -> {
-        try {
-          barrier.await();
-          for (int doc = 0; doc < 1000; doc++) {
-            int docId = random().nextInt(locks.length);
-            locks[docId].lock();
-            try {
-              Long value = rarely() ? null : random().nextLong(); // sometimes reset it
-              if (random().nextBoolean()) {
-                writer.updateDocValues(new Term("id", docId + ""), new NumericDocValuesField("value", value));
-              } else {
-                doUpdate(new Term("id", docId + ""), writer, new NumericDocValuesField("value", value));
-              }
-              values[docId] = value;
-            } catch (IOException e) {
-              throw new AssertionError(e);
-            } finally {
-              locks[docId].unlock();
-            }
-            if (rarely()) {
-              writer.flush();
-            }
-          }
-        } catch (Exception e) {
-          throw new AssertionError(e);
-        }
-      });
+      threads[i] =
+          new Thread(
+              () -> {
+                try {
+                  barrier.await();
+                  for (int doc = 0; doc < 1000; doc++) {
+                    int docId = random().nextInt(locks.length);
+                    locks[docId].lock();
+                    try {
+                      Long value = rarely() ? null : random().nextLong(); // sometimes reset it
+                      if (random().nextBoolean()) {
+                        writer.updateDocValues(
+                            new Term("id", docId + ""), new NumericDocValuesField("value", value));
+                      } else {
+                        doUpdate(
+                            new Term("id", docId + ""),
+                            writer,
+                            new NumericDocValuesField("value", value));
+                      }
+                      values[docId] = value;
+                    } catch (IOException e) {
+                      throw new AssertionError(e);
+                    } finally {
+                      locks[docId].unlock();
+                    }
+                    if (rarely()) {
+                      writer.flush();
+                    }
+                  }
+                } catch (Exception e) {
+                  throw new AssertionError(e);
+                }
+              });
       threads[i].start();
     }
 
@@ -513,7 +561,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         locks[i].lock();
         try {
           Long value = values[i];
-          TopDocs topDocs = new IndexSearcher(reader).search(new TermQuery(new Term("id", "" + i)), 10);
+          TopDocs topDocs =
+              new IndexSearcher(reader).search(new TermQuery(new Term("id", "" + i)), 10);
           assertEquals(topDocs.totalHits.value, 1);
           int docID = topDocs.scoreDocs[0].doc;
           List<LeafReaderContext> leaves = reader.leaves();
@@ -555,13 +604,13 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new StringField("id", "0", Store.NO));
     doc.add(new NumericDocValuesField("val", 5));
-    doc.add(new BinaryDocValuesField("val-bin", new BytesRef(new byte[] {(byte)5})));
+    doc.add(new BinaryDocValuesField("val-bin", new BytesRef(new byte[] {(byte) 5})));
     writer.addDocument(doc);
 
     if (random().nextBoolean()) {
       writer.commit();
     }
-    try(DirectoryReader reader = writer.getReader()) {
+    try (DirectoryReader reader = writer.getReader()) {
       assertEquals(1, reader.leaves().size());
       LeafReader r = reader.leaves().get(0).reader();
       NumericDocValues ndv = r.getNumericDocValues("val");
@@ -571,12 +620,12 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
 
       BinaryDocValues bdv = r.getBinaryDocValues("val-bin");
       assertEquals(0, bdv.nextDoc());
-      assertEquals(new BytesRef(new byte[]{(byte) 5}), bdv.binaryValue());
+      assertEquals(new BytesRef(new byte[] {(byte) 5}), bdv.binaryValue());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, bdv.nextDoc());
     }
 
     writer.updateDocValues(new Term("id", "0"), new BinaryDocValuesField("val-bin", null));
-    try(DirectoryReader reader = writer.getReader()) {
+    try (DirectoryReader reader = writer.getReader()) {
       assertEquals(1, reader.leaves().size());
       LeafReader r = reader.leaves().get(0).reader();
       NumericDocValues ndv = r.getNumericDocValues("val");
@@ -601,7 +650,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       Document doc = new Document();
       int id = random().nextInt(5);
       seqId[id] = currentSeqId;
-      doc.add(new StringField("id",  "" + id, Store.YES));
+      doc.add(new StringField("id", "" + id, Store.YES));
       doc.add(new NumericDocValuesField("seqID", currentSeqId++));
       doc.add(new NumericDocValuesField("is_live", 1));
       if (i > 0) {
@@ -622,7 +671,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
         numHits++;
       }
     }
-    try(DirectoryReader reader = writer.getReader()) {
+    try (DirectoryReader reader = writer.getReader()) {
       IndexSearcher searcher = new IndexSearcher(reader);
 
       TopDocs is_live = searcher.search(new DocValuesFieldExistsQuery("is_live"), 5);
@@ -643,7 +692,8 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
 
   public void testUpdateNotExistingFieldDV() throws IOException {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    try (Directory dir = newDirectory(); IndexWriter writer = new IndexWriter(dir, conf)) {
+    try (Directory dir = newDirectory();
+        IndexWriter writer = new IndexWriter(dir, conf)) {
       Document doc = new Document();
       doc.add(new StringField("id", "1", Store.YES));
       doc.add(new NumericDocValuesField("test", 1));
@@ -656,21 +706,29 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       Document doc1 = new Document();
       doc1.add(new StringField("id", "2", Store.YES));
       doc1.add(new BinaryDocValuesField("not_existing", new BytesRef()));
-      IllegalArgumentException iae = expectThrows(IllegalArgumentException.class, () ->
-          writer.addDocument(doc1)
-      );
-      assertEquals("cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"", iae.getMessage());
+      IllegalArgumentException iae =
+          expectThrows(IllegalArgumentException.class, () -> writer.addDocument(doc1));
+      assertEquals(
+          "cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"",
+          iae.getMessage());
 
-      iae = expectThrows(IllegalArgumentException.class, () ->
-          writer.updateDocValues(new Term("id", "1"), new BinaryDocValuesField("not_existing", new BytesRef()))
-      );
-      assertEquals("cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"", iae.getMessage());
+      iae =
+          expectThrows(
+              IllegalArgumentException.class,
+              () ->
+                  writer.updateDocValues(
+                      new Term("id", "1"),
+                      new BinaryDocValuesField("not_existing", new BytesRef())));
+      assertEquals(
+          "cannot change DocValues type from NUMERIC to BINARY for field \"not_existing\"",
+          iae.getMessage());
     }
   }
 
   public void testUpdateFieldWithNoPreviousDocValues() throws IOException {
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    try (Directory dir = newDirectory(); IndexWriter writer = new IndexWriter(dir, conf)) {
+    try (Directory dir = newDirectory();
+        IndexWriter writer = new IndexWriter(dir, conf)) {
       Document doc = new Document();
       doc.add(new StringField("id", "1", Store.YES));
       writer.addDocument(doc);
@@ -692,4 +750,3 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
     }
   }
 }
-

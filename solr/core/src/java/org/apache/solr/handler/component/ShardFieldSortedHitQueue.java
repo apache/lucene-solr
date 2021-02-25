@@ -41,10 +41,10 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
   /** The order of these fieldNames should correspond to the order of sort field values retrieved from the shard */
   protected List<String> fieldNames = new ArrayList<>();
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public ShardFieldSortedHitQueue(SortField[] fields, int size, IndexSearcher searcher) {
     super(size);
     final int n = fields.length;
-    //noinspection unchecked
     comparators = new Comparator[n];
     this.fields = new SortField[n];
     for (int i = 0; i < n; ++i) {
@@ -143,12 +143,14 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
 
     Object sortVal(ShardDoc shardDoc) {
       assert(shardDoc.sortFieldValues.getName(fieldNum).equals(fieldName));
+      @SuppressWarnings({"rawtypes"})
       List lst = (List)shardDoc.sortFieldValues.getVal(fieldNum);
       return lst.get(shardDoc.orderInShard);
     }
   }
 
   Comparator<ShardDoc> comparatorFieldComparator(SortField sortField) {
+    @SuppressWarnings({"rawtypes"})
     final FieldComparator fieldComparator = sortField.getComparator(0, 0);
     return new ShardComparator(sortField) {
       // Since the PriorityQueue keeps the biggest elements by default,
@@ -156,8 +158,8 @@ public class ShardFieldSortedHitQueue extends PriorityQueue<ShardDoc> {
       // smallest elements are kept instead of the largest... hence
       // the negative sign.
       @Override
+      @SuppressWarnings({"unchecked"})
       public int compare(final ShardDoc o1, final ShardDoc o2) {
-        //noinspection unchecked
         return -fieldComparator.compareValues(sortVal(o1), sortVal(o2));
       }
     };

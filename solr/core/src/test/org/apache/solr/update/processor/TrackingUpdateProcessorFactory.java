@@ -87,7 +87,7 @@ public final class TrackingUpdateProcessorFactory
   }
 
   @Override
-  public void init(NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
     if (args != null && args.indexOf("group",0) >= 0) {
       group = (String) args.get("group");
       log.debug("Init URP, group '{}'", group);

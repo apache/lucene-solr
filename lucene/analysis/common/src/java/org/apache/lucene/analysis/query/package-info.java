@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Automatically filter high-frequency stopwords.
- */
+/** Automatically filter high-frequency stopwords. */
 package org.apache.lucene.analysis.query;

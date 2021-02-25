@@ -37,8 +37,10 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
@@ -114,7 +116,7 @@ public class TestDocSet extends SolrTestCase {
       arr[i] = iter.nextDoc();
     }
 
-    return new DocSlice(offset, len, arr, null, len*2, 100.0f);
+    return new DocSlice(offset, len, arr, null, len*2, 100.0f, TotalHits.Relation.EQUAL_TO);
   }
 
 
@@ -339,6 +341,11 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public PointValues getPointValues(String field) {
+        return null;
+      }
+
+      @Override
+      public VectorValues getVectorValues(String field) {
         return null;
       }
 

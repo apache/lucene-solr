@@ -29,14 +29,16 @@ Likewise, committing changes using `openSearcher=false` may result in changes co
 
 == SolrCloud Backups
 
-Support for backups when running SolrCloud is provided with the <<collections-api.adoc#collections-api,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
+Support for backups when running SolrCloud is provided with the <<collection-management.adoc#,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
 
 NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same path on all nodes, or HDFS.
 
-Two commands are available:
+Four different API commands are supported:
 
 * `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collection-management.adoc#backup,Backup Collection>>.
 * `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collection-management.adoc#restore,Restore Collection>>.
+* `action=LISTBACKUP`: This command lists the backup points available at a specified location, displaying metadata for each.  More information is available in the section <<collection-management.adoc#listbackup,List Backups>>.
+* `action=DELETEBACKUP`: This command allows deletion of backup files or whole backups.  More information is available in the section <<collection-management.adoc#deletebackup,Delete Backups>>.
 
 == Standalone Mode Backups
 
@@ -62,7 +64,9 @@ The backup request can also take the following additional parameters:
 
 `location`::
 The path where the backup will be created. If the path is not absolute then the backup path will be relative to Solr's instance directory.
-|name |The snapshot will be created in a directory called `snapshot.<name>`. If a name is not specified then the directory name would have the following format: `snapshot.<yyyyMMddHHmmssSSS>`.
+
+`name`::
+The snapshot will be created in a directory called `snapshot.<name>`. If a name is not specified then the directory name will have the following format: `snapshot.<yyyyMMddHHmmssSSS>`.
 
 `numberToKeep`::
 The number of backups to keep. If `maxNumberOfBackups` has been specified on the replication handler in `solrconfig.xml`, `maxNumberOfBackups` is always used and attempts to use `numberToKeep` will cause an error. Also, this parameter is not taken into consideration if the backup name is specified. More information about `maxNumberOfBackups` can be found in the section <<index-replication.adoc#configuring-the-replicationhandler,Configuring the ReplicationHandler>>.
@@ -117,7 +121,7 @@ The `restore` request can take these additional parameters:
 The location of the backup snapshot file. If not specified, it looks for backups in Solr's data directory.
 
 `name`::
-The name of the backed up index snapshot to be restored. If the name is not provided it looks for backups with `snapshot.<timestamp>` format in the location directory. It picks the latest timestamp backup in that case.
+The name of the backup index snapshot to be restored. If the name is not provided it looks for backups with `snapshot.<timestamp>` format in the location directory. It picks the latest timestamp backup in that case.
 
 `repository`::
 The name of the repository to be used for the backup. If no repository is specified then the local filesystem repository will be used automatically.
@@ -225,7 +229,7 @@ The repository interfaces needs to be configured in the `solr.xml` file. While r
 
 If no repository is configured then the local filesystem repository will be used automatically.
 
-Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs.adoc#running-solr-on-hdfs,HDFS>>:
+Example `solr.xml` section to configure a repository like <<running-solr-on-hdfs.adoc#,HDFS>>:
 
 [source,xml]
 ----

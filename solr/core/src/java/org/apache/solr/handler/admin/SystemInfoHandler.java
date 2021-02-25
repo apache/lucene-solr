@@ -41,7 +41,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
@@ -139,8 +139,11 @@ public class SystemInfoHandler extends RequestHandlerBase
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req, core).getZkController().getZkServerAddress());
     }
-    if (cc != null)
-      rsp.add( "solr_home", cc.getSolrHome());
+    if (cc != null) {
+      rsp.add("solr_home", cc.getSolrHome());
+      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+    }
+
     rsp.add( "lucene", getLuceneInfo() );
     rsp.add( "jvm", getJvmInfo() );
     rsp.add( "security", getSecurityInfo(req) );
@@ -323,8 +326,14 @@ public class SystemInfoHandler extends RequestHandlerBase
   {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
 
-    if (cc.getAuthenticationPlugin() != null) info.add("authenticationPlugin", cc.getAuthenticationPlugin().getName());
-    if (cc.getAuthorizationPlugin() != null) info.add("authorizationPlugin", cc.getAuthorizationPlugin().getClass().getName());
+    if (cc != null) {
+      if (cc.getAuthenticationPlugin() != null) {
+        info.add("authenticationPlugin", cc.getAuthenticationPlugin().getName());
+      }
+      if (cc.getAuthorizationPlugin() != null) {
+        info.add("authorizationPlugin", cc.getAuthorizationPlugin().getClass().getName());
+      }
+    }
 
     // User principal
     String username = null;
@@ -333,10 +342,11 @@ public class SystemInfoHandler extends RequestHandlerBase
       info.add("username", username);
 
       // Mapped roles for this principal
-      AuthorizationPlugin auth = cc.getAuthorizationPlugin();
-      if (auth != null) {
-        RuleBasedAuthorizationPlugin rbap = (RuleBasedAuthorizationPlugin) auth;
-        Set<String> roles = rbap.getRoles(username);
+      @SuppressWarnings("resource")
+      AuthorizationPlugin auth = cc==null? null: cc.getAuthorizationPlugin();
+      if (auth instanceof RuleBasedAuthorizationPluginBase) {
+        RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
+        Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
       }
     }

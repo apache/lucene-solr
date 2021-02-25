@@ -139,6 +139,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
           "'set-user': {'harry':'HarryIsCool'}\n" +
           "}";
 
+      @SuppressWarnings({"rawtypes"})
       final SolrRequest genericReq;
       if (isUseV2Api) {
         genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
@@ -256,14 +257,15 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       try {
         System.setProperty("basicauth", "harry:HarryIsUberCool");
         tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), toolArgs));
+        @SuppressWarnings({"rawtypes"})
         Map obj = (Map) Utils.fromJSON(new ByteArrayInputStream(baos.toByteArray()));
         assertTrue(obj.containsKey("version"));
         assertTrue(obj.containsKey("startTime"));
         assertTrue(obj.containsKey("uptime"));
         assertTrue(obj.containsKey("memory"));
       } catch (Exception e) {
-        log.error("RunExampleTool failed due to: " + e +
-            "; stdout from tool prior to failure: " + baos.toString(StandardCharsets.UTF_8.name()));
+        log.error("RunExampleTool failed due to: {}; stdout from tool prior to failure: {}"
+            , e, baos.toString(StandardCharsets.UTF_8.name())); // nowarn
       }
 
       SolrParams params = new MapSolrParams(Collections.singletonMap("q", "*:*"));
@@ -320,6 +322,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private QueryResponse executeQuery(ModifiableSolrParams params, String user, String pass) throws IOException, SolrServerException {
+    @SuppressWarnings({"rawtypes"})
     SolrRequest req = new QueryRequest(params);
     req.setBasicAuthCredentials(user, pass);
     QueryResponse resp = (QueryResponse) req.process(cluster.getSolrClient(), COLLECTION);

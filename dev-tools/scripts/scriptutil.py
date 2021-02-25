@@ -109,17 +109,6 @@ def update_file(filename, line_re, edit):
   return True
 
 
-def check_ant():
-  antVersion = os.popen('ant -version').read().strip()
-  if (antVersion.startswith('Apache Ant(TM) version 1.8')):
-    return antVersion.split(" ")[3]
-  if (antVersion.startswith('Apache Ant(TM) version 1.9')):
-    return antVersion.split(" ")[3]
-  if (antVersion.startswith('Apache Ant(TM) version 1.10')):
-    return antVersion.split(" ")[3]
-  raise RuntimeError('Unsupported ant version (must be 1.8 - 1.10): "%s"' % antVersion)
-
-
 # branch types are "release", "stable" and "unstable"
 class BranchType(Enum):
   unstable = 1
@@ -186,9 +175,11 @@ def attemptDownload(urlString, fileName):
     if not success:
       os.remove(fileName)
 
-version_prop_re = re.compile('version\.base=(.*)')
+version_prop_re = re.compile(r'baseVersion\s*=\s*([\'"])(.*)\1')
 def find_current_version():
-  return version_prop_re.search(open('lucene/version.properties').read()).group(1).strip()
+  script_path = os.path.dirname(os.path.realpath(__file__))
+  top_level_dir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
+  return version_prop_re.search(open('%s/build.gradle' % top_level_dir).read()).group(2).strip()
 
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')

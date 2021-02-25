@@ -331,9 +331,8 @@ public class TestSort extends SolrTestCaseJ4 {
         for (int j=0; j<sdocs.length; j++) {
           int id = sdocs[j].doc;
           if (id != collectedDocs.get(j).doc) {
-            log.error("Error at pos " + j
-            + "\n\tsortMissingFirst=" + sortMissingFirst + " sortMissingLast=" + sortMissingLast + " reverse=" + reverse
-            + "\n\tEXPECTED=" + collectedDocs 
+            log.error("Error at pos {}\n\tsortMissingFirst={} sortMissingLast={} reverse={}\n\tEXPECTED={}"
+                , j, sortMissingFirst, sortMissingLast, reverse, collectedDocs
             );
           }
           assertEquals(id, collectedDocs.get(j).doc);

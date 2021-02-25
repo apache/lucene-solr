@@ -21,6 +21,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -55,6 +56,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
    // System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
     System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
+
     initCore("solrconfig.xml", "schema15.xml");
   }
 
@@ -67,6 +69,7 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
     indexDir1 = createTempDir("_testSplit1").toFile();
     indexDir2 = createTempDir("_testSplit2").toFile();
     indexDir3 = createTempDir("_testSplit3").toFile();
+    h.getCoreContainer().getAllowPaths().addAll(Set.of(indexDir1.toPath(), indexDir2.toPath(), indexDir3.toPath()));
   }
 
   @Test

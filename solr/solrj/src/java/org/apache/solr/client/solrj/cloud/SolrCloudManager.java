@@ -48,7 +48,7 @@ public interface SolrCloudManager extends SolrCloseable {
 
   // Solr-like methods
 
-  SolrResponse request(SolrRequest req) throws IOException;
+  SolrResponse request(@SuppressWarnings({"rawtypes"})SolrRequest req) throws IOException;
 
   byte[] httpRequest(String url, SolrRequest.METHOD method, Map<String, String> headers, String payload, int timeout, boolean followRedirects) throws IOException;
 }

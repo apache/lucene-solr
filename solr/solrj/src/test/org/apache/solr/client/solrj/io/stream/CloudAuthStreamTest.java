@@ -41,14 +41,13 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.util.TimeOut;
-
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 /**
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud cluster
@@ -75,6 +74,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
    *
    * @see SolrRequest#setBasicAuthCredentials
    */
+  @SuppressWarnings({"rawtypes"})
   private static <T extends SolrRequest> T setBasicAuthCredentials(T req, String user) {
     assert null != user;
     req.setBasicAuthCredentials(user, user);
@@ -125,7 +125,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       CollectionAdminRequest.createCollection(collection, "_default", 2, 2)
-        .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
         .process(cluster.getSolrClient());
     }
     
@@ -522,7 +523,7 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
           final List<Tuple> tuples = getTuples(daemonCheck);
           assertEquals(1, tuples.size()); // our daemon;
           if (log.isInfoEnabled()) {
-            log.info("Current daemon status: {}", tuples.get(0).fields);
+            log.info("Current daemon status: {}", tuples.get(0).getFields());
           }
           assertEquals(daemonId + " should have never had a successful iteration",
                        Long.valueOf(0L), tuples.get(0).getLong("iterations"));
@@ -808,7 +809,9 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
       log.trace("TupleStream: {}", tupleStream);
       tupleStream.open();
       for (Tuple t = tupleStream.read(); !t.EOF; t = tupleStream.read()) {
-        log.trace("Tuple: {}", t.fields);
+        if (log.isTraceEnabled()) {
+          log.trace("Tuple: {}", t.getFields());
+        }
         tuples.add(t);
       }
     } finally {

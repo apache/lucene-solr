@@ -17,19 +17,16 @@
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
 /**
- * This interface should be implemented by a {@link QueryNode} that represents
- * some kind of range query.
- *
+ * This interface should be implemented by a {@link QueryNode} that represents some kind of range
+ * query.
  */
-public interface RangeQueryNode<T extends FieldValuePairQueryNode<?>> extends
-    FieldableNode {
+public interface RangeQueryNode<T extends FieldValuePairQueryNode<?>> extends FieldableNode {
 
   T getLowerBound();
-  
+
   T getUpperBound();
-  
+
   boolean isLowerInclusive();
-  
+
   boolean isUpperInclusive();
-  
 }

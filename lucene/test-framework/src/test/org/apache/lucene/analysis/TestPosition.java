@@ -16,12 +16,9 @@
  */
 package org.apache.lucene.analysis;
 
-
 import org.junit.Ignore;
 
-/**
- * Trivial position class.
- */
+/** Trivial position class. */
 @Ignore
 public class TestPosition extends LookaheadTokenFilter.Position {
   private String fact;

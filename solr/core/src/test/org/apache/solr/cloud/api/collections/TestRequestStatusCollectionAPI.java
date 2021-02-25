@@ -49,7 +49,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("numShards", numShards);
     int replicationFactor = 1;
     params.set("replicationFactor", replicationFactor);
-    params.set("maxShardsPerNode", 100);
     params.set("collection.configName", "conf1");
     params.set(CommonAdminParams.ASYNC, "1000");
     try {
@@ -60,14 +59,16 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
     // Check for the request to be completed.
 
+    @SuppressWarnings({"rawtypes"})
     NamedList r = null;
+    @SuppressWarnings({"rawtypes"})
     NamedList status = null;
     String message = null;
 
     params = new ModifiableSolrParams();
 
     params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
-    params.set(OverseerCollectionMessageHandler.REQUESTID, "1000");
+    params.set(CollectionHandlingUtils.REQUESTID, "1000");
 
     NamedList<Object> createResponse =null;
     try {
@@ -84,7 +85,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     // Check for a random (hopefully non-existent request id
     params = new ModifiableSolrParams();
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.REQUESTSTATUS.toString());
-    params.set(OverseerCollectionMessageHandler.REQUESTID, "9999999");
+    params.set(CollectionHandlingUtils.REQUESTID, "9999999");
     try {
       r = sendRequest(params);
       status = (NamedList) r.get("status");
@@ -109,7 +110,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     // Check for the request to be completed.
     params = new ModifiableSolrParams();
     params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
-    params.set(OverseerCollectionMessageHandler.REQUESTID, "1001");
+    params.set(CollectionHandlingUtils.REQUESTID, "1001");
     NamedList<Object> splitResponse=null;
     try {
       splitResponse = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
@@ -128,7 +129,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("name", "collection2");
     params.set("numShards", 2);
     params.set("replicationFactor", 1);
-    params.set("maxShardsPerNode", 100);
     params.set("collection.configName", "conf1");
     params.set(CommonAdminParams.ASYNC, "1002");
     try {
@@ -140,7 +140,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params = new ModifiableSolrParams();
 
     params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
-    params.set(OverseerCollectionMessageHandler.REQUESTID, "1002");
+    params.set(CollectionHandlingUtils.REQUESTID, "1002");
 
     try {
       NamedList<Object> response = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
@@ -156,7 +156,6 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     params.set("name", "collection3");
     params.set("numShards", 1);
     params.set("replicationFactor", 1);
-    params.set("maxShardsPerNode", 100);
     params.set("collection.configName", "conf1");
     params.set(CommonAdminParams.ASYNC, "1002");
     try {

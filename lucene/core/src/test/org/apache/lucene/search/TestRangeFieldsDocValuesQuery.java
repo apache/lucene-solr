@@ -18,7 +18,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleRangeDocValuesField;
 import org.apache.lucene.document.FloatRangeDocValuesField;
@@ -64,7 +63,7 @@ public class TestRangeFieldsDocValuesQuery extends LuceneTestCase {
     double[] lowRange2 = {116.3, 299.3, 517.0};
     double[] highRange2 = {121.0, 317.1, 531.2};
 
-    query = DoubleRangeDocValuesField.newSlowIntersectsQuery( "dv", lowRange2, highRange2);
+    query = DoubleRangeDocValuesField.newSlowIntersectsQuery("dv", lowRange2, highRange2);
 
     assertEquals(searcher.count(query), iters);
 
@@ -174,7 +173,6 @@ public class TestRangeFieldsDocValuesQuery extends LuceneTestCase {
       iw.addDocument(doc);
     }
 
-
     float[] nonMatchingMin = {11.4f, 29.7f, 102.4f};
     float[] nonMatchingMax = {17.6f, 37.2f, 160.2f};
     Document doc = new Document();
@@ -209,7 +207,9 @@ public class TestRangeFieldsDocValuesQuery extends LuceneTestCase {
     double[] doubleMin = {112.7, 296.0, 512.4f};
     double[] doubleMax = {119.3, 314.8, 524.3f};
     Query q1 = DoubleRangeDocValuesField.newSlowIntersectsQuery("foo", doubleMin, doubleMax);
-    assertEquals("foo:[[112.7, 296.0, 512.4000244140625] TO [119.3, 314.8, 524.2999877929688]]", q1.toString());
+    assertEquals(
+        "foo:[[112.7, 296.0, 512.4000244140625] TO [119.3, 314.8, 524.2999877929688]]",
+        q1.toString());
 
     int[] intMin = {3, 11, 17};
     int[] intMax = {27, 35, 49};

@@ -65,7 +65,7 @@ public class UUIDField extends StrField {
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f)
       throws IOException {
-    writer.writeStr(name, f.stringValue(), false);
+    writer.writeStr(name, toExternal(f), false);
   }
 
   /**
@@ -99,7 +99,7 @@ public class UUIDField extends StrField {
 
   @Override
   public UUID toObject(IndexableField f) {
-    return UUID.fromString(f.stringValue());
+    return UUID.fromString(toExternal(f));
   }
 
   @Override

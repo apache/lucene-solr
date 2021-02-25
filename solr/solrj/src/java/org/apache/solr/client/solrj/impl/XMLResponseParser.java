@@ -176,7 +176,7 @@ public class XMLResponseParser extends ResponseParser
         }
         catch( Exception ex ) {
           if (log.isInfoEnabled()) {
-            log.info("{}", ex.getMessage(), ex);
+            log.info("Error reading date: {}", txt, ex);
           }
         }
         return null;

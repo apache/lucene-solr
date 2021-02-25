@@ -82,7 +82,7 @@ public class AnalyzeEvaluator extends SourceEvaluator {
       value = obj.toString();
     }
 
-    List<String> tokens = new ArrayList();
+    List<String> tokens = new ArrayList<>();
 
     try(TokenStream tokenStream = analyzer.tokenStream(analyzerField, value)) {
       CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);

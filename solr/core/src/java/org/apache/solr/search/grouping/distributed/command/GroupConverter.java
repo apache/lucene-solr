@@ -133,16 +133,16 @@ class GroupConverter {
     return result;
   }
   
+  @SuppressWarnings({"unchecked", "rawtypes"})
   static TopGroups<BytesRef> fromMutable(SchemaField field, TopGroups<MutableValue> values) {
     if (values == null) {
       return null;
     }
     
     FieldType fieldType = field.getType();
-    
-    @SuppressWarnings("unchecked")
+
     GroupDocs<BytesRef> groupDocs[] = new GroupDocs[values.groups.length];
-    
+
     for (int i = 0; i < values.groups.length; i++) {
       GroupDocs<MutableValue> original = values.groups[i];
       final BytesRef groupValue;

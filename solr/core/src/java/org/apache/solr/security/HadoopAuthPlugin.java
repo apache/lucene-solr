@@ -230,12 +230,10 @@ public class HadoopAuthPlugin extends AuthenticationPlugin {
   public boolean doAuthenticate(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
     if (TRACE_HTTP) {
-      log.info("----------HTTP Request---------{}");
+      log.info("----------HTTP Request---------");
       if (log.isInfoEnabled()) {
         log.info("{} : {}", request.getMethod(), request.getRequestURI());
-      }
-      if (log.isInfoEnabled()) {
-        log.info("Query : {}", request.getQueryString());
+        log.info("Query : {}", request.getQueryString()); // nowarn
       }
       log.info("Headers :");
       Enumeration<String> headers = request.getHeaderNames();

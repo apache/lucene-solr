@@ -208,7 +208,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
         debug.add("true");
         all = true;
       }
-      q.set("debug", (String[])debug.toArray(new String[debug.size()]));
+      q.set("debug", debug.toArray(new String[debug.size()]));
 
       QueryResponse r = client.query(q);
       try {
@@ -404,8 +404,8 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     QueryResponse response = collection1.query(query);
     assertTrue((Boolean)response.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
     @SuppressWarnings("unchecked")
-    NamedList<String> badShardTrack = (NamedList<String>) ((NamedList<NamedList<String>>)
-        ((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
+    NamedList<String> badShardTrack =
+            (((NamedList<NamedList<NamedList<String>>>)response.getDebugMap().get("track")).get("EXECUTE_QUERY")).get(badShard);
     assertEquals("Unexpected response size for shard", 1, badShardTrack.size());
     Entry<String, String> exception = badShardTrack.iterator().next();
     assertEquals("Expected key 'Exception' not found", "Exception", exception.getKey());
@@ -422,7 +422,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
   @SuppressWarnings({"unchecked", "rawtypes"})
   private void assertSameKeys(NamedList object, NamedList object2) {
-    Iterator<Map.Entry<String,Object>> iteratorObj2 = ((NamedList)object2).iterator();
+    Iterator<Map.Entry<String,Object>> iteratorObj2 = (object2).iterator();
     for (Map.Entry<String,Object> entry:(NamedList<Object>)object) {
       assertTrue(iteratorObj2.hasNext());
       Map.Entry<String,Object> entry2 = iteratorObj2.next();

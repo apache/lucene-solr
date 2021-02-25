@@ -18,15 +18,13 @@ package org.apache.lucene.queryparser.flexible.standard.config;
 
 import org.apache.lucene.search.FuzzyQuery;
 
-/**
- * Configuration parameters for {@link FuzzyQuery}s
- */
+/** Configuration parameters for {@link FuzzyQuery}s */
 public class FuzzyConfig {
-  
+
   private int prefixLength = FuzzyQuery.defaultPrefixLength;
 
   private float minSimilarity = FuzzyQuery.defaultMaxEdits;
-  
+
   public FuzzyConfig() {}
 
   public int getPrefixLength() {
@@ -44,5 +42,4 @@ public class FuzzyConfig {
   public void setMinSimilarity(float minSimilarity) {
     this.minSimilarity = minSimilarity;
   }
-  
 }

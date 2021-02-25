@@ -52,7 +52,7 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
   int maxNumToLog = 10;
   int slowUpdateThresholdMillis = -1;
   @Override
-  public void init( final NamedList args ) {
+  public void init( @SuppressWarnings({"rawtypes"})final NamedList args ) {
     if( args != null ) {
       SolrParams params = args.toSolrParams();
       maxNumToLog = params.getInt( "maxNumToLog", maxNumToLog );
@@ -62,7 +62,8 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
 
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-    return log.isInfoEnabled() ? new LogUpdateProcessor(req, rsp, this, next) : next;
+    return (log.isInfoEnabled() || slowUpdateThresholdMillis >= 0) ?
+        new LogUpdateProcessor(req, rsp, this, next) : next;
   }
   
   static class LogUpdateProcessor extends UpdateRequestProcessor {

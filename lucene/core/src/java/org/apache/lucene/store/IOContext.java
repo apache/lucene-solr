@@ -16,26 +16,25 @@
  */
 package org.apache.lucene.store;
 
-
 /**
- * IOContext holds additional details on the merge/search context. A IOContext
- * object can never be initialized as null as passed as a parameter to either
- * {@link org.apache.lucene.store.Directory#openInput(String, IOContext)} or
- * {@link org.apache.lucene.store.Directory#createOutput(String, IOContext)}
+ * IOContext holds additional details on the merge/search context. A IOContext object can never be
+ * initialized as null as passed as a parameter to either {@link
+ * org.apache.lucene.store.Directory#openInput(String, IOContext)} or {@link
+ * org.apache.lucene.store.Directory#createOutput(String, IOContext)}
  */
 public class IOContext {
 
   /**
-   * Context is a enumerator which specifies the context in which the Directory
-   * is being used for.
+   * Context is a enumerator which specifies the context in which the Directory is being used for.
    */
   public enum Context {
-    MERGE, READ, FLUSH, DEFAULT
+    MERGE,
+    READ,
+    FLUSH,
+    DEFAULT
   };
 
-  /**
-   * An object of a enumerator Context type
-   */
+  /** An object of a enumerator Context type */
   public final Context context;
 
   public final MergeInfo mergeInfo;
@@ -76,20 +75,24 @@ public class IOContext {
   public IOContext(MergeInfo mergeInfo) {
     this(Context.MERGE, mergeInfo);
   }
-  
+
   private IOContext(Context context, MergeInfo mergeInfo) {
-    assert context != Context.MERGE || mergeInfo != null : "MergeInfo must not be null if context is MERGE";
+    assert context != Context.MERGE || mergeInfo != null
+        : "MergeInfo must not be null if context is MERGE";
     assert context != Context.FLUSH : "Use IOContext(FlushInfo) to create a FLUSH IOContext";
     this.context = context;
     this.readOnce = false;
     this.mergeInfo = mergeInfo;
     this.flushInfo = null;
   }
-  
+
   /**
-   * This constructor is used to initialize a {@link IOContext} instance with a new value for the readOnce variable. 
-   * @param ctxt {@link IOContext} object whose information is used to create the new instance except the readOnce variable.
-   * @param readOnce The new {@link IOContext} object will use this value for readOnce. 
+   * This constructor is used to initialize a {@link IOContext} instance with a new value for the
+   * readOnce variable.
+   *
+   * @param ctxt {@link IOContext} object whose information is used to create the new instance
+   *     except the readOnce variable.
+   * @param readOnce The new {@link IOContext} object will use this value for readOnce.
    */
   public IOContext(IOContext ctxt, boolean readOnce) {
     this.context = ctxt.context;
@@ -111,34 +114,31 @@ public class IOContext {
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (getClass() != obj.getClass())
-      return false;
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
     IOContext other = (IOContext) obj;
-    if (context != other.context)
-      return false;
+    if (context != other.context) return false;
     if (flushInfo == null) {
-      if (other.flushInfo != null)
-        return false;
-    } else if (!flushInfo.equals(other.flushInfo))
-      return false;
+      if (other.flushInfo != null) return false;
+    } else if (!flushInfo.equals(other.flushInfo)) return false;
     if (mergeInfo == null) {
-      if (other.mergeInfo != null)
-        return false;
-    } else if (!mergeInfo.equals(other.mergeInfo))
-      return false;
-    if (readOnce != other.readOnce)
-      return false;
+      if (other.mergeInfo != null) return false;
+    } else if (!mergeInfo.equals(other.mergeInfo)) return false;
+    if (readOnce != other.readOnce) return false;
     return true;
   }
 
   @Override
   public String toString() {
-    return "IOContext [context=" + context + ", mergeInfo=" + mergeInfo
-        + ", flushInfo=" + flushInfo + ", readOnce=" + readOnce + "]";
+    return "IOContext [context="
+        + context
+        + ", mergeInfo="
+        + mergeInfo
+        + ", flushInfo="
+        + flushInfo
+        + ", readOnce="
+        + readOnce
+        + "]";
   }
-
 }

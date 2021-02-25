@@ -16,6 +16,10 @@
  */
 package org.apache.lucene.search.suggest.document;
 
+import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
+import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,10 +31,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.assertSuggestions;
-import static org.apache.lucene.search.suggest.document.TestSuggestField.iwcWithSuggestField;
 
 public class TestFuzzyCompletionQuery extends LuceneTestCase {
   public Directory dir;
@@ -48,7 +48,8 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
   @Test
   public void testFuzzyQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new SuggestField("suggest_field", "suggestion", 2));
@@ -67,12 +68,12 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     CompletionQuery query = new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "sugg"));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suaggestion", 4 * 2),
         new Entry("suggestion", 2 * 3),
         new Entry("sugfoo", 1 * 3),
-        new Entry("ssuggestion", 1 * 1)
-    );
+        new Entry("ssuggestion", 1 * 1));
 
     reader.close();
     iw.close();
@@ -81,7 +82,8 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
   @Test
   public void testFuzzyContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "sduggestion", 1, "type1"));
@@ -100,15 +102,16 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    CompletionQuery query =  new ContextQuery(new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "sugge")));
+    CompletionQuery query =
+        new ContextQuery(new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "sugge")));
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("suggdestion", "type4", 4),
         new Entry("suggestion", "type4", 4),
         new Entry("sugdgestion", "type3", 3),
         new Entry("sudggestion", "type2", 2),
-        new Entry("sduggestion", "type1", 1)
-    );
+        new Entry("sduggestion", "type1", 1));
 
     reader.close();
     iw.close();
@@ -117,7 +120,8 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
   @Test
   public void testFuzzyFilteredContextQuery() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    RandomIndexWriter iw =
+        new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     Document document = new Document();
 
     document.add(new ContextSuggestField("suggest_field", "sduggestion", 1, "type1"));
@@ -136,15 +140,16 @@ public class TestFuzzyCompletionQuery extends LuceneTestCase {
 
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
-    CompletionQuery fuzzyQuery = new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "sugge"));
+    CompletionQuery fuzzyQuery =
+        new FuzzyCompletionQuery(analyzer, new Term("suggest_field", "sugge"));
     ContextQuery contextQuery = new ContextQuery(fuzzyQuery);
     contextQuery.addContext("type1", 6);
     contextQuery.addContext("type3", 2);
     TopSuggestDocs suggest = suggestIndexSearcher.suggest(contextQuery, 5, false);
-    assertSuggestions(suggest,
+    assertSuggestions(
+        suggest,
         new Entry("sduggestion", "type1", 1 * (1 + 6)),
-        new Entry("sugdgestion", "type3", 1 * (3 + 2))
-    );
+        new Entry("sugdgestion", "type3", 1 * (3 + 2)));
 
     reader.close();
     iw.close();

@@ -16,16 +16,14 @@
  */
 package org.apache.lucene.document;
 
-
 import java.io.Reader;
-
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.IndexOptions;
 
-/** A field that is indexed and tokenized, without term
- *  vectors.  For example this would be used on a 'body'
- *  field, that contains the bulk of a document's text. */
-
+/**
+ * A field that is indexed and tokenized, without term vectors. For example this would be used on a
+ * 'body' field, that contains the bulk of a document's text.
+ */
 public final class TextField extends Field {
 
   /** Indexed, tokenized, not stored. */
@@ -47,7 +45,9 @@ public final class TextField extends Field {
 
   // TODO: add sugar for term vectors...?
 
-  /** Creates a new un-stored TextField with Reader value. 
+  /**
+   * Creates a new un-stored TextField with Reader value.
+   *
    * @param name field name
    * @param reader reader value
    * @throws IllegalArgumentException if the field name is null
@@ -57,7 +57,9 @@ public final class TextField extends Field {
     super(name, reader, TYPE_NOT_STORED);
   }
 
-  /** Creates a new TextField with String value. 
+  /**
+   * Creates a new TextField with String value.
+   *
    * @param name field name
    * @param value string value
    * @param store Store.YES if the content should also be stored
@@ -66,8 +68,10 @@ public final class TextField extends Field {
   public TextField(String name, String value, Store store) {
     super(name, value, store == Store.YES ? TYPE_STORED : TYPE_NOT_STORED);
   }
-  
-  /** Creates a new un-stored TextField with TokenStream value. 
+
+  /**
+   * Creates a new un-stored TextField with TokenStream value.
+   *
    * @param name field name
    * @param stream TokenStream value
    * @throws IllegalArgumentException if the field name is null.

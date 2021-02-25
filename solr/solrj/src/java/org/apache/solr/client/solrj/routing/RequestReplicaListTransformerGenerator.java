@@ -20,13 +20,12 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Random;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.NodesSysPropsCacher;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
@@ -64,9 +63,9 @@ public class RequestReplicaListTransformerGenerator {
   }
 
   public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
-    this.defaultRltFactory = Optional.ofNullable(defaultRltFactory).orElse(RANDOM_RLTF);
-    this.stableRltFactory = Optional.ofNullable(stableRltFactory).orElseGet(AffinityReplicaListTransformerFactory::new);
-    this.defaultShardPreferences = Optional.ofNullable(defaultShardPreferences).orElse("");
+    this.defaultRltFactory = Objects.requireNonNullElse(defaultRltFactory, RANDOM_RLTF);
+    this.stableRltFactory = Objects.requireNonNullElseGet(stableRltFactory, AffinityReplicaListTransformerFactory::new);
+    this.defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, "");
     this.nodeName = nodeName;
     this.localHostAddress = localHostAddress;
     this.sysPropsCacher = sysPropsCacher;
@@ -81,30 +80,18 @@ public class RequestReplicaListTransformerGenerator {
   }
 
   public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
-    @SuppressWarnings("deprecation")
-    final boolean preferLocalShards = requestParams.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
-    defaultShardPreferences = Optional.ofNullable(defaultShardPreferences).orElse(this.defaultShardPreferences);
+    defaultShardPreferences = Objects.requireNonNullElse(defaultShardPreferences, this.defaultShardPreferences);
     final String shardsPreferenceSpec = requestParams.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreferences);
 
-    if (preferLocalShards || !shardsPreferenceSpec.isEmpty()) {
-      if (preferLocalShards && !shardsPreferenceSpec.isEmpty()) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "preferLocalShards is deprecated and must not be used with shards.preference"
-        );
-      }
+    if (!shardsPreferenceSpec.isEmpty()) {
       List<PreferenceRule> preferenceRules = PreferenceRule.from(shardsPreferenceSpec);
-      if (preferLocalShards) {
-        preferenceRules.add(new PreferenceRule(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION, ShardParams.REPLICA_LOCAL));
-      }
-
       NodePreferenceRulesComparator replicaComp =
           new NodePreferenceRulesComparator(
               preferenceRules,
               requestParams,
-              Optional.ofNullable(nodeName).orElse(this.nodeName),
-              Optional.ofNullable(localHostAddress).orElse(this.localHostAddress),
-              Optional.ofNullable(sysPropsCacher).orElse(this.sysPropsCacher),
+              nodeName != null ? nodeName : this.nodeName, // could be still null
+              localHostAddress != null ? localHostAddress : this.localHostAddress, // could still be null
+              sysPropsCacher != null ? sysPropsCacher : this.sysPropsCacher, // could still be null
               defaultRltFactory,
               stableRltFactory);
       ReplicaListTransformer baseReplicaListTransformer = replicaComp.getBaseReplicaListTransformer();
@@ -158,7 +145,7 @@ public class RequestReplicaListTransformerGenerator {
         Object current;
         int idx = 1;
         int boundaryCount = 0;
-        int[] boundaries = new int[choices.size() - 1];
+        int[] boundaries = new int[choices.size()];
         do {
           current = iter.next();
           if (replicaComp.compare(prev, current) != 0) {
@@ -167,6 +154,7 @@ public class RequestReplicaListTransformerGenerator {
           prev = current;
           idx++;
         } while (iter.hasNext());
+        boundaries[boundaryCount++] = idx;
 
         // Finally inspect boundaries to apply base transformation, where necessary (separate phase to avoid ConcurrentModificationException)
         int startIdx = 0;

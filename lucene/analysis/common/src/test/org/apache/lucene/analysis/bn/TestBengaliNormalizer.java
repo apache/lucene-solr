@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.analysis.bn;
 
-
+import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
@@ -24,15 +24,9 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.util.TestUtil;
 
-import java.io.IOException;
-
-/**
- * Test BengaliNormalizer
- */
+/** Test BengaliNormalizer */
 public class TestBengaliNormalizer extends BaseTokenStreamTestCase {
-  /**
-   * Test some basic normalization, with an example from the paper.
-   */
+  /** Test some basic normalization, with an example from the paper. */
   public void testChndrobindu() throws IOException {
     check("চাঁদ", "চাদ");
   }
@@ -53,7 +47,7 @@ public class TestBengaliNormalizer extends BaseTokenStreamTestCase {
 
   public void testJaPhaala() throws IOException {
     check("ব্যাক্তি", "বেক্তি");
-    check( "সন্ধ্যা", "সন্ধা");
+    check("সন্ধ্যা", "সন্ধা");
   }
 
   public void testBaPhalaa() throws IOException {
@@ -74,7 +68,9 @@ public class TestBengaliNormalizer extends BaseTokenStreamTestCase {
     check("বাড়ি", "বারি");
   }
 
-  /** creates random strings in the bengali block and ensures the normalizer doesn't trip up on them */
+  /**
+   * creates random strings in the bengali block and ensures the normalizer doesn't trip up on them
+   */
   public void testRandom() throws IOException {
     BengaliNormalizer normalizer = new BengaliNormalizer();
     for (int i = 0; i < 100000; i++) {
@@ -84,7 +80,8 @@ public class TestBengaliNormalizer extends BaseTokenStreamTestCase {
         assertTrue(newLen >= 0); // should not return negative length
         assertTrue(newLen <= randomBengali.length()); // should not increase length of string
       } catch (Exception e) {
-        System.err.println("normalizer failed on input: '" + randomBengali + "' (" + escape(randomBengali) + ")");
+        System.err.println(
+            "normalizer failed on input: '" + randomBengali + "' (" + escape(randomBengali) + ")");
         throw e;
       }
     }
@@ -93,17 +90,18 @@ public class TestBengaliNormalizer extends BaseTokenStreamTestCase {
   private void check(String input, String output) throws IOException {
     Tokenizer tokenizer = whitespaceMockTokenizer(input);
     TokenFilter tf = new BengaliNormalizationFilter(tokenizer);
-    assertTokenStreamContents(tf, new String[] { output });
+    assertTokenStreamContents(tf, new String[] {output});
   }
-  
+
   public void testEmptyTerm() throws IOException {
-    Analyzer a = new Analyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        Tokenizer tokenizer = new KeywordTokenizer();
-        return new TokenStreamComponents(tokenizer, new BengaliNormalizationFilter(tokenizer));
-      }
-    };
+    Analyzer a =
+        new Analyzer() {
+          @Override
+          protected TokenStreamComponents createComponents(String fieldName) {
+            Tokenizer tokenizer = new KeywordTokenizer();
+            return new TokenStreamComponents(tokenizer, new BengaliNormalizationFilter(tokenizer));
+          }
+        };
     checkOneTerm(a, "", "");
     a.close();
   }

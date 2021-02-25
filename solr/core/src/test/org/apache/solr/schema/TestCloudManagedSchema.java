@@ -59,9 +59,12 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
     String previousBaseURL = client.getBaseURL();
     // Strip /collection1 step from baseURL - requests fail otherwise
     client.setBaseURL(previousBaseURL.substring(0, previousBaseURL.lastIndexOf("/")));
+    @SuppressWarnings({"rawtypes"})
     NamedList namedListResponse = client.request(request);
     client.setBaseURL(previousBaseURL); // Restore baseURL 
+    @SuppressWarnings({"rawtypes"})
     NamedList status = (NamedList)namedListResponse.get("status");
+    @SuppressWarnings({"rawtypes"})
     NamedList collectionStatus = (NamedList)status.getVal(0);
     String collectionSchema = (String)collectionStatus.get(CoreAdminParams.SCHEMA);
     // Make sure the upgrade to managed schema happened

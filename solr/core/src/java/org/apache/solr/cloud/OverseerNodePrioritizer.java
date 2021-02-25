@@ -20,24 +20,18 @@ import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.http.client.HttpClient;
-import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Responsible for prioritization of Overseer nodes, for example with the
@@ -51,23 +45,25 @@ public class OverseerNodePrioritizer {
   private final String adminPath;
   private final ShardHandlerFactory shardHandlerFactory;
 
-  private ZkDistributedQueue stateUpdateQueue;
+  /**
+   * Only used to send QUIT to the overseer
+   */
+  private final Overseer overseer;
 
-  private HttpClient httpClient;
-
-  public OverseerNodePrioritizer(ZkStateReader zkStateReader, ZkDistributedQueue stateUpdateQueue, String adminPath, ShardHandlerFactory shardHandlerFactory, HttpClient httpClient) {
+  public OverseerNodePrioritizer(ZkStateReader zkStateReader, Overseer overseer, String adminPath, ShardHandlerFactory shardHandlerFactory) {
     this.zkStateReader = zkStateReader;
     this.adminPath = adminPath;
     this.shardHandlerFactory = shardHandlerFactory;
-    this.stateUpdateQueue = stateUpdateQueue;
-    this.httpClient = httpClient;
+    this.overseer = overseer;
   }
 
   public synchronized void prioritizeOverseerNodes(String overseerId) throws Exception {
     SolrZkClient zk = zkStateReader.getZkClient();
     if(!zk.exists(ZkStateReader.ROLES,true))return;
+    @SuppressWarnings({"rawtypes"})
     Map m = (Map) Utils.fromJSON(zk.getData(ZkStateReader.ROLES, null, new Stat(), true));
 
+    @SuppressWarnings({"rawtypes"})
     List overseerDesignates = (List) m.get("overseer");
     if(overseerDesignates==null || overseerDesignates.isEmpty()) return;
     String ldr = OverseerTaskProcessor.getLeaderNode(zk);
@@ -98,15 +94,12 @@ public class OverseerNodePrioritizer {
       invokeOverseerOp(electionNodes.get(1), "rejoin");//ask second inline to go behind
     }
     //now ask the current leader to QUIT , so that the designate can takeover
-    stateUpdateQueue.offer(
-        Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            ID, OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()))));
-
+    overseer.sendQuitToOverseer(OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()));
   }
 
   private void invokeOverseerOp(String electionNode, String op) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    ShardHandler shardHandler = ((HttpShardHandlerFactory)shardHandlerFactory).getShardHandler(httpClient);
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     params.set(CoreAdminParams.ACTION, CoreAdminAction.OVERSEEROP.toString());
     params.set("op", op);
     params.set("qt", adminPath);

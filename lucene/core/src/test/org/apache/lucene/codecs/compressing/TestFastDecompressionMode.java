@@ -23,5 +23,4 @@ public class TestFastDecompressionMode extends AbstractTestCompressionMode {
     super.setUp();
     mode = CompressionMode.FAST_DECOMPRESSION;
   }
-
 }

@@ -105,7 +105,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
 
   @SuppressWarnings("unchecked")
   @Override
-  public void init( NamedList args )  {
+  public void init( @SuppressWarnings({"rawtypes"})NamedList args )  {
 
     Object tmp = args.remove("versionField");
     if (null == tmp) {
@@ -203,7 +203,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
           userVersionField.getType().getValueSource(userVersionField, null);
         } catch (Exception e) {
           useFieldCache = false;
-          log.warn("Can't use fieldcache/valuesource: {}", e.getMessage());
+          log.warn("Can't use fieldcache/valuesource: ", e);
         }
       }
     }

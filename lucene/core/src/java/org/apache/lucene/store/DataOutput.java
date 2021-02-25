@@ -16,34 +16,34 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Abstract base class for performing write operations of Lucene's low-level
- * data types.
- 
- * <p>{@code DataOutput} may only be used from one thread, because it is not
- * thread safe (it keeps internal state like file position).
+ * Abstract base class for performing write operations of Lucene's low-level data types.
+ *
+ * <p>{@code DataOutput} may only be used from one thread, because it is not thread safe (it keeps
+ * internal state like file position).
  */
 public abstract class DataOutput {
 
-  /** Writes a single byte.
-   * <p>
-   * The most primitive data type is an eight-bit byte. Files are 
-   * accessed as sequences of bytes. All other data types are defined 
-   * as sequences of bytes, so file formats are byte-order independent.
-   * 
+  /**
+   * Writes a single byte.
+   *
+   * <p>The most primitive data type is an eight-bit byte. Files are accessed as sequences of bytes.
+   * All other data types are defined as sequences of bytes, so file formats are byte-order
+   * independent.
+   *
    * @see IndexInput#readByte()
    */
   public abstract void writeByte(byte b) throws IOException;
 
-  /** Writes an array of bytes.
+  /**
+   * Writes an array of bytes.
+   *
    * @param b the bytes to write
    * @param length the number of bytes to write
    * @see DataInput#readBytes(byte[],int,int)
@@ -52,7 +52,9 @@ public abstract class DataOutput {
     writeBytes(b, 0, length);
   }
 
-  /** Writes an array of bytes.
+  /**
+   * Writes an array of bytes.
+   *
    * @param b the bytes to write
    * @param offset the offset in the byte array
    * @param length the number of bytes to write
@@ -60,36 +62,42 @@ public abstract class DataOutput {
    */
   public abstract void writeBytes(byte[] b, int offset, int length) throws IOException;
 
-  /** Writes an int as four bytes.
-   * <p>
-   * 32-bit unsigned integer written as four bytes, high-order bytes first.
-   * 
+  /**
+   * Writes an int as four bytes.
+   *
+   * <p>32-bit unsigned integer written as four bytes, high-order bytes first.
+   *
    * @see DataInput#readInt()
    */
   public void writeInt(int i) throws IOException {
-    writeByte((byte)(i >> 24));
-    writeByte((byte)(i >> 16));
-    writeByte((byte)(i >>  8));
-    writeByte((byte) i);
-  }
-  
-  /** Writes a short as two bytes.
-   * @see DataInput#readShort()
-   */
-  public void writeShort(short i) throws IOException {
-    writeByte((byte)(i >>  8));
+    writeByte((byte) (i >> 24));
+    writeByte((byte) (i >> 16));
+    writeByte((byte) (i >> 8));
     writeByte((byte) i);
   }
 
-  /** Writes an int in a variable-length format.  Writes between one and
-   * five bytes.  Smaller values take fewer bytes.  Negative numbers are
-   * supported, but should be avoided.
-   * <p>VByte is a variable-length format for positive integers is defined where the
-   * high-order bit of each byte indicates whether more bytes remain to be read. The
-   * low-order seven bits are appended as increasingly more significant bits in the
-   * resulting integer value. Thus values from zero to 127 may be stored in a single
-   * byte, values from 128 to 16,383 may be stored in two bytes, and so on.</p>
-   * <p>VByte Encoding Example</p>
+  /**
+   * Writes a short as two bytes.
+   *
+   * @see DataInput#readShort()
+   */
+  public void writeShort(short i) throws IOException {
+    writeByte((byte) (i >> 8));
+    writeByte((byte) i);
+  }
+
+  /**
+   * Writes an int in a variable-length format. Writes between one and five bytes. Smaller values
+   * take fewer bytes. Negative numbers are supported, but should be avoided.
+   *
+   * <p>VByte is a variable-length format for positive integers is defined where the high-order bit
+   * of each byte indicates whether more bytes remain to be read. The low-order seven bits are
+   * appended as increasingly more significant bits in the resulting integer value. Thus values from
+   * zero to 127 may be stored in a single byte, values from 128 to 16,383 may be stored in two
+   * bytes, and so on.
+   *
+   * <p>VByte Encoding Example
+   *
    * <table class="padding2" style="border-spacing: 0px; border-collapse: separate; border: 0">
    * <caption>variable length encoding examples</caption>
    * <tr valign="top">
@@ -177,36 +185,38 @@ public abstract class DataOutput {
    *   <td valign="bottom"></td>
    * </tr>
    * </table>
-   * <p>This provides compression while still being efficient to decode.</p>
-   * 
-   * @param i Smaller values take fewer bytes.  Negative numbers are
-   * supported, but should be avoided.
+   *
+   * <p>This provides compression while still being efficient to decode.
+   *
+   * @param i Smaller values take fewer bytes. Negative numbers are supported, but should be
+   *     avoided.
    * @throws IOException If there is an I/O error writing to the underlying medium.
    * @see DataInput#readVInt()
    */
   public final void writeVInt(int i) throws IOException {
     while ((i & ~0x7F) != 0) {
-      writeByte((byte)((i & 0x7F) | 0x80));
+      writeByte((byte) ((i & 0x7F) | 0x80));
       i >>>= 7;
     }
-    writeByte((byte)i);
+    writeByte((byte) i);
   }
 
   /**
-   * Write a {@link BitUtil#zigZagEncode(int) zig-zag}-encoded
-   * {@link #writeVInt(int) variable-length} integer. This is typically useful
-   * to write small signed ints and is equivalent to calling
-   * <code>writeVInt(BitUtil.zigZagEncode(i))</code>.
+   * Write a {@link BitUtil#zigZagEncode(int) zig-zag}-encoded {@link #writeVInt(int)
+   * variable-length} integer. This is typically useful to write small signed ints and is equivalent
+   * to calling <code>writeVInt(BitUtil.zigZagEncode(i))</code>.
+   *
    * @see DataInput#readZInt()
    */
   public final void writeZInt(int i) throws IOException {
     writeVInt(BitUtil.zigZagEncode(i));
   }
 
-  /** Writes a long as eight bytes.
-   * <p>
-   * 64-bit unsigned integer written as eight bytes, high-order bytes first.
-   * 
+  /**
+   * Writes a long as eight bytes.
+   *
+   * <p>64-bit unsigned integer written as eight bytes, high-order bytes first.
+   *
    * @see DataInput#readLong()
    */
   public void writeLong(long i) throws IOException {
@@ -214,11 +224,12 @@ public abstract class DataOutput {
     writeInt((int) i);
   }
 
-  /** Writes an long in a variable-length format.  Writes between one and nine
-   * bytes.  Smaller values take fewer bytes.  Negative numbers are not
-   * supported.
-   * <p>
-   * The format is described further in {@link DataOutput#writeVInt(int)}.
+  /**
+   * Writes an long in a variable-length format. Writes between one and nine bytes. Smaller values
+   * take fewer bytes. Negative numbers are not supported.
+   *
+   * <p>The format is described further in {@link DataOutput#writeVInt(int)}.
+   *
    * @see DataInput#readVLong()
    */
   public final void writeVLong(long i) throws IOException {
@@ -231,27 +242,29 @@ public abstract class DataOutput {
   // write a potentially negative vLong
   private void writeSignedVLong(long i) throws IOException {
     while ((i & ~0x7FL) != 0L) {
-      writeByte((byte)((i & 0x7FL) | 0x80L));
+      writeByte((byte) ((i & 0x7FL) | 0x80L));
       i >>>= 7;
     }
-    writeByte((byte)i);
+    writeByte((byte) i);
   }
 
   /**
-   * Write a {@link BitUtil#zigZagEncode(long) zig-zag}-encoded
-   * {@link #writeVLong(long) variable-length} long. Writes between one and ten
-   * bytes. This is typically useful to write small signed ints.
+   * Write a {@link BitUtil#zigZagEncode(long) zig-zag}-encoded {@link #writeVLong(long)
+   * variable-length} long. Writes between one and ten bytes. This is typically useful to write
+   * small signed ints.
+   *
    * @see DataInput#readZLong()
    */
   public final void writeZLong(long i) throws IOException {
     writeSignedVLong(BitUtil.zigZagEncode(i));
   }
 
-  /** Writes a string.
-   * <p>
-   * Writes strings as UTF-8 encoded bytes. First the length, in bytes, is
-   * written as a {@link #writeVInt VInt}, followed by the bytes.
-   * 
+  /**
+   * Writes a string.
+   *
+   * <p>Writes strings as UTF-8 encoded bytes. First the length, in bytes, is written as a {@link
+   * #writeVInt VInt}, followed by the bytes.
+   *
    * @see DataInput#readString()
    */
   public void writeString(String s) throws IOException {
@@ -265,16 +278,13 @@ public abstract class DataOutput {
 
   /** Copy numBytes bytes from input to ourself. */
   public void copyBytes(DataInput input, long numBytes) throws IOException {
-    assert numBytes >= 0: "numBytes=" + numBytes;
+    assert numBytes >= 0 : "numBytes=" + numBytes;
     long left = numBytes;
-    if (copyBuffer == null)
-      copyBuffer = new byte[COPY_BUFFER_SIZE];
-    while(left > 0) {
+    if (copyBuffer == null) copyBuffer = new byte[COPY_BUFFER_SIZE];
+    while (left > 0) {
       final int toCopy;
-      if (left > COPY_BUFFER_SIZE)
-        toCopy = COPY_BUFFER_SIZE;
-      else
-        toCopy = (int) left;
+      if (left > COPY_BUFFER_SIZE) toCopy = COPY_BUFFER_SIZE;
+      else toCopy = (int) left;
       input.readBytes(copyBuffer, 0, toCopy);
       writeBytes(copyBuffer, 0, toCopy);
       left -= toCopy;
@@ -283,29 +293,27 @@ public abstract class DataOutput {
 
   /**
    * Writes a String map.
-   * <p>
-   * First the size is written as an {@link #writeVInt(int) vInt},
-   * followed by each key-value pair written as two consecutive 
-   * {@link #writeString(String) String}s.
-   * 
+   *
+   * <p>First the size is written as an {@link #writeVInt(int) vInt}, followed by each key-value
+   * pair written as two consecutive {@link #writeString(String) String}s.
+   *
    * @param map Input map.
    * @throws NullPointerException if {@code map} is null.
    */
-  public void writeMapOfStrings(Map<String,String> map) throws IOException {
+  public void writeMapOfStrings(Map<String, String> map) throws IOException {
     writeVInt(map.size());
     for (Map.Entry<String, String> entry : map.entrySet()) {
       writeString(entry.getKey());
       writeString(entry.getValue());
     }
   }
-  
+
   /**
    * Writes a String set.
-   * <p>
-   * First the size is written as an {@link #writeVInt(int) vInt},
-   * followed by each value written as a
-   * {@link #writeString(String) String}.
-   * 
+   *
+   * <p>First the size is written as an {@link #writeVInt(int) vInt}, followed by each value written
+   * as a {@link #writeString(String) String}.
+   *
    * @param set Input set.
    * @throws NullPointerException if {@code set} is null.
    */

@@ -62,19 +62,16 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
 
     final private int numShards;
     final private int numReplicas;
-    final private int maxShardsPerNode;
 
-    public DefaultClusterInitFunction(int numShards, int numReplicas, int maxShardsPerNode) {
+    public DefaultClusterInitFunction(int numShards, int numReplicas) {
       this.numShards = numShards;
       this.numReplicas = numReplicas;
-      this.maxShardsPerNode = maxShardsPerNode;
     }
 
     protected void doAccept(String collection, MiniSolrCloudCluster cluster) {
       try {
         CollectionAdminRequest
         .createCollection(collection, "conf", numShards, numReplicas)
-        .setMaxShardsPerNode(maxShardsPerNode)
         .processAndWait(cluster.getSolrClient(), SolrCloudTestCase.DEFAULT_TIMEOUT);
 
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), false, true, SolrCloudTestCase.DEFAULT_TIMEOUT);

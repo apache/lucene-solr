@@ -25,6 +25,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
 
   protected SortValue value2;
 
+  @Override
   public SortValue getSortValue(String field) {
     if (value1.getField().equals(field)) {
       return value1;
@@ -34,6 +35,7 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     return null;
   }
 
+  @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.ord = context.ord;
     this.docBase = context.docBase;
@@ -41,25 +43,36 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     value2.setNextReader(context);
   }
 
+  @Override
   public void reset() {
     this.docId = -1;
     this.docBase = -1;
+    this.ord = -1;
     value1.reset();
     value2.reset();
   }
 
+  @Override
   public void setValues(int docId) throws IOException {
     this.docId = docId;
     value1.setCurrentValue(docId);
     value2.setCurrentValue(docId);
   }
 
+  @Override
+  public void setGlobalValues(SortDoc previous) {
+    DoubleValueSortDoc doubleValueSortDoc = (DoubleValueSortDoc) previous;
+    value1.toGlobalValue(doubleValueSortDoc.value1);
+    value2.toGlobalValue(doubleValueSortDoc.value2);
+  }
+
+  @Override
   public void setValues(SortDoc sortDoc) {
     this.docId = sortDoc.docId;
     this.ord = sortDoc.ord;
     this.docBase = sortDoc.docBase;
-    value1.setCurrentValue(((DoubleValueSortDoc)sortDoc).value1);
-    value2.setCurrentValue(((DoubleValueSortDoc)sortDoc).value2);
+    value1.setCurrentValue(((DoubleValueSortDoc) sortDoc).value1);
+    value2.setCurrentValue(((DoubleValueSortDoc) sortDoc).value2);
   }
 
   public DoubleValueSortDoc(SortValue value1, SortValue value2) {
@@ -67,34 +80,42 @@ class DoubleValueSortDoc extends SingleValueSortDoc {
     this.value2 = value2;
   }
 
+  @Override
   public SortDoc copy() {
     return new DoubleValueSortDoc(value1.copy(), value2.copy());
   }
 
+  @Override
   public boolean lessThan(Object o) {
-    DoubleValueSortDoc sd = (DoubleValueSortDoc)o;
+    DoubleValueSortDoc sd = (DoubleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
-    if(comp == -1) {
+    if (comp == -1) {
       return true;
     } else if (comp == 1) {
       return false;
     } else {
       comp = value2.compareTo(sd.value2);
-      if(comp == -1) {
+      if (comp == -1) {
         return true;
       } else if (comp == 1) {
         return false;
       } else {
-        return docId+docBase > sd.docId+sd.docBase;
+        return docId + docBase > sd.docId + sd.docBase;
       }
     }
   }
 
-  public int compareTo(Object o) {
-    DoubleValueSortDoc sd = (DoubleValueSortDoc)o;
+  @Override
+  public int compareTo(SortDoc o) {
+    DoubleValueSortDoc sd = (DoubleValueSortDoc) o;
     int comp = value1.compareTo(sd.value1);
     if (comp == 0) {
-      return value2.compareTo(sd.value2);
+      comp = value2.compareTo(sd.value2);
+      if (comp == 0) {
+        return (sd.docId + sd.docBase) - (docId + docBase);
+      } else {
+        return comp;
+      }
     } else {
       return comp;
     }

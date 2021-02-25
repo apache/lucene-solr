@@ -524,6 +524,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     SchemaField sf = h.getCore().getLatestSchema().getField(field);
 
     String response = JQ(req("q", "*:*"));
+    @SuppressWarnings({"rawtypes"})
     Map rsp = (Map) fromJSONString(response);
     Long numFound  = (Long)(((Map)rsp.get("response")).get("numFound"));
 
@@ -3561,7 +3562,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       NamedList<Object> rangeFacetsDv;
       
       SolrQueryRequest req = req(params);
-      log.info("Using Params: " + params);
+      log.info("Using Params: {}", params);
       try {
         SolrQueryResponse rsp = h.queryAndResponse("", req);
         rangeFacetsFilter = (NamedList<Object>) ((NamedList<Object>) rsp.getValues().get("facet_counts")).get("facet_ranges");

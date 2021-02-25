@@ -26,7 +26,6 @@ import java.util.Objects;
  * It is a direct mapping for the Json object Solr is returning.
  */
 public class Cluster {
-
   private List<String> labels;
   private double score;
   private List<String> docIds;
@@ -43,10 +42,10 @@ public class Cluster {
    * @param docIds   the list of document Ids belonging to the cluster
    */
   public Cluster(List<String> labels, double score, List<String> docIds, List<Cluster> subclusters, boolean otherTopics) {
-    this.labels = labels;
+    this.labels = Objects.requireNonNullElse(labels, Collections.emptyList());
     this.score = score;
-    this.docIds = docIds;
-    this.subclusters = subclusters;
+    this.docIds = Objects.requireNonNullElse(docIds, Collections.emptyList());
+    this.subclusters = Objects.requireNonNullElse(subclusters, Collections.emptyList());
     this.otherTopics = otherTopics;
   }
 
@@ -93,7 +92,7 @@ public class Cluster {
     this.docIds = docIds;
   }
 
-  public List<Cluster> getSubclusters() {
+  public List<Cluster> getClusters() {
     return subclusters;
   }
 

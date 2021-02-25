@@ -16,21 +16,20 @@
  */
 package org.apache.lucene.analysis.fa;
 
-
 import static org.apache.lucene.analysis.util.StemmerUtil.*;
 
 /**
  * Normalizer for Persian.
- * <p>
- * Normalization is done in-place for efficiency, operating on a termbuffer.
- * <p>
- * Normalization is defined as:
+ *
+ * <p>Normalization is done in-place for efficiency, operating on a termbuffer.
+ *
+ * <p>Normalization is defined as:
+ *
  * <ul>
- * <li>Normalization of various heh + hamza forms and heh goal to heh.
- * <li>Normalization of farsi yeh and yeh barree to arabic yeh
- * <li>Normalization of persian keheh to arabic kaf
+ *   <li>Normalization of various heh + hamza forms and heh goal to heh.
+ *   <li>Normalization of farsi yeh and yeh barree to arabic yeh
+ *   <li>Normalization of persian keheh to arabic kaf
  * </ul>
- * 
  */
 public class PersianNormalizer {
   public static final char YEH = '\u064A';
@@ -53,7 +52,7 @@ public class PersianNormalizer {
 
   /**
    * Normalize an input buffer of Persian text
-   * 
+   *
    * @param s input buffer
    * @param len length of input buffer
    * @return length of input buffer after normalization
@@ -62,23 +61,23 @@ public class PersianNormalizer {
 
     for (int i = 0; i < len; i++) {
       switch (s[i]) {
-      case FARSI_YEH:
-      case YEH_BARREE:
-        s[i] = YEH;
-        break;
-      case KEHEH:
-        s[i] = KAF;
-        break;
-      case HEH_YEH:
-      case HEH_GOAL:
-        s[i] = HEH;
-        break;
-      case HAMZA_ABOVE: // necessary for HEH + HAMZA
-        len = delete(s, i, len);
-        i--;
-        break;
-      default:
-        break;
+        case FARSI_YEH:
+        case YEH_BARREE:
+          s[i] = YEH;
+          break;
+        case KEHEH:
+          s[i] = KAF;
+          break;
+        case HEH_YEH:
+        case HEH_GOAL:
+          s[i] = HEH;
+          break;
+        case HAMZA_ABOVE: // necessary for HEH + HAMZA
+          len = delete(s, i, len);
+          i--;
+          break;
+        default:
+          break;
       }
     }
 

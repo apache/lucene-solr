@@ -16,37 +16,34 @@
  */
 package org.apache.lucene.search.similarities;
 
-
 import org.apache.lucene.search.Explanation;
 
 /**
- * This class acts as the base class for the implementations of the <em>first
- * normalization of the informative content</em> in the DFR framework. This
- * component is also called the <em>after effect</em> and is defined by the
- * formula <em>Inf<sub>2</sub> = 1 - Prob<sub>2</sub></em>, where
+ * This class acts as the base class for the implementations of the <em>first normalization of the
+ * informative content</em> in the DFR framework. This component is also called the <em>after
+ * effect</em> and is defined by the formula <em>Inf<sub>2</sub> = 1 - Prob<sub>2</sub></em>, where
  * <em>Prob<sub>2</sub></em> measures the <em>information gain</em>.
- * 
+ *
  * @see DFRSimilarity
  * @lucene.experimental
  */
 public abstract class AfterEffect {
-  
-  /**
-   * Sole constructor. (For invocation by subclass 
-   * constructors, typically implicit.)
-   */
+
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
   public AfterEffect() {}
 
-  /** Returns the product of the after effect with {@code 1+tfn}.
-   *  This may not depend on the value of {@code tfn}. */
+  /**
+   * Returns the product of the after effect with {@code 1+tfn}. This may not depend on the value of
+   * {@code tfn}.
+   */
   public abstract double scoreTimes1pTfn(BasicStats stats);
-  
+
   /** Returns an explanation for the score. */
   public abstract Explanation explain(BasicStats stats, double tfn);
-  
+
   /**
-   * Subclasses must override this method to return the code of the
-   * after effect formula. Refer to the original paper for the list. 
+   * Subclasses must override this method to return the code of the after effect formula. Refer to
+   * the original paper for the list.
    */
   @Override
   public abstract String toString();

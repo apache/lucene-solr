@@ -18,14 +18,11 @@ package org.apache.lucene.search.uhighlight;
 
 import java.util.Arrays;
 import java.util.Random;
-
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexOptions;
 
-/**
- * Helper for {@link UnifiedHighlighter} tests.
- */
+/** Helper for {@link UnifiedHighlighter} tests. */
 class UHTestHelper {
 
   static final FieldType postingsType = new FieldType(TextField.TYPE_STORED);
@@ -46,24 +43,21 @@ class UHTestHelper {
     postingsWithTvType.setStoreTermVectors(true);
     postingsWithTvType.freeze();
 
-
-    //re-analysis type needs no further changes.
+    // re-analysis type needs no further changes.
   }
 
   public static FieldType randomFieldType(Random random, FieldType... typePossibilities) {
     if (typePossibilities == null || typePossibilities.length == 0) {
-      typePossibilities = new FieldType[]{postingsType, tvType, postingsWithTvType, reanalysisType};
+      typePossibilities =
+          new FieldType[] {postingsType, tvType, postingsWithTvType, reanalysisType};
     }
     return typePossibilities[random.nextInt(typePossibilities.length)];
   }
 
-  /**
-   * for {@link com.carrotsearch.randomizedtesting.annotations.ParametersFactory}
-   */
+  /** for {@link com.carrotsearch.randomizedtesting.annotations.ParametersFactory} */
   // https://github.com/carrotsearch/randomizedtesting/blob/master/examples/maven/src/main/java/com/carrotsearch/examples/randomizedrunner/Test007ParameterizedTests.java
   static Iterable<Object[]> parametersFactoryList() {
-    return Arrays.asList(new Object[][]{
-        {postingsType}, {tvType}, {postingsWithTvType}, {reanalysisType}
-    });
+    return Arrays.asList(
+        new Object[][] {{postingsType}, {tvType}, {postingsWithTvType}, {reanalysisType}});
   }
 }

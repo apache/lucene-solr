@@ -75,7 +75,7 @@ public class AnalyzingLookupFactory extends LookupFactory {
   private static final String FILENAME = "wfsta.bin";
 
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
+  public Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core) {
     // mandatory parameter
     Object fieldTypeName = params.get(QUERY_ANALYZER);
     if (fieldTypeName == null) {

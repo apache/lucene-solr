@@ -85,7 +85,7 @@ public class Suggester extends SolrSpellChecker {
   private LookupFactory factory;
   
   @Override
-  public String init(NamedList config, SolrCore core) {
+  public String init(@SuppressWarnings({"rawtypes"})NamedList config, SolrCore core) {
     log.info("init: {}", config);
     String name = super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f

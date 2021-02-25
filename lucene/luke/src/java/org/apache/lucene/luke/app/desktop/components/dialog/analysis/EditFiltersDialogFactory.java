@@ -17,15 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components.dialog.analysis;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.table.TableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dialog;
@@ -39,7 +30,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.ListSelectionModel;
+import javax.swing.table.TableCellRenderer;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.components.ComponentOperatorRegistry;
@@ -78,7 +77,7 @@ public final class EditFiltersDialogFactory implements DialogOpener.DialogFactor
 
   private EditFiltersMode mode;
 
-  public synchronized static EditFiltersDialogFactory getInstance() throws IOException {
+  public static synchronized EditFiltersDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new EditFiltersDialogFactory();
     }
@@ -124,37 +123,49 @@ public final class EditFiltersDialogFactory implements DialogOpener.DialogFactor
     header.add(targetLbl);
     panel.add(header, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(filtersTable, ListSelectionModel.SINGLE_SELECTION, new FiltersTableModel(selectedFilters), tableListener,
+    TableUtils.setupTable(
+        filtersTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new FiltersTableModel(selectedFilters),
+        tableListener,
         FiltersTableModel.Column.DELETE.getColumnWidth(),
         FiltersTableModel.Column.ORDER.getColumnWidth());
     filtersTable.setShowGrid(true);
-    filtersTable.getColumnModel().getColumn(FiltersTableModel.Column.TYPE.getIndex()).setCellRenderer(new TypeCellRenderer());
+    filtersTable
+        .getColumnModel()
+        .getColumn(FiltersTableModel.Column.TYPE.getIndex())
+        .setCellRenderer(new TypeCellRenderer());
     panel.add(new JScrollPane(filtersTable), BorderLayout.CENTER);
 
     JPanel footer = new JPanel(new FlowLayout(FlowLayout.TRAILING, 10, 5));
     footer.setOpaque(false);
     JButton okBtn = new JButton(MessageUtils.getLocalizedMessage("button.ok"));
-    okBtn.addActionListener(e -> {
-      List<Integer> deletedIndexes = new ArrayList<>();
-      for (int i = 0; i < filtersTable.getRowCount(); i++) {
-        boolean deleted = (boolean) filtersTable.getValueAt(i, FiltersTableModel.Column.DELETE.getIndex());
-        if (deleted) {
-          deletedIndexes.add(i);
-        }
-      }
-      operatorRegistry.get(CustomAnalyzerPanelOperator.class).ifPresent(operator -> {
-        switch (mode) {
-          case CHARFILTER:
-            operator.updateCharFilters(deletedIndexes);
-            break;
-          case TOKENFILTER:
-            operator.updateTokenFilters(deletedIndexes);
-            break;
-        }
-      });
-      callback.call();
-      dialog.dispose();
-    });
+    okBtn.addActionListener(
+        e -> {
+          List<Integer> deletedIndexes = new ArrayList<>();
+          for (int i = 0; i < filtersTable.getRowCount(); i++) {
+            boolean deleted =
+                (boolean) filtersTable.getValueAt(i, FiltersTableModel.Column.DELETE.getIndex());
+            if (deleted) {
+              deletedIndexes.add(i);
+            }
+          }
+          operatorRegistry
+              .get(CustomAnalyzerPanelOperator.class)
+              .ifPresent(
+                  operator -> {
+                    switch (mode) {
+                      case CHARFILTER:
+                        operator.updateCharFilters(deletedIndexes);
+                        break;
+                      case TOKENFILTER:
+                        operator.updateTokenFilters(deletedIndexes);
+                        break;
+                    }
+                  });
+          callback.call();
+          dialog.dispose();
+        });
     footer.add(okBtn);
     JButton cancelBtn = new JButton(MessageUtils.getLocalizedMessage("button.cancel"));
     cancelBtn.addActionListener(e -> dialog.dispose());
@@ -188,28 +199,48 @@ public final class EditFiltersDialogFactory implements DialogOpener.DialogFactor
 
     private void showEditParamsCharFilterDialog(int selectedIndex) {
       int targetIndex = filtersTable.getSelectedRow();
-      String selectedItem = (String) filtersTable.getValueAt(selectedIndex, FiltersTableModel.Column.TYPE.getIndex());
-      Map<String, String> params = operatorRegistry.get(CustomAnalyzerPanelOperator.class).map(operator -> operator.getCharFilterParams(targetIndex)).orElse(Collections.emptyMap());
-      new DialogOpener<>(editParamsDialogFactory).open(dialog, MessageUtils.getLocalizedMessage("analysis.dialog.title.char_filter_params"), 400, 300,
-          factory -> {
-            factory.setMode(EditParamsMode.CHARFILTER);
-            factory.setTargetIndex(targetIndex);
-            factory.setTarget(selectedItem);
-            factory.setParams(params);
-          });
+      String selectedItem =
+          (String) filtersTable.getValueAt(selectedIndex, FiltersTableModel.Column.TYPE.getIndex());
+      Map<String, String> params =
+          operatorRegistry
+              .get(CustomAnalyzerPanelOperator.class)
+              .map(operator -> operator.getCharFilterParams(targetIndex))
+              .orElse(Collections.emptyMap());
+      new DialogOpener<>(editParamsDialogFactory)
+          .open(
+              dialog,
+              MessageUtils.getLocalizedMessage("analysis.dialog.title.char_filter_params"),
+              400,
+              300,
+              factory -> {
+                factory.setMode(EditParamsMode.CHARFILTER);
+                factory.setTargetIndex(targetIndex);
+                factory.setTarget(selectedItem);
+                factory.setParams(params);
+              });
     }
 
     private void showEditParamsTokenFilterDialog(int selectedIndex) {
       int targetIndex = filtersTable.getSelectedRow();
-      String selectedItem = (String) filtersTable.getValueAt(selectedIndex, FiltersTableModel.Column.TYPE.getIndex());
-      Map<String, String> params = operatorRegistry.get(CustomAnalyzerPanelOperator.class).map(operator -> operator.getTokenFilterParams(targetIndex)).orElse(Collections.emptyMap());
-      new DialogOpener<>(editParamsDialogFactory).open(dialog, MessageUtils.getLocalizedMessage("analysis.dialog.title.char_filter_params"), 400, 300,
-          factory -> {
-            factory.setMode(EditParamsMode.TOKENFILTER);
-            factory.setTargetIndex(targetIndex);
-            factory.setTarget(selectedItem);
-            factory.setParams(params);
-          });
+      String selectedItem =
+          (String) filtersTable.getValueAt(selectedIndex, FiltersTableModel.Column.TYPE.getIndex());
+      Map<String, String> params =
+          operatorRegistry
+              .get(CustomAnalyzerPanelOperator.class)
+              .map(operator -> operator.getTokenFilterParams(targetIndex))
+              .orElse(Collections.emptyMap());
+      new DialogOpener<>(editParamsDialogFactory)
+          .open(
+              dialog,
+              MessageUtils.getLocalizedMessage("analysis.dialog.title.char_filter_params"),
+              400,
+              300,
+              factory -> {
+                factory.setMode(EditParamsMode.TOKENFILTER);
+                factory.setTargetIndex(targetIndex);
+                factory.setTarget(selectedItem);
+                factory.setParams(params);
+              });
     }
   }
 
@@ -292,12 +323,11 @@ public final class EditFiltersDialogFactory implements DialogOpener.DialogFactor
   static final class TypeCellRenderer implements TableCellRenderer {
 
     @Override
-    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+    public Component getTableCellRendererComponent(
+        JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
       String[] tmp = ((String) value).split("\\.");
       String type = tmp[tmp.length - 1];
       return new JLabel(type);
     }
-
   }
-
 }

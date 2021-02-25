@@ -20,7 +20,6 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -82,6 +81,7 @@ public class MockSynonymFilter extends TokenFilter {
       return false;
     }
   }
+
   private void addSynonym(String synonymText, int posLen, int endOffset) {
     termAtt.setEmpty().append(synonymText);
     posIncAtt.setPositionIncrement(0);
@@ -90,11 +90,10 @@ public class MockSynonymFilter extends TokenFilter {
     typeAtt.setType("SYNONYM");
     tokenQueue.add(cloneAttributes());
   }
+
   private void addSynonymAndRestoreOrigToken(String synonymText, int posLen, int endOffset) {
     AttributeSource origToken = cloneAttributes();
     addSynonym(synonymText, posLen, endOffset);
     origToken.copyTo(this);
   }
 }
-
-

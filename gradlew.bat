@@ -32,6 +32,11 @@ set APP_HOME=%DIRNAME%
 @rem Add default JVM options here. You can also use JAVA_OPTS and GRADLE_OPTS to pass JVM options to this script.
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
+@rem LUCENE-9471: workaround for gradle leaving junk temp. files behind.
+SET GRADLE_TEMPDIR=%DIRNAME%\.gradle\tmp
+IF NOT EXIST "%GRADLE_TEMPDIR%" MKDIR "%GRADLE_TEMPDIR%"
+SET DEFAULT_JVM_OPTS=%DEFAULT_JVM_OPTS% "-Djava.io.tmpdir=%GRADLE_TEMPDIR%"
+
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
 
@@ -88,7 +93,7 @@ set CLASSPATH=%GRADLE_WRAPPER_JAR%
 
 @rem Don't fork a daemon mode on initial run that generates local defaults.
 SET GRADLE_DAEMON_CTRL=
-IF NOT EXIST %DIRNAME%\gradle.properties SET GRADLE_DAEMON_CTRL=--no-daemon
+IF NOT EXIST "%DIRNAME%\gradle.properties" SET GRADLE_DAEMON_CTRL=--no-daemon
 
 @rem Execute Gradle
 "%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %GRADLE_OPTS% "-Dorg.gradle.appname=%APP_BASE_NAME%" -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %GRADLE_DAEMON_CTRL% %CMD_LINE_ARGS%

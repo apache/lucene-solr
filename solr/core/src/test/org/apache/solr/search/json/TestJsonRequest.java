@@ -24,12 +24,15 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.DocSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
@@ -83,6 +86,8 @@ public class TestJsonRequest extends SolrTestCaseHS {
   public static void doJsonRequest(Client client, boolean isDistrib) throws Exception {
     addDocs(client);
 
+    ignoreException("Expected JSON");
+
     // test json param
     client.testJQ( params("json","{query:'cat_s:A'}")
         , "response/numFound==2"
@@ -91,6 +96,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     // invalid value
     SolrException ex = expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertThat(ex.getMessage(), containsString("Expected JSON Object but got Long=5"));
 
     // this is to verify other json params are not affected
     client.testJQ( params("q", "cat_s:A", "json.limit", "1"),
@@ -179,7 +185,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
         , "response/docs==[{id:'5', x:5.5},{id:'4', x:5.5}]"
     );
 
-
+    doParamRefDslTest(client);
 
     // test templating before parsing JSON
     client.testJQ( params("json","${OPENBRACE} query:'cat_s:A' ${CLOSEBRACE}", "json","${OPENBRACE} filter:'where_s:NY'${CLOSEBRACE}",  "OPENBRACE","{", "CLOSEBRACE","}")
@@ -388,23 +394,55 @@ public class TestJsonRequest extends SolrTestCaseHS {
         , "response/numFound==3", isDistrib? "" :  "response/docs==[{id:'4'},{id:'1'},{id:'5'}]"
     );
 
-    try {
-      client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));  // TODO: this seems like a reasonable capability that we would want to support in the future.  It should be OK to make this pass.
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("foo_s"));
-    }
+    // TODO: this seems like a reasonable capability that we would want to support in the future.  It should be OK to make this pass.
+    Exception e = expectThrows(Exception.class, () -> {
+      client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));
+    });
+    assertThat(e.getMessage(), containsString("foo_s"));
 
-    try {
-      // test failure on unknown parameter
-      client.testJQ(params("json", "{query:'cat_s:A', foobar_ignore_exception:5}")
-          , "response/numFound==2"
-      );
-      fail();
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("foobar"));
-    }
+    // test failure on unknown parameter
+    e = expectThrows(Exception.class, () -> {
+      client.testJQ(params("json", "{query:'cat_s:A', foobar_ignore_exception:5}"), "response/numFound==2");
+    });
+    assertThat(e.getMessage(), containsString("foobar"));
 
+    resetExceptionIgnores();
+  }
+
+  private static void doParamRefDslTest(Client client) throws Exception {
+    // referencing in dsl                //nestedqp
+    client.testJQ( params("json","{query: {query:  {param:'ref1'}}}", "ref1","{!field f=cat_s}A")
+        , "response/numFound==2"
+    );   
+    // referencing json string param
+    client.testJQ( params("json", random().nextBoolean()  ? 
+            "{query:{query:{param:'ref1'}}}"  // nestedqp
+           : "{query: {query: {query:{param:'ref1'}}}}",  // nestedqp, v local param  
+          "json",random().nextBoolean() 
+              ? "{params:{ref1:'{!field f=cat_s}A'}}" // string param  
+              : "{queries:{ref1:{field:{f:cat_s,query:A}}}}" ) // qdsl
+        , "response/numFound==2"
+    );
+    {                                                     // shortest top level ref
+      final ModifiableSolrParams params = params("json","{query:{param:'ref1'}}");
+      if (random().nextBoolean()) {
+        params.add("ref1","cat_s:A"); // either to plain string
+      } else {
+        params.add("json","{queries:{ref1:{field:{f:cat_s,query:A}}}}");// or to qdsl
+      }
+      client.testJQ( params, "response/numFound==2");
+    }  // ref in bool must
+    client.testJQ( params("json","{query:{bool: {must:[{param:fq1},{param:fq2}]}}}",
+        "json","{params:{fq1:'cat_s:A', fq2:'where_s:NY'}}", "json.fields", "id")
+        , "response/docs==[{id:'1'}]"
+    );// referencing dsl&strings from filters objs&array
+    client.testJQ( params("json.filter","{param:fq1}","json.filter","{param:fq2}",
+        "json", random().nextBoolean() ?
+             "{queries:{fq1:{lucene:{query:'cat_s:A'}}, fq2:{lucene:{query:'where_s:NY'}}}}" : 
+             "{params:{fq1:'cat_s:A', fq2:'where_s:NY'}}", 
+        "json.fields", "id", "q", "*:*")
+        , "response/docs==[{id:'1'}]"
+    );
   }
 
   private static void testFilterCachingLocally(Client client) throws Exception {

@@ -92,7 +92,7 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
 
   //////////////////////// NamedListInitializedPlugin methods //////////////////////
   @Override
-  public void init( NamedList args )
+  public void init( @SuppressWarnings({"rawtypes"})NamedList args )
   {
     // By default do nothing
   }

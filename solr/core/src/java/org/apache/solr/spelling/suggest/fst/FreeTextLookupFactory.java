@@ -53,7 +53,7 @@ public class FreeTextLookupFactory extends LookupFactory {
   
   
   @Override
-  public Lookup create(NamedList params, SolrCore core) {
+  public Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core) {
     Object fieldTypeName = params.get(QUERY_ANALYZER);
     if (fieldTypeName == null) {
       throw new IllegalArgumentException("Error in configuration: " + QUERY_ANALYZER + " parameter is mandatory");

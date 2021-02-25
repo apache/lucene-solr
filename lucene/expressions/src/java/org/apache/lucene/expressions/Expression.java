@@ -24,24 +24,26 @@ import org.apache.lucene.search.SortField;
 
 /**
  * Base class that computes the value of an expression for a document.
- * <p>
- * Example that sorts based on an expression:
+ *
+ * <p>Example that sorts based on an expression:
+ *
  * <pre class="prettyprint">
  *   // compile an expression:
  *   Expression expr = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
- *   
+ *
  *   // SimpleBindings just maps variables to SortField instances
  *   SimpleBindings bindings = new SimpleBindings();
  *   bindings.add(new SortField("_score", SortField.Type.SCORE));
  *   bindings.add(new SortField("popularity", SortField.Type.INT));
- *   
+ *
  *   // create a sort field and sort by it (reverse order)
  *   Sort sort = new Sort(expr.getSortField(bindings, true));
  *   Query query = new TermQuery(new Term("body", "contents"));
  *   searcher.search(query, 10, sort);
  * </pre>
- * <p>
- * Example that modifies the scores produced by the query:
+ *
+ * <p>Example that modifies the scores produced by the query:
+ *
  * <pre class="prettyprint">
  *   // compile an expression:
  *   Expression expr = JavascriptCompiler.compile("sqrt(_score) + ln(popularity)");
@@ -58,6 +60,7 @@ import org.apache.lucene.search.SortField;
  *       expr.getDoubleValuesSource(bindings));
  *   searcher.search(query, 10);
  * </pre>
+ *
  * @see JavascriptCompiler#compile
  * @lucene.experimental
  */
@@ -89,21 +92,22 @@ public abstract class Expression {
   public abstract double evaluate(DoubleValues[] functionValues);
 
   /**
-   * Get a DoubleValuesSource which can compute the value of this expression in the context of the given bindings.
+   * Get a DoubleValuesSource which can compute the value of this expression in the context of the
+   * given bindings.
+   *
    * @param bindings Bindings to use for external values in this expression
    * @return A DoubleValuesSource which will evaluate this expression when used
    */
   public DoubleValuesSource getDoubleValuesSource(Bindings bindings) {
     return new ExpressionValueSource(bindings, this);
   }
-  
+
   /** Get a sort field which can be used to rank documents by this expression. */
   public SortField getSortField(Bindings bindings, boolean reverse) {
     return getDoubleValuesSource(bindings).getSortField(reverse);
   }
 
-  /** Get a {@link Rescorer}, to rescore first-pass hits
-   *  using this expression. */
+  /** Get a {@link Rescorer}, to rescore first-pass hits using this expression. */
   public Rescorer getRescorer(Bindings bindings) {
     return new ExpressionRescorer(this, bindings);
   }

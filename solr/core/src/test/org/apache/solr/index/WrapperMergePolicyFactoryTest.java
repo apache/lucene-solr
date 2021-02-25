@@ -27,7 +27,7 @@ import org.apache.solr.schema.IndexSchema;
 /** Unit tests for {@link WrapperMergePolicyFactory}. */
 public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
 
-  private final SolrResourceLoader resourceLoader = new SolrResourceLoader();
+  private final SolrResourceLoader resourceLoader = new SolrResourceLoader(createTempDir());
 
   public void testReturnsDefaultMergePolicyIfNoneSpecified() {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();

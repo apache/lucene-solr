@@ -35,6 +35,7 @@ public class DateRangeFieldTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "3", "dateRange", "2020-05-21T12:00:00.000Z/DAY"));//DateMath syntax
     assertU(commit());
 
+
     //ensure stored value resolves datemath
     assertQ(req("q", "id:1", "fl", "dateRange"), "//result/doc/arr[@name='dateRange']/str[.='2014-05-21T12:00:00Z']");//no 000 ms
     assertQ(req("q", "id:2", "fl", "dateRange"), "//result/doc/arr[@name='dateRange']/str[.='[2000 TO 2014-05-21]']");//a range; same
@@ -50,7 +51,10 @@ public class DateRangeFieldTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "dateRange:[1998 TO 2000}"), xpathMatches(0));//exclusive end, so we barely miss one doc
 
+
     //show without local-params
+    assertQ(req("q", "dateRange:[* TO *]"), xpathMatches(0, 1, 2, 3));
+    assertQ(req("q", "dateRange:*"), xpathMatches(0, 1, 2, 3));
     assertQ(req("q", "dateRange:\"2014-05-21T12:00:00.000Z\""), xpathMatches(0, 1, 2));
     assertQ(req("q", "dateRange:[1999 TO 2001]"), xpathMatches(0, 2));
   }

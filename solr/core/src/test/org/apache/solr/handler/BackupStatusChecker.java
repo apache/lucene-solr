@@ -194,8 +194,10 @@ public final class BackupStatusChecker {
     final String label = (null == backupName ? "latest backup" : backupName);
     final SimpleSolrResponse rsp = new GenericSolrRequest(GenericSolrRequest.METHOD.GET, path,
                                                           params("command", "details")).process(client);
+    @SuppressWarnings({"rawtypes"})
     final NamedList data = rsp.getResponse();
     log.info("Checking Status of {}: {}", label, data);
+    @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData = (NamedList<String>) data.findRecursive("details","backup");
     if (null == backupData) {
       // no backup has finished yet
@@ -266,8 +268,10 @@ public final class BackupStatusChecker {
     assertNotNull("backumpName must not be null", backupName);
     final SimpleSolrResponse rsp = new GenericSolrRequest(GenericSolrRequest.METHOD.GET, path,
                                                           params("command", "details")).process(client);
+    @SuppressWarnings({"rawtypes"})
     final NamedList data = rsp.getResponse();
     log.info("Checking Deletion Status of {}: {}", backupName, data);
+    @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData = (NamedList<String>) data.findRecursive("details","backup");
     if (null == backupData
         || null == backupData.get("status")

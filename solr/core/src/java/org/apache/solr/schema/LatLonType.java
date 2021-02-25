@@ -318,9 +318,12 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
 
   protected class SpatialWeight extends ConstantScoreWeight {
     protected IndexSearcher searcher;
+    @SuppressWarnings({"rawtypes"})
     protected Map latContext;
+    @SuppressWarnings({"rawtypes"})
     protected Map lonContext;
 
+    @SuppressWarnings({"unchecked"})
     public SpatialWeight(IndexSearcher searcher, float boost) throws IOException {
       super(SpatialDistanceQuery.this, boost);
       this.searcher = searcher;
@@ -369,6 +372,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     int lastDistDoc;
     double lastDist;
 
+    @SuppressWarnings({"unchecked"})
     public SpatialScorer(LeafReaderContext readerContext, SpatialWeight w, float qWeight) throws IOException {
       super(w);
       this.weight = w;

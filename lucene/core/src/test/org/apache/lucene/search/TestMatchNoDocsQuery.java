@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -29,9 +28,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
-/**
- * Tests MatchNoDocsQuery.
- */
+/** Tests MatchNoDocsQuery. */
 public class TestMatchNoDocsQuery extends LuceneTestCase {
   private Analyzer analyzer;
 
@@ -50,16 +47,21 @@ public class TestMatchNoDocsQuery extends LuceneTestCase {
     assertTrue(rewrite instanceof MatchNoDocsQuery);
     assertEquals(rewrite.toString(), "MatchNoDocsQuery(\"field 'title' not found\")");
   }
-  
+
   public void testQuery() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(analyzer).setMaxBufferedDocs(2).setMergePolicy(newLogMergePolicy()));
+    IndexWriter iw =
+        new IndexWriter(
+            dir,
+            newIndexWriterConfig(analyzer)
+                .setMaxBufferedDocs(2)
+                .setMergePolicy(newLogMergePolicy()));
     addDoc("one", iw);
     addDoc("two", iw);
     addDoc("three", iw);
     IndexReader ir = DirectoryReader.open(iw);
     IndexSearcher searcher = new IndexSearcher(ir);
-    
+
     Query query = new MatchNoDocsQuery("field not found");
     assertEquals(searcher.count(query), 0);
 

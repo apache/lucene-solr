@@ -19,28 +19,27 @@ package org.apache.lucene.analysis.opennlp.tools;
 
 import java.io.IOException;
 import java.io.InputStream;
-
 import opennlp.tools.lemmatizer.DictionaryLemmatizer;
 import opennlp.tools.lemmatizer.LemmatizerME;
 import opennlp.tools.lemmatizer.LemmatizerModel;
 
 /**
- * <p>Supply OpenNLP Lemmatizer tools.</p>
- * <p>
- *   Both a dictionary-based lemmatizer and a MaxEnt lemmatizer are supported.
- *   If both are configured, the dictionary-based lemmatizer is tried first,
- *   and then the MaxEnt lemmatizer is consulted for out-of-vocabulary tokens.
- * </p>
- * <p>
- *   The MaxEnt implementation requires binary models from OpenNLP project on SourceForge.
- * </p>
+ * Supply OpenNLP Lemmatizer tools.
+ *
+ * <p>Both a dictionary-based lemmatizer and a MaxEnt lemmatizer are supported. If both are
+ * configured, the dictionary-based lemmatizer is tried first, and then the MaxEnt lemmatizer is
+ * consulted for out-of-vocabulary tokens.
+ *
+ * <p>The MaxEnt implementation requires binary models from OpenNLP project on SourceForge.
  */
 public class NLPLemmatizerOp {
   private final DictionaryLemmatizer dictionaryLemmatizer;
   private final LemmatizerME lemmatizerME;
 
-  public NLPLemmatizerOp(InputStream dictionary, LemmatizerModel lemmatizerModel) throws IOException {
-    assert dictionary != null || lemmatizerModel != null : "At least one parameter must be non-null";
+  public NLPLemmatizerOp(InputStream dictionary, LemmatizerModel lemmatizerModel)
+      throws IOException {
+    assert dictionary != null || lemmatizerModel != null
+        : "At least one parameter must be non-null";
     dictionaryLemmatizer = dictionary == null ? null : new DictionaryLemmatizer(dictionary);
     lemmatizerME = lemmatizerModel == null ? null : new LemmatizerME(lemmatizerModel);
   }
@@ -51,26 +50,26 @@ public class NLPLemmatizerOp {
     if (dictionaryLemmatizer != null) {
       lemmas = dictionaryLemmatizer.lemmatize(words, postags);
       for (int i = 0; i < lemmas.length; ++i) {
-        if (lemmas[i].equals("O")) {   // this word is not in the dictionary
-          if (lemmatizerME != null) {  // fall back to the MaxEnt lemmatizer if it's enabled
+        if (lemmas[i].equals("O")) { // this word is not in the dictionary
+          if (lemmatizerME != null) { // fall back to the MaxEnt lemmatizer if it's enabled
             if (maxEntLemmas == null) {
               maxEntLemmas = lemmatizerME.lemmatize(words, postags);
             }
             if ("_".equals(maxEntLemmas[i])) {
-              lemmas[i] = words[i];    // put back the original word if no lemma is found
+              lemmas[i] = words[i]; // put back the original word if no lemma is found
             } else {
               lemmas[i] = maxEntLemmas[i];
             }
-          } else {                     // there is no MaxEnt lemmatizer
-            lemmas[i] = words[i];      // put back the original word if no lemma is found
+          } else { // there is no MaxEnt lemmatizer
+            lemmas[i] = words[i]; // put back the original word if no lemma is found
           }
         }
       }
-    } else {                           // there is only a MaxEnt lemmatizer
+    } else { // there is only a MaxEnt lemmatizer
       maxEntLemmas = lemmatizerME.lemmatize(words, postags);
-      for (int i = 0 ; i < maxEntLemmas.length ; ++i) {
+      for (int i = 0; i < maxEntLemmas.length; ++i) {
         if ("_".equals(maxEntLemmas[i])) {
-          maxEntLemmas[i] = words[i];  // put back the original word if no lemma is found
+          maxEntLemmas[i] = words[i]; // put back the original word if no lemma is found
         }
       }
       lemmas = maxEntLemmas;

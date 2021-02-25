@@ -62,7 +62,7 @@ import com.codahale.metrics.MetricFilter;
 public class SolrShardReporter extends SolrCoreReporter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final List<String> DEFAULT_FILTERS = new ArrayList(){{
+  public static final List<String> DEFAULT_FILTERS = new ArrayList<>(){{
     add("TLOG.*");
     add("CORE\\.fs.*");
     add("REPLICATION.*");
@@ -154,7 +154,7 @@ public class SolrShardReporter extends SolrCoreReporter {
         .cloudClient(false) // we want to send reports specifically to a selected leader instance
         .skipAggregateValues(true) // we don't want to transport details of aggregates
         .skipHistograms(true) // we don't want to transport histograms
-        .build(core.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient(), new LeaderUrlSupplier(core));
+        .build(core.getCoreContainer().getSolrClientCache(), new LeaderUrlSupplier(core));
 
     reporter.start(period, TimeUnit.SECONDS);
   }

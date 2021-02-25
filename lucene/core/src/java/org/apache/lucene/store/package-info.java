@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Binary i/o API, used for all index data.
- */
+/** Binary i/o API, used for all index data. */
 package org.apache.lucene.store;

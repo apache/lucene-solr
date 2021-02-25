@@ -18,9 +18,7 @@
 package org.apache.solr.core;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -67,14 +65,10 @@ public class HelloStream extends TupleStream implements Expressible{
   @Override
   public Tuple read() throws IOException {
     if (isSentHelloWorld) {
-      Map m = new HashMap();
-      m.put("EOF", true);
-      return new Tuple(m);
+      return Tuple.EOF();
     } else {
       isSentHelloWorld = true;
-      Map m = new HashMap<>();
-      m.put("msg", "Hello World!");
-      return new Tuple(m);
+      return new Tuple("msg", "Hello World!");
     }
   }
 

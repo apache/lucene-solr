@@ -17,19 +17,17 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import java.io.IOException;
-
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
-/** Function to divide "a" by "b"
- */
+/** Function to divide "a" by "b" */
 public class DivFloatFunction extends DualFloatFunction {
- /**
-   * @param   a  the numerator.
-   * @param   b  the denominator.
+  /**
+   * @param a the numerator.
+   * @param b the denominator.
    */
   public DivFloatFunction(ValueSource a, ValueSource b) {
-    super(a,b);
+    super(a, b);
   }
 
   @Override

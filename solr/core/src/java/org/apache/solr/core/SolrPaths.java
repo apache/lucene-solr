@@ -17,17 +17,14 @@
 
 package org.apache.solr.core;
 
-import javax.naming.Context;
-import javax.naming.InitialContext;
-import javax.naming.NamingException;
-import javax.naming.NoInitialContextException;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 
+import org.apache.commons.exec.OS;
+import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,82 +34,7 @@ import org.slf4j.LoggerFactory;
 public final class SolrPaths {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /**
-   * Solr allows users to store arbitrary files in a special directory located directly under SOLR_HOME.
-   * <p>
-   * This directory is generally created by each node on startup.  Files located in this directory can then be
-   * manipulated using select Solr features (e.g. streaming expressions).
-   */
-  public static final String USER_FILES_DIRECTORY = "userfiles";
-  private static final Set<String> loggedOnce = new ConcurrentSkipListSet<>();
-
   private SolrPaths() {} // don't create this
-
-  /**
-   * Finds the solrhome based on looking up the value in one of three places:
-   * <ol>
-   * <li>JNDI: via java:comp/env/solr/home</li>
-   * <li>The system property solr.solr.home</li>
-   * <li>Look in the current working directory for a solr/ directory</li>
-   * </ol>
-   * <p>
-   * The return value is normalized.  Normalization essentially means it ends in a trailing slash.
-   *
-   * @return A normalized solrhome
-   * @see #normalizeDir(String)
-   */
-  public static Path locateSolrHome() {
-
-    String home = null;
-    // Try JNDI
-    try {
-      Context c = new InitialContext();
-      home = (String) c.lookup("java:comp/env/solr/home");
-      logOnceInfo("home_using_jndi", "Using JNDI solr.home: " + home);
-    } catch (NoInitialContextException e) {
-      log.debug("JNDI not configured for solr (NoInitialContextEx)");
-    } catch (NamingException e) {
-      log.debug("No /solr/home in JNDI");
-    } catch (RuntimeException ex) {
-      log.warn("Odd RuntimeException while testing for JNDI: {}", ex.getMessage());
-    }
-
-    // Now try system property
-    if (home == null) {
-      String prop = "solr.solr.home";
-      home = System.getProperty(prop);
-      if (home != null) {
-        logOnceInfo("home_using_sysprop", "Using system property " + prop + ": " + home);
-      }
-    }
-
-    // if all else fails, try
-    if (home == null) {
-      home = "solr/";
-      logOnceInfo("home_default", "solr home defaulted to '" + home + "' (could not find system property or JNDI)");
-    }
-    return Paths.get(home);
-  }
-
-  public static void ensureUserFilesDataDir(Path solrHome) {
-    final Path userFilesPath = getUserFilesPath(solrHome);
-    final File userFilesDirectory = new File(userFilesPath.toString());
-    if (!userFilesDirectory.exists()) {
-      try {
-        final boolean created = userFilesDirectory.mkdir();
-        if (!created) {
-          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
-        }
-      } catch (Exception e) {
-        log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.",
-            USER_FILES_DIRECTORY, solrHome, e);
-      }
-    }
-  }
-
-  public static Path getUserFilesPath(Path solrHome) {
-    return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
-  }
 
   /**
    * Ensures a directory name always ends with a '/'.
@@ -121,11 +43,37 @@ public final class SolrPaths {
     return (path != null && (!(path.endsWith("/") || path.endsWith("\\")))) ? path + File.separator : path;
   }
 
-  // Logs a message only once per startup
-  private static void logOnceInfo(String key, String msg) {
-    if (!loggedOnce.contains(key)) {
-      loggedOnce.add(key);
-      log.info(msg);
+  /**
+   * Checks that the given path is relative to one of the allowPaths supplied. Typically this will be
+   * called from {@link CoreContainer#assertPathAllowed(Path)} and allowPaths pre-filled with the node's
+   * SOLR_HOME, SOLR_DATA_HOME and coreRootDirectory folders, as well as any paths specified in
+   * solr.xml's allowPaths element. The following paths will always fail validation:
+   * <ul>
+   *   <li>Relative paths starting with <code>..</code></li>
+   *   <li>Windows UNC paths (such as <code>\\host\share\path</code>)</li>
+   *   <li>Paths which are not relative to any of allowPaths</li>
+   * </ul>
+   * @param pathToAssert path to check
+   * @param allowPaths list of paths that should be allowed prefixes for pathToAssert
+   * @throws SolrException if path is outside allowed paths
+   */
+  public static void assertPathAllowed(Path pathToAssert, Set<Path> allowPaths) throws SolrException {
+    if (pathToAssert == null) return;
+    if (OS.isFamilyWindows() && pathToAssert.toString().startsWith("\\\\")) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + pathToAssert + " disallowed. UNC paths not supported. Please use drive letter instead.");
+    }
+    // Conversion Path -> String -> Path is to be able to compare against org.apache.lucene.mockfile.FilterPath instances
+    final Path path = Path.of(pathToAssert.toString()).normalize();
+    if (path.startsWith("..")) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + pathToAssert + " disallowed due to path traversal..");
+    }
+    if (!path.isAbsolute()) return; // All relative paths are accepted
+    if (allowPaths.contains(Paths.get("_ALL_"))) return; // Catch-all path "*"/"_ALL_" will allow all other paths
+    if (allowPaths.stream().noneMatch(p -> path.startsWith(Path.of(p.toString())))) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Path " + path + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
     }
   }
 }

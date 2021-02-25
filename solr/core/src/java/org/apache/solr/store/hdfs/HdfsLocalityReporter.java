@@ -35,6 +35,10 @@ import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated since 8.6
+ */
+@Deprecated
 public class HdfsLocalityReporter implements SolrInfoBean {
   public static final String LOCALITY_BYTES_TOTAL = "locality.bytes.total";
   public static final String LOCALITY_BYTES_LOCAL = "locality.bytes.local";
@@ -89,7 +93,7 @@ public class HdfsLocalityReporter implements SolrInfoBean {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
+    MetricsMap metricsMap = new MetricsMap(map -> {
       long totalBytes = 0;
       long localBytes = 0;
       int totalCount = 0;

@@ -162,6 +162,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         String buf = parser.getBuf();
         parser.resetBuf();
 
+        @SuppressWarnings({"rawtypes"})
         Map m = (Map) Utils.fromJSONString(buf);
         if (count == 1) {
           assertEquals(m.get("id"), "123");
@@ -285,7 +286,9 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         "}}";
     streamer.streamRecords(new StringReader(json), (record, path) -> {
       assertEquals(record.get("x"), "y");
+      @SuppressWarnings({"rawtypes"})
       List l = (List) record.get("b");
+      @SuppressWarnings({"rawtypes"})
       Map m = (Map) l.get(0);
       assertEquals(m.get("c"), "c1");
       assertEquals(m.get("e"), "e1");
@@ -296,7 +299,9 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     streamer = JsonRecordReader.getInst("/|/a/b", Arrays.asList("$FQN:/**"));
     streamer.streamRecords(new StringReader(json), (record, path) -> {
       assertEquals(record.get("a.x"), "y");
+      @SuppressWarnings({"rawtypes"})
       List l = (List) record.get("b");
+      @SuppressWarnings({"rawtypes"})
       Map m = (Map) l.get(0);
       assertEquals(m.get("c"), "c1");
       assertEquals(m.get("e"), "e1");

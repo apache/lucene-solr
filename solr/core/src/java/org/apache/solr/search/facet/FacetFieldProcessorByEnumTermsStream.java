@@ -85,6 +85,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
   }
 
   @Override
+  @SuppressWarnings({"rawtypes"})
   public void process() throws IOException {
     super.process();
 

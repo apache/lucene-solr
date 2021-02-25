@@ -26,10 +26,7 @@ import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -76,7 +73,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
   }
 
   private void waitForNewOverseer(int seconds, String expected, boolean failOnIntermediateTransition) throws Exception {
-    log.info("Expecting node: "+expected);
+    log.info("Expecting node: {}", expected);
     waitForNewOverseer(seconds, s -> Objects.equals(s, expected), failOnIntermediateTransition);
   }
 
@@ -97,8 +94,10 @@ public class OverseerRolesTest extends SolrCloudTestCase {
   }
 
   private void logOverseerState() throws KeeperException, InterruptedException {
-    log.info("Overseer: {}", getLeaderNode(zkClient()));
-    log.info("Election queue: {}", getSortedElectionNodes(zkClient(), "/overseer_elect/election"));
+    if (log.isInfoEnabled()) {
+      log.info("Overseer: {}", getLeaderNode(zkClient()));
+      log.info("Election queue: {}", getSortedElectionNodes(zkClient(), "/overseer_elect/election")); // nowarn
+    }
   }
 
   @Test
@@ -155,9 +154,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     String leaderId = OverseerCollectionConfigSetProcessor.getLeaderId(zkClient());
     String leader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
     log.info("### Sending QUIT to overseer {}", leader);
-    getOverseerJetty().getCoreContainer().getZkController().getOverseer().getStateUpdateQueue()
-        .offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
-            "id", leaderId)));
+    getOverseerJetty().getCoreContainer().getZkController().getOverseer().sendQuitToOverseer(leaderId);
 
     waitForNewOverseer(15, s -> Objects.equals(leader, s) == false, false);
 
@@ -195,7 +192,7 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     logOverseerState();
     // kill the current overseer, and check that the next node in the election queue assumes leadership
     leaderJetty.stop();
-    log.info("Killing designated overseer: "+overseer1);
+    log.info("Killing designated overseer: {}", overseer1);
 
     // after 5 seconds, bring back dead designated overseer and assert that it assumes leadership "right away",
     // i.e. without any other node assuming leadership before this node becomes leader.

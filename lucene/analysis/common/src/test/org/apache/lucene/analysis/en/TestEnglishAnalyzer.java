@@ -16,20 +16,17 @@
  */
 package org.apache.lucene.analysis.en;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 
 public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
-  /** This test fails with NPE when the 
-   * stopwords file is missing in classpath */
+  /** This test fails with NPE when the stopwords file is missing in classpath */
   public void testResourcesAvailable() {
     new EnglishAnalyzer().close();
   }
-  
+
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
     Analyzer a = new EnglishAnalyzer();
@@ -44,17 +41,16 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
     checkOneTerm(a, "steven\uFF07s", "steven");
     a.close();
   }
-  
+
   /** test use of exclusion set */
   public void testExclude() throws IOException {
-    CharArraySet exclusionSet = new CharArraySet( asSet("books"), false);
-    Analyzer a = new EnglishAnalyzer( 
-        EnglishAnalyzer.getDefaultStopSet(), exclusionSet);
+    CharArraySet exclusionSet = new CharArraySet(asSet("books"), false);
+    Analyzer a = new EnglishAnalyzer(EnglishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTerm(a, "books", "books");
     checkOneTerm(a, "book", "book");
     a.close();
   }
-  
+
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     Analyzer a = new EnglishAnalyzer();

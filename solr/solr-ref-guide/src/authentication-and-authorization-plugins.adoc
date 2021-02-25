@@ -1,5 +1,5 @@
 = Configuring Authentication, Authorization and Audit Logging
-:page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin,  jwt-authentication-plugin, rule-based-authorization-plugin, audit-logging
+:page-children: basic-authentication-plugin, hadoop-authentication-plugin, kerberos-authentication-plugin,  jwt-authentication-plugin, cert-authentication-plugin, rule-based-authorization-plugin, audit-logging
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -84,7 +84,7 @@ This example also defines `security.json` on the command line, but you can also 
 
 [WARNING]
 ====
-Whenever you use any security plugins and store `security.json` in ZooKeeper, we highly recommend that you implement access control in your ZooKeeper nodes. Information about how to enable this is available in the section <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+Whenever you use any security plugins and store `security.json` in ZooKeeper, we highly recommend that you implement access control in your ZooKeeper nodes. Information about how to enable this is available in the section <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
 ====
 
 Once `security.json` has been uploaded to ZooKeeper, you should use the appropriate APIs for the plugins you're using to update it. You can edit it manually, but you must take care to remove any version data so it will be properly updated across all ZooKeeper nodes. The version data is found at the end of the `security.json` file, and will appear as the letter "v" followed by a number, such as `{"v":138}`.
@@ -93,7 +93,7 @@ Once `security.json` has been uploaded to ZooKeeper, you should use the appropri
 
 When running Solr in standalone mode, you need to create the `security.json` file and put it in the `$SOLR_HOME` directory for your installation (this is the same place you have located `solr.xml` and is usually `server/solr`).
 
-If you are using <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>, you will need to place `security.json` on each node of the cluster.
+If you are using <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>, you will need to place `security.json` on each node of the cluster.
 
 You can use the authentication and authorization APIs, but if you are using the legacy scaling model, you will need to make the same API requests on each node separately. You can also edit `security.json` by hand if you prefer.
 
@@ -129,7 +129,7 @@ include::securing-solr.adoc[tag=list-of-authentication-plugins]
 [#configuring-authorization]
 == Authorization
 
-An authorization plugin can be written for Solr by extending the {solr-javadocs}/solr-core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
+An authorization plugin can be written for Solr by extending the {solr-javadocs}/core/org/apache/solr/security/AuthorizationPlugin.html[AuthorizationPlugin] interface.
 
 === Enabling an Authorization Plugin
 
@@ -159,7 +159,7 @@ include::securing-solr.adoc[tag=list-of-authorization-plugins]
 [#configuring-audit-logging]
 == Audit Logging
 
-<<audit-logging.adoc#audit-logging,Audit logging>> plugins help you keep an audit trail of events happening in your Solr cluster.
+<<audit-logging.adoc#,Audit logging>> plugins help you keep an audit trail of events happening in your Solr cluster.
 Audit logging may e.g., ship data to an external audit service.
 A custom plugin can be implemented by extending the `AuditLoggerPlugin` class.
 
@@ -169,8 +169,8 @@ Whenever an authentication plugin is enabled, authentication is also required fo
 
 When authentication is required the Admin UI will presented you with a login dialogue. The authentication plugins currently supported by the Admin UI are:
 
-* <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
-* <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
+* <<basic-authentication-plugin.adoc#,Basic Authentication Plugin>>
+* <<jwt-authentication-plugin.adoc#,JWT Authentication Plugin>>
 
 If your plugin of choice is not supported, the Admin UI will still let you perform unrestricted operations, while for restricted operations you will need to interact with Solr by sending HTTP requests instead of through the graphical user interface of the Admin UI. All operations supported by Admin UI can be performed through Solr's RESTful APIs.
 

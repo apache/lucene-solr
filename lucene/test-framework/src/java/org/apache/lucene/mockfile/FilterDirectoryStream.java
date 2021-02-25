@@ -23,29 +23,24 @@ import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.Objects;
 
-/**  
- * A {@code FilterDirectoryStream} contains another 
- * {@code DirectoryStream}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterDirectoryStream} contains another {@code DirectoryStream}, which it uses as its
+ * basic source of data, possibly transforming the data along the way or providing additional
+ * functionality.
  */
 public class FilterDirectoryStream implements DirectoryStream<Path> {
-  
-  /** 
-   * The underlying {@code DirectoryStream} instance. 
-   */
+
+  /** The underlying {@code DirectoryStream} instance. */
   protected final DirectoryStream<Path> delegate;
-  
-  /**
-   * The underlying {@code FileSystem} instance.
-   */
+
+  /** The underlying {@code FileSystem} instance. */
   protected final FileSystem fileSystem;
 
   /**
-   * Construct a {@code FilterDirectoryStream} based on 
-   * the specified base stream.
-   * <p>
-   * Note that base stream is closed if this stream is closed.
+   * Construct a {@code FilterDirectoryStream} based on the specified base stream.
+   *
+   * <p>Note that base stream is closed if this stream is closed.
+   *
    * @param delegate specified base stream.
    */
   public FilterDirectoryStream(DirectoryStream<Path> delegate, FileSystem fileSystem) {
@@ -66,10 +61,12 @@ public class FilterDirectoryStream implements DirectoryStream<Path> {
       public boolean hasNext() {
         return delegateIterator.hasNext();
       }
+
       @Override
       public Path next() {
         return new FilterPath(delegateIterator.next(), fileSystem);
       }
+
       @Override
       public void remove() {
         delegateIterator.remove();

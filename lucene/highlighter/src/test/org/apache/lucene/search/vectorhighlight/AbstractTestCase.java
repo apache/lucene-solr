@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -33,8 +32,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
@@ -54,32 +53,25 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   protected Analyzer analyzerW;
   protected Analyzer analyzerB;
   protected Analyzer analyzerK;
-  protected IndexReader reader;  
+  protected IndexReader reader;
 
   protected static final String[] shortMVValues = {
-    "",
-    "",
-    "a b c",
-    "",   // empty data in multi valued field
+    "", "", "a b c", "", // empty data in multi valued field
     "d e"
   };
-  
+
   protected static final String[] longMVValues = {
     "Followings are the examples of customizable parameters and actual examples of customization:",
     "The most search engines use only one of these methods. Even the search engines that says they can use the both methods basically"
   };
-  
+
   // test data for LUCENE-1448 bug
   protected static final String[] biMVValues = {
     "\nLucene/Solr does not require such additional hardware.",
     "\nWhen you talk about processing speed, the"
   };
-  
-  protected static final String[] strMVValues = {
-    "abc",
-    "defg",
-    "hijkl"
-  };
+
+  protected static final String[] strMVValues = {"abc", "defg", "hijkl"};
 
   @Override
   public void setUp() throws Exception {
@@ -89,10 +81,10 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     analyzerK = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
     dir = newDirectory();
   }
-  
+
   @Override
   public void tearDown() throws Exception {
-    if( reader != null ){
+    if (reader != null) {
       reader.close();
       reader = null;
     }
@@ -100,77 +92,79 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     super.tearDown();
   }
 
-  protected Query tq( String text ){
-    return tq( 1F, text );
+  protected Query tq(String text) {
+    return tq(1F, text);
   }
 
-  protected Query tq( float boost, String text ){
-    return tq( boost, F, text );
+  protected Query tq(float boost, String text) {
+    return tq(boost, F, text);
   }
-  
-  protected Query tq( String field, String text ){
-    return tq( 1F, field, text );
+
+  protected Query tq(String field, String text) {
+    return tq(1F, field, text);
   }
-  
-  protected Query tq( float boost, String field, String text ){
-    Query query = new TermQuery( new Term( field, text ) );
+
+  protected Query tq(float boost, String field, String text) {
+    Query query = new TermQuery(new Term(field, text));
     if (boost != 1f) {
-      query = new BoostQuery( query, boost );
+      query = new BoostQuery(query, boost);
     }
     return query;
   }
-  
-  protected Query pqF( String... texts ){
-    return pqF( 1F, texts );
+
+  protected Query pqF(String... texts) {
+    return pqF(1F, texts);
   }
-  
-  protected Query pqF( float boost, String... texts ){
-    return pqF( boost, 0, texts );
+
+  protected Query pqF(float boost, String... texts) {
+    return pqF(boost, 0, texts);
   }
-  
-  protected Query pqF( float boost, int slop, String... texts ){
-    return pq( boost, slop, F, texts );
+
+  protected Query pqF(float boost, int slop, String... texts) {
+    return pq(boost, slop, F, texts);
   }
-  
-  protected Query pq( String field, String... texts ){
-    return pq( 1F, 0, field, texts );
+
+  protected Query pq(String field, String... texts) {
+    return pq(1F, 0, field, texts);
   }
-  
-  protected Query pq( float boost, String field, String... texts ){
-    return pq( boost, 0, field, texts );
+
+  protected Query pq(float boost, String field, String... texts) {
+    return pq(boost, 0, field, texts);
   }
-  
-  protected Query pq( float boost, int slop, String field, String... texts ){
+
+  protected Query pq(float boost, int slop, String field, String... texts) {
     Query query = new PhraseQuery(slop, field, texts);
     if (boost != 1f) {
       query = new BoostQuery(query, boost);
     }
     return query;
   }
-  
-  protected Query dmq( Query... queries ){
-    return dmq( 0.0F, queries );
+
+  protected Query dmq(Query... queries) {
+    return dmq(0.0F, queries);
   }
-  
-  protected Query dmq( float tieBreakerMultiplier, Query... queries ){
+
+  protected Query dmq(float tieBreakerMultiplier, Query... queries) {
     return new DisjunctionMaxQuery(Arrays.asList(queries), tieBreakerMultiplier);
   }
-  
-  protected void assertCollectionQueries( Collection<Query> actual, Query... expected ){
-    assertEquals( expected.length, actual.size() );
-    for( Query query : expected ){
-      assertTrue( actual.contains( query ) );
+
+  protected void assertCollectionQueries(Collection<Query> actual, Query... expected) {
+    assertEquals(expected.length, actual.size());
+    for (Query query : expected) {
+      assertTrue(actual.contains(query));
     }
   }
 
-  protected List<BytesRef> analyze(String text, String field, Analyzer analyzer) throws IOException {
+  protected List<BytesRef> analyze(String text, String field, Analyzer analyzer)
+      throws IOException {
     List<BytesRef> bytesRefs = new ArrayList<>();
 
     try (TokenStream tokenStream = analyzer.tokenStream(field, text)) {
-      TermToBytesRefAttribute termAttribute = tokenStream.getAttribute(TermToBytesRefAttribute.class);
-      
+      TermToBytesRefAttribute termAttribute =
+          tokenStream.getAttribute(TermToBytesRefAttribute.class);
+
       tokenStream.reset();
-    
+
       while (tokenStream.incrementToken()) {
         bytesRefs.add(BytesRef.deepCopyOf(termAttribute.getBytesRef()));
       }
@@ -191,7 +185,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       return new TokenStreamComponents(new BasicNGramTokenizer());
     }
   }
-  
+
   static final class BasicNGramTokenizer extends Tokenizer {
 
     public static final int DEFAULT_N_SIZE = 2;
@@ -209,20 +203,20 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     private char[] charBuffer;
     private int charBufferIndex;
     private int charBufferLen;
-    
-    public BasicNGramTokenizer( ){
-      this( DEFAULT_N_SIZE );
+
+    public BasicNGramTokenizer() {
+      this(DEFAULT_N_SIZE);
     }
-    
-    public BasicNGramTokenizer( int n ){
-      this( n, DEFAULT_DELIMITERS );
+
+    public BasicNGramTokenizer(int n) {
+      this(n, DEFAULT_DELIMITERS);
     }
-    
-    public BasicNGramTokenizer( String delimiters ){
-      this( DEFAULT_N_SIZE, delimiters );
+
+    public BasicNGramTokenizer(String delimiters) {
+      this(DEFAULT_N_SIZE, delimiters);
     }
-    
-    public BasicNGramTokenizer(int n, String delimiters ){
+
+    public BasicNGramTokenizer(int n, String delimiters) {
       super();
       this.n = n;
       this.delimiters = delimiters;
@@ -238,10 +232,10 @@ public abstract class AbstractTestCase extends LuceneTestCase {
 
     CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+
     @Override
     public boolean incrementToken() throws IOException {
-      if( !getNextPartialSnippet() )
-        return false;
+      if (!getNextPartialSnippet()) return false;
       clearAttributes();
       termAtt.setEmpty().append(snippet, startTerm, startTerm + lenTerm);
       offsetAtt.setOffset(correctOffset(startOffset), correctOffset(startOffset + lenTerm));
@@ -251,15 +245,15 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     private int getFinalOffset() {
       return nextStartOffset;
     }
-    
+
     @Override
     public final void end() throws IOException {
       super.end();
-      offsetAtt.setOffset(getFinalOffset(),getFinalOffset());
+      offsetAtt.setOffset(getFinalOffset(), getFinalOffset());
     }
-    
+
     protected boolean getNextPartialSnippet() throws IOException {
-      if( snippet != null && snippet.length() >= startTerm + 1 + n ){
+      if (snippet != null && snippet.length() >= startTerm + 1 + n) {
         startTerm++;
         startOffset++;
         lenTerm = n;
@@ -267,33 +261,28 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       }
       return getNextSnippet();
     }
-    
+
     protected boolean getNextSnippet() throws IOException {
       startTerm = 0;
       startOffset = nextStartOffset;
-      snippetBuffer.delete( 0, snippetBuffer.length() );
-      while( true ){
-        if( ch != -1 )
-          ch = readCharFromBuffer();
-        if( ch == -1 ) break;
-        else if( !isDelimiter( ch ) )
-          snippetBuffer.append( (char)ch );
-        else if( snippetBuffer.length() > 0 )
-          break;
-        else
-          startOffset++;
+      snippetBuffer.delete(0, snippetBuffer.length());
+      while (true) {
+        if (ch != -1) ch = readCharFromBuffer();
+        if (ch == -1) break;
+        else if (!isDelimiter(ch)) snippetBuffer.append((char) ch);
+        else if (snippetBuffer.length() > 0) break;
+        else startOffset++;
       }
-      if( snippetBuffer.length() == 0 )
-        return false;
+      if (snippetBuffer.length() == 0) return false;
       snippet = snippetBuffer.toString();
       lenTerm = snippet.length() >= n ? n : snippet.length();
       return true;
     }
-    
+
     protected int readCharFromBuffer() throws IOException {
-      if( charBufferIndex >= charBufferLen ){
-        charBufferLen = input.read( charBuffer );
-        if( charBufferLen == -1 ){
+      if (charBufferIndex >= charBufferLen) {
+        charBufferLen = input.read(charBuffer);
+        if (charBufferLen == -1) {
           return -1;
         }
         charBufferIndex = 0;
@@ -302,77 +291,80 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       nextStartOffset++;
       return c;
     }
-    
-    protected boolean isDelimiter( int c ){
-      return delimiters.indexOf( c ) >= 0;
+
+    protected boolean isDelimiter(int c) {
+      return delimiters.indexOf(c) >= 0;
     }
-    
+
     @Override
     public void reset() throws IOException {
       super.reset();
       startTerm = 0;
       nextStartOffset = 0;
       snippet = null;
-      snippetBuffer.setLength( 0 );
+      snippetBuffer.setLength(0);
       charBufferIndex = BUFFER_SIZE;
       charBufferLen = 0;
       ch = 0;
     }
   }
 
-  protected void make1d1fIndex( String value ) throws Exception {
-    make1dmfIndex( value );
+  protected void make1d1fIndex(String value) throws Exception {
+    make1dmfIndex(value);
   }
-  
-  protected void make1d1fIndexB( String value ) throws Exception {
-    make1dmfIndexB( value );
+
+  protected void make1d1fIndexB(String value) throws Exception {
+    make1dmfIndexB(value);
   }
-  
-  protected void make1dmfIndex( String... values ) throws Exception {
-    make1dmfIndex( analyzerW, values );
+
+  protected void make1dmfIndex(String... values) throws Exception {
+    make1dmfIndex(analyzerW, values);
   }
-  
-  protected void make1dmfIndexB( String... values ) throws Exception {
-    make1dmfIndex( analyzerB, values );
+
+  protected void make1dmfIndexB(String... values) throws Exception {
+    make1dmfIndex(analyzerB, values);
   }
-  
+
   // make 1 doc with multi valued field
-  protected void make1dmfIndex( Analyzer analyzer, String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE));
+  protected void make1dmfIndex(Analyzer analyzer, String... values) throws Exception {
+    IndexWriter writer =
+        new IndexWriter(dir, new IndexWriterConfig(analyzer).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
-    for( String value: values ) {
-      doc.add( new Field( F, value, customType) );
+    for (String value : values) {
+      doc.add(new Field(F, value, customType));
     }
-    writer.addDocument( doc );
+    writer.addDocument(doc);
     writer.close();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }
-  
+
   // make 1 doc with multi valued & not analyzed field
-  protected void make1dmfIndexNA( String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(analyzerK).setOpenMode(OpenMode.CREATE));
+  protected void make1dmfIndexNA(String... values) throws Exception {
+    IndexWriter writer =
+        new IndexWriter(dir, new IndexWriterConfig(analyzerK).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     customType.setStoreTermVectors(true);
     customType.setStoreTermVectorOffsets(true);
     customType.setStoreTermVectorPositions(true);
-    for( String value: values ) {
-      doc.add( new Field( F, value, customType));
-      //doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
+    for (String value : values) {
+      doc.add(new Field(F, value, customType));
+      // doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED,
+      // TermVector.WITH_POSITIONS_OFFSETS ) );
     }
-    writer.addDocument( doc );
+    writer.addDocument(doc);
     writer.close();
     if (reader != null) reader.close();
     reader = DirectoryReader.open(dir);
   }
-  
+
   protected void makeIndexShortMV() throws Exception {
-    
+
     //  0
     // ""
     //  1
@@ -389,27 +381,27 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     //  9012
     // "d e"
     //  3 4
-    make1dmfIndex( shortMVValues );
+    make1dmfIndex(shortMVValues);
   }
-  
+
   protected void makeIndexLongMV() throws Exception {
     //           11111111112222222222333333333344444444445555555555666666666677777777778888888888999
     // 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012
     // Followings are the examples of customizable parameters and actual examples of customization:
     // 0          1   2   3        4  5            6          7   8      9        10 11
-    
-    //        1                                                                                                   2
+
+    // _______1___________________________________________________________________________________________________2
     // 999999900000000001111111111222222222233333333334444444444555555555566666666667777777777888888888899999999990000000000111111111122
     // 345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901
-    // The most search engines use only one of these methods. Even the search engines that says they can use the both methods basically
-    // 12  13  (14)   (15)     16  17   18  19 20    21       22   23 (24)   (25)     26   27   28   29  30  31  32   33      34
+    // The_most_search_engines_use_only_one_of_these_methods._Even_the_search_engines_that_says_they_can_use_the_both_methods_basically
+    // 12__13__(14)___(15)_____16__17___18__19_20____21_______22___23_(24)___(25)_____26___27___28___29__30__31__32___33______34
 
-    make1dmfIndex( longMVValues );
+    make1dmfIndex(longMVValues);
   }
-  
+
   protected void makeIndexLongMVB() throws Exception {
     // "*" ... LF
-    
+
     //           1111111111222222222233333333334444444444555555
     // 01234567890123456789012345678901234567890123456789012345
     // *Lucene/Solr does not require such additional hardware.
@@ -437,20 +429,20 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     //             lk 47       ce 55     ee 63
     //                                    ed 64
 
-    make1dmfIndexB( biMVValues );
+    make1dmfIndexB(biMVValues);
   }
-  
+
   protected void makeIndexStrMV() throws Exception {
 
     //  0123
     // "abc"
-    
+
     //  34567
     // "defg"
 
     //     111
     //  789012
     // "hijkl"
-    make1dmfIndexNA( strMVValues );
+    make1dmfIndexNA(strMVValues);
   }
 }

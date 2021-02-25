@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
@@ -33,20 +32,17 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 
 /**
- * A {@link SnapshotDeletionPolicy} which adds a persistence layer so that
- * snapshots can be maintained across the life of an application. The snapshots
- * are persisted in a {@link Directory} and are committed as soon as
- * {@link #snapshot()} or {@link #release(IndexCommit)} is called.
- * <p>
- * <b>NOTE:</b> Sharing {@link PersistentSnapshotDeletionPolicy}s that write to
- * the same directory across {@link IndexWriter}s will corrupt snapshots. You
- * should make sure every {@link IndexWriter} has its own
- * {@link PersistentSnapshotDeletionPolicy} and that they all write to a
- * different {@link Directory}.  It is OK to use the same
- * Directory that holds the index.
+ * A {@link SnapshotDeletionPolicy} which adds a persistence layer so that snapshots can be
+ * maintained across the life of an application. The snapshots are persisted in a {@link Directory}
+ * and are committed as soon as {@link #snapshot()} or {@link #release(IndexCommit)} is called.
  *
- * <p> This class adds a {@link #release(long)} method to
- * release commits from a previous snapshot's {@link IndexCommit#getGeneration}.
+ * <p><b>NOTE:</b> Sharing {@link PersistentSnapshotDeletionPolicy}s that write to the same
+ * directory across {@link IndexWriter}s will corrupt snapshots. You should make sure every {@link
+ * IndexWriter} has its own {@link PersistentSnapshotDeletionPolicy} and that they all write to a
+ * different {@link Directory}. It is OK to use the same Directory that holds the index.
+ *
+ * <p>This class adds a {@link #release(long)} method to release commits from a previous snapshot's
+ * {@link IndexCommit#getGeneration}.
  *
  * @lucene.experimental
  */
@@ -54,6 +50,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
 
   /** Prefix used for the save file. */
   public static final String SNAPSHOTS_PREFIX = "snapshots_";
+
   private static final int VERSION_START = 0;
   private static final int VERSION_CURRENT = VERSION_START;
   private static final String CODEC_NAME = "snapshots";
@@ -64,42 +61,33 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   private final Directory dir;
 
   /**
-   * {@link PersistentSnapshotDeletionPolicy} wraps another
-   * {@link IndexDeletionPolicy} to enable flexible
-   * snapshotting, passing {@link OpenMode#CREATE_OR_APPEND}
-   * by default.
-   * 
-   * @param primary
-   *          the {@link IndexDeletionPolicy} that is used on non-snapshotted
-   *          commits. Snapshotted commits, by definition, are not deleted until
-   *          explicitly released via {@link #release}.
-   * @param dir
-   *          the {@link Directory} which will be used to persist the snapshots
-   *          information.
+   * {@link PersistentSnapshotDeletionPolicy} wraps another {@link IndexDeletionPolicy} to enable
+   * flexible snapshotting, passing {@link OpenMode#CREATE_OR_APPEND} by default.
+   *
+   * @param primary the {@link IndexDeletionPolicy} that is used on non-snapshotted commits.
+   *     Snapshotted commits, by definition, are not deleted until explicitly released via {@link
+   *     #release}.
+   * @param dir the {@link Directory} which will be used to persist the snapshots information.
    */
-  public PersistentSnapshotDeletionPolicy(IndexDeletionPolicy primary,
-      Directory dir) throws IOException {
+  public PersistentSnapshotDeletionPolicy(IndexDeletionPolicy primary, Directory dir)
+      throws IOException {
     this(primary, dir, OpenMode.CREATE_OR_APPEND);
   }
 
   /**
-   * {@link PersistentSnapshotDeletionPolicy} wraps another
-   * {@link IndexDeletionPolicy} to enable flexible snapshotting.
-   * 
-   * @param primary
-   *          the {@link IndexDeletionPolicy} that is used on non-snapshotted
-   *          commits. Snapshotted commits, by definition, are not deleted until
-   *          explicitly released via {@link #release}.
-   * @param dir
-   *          the {@link Directory} which will be used to persist the snapshots
-   *          information.
-   * @param mode
-   *          specifies whether a new index should be created, deleting all
-   *          existing snapshots information (immediately), or open an existing
-   *          index, initializing the class with the snapshots information.
+   * {@link PersistentSnapshotDeletionPolicy} wraps another {@link IndexDeletionPolicy} to enable
+   * flexible snapshotting.
+   *
+   * @param primary the {@link IndexDeletionPolicy} that is used on non-snapshotted commits.
+   *     Snapshotted commits, by definition, are not deleted until explicitly released via {@link
+   *     #release}.
+   * @param dir the {@link Directory} which will be used to persist the snapshots information.
+   * @param mode specifies whether a new index should be created, deleting all existing snapshots
+   *     information (immediately), or open an existing index, initializing the class with the
+   *     snapshots information.
    */
-  public PersistentSnapshotDeletionPolicy(IndexDeletionPolicy primary,
-      Directory dir, OpenMode mode) throws IOException {
+  public PersistentSnapshotDeletionPolicy(IndexDeletionPolicy primary, Directory dir, OpenMode mode)
+      throws IOException {
     super(primary);
 
     this.dir = dir;
@@ -116,9 +104,9 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   }
 
   /**
-   * Snapshots the last commit. Once this method returns, the
-   * snapshot information is persisted in the directory.
-   * 
+   * Snapshots the last commit. Once this method returns, the snapshot information is persisted in
+   * the directory.
+   *
    * @see SnapshotDeletionPolicy#snapshot
    */
   @Override
@@ -141,9 +129,9 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   }
 
   /**
-   * Deletes a snapshotted commit. Once this method returns, the snapshot
-   * information is persisted in the directory.
-   * 
+   * Deletes a snapshotted commit. Once this method returns, the snapshot information is persisted
+   * in the directory.
+   *
    * @see SnapshotDeletionPolicy#release
    */
   @Override
@@ -165,9 +153,9 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   }
 
   /**
-   * Deletes a snapshotted commit by generation. Once this method returns, the snapshot
-   * information is persisted in the directory.
-   * 
+   * Deletes a snapshotted commit by generation. Once this method returns, the snapshot information
+   * is persisted in the directory.
+   *
    * @see IndexCommit#getGeneration
    * @see SnapshotDeletionPolicy#release
    */
@@ -176,14 +164,14 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     persist();
   }
 
-  synchronized private void persist() throws IOException {
+  private synchronized void persist() throws IOException {
     String fileName = SNAPSHOTS_PREFIX + nextWriteGen;
     IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT);
     boolean success = false;
     try {
-      CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);   
+      CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
       out.writeVInt(refCounts.size());
-      for(Entry<Long,Integer> ent : refCounts.entrySet()) {
+      for (Entry<Long, Integer> ent : refCounts.entrySet()) {
         out.writeVLong(ent.getKey());
         out.writeVInt(ent.getValue());
       }
@@ -198,9 +186,9 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     }
 
     dir.sync(Collections.singletonList(fileName));
-    
+
     if (nextWriteGen > 0) {
-      String lastSaveFile = SNAPSHOTS_PREFIX + (nextWriteGen-1);
+      String lastSaveFile = SNAPSHOTS_PREFIX + (nextWriteGen - 1);
       // exception OK: likely it didn't exist
       IOUtils.deleteFilesIgnoringExceptions(dir, lastSaveFile);
     }
@@ -209,44 +197,45 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   }
 
   private synchronized void clearPriorSnapshots() throws IOException {
-    for(String file : dir.listAll()) {
+    for (String file : dir.listAll()) {
       if (file.startsWith(SNAPSHOTS_PREFIX)) {
         dir.deleteFile(file);
       }
     }
   }
 
-  /** Returns the file name the snapshots are currently
-   *  saved to, or null if no snapshots have been saved. */
+  /**
+   * Returns the file name the snapshots are currently saved to, or null if no snapshots have been
+   * saved.
+   */
   public String getLastSaveFile() {
     if (nextWriteGen == 0) {
       return null;
     } else {
-      return SNAPSHOTS_PREFIX + (nextWriteGen-1);
+      return SNAPSHOTS_PREFIX + (nextWriteGen - 1);
     }
   }
 
   /**
-   * Reads the snapshots information from the given {@link Directory}. This
-   * method can be used if the snapshots information is needed, however you
-   * cannot instantiate the deletion policy (because e.g., some other process
-   * keeps a lock on the snapshots directory).
+   * Reads the snapshots information from the given {@link Directory}. This method can be used if
+   * the snapshots information is needed, however you cannot instantiate the deletion policy
+   * (because e.g., some other process keeps a lock on the snapshots directory).
    */
   private synchronized void loadPriorSnapshots() throws IOException {
     long genLoaded = -1;
     IOException ioe = null;
     List<String> snapshotFiles = new ArrayList<>();
-    for(String file : dir.listAll()) {
+    for (String file : dir.listAll()) {
       if (file.startsWith(SNAPSHOTS_PREFIX)) {
         long gen = Long.parseLong(file.substring(SNAPSHOTS_PREFIX.length()));
         if (genLoaded == -1 || gen > genLoaded) {
           snapshotFiles.add(file);
-          Map<Long,Integer> m = new HashMap<>();
+          Map<Long, Integer> m = new HashMap<>();
           IndexInput in = dir.openInput(file, IOContext.DEFAULT);
           try {
             CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
             int count = in.readVInt();
-            for(int i=0;i<count;i++) {
+            for (int i = 0; i < count; i++) {
               long commitGen = in.readVLong();
               int refCount = in.readVInt();
               m.put(commitGen, refCount);
@@ -273,17 +262,17 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
         // ... not for lack of trying:
         throw ioe;
       }
-    } else { 
+    } else {
       if (snapshotFiles.size() > 1) {
         // Remove any broken / old snapshot files:
         String curFileName = SNAPSHOTS_PREFIX + genLoaded;
-        for(String file : snapshotFiles) {
+        for (String file : snapshotFiles) {
           if (!curFileName.equals(file)) {
             IOUtils.deleteFilesIgnoringExceptions(dir, file);
           }
         }
       }
-      nextWriteGen = 1+genLoaded;
+      nextWriteGen = 1 + genLoaded;
     }
   }
 }

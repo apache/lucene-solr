@@ -64,7 +64,8 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
-    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1).setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);
@@ -284,7 +285,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
       //tag::solrj-ipod-query-boosted-dsl-2[]
       final Map<String, Object> queryTopLevel = new HashMap<>();
       final Map<String, Object> boostProperties = new HashMap<>();
-      final Map<String, Object> luceneTopLevel = new HashMap();
+      final Map<String, Object> luceneTopLevel = new HashMap<>();
       final Map<String, Object> luceneProperties = new HashMap<>();
       queryTopLevel.put("boost", boostProperties);
       boostProperties.put("b", "log(popularity)");

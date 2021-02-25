@@ -105,113 +105,115 @@ The resulting document in our collection will be:
 
 === Updating Child Documents
 
-Solr supports modifying, adding and removing child documents as part of atomic updates. +
-Schema and configuration requirements are detailed in
-<<updating-parts-of-documents#field-storage, Field Storage>> and <<indexing-nested-documents#schema-configuration, Indexing Nested Documents>>. +
-Under the hood, Solr retrieves the whole nested structure, deletes the old documents,
-and reindexes the structure after applying the atomic update. +
-Syntactically, nested/partial updates are very similar to a regular atomic update,
-as demonstrated by the examples below.
+Solr supports modifying, adding and removing child documents as part of atomic updates.
+Syntactically, updates changing the children of a document are very similar to regular atomic updates of simple fields, as demonstrated by the examples below.
 
-[NOTE]
+Schema and configuration requirements for updating child documents use the same
+<<updating-parts-of-documents#field-storage,Field Storage>> requirements for atomic updates mentioned above.
+
+Under the hood, Solr conceptually behaves similarly for nested documents as for non-nested documents, it's just that it applies to entire trees (from the root) of nested documents instead of stand-alone documents.  You can expect more overhead because of this.  In-place updates avoid that.
+
+[IMPORTANT]
 ====
-.\_route_ Parameter
-To ensure each nested update is routed to its respective shard,
-`\_route_` parameter must be set to the root document's ID when the
-update does not have that root document.
+.Routing Updates using child document Ids in SolrCloud
+
+When SolrCloud receives document updates, the
+<<shards-and-indexing-data-in-solrcloud#document-routing,document routing>> rules for the collection is used to determine which shard should process the update based on the `id` of the document.
+
+When sending an update that specifies the `id` of a _child document_ this will not work by default: the correct shard to send the document to is based on the `id` of the "Root" document for the block the child document is in, *not* the `id` of the child document being updated.
+
+Solr offers two solutions to address this:
+
+* Clients may specify a <<shards-and-indexing-data-in-solrcloud#document-routing,`\_route_` parameter>>, with the `id` of the Root document as the parameter value, on each update to tell Solr which shard should process the update.
+* Clients can use the (default) `compositeId` router's "prefix routing" feature when indexing all documents to ensure that all child/descendent documents in a Block use the same `id` prefix as the Root level document.  This will cause Solr's default routing logic to automatically send child document updates to the correct shard.
+
+Furthermore, you _should_ (sometimes _must_) specify the Root document's ID in the `\_root_`
+field of this partial update.  This is how Solr understands that you are updating a child
+document, and not a Root document.  Without it, Solr only guesses that the `\_route_` param is
+equivalent, but it may be absent or not equivalent (e.g., when using the `implicit` router).
+
+All of the examples below use `id` prefixes, so no `\_route_` param will be necessary for these examples.
 ====
 
-If the following document exists in our collection:
+For the upcoming examples, we'll assume an index containing the same documents covered in <<indexing-nested-documents#example-indexing-syntax,Indexing Nested Documents>>:
 
-[source,json]
+include::indexing-nested-documents.adoc[tag=sample-indexing-deeply-nested-documents]
+
+==== Modifying Child Document Fields
+
+All of the <<#atomic-updates,Atomic Update operations>> mentioned above are supported for "real" fields of Child Documents:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc",
- "product":"T-Shirt",
- "stock": {
-           "id":"mydoc2",
-           "color":"red",
-           "size": ["L"]
-           }
-}
+  "id": "P11!S31",
+  "_root_": "P11!prod",
+  "price_i": { "inc": 73 },
+  "color_s": { "set": "GREY" }
+} ]'
 ----
 
-And we apply the following update command:
+==== Replacing All Child Documents
 
-[source,json]
+As with normal (multiValued) fields, the `set` keyword can be used to replace all child documents in a psuedo-field:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc",
- "stock": {
-           "add":
-                 {
-                  "id":"mydoc3",
-                  "color":"blue",
-                  "size": ["M"]
-                 }
-          }
-}
+  "id": "P22!S22",
+  "_root_": "P22!prod",
+  "manuals": { "set": [ { "id": "P22!D77",
+                          "name_s": "Why Red Pens Are the Best",
+                          "content_t": "... correcting papers ...",
+                        },
+                        { "id": "P22!D88",
+                          "name_s": "How to get Red ink stains out of fabric",
+                          "content_t": "... vinegar ...",
+                        } ] }
+
+} ]'
 ----
 
-The resulting document in our collection will be:
+==== Adding a Child Document
 
-[source,json]
+As with normal (multiValued) fields, the `add` keyword can be used to add additional child documents to a psuedo-field:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc",
- "product":"T-Shirt",
- "stock": [{
-            "id":"mydoc2",
-            "color":"red",
-            "size": ["L"]
-           },
-           {
-            "id":"mydoc3",
-            "color":"blue",
-            "size": ["M"]
-           }]
-}
+  "id": "P11!S21",
+  "_root_": "P11!prod",
+  "manuals": { "add": { "id": "P11!D99",
+                        "name_s": "Why Red Staplers Are the Best",
+                        "content_t": "Once upon a time, Mike Judge ...",
+                      } }
+} ]'
 ----
 
-Documents inside nested structures can also be updated.
-These type of updates require setting the `\_route_` set to the root document's ID
 
-If we send this update, setting `\_route_`=mydoc
+==== Removing a Child Document
 
-[source,json]
+As with normal (multiValued) fields, the `remove` keyword can be used to remove a child document (by `id`) from it's psuedo-field:
+
+[source,bash]
 ----
+curl -X POST 'http://localhost:8983/solr/gettingstarted/update?commit=true' -H 'Content-Type: application/json' --data-binary '[
 {
- "id":"mydoc2",
- "size": {"add": ["S"]}
-}
-----
-
-The resulting document in our collection will be:
-
-[source,json]
-----
-{
- "id":"mydoc",
- "product":"T-Shirt",
- "stock": [{
-            "id":"mydoc2",
-            "color":"red",
-            "size": ["L", "S"]
-           },
-           {
-            "id":"mydoc3",
-            "color":"blue",
-            "size": ["M"]
-           }]
-}
+  "id": "P11!S21",
+  "_root_": "P11!prod",
+  "manuals": { "remove": { "id": "P11!D41" } }
+} ]'
 ----
 
 
 == In-Place Updates
 
-In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is reindexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences, there is no functional difference between atomic updates and in-place updates.
+In-place updates are very similar to atomic updates; in some sense, this is a subset of atomic updates. In regular atomic updates, the entire document is reindexed internally during the application of the update. However, in this approach, only the fields to be updated are affected and the rest of the documents are not reindexed internally. Hence, the efficiency of updating in-place is unaffected by the size of the documents that are updated (i.e., number of fields, size of fields, etc.). Apart from these internal differences in efficiency, there is no functional difference between atomic updates and in-place updates.
 
-An atomic update operation is performed using this approach only when the fields to be updated meet these three conditions:
+An atomic update operation is performed using this In-Place approach only when the fields to be updated meet these three conditions:
 
 * are non-indexed (`indexed="false"`), non-stored (`stored="false"`), single valued (`multiValued="false"`) numeric docValues (`docValues="true"`) fields;
 * the `\_version_` field is also a non-indexed, non-stored single valued docValues field; and,
@@ -224,6 +226,14 @@ Set or replace the field value(s) with the specified value(s). May be specified 
 
 `inc`::
 Increments a numeric value by a specific amount. Must be specified as a single numeric value.
+
+[TIP]
+====
+.Preventing Atomic Updates that can't be done In-Place
+
+Since it can be tricky to ensure that all of the neccessary conditions are satisfied to ensure that an udpate can be don In-Place, Solr supports a request parameter option named `update.partial.requireInPlace`.  When set to `true`, and Atomic Update that can not be don In-Place will fail.  Users can specify this option when they would prefer that an update request "fail fast" if it can't be done In-Place.
+
+====
 
 === In-Place Update Example
 
@@ -294,7 +304,7 @@ When documents are added/updated in batches even a single version conflict may l
 
 If the document being updated does not include the `\_version_` field, and atomic updates are not being used, the document will be treated by normal Solr rules, which is usually to discard the previous version.
 
-When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#realtime-get,`/get` request>>.
+When using Optimistic Concurrency, clients can include an optional `versions=true` request parameter to indicate that the _new_ versions of the documents being added should be included in the response. This allows clients to immediately know what the `\_version_` is of every document added without needing to make a redundant <<realtime-get.adoc#,`/get` request>>.
 
 Following are some examples using `versions=true` in queries:
 
@@ -424,7 +434,7 @@ For more information, please also see Yonik Seeley's presentation on https://www
 
 Optimistic Concurrency is extremely powerful, and works very efficiently because it uses an internally assigned, globally unique values for the `\_version_` field.
 However, in some situations users may want to configure their own document specific version field, where the version values are assigned on a per-document basis by an external system, and have Solr reject updates that attempt to replace a document with an "older" version.
-In situations like this the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
+In situations like this the {solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[`DocBasedVersionConstraintsProcessorFactory`] can be useful.
 
 The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure it in `solrconfig.xml` as part of the <<update-request-processors.adoc#update-request-processor-configuration,UpdateRequestProcessorChain>> and specify the name of your custom `versionField` in your schema that should be checked when validating updates:
 
@@ -435,7 +445,7 @@ The basic usage of `DocBasedVersionConstraintsProcessorFactory` is to configure 
 </processor>
 ----
 
-Note that `versionField` is a comma delimited list of fields to check for version numbers.
+Note that `versionField` is a comma-delimited list of fields to check for version numbers.
 Once configured, this update processor will reject (HTTP error code 409) any attempt to update an existing document where the value of the `my_version_l` field in the "new" document is not greater then the value of that field in the existing document.
 
 .versionField vs `\_version_`
@@ -456,9 +466,9 @@ The value of this option should be the name of a request parameter that the proc
 +
 When using this request parameter, any Delete By Id command with a high enough document version number to succeed will be internally converted into an Add Document command that replaces the existing document with a new one which is empty except for the Unique Key and `versionField` to keeping a record of the deleted version so future Add Document commands will fail if their "new" version is not high enough.
 +
-If `versionField` is specified as a list, then this parameter too must be specified as a comma delimited list of the same size so that the parameters correspond with the fields.
+If `versionField` is specified as a list, then this parameter too must be specified as a comma-delimited list of the same size so that the parameters correspond with the fields.
 
 `supportMissingVersionOnOldDocs`::
 This boolean parameter defaults to `false`, but if set to `true` allows any documents written *before* this feature is enabled, and which are missing the `versionField`, to be overwritten.
 
-Please consult the {solr-javadocs}/solr-core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml[test solrconfig.xml file] for additional information and example usages.
+Please consult the {solr-javadocs}/core/org/apache/solr/update/processor/DocBasedVersionConstraintsProcessorFactory.html[DocBasedVersionConstraintsProcessorFactory javadocs] and https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/solr/collection1/conf/solrconfig-externalversionconstraint.xml[test solrconfig.xml file] for additional information and example usages.

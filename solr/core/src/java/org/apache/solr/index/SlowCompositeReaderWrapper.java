@@ -88,7 +88,8 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
           minVersion = leafVersion;
         }
       }
-      metaData = new LeafMetaData(reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor(), minVersion, null);
+      int createdVersionMajor = reader.leaves().get(0).reader().getMetaData().getCreatedVersionMajor();
+      metaData = new LeafMetaData(createdVersionMajor, minVersion, null);
     }
     fieldInfos = FieldInfos.getMergedFieldInfos(in);
   }
@@ -272,6 +273,12 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
 
   @Override
   public PointValues getPointValues(String field) {
+    ensureOpen();
+    return null; // because not supported.  Throw UOE?
+  }
+
+  @Override
+  public VectorValues getVectorValues(String field) {
     ensureOpen();
     return null; // because not supported.  Throw UOE?
   }

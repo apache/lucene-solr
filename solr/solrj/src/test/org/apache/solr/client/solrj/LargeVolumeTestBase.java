@@ -120,7 +120,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase
         } catch (Exception e) {
           // a commit/optimize can fail with a too many warming searchers exception
           if (log.isInfoEnabled()) {
-            log.info("Caught benign exception during commit: {}", e.getMessage());
+            log.info("Caught benign exception during commit: ", e);
           }
         }
         if (!(client instanceof EmbeddedSolrServer)) {

@@ -78,6 +78,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
   /**
    * Modifies the request to inlcude authentication params if needed, returns the request 
    */
+  @SuppressWarnings({"rawtypes"})
   private <T extends SolrRequest> T setAuthIfNeeded(T req) {
     if (null != USER) {
       assert null != PASS;
@@ -231,7 +232,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
       boolean firstReplica = true;
       for (Replica replica : shard) {
         coresCompared++;
-        assertEquals(shard.getName(), replica.getSlice()); // sanity check
+        assertEquals(shard.getName(), replica.getShard()); // sanity check
         final String core = replica.getCoreName();
         final ReplicaData initData = initReplicaData.get(core);
         final ReplicaData finalData = finalReplicaData.get(core);
@@ -300,7 +301,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
                                   "rows", "0",
                                   "_trace", "counting_docs"))).process(client).getResults().getNumFound();
 
-        final ReplicaData data = new ReplicaData(replica.getSlice(),coreName,(Long)version,numDocs);
+        final ReplicaData data = new ReplicaData(replica.getShard(),coreName,(Long)version,numDocs);
         log.info("{}", data);
         results.put(coreName, data);
 

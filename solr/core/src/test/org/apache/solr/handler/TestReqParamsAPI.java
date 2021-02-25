@@ -78,13 +78,14 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private void testReqParams() throws Exception {
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection coll = cloudClient.getZkStateReader().getClusterState().getCollection(COLL_NAME);
     List<String> urls = new ArrayList<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas())
-        urls.add("" + replica.get(ZkStateReader.BASE_URL_PROP) + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
+        urls.add("" + replica.getBaseUrl() + "/" + replica.get(ZkStateReader.CORE_NAME_PROP));
     }
 
     RestTestHarness writeHarness = restTestHarnesses.get(random().nextInt(restTestHarnesses.size()));
@@ -282,6 +283,7 @@ public class TestReqParamsAPI extends SolrCloudTestCase {
     compareValues(result, new Predicate() {
       @Override
       public boolean test(Object o) {
+        @SuppressWarnings({"rawtypes"})
         List l = (List) o;
         return l.contains("first") && l.contains("second");
       }

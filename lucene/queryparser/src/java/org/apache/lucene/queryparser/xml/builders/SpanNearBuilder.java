@@ -16,19 +16,17 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
-import java.util.ArrayList;
-import java.util.List;
-/**
- * Builder for {@link SpanNearQuery}
- */
+/** Builder for {@link SpanNearQuery} */
 public class SpanNearBuilder extends SpanBuilderBase {
 
   private final SpanQueryBuilder factory;
@@ -53,5 +51,4 @@ public class SpanNearBuilder extends SpanBuilderBase {
     float boost = DOMUtils.getAttribute(e, "boost", 1.0f);
     return new SpanBoostQuery(snq, boost);
   }
-
 }

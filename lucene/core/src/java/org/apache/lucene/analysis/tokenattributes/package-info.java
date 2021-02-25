@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * General-purpose attributes for text analysis.
- */
+/** General-purpose attributes for text analysis. */
 package org.apache.lucene.analysis.tokenattributes;

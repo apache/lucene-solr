@@ -16,34 +16,29 @@
  */
 package org.apache.lucene.util;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.junit.Assert;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-
 /**
- * This rule keeps a count of failed tests (suites) and will result in an
- * {@link AssumptionViolatedException} after a given number of failures for all
- * tests following this condition.
- * 
- * <p>
- * Aborting quickly on failed tests can be useful when used in combination with
- * test repeats (via the {@link Repeat} annotation or system property).
+ * This rule keeps a count of failed tests (suites) and will result in an {@link
+ * AssumptionViolatedException} after a given number of failures for all tests following this
+ * condition.
+ *
+ * <p>Aborting quickly on failed tests can be useful when used in combination with test repeats (via
+ * the {@link Repeat} annotation or system property).
  */
 public final class TestRuleIgnoreAfterMaxFailures implements TestRule {
-  /**
-   * Maximum failures. Package scope for tests.
-   */
+  /** Maximum failures. Package scope for tests. */
   int maxFailures;
-  
+
   /**
-   * @param maxFailures
-   *          The number of failures after which all tests are ignored. Must be
-   *          greater or equal 1.
+   * @param maxFailures The number of failures after which all tests are ignored. Must be greater or
+   *     equal 1.
    */
   public TestRuleIgnoreAfterMaxFailures(int maxFailures) {
     Assert.assertTrue("maxFailures must be >= 1: " + maxFailures, maxFailures >= 1);
@@ -57,8 +52,9 @@ public final class TestRuleIgnoreAfterMaxFailures implements TestRule {
       public void evaluate() throws Throwable {
         int failuresSoFar = FailureMarker.getFailures();
         if (failuresSoFar >= maxFailures) {
-          RandomizedTest.assumeTrue("Ignored, failures limit reached (" + 
-              failuresSoFar + " >= " + maxFailures + ").", false);
+          RandomizedTest.assumeTrue(
+              "Ignored, failures limit reached (" + failuresSoFar + " >= " + maxFailures + ").",
+              false);
         }
 
         s.evaluate();

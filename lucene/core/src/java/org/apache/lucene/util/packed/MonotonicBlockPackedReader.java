@@ -16,22 +16,20 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MIN_BLOCK_SIZE;
 import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * Provides random access to a stream written with
- * {@link MonotonicBlockPackedWriter}.
+ * Provides random access to a stream written with {@link MonotonicBlockPackedWriter}.
+ *
  * @lucene.internal
  */
 public class MonotonicBlockPackedReader extends LongValues implements Accountable {
@@ -48,11 +46,15 @@ public class MonotonicBlockPackedReader extends LongValues implements Accountabl
   final long sumBPV;
 
   /** Sole constructor. */
-  public static MonotonicBlockPackedReader of(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
+  public static MonotonicBlockPackedReader of(
+      IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct)
+      throws IOException {
     return new MonotonicBlockPackedReader(in, packedIntsVersion, blockSize, valueCount, direct);
   }
 
-  private MonotonicBlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
+  private MonotonicBlockPackedReader(
+      IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct)
+      throws IOException {
     this.valueCount = valueCount;
     blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     blockMask = blockSize - 1;
@@ -75,10 +77,15 @@ public class MonotonicBlockPackedReader extends LongValues implements Accountabl
         final int size = (int) Math.min(blockSize, valueCount - (long) i * blockSize);
         if (direct) {
           final long pointer = in.getFilePointer();
-          subReaders[i] = PackedInts.getDirectReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
-          in.seek(pointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, size, bitsPerValue));
+          subReaders[i] =
+              PackedInts.getDirectReaderNoHeader(
+                  in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
+          in.seek(
+              pointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, size, bitsPerValue));
         } else {
-          subReaders[i] = PackedInts.getReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
+          subReaders[i] =
+              PackedInts.getReaderNoHeader(
+                  in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
         }
       }
     }
@@ -97,21 +104,28 @@ public class MonotonicBlockPackedReader extends LongValues implements Accountabl
   public long size() {
     return valueCount;
   }
-  
+
   @Override
   public long ramBytesUsed() {
     long sizeInBytes = 0;
     sizeInBytes += RamUsageEstimator.sizeOf(minValues);
     sizeInBytes += RamUsageEstimator.sizeOf(averages);
-    for(PackedInts.Reader reader: subReaders) {
+    for (PackedInts.Reader reader : subReaders) {
       sizeInBytes += reader.ramBytesUsed();
     }
     return sizeInBytes;
   }
-  
+
   @Override
   public String toString() {
     long avgBPV = subReaders.length == 0 ? 0 : sumBPV / subReaders.length;
-    return getClass().getSimpleName() + "(blocksize=" + (1<<blockShift) + ",size=" + valueCount + ",avgBPV=" + avgBPV + ")";
+    return getClass().getSimpleName()
+        + "(blocksize="
+        + (1 << blockShift)
+        + ",size="
+        + valueCount
+        + ",avgBPV="
+        + avgBPV
+        + ")";
   }
 }

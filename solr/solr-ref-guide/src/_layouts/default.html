@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-{% comment %}NOTE: page_id is also definied in page.html{% endcomment %}
+{% comment %}NOTE: page_id is also defined in page.html{% endcomment %}
 {% assign page_id = page.url | split: '/' | last | remove: '.html' %}
 <head>
     {% include head.html %}
@@ -56,6 +56,8 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 
 <script src="{{ "js/customscripts.js" }}"></script>
+
+{% include mathjax-support.html %}
 
 </body>
 </html>

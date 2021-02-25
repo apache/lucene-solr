@@ -25,7 +25,7 @@ There are two alternatives to Lucene's default codec.
 
 === solr.SchemaCodecFactory
 
-The {solr-javadocs}/solr-core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] supports 2 key features:
+The {solr-javadocs}/core/org/apache/solr/core/SchemaCodecFactory.html[`solr.SchemaCodecFactory`] supports 2 key features:
 
 * Schema based per-fieldtype configuration for `docValuesFormat` and `postingsFormat` - see the <<field-type-definitions-and-properties.adoc#field-type-properties,Field Type Properties>> section for more details.
 * A `compressionMode` option:
@@ -43,7 +43,7 @@ Example:
 
 === solr.SimpleTextCodecFactory
 
-This factory for Lucene's {solr-javadocs}/solr-core/org/apache/solr/core/SimpleTextCodecFactory.html[`SimpleTextCodecFactory`] produces a plain text human-readable index format.
+This factory for Lucene's {solr-javadocs}/core/org/apache/solr/core/SimpleTextCodecFactory.html[`SimpleTextCodecFactory`] produces a plain text human-readable index format.
 
 CAUTION: *FOR RECREATIONAL USE ONLY*. This codec should never be used in production. `SimpleTextCodec` is relatively slow and takes up a large amount of disk space. Its use should be limited to educational and debugging purposes.
 

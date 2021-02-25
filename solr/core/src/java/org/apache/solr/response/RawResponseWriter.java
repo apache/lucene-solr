@@ -54,7 +54,7 @@ public class RawResponseWriter implements BinaryQueryResponseWriter {
   private String _baseWriter = null;
   
   @Override
-  public void init(NamedList n) {
+  public void init(@SuppressWarnings({"rawtypes"})NamedList n) {
     if( n != null ) {
       Object base = n.get( "base" );
       if( base != null ) {

@@ -16,31 +16,30 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Removes words that are too long or too short from the stream.
- * <p>
- * Note: Length is calculated as the number of Unicode codepoints.
- * </p>
+ *
+ * <p>Note: Length is calculated as the number of Unicode codepoints.
  */
 public final class CodepointCountFilter extends FilteringTokenFilter {
 
   private final int min;
   private final int max;
-  
+
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   /**
-   * Create a new {@link CodepointCountFilter}. This will filter out tokens whose
-   * {@link CharTermAttribute} is either too short ({@link Character#codePointCount(char[], int, int)}
-   * &lt; min) or too long ({@link Character#codePointCount(char[], int, int)} &gt; max).
-   * @param in      the {@link TokenStream} to consume
-   * @param min     the minimum length
-   * @param max     the maximum length
+   * Create a new {@link CodepointCountFilter}. This will filter out tokens whose {@link
+   * CharTermAttribute} is either too short ({@link Character#codePointCount(char[], int, int)} &lt;
+   * min) or too long ({@link Character#codePointCount(char[], int, int)} &gt; max).
+   *
+   * @param in the {@link TokenStream} to consume
+   * @param min the minimum length
+   * @param max the maximum length
    */
   public CodepointCountFilter(TokenStream in, int min, int max) {
     super(in);

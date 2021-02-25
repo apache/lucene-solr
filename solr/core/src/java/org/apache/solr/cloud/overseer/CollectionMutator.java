@@ -25,31 +25,25 @@ import java.util.Map;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.cloud.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class CollectionMutator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final SolrCloudManager cloudManager;
   protected final DistribStateManager stateManager;
+  protected final SolrZkClient zkClient;
 
   public CollectionMutator(SolrCloudManager cloudManager) {
     this.cloudManager = cloudManager;
     this.stateManager = cloudManager.getDistribStateManager();
+    this.zkClient = SliceMutator.getZkClient(cloudManager);
   }
 
   public ZkWriteCommand createShard(final ClusterState clusterState, ZkNodeProps message) {
@@ -59,6 +53,7 @@ public class CollectionMutator {
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(shardId);
     if (slice == null) {
+      @SuppressWarnings({"unchecked"})
       Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
       String shardRange = message.getStr(ZkStateReader.SHARD_RANGE_PROP);
@@ -106,7 +101,21 @@ public class CollectionMutator {
     DocCollection coll = clusterState.getCollection(message.getStr(COLLECTION_PROP));
     Map<String, Object> m = coll.shallowCopy();
     boolean hasAnyOps = false;
+    PerReplicaStatesOps replicaOps = null;
     for (String prop : CollectionAdminRequest.MODIFIABLE_COLLECTION_PROPERTIES) {
+      if (prop.equals(DocCollection.PER_REPLICA_STATE)) {
+        String val = message.getStr(DocCollection.PER_REPLICA_STATE);
+        if (val == null) continue;
+        boolean enable = Boolean.parseBoolean(val);
+        if (enable == coll.isPerReplicaState()) {
+          //already enabled
+          log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
+          continue;
+        }
+        replicaOps = PerReplicaStatesOps.modifyCollection(coll, enable, PerReplicaStates.fetch(coll.getZNode(), zkClient, null));
+      }
+
+
       if (message.containsKey(prop)) {
         hasAnyOps = true;
         if (message.get(prop) == null)  {
@@ -135,29 +144,18 @@ public class CollectionMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    return new ZkWriteCommand(coll.getName(),
-        new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion(), coll.getZNode()));
+    DocCollection collection = new DocCollection(coll.getName(), coll.getSlicesMap(), m, coll.getRouter(), coll.getZNodeVersion());
+    if (replicaOps == null){
+      return new ZkWriteCommand(coll.getName(), collection);
+    } else {
+      return new ZkWriteCommand(coll.getName(), collection, replicaOps, true);
+    }
   }
 
   public static DocCollection updateSlice(String collectionName, DocCollection collection, Slice slice) {
-    DocCollection newCollection = null;
-    Map<String, Slice> slices;
-
-    if (collection == null) {
-      //  when updateSlice is called on a collection that doesn't exist, it's currently when a core is publishing itself
-      // without explicitly creating a collection.  In this current case, we assume custom sharding with an "implicit" router.
-      slices = new LinkedHashMap<>(1);
-      slices.put(slice.getName(), slice);
-      Map<String, Object> props = new HashMap<>(1);
-      props.put(DocCollection.DOC_ROUTER, Utils.makeMap(NAME, ImplicitDocRouter.NAME));
-      newCollection = new DocCollection(collectionName, slices, props, new ImplicitDocRouter());
-    } else {
-      slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
-      slices.put(slice.getName(), slice);
-      newCollection = collection.copyWithSlices(slices);
-    }
-
-    return newCollection;
+    Map<String, Slice> slices = new LinkedHashMap<>(collection.getSlicesMap()); // make a shallow copy
+    slices.put(slice.getName(), slice);
+    return collection.copyWithSlices(slices);
   }
 
   static boolean checkCollectionKeyExistence(ZkNodeProps message) {

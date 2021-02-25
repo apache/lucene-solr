@@ -47,8 +47,7 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = 2;
-  private static final int nodeCount = (numShards*numReplicas + (maxShardsPerNode-1))/maxShardsPerNode;
+  private static final int nodeCount = numShards*numReplicas;
   private static final String configName = "solrCloudCollectionConfig";
   private static final String collectionName = "testcollection";
 
@@ -97,13 +96,11 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
       throws Exception {
     if (random().nextBoolean()) {  // process asynchronously
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-          .setMaxShardsPerNode(maxShardsPerNode)
           .processAndWait(cluster.getSolrClient(), 90);
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-          .setMaxShardsPerNode(maxShardsPerNode)
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
     }
@@ -145,16 +142,16 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
         filterChain.doFilter(request, response);
         return true;
       }
-      HttpServletRequest httpRequest = (HttpServletRequest)request;
+      HttpServletRequest httpRequest = request;
       String username = httpRequest.getHeader("username");
       String password = httpRequest.getHeader("password");
       
-      log.info("Username: "+username+", password: "+password);
+      log.info("Username: {}, password: {}", username, password);
       if(MockAuthenticationPlugin.expectedUsername.equals(username) && MockAuthenticationPlugin.expectedPassword.equals(password)) {
         filterChain.doFilter(request, response);
         return true;
       } else {
-        ((HttpServletResponse)response).sendError(401, "Unauthorized request");
+        response.sendError(401, "Unauthorized request");
         return false;
       }
     }

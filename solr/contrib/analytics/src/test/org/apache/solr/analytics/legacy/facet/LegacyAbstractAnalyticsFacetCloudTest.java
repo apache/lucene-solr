@@ -171,7 +171,7 @@ public class LegacyAbstractAnalyticsFacetCloudTest extends LegacyAbstractAnalyti
       result = new ArrayList<T>();
       for (List<T> list : lists) {
         if( list.size() == 0) continue;
-        Collections.sort((List<T>)list);
+        Collections.sort(list);
         result.add(list.get(0));
       }
     } else {

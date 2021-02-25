@@ -302,7 +302,6 @@ POST /api/c
       "numShards": 3,
       "tlogReplicas":1,
       "pullReplicas":1,
-      "maxShardsPerNode":2,
       "properties" : {
         "foobar":"bazbam"
       }
@@ -346,7 +345,6 @@ http://localhost:8983/solr/admin/collections?action=CREATEALIAS
     &create-collection.shards=foo,bar,baz
     &create-collection.tlogReplicas=1
     &create-collection.pullReplicas=1
-    &create-collection.maxShardsPerNode=2
     &create-collection.property.foobar=bazbam
 ----
 

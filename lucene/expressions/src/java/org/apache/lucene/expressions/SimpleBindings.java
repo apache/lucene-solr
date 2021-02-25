@@ -16,20 +16,19 @@
  */
 package org.apache.lucene.expressions;
 
-
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
-
 import org.apache.lucene.search.DoubleValuesSource;
 
 /**
- * Simple class that binds expression variable names to {@link DoubleValuesSource}s
- * or other {@link Expression}s.
- * <p>
- * Example usage:
+ * Simple class that binds expression variable names to {@link DoubleValuesSource}s or other {@link
+ * Expression}s.
+ *
+ * <p>Example usage:
+ *
  * <pre class="prettyprint">
  *   SimpleBindings bindings = new SimpleBindings();
  *   // document's text relevance score
@@ -38,11 +37,11 @@ import org.apache.lucene.search.DoubleValuesSource;
  *   bindings.add("popularity", DoubleValuesSource.fromIntField("popularity"));
  *   // another expression
  *   bindings.add("recency", myRecencyExpression);
- *   
+ *
  *   // create a sort field in reverse order
  *   Sort sort = new Sort(expr.getSortField(bindings, true));
  * </pre>
- * 
+ *
  * @lucene.experimental
  */
 public final class SimpleBindings extends Bindings {
@@ -52,20 +51,20 @@ public final class SimpleBindings extends Bindings {
   /** Creates a new empty Bindings */
   public SimpleBindings() {}
 
-  /**
-   * Bind a {@link DoubleValuesSource} directly to the given name.
-   */
-  public void add(String name, DoubleValuesSource source) { map.put(name, bindings -> source); }
+  /** Bind a {@link DoubleValuesSource} directly to the given name. */
+  public void add(String name, DoubleValuesSource source) {
+    map.put(name, bindings -> source);
+  }
 
-  /** 
+  /**
    * Adds an Expression to the bindings.
-   * <p>
-   * This can be used to reference expressions from other expressions. 
+   *
+   * <p>This can be used to reference expressions from other expressions.
    */
   public void add(String name, Expression expression) {
     map.put(name, expression::getDoubleValuesSource);
   }
-  
+
   @Override
   public DoubleValuesSource getDoubleValuesSource(String name) {
     if (map.containsKey(name) == false) {
@@ -76,6 +75,7 @@ public final class SimpleBindings extends Bindings {
 
   /**
    * Traverses the graph of bindings, checking there are no cycles or missing references
+   *
    * @throws IllegalArgumentException if the bindings is inconsistent
    */
   public void validate() {
@@ -100,7 +100,8 @@ public final class SimpleBindings extends Bindings {
     @Override
     public DoubleValuesSource getDoubleValuesSource(String name) {
       if (seenFields.contains(name)) {
-        throw new IllegalArgumentException("Recursion error: Cycle detected " + seenFields + "->" + name);
+        throw new IllegalArgumentException(
+            "Recursion error: Cycle detected " + seenFields + "->" + name);
       }
       if (map.containsKey(name) == false) {
         throw new IllegalArgumentException("Invalid reference '" + name + "'");
@@ -109,4 +110,3 @@ public final class SimpleBindings extends Bindings {
     }
   }
 }
-

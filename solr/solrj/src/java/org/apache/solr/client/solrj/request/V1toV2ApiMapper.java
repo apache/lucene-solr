@@ -84,6 +84,7 @@ public class V1toV2ApiMapper {
     public V2Request.Builder convert(SolrParams paramsV1) {
       String[] list = new String[template.variables.size()];
       MapWriter data = serializeToV2Format(paramsV1, list);
+      @SuppressWarnings({"rawtypes"})
       Map o = data.toMap(new LinkedHashMap<>());
       return new V2Request.Builder(template.apply(s -> {
         int idx = template.variables.indexOf(s);

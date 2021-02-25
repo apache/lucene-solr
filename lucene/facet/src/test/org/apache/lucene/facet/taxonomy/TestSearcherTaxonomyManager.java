@@ -22,7 +22,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.facet.FacetField;
@@ -53,7 +52,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestSearcherTaxonomyManager extends FacetTestCase {
 
   private static class IndexerThread extends Thread {
-    
+
     private IndexWriter w;
     private FacetsConfig config;
     private TaxonomyWriter tw;
@@ -61,8 +60,13 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     private int ordLimit;
     private AtomicBoolean stop;
 
-    public IndexerThread(IndexWriter w, FacetsConfig config, TaxonomyWriter tw,
-        ReferenceManager<SearcherAndTaxonomy> mgr, int ordLimit, AtomicBoolean stop) {
+    public IndexerThread(
+        IndexWriter w,
+        FacetsConfig config,
+        TaxonomyWriter tw,
+        ReferenceManager<SearcherAndTaxonomy> mgr,
+        int ordLimit,
+        AtomicBoolean stop) {
       this.w = w;
       this.config = config;
       this.tw = tw;
@@ -79,7 +83,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
         while (true) {
           Document doc = new Document();
           int numPaths = TestUtil.nextInt(random(), 1, 5);
-          for(int i=0;i<numPaths;i++) {
+          for (int i = 0; i < numPaths; i++) {
             String path;
             if (!paths.isEmpty() && random().nextInt(5) != 4) {
               // Use previous path
@@ -121,7 +125,6 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
         stop.set(true);
       }
     }
-
   }
 
   public void testNRT() throws Exception {
@@ -149,29 +152,30 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
 
     final SearcherTaxonomyManager mgr = new SearcherTaxonomyManager(w, true, null, tw);
 
-    Thread reopener = new Thread() {
-        @Override
-        public void run() {
-          while(!stop.get()) {
-            try {
-              // Sleep for up to 20 msec:
-              Thread.sleep(random().nextInt(20));
+    Thread reopener =
+        new Thread() {
+          @Override
+          public void run() {
+            while (!stop.get()) {
+              try {
+                // Sleep for up to 20 msec:
+                Thread.sleep(random().nextInt(20));
 
-              if (VERBOSE) {
-                System.out.println("TEST: reopen");
+                if (VERBOSE) {
+                  System.out.println("TEST: reopen");
+                }
+
+                mgr.maybeRefresh();
+
+                if (VERBOSE) {
+                  System.out.println("TEST: reopen done");
+                }
+              } catch (Exception ioe) {
+                throw new RuntimeException(ioe);
               }
-
-              mgr.maybeRefresh();
-
-              if (VERBOSE) {
-                System.out.println("TEST: reopen done");
-              }
-            } catch (Exception ioe) {
-              throw new RuntimeException(ioe);
             }
           }
-        }
-      };
+        };
 
     reopener.setName("reopener");
     reopener.start();
@@ -183,20 +187,20 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
       while (!stop.get()) {
         SearcherAndTaxonomy pair = mgr.acquire();
         try {
-          //System.out.println("search maxOrd=" + pair.taxonomyReader.getSize());
+          // System.out.println("search maxOrd=" + pair.taxonomyReader.getSize());
           FacetsCollector sfc = new FacetsCollector();
           pair.searcher.search(new MatchAllDocsQuery(), sfc);
           Facets facets = getTaxonomyFacetCounts(pair.taxonomyReader, config, sfc);
           FacetResult result = facets.getTopChildren(10, "field");
-          if (pair.searcher.getIndexReader().numDocs() > 0) { 
-            //System.out.println(pair.taxonomyReader.getSize());
+          if (pair.searcher.getIndexReader().numDocs() > 0) {
+            // System.out.println(pair.taxonomyReader.getSize());
             assertTrue(result.childCount > 0);
             assertTrue(result.labelValues.length > 0);
           }
 
-          //if (VERBOSE) {
-          //System.out.println("TEST: facets=" + FacetTestUtils.toString(results.get(0)));
-          //}
+          // if (VERBOSE) {
+          // System.out.println("TEST: facets=" + FacetTestUtils.toString(results.get(0)));
+          // }
         } finally {
           mgr.release(pair);
         }
@@ -213,11 +217,12 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     w.close();
     IOUtils.close(mgr, tw, taxoDir, dir);
   }
-  
+
   public void testDirectory() throws Exception {
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
-    final IndexWriter w = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
+    final IndexWriter w =
+        new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));
     final DirectoryTaxonomyWriter tw = new DirectoryTaxonomyWriter(taxoDir);
     // first empty commit
     w.commit();
@@ -237,20 +242,20 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
       while (!stop.get()) {
         SearcherAndTaxonomy pair = mgr.acquire();
         try {
-          //System.out.println("search maxOrd=" + pair.taxonomyReader.getSize());
+          // System.out.println("search maxOrd=" + pair.taxonomyReader.getSize());
           FacetsCollector sfc = new FacetsCollector();
           pair.searcher.search(new MatchAllDocsQuery(), sfc);
           Facets facets = getTaxonomyFacetCounts(pair.taxonomyReader, config, sfc);
           FacetResult result = facets.getTopChildren(10, "field");
-          if (pair.searcher.getIndexReader().numDocs() > 0) { 
-            //System.out.println(pair.taxonomyReader.getSize());
+          if (pair.searcher.getIndexReader().numDocs() > 0) {
+            // System.out.println(pair.taxonomyReader.getSize());
             assertTrue(result.childCount > 0);
             assertTrue(result.labelValues.length > 0);
           }
 
-          //if (VERBOSE) {
-          //System.out.println("TEST: facets=" + FacetTestUtils.toString(results.get(0)));
-          //}
+          // if (VERBOSE) {
+          // System.out.println("TEST: facets=" + FacetTestUtils.toString(results.get(0)));
+          // }
         } finally {
           mgr.release(pair);
         }
@@ -266,7 +271,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     w.close();
     IOUtils.close(mgr, tw, taxoDir, indexDir);
   }
-  
+
   public void testReplaceTaxonomyNRT() throws Exception {
     Directory dir = newDirectory();
     Directory taxoDir = newDirectory();
@@ -282,14 +287,16 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     tw.replaceTaxonomy(taxoDir2);
     taxoDir2.close();
 
-    expectThrows(IllegalStateException.class, () -> {
-      mgr.maybeRefresh();
-    });
+    expectThrows(
+        IllegalStateException.class,
+        () -> {
+          mgr.maybeRefresh();
+        });
 
     w.close();
     IOUtils.close(mgr, tw, taxoDir, dir);
   }
-  
+
   public void testReplaceTaxonomyDirectory() throws Exception {
     Directory indexDir = newDirectory();
     Directory taxoDir = newDirectory();
@@ -310,7 +317,7 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     } finally {
       mgr.release(pair);
     }
-    
+
     w.addDocument(new Document());
     tw.replaceTaxonomy(taxoDir2);
     taxoDir2.close();
@@ -354,7 +361,8 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     IOUtils.close(w, tw, mgr, indexDir, taxoDir);
   }
 
-  private SearcherTaxonomyManager getSearcherTaxonomyManager(Directory indexDir, Directory taxoDir, SearcherFactory searcherFactory) throws IOException {
+  private SearcherTaxonomyManager getSearcherTaxonomyManager(
+      Directory indexDir, Directory taxoDir, SearcherFactory searcherFactory) throws IOException {
     if (random().nextBoolean()) {
       return new SearcherTaxonomyManager(indexDir, taxoDir, searcherFactory);
     } else {

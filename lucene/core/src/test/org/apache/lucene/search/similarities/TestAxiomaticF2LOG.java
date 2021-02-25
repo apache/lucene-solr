@@ -22,5 +22,4 @@ public class TestAxiomaticF2LOG extends AxiomaticTestCase {
   protected final Similarity getAxiomaticModel(float s, int queryLen, float k) {
     return new AxiomaticF2LOG(s);
   }
-
 }

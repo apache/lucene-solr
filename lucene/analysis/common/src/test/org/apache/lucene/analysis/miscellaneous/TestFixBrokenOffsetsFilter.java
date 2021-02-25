@@ -18,7 +18,6 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
@@ -29,6 +28,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 
+@Deprecated
 public class TestFixBrokenOffsetsFilter extends BaseTokenStreamTestCase {
 
   public void testBogusTermVectors() throws IOException {
@@ -39,9 +39,9 @@ public class TestFixBrokenOffsetsFilter extends BaseTokenStreamTestCase {
     ft.setStoreTermVectors(true);
     ft.setStoreTermVectorOffsets(true);
     Field field = new Field("foo", "", ft);
-    field.setTokenStream(new FixBrokenOffsetsFilter(new CannedTokenStream(
-        new Token("bar", 5, 10), new Token("bar", 1, 4)
-        )));
+    field.setTokenStream(
+        new FixBrokenOffsetsFilter(
+            new CannedTokenStream(new Token("bar", 5, 10), new Token("bar", 1, 4))));
     doc.add(field);
     iw.addDocument(doc);
     iw.close();

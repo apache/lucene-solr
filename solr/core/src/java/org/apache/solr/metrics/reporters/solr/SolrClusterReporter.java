@@ -144,7 +144,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
     this.handler = handler;
   }
 
-  public void setReport(List<Map> reportConfig) {
+  public void setReport(@SuppressWarnings({"rawtypes"})List<Map> reportConfig) {
     if (reportConfig == null || reportConfig.isEmpty()) {
       return;
     }
@@ -156,7 +156,7 @@ public class SolrClusterReporter extends SolrCoreContainerReporter {
     });
   }
 
-  public void setReport(Map map) {
+  public void setReport(@SuppressWarnings({"rawtypes"})Map map) {
     if (map == null || map.isEmpty()) {
       return;
     }

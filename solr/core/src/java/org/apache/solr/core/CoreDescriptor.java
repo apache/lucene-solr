@@ -35,7 +35,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.util.PropertiesUtil;
+import org.apache.solr.common.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,6 +126,7 @@ public class CoreDescriptor {
 
   private final CloudDescriptor cloudDesc;
 
+  /** The absolute path to where the core lives. */
   private final Path instanceDir;
 
   /** The original standard core properties, before substitution */
@@ -175,7 +176,7 @@ public class CoreDescriptor {
   /**
    * Create a new CoreDescriptor.
    * @param name            the CoreDescriptor's name
-   * @param instanceDir     a Path resolving to the instanceDir
+   * @param instanceDir     a Path resolving to the instanceDir. Must be absolute.
    * @param coreProps       a Map of the properties for this core
    * @param containerProperties the properties from the enclosing container.
    * @param zkController    the ZkController in SolrCloud mode, otherwise null.
@@ -183,6 +184,7 @@ public class CoreDescriptor {
   public CoreDescriptor(String name, Path instanceDir, Map<String, String> coreProps,
                         Properties containerProperties, ZkController zkController) {
     this.instanceDir = instanceDir;
+    assert instanceDir.isAbsolute();
 
     originalCoreProperties.setProperty(CORE_NAME, name);
 
@@ -257,7 +259,7 @@ public class CoreDescriptor {
         propName = SOLR_CORE_PROP_PREFIX + propName;
       substitutableProperties.setProperty(propName, propValue);
     }
-    substitutableProperties.setProperty("solr.core.instanceDir", instanceDir.toAbsolutePath().toString());
+    substitutableProperties.setProperty("solr.core.instanceDir", instanceDir.toString());
   }
 
   /**
@@ -290,9 +292,7 @@ public class CoreDescriptor {
     return defaultProperties.get(CORE_DATADIR).equals(coreProperties.getProperty(CORE_DATADIR));
   }
 
-  /**
-   * @return the core instance directory
-   */
+  /** The core instance directory (absolute). */
   public Path getInstanceDir() {
     return instanceDir;
   }

@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.NamedList;
@@ -34,8 +35,8 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void setupCluster() throws Exception {
-    oldResponseEntries = OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE;
-    OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE = random().nextBoolean();
+    oldResponseEntries = ShardRequestTracker.INCLUDE_TOP_LEVEL_RESPONSE;
+    ShardRequestTracker.INCLUDE_TOP_LEVEL_RESPONSE = random().nextBoolean();
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
@@ -44,7 +45,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void restoreFlag() throws Exception {
-    OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE = oldResponseEntries; 
+    ShardRequestTracker.INCLUDE_TOP_LEVEL_RESPONSE = oldResponseEntries;
   }
 
   @SuppressWarnings("deprecation")
@@ -53,7 +54,6 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     int numShards = 4;
     int numReplicas = 1;
     Create createCollection = CollectionAdminRequest.createCollection("asynccall", "conf", numShards, numReplicas);
-    createCollection.setMaxShardsPerNode(100);
     String asyncId =
         createCollection.processAsync(cluster.getSolrClient());
 
@@ -66,7 +66,7 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
     CollectionAdminRequest.RequestStatus requestStatus = CollectionAdminRequest.requestStatus(asyncId);
     CollectionAdminResponse rsp = requestStatus.process(cluster.getSolrClient());
     NamedList<?> r = rsp.getResponse();
-    if (OverseerCollectionMessageHandler.INCLUDE_TOP_LEVEL_RESPONSE) {
+    if (ShardRequestTracker.INCLUDE_TOP_LEVEL_RESPONSE) {
       final int actualNumOfElems = 3+(numShards*numReplicas);
       // responseHeader, success, status, + old responses per every replica  
       assertEquals("Expected "+actualNumOfElems+" elements in the response" + r.jsonStr(),

@@ -209,6 +209,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     // Pull from the queue multiple times and streams over a single connection.
     // Exits on exception, interruption, or an empty queue to pull from.
     //
+    @SuppressWarnings({"unchecked"})
     void sendUpdateStream() throws Exception {
 
       try {
@@ -329,7 +330,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   // *must* be called with runners monitor held, e.g. synchronized(runners){ addRunner() }
   private void addRunner() {
-    MDC.put("ConcurrentUpdateHttp2SolrClient.url", client.getBaseURL());
+    MDC.put("ConcurrentUpdateHttp2SolrClient.url", String.valueOf(client.getBaseURL())); // MDC can't have null value
     try {
       Runner r = new Runner();
       runners.add(r);
@@ -345,7 +346,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
   }
 
   @Override
-  public NamedList<Object> request(final SolrRequest request, String collection)
+  public NamedList<Object> request(@SuppressWarnings({"rawtypes"})final SolrRequest request, String collection)
       throws SolrServerException, IOException {
     if (!(request instanceof UpdateRequest)) {
       request.setBasePath(basePath);

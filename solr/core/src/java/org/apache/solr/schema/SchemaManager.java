@@ -31,18 +31,18 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.BaseSolrResource;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.InputSource;
 
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
@@ -82,6 +82,7 @@ public class SchemaManager {
    * as possible instead of failing at the first error it encounters
    * @return List of errors. If the List is empty then the operation was successful.
    */
+  @SuppressWarnings({"rawtypes"})
   public List performOperations() throws Exception {
     List<CommandOperation> ops = req.getCommands(false);
     List errs = CommandOperation.captureErrors(ops);
@@ -95,6 +96,7 @@ public class SchemaManager {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   private List doOperations(List<CommandOperation> operations) throws InterruptedException, IOException, KeeperException {
     TimeOut timeOut = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     SolrCore core = req.getCore();
@@ -130,7 +132,7 @@ public class SchemaManager {
             latestVersion = ZkController.persistConfigResourceToZooKeeper
                 (zkLoader, managedIndexSchema.getSchemaZkVersion(), managedIndexSchema.getResourceName(),
                  sw.toString().getBytes(StandardCharsets.UTF_8), true);
-            req.getCore().getCoreContainer().reload(req.getCore().getName());
+            req.getCore().getCoreContainer().reload(req.getCore().getName(), req.getCore().uniqueId);
             break;
           } catch (ZkController.ResourceModifiedInZkException e) {
             log.info("Schema was modified by another node. Retrying..");
@@ -140,7 +142,7 @@ public class SchemaManager {
             //only for non cloud stuff
             managedIndexSchema.persistManagedSchema(false);
             core.setLatestSchema(managedIndexSchema);
-            core.getCoreContainer().reload(core.getName());
+            core.getCoreContainer().reload(core.getName(), core.uniqueId);
           } catch (SolrException e) {
             log.warn(errorMsg);
             errors = singletonList(errorMsg + e.getMessage());
@@ -187,6 +189,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addFieldTypes(singletonList(fieldType), false);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -221,6 +224,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.addCopyFields(src, dests, maxChars);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -238,6 +242,7 @@ public class SchemaManager {
               = mgr.managedIndexSchema.addFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -255,6 +260,7 @@ public class SchemaManager {
               = mgr.managedIndexSchema.addDynamicFields(singletonList(field), Collections.emptyMap(), false);
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -273,6 +279,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -329,6 +336,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -344,6 +352,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceFieldType(name, className, op.getDataMap());
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -364,6 +373,7 @@ public class SchemaManager {
           mgr.managedIndexSchema = mgr.managedIndexSchema.replaceField(name, ft, op.getValuesExcluding(NAME, TYPE));
           return true;
         } catch (Exception e) {
+          log.error("err", e);
           op.addError(getErrorStr(e));
           return false;
         }
@@ -444,8 +454,8 @@ public class SchemaManager {
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
         int version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.info("managed schema loaded . version : {} ", version);
-        return new ManagedIndexSchema(core.getSolrConfig(), name, new InputSource(in), true, name, version,
-            core.getLatestSchema().getSchemaUpdateLock());
+        return new ManagedIndexSchema(core.getSolrConfig(), name, () -> ConfigSetService.getParsedSchema(in, zkLoader,  core.getLatestSchema().getResourceName()), true, name, version,
+                core.getLatestSchema().getSchemaUpdateLock());
       } else {
         return (ManagedIndexSchema) core.getLatestSchema();
       }

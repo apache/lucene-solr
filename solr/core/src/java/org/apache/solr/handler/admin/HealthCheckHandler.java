@@ -70,15 +70,12 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   CoreContainer coreContainer;
 
-  public HealthCheckHandler() {}
-
   public HealthCheckHandler(final CoreContainer coreContainer) {
-    super();
     this.coreContainer = coreContainer;
   }
 
   @Override
-  final public void init(NamedList args) {
+  final public void init(@SuppressWarnings({"rawtypes"})NamedList args) {
   }
 
   public CoreContainer getCoreContainer() {
@@ -129,7 +126,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
           rsp.add(STATUS, FAILURE);
           rsp.add("num_cores_unhealthy", unhealthyCores);
           rsp.setException(new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, unhealthyCores + " out of "
-              + cores.getAllCoreNames().size() + " replicas are currently initializing or recovering"));
+              + cores.getNumAllCores() + " replicas are currently initializing or recovering"));
           return;
       }
       rsp.add("message", "All cores are healthy");

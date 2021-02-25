@@ -49,7 +49,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactory extends UpdateRequestPro
   protected boolean ignoreOptimizeOnly = false; // default behavior is to ignore commits and optimize
 
   @Override
-  public void init(final NamedList args) {
+  public void init(@SuppressWarnings({"rawtypes"})final NamedList args) {
     SolrParams params = (args != null) ? args.toSolrParams() : null;
     if (params == null) {
       errorCode = ErrorCode.FORBIDDEN; // default is 403 error

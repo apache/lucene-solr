@@ -16,22 +16,19 @@
  */
 package org.apache.lucene.benchmark.byTask.utils;
 
-
 import java.text.NumberFormat;
 import java.util.Locale;
 
-/**
- * Formatting utilities (for reports).
- */
+/** Formatting utilities (for reports). */
 public class Format {
 
-  private static NumberFormat numFormat [] = { 
-    NumberFormat.getInstance(Locale.ROOT), 
+  private static NumberFormat numFormat[] = {
+    NumberFormat.getInstance(Locale.ROOT),
     NumberFormat.getInstance(Locale.ROOT),
     NumberFormat.getInstance(Locale.ROOT),
   };
   private static final String padd = "                                                 ";
-  
+
   static {
     numFormat[0].setMaximumFractionDigits(0);
     numFormat[0].setMinimumFractionDigits(0);
@@ -43,6 +40,7 @@ public class Format {
 
   /**
    * Padd a number from left.
+   *
    * @param numFracDigits number of digits in fraction part - must be 0 or 1 or 2.
    * @param f number to be formatted.
    * @param col column name (used for deciding on length).
@@ -60,6 +58,7 @@ public class Format {
 
   /**
    * Pad a number from right.
+   *
    * @param numFracDigits number of digits in fraction part - must be 0 or 1 or 2.
    * @param f number to be formatted.
    * @param col column name (used for deciding on length).
@@ -77,6 +76,7 @@ public class Format {
 
   /**
    * Pad a number from left.
+   *
    * @param n number to be formatted.
    * @param col column name (used for deciding on length).
    * @return formatted string.
@@ -88,6 +88,7 @@ public class Format {
 
   /**
    * Pad a string from right.
+   *
    * @param s string to be formatted.
    * @param col column name (used for deciding on length).
    * @return formatted string.
@@ -99,6 +100,7 @@ public class Format {
 
   /**
    * Pad a string from left.
+   *
    * @param s string to be formatted.
    * @param col column name (used for deciding on length).
    * @return formatted string.
@@ -107,5 +109,4 @@ public class Format {
     String res = padd + s;
     return res.substring(res.length() - col.length());
   }
-
 }

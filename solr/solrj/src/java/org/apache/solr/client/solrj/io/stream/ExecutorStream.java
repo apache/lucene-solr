@@ -132,7 +132,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<>();
     l.add(stream);
     return l;
   }
@@ -153,6 +153,7 @@ public class ExecutorStream extends TupleStream implements Expressible {
   }
 
   public Tuple read() throws IOException {
+    @SuppressWarnings({"unchecked", "rawtypes"})
     ArrayBlockingQueue<Tuple> queue = new ArrayBlockingQueue(10000);
     while(true) {
       Tuple tuple = stream.read();
@@ -183,10 +184,12 @@ public class ExecutorStream extends TupleStream implements Expressible {
     private StreamFactory streamFactory;
     private StreamContext streamContext;
 
-    public StreamTask(ArrayBlockingQueue queue, StreamFactory streamFactory, StreamContext streamContext) {
+    @SuppressWarnings({"unchecked"})
+    public StreamTask(@SuppressWarnings({"rawtypes"})ArrayBlockingQueue queue, StreamFactory streamFactory, StreamContext streamContext) {
       this.queue = queue;
       this.streamFactory = streamFactory;
       this.streamContext = new StreamContext();
+      this.streamContext.setObjectCache(streamContext.getObjectCache());
       this.streamContext.setSolrClientCache(streamContext.getSolrClientCache());
       this.streamContext.setModelCache(streamContext.getModelCache());
     }

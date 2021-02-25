@@ -45,12 +45,14 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.DelegationTokenResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
@@ -79,6 +81,7 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     return s;
   }
 
+  @SuppressWarnings({"unchecked"})
   public static <T> T rand(T... vals) {
     return vals[ random().nextInt(vals.length) ];
   }
@@ -107,9 +110,13 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   }
   
   
-  public static Object createDocObjects(Map<Comparable, Doc> fullModel, Comparator sort, int rows, Collection<String> fieldNames) {
+  @SuppressWarnings({"unchecked"})
+  public static Object createDocObjects(@SuppressWarnings({"rawtypes"})Map<Comparable, Doc> fullModel,
+                                        @SuppressWarnings({"rawtypes"})Comparator sort, int rows,
+                                        Collection<String> fieldNames) {
     List<Doc> docList = new ArrayList<>(fullModel.values());
     Collections.sort(docList, sort);
+    @SuppressWarnings({"rawtypes"})
     List sortedDocs = new ArrayList(rows);
     for (Doc doc : docList) {
       if (sortedDocs.size() >= rows) break;
@@ -120,18 +127,16 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   }
 
 
-  public static void compare(SolrQueryRequest req, String path, Object model, Map<Comparable, Doc> fullModel) throws Exception {
+  public static void compare(SolrQueryRequest req, String path, Object model,
+                             @SuppressWarnings({"rawtypes"})Map<Comparable, Doc> fullModel) throws Exception {
     String strResponse = h.query(req);
 
     Object realResponse = ObjectBuilder.fromJSON(strResponse);
     String err = JSONTestUtil.matchObj(path, realResponse, model);
     if (err != null) {
-      log.error("RESPONSE MISMATCH: " + err
-              + "\n\trequest="+req
-              + "\n\tresult="+strResponse
-              + "\n\texpected="+ JSONUtil.toJSON(model)
-              + "\n\tmodel="+ fullModel
-      );
+      log.error("RESPONSE MISMATCH: {}\n\trequest={}\n\tresult={}" +
+          "\n\texpected={}\n\tmodel={}"
+          , err, req, strResponse, JSONUtil.toJSON(model), fullModel);
 
       // re-execute the request... good for putting a breakpoint here for debugging
       String rsp = h.query(req);
@@ -184,17 +189,15 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
         String err = JSONTestUtil.match(response, test, JSONTestUtil.DEFAULT_DELTA);
         failed = false;
         if (err != null) {
-          log.error("query failed JSON validation. error=" + err +
-                  "\n expected =" + test +
-                  "\n response = " + response
+          log.error("query failed JSON validation. error={}\n expected ={}\n response = {}"
+              , err, test, response
           );
           throw new RuntimeException(err);
         }
       } finally {
         if (failed) {
-          log.error("JSON query validation threw an exception." +
-                  "\n expected =" + test +
-                  "\n response = " + response
+          log.error("JSON query validation threw an exception.\n expected ={}\n response = {}"
+                  , test, response
           );
         }
       }
@@ -230,12 +233,15 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       query.setPath(path);
     }
 
-    query.setResponseParser(new NoOpResponseParser(wt));
-    NamedList<Object> rsp = client.request(query);
-
-    String raw = (String)rsp.get("response");
-
-    return raw;
+    if ("json".equals(wt)) {
+      query.setResponseParser(new DelegationTokenResponse.JsonMapResponseParser());
+      NamedList<Object> rsp = client.request(query);
+      return Utils.toJSONString(rsp);
+    } else {
+      query.setResponseParser(new NoOpResponseParser(wt));
+      NamedList<Object> rsp = client.request(query);
+      return  (String)rsp.get("response");
+    }
   }
 
   public static String getQueryResponse(String wt, SolrParams params) throws Exception {
@@ -524,7 +530,9 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
 
       jetty.start();
       port = jetty.getLocalPort();
-      log.info("===> Started solr server port=" + port + " home="+getBaseDir());
+      if (log.isInfoEnabled()) {
+        log.info("===> Started solr server port={} home={}", port, getBaseDir());
+      }
     }
 
     public void stop() throws Exception {

@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.util.Collection;
 
-/** 
- * This class makes a best-effort check that a provided {@link Lock}
- * is valid before any destructive filesystem operation.
+/**
+ * This class makes a best-effort check that a provided {@link Lock} is valid before any destructive
+ * filesystem operation.
  */
 public final class LockValidatingDirectoryWrapper extends FilterDirectory {
   private final Lock writeLock;
@@ -45,7 +44,8 @@ public final class LockValidatingDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+  public void copyFrom(Directory from, String src, String dest, IOContext context)
+      throws IOException {
     writeLock.ensureValid();
     in.copyFrom(from, src, dest, context);
   }

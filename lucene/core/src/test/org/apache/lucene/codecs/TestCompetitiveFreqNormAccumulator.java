@@ -21,7 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.lucene.index.Impact;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -42,7 +41,7 @@ public class TestCompetitiveFreqNormAccumulator extends LuceneTestCase {
     acc.add(10, 13);
     expected.add(new Impact(10, 13));
     assertEquals(List.copyOf(expected), List.copyOf(acc.getCompetitiveFreqNormPairs()));
-    
+
     acc.add(1, 2);
     expected.add(new Impact(1, 2));
     assertEquals(List.copyOf(expected), List.copyOf(acc.getCompetitiveFreqNormPairs()));
@@ -91,7 +90,9 @@ public class TestCompetitiveFreqNormAccumulator extends LuceneTestCase {
     acc.add(1, 7);
     acc.add(1, 4);
 
-    assertEquals(Collections.singletonList(new Impact(1, 4)), List.copyOf(acc.getCompetitiveFreqNormPairs()));
+    assertEquals(
+        Collections.singletonList(new Impact(1, 4)),
+        List.copyOf(acc.getCompetitiveFreqNormPairs()));
   }
 
   public void testOmitNorms() {
@@ -101,6 +102,8 @@ public class TestCompetitiveFreqNormAccumulator extends LuceneTestCase {
     acc.add(7, 1);
     acc.add(4, 1);
 
-    assertEquals(Collections.singletonList(new Impact(7, 1)), List.copyOf(acc.getCompetitiveFreqNormPairs()));
+    assertEquals(
+        Collections.singletonList(new Impact(7, 1)),
+        List.copyOf(acc.getCompetitiveFreqNormPairs()));
   }
 }

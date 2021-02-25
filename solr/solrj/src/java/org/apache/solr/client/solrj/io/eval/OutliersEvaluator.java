@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.commons.math3.distribution.IntegerDistribution;
@@ -35,6 +34,7 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
   }
 
   @Override
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public Object doWork(Object... values) throws IOException{
 
     if(values.length < 4) {
@@ -74,13 +74,13 @@ public class OutliersEvaluator extends RecursiveObjectEvaluator implements ManyV
         throw new IOException("The optional fifth parameter of the outliers function is an array of Tuples that are paired with the numeric array of values to be tested.");
       }
     } else {
-      tuples = new ArrayList();
+      tuples = new ArrayList<>();
       for(int i=0; i<vec.size(); i++) {
-        tuples.add(new Tuple(new HashMap()));
+        tuples.add(new Tuple());
       }
     }
 
-    List<Tuple> outliers = new ArrayList();
+    List<Tuple> outliers = new ArrayList<>();
 
     if(dist instanceof IntegerDistribution) {
 

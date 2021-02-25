@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.util.IOUtils;
 
 /**
@@ -58,17 +57,14 @@ public class ExtractReuters {
     }
   }
 
-  Pattern EXTRACTION_PATTERN = Pattern
-      .compile("<TITLE>(.*?)</TITLE>|<DATE>(.*?)</DATE>|<BODY>(.*?)</BODY>");
+  Pattern EXTRACTION_PATTERN =
+      Pattern.compile("<TITLE>(.*?)</TITLE>|<DATE>(.*?)</DATE>|<BODY>(.*?)</BODY>");
 
-  private static String[] META_CHARS = { "&", "<", ">", "\"", "'" };
+  private static String[] META_CHARS = {"&", "<", ">", "\"", "'"};
 
-  private static String[] META_CHARS_SERIALIZATIONS = { "&amp;", "&lt;",
-      "&gt;", "&quot;", "&apos;" };
+  private static String[] META_CHARS_SERIALIZATIONS = {"&amp;", "&lt;", "&gt;", "&quot;", "&apos;"};
 
-  /**
-   * Override if you wish to change what is extracted
-   */
+  /** Override if you wish to change what is extracted */
   protected void extractFile(Path sgmFile) {
     try (BufferedReader reader = Files.newBufferedReader(sgmFile, StandardCharsets.ISO_8859_1)) {
       StringBuilder buffer = new StringBuilder(1024);
@@ -82,9 +78,9 @@ public class ExtractReuters {
         if (line.indexOf("</REUTERS") == -1) {
           // Replace the SGM escape sequences
 
-          buffer.append(line).append(' ');// accumulate the strings for now,
-                                          // then apply regular expression to
-                                          // get the pieces,
+          buffer.append(line).append(' '); // accumulate the strings for now,
+          // then apply regular expression to
+          // get the pieces,
         } else {
           // Extract the relevant pieces and write to a file in the output dir
           Matcher matcher = EXTRACTION_PATTERN.matcher(buffer);
@@ -116,15 +112,15 @@ public class ExtractReuters {
 
   public static void main(String[] args) throws Exception {
     if (args.length != 2) {
-      usage("Wrong number of arguments ("+args.length+")");
+      usage("Wrong number of arguments (" + args.length + ")");
       return;
     }
     Path reutersDir = Paths.get(args[0]);
     if (!Files.exists(reutersDir)) {
-      usage("Cannot find Path to Reuters SGM files ("+reutersDir+")");
+      usage("Cannot find Path to Reuters SGM files (" + reutersDir + ")");
       return;
     }
-    
+
     // First, extract to a tmp directory and only if everything succeeds, rename
     // to output directory.
     Path outputDir = Paths.get(args[1] + "-tmp");
@@ -136,7 +132,9 @@ public class ExtractReuters {
   }
 
   private static void usage(String msg) {
-    System.err.println("Usage: "+msg+" :: java -cp <...> org.apache.lucene.benchmark.utils.ExtractReuters <Path to Reuters SGM files> <Output Path>");
+    System.err.println(
+        "Usage: "
+            + msg
+            + " :: java -cp <...> org.apache.lucene.benchmark.utils.ExtractReuters <Path to Reuters SGM files> <Output Path>");
   }
-  
 }

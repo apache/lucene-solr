@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -31,29 +30,19 @@ import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-
-
 /**
- * <p>
- * Dictionary with terms, weights, payload (optional) and contexts (optional)
- * information taken from stored/indexed fields in a Lucene index.
- * </p>
- * <b>NOTE:</b> 
- *  <ul>
- *    <li>
- *      The term field has to be stored; if it is missing, the document is skipped.
- *    </li>
- *    <li>
- *      The payload and contexts field are optional and are not required to be stored.
- *    </li>
- *    <li>
- *      The weight field can be stored or can be a {@link NumericDocValues}.
- *      If the weight field is not defined, the value of the weight is <code>0</code>
- *    </li>
- *  </ul>
+ * Dictionary with terms, weights, payload (optional) and contexts (optional) information taken from
+ * stored/indexed fields in a Lucene index. <b>NOTE:</b>
+ *
+ * <ul>
+ *   <li>The term field has to be stored; if it is missing, the document is skipped.
+ *   <li>The payload and contexts field are optional and are not required to be stored.
+ *   <li>The weight field can be stored or can be a {@link NumericDocValues}. If the weight field is
+ *       not defined, the value of the weight is <code>0</code>
+ * </ul>
  */
 public class DocumentDictionary implements Dictionary {
-  
+
   /** {@link IndexReader} to load documents from */
   protected final IndexReader reader;
 
@@ -61,35 +50,40 @@ public class DocumentDictionary implements Dictionary {
   protected final String payloadField;
   /** Field to read contexts from */
   protected final String contextsField;
+
   private final String field;
   private final String weightField;
-  
+
   /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms and <code>weightField</code> for the weights that will be used for
-   * the corresponding terms.
+   * Creates a new dictionary with the contents of the fields named <code>field</code> for the terms
+   * and <code>weightField</code> for the weights that will be used for the corresponding terms.
    */
   public DocumentDictionary(IndexReader reader, String field, String weightField) {
     this(reader, field, weightField, null);
   }
-  
+
   /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms, <code>weightField</code> for the weights that will be used for the 
-   * the corresponding terms and <code>payloadField</code> for the corresponding payloads
-   * for the entry.
+   * Creates a new dictionary with the contents of the fields named <code>field</code> for the
+   * terms, <code>weightField</code> for the weights that will be used for the the corresponding
+   * terms and <code>payloadField</code> for the corresponding payloads for the entry.
    */
-  public DocumentDictionary(IndexReader reader, String field, String weightField, String payloadField) {
+  public DocumentDictionary(
+      IndexReader reader, String field, String weightField, String payloadField) {
     this(reader, field, weightField, payloadField, null);
   }
 
   /**
-   * Creates a new dictionary with the contents of the fields named <code>field</code>
-   * for the terms, <code>weightField</code> for the weights that will be used for the 
-   * the corresponding terms, <code>payloadField</code> for the corresponding payloads
-   * for the entry and <code>contextsField</code> for associated contexts.
+   * Creates a new dictionary with the contents of the fields named <code>field</code> for the
+   * terms, <code>weightField</code> for the weights that will be used for the the corresponding
+   * terms, <code>payloadField</code> for the corresponding payloads for the entry and <code>
+   * contextsField</code> for associated contexts.
    */
-  public DocumentDictionary(IndexReader reader, String field, String weightField, String payloadField, String contextsField) {
+  public DocumentDictionary(
+      IndexReader reader,
+      String field,
+      String weightField,
+      String payloadField,
+      String contextsField) {
     this.reader = reader;
     this.field = field;
     this.weightField = weightField;
@@ -99,7 +93,7 @@ public class DocumentDictionary implements Dictionary {
 
   @Override
   public InputIterator getEntryIterator() throws IOException {
-    return new DocumentInputIterator(payloadField!=null, contextsField!=null);
+    return new DocumentInputIterator(payloadField != null, contextsField != null);
   }
 
   /** Implements {@link InputIterator} from stored fields. */
@@ -119,17 +113,18 @@ public class DocumentDictionary implements Dictionary {
     int nextFieldsPosition = 0;
 
     /**
-     * Creates an iterator over term, weight and payload fields from the lucene
-     * index. setting <code>withPayload</code> to false, implies an iterator
-     * over only term and weight.
+     * Creates an iterator over term, weight and payload fields from the lucene index. setting
+     * <code>withPayload</code> to false, implies an iterator over only term and weight.
      */
     public DocumentInputIterator(boolean hasPayloads, boolean hasContexts) throws IOException {
       this.hasPayloads = hasPayloads;
       this.hasContexts = hasContexts;
       docCount = reader.maxDoc() - 1;
-      weightValues = (weightField != null) ? MultiDocValues.getNumericValues(reader, weightField) : null;
+      weightValues =
+          (weightField != null) ? MultiDocValues.getNumericValues(reader, weightField) : null;
       liveDocs = (reader.leaves().size() > 0) ? MultiBits.getLiveDocs(reader) : null;
-      relevantFields = getRelevantFields(new String [] {field, weightField, payloadField, contextsField});
+      relevantFields =
+          getRelevantFields(new String[] {field, weightField, payloadField, contextsField});
     }
 
     @Override
@@ -158,7 +153,7 @@ public class DocumentDictionary implements Dictionary {
         }
 
         currentDocId++;
-        if (liveDocs != null && !liveDocs.get(currentDocId)) { 
+        if (liveDocs != null && !liveDocs.get(currentDocId)) {
           continue;
         }
 
@@ -169,7 +164,7 @@ public class DocumentDictionary implements Dictionary {
           IndexableField payload = doc.getField(payloadField);
           if (payload != null) {
             if (payload.binaryValue() != null) {
-              tempPayload =  payload.binaryValue();
+              tempPayload = payload.binaryValue();
             } else if (payload.stringValue() != null) {
               tempPayload = new BytesRef(payload.stringValue());
             }
@@ -232,18 +227,18 @@ public class DocumentDictionary implements Dictionary {
     public boolean hasPayloads() {
       return hasPayloads;
     }
-    
-    /** 
-     * Returns the value of the <code>weightField</code> for the current document.
-     * Retrieves the value for the <code>weightField</code> if it's stored (using <code>doc</code>)
-     * or if it's indexed as {@link NumericDocValues} (using <code>docId</code>) for the document.
-     * If no value is found, then the weight is 0.
+
+    /**
+     * Returns the value of the <code>weightField</code> for the current document. Retrieves the
+     * value for the <code>weightField</code> if it's stored (using <code>doc</code>) or if it's
+     * indexed as {@link NumericDocValues} (using <code>docId</code>) for the document. If no value
+     * is found, then the weight is 0.
      */
     protected long getWeight(Document doc, int docId) throws IOException {
       IndexableField weight = doc.getField(weightField);
       if (weight != null) { // found weight as stored
         return (weight.numericValue() != null) ? weight.numericValue().longValue() : 0;
-      } else if (weightValues != null) {  // found weight as NumericDocValue
+      } else if (weightValues != null) { // found weight as NumericDocValue
         if (weightValues.docID() < docId) {
           weightValues.advance(docId);
         }
@@ -257,7 +252,7 @@ public class DocumentDictionary implements Dictionary {
         return 0;
       }
     }
-    
+
     private Set<String> getRelevantFields(String... fields) {
       Set<String> relevantFields = new HashSet<>();
       for (String relevantField : fields) {

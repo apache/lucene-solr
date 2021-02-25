@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.document.Document;
@@ -39,7 +37,8 @@ public class TestMultiTermsEnum extends LuceneTestCase {
   // LUCENE-6826
   public void testNoTermsInField() throws Exception {
     Directory directory = new ByteBuffersDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter writer =
+        new IndexWriter(directory, new IndexWriterConfig(new MockAnalyzer(random())));
     Document document = new Document();
     document.add(new StringField("deleted", "0", Field.Store.YES));
     writer.addDocument(document);
@@ -49,7 +48,7 @@ public class TestMultiTermsEnum extends LuceneTestCase {
 
     Directory directory2 = new ByteBuffersDirectory();
     writer = new IndexWriter(directory2, new IndexWriterConfig(new MockAnalyzer(random())));
-    
+
     List<LeafReaderContext> leaves = reader.leaves();
     CodecReader[] codecReaders = new CodecReader[leaves.size()];
     for (int i = 0; i < leaves.size(); i++) {
@@ -114,7 +113,8 @@ public class TestMultiTermsEnum extends LuceneTestCase {
 
               int comparison = term.compareTo(value);
               if (comparison < 0) {
-                // I don't think it will actually get here because they are supposed to call nextSeekTerm
+                // I don't think it will actually get here because they are supposed to call
+                // nextSeekTerm
                 // to get the initial term to seek to.
                 return AcceptStatus.NO_AND_SEEK;
               } else if (comparison > 0) {
@@ -192,20 +192,17 @@ public class TestMultiTermsEnum extends LuceneTestCase {
         final Iterator<FieldInfo> fieldInfoIterator = newFieldInfo.iterator();
         return new Iterator<String>() {
           @Override
-          public boolean hasNext()
-          {
+          public boolean hasNext() {
             return fieldInfoIterator.hasNext();
           }
 
           @Override
-          public void remove()
-          {
+          public void remove() {
             throw new UnsupportedOperationException();
           }
 
           @Override
-          public String next()
-          {
+          public String next() {
             return fieldInfoIterator.next().name;
           }
         };

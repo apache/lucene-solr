@@ -33,9 +33,9 @@ import java.util.jar.JarOutputStream;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
-import org.apache.lucene.analysis.util.ResourceLoaderAware;
-import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -50,8 +50,9 @@ import static org.hamcrest.core.Is.is;
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   public void testInstanceDir() throws Exception {
-    try (SolrResourceLoader loader = new SolrResourceLoader()) {
-      assertThat(loader.getInstancePath(), is(Paths.get("solr").toAbsolutePath()));
+    final Path dir = createTempDir();
+    try (SolrResourceLoader loader = new SolrResourceLoader(dir.toAbsolutePath())) {
+      assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
     }
   }
 
@@ -71,11 +72,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   public void testAwareCompatibility() throws Exception {
     
     final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    //noinspection unchecked
     assertAwareCompatibility(clazz1, new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")));
     assertAwareCompatibility(clazz1, new KeywordTokenizerFactory(new HashMap<>()));
     
@@ -98,7 +99,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     assertAwareCompatibility(clazz2, new JSONResponseWriter());
     
     // Make sure it throws an error for invalid objects
-    //noinspection unchecked
     invalid = new Object[] {
         new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")),
         "hello",   12.3f ,
@@ -201,9 +201,9 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     
   }
 
-  @SuppressWarnings("deprecation")
+  @SuppressWarnings({"rawtypes", "deprecation"})
   public void testLoadDeprecatedFactory() throws Exception {
-    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1"));
+    SolrResourceLoader loader = new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(DeprecatedTokenFilterFactory.class.getName(), TokenFilterFactory.class, null,
         new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
@@ -211,10 +211,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     loader.close();    
   }
 
-  public void testCacheWrongType() {
+  public void testCacheWrongType() throws Exception {
     clearCache();
 
-    SolrResourceLoader loader = new SolrResourceLoader();
+    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
+    @SuppressWarnings({"rawtypes"})
     Class[] params = { Map.class };
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";
@@ -226,5 +227,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     // This should work, but won't if earlier call succeeding corrupting the cache
     TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
     assertNotNull("Did not load Tokenizer after bad call earlier", tf);
+    loader.close();
   }
 }

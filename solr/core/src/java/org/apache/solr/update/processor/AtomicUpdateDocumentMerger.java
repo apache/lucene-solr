@@ -21,12 +21,15 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -53,6 +56,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.NumericValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,7 +93,52 @@ public class AtomicUpdateDocumentMerger {
     
     return false;
   }
-  
+
+  /**
+   * Merges the fromDoc into the toDoc using the atomic update syntax.
+   * This method will look for a nested document (possibly {@code toDoc} itself) with an
+   * equal ID, and merge into that one.
+   * @param sdoc the doc containing update instructions
+   * @param toDoc the target doc (possibly nested) before the update (will be modified in-place)
+   * @return toDoc with modifications; never null
+   */
+  public SolrInputDocument merge(SolrInputDocument sdoc, SolrInputDocument toDoc) {
+    if (mergeChildDocRecursive(sdoc, getRequiredId(sdoc), toDoc)) {
+      return toDoc;
+    }
+    throw new IllegalStateException("Did not find child ID " + getRequiredId(sdoc) +
+        " in parent ID " + getRequiredId(toDoc));
+  }
+
+  private boolean mergeChildDocRecursive(SolrInputDocument sdoc, Object sdocId, SolrInputDocument docWithChildren) {
+    if (sdocId.equals(getRequiredId(docWithChildren))) {
+      mergeDocHavingSameId(sdoc, docWithChildren);
+      return true;
+    }
+    for (SolrInputField inputField : docWithChildren) {
+      final Collection<Object> values = inputField.getValues();
+      if (values == null) {
+        continue;
+      }
+      for (Object value : values) {
+        if (isChildDoc(value)) {
+          if (mergeChildDocRecursive(sdoc, sdocId, (SolrInputDocument) value)) {
+            return true;
+          } // else continue the search
+        }
+      }
+    }
+    return false;
+  }
+
+  private String getRequiredId(SolrInputDocument sdoc) {
+    String id = schema.printableUniqueKey(sdoc);
+    if (id == null) {
+      throw new IllegalStateException("partial updates require that docs have an ID");
+    }
+    return id;
+  }
+
   /**
    * Merges the fromDoc into the toDoc using the atomic update syntax.
    * 
@@ -97,7 +146,8 @@ public class AtomicUpdateDocumentMerger {
    * @param toDoc the final SolrInputDocument that will be mutated with the values from the fromDoc atomic commands
    * @return toDoc with mutated values
    */
-  public SolrInputDocument merge(final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
+  @SuppressWarnings({"unchecked"})
+  private SolrInputDocument mergeDocHavingSameId(final SolrInputDocument fromDoc, SolrInputDocument toDoc) {
     for (SolrInputField sif : fromDoc.values()) {
      Object val = sif.getValue();
       if (val instanceof Map) {
@@ -124,13 +174,8 @@ public class AtomicUpdateDocumentMerger {
               doAddDistinct(toDoc, sif, fieldVal);
               break;
             default:
-              Object id = toDoc.containsKey(idField.getName())? toDoc.getFieldValue(idField.getName()):
-                  fromDoc.getFieldValue(idField.getName());
-              String err = "Unknown operation for the an atomic update, operation ignored: " + key;
-              if (id != null) {
-                err = err + " for id:" + id;
-              }
-              throw new SolrException(ErrorCode.BAD_REQUEST, err);
+              throw new SolrException(ErrorCode.BAD_REQUEST,
+                  "Error:" + getID(toDoc, schema) + " Unknown operation for the an atomic update: " + key);
           }
           // validate that the field being modified is not the id field.
           if (idField.getName().equals(sif.getName())) {
@@ -145,6 +190,15 @@ public class AtomicUpdateDocumentMerger {
     }
     
     return toDoc;
+  }
+
+  private static String getID(SolrInputDocument doc, IndexSchema schema) {
+    String id = "";
+    SchemaField sf = schema.getUniqueKeyField();
+    if (sf != null) {
+      id = "[doc="+doc.getFieldValue( sf.getName() )+"] ";
+    }
+    return id;
   }
 
   /**
@@ -164,6 +218,7 @@ public class AtomicUpdateDocumentMerger {
    * 
    * @return Return a set of fields that can be in-place updated.
    */
+  @SuppressWarnings({"unchecked"})
   public static Set<String> computeInPlaceUpdatableFields(AddUpdateCommand cmd) throws IOException {
     SolrInputDocument sdoc = cmd.getSolrInputDocument();
     IndexSchema schema = cmd.getReq().getSchema();
@@ -185,9 +240,10 @@ public class AtomicUpdateDocumentMerger {
     for (String fieldName : sdoc.getFieldNames()) {
       Object fieldValue = sdoc.getField(fieldName).getValue();
       if (fieldName.equals(uniqueKeyFieldName)
+          || fieldName.equals(IndexSchema.ROOT_FIELD_NAME)
           || fieldName.equals(CommonParams.VERSION_FIELD)
           || fieldName.equals(routeFieldOrNull)) {
-        if (fieldValue instanceof Map ) {
+        if (fieldValue instanceof Map) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Updating unique key, version or route field is not allowed: " + sdoc.getField(fieldName));
         } else {
@@ -300,7 +356,7 @@ public class AtomicUpdateDocumentMerger {
   /**
    *
    * @param completeHierarchy SolrInputDocument that represents the nested document hierarchy from its root
-   * @param fieldPath the path to fetch, seperated by a '/' e.g. /children/grandChildren
+   * @param fieldPath the path to fetch, separated by a '/' e.g. /children/grandChildren
    * @return the SolrInputField of fieldPath
    */
   public static SolrInputField getFieldFromHierarchy(SolrInputDocument completeHierarchy, String fieldPath) {
@@ -329,15 +385,15 @@ public class AtomicUpdateDocumentMerger {
    */
   public boolean doInPlaceUpdateMerge(AddUpdateCommand cmd, Set<String> updatedFields) throws IOException {
     SolrInputDocument inputDoc = cmd.getSolrInputDocument();
-    BytesRef idBytes = cmd.getIndexedId();
+    BytesRef rootIdBytes = cmd.getIndexedId();
+    BytesRef idBytes = schema.indexableUniqueKey(cmd.getChildDocIdStr());
 
     updatedFields.add(CommonParams.VERSION_FIELD); // add the version field so that it is fetched too
     SolrInputDocument oldDocument = RealTimeGetComponent.getInputDocument
-      (cmd.getReq().getCore(), idBytes,
-       null, // don't want the version to be returned
-       updatedFields,
-       RealTimeGetComponent.Resolution.DOC);
-                                              
+      (cmd.getReq().getCore(), idBytes, rootIdBytes,
+          null, // don't want the version to be returned
+          updatedFields, RealTimeGetComponent.Resolution.DOC);
+
     if (oldDocument == RealTimeGetComponent.DELETED || oldDocument == null) {
       // This doc was deleted recently. In-place update cannot work, hence a full atomic update should be tried.
       return false;
@@ -353,7 +409,7 @@ public class AtomicUpdateDocumentMerger {
     // This can happen, despite requesting for these fields in the call to RTGC.getInputDocument, if the document was
     // fetched from the tlog and had all these fields (possibly because it was a full document ADD operation).
     if (updatedFields != null) {
-      Collection<String> names = new HashSet<String>(oldDocument.getFieldNames());
+      Collection<String> names = new HashSet<>(oldDocument.getFieldNames());
       for (String fieldName: names) {
         if (fieldName.equals(CommonParams.VERSION_FIELD)==false && fieldName.equals(ID)==false && updatedFields.contains(fieldName)==false) {
           oldDocument.remove(fieldName);
@@ -375,8 +431,8 @@ public class AtomicUpdateDocumentMerger {
         partialDoc.addField(fieldName, oldDocument.getFieldValue(fieldName));
       }
     }
-    
-    merge(inputDoc, partialDoc);
+
+    mergeDocHavingSameId(inputDoc, partialDoc);
 
     // Populate the id field if not already populated (this can happen since stored fields were avoided during fetch from RTGC)
     if (!partialDoc.containsKey(schema.getUniqueKeyField().getName())) {
@@ -387,49 +443,6 @@ public class AtomicUpdateDocumentMerger {
     cmd.prevVersion = oldVersion;
     cmd.solrDoc = partialDoc;
     return true;
-  }
-
-  /**
-   *
-   * Merges an Atomic Update inside a document hierarchy
-   * @param sdoc the doc containing update instructions
-   * @param oldDocWithChildren the doc (children included) before the update
-   * @param sdocWithChildren the updated doc prior to the update (children included)
-   * @return root doc (children included) after update
-   */
-  public SolrInputDocument mergeChildDoc(SolrInputDocument sdoc, SolrInputDocument oldDocWithChildren,
-                                         SolrInputDocument sdocWithChildren) {
-    // get path of document to be updated
-    String updatedDocPath = (String) sdocWithChildren.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME);
-    // get the SolrInputField containing the document which the AddUpdateCommand updates
-    SolrInputField sifToReplace = getFieldFromHierarchy(oldDocWithChildren, updatedDocPath);
-    // update SolrInputField, either appending or replacing the updated document
-    updateDocInSif(sifToReplace, sdocWithChildren, sdoc);
-    return oldDocWithChildren;
-  }
-
-  /**
-   *
-   * @param updateSif the SolrInputField to update its values
-   * @param cmdDocWChildren the doc to insert/set inside updateSif
-   * @param updateDoc the document that was sent as part of the Add Update Command
-   * @return updated SolrInputDocument
-   */
-  public SolrInputDocument updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
-    List sifToReplaceValues = (List) updateSif.getValues();
-    final boolean wasList = updateSif.getValue() instanceof Collection;
-    int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
-    SolrInputDocument updatedDoc = merge(updateDoc, cmdDocWChildren);
-    if(index == -1) {
-      sifToReplaceValues.add(updatedDoc);
-    } else {
-      sifToReplaceValues.set(index, updatedDoc);
-    }
-    // in the case where value was a List prior to the update and post update there is no more then one value
-    // it should be kept as a List.
-    final boolean singleVal = !wasList && sifToReplaceValues.size() <= 1;
-    updateSif.setValue(singleVal? sifToReplaceValues.get(0): sifToReplaceValues);
-    return cmdDocWChildren;
   }
 
   protected void doSet(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
@@ -446,33 +459,24 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
 
-    SchemaField sf = schema.getField(name);
+    Collection<Object> original = existingField != null ?
+        existingField.getValues() :
+        new ArrayList<>();
 
-    if (sf != null) {
-      Collection<Object> original = existingField != null ?
-          existingField.getValues() :
-          new ArrayList<>();
-
-      int initialSize = original.size();
-      if (fieldVal instanceof Collection) {
-        for (Object object : (Collection) fieldVal) {
-          if (!original.contains(object)) {
-            original.add(object);
-          }
-        }
-      } else {
-        Object object = sf.getType().toNativeType(fieldVal);
-        if (!original.contains(object)) {
-          original.add(object);
-        }
+    int initialSize = original.size();
+    if (fieldVal instanceof Collection) {
+      for (Object object : (Collection) fieldVal) {
+        addValueIfDistinct(name, original, object);
       }
+    } else {
+      addValueIfDistinct(name, original, fieldVal);
+    }
 
-      if (original.size() > initialSize) { // update only if more are added
-        if (original.size() == 1) { // if single value, pass the value instead of List
-          doAdd(toDoc, sif, original.toArray()[0]);
-        } else {
-          toDoc.setField(name, original);
-        }
+    if (original.size() > initialSize) { // update only if more are added
+      if (original.size() == 1) { // if single value, pass the value instead of List
+        doAdd(toDoc, sif, original.toArray()[0]);
+      } else {
+        toDoc.setField(name, original);
       }
     }
   }
@@ -480,6 +484,11 @@ public class AtomicUpdateDocumentMerger {
   protected void doInc(SolrInputDocument toDoc, SolrInputField sif, Object fieldVal) {
     SolrInputField numericField = toDoc.get(sif.getName());
     SchemaField sf = schema.getField(sif.getName());
+
+    if (sf.getType().getNumberType() == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "'inc' is not supported on non-numeric field " + sf.getName());
+    }
+
     if (numericField != null || sf.getDefaultValue() != null) {
       // TODO: fieldtype needs externalToObject?
       String oldValS = (numericField != null) ?
@@ -488,20 +497,23 @@ public class AtomicUpdateDocumentMerger {
       sf.getType().readableToIndexed(oldValS, term);
       Object oldVal = sf.getType().toObject(sf, term.get());
 
-      String fieldValS = fieldVal.toString();
-      Number result;
+      // behavior similar to doAdd/doSet
+      Object resObj = getNativeFieldValue(sf.getName(), fieldVal);
+      if (!(resObj instanceof Number)) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid input '" + resObj + "' for field " + sf.getName());
+      }
+      Number result = (Number)resObj;
       if (oldVal instanceof Long) {
-        result = ((Long) oldVal).longValue() + Long.parseLong(fieldValS);
+        result = ((Long) oldVal).longValue() + result.longValue();
       } else if (oldVal instanceof Float) {
-        result = ((Float) oldVal).floatValue() + Float.parseFloat(fieldValS);
+        result = ((Float) oldVal).floatValue() + result.floatValue();
       } else if (oldVal instanceof Double) {
-        result = ((Double) oldVal).doubleValue() + Double.parseDouble(fieldValS);
+        result = ((Double) oldVal).doubleValue() + result.doubleValue();
       } else {
         // int, short, byte
-        result = ((Integer) oldVal).intValue() + Integer.parseInt(fieldValS);
+        result = ((Integer) oldVal).intValue() + result.intValue();
       }
-
-      toDoc.setField(sif.getName(),  result);
+      toDoc.setField(sif.getName(), result);
     } else {
       toDoc.setField(sif.getName(), fieldVal);
     }
@@ -511,7 +523,8 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
     if (existingField == null) return;
-    final Collection original = existingField.getValues();
+    @SuppressWarnings({"rawtypes"})
+    final Collection<Object> original = existingField.getValues();
     if (fieldVal instanceof Collection) {
       for (Object object : (Collection) fieldVal) {
         removeObj(original, object, name);
@@ -546,6 +559,7 @@ public class AtomicUpdateDocumentMerger {
   private Collection<Pattern> preparePatterns(Object fieldVal) {
     final Collection<Pattern> patterns = new LinkedHashSet<>(1);
     if (fieldVal instanceof Collection) {
+      @SuppressWarnings({"unchecked"})
       Collection<Object> patternVals = (Collection<Object>) fieldVal;
       for (Object patternVal : patternVals) {
         patterns.add(Pattern.compile(patternVal.toString()));
@@ -561,13 +575,22 @@ public class AtomicUpdateDocumentMerger {
       return val;
     }
     SchemaField sf = schema.getField(fieldName);
-    return sf.getType().toNativeType(val);
+    try {
+      return sf.getType().toNativeType(val);
+    } catch (SolrException ex) {
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(ex.code()),
+          "Error converting field '" + sf.getName() + "'='" +val+"' to native type, msg=" + ex.getMessage(), ex);
+    } catch (Exception ex) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          "Error converting field '" + sf.getName() + "'='" +val+"' to native type, msg=" + ex.getMessage(), ex);
+    }
   }
 
   private static boolean isChildDoc(Object obj) {
     if(!(obj instanceof Collection)) {
       return obj instanceof SolrDocumentBase;
     }
+    @SuppressWarnings({"rawtypes"})
     Collection objValues = (Collection) obj;
     if(objValues.size() == 0) {
       return false;
@@ -575,15 +598,16 @@ public class AtomicUpdateDocumentMerger {
     return objValues.iterator().next() instanceof SolrDocumentBase;
   }
 
-  private void removeObj(Collection original, Object toRemove, String fieldName) {
+  private void removeObj(Collection<Object> original, Object toRemove, String fieldName) {
     if(isChildDoc(toRemove)) {
       removeChildDoc(original, (SolrInputDocument) toRemove);
     } else {
-      original.remove(getNativeFieldValue(fieldName, toRemove));
+      removeFieldValueWithNumericFudging(fieldName, original, toRemove);
     }
   }
 
-  private static void removeChildDoc(Collection original, SolrInputDocument docToRemove) {
+  @SuppressWarnings({"unchecked"})
+  private static void removeChildDoc(@SuppressWarnings({"rawtypes"})Collection original, SolrInputDocument docToRemove) {
     for(SolrInputDocument doc: (Collection<SolrInputDocument>) original) {
       if(isDerivedFromDoc(doc, docToRemove)) {
         original.remove(doc);
@@ -592,19 +616,79 @@ public class AtomicUpdateDocumentMerger {
     }
   }
 
-  /**
-   *
-   * @param doc document to search for
-   * @param col collection of solrInputDocument
-   * @return index of doc in col, returns -1 if not found.
-   */
-  private static int getDocIndexFromCollection(SolrInputDocument doc, List<SolrInputDocument> col) {
-    for(int i = 0; i < col.size(); ++i) {
-      if(isDerivedFromDoc(col.get(i), doc)) {
-        return i;
-      }
+  private void removeFieldValueWithNumericFudging(String fieldName, @SuppressWarnings({"rawtypes"}) Collection<Object> original, Object toRemove) {
+    if (original.size() == 0) {
+      return;
     }
-    return -1;
+
+    final BiConsumer<Collection<Object>, Object> removePredicate = (coll, existingElement) -> coll.remove(existingElement);
+    modifyCollectionBasedOnFuzzyPresence(fieldName, original, toRemove, removePredicate, null);
+  }
+
+  private void addValueIfDistinct(String fieldName, Collection<Object> original, Object toAdd) {
+    final BiConsumer<Collection<Object>, Object> addPredicate = (coll, newElement) -> coll.add(newElement);
+    modifyCollectionBasedOnFuzzyPresence(fieldName, original, toAdd, null, addPredicate);
+  }
+
+  /**
+   * Modifies a collection based on the (loosely-judged) presence or absence of a specific value
+   *
+   * Several classes of atomic update (notably 'remove' and 'add-distinct') rely on being able to identify whether an
+   * item is already present in a given list of values.  Unfortunately the 'item' being checked for may be of different
+   * types based on the format of the user request and on where the existing document was pulled from (tlog vs index).
+   * As a result atomic updates needs a "fuzzy" way of checking presence and equality that is more flexible than
+   * traditional equality checks allow.  This method does light type-checking to catch some of these more common cases
+   * (Long compared against Integers, String compared against Date, etc.), and calls the provided lambda to modify the
+   * field values as necessary.
+   *
+   * @param fieldName the field name involved in this atomic update operation
+   * @param original the list of values currently present in the existing document
+   * @param rawValue a value to be checked for in 'original'
+   * @param ifPresent a function to execute if rawValue was found in 'original'
+   * @param ifAbsent a function to execute if rawValue was not found in 'original'
+   */
+  private void modifyCollectionBasedOnFuzzyPresence(String fieldName, Collection<Object> original, Object rawValue,
+                                                    BiConsumer<Collection<Object>, Object> ifPresent,
+                                                    BiConsumer<Collection<Object>, Object> ifAbsent) {
+    Object nativeValue = getNativeFieldValue(fieldName, rawValue);
+    Optional<Object> matchingValue = findObjectWithTypeFuzziness(original, rawValue, nativeValue);
+    if (matchingValue.isPresent() && ifPresent != null) {
+      ifPresent.accept(original, matchingValue.get());
+    } else if(matchingValue.isEmpty() && ifAbsent != null) {
+      ifAbsent.accept(original, rawValue);
+    }
+  }
+
+  private Optional<Object> findObjectWithTypeFuzziness(Collection<Object> original, Object rawValue, Object nativeValue) {
+    if (nativeValue instanceof Double || nativeValue instanceof Float) {
+      final Number nativeAsNumber = (Number) nativeValue;
+      return original.stream().filter(val ->
+              val.equals(rawValue) ||
+                      val.equals(nativeValue) ||
+                      (val instanceof Number && ((Number) val).doubleValue() == nativeAsNumber.doubleValue()) ||
+                      (val instanceof String && val.equals(nativeAsNumber.toString())))
+              .findFirst();
+    } else if (nativeValue instanceof Long || nativeValue instanceof Integer) {
+      final Number nativeAsNumber = (Number) nativeValue;
+      return original.stream().filter(val ->
+              val.equals(rawValue) ||
+                      val.equals(nativeValue) ||
+                      (val instanceof Number && ((Number) val).longValue() == nativeAsNumber.longValue()) ||
+                      (val instanceof String && val.equals(nativeAsNumber.toString())))
+              .findFirst();
+    } else if (nativeValue instanceof Date) {
+      return original.stream().filter(val ->
+              val.equals(rawValue) ||
+                      val.equals(nativeValue) ||
+                      (val instanceof String && DateMathParser.parseMath(null, (String)val).equals(nativeValue)))
+              .findFirst();
+    } else if (original.contains(nativeValue)) {
+      return Optional.of(nativeValue);
+    } else if (original.contains(rawValue)) {
+      return Optional.of(rawValue);
+    } else {
+      return Optional.empty();
+    }
   }
 
   private static Pair<String, Integer> getPathAndIndexFromNestPath(String nestPath) {

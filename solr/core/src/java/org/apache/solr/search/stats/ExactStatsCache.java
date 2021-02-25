@@ -42,7 +42,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -70,7 +69,9 @@ public class ExactStatsCache extends StatsCache {
 
   @Override
   protected StatsSource doGet(SolrQueryRequest req) {
+    @SuppressWarnings({"unchecked"})
     Map<String,CollectionStats> currentGlobalColStats = (Map<String,CollectionStats>) req.getContext().getOrDefault(CURRENT_GLOBAL_COL_STATS, Collections.emptyMap());
+    @SuppressWarnings({"unchecked"})
     Map<String,TermStats> currentGlobalTermStats = (Map<String,TermStats>) req.getContext().getOrDefault(CURRENT_GLOBAL_TERM_STATS, Collections.emptyMap());
     if (log.isDebugEnabled()) {
       log.debug("Returning StatsSource. Collection stats={}, Term stats size= {}", currentGlobalColStats, currentGlobalTermStats.size());
@@ -93,6 +94,12 @@ public class ExactStatsCache extends StatsCache {
   protected void doMergeToGlobalStats(SolrQueryRequest req, List<ShardResponse> responses) {
     Set<Term> allTerms = new HashSet<>();
     for (ShardResponse r : responses) {
+      if ("true".equalsIgnoreCase(req.getParams().get(ShardParams.SHARDS_TOLERANT)) && r.getException() != null) {
+        // Can't expect stats if there was an exception for this request on any shard
+        // this should only happen when using shards.tolerant=true
+        log.debug("Exception shard response={}", r);
+        continue;
+      }
       if (log.isDebugEnabled()) {
         log.debug("Merging to global stats, shard={}, response={}", r.getShard(), r.getSolrResponse().getResponse());
       }
@@ -127,12 +134,15 @@ public class ExactStatsCache extends StatsCache {
   }
 
   protected void addToPerShardColStats(SolrQueryRequest req, String shard, Map<String,CollectionStats> colStats) {
-    Map<String,Map<String,CollectionStats>> perShardColStats = (Map<String,Map<String,CollectionStats>>) req.getContext().computeIfAbsent(PER_SHARD_COL_STATS, Utils.NEW_HASHMAP_FUN);
+    @SuppressWarnings({"unchecked"})
+    Map<String,Map<String,CollectionStats>> perShardColStats = (Map<String,Map<String,CollectionStats>>) req.getContext().computeIfAbsent(PER_SHARD_COL_STATS, o -> new HashMap<>());
     perShardColStats.put(shard, colStats);
   }
 
   protected void printStats(SolrQueryRequest req) {
+    @SuppressWarnings({"unchecked"})
     Map<String,Map<String,TermStats>> perShardTermStats = (Map<String,Map<String,TermStats>>) req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
+    @SuppressWarnings({"unchecked"})
     Map<String,Map<String,CollectionStats>> perShardColStats = (Map<String,Map<String,CollectionStats>>) req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
     log.debug("perShardColStats={}, perShardTermStats={}", perShardColStats, perShardTermStats);
   }
@@ -140,7 +150,8 @@ public class ExactStatsCache extends StatsCache {
   protected void addToPerShardTermStats(SolrQueryRequest req, String shard, String termStatsString) {
     Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
-      Map<String,Map<String,TermStats>> perShardTermStats = (Map<String,Map<String,TermStats>>) req.getContext().computeIfAbsent(PER_SHARD_TERM_STATS, Utils.NEW_HASHMAP_FUN);
+      @SuppressWarnings({"unchecked"})
+      Map<String,Map<String,TermStats>> perShardTermStats = (Map<String,Map<String,TermStats>>) req.getContext().computeIfAbsent(PER_SHARD_TERM_STATS, o -> new HashMap<>());
       perShardTermStats.put(shard, termStats);
     }
   }
@@ -275,11 +286,13 @@ public class ExactStatsCache extends StatsCache {
   }
 
   protected Map<String,CollectionStats> getPerShardColStats(ResponseBuilder rb, String shard) {
+    @SuppressWarnings({"unchecked"})
     Map<String,Map<String,CollectionStats>> perShardColStats = (Map<String,Map<String,CollectionStats>>) rb.req.getContext().getOrDefault(PER_SHARD_COL_STATS, Collections.emptyMap());
     return perShardColStats.get(shard);
   }
 
   protected TermStats getPerShardTermStats(SolrQueryRequest req, String t, String shard) {
+    @SuppressWarnings({"unchecked"})
     Map<String,Map<String,TermStats>> perShardTermStats = (Map<String,Map<String,TermStats>>) req.getContext().getOrDefault(PER_SHARD_TERM_STATS, Collections.emptyMap());
     Map<String,TermStats> cache = perShardTermStats.get(shard);
     return (cache != null) ? cache.get(t) : null; //Term doesn't exist in shard
@@ -309,12 +322,14 @@ public class ExactStatsCache extends StatsCache {
 
   protected void addToGlobalColStats(SolrQueryRequest req,
                                      Entry<String,CollectionStats> e) {
-    Map<String,CollectionStats> currentGlobalColStats = (Map<String,CollectionStats>) req.getContext().computeIfAbsent(CURRENT_GLOBAL_COL_STATS, Utils.NEW_HASHMAP_FUN);
+    @SuppressWarnings({"unchecked"})
+    Map<String,CollectionStats> currentGlobalColStats = (Map<String,CollectionStats>) req.getContext().computeIfAbsent(CURRENT_GLOBAL_COL_STATS, o -> new HashMap<>());
     currentGlobalColStats.put(e.getKey(), e.getValue());
   }
 
   protected void addToGlobalTermStats(SolrQueryRequest req, Entry<String,TermStats> e) {
-    Map<String,TermStats> currentGlobalTermStats = (Map<String,TermStats>) req.getContext().computeIfAbsent(CURRENT_GLOBAL_TERM_STATS, Utils.NEW_HASHMAP_FUN);
+    @SuppressWarnings({"unchecked"})
+    Map<String,TermStats> currentGlobalTermStats = (Map<String,TermStats>) req.getContext().computeIfAbsent(CURRENT_GLOBAL_TERM_STATS, o -> new HashMap<>());
     currentGlobalTermStats.put(e.getKey(), e.getValue());
   }
 

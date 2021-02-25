@@ -61,7 +61,7 @@ solrAdminServices.factory('System',
     return $resource('admin/info/logging', {'wt':'json', '_':Date.now()}, {
       "events": {params: {since:'0'}},
       "levels": {},
-      "setLevel": {}
+      "setLevel": {params: {nodes:'all'}}
       });
   }])
 .factory('Zookeeper',
@@ -171,21 +171,6 @@ solrAdminServices.factory('System',
   ['$resource', function($resource) {
     return $resource(':core/analysis/field', {core: '@core', wt:'json', _:Date.now()}, {
       "field": {params: {"analysis.showmatch": true}}
-    });
-  }])
-.factory('DataImport',
-  ['$resource', function($resource) {
-    return $resource(':core/:name', {core: '@core', name: '@name', indent:'on', wt:'json', _:Date.now()}, {
-      "config": {params: {command: "show-config"}, headers: {doNotIntercept: "true"},
-                 transformResponse: function(data) {
-                    return {config: data};
-                 }
-                },
-      "status": {params: {command: "status"}, headers: {doNotIntercept: "true"}},
-      "reload": {params: {command: "reload-config"}},
-      "post": {method: "POST",
-                headers: {'Content-type': 'application/x-www-form-urlencoded'},
-                transformRequest: function(data) { return $.param(data) }}
     });
   }])
 .factory('Ping',

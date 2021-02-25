@@ -47,14 +47,17 @@ import org.slf4j.LoggerFactory;
 public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @SuppressWarnings({"rawtypes"})
   private LogWatcher watcher;
+  private final CoreContainer cc;
   
   public LoggingHandler(CoreContainer cc) {
+    this.cc = cc;
     this.watcher = cc.getLogging();
   }
   
   public LoggingHandler() {
-    
+    this.cc = null;
   }
   
   @Override
@@ -139,6 +142,7 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
     else {
       rsp.add("levels", watcher.getAllLevels());
   
+      @SuppressWarnings({"unchecked"})
       List<LoggerInfo> loggers = new ArrayList<>(watcher.getAllLoggers());
       Collections.sort(loggers);
   
@@ -149,6 +153,9 @@ public class LoggingHandler extends RequestHandlerBase implements SolrCoreAware 
       rsp.add("loggers", info);
     }
     rsp.setHttpCaching(false);
+    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
+      return; // Request was proxied to other node
+    }
   }
 
   // ////////////////////// SolrInfoMBeans methods //////////////////////

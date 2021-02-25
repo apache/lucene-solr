@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.analysis.synonym;
 
-
 import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.text.ParseException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CharsRef;
@@ -29,14 +27,15 @@ import org.apache.lucene.util.CharsRefBuilder;
 
 /**
  * Parser for wordnet prolog format
- * <p>
- * See https://wordnet.princeton.edu/documentation/prologdb5wn for a description of the format.
+ *
+ * <p>See https://wordnet.princeton.edu/documentation/prologdb5wn for a description of the format.
+ *
  * @lucene.experimental
  */
 // TODO: allow you to specify syntactic categories (e.g. just nouns, etc)
 public class WordnetSynonymParser extends SynonymMap.Parser {
   private final boolean expand;
-  
+
   public WordnetSynonymParser(boolean dedup, boolean expand, Analyzer analyzer) {
     super(dedup, analyzer);
     this.expand = expand;
@@ -50,7 +49,7 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
       String lastSynSetID = "";
       CharsRef synset[] = new CharsRef[8];
       int synsetSize = 0;
-      
+
       while ((line = br.readLine()) != null) {
         String synSetID = line.substring(2, 11);
 
@@ -64,35 +63,36 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
         synsetSize++;
         lastSynSetID = synSetID;
       }
-      
+
       // final synset in the file
       addInternal(synset, synsetSize);
     } catch (IllegalArgumentException e) {
-      ParseException ex = new ParseException("Invalid synonym rule at line " + br.getLineNumber(), 0);
+      ParseException ex =
+          new ParseException("Invalid synonym rule at line " + br.getLineNumber(), 0);
       ex.initCause(e);
       throw ex;
     } finally {
       br.close();
     }
   }
- 
+
   private CharsRef parseSynonym(String line, CharsRefBuilder reuse) throws IOException {
     if (reuse == null) {
       reuse = new CharsRefBuilder();
     }
-    
-    int start = line.indexOf('\'')+1;
+
+    int start = line.indexOf('\'') + 1;
     int end = line.lastIndexOf('\'');
-    
+
     String text = line.substring(start, end).replace("''", "'");
     return analyze(text, reuse);
   }
-  
+
   private void addInternal(CharsRef synset[], int size) {
     if (size <= 1) {
       return; // nothing to do
     }
-    
+
     if (expand) {
       for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {

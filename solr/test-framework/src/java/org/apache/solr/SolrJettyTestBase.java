@@ -113,7 +113,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     jetty = new JettySolrRunner(solrHome, nodeProps, jettyConfig);
     jetty.start();
     port = jetty.getLocalPort();
-    log.info("Jetty Assigned Port#" + port);
+    log.info("Jetty Assigned Port#{}", port);
     return jetty;
   }
 

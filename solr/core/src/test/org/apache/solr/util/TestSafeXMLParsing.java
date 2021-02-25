@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.SolrTestCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

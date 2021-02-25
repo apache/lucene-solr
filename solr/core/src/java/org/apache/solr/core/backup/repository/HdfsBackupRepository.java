@@ -21,7 +21,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.NoSuchFileException;
+import java.util.Collection;
 import java.util.Objects;
+import java.lang.invoke.MethodHandles;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.conf.Configuration;
@@ -40,8 +43,16 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsDirectory.HdfsIndexInput;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated since 8.6
+ */
+@Deprecated
 public class HdfsBackupRepository implements BackupRepository {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private static final String HDFS_UMASK_MODE_PARAM = "solr.hdfs.permissions.umask-mode";
   private static final String HDFS_COPY_BUFFER_SIZE_PARAM = "solr.hdfs.buffer.size";
 
@@ -49,6 +60,7 @@ public class HdfsBackupRepository implements BackupRepository {
   private Configuration hdfsConfig = null;
   private FileSystem fileSystem = null;
   private Path baseHdfsPath = null;
+  @SuppressWarnings("rawtypes")
   private NamedList config = null;
   protected int copyBufferSize = HdfsDirectory.DEFAULT_BUFFER_SIZE;
 
@@ -56,6 +68,8 @@ public class HdfsBackupRepository implements BackupRepository {
   @Override
   public void init(NamedList args) {
     this.config = args;
+
+    log.warn("HDFS support in Solr has been deprecated as of 8.6. See SOLR-14021 for details.");
 
     // Configure the size of the buffer used for copying index files to/from HDFS, if specified.
     if (args.get(HDFS_COPY_BUFFER_SIZE_PARAM) != null) {
@@ -86,7 +100,7 @@ public class HdfsBackupRepository implements BackupRepository {
     }
 
     try {
-      this.fileSystem = FileSystem.get(this.baseHdfsPath.toUri(), this.hdfsConfig);
+      this.fileSystem = FileSystem.newInstance(this.baseHdfsPath.toUri(), this.hdfsConfig);
     } catch (IOException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
@@ -182,18 +196,33 @@ public class HdfsBackupRepository implements BackupRepository {
   }
 
   @Override
-  public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
-    try (HdfsDirectory dir = new HdfsDirectory(new Path(dest), NoLockFactory.INSTANCE,
-        hdfsConfig, copyBufferSize)) {
-      dir.copyFrom(sourceDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+  public void copyIndexFileFrom(Directory sourceDir, String sourceFileName, URI destDir, String destFileName) throws IOException {
+    try (HdfsDirectory dir = new HdfsDirectory(new Path(destDir), NoLockFactory.INSTANCE,
+            hdfsConfig, copyBufferSize)) {
+      copyIndexFileFrom(sourceDir, sourceFileName, dir, destFileName);
     }
   }
 
   @Override
-  public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
+  public void copyIndexFileTo(URI sourceRepo, String sourceFileName, Directory dest, String destFileName) throws IOException {
     try (HdfsDirectory dir = new HdfsDirectory(new Path(sourceRepo), NoLockFactory.INSTANCE,
-        hdfsConfig, copyBufferSize)) {
-      dest.copyFrom(dir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
+            hdfsConfig, copyBufferSize)) {
+      dest.copyFrom(dir, sourceFileName, destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
     }
   }
+
+  @Override
+  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException) throws IOException {
+    if (files.isEmpty())
+      return;
+
+    for (String file : files) {
+      Path filePath = new Path(new Path(path), file);
+      boolean success = fileSystem.delete(filePath, false);
+      if (!ignoreNoSuchFileException && !success) {
+        throw new NoSuchFileException(filePath.toString());
+      }
+    }
+  }
+
 }

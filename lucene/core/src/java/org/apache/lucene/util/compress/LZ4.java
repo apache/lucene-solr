@@ -29,7 +29,6 @@ package org.apache.lucene.util.compress;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
@@ -37,13 +36,12 @@ import org.apache.lucene.util.packed.PackedInts;
 /**
  * LZ4 compression and decompression routines.
  *
- * https://github.com/lz4/lz4/tree/dev/lib
- * http://fastcompression.blogspot.fr/p/lz4.html
+ * <p>https://github.com/lz4/lz4/tree/dev/lib http://fastcompression.blogspot.fr/p/lz4.html
  *
- * The high-compression option is a simpler version of the one of the original
- * algorithm, and only retains a better hash table that remembers about more
- * occurrences of a previous 4-bytes sequence, and removes all the logic about
- * handling of the case when overlapping matches are found.
+ * <p>The high-compression option is a simpler version of the one of the original algorithm, and
+ * only retains a better hash table that remembers about more occurrences of a previous 4-bytes
+ * sequence, and removes all the logic about handling of the case when overlapping matches are
+ * found.
  */
 public final class LZ4 {
 
@@ -55,8 +53,6 @@ public final class LZ4 {
   static final int LAST_LITERALS = 5; // the last 5 bytes must be encoded as literals
   static final int HASH_LOG_HC = 15; // log size of the dictionary for compressHC
   static final int HASH_TABLE_SIZE_HC = 1 << HASH_LOG_HC;
-  static final int OPTIMAL_ML = 0x0F + 4 - 1; // match length that doesn't require an additional byte
-
 
   private static int hash(int i, int hashBits) {
     return (i * -1640531535) >>> (32 - hashBits);
@@ -67,7 +63,10 @@ public final class LZ4 {
   }
 
   private static int readInt(byte[] buf, int i) {
-    return ((buf[i] & 0xFF) << 24) | ((buf[i+1] & 0xFF) << 16) | ((buf[i+2] & 0xFF) << 8) | (buf[i+3] & 0xFF);
+    return ((buf[i] & 0xFF) << 24)
+        | ((buf[i + 1] & 0xFF) << 16)
+        | ((buf[i + 2] & 0xFF) << 8)
+        | (buf[i + 3] & 0xFF);
   }
 
   private static int commonBytes(byte[] b, int o1, int o2, int limit) {
@@ -77,14 +76,14 @@ public final class LZ4 {
   }
 
   /**
-   * Decompress at least <code>decompressedLen</code> bytes into
-   * <code>dest[dOff:]</code>. Please note that <code>dest</code> must be large
-   * enough to be able to hold <b>all</b> decompressed data (meaning that you
-   * need to know the total decompressed length).
+   * Decompress at least {@code decompressedLen} bytes into {@code dest[dOff:]}. Please note that
+   * {@code dest} must be large enough to be able to hold <b>all</b> decompressed data (meaning that
+   * you need to know the total decompressed length). If the given bytes were compressed using a
+   * preset dictionary then the same dictionary must be provided in {@code dest[dOff-dictLen:dOff]}.
    */
-  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest) throws IOException {
-    int dOff = 0;
-    final int destEnd = dest.length;
+  public static int decompress(DataInput compressed, int decompressedLen, byte[] dest, int dOff)
+      throws IOException {
+    final int destEnd = dOff + decompressedLen;
 
     do {
       // literals
@@ -103,7 +102,7 @@ public final class LZ4 {
         dOff += literalLen;
       }
 
-      if (dOff >= decompressedLen) {
+      if (dOff >= destEnd) {
         break;
       }
 
@@ -133,7 +132,7 @@ public final class LZ4 {
         System.arraycopy(dest, dOff - matchDec, dest, dOff, fastLen);
         dOff += matchLen;
       }
-    } while (dOff < decompressedLen);
+    } while (dOff < destEnd);
 
     return dOff;
   }
@@ -146,7 +145,8 @@ public final class LZ4 {
     out.writeByte((byte) l);
   }
 
-  private static void encodeLiterals(byte[] bytes, int token, int anchor, int literalLen, DataOutput out) throws IOException {
+  private static void encodeLiterals(
+      byte[] bytes, int token, int anchor, int literalLen, DataOutput out) throws IOException {
     out.writeByte((byte) token);
 
     // encode literal length
@@ -158,12 +158,15 @@ public final class LZ4 {
     out.writeBytes(bytes, anchor, literalLen);
   }
 
-  private static void encodeLastLiterals(byte[] bytes, int anchor, int literalLen, DataOutput out) throws IOException {
+  private static void encodeLastLiterals(byte[] bytes, int anchor, int literalLen, DataOutput out)
+      throws IOException {
     final int token = Math.min(literalLen, 0x0F) << 4;
     encodeLiterals(bytes, token, anchor, literalLen, out);
   }
 
-  private static void encodeSequence(byte[] bytes, int anchor, int matchRef, int matchOff, int matchLen, DataOutput out) throws IOException {
+  private static void encodeSequence(
+      byte[] bytes, int anchor, int matchRef, int matchOff, int matchLen, DataOutput out)
+      throws IOException {
     final int literalLen = matchOff - anchor;
     assert matchLen >= 4;
     // encode token
@@ -182,26 +185,27 @@ public final class LZ4 {
     }
   }
 
-  /**
-   * A record of previous occurrences of sequences of 4 bytes.
-   */
-  static abstract class HashTable {
+  /** A record of previous occurrences of sequences of 4 bytes. */
+  abstract static class HashTable {
 
     /** Reset this hash table in order to compress the given content. */
     abstract void reset(byte[] b, int off, int len);
 
+    /** Init {@code dictLen} bytes to be used as a dictionary. */
+    abstract void initDictionary(int dictLen);
+
     /**
-     * Advance the cursor to {@off} and return an index that stored the same
-     * 4 bytes as {@code b[o:o+4)}. This may only be called on strictly
-     * increasing sequences of offsets. A return value of {@code -1} indicates
-     * that no other index could be found. */
+     * Advance the cursor to {@code off} and return an index that stored the same 4 bytes as {@code
+     * b[o:o+4)}. This may only be called on strictly increasing sequences of offsets. A return
+     * value of {@code -1} indicates that no other index could be found.
+     */
     abstract int get(int off);
 
     /**
-     * Return an index that less than {@code off} and stores the same 4
-     * bytes. Unlike {@link #get}, it doesn't need to be called on increasing
-     * offsets. A return value of {@code -1} indicates that no other index could
-     * be found. */
+     * Return an index that less than {@code off} and stores the same 4 bytes. Unlike {@link #get},
+     * it doesn't need to be called on increasing offsets. A return value of {@code -1} indicates
+     * that no other index could be found.
+     */
     abstract int previous(int off);
 
     // For testing
@@ -209,8 +213,8 @@ public final class LZ4 {
   }
 
   /**
-   * Simple lossy {@link HashTable} that only stores the last ocurrence for
-   * each hash on {@code 2^14} bytes of memory.
+   * Simple lossy {@link HashTable} that only stores the last ocurrence for each hash on {@code
+   * 2^14} bytes of memory.
    */
   public static final class FastCompressionHashTable extends HashTable {
 
@@ -229,18 +233,30 @@ public final class LZ4 {
       Objects.checkFromIndexSize(off, len, bytes.length);
       this.bytes = bytes;
       this.base = off;
-      this.lastOff = off - 1;
       this.end = off + len;
       final int bitsPerOffset = PackedInts.bitsRequired(len - LAST_LITERALS);
       final int bitsPerOffsetLog = 32 - Integer.numberOfLeadingZeros(bitsPerOffset - 1);
       hashLog = MEMORY_USAGE + 3 - bitsPerOffsetLog;
-      if (hashTable == null || hashTable.size() < 1 << hashLog || hashTable.getBitsPerValue() < bitsPerOffset) {
+      if (hashTable == null
+          || hashTable.size() < 1 << hashLog
+          || hashTable.getBitsPerValue() < bitsPerOffset) {
         hashTable = PackedInts.getMutable(1 << hashLog, bitsPerOffset, PackedInts.DEFAULT);
       } else {
-        // Avoid calling hashTable.clear(), this makes it costly to compress many short sequences otherwise.
+        // Avoid calling hashTable.clear(), this makes it costly to compress many short sequences
+        // otherwise.
         // Instead, get() checks that references are less than the current offset.
-        get(off); // this sets the hashTable for the first 4 bytes as a side-effect
       }
+      this.lastOff = off - 1;
+    }
+
+    @Override
+    void initDictionary(int dictLen) {
+      for (int i = 0; i < dictLen; ++i) {
+        final int v = readInt(bytes, base + i);
+        final int h = hash(v, hashLog);
+        hashTable.set(h, i);
+      }
+      lastOff += dictLen;
     }
 
     @Override
@@ -271,13 +287,12 @@ public final class LZ4 {
     boolean assertReset() {
       return true;
     }
-
   }
 
   /**
-   * A higher-precision {@link HashTable}. It stores up to 256 occurrences of
-   * 4-bytes sequences in the last {@code 2^16} bytes, which makes it much more
-   * likely to find matches than {@link FastCompressionHashTable}.
+   * A higher-precision {@link HashTable}. It stores up to 256 occurrences of 4-bytes sequences in
+   * the last {@code 2^16} bytes, which makes it much more likely to find matches than {@link
+   * FastCompressionHashTable}.
    */
   public static final class HighCompressionHashTable extends HashTable {
     private static final int MAX_ATTEMPTS = 256;
@@ -328,8 +343,17 @@ public final class LZ4 {
     }
 
     @Override
+    void initDictionary(int dictLen) {
+      assert next == base;
+      for (int i = 0; i < dictLen; ++i) {
+        addHash(base + i);
+      }
+      next += dictLen;
+    }
+
+    @Override
     int get(int off) {
-      assert off > next;
+      assert off >= next;
       assert off < end;
 
       for (; next < off; next++) {
@@ -371,7 +395,7 @@ public final class LZ4 {
       final int v = readInt(bytes, off);
       for (int ref = off - (chainTable[off & MASK] & 0xFFFF);
           ref >= base && attempts < MAX_ATTEMPTS;
-          ref -= chainTable[ref & MASK] & 0xFFFF, attempts++ ) {
+          ref -= chainTable[ref & MASK] & 0xFFFF, attempts++) {
         if (readInt(bytes, ref) == v) {
           return ref;
         }
@@ -389,23 +413,42 @@ public final class LZ4 {
   }
 
   /**
-   * Compress <code>bytes[off:off+len]</code> into <code>out</code> using
-   * at most 16KB of memory. <code>ht</code> shouldn't be shared across threads
-   * but can safely be reused.
+   * Compress {@code bytes[off:off+len]} into {@code out} using at most 16kB of memory. {@code ht}
+   * shouldn't be shared across threads but can safely be reused.
    */
-  public static void compress(byte[] bytes, int off, int len, DataOutput out, HashTable ht) throws IOException {
-    Objects.checkFromIndexSize(off, len, bytes.length);
+  public static void compress(byte[] bytes, int off, int len, DataOutput out, HashTable ht)
+      throws IOException {
+    compressWithDictionary(bytes, off, 0, len, out, ht);
+  }
 
-    final int base = off;
-    final int end = off + len;
+  /**
+   * Compress {@code bytes[dictOff+dictLen:dictOff+dictLen+len]} into {@code out} using at most 16kB
+   * of memory. {@code bytes[dictOff:dictOff+dictLen]} will be used as a dictionary. {@code dictLen}
+   * must not be greater than 64kB, the maximum window size.
+   *
+   * <p>{@code ht} shouldn't be shared across threads but can safely be reused.
+   */
+  public static void compressWithDictionary(
+      byte[] bytes, int dictOff, int dictLen, int len, DataOutput out, HashTable ht)
+      throws IOException {
+    Objects.checkFromIndexSize(dictOff, dictLen, bytes.length);
+    Objects.checkFromIndexSize(dictOff + dictLen, len, bytes.length);
+    if (dictLen > MAX_DISTANCE) {
+      throw new IllegalArgumentException(
+          "dictLen must not be greater than 64kB, but got " + dictLen);
+    }
 
-    int anchor = off++;
+    final int end = dictOff + dictLen + len;
+
+    int off = dictOff + dictLen;
+    int anchor = off;
 
     if (len > LAST_LITERALS + MIN_MATCH) {
 
       final int limit = end - LAST_LITERALS;
       final int matchLimit = limit - MIN_MATCH;
-      ht.reset(bytes, base, len);
+      ht.reset(bytes, dictOff, dictLen + len);
+      ht.initDictionary(dictLen);
 
       main:
       while (off <= limit) {
@@ -417,7 +460,7 @@ public final class LZ4 {
           }
           ref = ht.get(off);
           if (ref != -1) {
-            assert ref >= base && ref < off;
+            assert ref >= dictOff && ref < off;
             assert readInt(bytes, ref) == readInt(bytes, off);
             break;
           }
@@ -428,7 +471,9 @@ public final class LZ4 {
         int matchLen = MIN_MATCH + commonBytes(bytes, ref + MIN_MATCH, off + MIN_MATCH, limit);
 
         // try to find a better match
-        for (int r = ht.previous(ref), min = Math.max(off - MAX_DISTANCE + 1, base); r >= min; r = ht.previous(r)) {
+        for (int r = ht.previous(ref), min = Math.max(off - MAX_DISTANCE + 1, dictOff);
+            r >= min;
+            r = ht.previous(r)) {
           assert readInt(bytes, r) == readInt(bytes, off);
           int rMatchLen = MIN_MATCH + commonBytes(bytes, r + MIN_MATCH, off + MIN_MATCH, limit);
           if (rMatchLen > matchLen) {
@@ -448,5 +493,4 @@ public final class LZ4 {
     assert literalLen >= LAST_LITERALS || literalLen == len;
     encodeLastLiterals(bytes, anchor, end - anchor, out);
   }
-
 }

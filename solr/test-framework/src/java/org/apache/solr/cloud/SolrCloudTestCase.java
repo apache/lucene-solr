@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -81,6 +82,7 @@ import org.slf4j.LoggerFactory;
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final Boolean USE_PER_REPLICA_STATE = Boolean.parseBoolean(System.getProperty("use.per-replica", "false"));
 
   public static final int DEFAULT_TIMEOUT = 45; // this is an important timeout for test stability - can't be too short
 
@@ -108,6 +110,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     private Map<String, Object> clusterProperties = new HashMap<>();
 
     private boolean trackJettyMetrics;
+    private boolean useDistributedClusterStateUpdate;
 
     /**
      * Create a builder
@@ -118,6 +121,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     public Builder(int nodeCount, Path baseDir) {
       this.nodeCount = nodeCount;
       this.baseDir = baseDir;
+      // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which cluster update strategy to use
+      this.useDistributedClusterStateUpdate = LuceneTestCase.random().nextInt(2) == 0;
     }
 
     /**
@@ -186,6 +191,48 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     /**
+     * This method makes the MiniSolrCloudCluster use the "other" cluster state update strategy than it normally would.
+     * When some test classes call this method (and some don't) we make sure that a run of multiple tests with a single
+     * seed will exercise both code lines (distributed updates and Overseer based updates) so regressions can be spotted
+     * faster.<p>
+     *
+     * The real need is for a few tests covering reasonable use cases to call this method. If you're adding a new test,
+     * you don't have to call it (but it's ok if you do).
+     */
+    public Builder useOtherClusterStateUpdateStrategy() {
+      useDistributedClusterStateUpdate = !useDistributedClusterStateUpdate;
+      return this;
+    }
+
+    /**
+     * Force the cluster state update strategy to be either Overseer based or distributed. <b>This method can be useful when
+     * debugging tests</b> failing in only one of the two modes to have all local runs exhibit the issue, as well obviously for
+     * tests that are not compatible with one of the two modes.
+     * <p>
+     * If this method is not called, the strategy being used will be random if the configuration passed to the cluster
+     * ({@code solr.xml} equivalent) contains a placeholder similar to:
+     * <pre>
+     * {@code
+     * <solrcloud>
+     *   ....
+     *   <str name="distributedClusterStateUpdates">${solr.distributedClusterStateUpdates:false}</str>
+     *   ....
+     * </solrcloud>
+     * }</pre>
+     * For an example of a configuration supporting this setting, see {@link MiniSolrCloudCluster#DEFAULT_CLOUD_SOLR_XML}.
+     * When a test sets a different {@code solr.xml} config (using {@link #withSolrXml}), if the config does not contain
+     * the placeholder, the strategy will be defined by the value assigned to {@code useDistributedClusterStateUpdates}
+     * in {@link org.apache.solr.core.CloudConfig.CloudConfigBuilder}.
+     *
+     * @param distributed When {@code true}, cluster state updates are handled in a distributed way by nodes. When
+     *                    {@code false}, cluster state updates are handled by Overseer.
+     */
+    public Builder withDistributedClusterStateUpdates(boolean distributed) {
+      useDistributedClusterStateUpdate = distributed;
+      return this;
+    }
+
+    /**
      * Set a cluster property
      *
      * @param propertyName  the property name
@@ -216,6 +263,14 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
+      // This will have an impact on how the MiniSolrCloudCluster and therefore the test run if the config being
+      // used does have the appropriate placeholder.
+      // It is a good place to hard code true or false instead of useDistributedClusterStateUpdate to run all qualifying
+      // tests with a given cluster state update strategy (non qualifying tests will use the default value assigned to
+      // useDistributedClusterStateUpdates in org.apache.solr.core.CloudConfig.CloudConfigBuilder, so if you really want
+      // ALL tests to run with a given strategy, patch it there too (and revert before commit!)
+      System.setProperty("solr.distributedClusterStateUpdates", Boolean.toString(useDistributedClusterStateUpdate));
+
       JettyConfig jettyConfig = jettyConfigBuilder.build();
       MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(nodeCount, baseDir, solrxml, jettyConfig,
           null, securityJson, trackJettyMetrics);
@@ -234,11 +289,13 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
 
     public Builder withDefaultClusterProperty(String key, String value) {
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> defaults = (HashMap<String, Object>) this.clusterProperties.get(CollectionAdminParams.DEFAULTS);
       if (defaults == null) {
         defaults = new HashMap<>();
         this.clusterProperties.put(CollectionAdminParams.DEFAULTS, defaults);
       }
+      @SuppressWarnings({"unchecked"})
       HashMap<String, Object> cluster = (HashMap<String, Object>) defaults.get(CollectionAdminParams.CLUSTER);
       if (cluster == null) {
         cluster = new HashMap<>();
@@ -347,7 +404,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
-      log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
+      if (log.isInfoEnabled()) {
+        log.info("active slice count: {} expected: {}", collectionState.getActiveSlices().size(), expectedShards);
+      }
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
       return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
@@ -389,7 +448,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       }
     }
 
-    log.info("active replica count: " + activeReplicas + " expected replica count: " + expectedReplicas);
+    log.info("active replica count: {} expected replica count: {}", activeReplicas, expectedReplicas);
 
     return activeReplicas == expectedReplicas;
 
@@ -445,6 +504,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   protected NamedList waitForResponse(Predicate<NamedList> predicate, SolrRequest request, int intervalInMillis, int numRetries, String messageOnFail) {
     log.info("waitForResponse: {}", request);
     int i = 0;

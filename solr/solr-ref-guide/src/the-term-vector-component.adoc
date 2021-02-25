@@ -162,7 +162,7 @@ This parameter requires both `tv.tf` and `tv.df` to be "true". This can be compu
 
 To see an example of TermVector component output, see the Wiki page: https://cwiki.apache.org/confluence/display/solr/TermVectorComponentExampleOptions
 
-For schema requirements, see also the section  <<field-properties-by-use-case.adoc#field-properties-by-use-case, Field Properties by Use Case>>.
+For schema requirements, see also the section  <<field-properties-by-use-case.adoc#, Field Properties by Use Case>>.
 
 == SolrJ and the Term Vector Component
 

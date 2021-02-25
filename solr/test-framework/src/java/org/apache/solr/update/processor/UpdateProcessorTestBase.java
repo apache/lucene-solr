@@ -140,7 +140,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   /**
    * Convenience method for building up SolrInputDocuments
    */
-  final SolrInputDocument doc(SolrInputField... fields) {
+  protected final SolrInputDocument doc(SolrInputField... fields) {
     SolrInputDocument d = new SolrInputDocument();
     for (SolrInputField f : fields) {
       d.put(f.getName(), f);
@@ -162,7 +162,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   /**
    * Convenience method for building up SolrInputFields with default boost
    */
-  final SolrInputField f(String name, Object... values) {
+  protected final SolrInputField f(String name, Object... values) {
     return field(name, values);
   }
 }

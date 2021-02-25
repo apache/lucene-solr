@@ -15,9 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script is a wizard that aims to (some day) replace the todoList at https://wiki.apache.org/lucene-java/ReleaseTodo
-# It will walk you through the steps of the release process, asking for decisions or input along the way
-# CAUTION: This is an alpha version, please read the HELP section in the main menu.
+# This script is the Release Manager's best friend, ensuring all details of a release are handled correctly.
+# It will walk you through the steps of the release process, asking for decisions or input along the way.
+# CAUTION: You still need to use your head! Please read the HELP section in the main menu.
 #
 # Requirements:
 #   Install requirements with this command:
@@ -64,11 +64,11 @@ import scriptutil
 from consolemenu import ConsoleMenu
 from consolemenu.items import FunctionItem, SubmenuItem, ExitItem
 from consolemenu.screen import Screen
-from scriptutil import BranchType, Version, check_ant, download, run
+from scriptutil import BranchType, Version, download, run
 
 # Solr-to-Java version mapping
 java_versions = {6: 8, 7: 8, 8: 8, 9: 11}
-
+editor = None
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -83,6 +83,7 @@ def expand_jinja(text, vars=None):
         'script_branch': state.script_branch,
         'release_folder': state.get_release_folder(),
         'git_checkout_folder': state.get_git_checkout_folder(),
+        'git_website_folder': state.get_website_git_folder(),
         'dist_url_base': 'https://dist.apache.org/repos/dist/dev/lucene',
         'm2_repository_url': 'https://repository.apache.org/service/local/staging/deploy/maven2',
         'dist_file_path': state.get_dist_folder(),
@@ -96,8 +97,10 @@ def expand_jinja(text, vars=None):
         'release_version_major': state.release_version_major,
         'release_version_minor': state.release_version_minor,
         'release_version_bugfix': state.release_version_bugfix,
+        'release_version_refguide': state.get_refguide_release() ,
         'state': state,
         'gpg_key' : state.get_gpg_key(),
+        'gradle_cmd' : 'gradlew.bat' if is_windows() else './gradlew',
         'epoch': unix_time_millis(datetime.utcnow()),
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
@@ -107,12 +110,6 @@ def expand_jinja(text, vars=None):
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'vote_close_72h_holidays': vote_close_72h_holidays(),
-        'lucene_highlights_file': lucene_highlights_file,
-        'solr_highlights_file': solr_highlights_file,
-        'tlp_news_draft': tlp_news_draft,
-        'lucene_news_draft': lucene_news_draft,
-        'solr_news_draft': solr_news_draft,
-        'tlp_news_file': tlp_news_file,
         'lucene_news_file': lucene_news_file,
         'solr_news_file': solr_news_file,
         'load_lines': load_lines,
@@ -153,15 +150,24 @@ def replace_templates(text):
             tpl_lines.append(line)
     return "\n".join(tpl_lines)
 
-
 def getScriptVersion():
-    topLevelDir = os.path.join(os.path.abspath("%s/" % script_path), os.path.pardir, os.path.pardir)
-    reBaseVersion = re.compile(r'version\.base\s*=\s*(\d+\.\d+\.\d+)')
-    return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
+    return scriptutil.find_current_version()
 
 
 def get_editor():
-    return os.environ['EDITOR'] if 'EDITOR' in os.environ else 'notepad.exe' if is_windows() else 'vi'
+    global editor
+    if editor is None:
+      if 'EDITOR' in os.environ:
+          if os.environ['EDITOR'] in ['vi', 'vim', 'nano', 'pico', 'emacs']:
+              print("WARNING: You have EDITOR set to %s, which will not work when launched from this tool. Please use an editor that launches a separate window/process" % os.environ['EDITOR'])
+          editor = os.environ['EDITOR']
+      elif is_windows():
+          editor = 'notepad.exe'
+      elif is_mac():
+          editor = 'open -a TextEdit'
+      else:
+          sys.exit("On Linux you have to set EDITOR variable to a command that will start an editor in its own window")
+    return editor
 
 
 def check_prerequisites(todo=None):
@@ -171,12 +177,10 @@ def check_prerequisites(todo=None):
         gpg_ver = run("gpg --version").splitlines()[0]
     except:
         sys.exit("You will need gpg installed")
-    if not check_ant().startswith('1.8'):
-        print("WARNING: This script will work best with ant 1.8. The script buildAndPushRelease.py may have problems with PGP password input under ant 1.10")
     if not 'GPG_TTY' in os.environ:
-        print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(TTY)'")
-    if not 'JAVA8_HOME' in os.environ or not 'JAVA11_HOME' in os.environ:
-        sys.exit("Please set environment variables JAVA8_HOME and JAVA11_HOME")
+        print("WARNING: GPG_TTY environment variable is not set, GPG signing may not work correctly (try 'export GPG_TTY=$(tty)'")
+    if not 'JAVA11_HOME' in os.environ:
+        sys.exit("Please set environment variables JAVA11_HOME")
     try:
         asciidoc_ver = run("asciidoctor -V").splitlines()[0]
     except:
@@ -316,6 +320,13 @@ class ReleaseState:
         else:
             return None
 
+    def get_release_date_iso(self):
+        release_date = self.get_release_date()
+        if release_date is None:
+            return "yyyy-mm-dd"
+        else:
+            return release_date.isoformat()[:10]
+
     def get_latest_version(self):
         if self.latest_version is None:
             versions = self.get_mirrored_versions()
@@ -345,7 +356,7 @@ class ReleaseState:
           if Version.parse(state.release_version).major == Version.parse(state.get_latest_version()).major:
             to_keep = [self.release_version, self.get_latest_lts_version()]
           elif Version.parse(state.release_version).major == Version.parse(state.get_latest_lts_version()).major:
-            to_keep = [self.get_latest_version(), self.release_version()]
+            to_keep = [self.get_latest_version(), self.release_version]
           else:
             raise Exception("Release version %s must have same major version as current minor or lts release")
         return [ver for ver in versions if ver not in to_keep]
@@ -544,6 +555,10 @@ class ReleaseState:
         folder = os.path.join(self.get_release_folder(), "lucene-solr")
         return folder
 
+    def get_website_git_folder(self):
+        folder = os.path.join(self.get_release_folder(), "lucene-site")
+        return folder
+
     def get_minor_branch_name(self):
         latest = state.get_latest_version()
         if latest is not None:
@@ -553,16 +568,22 @@ class ReleaseState:
             raise Exception("Cannot find latest version")
 
     def get_stable_branch_name(self):
-        v = Version.parse(self.get_latest_version())
+        if self.release_type == 'major':
+            v = Version.parse(self.get_master_version())
+        else:
+            v = Version.parse(self.get_latest_version())
         return "branch_%sx" % v.major
 
     def get_next_version(self):
         if self.release_type == 'major':
-            return "%s.0" % (self.release_version_major + 1)
+            return "%s.0.0" % (self.release_version_major + 1)
         if self.release_type == 'minor':
-            return "%s.%s" % (self.release_version_major, self.release_version_minor + 1)
+            return "%s.%s.0" % (self.release_version_major, self.release_version_minor + 1)
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
+
+    def get_refguide_release(self):
+        return "%s_%s" % (self.release_version_major, self.release_version_minor)
 
     def get_java_home(self):
         return self.get_java_home_for_version(self.release_version)
@@ -930,7 +951,7 @@ def generate_asciidoc():
     fh = open(filename_adoc, "w")
 
     fh.write("= Lucene/Solr Release %s\n\n" % state.release_version)
-    fh.write("(_Generated by releaseWizard.py v%s ALPHA at %s_)\n\n"
+    fh.write("(_Generated by releaseWizard.py v%s at %s_)\n\n"
              % (getScriptVersion(), datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")))
     fh.write(":numbered:\n\n")
     fh.write("%s\n\n" % template('help'))
@@ -1342,7 +1363,6 @@ def main():
             release_version = get_release_version()
     store_rc(release_root, release_version)
 
-
     check_prerequisites()
 
     try:
@@ -1357,34 +1377,23 @@ def main():
 
     state.save()
 
-    # Smoketester requires JAVA_HOME to point to JAVA8 and JAVA11_HOME to point ot Java11
+    # Smoketester requires JAVA11_HOME to point to Java11
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
 
-    global tlp_news_draft
-    global lucene_news_draft
-    global solr_news_draft
-    global lucene_highlights_file
-    global solr_highlights_file
-    global website_folder
-    global tlp_news_file
     global lucene_news_file
     global solr_news_file
-    lucene_highlights_file = os.path.join(state.get_release_folder(), 'lucene_highlights.txt')
-    solr_highlights_file = os.path.join(state.get_release_folder(), 'solr_highlights.txt')
-    tlp_news_draft = os.path.join(state.get_release_folder(), 'tlp_news.md')
-    lucene_news_draft = os.path.join(state.get_release_folder(), 'lucene_news.md')
-    solr_news_draft = os.path.join(state.get_release_folder(), 'solr_news.md')
-    website_folder = os.path.join(state.get_release_folder(), 'website-source')
-    tlp_news_file = os.path.join(website_folder, 'content', 'mainnews.mdtext')
-    lucene_news_file = os.path.join(website_folder, 'content', 'core', 'corenews.mdtext')
-    solr_news_file = os.path.join(website_folder, 'content', 'solr', 'news.mdtext')
+    lucene_news_file = os.path.join(state.get_website_git_folder(), 'content', 'core', 'core_news',
+      "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
+    solr_news_file = os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
+      "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
+    website_folder = state.get_website_git_folder()
 
     main_menu = UpdatableConsoleMenu(title="Lucene/Solr ReleaseWizard",
                             subtitle=get_releasing_text,
                             prologue_text="Welcome to the release wizard. From here you can manage the process including creating new RCs. "
                                           "All changes are persisted, so you can exit any time and continue later. Make sure to read the Help section.",
-                            epilogue_text="® 2019 The Lucene/Solr project. Licensed under the Apache License 2.0\nScript version v%s ALPHA)" % getScriptVersion(),
+                            epilogue_text="® 2020 The Lucene/Solr project. Licensed under the Apache License 2.0\nScript version v%s)" % getScriptVersion(),
                             screen=MyScreen())
 
     todo_menu = UpdatableConsoleMenu(title=get_releasing_text,
@@ -1571,6 +1580,11 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
 def is_windows():
     return platform.system().startswith("Win")
 
+def is_mac():
+    return platform.system().startswith("Darwin")
+
+def is_linux():
+    return platform.system().startswith("Linux")
 
 class Commands(SecretYamlObject):
     yaml_tag = u'!Commands'
@@ -1933,82 +1947,24 @@ def vote_close_72h_holidays():
     return holidays if len(holidays) > 0 else None
 
 
-def website_javadoc_redirect(todo):
-    htfile = os.path.join(website_folder, 'content', '.htaccess')
-    latest = state.get_latest_version()
-    if Version.parse(state.release_version).gt(Version.parse(latest)):
-        print("We are releasing the latest version ")
-        htaccess = file_to_string(htfile)
-        print("NOT YET IMPLEMENTED")
-        return False
-    else:
-        print("Task not necessary since %s is not the latest release version" % state.release_version)
-        return True
-
-
-def prepare_highlights(todo):
-    if not os.path.exists(lucene_highlights_file):
-        with open(lucene_highlights_file, 'w') as fp:
-            fp.write("* New cool Lucene feature\n* Important bugfix")
-    if not os.path.exists(solr_highlights_file):
-        with open(solr_highlights_file, 'w') as fp:
-            fp.write("* New cool Solr feature\n* Important bugfix")
-    return True
-
-
-def prepare_announce(todo):
-    if not os.path.exists(tlp_news_draft):
-        tlp_text = expand_jinja("(( template=announce_tlp ))")
-        with open(tlp_news_draft, 'w') as fp:
-            fp.write(tlp_text)
-        # print("Wrote TLP announce draft to %s" % tlp_news_file)
-
+def prepare_announce_lucene(todo):
+    if not os.path.exists(lucene_news_file):
         lucene_text = expand_jinja("(( template=announce_lucene ))")
-        with open(lucene_news_draft, 'w') as fp:
+        with open(lucene_news_file, 'w') as fp:
             fp.write(lucene_text)
         # print("Wrote Lucene announce draft to %s" % lucene_news_file)
+    else:
+        print("Draft already exist, not re-generating")
+    return True
 
+def prepare_announce_solr(todo):
+    if not os.path.exists(solr_news_file):
         solr_text = expand_jinja("(( template=announce_solr ))")
-        with open(solr_news_draft, 'w') as fp:
+        with open(solr_news_file, 'w') as fp:
             fp.write(solr_text)
         # print("Wrote Solr announce draft to %s" % solr_news_file)
     else:
-        print("Drafts already exist, not re-generating")
-    return True
-
-
-def patch_news_file(orig, draft, sticky_lines):
-    orig_lines = open(orig).readlines()
-    draft_lines = open(draft).readlines()
-    lines = orig_lines[0:sticky_lines]
-    lines.extend(draft_lines)
-    lines.append('\n')
-    lines.append('\n')
-    lines.extend(orig_lines[sticky_lines:])
-    with open(orig, 'w') as fp:
-        fp.writelines(lines)
-    print("Added news to %s" % orig)
-
-
-def update_news(todo):
-    touch_file = os.path.join(state.get_release_folder(), 'news_updated')
-    if not os.path.exists(touch_file):
-        patch_news_file(tlp_news_file, tlp_news_draft, 2)
-        patch_news_file(lucene_news_file, lucene_news_draft, 2)
-        patch_news_file(solr_news_file, solr_news_draft, 4)
-
-        latest = state.get_latest_version()
-        if Version.parse(state.release_version).gt(Version.parse(latest)):
-            print("We are releasing the latest version, updating latestversion.mdtext")
-            with open(os.path.join(website_folder, 'content', 'latestversion.mdtext'), 'w') as fp:
-                fp.write(state.release_version)
-
-        with open(touch_file, 'w') as fp:
-            fp.write("true")
-        print("News files in website folder updated with draft announcements")
-    else:
-        print("News files not changed, already patched earlier. Please edit by hand")
-
+        print("Draft already exist, not re-generating")
     return True
 
 
@@ -2017,12 +1973,12 @@ def set_java_home(version):
     os.environ['JAVACMD'] = state.get_java_cmd_for_version(version)
 
 
-def load_lines(file):
+def load_lines(file, from_line=0):
     if os.path.exists(file):
         with open(file, 'r') as fp:
-            return fp.readlines()
+            return fp.readlines()[from_line:]
     else:
-        return ['* foo', '* bar']
+        return ["<Please paste the announcement text here>\n"]
 
 
 if __name__ == '__main__':

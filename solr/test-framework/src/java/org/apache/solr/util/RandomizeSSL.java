@@ -135,8 +135,9 @@ public @interface RandomizeSSL {
     /**
      * Returns an SSLRandomizer suitable for the specified (test) class
      */
-    public static final SSLRandomizer getSSLRandomizerForClass(Class clazz) {
+    public static final SSLRandomizer getSSLRandomizerForClass(@SuppressWarnings({"rawtypes"})Class clazz) {
 
+      @SuppressWarnings({"unchecked"})
       final SuppressSSL suppression = (SuppressSSL) clazz.getAnnotation(SuppressSSL.class);
       if (null != suppression) {
         // Even if this class has a RandomizeSSL annotation, any usage of SuppressSSL -- even in a
@@ -147,6 +148,7 @@ public @interface RandomizeSSL {
         return new SSLRandomizer(0.0D, 0.0D, suppression.toString());
       }
 
+      @SuppressWarnings({"unchecked"})
       final RandomizeSSL annotation = (RandomizeSSL) clazz.getAnnotation(RandomizeSSL.class);
       
       if (null == annotation) {

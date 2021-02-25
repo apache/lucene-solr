@@ -22,26 +22,21 @@ In a sense, this search component provides fast field-faceting over the whole in
 
 == Configuring the Terms Component
 
-By default, the Terms Component is already configured in `solrconfig.xml` for each collection.
+Terms Component is one of  <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#defining-search-components,the default search components>>
+and does not need to be defined in `solrconfig.xml`.
 
-=== Defining the Terms Component
-
-Defining the Terms search component is straightforward: simply give it a name and use the class `solr.TermsComponent`.
+The definition is equivalent to:
 
 [source,xml]
 ----
 <searchComponent name="terms" class="solr.TermsComponent"/>
 ----
 
-This makes the component available for use, but by itself will not be useable until included with a request handler.
-
 === Using the Terms Component in a Request Handler
 
-The terms component is included with the `/terms` request handler, which is among Solr's out-of-the-box request handlers - see <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>.
+Solr comes with an <<implicit-requesthandlers.adoc#query-handlers,Implicit RequestHandler>> definition `/terms`, which enables (only) Terms component.
 
-Note that the defaults for this request handler set the parameter "terms" to true, which allows terms to be returned on request. The parameter "distrib" is set to false, which allows this handler to be used only on a single Solr core.
-
-You could add this component to another handler if you wanted to, and pass "terms=true" in the HTTP request in order to get terms back. If it is only defined in a separate handler, you must use that handler when querying in order to get terms and not regular documents as results.
+If you want to enable Terms component when using another Request Handler, `terms=true` parameter needs to be passed during the request or be set in the handler's defaults.
 
 === Terms Component Parameters
 
@@ -58,7 +53,7 @@ Specifies the field from which to retrieve terms. This parameter is required if 
 Example: `terms.fl=title`
 
 `terms.list`::
-Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
+Fetches the document frequency for a comma-delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
 +
 Example: `terms.list=termA,termB,termC`
 +
@@ -172,7 +167,7 @@ Example: `terms.upper.incl=true`
 
 The response to a terms request is a list of the terms and their document frequency values.
 
-You may also be interested in the {solr-javadocs}/solr-core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
+You may also be interested in the {solr-javadocs}/core/org/apache/solr/handler/component/TermsComponent.html[TermsComponent javadoc].
 
 == Terms Component Examples
 
@@ -244,6 +239,46 @@ Results:
 </response>
 ----
 
+=== Using Terms Component as part of another handler
+
+This query augments a regular search with terms information.
+
+[source,text]
+http://localhost:8983/solr/techproducts/select?q=corsair&fl=id,name&rows=1&echoParams=none&wt=xml&terms=true&terms.fl=name
+
+Results (notice that the term counts are not affected by the query):
+
+[source,xml]
+----
+<response>
+
+<lst name="responseHeader">
+  <int name="status">0</int>
+  <int name="QTime">1</int>
+</lst>
+<result name="response" numFound="2" start="0" numFoundExact="true">
+  <doc>
+    <str name="id">VS1GB400C3</str>
+    <str name="name">CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail</str></doc>
+</result>
+<lst name="terms">
+  <lst name="name">
+    <int name="one">5</int>
+    <int name="184">3</int>
+    <int name="1gb">3</int>
+    <int name="3200">3</int>
+    <int name="400">3</int>
+    <int name="ddr">3</int>
+    <int name="gb">3</int>
+    <int name="ipod">3</int>
+    <int name="memory">3</int>
+    <int name="pc">3</int>
+  </lst>
+</lst>
+</response>
+----
+
+
 === SolrJ Invocation
 
 [source,java]
@@ -263,7 +298,7 @@ Results:
 
 == Using the Terms Component for an Auto-Suggest Feature
 
-If the <<suggester.adoc#suggester,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
+If the <<suggester.adoc#,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
 
 [source,text]
 http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&wt=xml
@@ -312,13 +347,13 @@ Result:
 The TermsComponent also supports distributed indexes. For the `/terms` request handler, you must provide the following two parameters:
 
 `shards`::
-Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
+Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#,Distributed Search with Index Sharding>>.
 +
 The `shards` parameter is subject to a host whitelist that has to be configured in the component's parameters using the configuration key `shardsWhitelist` and the list of hosts as values.
 +
 By default the whitelist will be populated with all live nodes when running in SolrCloud mode. If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`.
 +
-See the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>> for more information about how the whitelist works. 
+See the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>> for more information about how the whitelist works.
 
 `shards.qt`::
 Specifies the request handler Solr uses for requests to shards.

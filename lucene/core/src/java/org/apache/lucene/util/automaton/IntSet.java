@@ -19,28 +19,32 @@ package org.apache.lucene.util.automaton;
 import java.util.Arrays;
 
 abstract class IntSet {
-    /**
-     * Return an array representation of this int set's values. Values are valid for indices [0, {@link #size()}).
-     * If this is a mutable int set, then changes to the set are not guaranteed to be visible in this array.
-     * @return an array containing the values for this set, guaranteed to be at least {@link #size()} elements
-     */
-    abstract int[] getArray();
+  /**
+   * Return an array representation of this int set's values. Values are valid for indices [0,
+   * {@link #size()}). If this is a mutable int set, then changes to the set are not guaranteed to
+   * be visible in this array.
+   *
+   * @return an array containing the values for this set, guaranteed to be at least {@link #size()}
+   *     elements
+   */
+  abstract int[] getArray();
 
-    /**
-     * Guaranteed to be less than or equal to the length of the array returned by {@link #getArray()}.
-     * @return The number of values in this set.
-     */
-    abstract int size();
+  /**
+   * Guaranteed to be less than or equal to the length of the array returned by {@link #getArray()}.
+   *
+   * @return The number of values in this set.
+   */
+  abstract int size();
 
-    @Override
-    public abstract int hashCode();
+  @Override
+  public abstract int hashCode();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof IntSet)) return false;
-        IntSet that = (IntSet) o;
-        return hashCode() == that.hashCode()
-            && Arrays.equals(getArray(), 0, size(), that.getArray(), 0, that.size());
-    }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof IntSet)) return false;
+    IntSet that = (IntSet) o;
+    return hashCode() == that.hashCode()
+        && Arrays.equals(getArray(), 0, size(), that.getArray(), 0, that.size());
+  }
 }

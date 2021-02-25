@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -57,9 +58,12 @@ public final class CommitTracker implements Runnable {
   private int docsUpperBound;
   private long timeUpperBound;
   private long tLogFileSizeUpperBound;
-  
-  private final ScheduledExecutorService scheduler = 
+
+  // note: can't use ExecutorsUtil because it doesn't have a *scheduled* ExecutorService.
+  //  Not a big deal but it means we must take care of MDC logging here.
+  private final ScheduledExecutorService scheduler =
       Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("commitScheduler"));
+  @SuppressWarnings({"rawtypes"})
   private ScheduledFuture pending;
   
   // state
@@ -248,9 +252,8 @@ public final class CommitTracker implements Runnable {
       pending = null;  // allow a new commit to be scheduled
     }
 
-    SolrQueryRequest req = new LocalSolrQueryRequest(core,
-        new ModifiableSolrParams());
-    try {
+    MDCLoggingContext.setCore(core);
+    try (SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
       CommitUpdateCommand command = new CommitUpdateCommand(req, false);
       command.openSearcher = openSearcher;
       command.waitSearcher = WAIT_SEARCHER;
@@ -271,9 +274,9 @@ public final class CommitTracker implements Runnable {
     } catch (Exception e) {
       SolrException.log(log, "auto commit error...", e);
     } finally {
-      // log.info("###done committing");
-      req.close();
+      MDCLoggingContext.clear();
     }
+    // log.info("###done committing");
   }
   
   // to facilitate testing: blocks if called during commit

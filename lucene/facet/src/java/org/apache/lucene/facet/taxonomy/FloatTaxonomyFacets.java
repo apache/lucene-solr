@@ -18,15 +18,13 @@ package org.apache.lucene.facet.taxonomy;
 
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.FacetsConfig.DimConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.TopOrdAndFloatQueue;
 
-/** Base class for all taxonomy-based facets that aggregate
- *  to a per-ords float[]. */
+/** Base class for all taxonomy-based facets that aggregate to a per-ords float[]. */
 public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
 
   // TODO: also use native hash map for sparse collection, like IntTaxonomyFacets
@@ -35,16 +33,17 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
   protected final float[] values;
 
   /** Sole constructor. */
-  protected FloatTaxonomyFacets(String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
+  protected FloatTaxonomyFacets(
+      String indexFieldName, TaxonomyReader taxoReader, FacetsConfig config) throws IOException {
     super(indexFieldName, taxoReader, config);
     values = new float[taxoReader.getSize()];
   }
-  
+
   /** Rolls up any single-valued hierarchical dimensions. */
   protected void rollup() throws IOException {
     // Rollup any necessary dims:
     int[] children = getChildren();
-    for(Map.Entry<String,DimConfig> ent : config.getDimConfigs().entrySet()) {
+    for (Map.Entry<String, DimConfig> ent : config.getDimConfigs().entrySet()) {
       String dim = ent.getKey();
       DimConfig ft = ent.getValue();
       if (ft.hierarchical && ft.multiValued == false) {
@@ -77,7 +76,8 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
       } else if (dimConfig.requireDimCount && dimConfig.multiValued) {
         // ok: we indexed all ords at index time
       } else {
-        throw new IllegalArgumentException("cannot return dimension-level value alone; use getTopChildren instead");
+        throw new IllegalArgumentException(
+            "cannot return dimension-level value alone; use getTopChildren instead");
       }
     }
     int ord = taxoReader.getOrdinal(new FacetLabel(dim, path));
@@ -110,7 +110,7 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
     int childCount = 0;
 
     TopOrdAndFloatQueue.OrdAndValue reuse = null;
-    while(ord != TaxonomyReader.INVALID_ORDINAL) {
+    while (ord != TaxonomyReader.INVALID_ORDINAL) {
       if (values[ord] > 0) {
         sumValues += values[ord];
         childCount++;
@@ -146,7 +146,7 @@ public abstract class FloatTaxonomyFacets extends TaxonomyFacets {
     }
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-    for(int i=labelValues.length-1;i>=0;i--) {
+    for (int i = labelValues.length - 1; i >= 0; i--) {
       TopOrdAndFloatQueue.OrdAndValue ordAndValue = q.pop();
       FacetLabel child = taxoReader.getPath(ordAndValue.ord);
       labelValues[i] = new LabelAndValue(child.components[cp.length], ordAndValue.value);

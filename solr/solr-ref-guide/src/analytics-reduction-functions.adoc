@@ -17,8 +17,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Reduction functions reduce the values of <<analytics-expression-sources.adoc#analytics-expression-sources,sources>>
-and/or unreduced <<analytics-mapping-functions.adoc#analytics-mapping-functions,mapping functions>>
+Reduction functions reduce the values of <<analytics-expression-sources.adoc#,sources>>
+and/or unreduced <<analytics-mapping-functions.adoc#,mapping functions>>
 for every Solr Document to a single value.
 
 Below is a list of all reduction functions provided by the Analytics Component.

@@ -29,7 +29,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
 import org.apache.solr.cloud.overseer.CollectionMutator;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -40,11 +39,12 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.SHARD_UNIQUE;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
 
 // Class to encapsulate processing replica properties that have at most one replica hosting a property per slice.
@@ -74,8 +74,8 @@ class ExclusiveSliceProperty {
   ExclusiveSliceProperty(ClusterState clusterState, ZkNodeProps message) {
     this.clusterState = clusterState;
     String tmp = message.getStr(ZkStateReader.PROPERTY_PROP);
-    if (StringUtils.startsWith(tmp, OverseerCollectionMessageHandler.COLL_PROP_PREFIX) == false) {
-      tmp = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + tmp;
+    if (!StringUtils.startsWith(tmp, CollectionAdminParams.PROPERTY_PREFIX)) {
+      tmp = CollectionAdminParams.PROPERTY_PREFIX + tmp;
     }
     this.property = tmp.toLowerCase(Locale.ROOT);
     collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
@@ -362,7 +362,7 @@ class ExclusiveSliceProperty {
       this.replica = replica;
     }
     public String toString() {
-      StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator()).append("******EOE20 starting toString of SliceReplica");
+      StringBuilder sb = new StringBuilder(System.lineSeparator()).append(System.lineSeparator());
       sb.append("    :").append(System.lineSeparator()).append("slice: ").append(slice.toString()).append(System.lineSeparator()).append("      replica: ").append(replica.toString()).append(System.lineSeparator());
       return sb.toString();
     }

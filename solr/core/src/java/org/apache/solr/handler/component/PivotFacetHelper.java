@@ -92,6 +92,7 @@ public class PivotFacetHelper {
   }
 
   /** @see PivotListEntry#VALUE */
+  @SuppressWarnings({"rawtypes"})
   public static Comparable getValue(NamedList<Object> pivotList) {
     return (Comparable) PivotListEntry.VALUE.extract(pivotList);
   }
@@ -107,21 +108,25 @@ public class PivotFacetHelper {
   }
 
   /** @see PivotListEntry#PIVOT */
+  @SuppressWarnings({"unchecked"})
   public static List<NamedList<Object>> getPivots(NamedList<Object> pivotList) {
     return (List<NamedList<Object>>) PivotListEntry.PIVOT.extract(pivotList);
   }
   
   /** @see PivotListEntry#STATS */
+  @SuppressWarnings({"unchecked"})
   public static NamedList<NamedList<NamedList<?>>> getStats(NamedList<Object> pivotList) {
     return (NamedList<NamedList<NamedList<?>>>) PivotListEntry.STATS.extract(pivotList);
   }
 
   /** @see PivotListEntry#QUERIES */
+  @SuppressWarnings({"unchecked"})
   public static NamedList<Number> getQueryCounts(NamedList<Object> pivotList) {
     return (NamedList<Number>) PivotListEntry.QUERIES.extract(pivotList);
   }
   
   /** @see PivotListEntry#RANGES */
+  @SuppressWarnings({"unchecked"})
   public static SimpleOrderedMap<SimpleOrderedMap<Object>> getRanges(NamedList<Object> pivotList) {
     return (SimpleOrderedMap<SimpleOrderedMap<Object>>) PivotListEntry.RANGES.extract(pivotList);
   }

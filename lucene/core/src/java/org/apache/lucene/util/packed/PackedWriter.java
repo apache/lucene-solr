@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.util.packed;
 
-
-import org.apache.lucene.store.DataOutput;
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
+import org.apache.lucene.store.DataOutput;
 
 // Packs high order byte first, to match
 // IndexOutput.writeInt/Long/Short byte order
@@ -37,7 +35,8 @@ final class PackedWriter extends PackedInts.Writer {
   int off;
   int written;
 
-  PackedWriter(PackedInts.Format format, DataOutput out, int valueCount, int bitsPerValue, int mem) {
+  PackedWriter(
+      PackedInts.Format format, DataOutput out, int valueCount, int bitsPerValue, int mem) {
     super(out, valueCount, bitsPerValue);
     this.format = format;
     encoder = BulkOperation.of(format, bitsPerValue);

@@ -85,6 +85,7 @@ public class TestZkAclsWithHadoopAuth extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings({"try"})
   public void testZkAcls() throws Exception {
     try (ZooKeeper keeper = new ZooKeeper(cluster.getZkServer().getZkAddress(),
         (int) TimeUnit.MINUTES.toMillis(1), arg0 -> {/* Do nothing */})) {

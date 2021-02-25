@@ -16,6 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+WARNING: Storing indexes in HDFS is deprecated and may be be removed in 9.0. This functionality may be moved to a 3rd-party plugin in the future.
+
 Solr has support for writing and reading its index and transaction log files to the HDFS distributed filesystem.
 
 This does not use Hadoop MapReduce to process Solr data, rather it only uses the HDFS filesystem for index and transaction log file storage.
@@ -176,42 +178,3 @@ If using Kerberos, you will need to add the three Kerberos related properties to
 </directoryFactory>
 ----
 
-// In Solr 8, this should be removed entirely;
-// it's here now only for back-compat for existing users
-
-== Automatically Add Replicas in SolrCloud
-
-The ability to automatically add new replicas when the Overseer notices that a shard has gone down was previously only available to users running Solr in HDFS, but it is now available to all users via Solr's autoscaling framework. See the section <<solrcloud-autoscaling-auto-add-replicas.adoc#the-autoaddreplicas-parameter,SolrCloud Autoscaling Automatically Adding Replicas>> for details on how to enable and disable this feature.
-
-[WARNING]
-====
-The ability to enable or disable the autoAddReplicas feature with cluster properties has been deprecated and will be removed in a future version. All users of this feature who have previously used that approach are encouraged to change their configurations to use the autoscaling framework to ensure continued operation of this feature in their Solr installations.
-
-For users using this feature with the deprecated configuration, you can temporarily disable it cluster-wide by setting the cluster property `autoAddReplicas` to `false`, as in these examples:
-
-.V1 API
-[source,bash]
-----
-http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas&val=false
-----
-
-.V2 API
-[source,bash]
-----
-curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"name":"autoAddReplicas", "val":false}}' http://localhost:8983/api/cluster
-----
-
-Re-enable the feature by unsetting the `autoAddReplicas` cluster property. When no `val` parameter is provided, the cluster property is unset:
-
-.V1 API
-[source,bash]
-----
-http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=autoAddReplicas
-----
-
-.V2 API
-[source,bash]
-----
-curl -X POST -H 'Content-type: application/json' -d '{"set-property": {"name":"autoAddReplicas"}}' http://localhost:8983/api/cluster
-----
-====

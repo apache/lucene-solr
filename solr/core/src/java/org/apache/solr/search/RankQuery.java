@@ -29,6 +29,7 @@ import java.io.IOException;
 
 public abstract class RankQuery extends ExtendedQueryBase {
 
+  @SuppressWarnings({"rawtypes"})
   public abstract TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException;
   public abstract MergeStrategy getMergeStrategy();
   public abstract RankQuery wrap(Query mainQuery);

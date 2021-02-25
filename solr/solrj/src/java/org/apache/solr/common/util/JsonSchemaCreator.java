@@ -36,6 +36,7 @@ import org.apache.solr.common.annotation.JsonProperty;
  */
 
 public class JsonSchemaCreator {
+  @SuppressWarnings({"rawtypes"})
   public static final Map<Class, String> natives = new HashMap<>();
 
   static {
@@ -57,17 +58,23 @@ public class JsonSchemaCreator {
   private static Map<String, Object> createSchemaFromType(java.lang.reflect.Type t, Map<String, Object> map) {
     if (natives.containsKey(t)) {
       map.put("type", natives.get(t));
-    } else if (t instanceof ParameterizedType && ((ParameterizedType) t).getRawType() == List.class) {
-      Type typ = ((ParameterizedType) t).getActualTypeArguments()[0];
-      map.put("type", "array");
-      map.put("items", getSchema(typ));
+    } else if (t instanceof ParameterizedType) {
+      if (((ParameterizedType) t).getRawType() == List.class) {
+        Type typ = ((ParameterizedType) t).getActualTypeArguments()[0];
+        map.put("type", "array");
+        map.put("items", getSchema(typ));
+      } else if (((ParameterizedType) t).getRawType() == Map.class) {
+        Type typ = ((ParameterizedType) t).getActualTypeArguments()[0];
+        map.put("type", "object");
+        map.put("additionalProperties", true);
+      }
     } else {
       createObjectSchema((Class) t, map);
     }
     return map;
   }
 
-  private static void createObjectSchema(Class klas, Map<String, Object> map) {
+  private static void createObjectSchema(@SuppressWarnings({"rawtypes"})Class klas, Map<String, Object> map) {
     map.put("type", "object");
     Map<String, Object> props = new HashMap<>();
     map.put("properties", props);
@@ -80,6 +87,7 @@ public class JsonSchemaCreator {
       if(p.required()) required.add(name);
     }
     if(!required.isEmpty()) map.put("required", new ArrayList<>(required));
+     map.put("additionalProperties", true);
 
   }
 }

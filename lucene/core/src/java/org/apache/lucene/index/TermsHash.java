@@ -16,22 +16,20 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool;
 
-/** This class is passed each token produced by the analyzer
- *  on each field during indexing, and it stores these
- *  tokens in a hash table, and allocates separate byte
- *  streams per token.  Consumers of this class, eg {@link
- *  FreqProxTermsWriter} and {@link TermVectorsConsumer},
- *  write their own byte streams under each term. */
+/**
+ * This class is passed each token produced by the analyzer on each field during indexing, and it
+ * stores these tokens in a hash table, and allocates separate byte streams per token. Consumers of
+ * this class, eg {@link FreqProxTermsWriter} and {@link TermVectorsConsumer}, write their own byte
+ * streams under each term.
+ */
 abstract class TermsHash {
 
   final TermsHash nextTermsHash;
@@ -41,17 +39,15 @@ abstract class TermsHash {
   ByteBlockPool termBytePool;
   final Counter bytesUsed;
 
-  final DocumentsWriterPerThread.DocState docState;
-
-  final boolean trackAllocations;
-
-  TermsHash(final DocumentsWriterPerThread docWriter, boolean trackAllocations, TermsHash nextTermsHash) {
-    this.docState = docWriter.docState;
-    this.trackAllocations = trackAllocations; 
+  TermsHash(
+      final IntBlockPool.Allocator intBlockAllocator,
+      final ByteBlockPool.Allocator byteBlockAllocator,
+      Counter bytesUsed,
+      TermsHash nextTermsHash) {
     this.nextTermsHash = nextTermsHash;
-    this.bytesUsed = trackAllocations ? docWriter.bytesUsed : Counter.newCounter();
-    intPool = new IntBlockPool(docWriter.intBlockAllocator);
-    bytePool = new ByteBlockPool(docWriter.byteBlockAllocator);
+    this.bytesUsed = bytesUsed;
+    intPool = new IntBlockPool(intBlockAllocator);
+    bytePool = new ByteBlockPool(byteBlockAllocator);
 
     if (nextTermsHash != null) {
       // We are primary
@@ -73,16 +69,20 @@ abstract class TermsHash {
   // Clear all state
   void reset() {
     // we don't reuse so we drop everything and don't fill with 0
-    intPool.reset(false, false); 
+    intPool.reset(false, false);
     bytePool.reset(false, false);
   }
 
-  void flush(Map<String,TermsHashPerField> fieldsToFlush, final SegmentWriteState state,
-      Sorter.DocMap sortMap, NormsProducer norms) throws IOException {
+  void flush(
+      Map<String, TermsHashPerField> fieldsToFlush,
+      final SegmentWriteState state,
+      Sorter.DocMap sortMap,
+      NormsProducer norms)
+      throws IOException {
     if (nextTermsHash != null) {
-      Map<String,TermsHashPerField> nextChildFields = new HashMap<>();
-      for (final Map.Entry<String,TermsHashPerField> entry : fieldsToFlush.entrySet()) {
-        nextChildFields.put(entry.getKey(), entry.getValue().nextPerField);
+      Map<String, TermsHashPerField> nextChildFields = new HashMap<>();
+      for (final Map.Entry<String, TermsHashPerField> entry : fieldsToFlush.entrySet()) {
+        nextChildFields.put(entry.getKey(), entry.getValue().getNextPerField());
       }
       nextTermsHash.flush(nextChildFields, state, sortMap, norms);
     }
@@ -90,9 +90,9 @@ abstract class TermsHash {
 
   abstract TermsHashPerField addField(FieldInvertState fieldInvertState, FieldInfo fieldInfo);
 
-  void finishDocument() throws IOException {
+  void finishDocument(int docID) throws IOException {
     if (nextTermsHash != null) {
-      nextTermsHash.finishDocument();
+      nextTermsHash.finishDocument(docID);
     }
   }
 

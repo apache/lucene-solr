@@ -120,7 +120,6 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
         "      \"config\":\"_default\",\n" +
         "      \"tlogReplicas\":1,\n" +
         "      \"pullReplicas\":1,\n" +
-        "      \"maxShardsPerNode\":4,\n" + // note: we also expect the 'policy' to work fine
         "      \"nodeSet\": '" + createNode + "',\n" +
         "      \"properties\" : {\n" +
         "        \"foobar\":\"bazbam\",\n" +
@@ -152,8 +151,6 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     //assertEquals(1, coll.getNumNrtReplicas().intValue()); // TODO seems to be erroneous; I figured 'null'
     assertEquals(1, coll.getNumTlogReplicas().intValue()); // per-shard
     assertEquals(1, coll.getNumPullReplicas().intValue()); // per-shard
-    assertEquals(4, coll.getMaxShardsPerNode());
-    //TODO SOLR-11877 assertEquals(2, coll.getStateFormat());
     assertTrue("nodeSet didn't work?",
         coll.getSlices().stream().flatMap(s -> s.getReplicas().stream())
             .map(Replica::getNodeName).allMatch(createNode::equals));
@@ -200,7 +197,6 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
     assertEquals("foo_s", ((Map)coll.get("router")).get("field"));
     assertEquals(1, coll.getSlices().size()); // numShards
     assertEquals(2, coll.getReplicationFactor().intValue()); // num replicas
-    //TODO SOLR-11877 assertEquals(2, coll.getStateFormat());
 
     // Test Alias metadata
     Aliases aliases = cluster.getSolrClient().getZkStateReader().getAliases();

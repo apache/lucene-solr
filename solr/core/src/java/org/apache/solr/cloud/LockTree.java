@@ -39,12 +39,6 @@ public class LockTree {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Node root = new Node(null, LockLevel.CLUSTER, null);
 
-  public void clear() {
-    synchronized (this) {
-      root.clear();
-    }
-  }
-
   private class LockImpl implements Lock {
     final Node node;
 
@@ -66,15 +60,24 @@ public class LockTree {
   }
 
 
+  /**
+   * This class is used to mark nodes for which acquiring a lock was attempted but didn't succeed. Lock acquisition failure
+   * needs to be "remembered" to trigger failures to acquire a competing lock until the Session is replaced, to prevent
+   * tasks enqueued later (and dequeued later once the busy lock got released) from being executed before earlier tasks
+   * that failed to execute because the lock wasn't available earlier when they attempted to acquire it.<p>
+   *
+   * A new Session is created each time the iteration over the queue tasks is restarted starting at the oldest non
+   * running or completed tasks.
+   */
   public class Session {
     private SessionNode root = new SessionNode(LockLevel.CLUSTER);
 
     public Lock lock(CollectionParams.CollectionAction action, List<String> path) {
+      if (action.lockLevel == LockLevel.NONE) return FREELOCK;
       synchronized (LockTree.this) {
-        if (action.lockLevel == LockLevel.NONE) return FREELOCK;
         if (root.isBusy(action.lockLevel, path)) return null;
         Lock lockObject = LockTree.this.root.lock(action.lockLevel, path);
-        if (lockObject == null) root.markBusy(path, 0);
+        if (lockObject == null) root.markBusy(action.lockLevel, path);
         return lockObject;
       }
     }
@@ -89,22 +92,31 @@ public class LockTree {
       this.level = level;
     }
 
-    void markBusy(List<String> path, int depth) {
-      if (path.size() == depth) {
+    /**
+     * Marks busy the SessionNode corresponding to <code>lockLevel</code> (node names coming from <code>path</code>).
+     * @param path contains at least <code>lockLevel.getHeight()</code> strings, capturing the names of the
+     *             <code>SessionNode</code> being walked from the {@link Session#root} to the <code>SessionNode</code>
+     *             that is to be marked busy.
+     * @param lockLevel the level of the node that should be marked busy.
+     */
+    void markBusy(LockLevel lockLevel, List<String> path) {
+      if (level == lockLevel) {
+        // Lock is to be set on current node
         busy = true;
       } else {
-        String s = path.get(depth);
+        // Recursively create the required SessionNode subtree to capture lock being set on child node.
+        String s = path.get(level.getHeight());
         if (kids == null) kids = new HashMap<>();
-        SessionNode node = kids.get(s);
-        if (node == null) kids.put(s, node = new SessionNode(level.getChild()));
-        node.markBusy(path, depth + 1);
+        SessionNode child = kids.get(s);
+        if (child == null) kids.put(s, child = new SessionNode(level.getChild()));
+        child.markBusy(lockLevel, path);
       }
     }
 
     boolean isBusy(LockLevel lockLevel, List<String> path) {
       if (lockLevel.isHigherOrEqual(level)) {
         if (busy) return true;
-        String s = path.get(level.level);
+        String s = path.get(level.getHeight());
         if (kids == null || kids.get(s) == null) return false;
         return kids.get(s).isBusy(lockLevel, path);
       } else {
@@ -155,10 +167,10 @@ public class LockTree {
         if (isLocked()) return null;
         return myLock = new LockImpl(this);
       } else {
-        String childName = path.get(level.level);
+        String childName = path.get(level.getHeight());
         Node child = children.get(childName);
         if (child == null)
-          children.put(childName, child = new Node(childName, LockLevel.getLevel(level.level + 1), this));
+          children.put(childName, child = new Node(childName, level.getChild(), this));
         return child.lock(lockLevel, path);
       }
     }
@@ -167,14 +179,6 @@ public class LockTree {
       if (name != null) collect.addFirst(name);
       if (mom != null) mom.constructPath(collect);
       return collect;
-    }
-
-    void clear() {
-      if (myLock != null) {
-        log.warn("lock_is_leaked at {}", constructPath(new LinkedList<>()));
-        myLock = null;
-      }
-      for (Node node : children.values()) node.clear();
     }
   }
   static final Lock FREELOCK = () -> {};

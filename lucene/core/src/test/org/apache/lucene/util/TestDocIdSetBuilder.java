@@ -16,15 +16,12 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
-
 
 public class TestDocIdSetBuilder extends LuceneTestCase {
 
@@ -57,7 +54,9 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     for (int i = 0; i < numIterators; ++i) {
       final int baseInc = 200000 + random().nextInt(10000);
       RoaringDocIdSet.Builder b = new RoaringDocIdSet.Builder(maxDoc);
-      for (int doc = random().nextInt(100); doc < maxDoc; doc += baseInc + random().nextInt(10000)) {
+      for (int doc = random().nextInt(100);
+          doc < maxDoc;
+          doc += baseInc + random().nextInt(10000)) {
         b.add(doc);
         ref.set(doc);
       }
@@ -87,8 +86,11 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
   }
 
   public void testRandom() throws IOException {
-    final int maxDoc = TEST_NIGHTLY ? TestUtil.nextInt(random(), 1, 10000000) : TestUtil.nextInt(random(), 1, 100000) ;
-    for (int i = 1 ; i < maxDoc / 2; i <<=1) {
+    final int maxDoc =
+        TEST_NIGHTLY
+            ? TestUtil.nextInt(random(), 1, 10000000)
+            : TestUtil.nextInt(random(), 1, 100000);
+    for (int i = 1; i < maxDoc / 2; i <<= 1) {
       final int numDocs = TestUtil.nextInt(random(), 1, i);
       final FixedBitSet docs = new FixedBitSet(maxDoc);
       int c = 0;
@@ -293,7 +295,6 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     public boolean hasPayloads() {
       throw new UnsupportedOperationException();
     }
-
   }
 
   private static class DummyPointValues extends PointValues {
@@ -350,7 +351,5 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     public int getDocCount() {
       return docCount;
     }
-
   }
-
 }

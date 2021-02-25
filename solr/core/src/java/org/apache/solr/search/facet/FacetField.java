@@ -24,50 +24,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 
-
-// Any type of facet request that generates a variable number of buckets
-// and the ability to sort by those generated buckets.
-abstract class FacetRequestSorted extends FacetRequest {
-  long offset;
-  long limit;
-  /** 
-   * Number of buckets to request beyond the limit to do internally during initial distributed search. 
-   * -1 means default heuristic.
-   */
-  int overrequest = -1;
-  /** 
-   * Number of buckets to fill in beyond the limit to do internally during refinement of distributed search. 
-   * -1 means default heuristic.
-   */
-  int overrefine = -1;
-  long mincount;
-  /** 
-   * The basic sorting to do on buckets, defaults to {@link FacetRequest.FacetSort#COUNT_DESC} 
-   * @see #prelim_sort
-   */
-  FacetSort sort;
-  /** 
-   * An optional "Pre-Sort" that defaults to null.
-   * If specified, then the <code>prelim_sort</code> is used as an optimization in place of {@link #sort} 
-   * during collection, and the full {@link #sort} values are only computed for the top candidate buckets 
-   * (after refinement)
-   */
-  FacetSort prelim_sort;
-  RefineMethod refine; // null, NONE, or SIMPLE
-
-  @Override
-  public RefineMethod getRefineMethod() {
-    return refine;
-  }
-
-  @Override
-  public boolean returnsPartial() {
-    return super.returnsPartial() || (limit > 0);
-  }
-
-}
-
-
 public class FacetField extends FacetRequestSorted {
   public static final int DEFAULT_FACET_LIMIT = 10;
   String field;
@@ -114,6 +70,7 @@ public class FacetField extends FacetRequestSorted {
   }
 
   @Override
+  @SuppressWarnings("rawtypes")
   public FacetProcessor createFacetProcessor(FacetContext fcontext) {
     SchemaField sf = fcontext.searcher.getSchema().getField(field);
     FieldType ft = sf.getType();
@@ -148,7 +105,10 @@ public class FacetField extends FacetRequestSorted {
       method = FacetMethod.STREAM;
     }
     if (method == FacetMethod.STREAM && sf.indexed() && !ft.isPointField() &&
-        // wether we can use stream processing depends on wether this is a shard request, wether
+        // streaming doesn't support allBuckets, numBuckets or missing
+        // so, don't use stream processor if anyone of them is enabled
+        !(allBuckets || numBuckets || missing) &&
+        // whether we can use stream processing depends on whether this is a shard request, whether
         // re-sorting has been requested, and if the effective sort during collection is "index asc"
         ( fcontext.isShard()
           // for a shard request, the effective per-shard sort must be index asc

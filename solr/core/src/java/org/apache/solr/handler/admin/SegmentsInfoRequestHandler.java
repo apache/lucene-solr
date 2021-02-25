@@ -127,7 +127,6 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     SimpleOrderedMap<Object> segmentInfos = new SimpleOrderedMap<>();
 
     SolrCore core = req.getCore();
-    RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
     SimpleOrderedMap<Object> infosInfo = new SimpleOrderedMap<>();
     Version minVersion = infos.getMinSegmentLuceneVersion();
     if (minVersion != null) {
@@ -149,6 +148,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       coreInfo.add("indexDir", core.getIndexDir());
       coreInfo.add("sizeInGB", (double)core.getIndexSize() / GB);
 
+      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
       if (iwRef != null) {
         try {
           IndexWriter iw = iwRef.get();
@@ -238,10 +238,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     SegmentReader seg = null;
     for (LeafReaderContext lrc : leafContexts) {
       LeafReader leafReader = lrc.reader();
-      // unwrap
-      while (leafReader instanceof FilterLeafReader) {
-        leafReader = ((FilterLeafReader)leafReader).getDelegate();
-      }
+      leafReader = FilterLeafReader.unwrap(leafReader);
       if (leafReader instanceof SegmentReader) {
         SegmentReader sr = (SegmentReader)leafReader;
         if (sr.getSegmentInfo().info.equals(segmentCommitInfo.info)) {

@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -56,7 +55,6 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     assertFalse(querytree.advancePhase(0));
 
     assertEquals(expected, collectTerms(querytree));
-
   }
 
   public void testDisjunctionsWithAnyClausesOnlyReturnANYTOKEN() {
@@ -67,7 +65,6 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     Set<Term> terms = collectTerms(q);
     assertEquals(1, terms.size());
     assertEquals(TermFilteredPresearcher.ANYTOKEN_FIELD, terms.iterator().next().field());
-
   }
 
   public void testConjunctionsDoNotAdvanceOverANYTOKENs() {
@@ -84,14 +81,14 @@ public class TestQueryAnalyzer extends LuceneTestCase {
 
     assertFalse(tree.advancePhase(0));
     assertEquals(expected, collectTerms(tree));
-
   }
 
   public void testConjunctionsCannotAdvanceOverMinWeightedTokens() {
 
-    TermWeightor weightor = TermWeightor.combine(
-        TermWeightor.termWeightor(0.1, new BytesRef("startterm")),
-        TermWeightor.lengthWeightor(1, 1));
+    TermWeightor weightor =
+        TermWeightor.combine(
+            TermWeightor.termWeightor(0.1, new BytesRef("startterm")),
+            TermWeightor.lengthWeightor(1, 1));
 
     QueryAnalyzer analyzer = new QueryAnalyzer();
 
@@ -106,7 +103,6 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     assertEquals(expected, collectTerms(tree));
 
     assertFalse(tree.advancePhase(0.5));
-
   }
 
   public void testNestedConjunctions() {
@@ -129,7 +125,6 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     expected = Collections.singleton(new Term("field", "d"));
     assertEquals(expected, collectTerms(tree));
     assertFalse(tree.advancePhase(0));
-
   }
 
   public void testNestedDisjunctions() {
@@ -137,58 +132,45 @@ public class TestQueryAnalyzer extends LuceneTestCase {
     Query q = MonitorTestBase.parse("+(+((+aaaa +cc) (+dd +bbb +f)))");
     QueryTree tree = analyzer.buildTree(q, TermWeightor.DEFAULT);
 
-    Set<Term> expected = new HashSet<>(Arrays.asList(
-        new Term("field", "aaaa"),
-        new Term("field", "bbb"
-    )));
+    Set<Term> expected =
+        new HashSet<>(Arrays.asList(new Term("field", "aaaa"), new Term("field", "bbb")));
     assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0));
 
-    expected = new HashSet<>(Arrays.asList(
-        new Term("field", "cc"),
-        new Term("field", "dd")
-    ));
+    expected = new HashSet<>(Arrays.asList(new Term("field", "cc"), new Term("field", "dd")));
     assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0));
 
-    expected = new HashSet<>(Arrays.asList(
-        new Term("field", "cc"),
-        new Term("field", "f")
-    ));
+    expected = new HashSet<>(Arrays.asList(new Term("field", "cc"), new Term("field", "f")));
     assertEquals(expected, collectTerms(tree));
     assertFalse(tree.advancePhase(0));
   }
 
   public void testMinWeightAdvances() {
-    QueryTree tree = QueryTree.disjunction(
-        QueryTree.conjunction(
-            QueryTree.term(new Term("field", "term1"), 1),
-            QueryTree.term(new Term("field", "term2"), 0.1),
-            QueryTree.anyTerm("*:*")
-        ),
-        QueryTree.conjunction(
-            QueryTree.disjunction(
-                QueryTree.term(new Term("field", "term4"), 0.2),
-                QueryTree.term(new Term("field", "term5"), 1)
-            ),
-            QueryTree.term(new Term("field", "term3"), 0.5)
-        )
-    );
+    QueryTree tree =
+        QueryTree.disjunction(
+            QueryTree.conjunction(
+                QueryTree.term(new Term("field", "term1"), 1),
+                QueryTree.term(new Term("field", "term2"), 0.1),
+                QueryTree.anyTerm("*:*")),
+            QueryTree.conjunction(
+                QueryTree.disjunction(
+                    QueryTree.term(new Term("field", "term4"), 0.2),
+                    QueryTree.term(new Term("field", "term5"), 1)),
+                QueryTree.term(new Term("field", "term3"), 0.5)));
 
-    Set<Term> expected = new HashSet<>(Arrays.asList(
-        new Term("field", "term1"),
-        new Term("field", "term3")
-    ));
+    Set<Term> expected =
+        new HashSet<>(Arrays.asList(new Term("field", "term1"), new Term("field", "term3")));
     assertEquals(expected, collectTerms(tree));
     assertTrue(tree.advancePhase(0.1f));
 
-    expected = new HashSet<>(Arrays.asList(
-        new Term("field", "term1"),
-        new Term("field", "term4"),
-        new Term("field", "term5")
-    ));
+    expected =
+        new HashSet<>(
+            Arrays.asList(
+                new Term("field", "term1"),
+                new Term("field", "term4"),
+                new Term("field", "term5")));
     assertEquals(expected, collectTerms(tree));
     assertFalse(tree.advancePhase(0.1f));
   }
-
 }

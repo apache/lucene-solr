@@ -62,3 +62,7 @@ java.lang.Double#<init>(java.lang.String)
 @defaultMessage Java deserialization is unsafe when the data is untrusted. The java developer is powerless: no checks or casts help, exploitation can happen in places such as clinit or finalize!
 java.io.ObjectInputStream
 java.io.ObjectOutputStream
+
+@defaultMessage Don't set a dictionary on a Deflater using a method that takes an offset or ByteBuffer (JDK-8252739)
+java.util.zip.Deflater#setDictionary(byte[],int,int)
+java.util.zip.Deflater#setDictionary(java.nio.ByteBuffer)

@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Armenian.
- */
+/** Analyzer for Armenian. */
 package org.apache.lucene.analysis.hy;

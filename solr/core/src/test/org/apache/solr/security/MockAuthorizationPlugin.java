@@ -48,7 +48,7 @@ public class MockAuthorizationPlugin implements AuthorizationPlugin {
         return new AuthorizationResponse(200);
       }
       if (uname == null) uname = context.getParams().get("uname");
-      log.info("User request: " + uname);
+      log.info("User request: {}", uname);
       if (uname == null || denyUsers.contains(uname))
         return new AuthorizationResponse(403);
       else

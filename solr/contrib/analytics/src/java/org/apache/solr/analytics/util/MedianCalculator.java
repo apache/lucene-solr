@@ -53,7 +53,7 @@ public class MedianCalculator {
       split = split(list, begin, end);
     }
 
-    Point result = partition(list, begin, end, split);
+    OrdinalCalculator.Point result = partition(list, begin, end, split);
 
     if (place < result.low) {
       select(list, place, begin, result.low);
@@ -86,7 +86,7 @@ public class MedianCalculator {
     return list.get(recursiveSize / 2 + begin);
   }
 
-  private static <T extends Comparable<T>> Point partition(List<T> list, int begin, int end, T indexElement) {
+  private static <T extends Comparable<T>> OrdinalCalculator.Point partition(List<T> list, int begin, int end, T indexElement) {
     T temp;
     int left, right;
     for (left = begin, right = end; left < right; left++, right--) {
@@ -126,6 +126,6 @@ public class MedianCalculator {
       }
       rightMove++;
     }
-    return new Point(left, right);
+    return new OrdinalCalculator.Point(left, right);
   }
 }

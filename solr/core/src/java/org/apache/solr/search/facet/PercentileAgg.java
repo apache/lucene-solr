@@ -132,7 +132,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     return lst;
   }
 
-  class Acc extends FuncSlotAcc {
+  class Acc extends SlotAcc.FuncSlotAcc {
     protected AVLTreeDigest[] digests;
     protected ByteBuffer buf;
     protected double[] sortvals;
@@ -465,7 +465,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
   }
 
-  class Merger extends FacetSortableMerger {
+  class Merger extends FacetModule.FacetSortableMerger {
     protected AVLTreeDigest digest;
     protected Double sortVal;
 
@@ -488,7 +488,7 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     @Override
-    public int compareTo(FacetSortableMerger other, FacetRequest.SortDirection direction) {
+    public int compareTo(FacetModule.FacetSortableMerger other, FacetRequest.SortDirection direction) {
       return Double.compare(getSortVal(), ((Merger) other).getSortVal());
     }
 

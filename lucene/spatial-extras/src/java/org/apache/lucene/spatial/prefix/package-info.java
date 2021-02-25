@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Prefix Tree Strategy.
- */
+/** Prefix Tree Strategy. */
 package org.apache.lucene.spatial.prefix;

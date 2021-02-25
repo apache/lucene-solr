@@ -30,6 +30,10 @@ public class MapBackedCache<K, V> implements Cache<K, V> {
     this.map = map;
   }
 
+  public Map<K, V> asMap() {
+    return map;
+  }
+
   @Override
   public V put(K key, V val) {
     return map.put(key, val);

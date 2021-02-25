@@ -81,6 +81,7 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.solr.legacy.LegacyNumericRangeQuery
  * @since solr 1.4
  * @deprecated Trie fields are deprecated as of Solr 7.0
+ * @see PointField
  */
 @Deprecated
 public class TrieField extends NumericFieldType {

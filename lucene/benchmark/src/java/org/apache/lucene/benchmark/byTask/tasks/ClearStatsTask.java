@@ -18,10 +18,9 @@ package org.apache.lucene.benchmark.byTask.tasks;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 
-
 /**
- * Clear statistics data.
- * <br>Other side effects: None.
+ * Clear statistics data. <br>
+ * Other side effects: None.
  */
 public class ClearStatsTask extends PerfTask {
 
@@ -42,5 +41,4 @@ public class ClearStatsTask extends PerfTask {
   protected boolean shouldNotRecordStats() {
     return true;
   }
-
 }

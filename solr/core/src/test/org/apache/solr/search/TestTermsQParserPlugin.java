@@ -18,6 +18,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,14 +28,14 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
 
-    assertU(adoc("id","1", "author_s", "Lev Grossman", "t_title", "The Magicians",  "cat_s", "fantasy", "pubyear_i", "2009"));
-    assertU(adoc("id", "2", "author_s", "Robert Jordan", "t_title", "The Eye of the World", "cat_s", "fantasy", "cat_s", "childrens", "pubyear_i", "1990"));
-    assertU(adoc("id", "3", "author_s", "Robert Jordan", "t_title", "The Great Hunt", "cat_s", "fantasy", "cat_s", "childrens", "pubyear_i", "1990"));
-    assertU(adoc("id", "4", "author_s", "N.K. Jemisin", "t_title", "The Fifth Season", "cat_s", "fantasy", "pubyear_i", "2015"));
+    assertU(adoc("id","1", "author_s1", "Lev Grossman", "t_title", "The Magicians",  "cat_s", "fantasy", "pubyear_i", "2009"));
+    assertU(adoc("id", "2", "author_s1", "Robert Jordan", "t_title", "The Eye of the World", "cat_s", "fantasy", "cat_s", "childrens", "pubyear_i", "1990"));
+    assertU(adoc("id", "3", "author_s1", "Robert Jordan", "t_title", "The Great Hunt", "cat_s", "fantasy", "cat_s", "childrens", "pubyear_i", "1990"));
+    assertU(adoc("id", "4", "author_s1", "N.K. Jemisin", "t_title", "The Fifth Season", "cat_s", "fantasy", "pubyear_i", "2015"));
     assertU(commit());
-    assertU(adoc("id", "5", "author_s", "Ursula K. Le Guin", "t_title", "The Dispossessed", "cat_s", "scifi", "pubyear_i", "1974"));
-    assertU(adoc("id", "6", "author_s", "Ursula K. Le Guin", "t_title", "The Left Hand of Darkness", "cat_s", "scifi", "pubyear_i", "1969"));
-    assertU(adoc("id", "7", "author_s", "Isaac Asimov", "t_title", "Foundation", "cat_s", "scifi", "pubyear_i", "1951"));
+    assertU(adoc("id", "5", "author_s1", "Ursula K. Le Guin", "t_title", "The Dispossessed", "cat_s", "scifi", "pubyear_i", "1974"));
+    assertU(adoc("id", "6", "author_s1", "Ursula K. Le Guin", "t_title", "The Left Hand of Darkness", "cat_s", "scifi", "pubyear_i", "1969"));
+    assertU(adoc("id", "7", "author_s1", "Isaac Asimov", "t_title", "Foundation", "cat_s", "scifi", "pubyear_i", "1951"));
     assertU(commit());
   }
 
@@ -70,6 +71,11 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
         "//result/doc[4]/str[@name='id'][.='6']",
         "//result/doc[5]/str[@name='id'][.='7']"
     );
+  }
+  
+  @Test
+  public void testMissingField() {
+    assertQEx("Expecting bad request", "Missing field to query", req("q", "{!terms}childrens|scifi"), SolrException.ErrorCode.BAD_REQUEST);
   }
 
   class TermsParams {
@@ -108,7 +114,7 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
     for (TermsParams method : methods) {
       // Single-valued field, single term value
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.add("q", method.buildQuery("author_s", "Robert Jordan"));
+      params.add("q", method.buildQuery("author_s1", "Robert Jordan"));
       params.add("sort", "id asc");
       assertQ(req(params, "indent", "on"), "*[count(//doc)=2]",
           "//result/doc[1]/str[@name='id'][.='2']",
@@ -117,7 +123,7 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
 
       // Single-valued field, multiple term values
       params = new ModifiableSolrParams();
-      params.add("q", method.buildQuery("author_s", "Robert Jordan,Isaac Asimov"));
+      params.add("q", method.buildQuery("author_s1", "Robert Jordan,Isaac Asimov"));
       params.add("sort", "id asc");
       assertQ(req(params, "indent", "on"), "*[count(//doc)=3]",
           "//result/doc[1]/str[@name='id'][.='2']",

@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -38,19 +37,23 @@ import org.apache.lucene.search.SortField;
  */
 public class SearchGroup<T> {
 
-  /** The value that defines this group  */
+  /** The value that defines this group */
   public T groupValue;
 
-  /** The sort values used during sorting. These are the
-   *  groupSort field values of the highest rank document
-   *  (by the groupSort) within the group.  Can be
-   * <code>null</code> if <code>fillFields=false</code> had
-   * been passed to {@link FirstPassGroupingCollector#getTopGroups} */
+  /**
+   * The sort values used during sorting. These are the groupSort field values of the highest rank
+   * document (by the groupSort) within the group. Can be <code>null</code> if <code>
+   * fillFields=false</code> had been passed to {@link FirstPassGroupingCollector#getTopGroups}
+   */
   public Object[] sortValues;
 
   @Override
   public String toString() {
-    return("SearchGroup(groupValue=" + groupValue + " sortValues=" + Arrays.toString(sortValues) + ")");
+    return ("SearchGroup(groupValue="
+        + groupValue
+        + " sortValues="
+        + Arrays.toString(sortValues)
+        + ")");
   }
 
   @Override
@@ -90,11 +93,12 @@ public class SearchGroup<T> {
       assert iter.hasNext();
       final SearchGroup<T> group = iter.next();
       if (group.sortValues == null) {
-        throw new IllegalArgumentException("group.sortValues is null; you must pass fillFields=true to the first pass collector");
+        throw new IllegalArgumentException(
+            "group.sortValues is null; you must pass fillFields=true to the first pass collector");
       }
       return group;
     }
-    
+
     @Override
     public String toString() {
       return "ShardIter(shard=" + shardIndex + ")";
@@ -162,7 +166,7 @@ public class SearchGroup<T> {
 
     @SuppressWarnings("rawtypes")
     public final FieldComparator[] comparators;
-    
+
     public final int[] reversed;
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -178,18 +182,19 @@ public class SearchGroup<T> {
     }
 
     @Override
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public int compare(MergedGroup<T> group, MergedGroup<T> other) {
       if (group == other) {
         return 0;
       }
-      //System.out.println("compare group=" + group + " other=" + other);
+      // System.out.println("compare group=" + group + " other=" + other);
       final Object[] groupValues = group.topValues;
       final Object[] otherValues = other.topValues;
-      //System.out.println("  groupValues=" + groupValues + " otherValues=" + otherValues);
-      for (int compIDX = 0;compIDX < comparators.length; compIDX++) {
-        final int c = reversed[compIDX] * comparators[compIDX].compareValues(groupValues[compIDX],
-                                                                             otherValues[compIDX]);
+      // System.out.println("  groupValues=" + groupValues + " otherValues=" + otherValues);
+      for (int compIDX = 0; compIDX < comparators.length; compIDX++) {
+        final int c =
+            reversed[compIDX]
+                * comparators[compIDX].compareValues(groupValues[compIDX], otherValues[compIDX]);
         if (c != 0) {
           return c;
         }
@@ -205,7 +210,7 @@ public class SearchGroup<T> {
 
     private final GroupComparator<T> groupComp;
     private final NavigableSet<MergedGroup<T>> queue;
-    private final Map<T,MergedGroup<T>> groupsSeen;
+    private final Map<T, MergedGroup<T>> groupsSeen;
 
     public GroupMerger(Sort groupSort) {
       groupComp = new GroupComparator<>(groupSort);
@@ -213,17 +218,18 @@ public class SearchGroup<T> {
       groupsSeen = new HashMap<>();
     }
 
-    @SuppressWarnings({"unchecked","rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private void updateNextGroup(int topN, ShardIter<T> shard) {
-      while(shard.iter.hasNext()) {
+      while (shard.iter.hasNext()) {
         final SearchGroup<T> group = shard.next();
         MergedGroup<T> mergedGroup = groupsSeen.get(group.groupValue);
         final boolean isNew = mergedGroup == null;
-        //System.out.println("    next group=" + (group.groupValue == null ? "null" : ((BytesRef) group.groupValue).utf8ToString()) + " sort=" + Arrays.toString(group.sortValues));
+        // System.out.println("    next group=" + (group.groupValue == null ? "null" : ((BytesRef)
+        // group.groupValue).utf8ToString()) + " sort=" + Arrays.toString(group.sortValues));
 
         if (isNew) {
           // Start a new group:
-          //System.out.println("      new");
+          // System.out.println("      new");
           mergedGroup = new MergedGroup<>(group.groupValue);
           mergedGroup.minShardIndex = shard.shardIndex;
           assert group.sortValues != null;
@@ -236,11 +242,13 @@ public class SearchGroup<T> {
           // processed; move on to next group...
           continue;
         } else {
-          //System.out.println("      old");
+          // System.out.println("      old");
           boolean competes = false;
-          for(int compIDX=0;compIDX<groupComp.comparators.length;compIDX++) {
-            final int cmp = groupComp.reversed[compIDX] * groupComp.comparators[compIDX].compareValues(group.sortValues[compIDX],
-                                                                                                       mergedGroup.topValues[compIDX]);
+          for (int compIDX = 0; compIDX < groupComp.comparators.length; compIDX++) {
+            final int cmp =
+                groupComp.reversed[compIDX]
+                    * groupComp.comparators[compIDX].compareValues(
+                        group.sortValues[compIDX], mergedGroup.topValues[compIDX]);
             if (cmp < 0) {
               // Definitely competes
               competes = true;
@@ -248,14 +256,14 @@ public class SearchGroup<T> {
             } else if (cmp > 0) {
               // Definitely does not compete
               break;
-            } else if (compIDX == groupComp.comparators.length-1) {
+            } else if (compIDX == groupComp.comparators.length - 1) {
               if (shard.shardIndex < mergedGroup.minShardIndex) {
                 competes = true;
               }
             }
           }
 
-          //System.out.println("      competes=" + competes);
+          // System.out.println("      competes=" + competes);
 
           if (competes) {
             // Group's sort changed -- remove & re-insert
@@ -274,23 +282,24 @@ public class SearchGroup<T> {
       }
 
       // Prune un-competitive groups:
-      while(queue.size() > topN) {
+      while (queue.size() > topN) {
         final MergedGroup<T> group = queue.pollLast();
-        //System.out.println("PRUNE: " + group);
+        // System.out.println("PRUNE: " + group);
         group.inQueue = false;
       }
     }
 
-    public Collection<SearchGroup<T>> merge(List<Collection<SearchGroup<T>>> shards, int offset, int topN) {
+    public Collection<SearchGroup<T>> merge(
+        List<Collection<SearchGroup<T>>> shards, int offset, int topN) {
 
       final int maxQueueSize = offset + topN;
 
-      //System.out.println("merge");
+      // System.out.println("merge");
       // Init queue:
-      for(int shardIDX=0;shardIDX<shards.size();shardIDX++) {
+      for (int shardIDX = 0; shardIDX < shards.size(); shardIDX++) {
         final Collection<SearchGroup<T>> shard = shards.get(shardIDX);
         if (!shard.isEmpty()) {
-          //System.out.println("  insert shard=" + shardIDX);
+          // System.out.println("  insert shard=" + shardIDX);
           updateNextGroup(maxQueueSize, new ShardIter<>(shard, shardIDX));
         }
       }
@@ -300,10 +309,12 @@ public class SearchGroup<T> {
 
       int count = 0;
 
-      while(!queue.isEmpty()) {
+      while (!queue.isEmpty()) {
         final MergedGroup<T> group = queue.pollFirst();
         group.processed = true;
-        //System.out.println("  pop: shards=" + group.shards + " group=" + (group.groupValue == null ? "null" : (((BytesRef) group.groupValue).utf8ToString())) + " sortValues=" + Arrays.toString(group.topValues));
+        // System.out.println("  pop: shards=" + group.shards + " group=" + (group.groupValue ==
+        // null ? "null" : (((BytesRef) group.groupValue).utf8ToString())) + " sortValues=" +
+        // Arrays.toString(group.topValues));
         if (count++ >= offset) {
           final SearchGroup<T> newGroup = new SearchGroup<>();
           newGroup.groupValue = group.groupValue;
@@ -312,12 +323,12 @@ public class SearchGroup<T> {
           if (newTopGroups.size() == topN) {
             break;
           }
-        //} else {
-        // System.out.println("    skip < offset");
+          // } else {
+          // System.out.println("    skip < offset");
         }
 
         // Advance all iters in this group:
-        for(ShardIter<T> shardIter : group.shards) {
+        for (ShardIter<T> shardIter : group.shards) {
           updateNextGroup(maxQueueSize, shardIter);
         }
       }
@@ -330,16 +341,16 @@ public class SearchGroup<T> {
     }
   }
 
-  /** Merges multiple collections of top groups, for example
-   *  obtained from separate index shards.  The provided
-   *  groupSort must match how the groups were sorted, and
-   *  the provided SearchGroups must have been computed
-   *  with fillFields=true passed to {@link
-   *  FirstPassGroupingCollector#getTopGroups}.
+  /**
+   * Merges multiple collections of top groups, for example obtained from separate index shards. The
+   * provided groupSort must match how the groups were sorted, and the provided SearchGroups must
+   * have been computed with fillFields=true passed to {@link
+   * FirstPassGroupingCollector#getTopGroups}.
    *
    * <p>NOTE: this returns null if the topGroups is empty.
    */
-  public static <T> Collection<SearchGroup<T>> merge(List<Collection<SearchGroup<T>>> topGroups, int offset, int topN, Sort groupSort) {
+  public static <T> Collection<SearchGroup<T>> merge(
+      List<Collection<SearchGroup<T>>> topGroups, int offset, int topN, Sort groupSort) {
     if (topGroups.isEmpty()) {
       return null;
     } else {

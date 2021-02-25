@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
@@ -24,7 +23,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -37,40 +35,41 @@ import org.apache.lucene.util.UnicodeUtil;
 
 public class TestIndexWriterUnicode extends LuceneTestCase {
 
-  final String[] utf8Data = new String[] {
-    // unpaired low surrogate
-    "ab\udc17cd", "ab\ufffdcd",
-    "\udc17abcd", "\ufffdabcd",
-    "\udc17", "\ufffd",
-    "ab\udc17\udc17cd", "ab\ufffd\ufffdcd",
-    "\udc17\udc17abcd", "\ufffd\ufffdabcd",
-    "\udc17\udc17", "\ufffd\ufffd",
+  final String[] utf8Data =
+      new String[] {
+        // unpaired low surrogate
+        "ab\udc17cd", "ab\ufffdcd",
+        "\udc17abcd", "\ufffdabcd",
+        "\udc17", "\ufffd",
+        "ab\udc17\udc17cd", "ab\ufffd\ufffdcd",
+        "\udc17\udc17abcd", "\ufffd\ufffdabcd",
+        "\udc17\udc17", "\ufffd\ufffd",
 
-    // unpaired high surrogate
-    "ab\ud917cd", "ab\ufffdcd",
-    "\ud917abcd", "\ufffdabcd",
-    "\ud917", "\ufffd",
-    "ab\ud917\ud917cd", "ab\ufffd\ufffdcd",
-    "\ud917\ud917abcd", "\ufffd\ufffdabcd",
-    "\ud917\ud917", "\ufffd\ufffd",
+        // unpaired high surrogate
+        "ab\ud917cd", "ab\ufffdcd",
+        "\ud917abcd", "\ufffdabcd",
+        "\ud917", "\ufffd",
+        "ab\ud917\ud917cd", "ab\ufffd\ufffdcd",
+        "\ud917\ud917abcd", "\ufffd\ufffdabcd",
+        "\ud917\ud917", "\ufffd\ufffd",
 
-    // backwards surrogates
-    "ab\udc17\ud917cd", "ab\ufffd\ufffdcd",
-    "\udc17\ud917abcd", "\ufffd\ufffdabcd",
-    "\udc17\ud917", "\ufffd\ufffd",
-    "ab\udc17\ud917\udc17\ud917cd", "ab\ufffd\ud917\udc17\ufffdcd",
-    "\udc17\ud917\udc17\ud917abcd", "\ufffd\ud917\udc17\ufffdabcd",
-    "\udc17\ud917\udc17\ud917", "\ufffd\ud917\udc17\ufffd"
-  };
-  
+        // backwards surrogates
+        "ab\udc17\ud917cd", "ab\ufffd\ufffdcd",
+        "\udc17\ud917abcd", "\ufffd\ufffdabcd",
+        "\udc17\ud917", "\ufffd\ufffd",
+        "ab\udc17\ud917\udc17\ud917cd", "ab\ufffd\ud917\udc17\ufffdcd",
+        "\udc17\ud917\udc17\ud917abcd", "\ufffd\ud917\udc17\ufffdabcd",
+        "\udc17\ud917\udc17\ud917", "\ufffd\ud917\udc17\ufffd"
+      };
+
   private int nextInt(int lim) {
     return random().nextInt(lim);
   }
 
   private int nextInt(int start, int end) {
-    return start + nextInt(end-start);
+    return start + nextInt(end - start);
   }
-  
+
   private boolean fillUnicode(char[] buffer, char[] expected, int offset, int count) {
     final int len = offset + count;
     boolean hasIllegal = false;
@@ -79,34 +78,27 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       // Don't start in the middle of a valid surrogate pair
       offset--;
 
-    for(int i=offset;i<len;i++) {
+    for (int i = offset; i < len; i++) {
       int t = nextInt(6);
-      if (0 == t && i < len-1) {
+      if (0 == t && i < len - 1) {
         // Make a surrogate pair
         // High surrogate
         expected[i] = buffer[i++] = (char) nextInt(0xd800, 0xdc00);
         // Low surrogate
         expected[i] = buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      } else if (t <= 1)
-        expected[i] = buffer[i] = (char) nextInt(0x80);
-      else if (2 == t)
-        expected[i] = buffer[i] = (char) nextInt(0x80, 0x800);
-      else if (3 == t)
-        expected[i] = buffer[i] = (char) nextInt(0x800, 0xd800);
-      else if (4 == t)
-        expected[i] = buffer[i] = (char) nextInt(0xe000, 0xffff);
-      else if (5 == t && i < len-1) {
+      } else if (t <= 1) expected[i] = buffer[i] = (char) nextInt(0x80);
+      else if (2 == t) expected[i] = buffer[i] = (char) nextInt(0x80, 0x800);
+      else if (3 == t) expected[i] = buffer[i] = (char) nextInt(0x800, 0xd800);
+      else if (4 == t) expected[i] = buffer[i] = (char) nextInt(0xe000, 0xffff);
+      else if (5 == t && i < len - 1) {
         // Illegal unpaired surrogate
         if (nextInt(10) == 7) {
-          if (random().nextBoolean())
-            buffer[i] = (char) nextInt(0xd800, 0xdc00);
-          else
-            buffer[i] = (char) nextInt(0xdc00, 0xe000);
+          if (random().nextBoolean()) buffer[i] = (char) nextInt(0xd800, 0xdc00);
+          else buffer[i] = (char) nextInt(0xdc00, 0xe000);
           expected[i++] = 0xfffd;
           expected[i] = buffer[i] = (char) nextInt(0x800, 0xd800);
           hasIllegal = true;
-        } else
-          expected[i] = buffer[i] = (char) nextInt(0x800, 0xd800);
+        } else expected[i] = buffer[i] = (char) nextInt(0x800, 0xd800);
       } else {
         expected[i] = buffer[i] = ' ';
       }
@@ -114,10 +106,10 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     return hasIllegal;
   }
-  
+
   // both start & end are inclusive
   private final int getInt(Random r, int start, int end) {
-    return start + r.nextInt(1+end-start);
+    return start + r.nextInt(1 + end - start);
   }
 
   private final String asUnicodeChar(char c) {
@@ -135,14 +127,15 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
     return s0;
   }
 
-  private void checkTermsOrder(IndexReader r, Set<String> allTerms, boolean isTop) throws IOException {
+  private void checkTermsOrder(IndexReader r, Set<String> allTerms, boolean isTop)
+      throws IOException {
     TermsEnum terms = MultiTerms.getTerms(r, "f").iterator();
 
     BytesRefBuilder last = new BytesRefBuilder();
 
     Set<String> seenTerms = new HashSet<>();
 
-    while(true) {
+    while (true) {
       final BytesRef term = terms.next();
       if (term == null) {
         break;
@@ -152,7 +145,9 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       last.copyBytes(term);
 
       final String s = term.utf8ToString();
-      assertTrue("term " + termDesc(s) + " was not added to index (count=" + allTerms.size() + ")", allTerms.contains(s));
+      assertTrue(
+          "term " + termDesc(s) + " was not added to index (count=" + allTerms.size() + ")",
+          allTerms.contains(s));
       seenTerms.add(s);
     }
 
@@ -162,11 +157,12 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     // Test seeking:
     Iterator<String> it = seenTerms.iterator();
-    while(it.hasNext()) {
+    while (it.hasNext()) {
       BytesRef tr = new BytesRef(it.next());
-      assertEquals("seek failed for term=" + termDesc(tr.utf8ToString()),
-                   TermsEnum.SeekStatus.FOUND,
-                   terms.seekCeil(tr));
+      assertEquals(
+          "seek failed for term=" + termDesc(tr.utf8ToString()),
+          TermsEnum.SeekStatus.FOUND,
+          terms.seekCeil(tr));
     }
   }
 
@@ -185,14 +181,12 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       if (!hasIllegal) {
         byte[] b = new String(buffer, 0, 20).getBytes(StandardCharsets.UTF_8);
         assertEquals(b.length, utf8.length);
-        for(int i=0;i<b.length;i++)
-          assertEquals(b[i], utf8.bytes[i]);
+        for (int i = 0; i < b.length; i++) assertEquals(b[i], utf8.bytes[i]);
       }
 
       utf16.copyUTF8Bytes(utf8.bytes, 0, utf8.length);
       assertEquals(utf16.length(), 20);
-      for(int i=0;i<20;i++)
-        assertEquals(expected[i], utf16.charAt(i));
+      for (int i = 0; i < 20; i++) assertEquals(expected[i], utf16.charAt(i));
     }
   }
 
@@ -201,7 +195,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
     CharsRefBuilder utf16 = new CharsRefBuilder();
     char[] chars = new char[2];
-    for(int ch=0;ch<0x0010FFFF;ch++) {
+    for (int ch = 0; ch < 0x0010FFFF; ch++) {
 
       if (ch == 0xd800)
         // Skip invalid code points
@@ -211,8 +205,8 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
       if (ch <= 0xffff) {
         chars[len++] = (char) ch;
       } else {
-        chars[len++] = (char) (((ch-0x0010000) >> 10) + UnicodeUtil.UNI_SUR_HIGH_START);
-        chars[len++] = (char) (((ch-0x0010000) & 0x3FFL) + UnicodeUtil.UNI_SUR_LOW_START);
+        chars[len++] = (char) (((ch - 0x0010000) >> 10) + UnicodeUtil.UNI_SUR_HIGH_START);
+        chars[len++] = (char) (((ch - 0x0010000) & 0x3FFL) + UnicodeUtil.UNI_SUR_LOW_START);
       }
 
       BytesRef utf8 = new BytesRef(CharBuffer.wrap(chars, 0, len));
@@ -226,11 +220,10 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
       byte[] b = s1.getBytes(StandardCharsets.UTF_8);
       assertEquals(utf8.length, b.length);
-      for(int j=0;j<utf8.length;j++)
-        assertEquals(utf8.bytes[j], b[j]);
+      for (int j = 0; j < utf8.length; j++) assertEquals(utf8.bytes[j], b[j]);
     }
   }
-  
+
   public void testEmbeddedFFFF() throws Throwable {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, newIndexWriterConfig(new MockAnalyzer(random())));
@@ -250,25 +243,32 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
   // LUCENE-510
   public void testInvalidUTF16() throws Throwable {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new TestIndexWriter.StringSplitAnalyzer()));
+    IndexWriter w =
+        new IndexWriter(dir, newIndexWriterConfig(new TestIndexWriter.StringSplitAnalyzer()));
     Document doc = new Document();
 
-    final int count = utf8Data.length/2;
-    for(int i=0;i<count;i++)
-      doc.add(newTextField("f" + i, utf8Data[2*i], Field.Store.YES));
+    final int count = utf8Data.length / 2;
+    for (int i = 0; i < count; i++)
+      doc.add(newTextField("f" + i, utf8Data[2 * i], Field.Store.YES));
     w.addDocument(doc);
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
     Document doc2 = ir.document(0);
-    for(int i=0;i<count;i++) {
-      assertEquals("field " + i + " was not indexed correctly", 1, ir.docFreq(new Term("f"+i, utf8Data[2*i+1])));
-      assertEquals("field " + i + " is incorrect", utf8Data[2*i+1], doc2.getField("f"+i).stringValue());
+    for (int i = 0; i < count; i++) {
+      assertEquals(
+          "field " + i + " was not indexed correctly",
+          1,
+          ir.docFreq(new Term("f" + i, utf8Data[2 * i + 1])));
+      assertEquals(
+          "field " + i + " is incorrect",
+          utf8Data[2 * i + 1],
+          doc2.getField("f" + i).stringValue());
     }
     ir.close();
     dir.close();
   }
-  
+
   // Make sure terms, including ones with surrogate pairs,
   // sort in codepoint sort order by default
   public void testTermUTF16SortOrder() throws Throwable {
@@ -290,16 +290,18 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
         // Single char
         if (rnd.nextBoolean()) {
           // Above surrogates
-          chars[0] = (char) getInt(rnd, 1+UnicodeUtil.UNI_SUR_LOW_END, 0xffff);
+          chars[0] = (char) getInt(rnd, 1 + UnicodeUtil.UNI_SUR_LOW_END, 0xffff);
         } else {
           // Below surrogates
-          chars[0] = (char) getInt(rnd, 0, UnicodeUtil.UNI_SUR_HIGH_START-1);
+          chars[0] = (char) getInt(rnd, 0, UnicodeUtil.UNI_SUR_HIGH_START - 1);
         }
         s = new String(chars, 0, 1);
       } else {
         // Surrogate pair
         chars[0] = (char) getInt(rnd, UnicodeUtil.UNI_SUR_HIGH_START, UnicodeUtil.UNI_SUR_HIGH_END);
-        assertTrue(((int) chars[0]) >= UnicodeUtil.UNI_SUR_HIGH_START && ((int) chars[0]) <= UnicodeUtil.UNI_SUR_HIGH_END);
+        assertTrue(
+            ((int) chars[0]) >= UnicodeUtil.UNI_SUR_HIGH_START
+                && ((int) chars[0]) <= UnicodeUtil.UNI_SUR_HIGH_END);
         chars[1] = (char) getInt(rnd, UnicodeUtil.UNI_SUR_LOW_START, UnicodeUtil.UNI_SUR_LOW_END);
         s = new String(chars, 0, 2);
       }
@@ -308,7 +310,7 @@ public class TestIndexWriterUnicode extends LuceneTestCase {
 
       writer.addDocument(d);
 
-      if ((1+i) % 42 == 0) {
+      if ((1 + i) % 42 == 0) {
         writer.commit();
       }
     }

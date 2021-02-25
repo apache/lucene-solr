@@ -16,9 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
 import java.util.Arrays;
-
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,8 +29,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Test date sorting, i.e. auto-sorting of fields with type "long".
- * See http://issues.apache.org/jira/browse/LUCENE-1045 
+ * Test date sorting, i.e. auto-sorting of fields with type "long". See
+ * http://issues.apache.org/jira/browse/LUCENE-1045
  */
 public class TestDateSort extends LuceneTestCase {
 
@@ -52,9 +50,9 @@ public class TestDateSort extends LuceneTestCase {
     // oldest doc:
     // Add the first document.  text = "Document 1"  dateTime = Oct 10 03:25:22 EDT 2007
     writer.addDocument(createDocument("Document 1", 1192001122000L));
-    // Add the second document.  text = "Document 2"  dateTime = Oct 10 03:25:26 EDT 2007 
+    // Add the second document.  text = "Document 2"  dateTime = Oct 10 03:25:26 EDT 2007
     writer.addDocument(createDocument("Document 2", 1192001126000L));
-    // Add the third document.  text = "Document 3"  dateTime = Oct 11 07:12:13 EDT 2007 
+    // Add the third document.  text = "Document 3"  dateTime = Oct 11 07:12:13 EDT 2007
     writer.addDocument(createDocument("Document 3", 1192101133000L));
     // Add the fourth document.  text = "Document 4"  dateTime = Oct 11 08:02:09 EDT 2007
     writer.addDocument(createDocument("Document 4", 1192104129000L));
@@ -114,5 +112,4 @@ public class TestDateSort extends LuceneTestCase {
 
     return document;
   }
-
 }

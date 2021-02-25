@@ -89,6 +89,7 @@ public abstract class LTRScoringModel implements Accountable {
   protected final List<Normalizer> norms;
   private Integer hashCode; // cached since it shouldn't actually change after construction
 
+  @SuppressWarnings({"rawtypes"})
   public static LTRScoringModel getInstance(SolrResourceLoader solrResourceLoader,
       String className, String name, List<Feature> features,
       List<Normalizer> norms,
@@ -107,7 +108,7 @@ public abstract class LTRScoringModel implements Accountable {
         SolrPluginUtils.invokeSetters(model, params.entrySet());
       }
     } catch (final Exception e) {
-      throw new ModelException("Model type does not exist " + className, e);
+      throw new ModelException("Model loading failed for " + className, e);
     }
     model.validate();
     return model;

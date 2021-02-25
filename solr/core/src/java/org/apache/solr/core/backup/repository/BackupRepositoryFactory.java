@@ -60,18 +60,24 @@ public class BackupRepositoryFactory {
 
       if (this.defaultBackupRepoPlugin != null) {
         log.info("Default configuration for backup repository is with configuration params {}",
-            defaultBackupRepoPlugin);
+                defaultBackupRepoPlugin);
       }
     }
   }
 
+  @SuppressWarnings({"unchecked"})
   public BackupRepository newInstance(SolrResourceLoader loader, String name) {
     Objects.requireNonNull(loader);
     Objects.requireNonNull(name);
     PluginInfo repo = Objects.requireNonNull(backupRepoPluginByName.get(name),
-        "Could not find a backup repository with name " + name);
+            "Could not find a backup repository with name " + name);
 
     BackupRepository result = loader.newInstance(repo.className, BackupRepository.class);
+    if ("trackingBackupRepository".equals(name) && repo.initArgs.get("factory") == null) {
+      repo.initArgs.add("factory", this);
+      repo.initArgs.add("loader", loader);
+    }
+
     result.init(repo.initArgs);
     return result;
   }

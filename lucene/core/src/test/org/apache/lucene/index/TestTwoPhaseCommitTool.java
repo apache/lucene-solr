@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Map;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTwoPhaseCommitTool extends LuceneTestCase {
@@ -115,7 +113,9 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
     if (anyFailure) {
       // if any failure happened, ensure that rollback was called on all.
       for (TwoPhaseCommitImpl tpc : objects) {
-        assertTrue("rollback was not called while a failure occurred during the 2-phase commit", tpc.rollbackCalled);
+        assertTrue(
+            "rollback was not called while a failure occurred during the 2-phase commit",
+            tpc.rollbackCalled);
       }
     }
   }
@@ -143,5 +143,4 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
     // following call would fail if TPCTool won't handle null TPCs properly
     TwoPhaseCommitTool.execute(tpcs);
   }
-
 }

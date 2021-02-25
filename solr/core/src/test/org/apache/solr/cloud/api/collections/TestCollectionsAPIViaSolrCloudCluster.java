@@ -56,7 +56,6 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
   private static final int numShards = 2;
   private static final int numReplicas = 2;
-  private static final int maxShardsPerNode = 1;
   private static final int nodeCount = 5;
   private static final String configName = "solrCloudCollectionConfig";
   private static final Map<String,String> collectionProperties  // ensure indexes survive core shutdown
@@ -77,21 +76,19 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
   private void createCollection(String collectionName, String createNodeSet) throws Exception {
     if (random().nextBoolean()) { // process asynchronously
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-          .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .processAndWait(cluster.getSolrClient(), 30);
     }
     else {
       CollectionAdminRequest.createCollection(collectionName, configName, numShards, numReplicas)
-          .setMaxShardsPerNode(maxShardsPerNode)
           .setCreateNodeSet(createNodeSet)
           .setProperties(collectionProperties)
           .process(cluster.getSolrClient());
 
     }
     
-    if (createNodeSet != null && createNodeSet.equals(OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY)) {
+    if (createNodeSet != null && createNodeSet.equals(CollectionHandlingUtils.CREATE_NODE_SET_EMPTY)) {
       cluster.waitForActiveCollection(collectionName, numShards, 0);
     } else {
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
@@ -193,7 +190,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertFalse(cluster.getJettySolrRunners().isEmpty());
 
     // create collection
-    createCollection(collectionName, OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY);
+    createCollection(collectionName, CollectionHandlingUtils.CREATE_NODE_SET_EMPTY);
 
     // check the collection's corelessness
     int coreCount = 0;

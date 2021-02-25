@@ -17,24 +17,25 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
-
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
- * Takes a while to open files: gives testThreadInterruptDeadlock
- * a chance to find file leaks if opening an input throws exception
+ * Takes a while to open files: gives testThreadInterruptDeadlock a chance to find file leaks if
+ * opening an input throws exception
  */
 class SlowOpeningMockIndexInputWrapper extends MockIndexInputWrapper {
 
-  public SlowOpeningMockIndexInputWrapper(MockDirectoryWrapper dir,
-      String name, IndexInput delegate) throws IOException {
+  public SlowOpeningMockIndexInputWrapper(
+      MockDirectoryWrapper dir, String name, IndexInput delegate) throws IOException {
     super(dir, name, delegate, null);
     try {
       Thread.sleep(50);
     } catch (InterruptedException ie) {
       try {
         super.close();
-      } catch (Throwable ignore) {} // we didnt open successfully
+      } catch (Throwable ignore) {
+        // we didnt open successfully
+      }
       throw new ThreadInterruptedException(ie);
     }
   }

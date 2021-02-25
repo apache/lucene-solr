@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Learning to Rank Package'
+
 dependencies {
   implementation project(':solr:core')
   implementation project(':lucene:analysis:common')
@@ -25,7 +27,6 @@ dependencies {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
   testImplementation ('org.objenesis:objenesis')
-  testImplementation ('org.restlet.jee:org.restlet.ext.servlet')
 
   testImplementation project(':solr:test-framework')
 }

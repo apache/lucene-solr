@@ -22,10 +22,10 @@ Solr makes it easy for programmers to develop sophisticated, high-performance se
 
 This section introduces you to the basic Solr architecture and features to help you get up and running quickly. It covers the following topics:
 
-<<solr-tutorial.adoc#solr-tutorial,Solr Tutorial>>: This tutorial covers getting Solr up and running
+<<solr-tutorial.adoc#,Solr Tutorial>>: This tutorial covers getting Solr up and running
 
-<<a-quick-overview.adoc#a-quick-overview,A Quick Overview>>: A high-level overview of how Solr works.
+<<a-quick-overview.adoc#,A Quick Overview>>: A high-level overview of how Solr works.
 
-<<solr-system-requirements.adoc#solr-system-requirements,Solr System Requirements>>: Solr System Requirement
+<<solr-system-requirements.adoc#,Solr System Requirements>>: Solr System Requirement
 
-<<installing-solr.adoc#installing-solr,Installing Solr>>: A walkthrough of the Solr installation process.
+<<installing-solr.adoc#,Installing Solr>>: A walkthrough of the Solr installation process.

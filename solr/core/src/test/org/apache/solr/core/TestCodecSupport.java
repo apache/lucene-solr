@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
+import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
+import org.apache.lucene.codecs.lucene90.Lucene90Codec.Mode;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
@@ -117,11 +117,11 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
       SegmentInfos infos = SegmentInfos.readLatestCommit(searcher.getIndexReader().directory());
       SegmentInfo info = infos.info(infos.size() - 1).info;
       assertEquals("Expecting compression mode string to be " + expectedModeString +
-              " but got: " + info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY) +
+              " but got: " + info.getAttribute(Lucene87StoredFieldsFormat.MODE_KEY) +
               "\n SegmentInfo: " + info +
               "\n SegmentInfos: " + infos +
               "\n Codec: " + core.getCodec(),
-          expectedModeString, info.getAttribute(Lucene50StoredFieldsFormat.MODE_KEY));
+          expectedModeString, info.getAttribute(Lucene87StoredFieldsFormat.MODE_KEY));
       return null;
     });
   }
@@ -210,7 +210,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     try {
       CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName), coreContainer);
       c = new SolrCore(coreContainer, cd,
-          new ConfigSet("fakeConfigset", config, schema, null, true));
+          new ConfigSet("fakeConfigset", config, forceFetch -> schema, null, true));
       assertNull(coreContainer.registerCore(cd, c, false, false));
       h.coreName = newCoreName;
       assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());

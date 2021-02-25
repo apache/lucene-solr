@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = '3D spatial planar geometry APIs'
+
 dependencies {
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')

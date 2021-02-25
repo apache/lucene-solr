@@ -1,5 +1,5 @@
 = Documents, Fields, and Schema Design
-:page-children: overview-of-documents-fields-and-schema-design, solr-field-types, defining-fields, copying-fields, dynamic-fields, other-schema-elements, schema-api, putting-the-pieces-together, docvalues, schemaless-mode
+:page-children: overview-of-documents-fields-and-schema-design, solr-field-types, defining-fields, copying-fields, dynamic-fields, other-schema-elements, schema-api, putting-the-pieces-together, docvalues, schemaless-mode, luke-request-handler
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,22 +21,24 @@ This section discusses how Solr organizes its data into documents and fields, as
 
 This section includes the following topics:
 
-<<overview-of-documents-fields-and-schema-design.adoc#overview-of-documents-fields-and-schema-design,Overview of Documents, Fields, and Schema Design>>: An introduction to the concepts covered in this section.
+<<overview-of-documents-fields-and-schema-design.adoc#,Overview of Documents, Fields, and Schema Design>>: An introduction to the concepts covered in this section.
 
-<<solr-field-types.adoc#solr-field-types,Solr Field Types>>: Detailed information about field types in Solr, including the field types in the default Solr schema.
+<<solr-field-types.adoc#,Solr Field Types>>: Detailed information about field types in Solr, including the field types in the default Solr schema.
 
-<<defining-fields.adoc#defining-fields,Defining Fields>>: Describes how to define fields in Solr.
+<<defining-fields.adoc#,Defining Fields>>: Describes how to define fields in Solr.
 
-<<copying-fields.adoc#copying-fields,Copying Fields>>: Describes how to populate fields with data copied from another field.
+<<copying-fields.adoc#,Copying Fields>>: Describes how to populate fields with data copied from another field.
 
-<<dynamic-fields.adoc#dynamic-fields,Dynamic Fields>>: Information about using dynamic fields in order to catch and index fields that do not exactly conform to other field definitions in your schema.
+<<dynamic-fields.adoc#,Dynamic Fields>>: Information about using dynamic fields in order to catch and index fields that do not exactly conform to other field definitions in your schema.
 
-<<schema-api.adoc#schema-api,Schema API>>: Use curl commands to read various parts of a schema or create new fields and copyField rules.
+<<schema-api.adoc#,Schema API>>: Use curl commands to read various parts of a schema or create new fields and copyField rules.
 
-<<other-schema-elements.adoc#other-schema-elements,Other Schema Elements>>: Describes other important elements in the Solr schema.
+<<other-schema-elements.adoc#,Other Schema Elements>>: Describes other important elements in the Solr schema.
 
-<<putting-the-pieces-together.adoc#putting-the-pieces-together,Putting the Pieces Together>>: A higher-level view of the Solr schema and how its elements work together.
+<<putting-the-pieces-together.adoc#,Putting the Pieces Together>>: A higher-level view of the Solr schema and how its elements work together.
 
-<<docvalues.adoc#docvalues,DocValues>>: Describes how to create a docValues index for faster lookups.
+<<docvalues.adoc#,DocValues>>: Describes how to create a docValues index for faster lookups.
 
-<<schemaless-mode.adoc#schemaless-mode,Schemaless Mode>>: Automatically add previously unknown schema fields using value-based field type guessing.
+<<schemaless-mode.adoc#,Schemaless Mode>>: Automatically add previously unknown schema fields using value-based field type guessing.
+
+<<luke-request-handler.adoc#,Luke Requst Handler>>: The request handler which provides access to information about fields in the index. This request handler powers the <<schema-browser-screen.adoc#,Schema Browser>> page of Solr's Admin UI.

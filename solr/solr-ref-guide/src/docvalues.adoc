@@ -30,7 +30,7 @@ In Lucene 4.0, a new approach was introduced. DocValue fields are now column-ori
 
 To use docValues, you only need to enable it for a field that you will use it with. As with all schema design, you need to define a field type and then define fields of that type with docValues enabled. All of these actions are done in `schema.xml`.
 
-Enabling a field for docValues only requires adding `docValues="true"` to the field (or field type) definition, as in this example from the `schema.xml` of Solr's `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>>:
+Enabling a field for docValues only requires adding `docValues="true"` to the field (or field type) definition, as in this example from the `schema.xml` of Solr's `sample_techproducts_configs` <<config-sets.adoc#,configset>>:
 
 [source,xml]
 ----
@@ -73,17 +73,17 @@ Lucene index back-compatibility is only supported for the default codec. If you 
 
 === Sorting, Faceting & Functions
 
-If `docValues="true"` for a field, then DocValues will automatically be used any time the field is used for <<common-query-parameters.adoc#sort-parameter,sorting>>, <<faceting.adoc#faceting,faceting>> or <<function-queries.adoc#function-queries,function queries>>.
+If `docValues="true"` for a field, then DocValues will automatically be used any time the field is used for <<common-query-parameters.adoc#sort-parameter,sorting>>, <<faceting.adoc#,faceting>> or <<function-queries.adoc#,function queries>>.
 
 === Retrieving DocValues During Search
 
-Field values retrieved during search queries are typically returned from stored values. However, non-stored docValues fields will be also returned along with other stored fields when all fields (or pattern matching globs) are specified to be returned (e.g., "`fl=*`") for search queries depending on the effective value of the `useDocValuesAsStored` parameter for each field. For schema versions >= 1.6, the implicit default is `useDocValuesAsStored="true"`. See <<field-type-definitions-and-properties.adoc#field-type-definitions-and-properties,Field Type Definitions and Properties>> & <<defining-fields.adoc#defining-fields,Defining Fields>> for more details.
+Field values retrieved during search queries are typically returned from stored values. However, non-stored docValues fields will be also returned along with other stored fields when all fields (or pattern matching globs) are specified to be returned (e.g., "`fl=*`") for search queries depending on the effective value of the `useDocValuesAsStored` parameter for each field. For schema versions >= 1.6, the implicit default is `useDocValuesAsStored="true"`. See <<field-type-definitions-and-properties.adoc#,Field Type Definitions and Properties>> & <<defining-fields.adoc#,Defining Fields>> for more details.
 
 When `useDocValuesAsStored="false"`, non-stored DocValues fields can still be explicitly requested by name in the <<common-query-parameters.adoc#fl-field-list-parameter,fl param>>, but will not match glob patterns (`"*"`). Note that returning DocValues along with "regular" stored fields at query time has performance implications that stored fields may not because DocValues are column-oriented and may therefore incur additional cost to retrieve for each returned document. Also note that while returning non-stored fields from DocValues, the values of a multi-valued field are returned in sorted order rather than insertion order and may have duplicates removed, see above. If you require the multi-valued fields to be returned in the original insertion order, then make your multi-valued field as stored (such a change requires reindexing).
 
 In cases where the query is returning _only_ docValues fields performance may improve since returning stored fields requires disk reads and decompression whereas returning docValues fields in the fl list only requires memory access.
 
-When retrieving fields from their docValues form (such as when using the <<exporting-result-sets.adoc#exporting-result-sets,/export handler>>, <<streaming-expressions.adoc#streaming-expressions,streaming expressions>> or if the field is requested in the `fl` parameter), two important differences between regular stored fields and docValues fields must be understood:
+When retrieving fields from their docValues form (such as when using the <<exporting-result-sets.adoc#,/export handler>>, <<streaming-expressions.adoc#,streaming expressions>> or if the field is requested in the `fl` parameter), two important differences between regular stored fields and docValues fields must be understood:
 
 1.  Order is _not_ preserved. When retrieving stored fields, the insertion order is the return order. For docValues, it is the _sorted_ order.
 2.  For field types using `SORTED_SET` (see above), multiple identical entries are collapsed into a single value. Thus if values 4, 5, 2, 4, 1 are inserted, the values returned will be 1, 2, 4, 5.

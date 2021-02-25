@@ -29,8 +29,9 @@ public class ZkDynamicConfigTest extends SolrTestCaseJ4 {
             "server.1=zoo1:2780:2783:participant;0.0.0.0:2181\n" +
             "server.2=zoo2:2781:2784:participant|zoo3:2783;2181\n" +
             "server.3=zoo3:2782:2785;zoo3-client:2181\n" +
+            "server.4=zoo4:2783:2786:participant\n" + // this assumes clientPort specified in static config
             "version=400000003");
-    assertEquals(3, parsed.size());
+    assertEquals(4, parsed.size());
 
     assertEquals("zoo1", parsed.getServers().get(0).address);
     assertEquals(Integer.valueOf(2780), parsed.getServers().get(0).leaderPort);
@@ -50,6 +51,12 @@ public class ZkDynamicConfigTest extends SolrTestCaseJ4 {
     assertNull(parsed.getServers().get(2).role);
     assertEquals("zoo3-client", parsed.getServers().get(2).clientPortAddress);
     assertEquals("zoo3-client", parsed.getServers().get(2).resolveClientPortAddress());
+
+    // client address/port optional if clientPort specified in static config file (back-compat mode)
+    assertEquals("participant", parsed.getServers().get(3).role);
+    assertEquals(null, parsed.getServers().get(3).clientPortAddress);
+    assertEquals("zoo4", parsed.getServers().get(3).resolveClientPortAddress());
+    assertEquals(null, parsed.getServers().get(3).clientPort);
   }
 
   @Test(expected = SolrException.class)

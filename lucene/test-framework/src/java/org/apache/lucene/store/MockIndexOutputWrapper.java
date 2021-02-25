@@ -18,22 +18,18 @@ package org.apache.lucene.store;
 
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Used to create an output stream that
- * will throw an IOException on fake disk full, track max
- * disk space actually used, and maybe throw random
- * IOExceptions.
+ * Used to create an output stream that will throw an IOException on fake disk full, track max disk
+ * space actually used, and maybe throw random IOExceptions.
  */
-
 public class MockIndexOutputWrapper extends IndexOutput {
   private MockDirectoryWrapper dir;
   private final IndexOutput delegate;
-  private boolean first=true;
+  private boolean first = true;
   final String name;
-  
+
   byte[] singleByte = new byte[1];
 
   /** Construct an empty output buffer. */
@@ -47,10 +43,11 @@ public class MockIndexOutputWrapper extends IndexOutput {
   private void checkCrashed() throws IOException {
     // If crashed since we were opened, then don't write anything
     if (dir.crashed) {
-      throw new IOException(dir.getClass().getSimpleName() + " has crashed; cannot write to " + name);
+      throw new IOException(
+          dir.getClass().getSimpleName() + " has crashed; cannot write to " + name);
     }
   }
-  
+
   private void checkDiskFull(byte[] b, int offset, DataInput in, long len) throws IOException {
     long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
@@ -75,7 +72,13 @@ public class MockIndexOutputWrapper extends IndexOutput {
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
-      String message = "fake disk full at " + dir.sizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.getFilePointer();
+      String message =
+          "fake disk full at "
+              + dir.sizeInBytes()
+              + " bytes when writing "
+              + name
+              + " (file length="
+              + delegate.getFilePointer();
       if (freeSpace > 0) {
         message += "; wrote " + freeSpace + " of " + len + " bytes";
       }
@@ -87,9 +90,9 @@ public class MockIndexOutputWrapper extends IndexOutput {
       throw new IOException(message);
     }
   }
-  
+
   private boolean closed;
-  
+
   @Override
   public void close() throws IOException {
     if (closed) {
@@ -97,7 +100,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       return;
     }
     closed = true;
-    
+
     try (Closeable delegate = this.delegate) {
       assert delegate != null;
       dir.maybeThrowDeterministicException();
@@ -113,7 +116,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       }
     }
   }
-  
+
   private void ensureOpen() {
     if (closed) {
       throw new AlreadyClosedException("Already closed: " + this);
@@ -125,18 +128,18 @@ public class MockIndexOutputWrapper extends IndexOutput {
     singleByte[0] = b;
     writeBytes(singleByte, 0, 1);
   }
-  
+
   @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
     ensureOpen();
     checkCrashed();
     checkDiskFull(b, offset, null, len);
-    
+
     if (dir.randomState.nextInt(200) == 0) {
-      final int half = len/2;
+      final int half = len / 2;
       delegate.writeBytes(b, offset, half);
       Thread.yield();
-      delegate.writeBytes(b, offset+half, len-half);
+      delegate.writeBytes(b, offset + half, len - half);
     } else {
       delegate.writeBytes(b, offset, len);
     }
@@ -161,7 +164,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
     ensureOpen();
     checkCrashed();
     checkDiskFull(null, 0, input, numBytes);
-    
+
     delegate.copyBytes(input, numBytes);
     dir.maybeThrowDeterministicException();
   }

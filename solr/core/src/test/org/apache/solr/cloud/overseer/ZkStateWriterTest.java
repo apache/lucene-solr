@@ -80,12 +80,9 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c3", true);
 
-        ZkWriteCommand c1 = new ZkWriteCommand("c1",
-            new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1"));
-        ZkWriteCommand c2 = new ZkWriteCommand("c2",
-            new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c2"));
-        ZkWriteCommand c3 = new ZkWriteCommand("c3",
-            new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c3"));
+        ZkWriteCommand c1 = new ZkWriteCommand("c1", new DocCollection("c1", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
+        ZkWriteCommand c2 = new ZkWriteCommand("c2", new DocCollection("c2", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
+        ZkWriteCommand c3 = new ZkWriteCommand("c3", new DocCollection("c3", new HashMap<>(), new HashMap<>(), DocRouter.DEFAULT, 0));
         ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
 
         // First write is flushed immediately
@@ -110,46 +107,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
     }
   }
 
-  public void testSingleLegacyCollection() throws Exception {
-    Path zkDir = createTempDir("testSingleLegacyCollection");
-
-    ZkTestServer server = new ZkTestServer(zkDir);
-
-    SolrZkClient zkClient = null;
-
-    try {
-      server.run();
-
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
-      ZkController.createClusterZkNodes(zkClient);
-
-      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
-        reader.createClusterStateWatchersAndUpdate();
-
-        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
-
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-
-        // create new collection with stateFormat = 1
-        ZkWriteCommand c1 = new ZkWriteCommand("c1",
-            new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE));
-
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        writer.writePendingUpdates();
-
-        Map map = (Map) Utils.fromJSON(zkClient.getData("/clusterstate.json", null, null, true));
-        assertNotNull(map.get("c1"));
-        boolean exists = zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true);
-        assertFalse(exists);
-      }
-
-    } finally {
-      IOUtils.close(zkClient);
-      server.shutdown();
-
-    }
-  }
-
   public void testSingleExternalCollection() throws Exception {
     Path zkDir = createTempDir("testSingleExternalCollection");
 
@@ -170,104 +127,25 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
 
-        // create new collection with stateFormat = 2
+        // create new collection
         ZkWriteCommand c1 = new ZkWriteCommand("c1",
-            new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
+            new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0));
 
         writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
         writer.writePendingUpdates();
 
-        Map map = (Map) Utils.fromJSON(zkClient.getData("/clusterstate.json", null, null, true));
-        assertNull(map.get("c1"));
-        map = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
+        @SuppressWarnings({"rawtypes"})
+        Map map = (Map) Utils.fromJSON(zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
         assertNotNull(map.get("c1"));
       }
-
     } finally {
       IOUtils.close(zkClient);
       server.shutdown();
-
     }
-
-
   }
 
-  public void testExternalModificationToSharedClusterState() throws Exception {
+  public void testExternalModification() throws Exception {
     Path zkDir = createTempDir("testExternalModification");
-
-    ZkTestServer server = new ZkTestServer(zkDir);
-
-    SolrZkClient zkClient = null;
-
-    try {
-      server.run();
-
-      zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
-      ZkController.createClusterZkNodes(zkClient);
-
-      try (ZkStateReader reader = new ZkStateReader(zkClient)) {
-        reader.createClusterStateWatchersAndUpdate();
-
-        ZkStateWriter writer = new ZkStateWriter(reader, new Stats());
-
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c1", true);
-        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/c2", true);
-
-        // create collection 1 with stateFormat = 1
-        ZkWriteCommand c1 = new ZkWriteCommand("c1",
-            new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE));
-        writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c1), null);
-        writer.writePendingUpdates();
-
-        reader.forceUpdateCollection("c1");
-        reader.forceUpdateCollection("c2");
-        ClusterState clusterState = reader.getClusterState(); // keep a reference to the current cluster state object
-        assertTrue(clusterState.hasCollection("c1"));
-        assertFalse(clusterState.hasCollection("c2"));
-
-        // Simulate an external modification to /clusterstate.json
-        byte[] data = zkClient.getData("/clusterstate.json", null, null, true);
-        zkClient.setData("/clusterstate.json", data, true);
-
-        // enqueue another c1 so that ZkStateWriter has pending updates
-        writer.enqueueUpdate(clusterState, Collections.singletonList(c1), null);
-        assertTrue(writer.hasPendingUpdates());
-
-        // Will trigger flush
-        Thread.sleep(Overseer.STATE_UPDATE_DELAY + 100);
-        ZkWriteCommand c2 = new ZkWriteCommand("c2",
-            new DocCollection("c2", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.getCollectionPath("c2")));
-
-        try {
-          writer.enqueueUpdate(clusterState, Collections.singletonList(c2), null); // we are sending in the old cluster state object
-          fail("Enqueue should not have succeeded");
-        } catch (KeeperException.BadVersionException bve) {
-          // expected
-        }
-
-        try {
-          writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(c2), null);
-          fail("enqueueUpdate after BadVersionException should not have succeeded");
-        } catch (IllegalStateException e) {
-          // expected
-        }
-
-        try {
-          writer.writePendingUpdates();
-          fail("writePendingUpdates after BadVersionException should not have succeeded");
-        } catch (IllegalStateException e) {
-          // expected
-        }
-      }
-    } finally {
-      IOUtils.close(zkClient);
-      server.shutdown();
-    }
-
-  }
-
-  public void testExternalModificationToStateFormat2() throws Exception {
-    Path zkDir = createTempDir("testExternalModificationToStateFormat2");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -289,14 +167,13 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
         ClusterState state = reader.getClusterState();
 
-        // create collection 2 with stateFormat = 2
+        // create collection 2
         ZkWriteCommand c2 = new ZkWriteCommand("c2",
-            new DocCollection("c2", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.getCollectionPath("c2")));
+            new DocCollection("c2", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0));
         state = writer.enqueueUpdate(state, Collections.singletonList(c2), null);
         assertFalse(writer.hasPendingUpdates()); // first write is flushed immediately
 
-        int sharedClusterStateVersion = state.getZkClusterStateVersion();
-        int stateFormat2Version = state.getCollection("c2").getZNodeVersion();
+        int c2Version = state.getCollection("c2").getZNodeVersion();
 
         // Simulate an external modification to /collections/c2/state.json
         byte[] data = zkClient.getData(ZkStateReader.getCollectionPath("c2"), null, null, true);
@@ -307,8 +184,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         state = reader.getClusterState();
         log.info("Cluster state: {}", state);
         assertTrue(state.hasCollection("c2"));
-        assertEquals(sharedClusterStateVersion, (int) state.getZkClusterStateVersion());
-        assertEquals(stateFormat2Version + 1, state.getCollection("c2").getZNodeVersion());
+        assertEquals(c2Version + 1, state.getCollection("c2").getZNodeVersion());
 
         writer.enqueueUpdate(state, Collections.singletonList(c2), null);
         assertTrue(writer.hasPendingUpdates());
@@ -320,7 +196,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         // Will trigger flush
         Thread.sleep(Overseer.STATE_UPDATE_DELAY+100);
         ZkWriteCommand c1 = new ZkWriteCommand("c1",
-            new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE));
+            new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0));
 
         try {
           writer.enqueueUpdate(state, Collections.singletonList(c1), null);

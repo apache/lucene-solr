@@ -17,6 +17,8 @@
 
 apply plugin: 'java-library'
 
+description = 'Solr Server'
+
 configurations {
   api {
     exclude group: "org.slf4j"

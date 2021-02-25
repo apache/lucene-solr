@@ -26,25 +26,31 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Strings;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.PropertiesUtil;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
-import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.JmxUtil;
-import org.apache.solr.util.PropertiesUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -62,22 +68,61 @@ public class SolrXmlConfig {
   // TODO should these from* methods return a NodeConfigBuilder so that the caller (a test) can make further
   //  manipulations like add properties and set the CorePropertiesLocator and "async" mode?
 
+  public final static String ZK_HOST = "zkHost";
   public final static String SOLR_XML_FILE = "solr.xml";
   public final static String SOLR_DATA_HOME = "solr.data.home";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * Given some node Properties, checks if non-null and a 'zkHost' is alread included.  If so, the Properties are
+   * returned as is.  If not, then the returned value will be a new Properties, wrapping the original Properties, 
+   * with the 'zkHost' value set based on the value of the corispond System property (if set)
+   *
+   * In theory we only need this logic once, ideally in SolrDispatchFilter, but we put it here to re-use 
+   * redundently because of how much surface area our API has for various tests to poke at us.
+   */
+  public static Properties wrapAndSetZkHostFromSysPropIfNeeded(final Properties props) {
+    if (null != props && ! StringUtils.isEmpty(props.getProperty(ZK_HOST))) {
+      // nothing to do...
+      return props;
+    }
+    // we always wrap if we might set a property -- never mutate the original props
+    final Properties results = (null == props ? new Properties() : new Properties(props));
+    final String sysprop = System.getProperty(ZK_HOST);
+    if (! StringUtils.isEmpty(sysprop)) {
+      results.setProperty(ZK_HOST, sysprop);
+    }
+    return results;
+  }
+
+  
   public static NodeConfig fromConfig(Path solrHome, XmlConfigFile config, boolean fromZookeeper) {
 
     checkForIllegalConfig(config);
 
+    // sanity check: if our config came from zookeeper, then there *MUST* be Node Properties that tell us
+    // what zkHost was used to read it (either via webapp context attribute, or that SolrDispatchFilter
+    // filled in for us from system properties)
+    assert ( (! fromZookeeper) || (null != config.getSubstituteProperties()
+                                   && null != config.getSubstituteProperties().getProperty(ZK_HOST)));
+    
+    // Regardless of where/how we this XmlConfigFile was loaded from, if it contains a zkHost property,
+    // we're going to use that as our "default" and only *directly* check the system property if it's not specified.
+    //
+    // (checking the sys prop here is really just for tests that by-pass SolrDispatchFilter. In non-test situations,
+    // SolrDispatchFilter will check the system property if needed in order to try and load solr.xml from ZK, and
+    // should have put the sys prop value in the node properties for us)
+    final String defaultZkHost
+      = wrapAndSetZkHostFromSysPropIfNeeded(config.getSubstituteProperties()).getProperty(ZK_HOST);
+    
     CloudConfig cloudConfig = null;
     UpdateShardHandlerConfig deprecatedUpdateConfig = null;
 
     if (config.getNodeList("solr/solrcloud", false).getLength() > 0) {
       NamedList<Object> cloudSection = readNodeListAsNamedList(config, "solr/solrcloud/*[@name]", "<solrcloud>");
       deprecatedUpdateConfig = loadUpdateConfig(cloudSection, false);
-      cloudConfig = fillSolrCloudSection(cloudSection);
+      cloudConfig = fillSolrCloudSection(cloudSection, config, defaultZkHost);
     }
 
     NamedList<Object> entries = readNodeListAsNamedList(config, "solr/*[@name]", "<solr>");
@@ -110,6 +155,7 @@ public class SolrXmlConfig {
     configBuilder.setBackupRepositoryPlugins(getBackupRepositoryPluginInfos(config));
     configBuilder.setMetricsConfig(getMetricsConfig(config));
     configBuilder.setFromZookeeper(fromZookeeper);
+    configBuilder.setDefaultZkHost(defaultZkHost);
     return fillSolrSection(configBuilder, entries);
   }
 
@@ -206,7 +252,7 @@ public class SolrXmlConfig {
       return properties;
     }
     catch (XPathExpressionException e) {
-      log.warn("Error parsing solr.xml: {}", e.getMessage());
+      log.warn("Error parsing solr.xml: ", e);
       return null;
     }
   }
@@ -277,6 +323,9 @@ public class SolrXmlConfig {
         case "sharedLib":
           builder.setSharedLibDirectory(value);
           break;
+        case "allowPaths":
+          builder.setAllowPaths(stringToPaths(value));
+          break;
         case "configSetBaseDir":
           builder.setConfigSetBaseDirectory(value);
           break;
@@ -298,6 +347,15 @@ public class SolrXmlConfig {
     }
 
     return builder.build();
+  }
+
+  private static Set<Path> stringToPaths(String commaSeparatedString) {
+    if (Strings.isNullOrEmpty(commaSeparatedString)) {
+      return Collections.emptySet();
+    }
+    // Parse list of paths. The special value '*' is mapped to _ALL_ to mean all paths
+    return Arrays.stream(commaSeparatedString.split(",\\s?"))
+        .map(p -> Paths.get("*".equals(p) ? "_ALL_" : p)).collect(Collectors.toSet());
   }
 
   private static UpdateShardHandlerConfig loadUpdateConfig(NamedList<Object> nl, boolean alwaysDefine) {
@@ -374,14 +432,20 @@ public class SolrXmlConfig {
     throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, section + " section missing required entry '" + key + "'");
   }
 
-  private static CloudConfig fillSolrCloudSection(NamedList<Object> nl) {
+  private static CloudConfig fillSolrCloudSection(NamedList<Object> nl, XmlConfigFile config, String defaultZkHost) {
 
-    String hostName = required("solrcloud", "host", removeValue(nl, "host"));
     int hostPort = parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
+    if (hostPort <= 0) {
+      // Default to the port that jetty is listening on, or 8983 if that is not provided.
+      hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
+    }
+    String hostName = required("solrcloud", "host", removeValue(nl, "host"));
     String hostContext = required("solrcloud", "hostContext", removeValue(nl, "hostContext"));
 
     CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort, hostContext);
-
+    // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
+    builder.setZkHost(defaultZkHost);
+    
     for (Map.Entry<String, Object> entry : nl) {
       String name = entry.getKey();
       if (entry.getValue() == null)
@@ -420,6 +484,9 @@ public class SolrXmlConfig {
           break;
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
+          break;
+        case "distributedClusterStateUpdates":
+          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
@@ -484,7 +551,18 @@ public class SolrXmlConfig {
 
   private static MetricsConfig getMetricsConfig(XmlConfigFile config) {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
-    Node node = config.getNode("solr/metrics/suppliers/counter", false);
+    Node node = config.getNode("solr/metrics", false);
+    // enabled by default
+    boolean enabled = true;
+    if (node != null) {
+      enabled = Boolean.parseBoolean(DOMUtil.getAttrOrDefault(node, "enabled", "true"));
+    }
+    builder.setEnabled(enabled);
+    if (!enabled) {
+      log.info("Metrics collection is disabled.");
+      return builder.build();
+    }
+    node = config.getNode("solr/metrics/suppliers/counter", false);
     if (node != null) {
       builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
     }
@@ -504,12 +582,35 @@ public class SolrXmlConfig {
     if (node != null) {
       builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
+    node = config.getNode("solr/metrics/missingValues", false);;
+    if (node != null) {
+      NamedList<Object> missingValues = DOMUtil.childNodesToNamedList(node);
+      builder.setNullNumber(decodeNullValue(missingValues.get("nullNumber")));
+      builder.setNotANumber(decodeNullValue(missingValues.get("notANumber")));
+      builder.setNullString(decodeNullValue(missingValues.get("nullString")));
+      builder.setNullObject(decodeNullValue(missingValues.get("nullObject")));
+    }
+
     PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(config);
     Set<String> hiddenSysProps = getHiddenSysProps(config);
     return builder
         .setMetricReporterPlugins(reporterPlugins)
         .setHiddenSysProps(hiddenSysProps)
         .build();
+  }
+
+  private static Object decodeNullValue(Object o) {
+    if (o instanceof String) { // check if it's a JSON object
+      String str = (String) o;
+      if (!str.isBlank() && (str.startsWith("{") || str.startsWith("["))) {
+        try {
+          o = Utils.fromJSONString((String) o);
+        } catch (Exception e) {
+          // ignore
+        }
+      }
+    }
+    return o;
   }
 
   private static PluginInfo[] getMetricReporterPluginInfos(XmlConfigFile config) {

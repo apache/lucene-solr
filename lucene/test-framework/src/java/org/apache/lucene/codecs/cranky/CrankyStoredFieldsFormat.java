@@ -17,8 +17,8 @@
 package org.apache.lucene.codecs.cranky;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Random;
-
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
@@ -29,34 +29,37 @@ import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.Accountable;
 
 class CrankyStoredFieldsFormat extends StoredFieldsFormat {
   final StoredFieldsFormat delegate;
   final Random random;
-  
+
   CrankyStoredFieldsFormat(StoredFieldsFormat delegate, Random random) {
     this.delegate = delegate;
     this.random = random;
   }
 
   @Override
-  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+  public StoredFieldsReader fieldsReader(
+      Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
     return delegate.fieldsReader(directory, si, fn, context);
   }
 
   @Override
-  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
+  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context)
+      throws IOException {
     if (random.nextInt(100) == 0) {
       throw new IOException("Fake IOException from StoredFieldsFormat.fieldsWriter()");
     }
     return new CrankyStoredFieldsWriter(delegate.fieldsWriter(directory, si, context), random);
   }
-  
+
   static class CrankyStoredFieldsWriter extends StoredFieldsWriter {
-    
+
     final StoredFieldsWriter delegate;
     final Random random;
-    
+
     CrankyStoredFieldsWriter(StoredFieldsWriter delegate, Random random) {
       this.delegate = delegate;
       this.random = random;
@@ -77,7 +80,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
       }
       return super.merge(mergeState);
     }
-    
+
     @Override
     public void close() throws IOException {
       delegate.close();
@@ -85,7 +88,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
         throw new IOException("Fake IOException from StoredFieldsWriter.close()");
       }
     }
-    
+
     // per doc/field methods: lower probability since they are invoked so many times.
 
     @Override
@@ -95,7 +98,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
       }
       delegate.startDocument();
     }
-    
+
     @Override
     public void finishDocument() throws IOException {
       if (random.nextInt(10000) == 0) {
@@ -110,6 +113,16 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
         throw new IOException("Fake IOException from StoredFieldsWriter.writeField()");
       }
       delegate.writeField(info, field);
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return delegate.ramBytesUsed();
+    }
+
+    @Override
+    public Collection<Accountable> getChildResources() {
+      return delegate.getChildResources();
     }
   }
 }

@@ -52,13 +52,14 @@ public class ConfigSetProperties {
    * @param name   the name of the config set properties file
    * @return the properties in a NamedList
    */
+  @SuppressWarnings({"rawtypes"})
   public static NamedList readFromResourceLoader(SolrResourceLoader loader, String name) {
     InputStreamReader reader;
     try {
       reader = new InputStreamReader(loader.openResource(name), StandardCharsets.UTF_8);
     } catch (SolrResourceNotFoundException ex) {
       if (log.isDebugEnabled()) {
-        log.debug("Did not find ConfigSet properties, assuming default properties: {}", ex.getMessage());
+        log.debug("Did not find ConfigSet properties, assuming default properties: ", ex);
       }
       return null;
     } catch (Exception ex) {
@@ -72,6 +73,7 @@ public class ConfigSetProperties {
     }
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public static NamedList readFromInputStream(InputStreamReader reader) {
     try {
       Object object = fromJSON(reader);

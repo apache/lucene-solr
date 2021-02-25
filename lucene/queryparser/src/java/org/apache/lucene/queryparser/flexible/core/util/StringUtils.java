@@ -16,20 +16,16 @@
  */
 package org.apache.lucene.queryparser.flexible.core.util;
 
-/**
- * String manipulation routines
- */
-final public class StringUtils {
+/** String manipulation routines */
+public final class StringUtils {
 
   public static String toString(Object obj) {
-    
+
     if (obj != null) {
       return obj.toString();
-      
+
     } else {
       return null;
     }
-    
   }
-  
 }

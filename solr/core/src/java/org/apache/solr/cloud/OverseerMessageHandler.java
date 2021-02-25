@@ -47,10 +47,11 @@ public interface OverseerMessageHandler {
     void unlock();
   }
 
-  /**Try to provide an exclusive lock for this particular task
-   * return null if locking is not possible. If locking is not necessary
+  /**
+   * Grabs an exclusive lock for this particular task.
+   * @return <code>null</code> if locking is not possible.
    */
-  Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch);
+  Lock lockTask(ZkNodeProps message, long batchSessionId);
 
   /**
    * @param message the message being processed

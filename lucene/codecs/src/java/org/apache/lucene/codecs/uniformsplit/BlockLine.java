@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -31,43 +30,38 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * One term block line.
- * <p>
- * Contains a term and its details as a {@link BlockTermState}.
- * <p>
- * The line is written to the {@link UniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block file}
- * in two parts. The first part is the term followed by an offset to the details
- * region. The second part is the term {@link BlockTermState}, written in
- * the details region, after all the terms of the block.
- * <p>
- * The separate details region allows fast scan of the terms without having
- * to decode the details for each term. At read time, the {@link BlockLine.Serializer#readLine}
- * only reads the term and its offset to the details. The corresponding {@link BlockTermState}
- * is decoded on demand in the {@link BlockReader} (see {@link BlockReader#readTermStateIfNotRead}).
+ *
+ * <p>Contains a term and its details as a {@link BlockTermState}.
+ *
+ * <p>The line is written to the {@link UniformSplitPostingsFormat#TERMS_BLOCKS_EXTENSION block
+ * file} in two parts. The first part is the term followed by an offset to the details region. The
+ * second part is the term {@link BlockTermState}, written in the details region, after all the
+ * terms of the block.
+ *
+ * <p>The separate details region allows fast scan of the terms without having to decode the details
+ * for each term. At read time, the {@link BlockLine.Serializer#readLine} only reads the term and
+ * its offset to the details. The corresponding {@link BlockTermState} is decoded on demand in the
+ * {@link BlockReader} (see {@link BlockReader#readTermStateIfNotRead}).
  *
  * @lucene.experimental
  */
 public class BlockLine implements Accountable {
 
-  private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(BlockLine.class);
+  private static final long BASE_RAM_USAGE =
+      RamUsageEstimator.shallowSizeOfInstance(BlockLine.class);
 
   protected TermBytes termBytes;
   protected int termStateRelativeOffset;
 
-  /**
-   * Only used for writing.
-   */
+  /** Only used for writing. */
   protected final BlockTermState termState;
 
-  /**
-   * Constructor used for writing a {@link BlockLine}.
-   */
+  /** Constructor used for writing a {@link BlockLine}. */
   protected BlockLine(TermBytes termBytes, BlockTermState termState) {
     this(termBytes, -1, termState);
   }
 
-  /**
-   * Constructor used for reading a {@link BlockLine}.
-   */
+  /** Constructor used for reading a {@link BlockLine}. */
   protected BlockLine(TermBytes termBytes, int termStateRelativeOffset) {
     this(termBytes, termStateRelativeOffset, null);
   }
@@ -77,9 +71,7 @@ public class BlockLine implements Accountable {
     this.termState = termState;
   }
 
-  /**
-   * Resets this {@link BlockLine} to reuse it when reading.
-   */
+  /** Resets this {@link BlockLine} to reuse it when reading. */
   protected BlockLine reset(TermBytes termBytes, int termStateRelativeOffset) {
     assert termState == null;
     this.termBytes = termBytes;
@@ -92,8 +84,8 @@ public class BlockLine implements Accountable {
   }
 
   /**
-   * @return The offset of the {@link org.apache.lucene.index.TermState}
-   * bytes in the block, relatively to the term states base offset.
+   * @return The offset of the {@link org.apache.lucene.index.TermState} bytes in the block,
+   *     relatively to the term states base offset.
    */
   public int getTermStateRelativeOffset() {
     return termStateRelativeOffset;
@@ -101,18 +93,17 @@ public class BlockLine implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_USAGE
-        + termBytes.ramBytesUsed()
-        + RamUsageUtil.ramBytesUsed(termState);
+    return BASE_RAM_USAGE + termBytes.ramBytesUsed() + RamUsageUtil.ramBytesUsed(termState);
   }
 
   /**
-   * Reads/writes block lines with terms encoded incrementally inside a block.
-   * This class keeps a state of the previous term read to decode the next term.
+   * Reads/writes block lines with terms encoded incrementally inside a block. This class keeps a
+   * state of the previous term read to decode the next term.
    */
   public static class Serializer implements Accountable {
 
-    private static final long BASE_RAM_USAGE = RamUsageEstimator.shallowSizeOfInstance(Serializer.class);
+    private static final long BASE_RAM_USAGE =
+        RamUsageEstimator.shallowSizeOfInstance(Serializer.class);
 
     protected final BytesRef currentTerm;
 
@@ -123,37 +114,49 @@ public class BlockLine implements Accountable {
     /**
      * Reads the current line.
      *
-     * @param isIncrementalEncodingSeed Whether the term is a seed of the
-     *                                  incremental encoding. {@code true} for the first and
-     *                                  middle term, {@code false} for other terms.
-     * @param reuse                     A {@link BlockLine} instance to reuse; or null if none.
+     * @param isIncrementalEncodingSeed Whether the term is a seed of the incremental encoding.
+     *     {@code true} for the first and middle term, {@code false} for other terms.
+     * @param reuse A {@link BlockLine} instance to reuse; or null if none.
      */
-    public BlockLine readLine(DataInput blockInput, boolean isIncrementalEncodingSeed, BlockLine reuse) throws IOException {
+    public BlockLine readLine(
+        DataInput blockInput, boolean isIncrementalEncodingSeed, BlockLine reuse)
+        throws IOException {
       int termStateRelativeOffset = blockInput.readVInt();
       if (termStateRelativeOffset < 0) {
-        throw new CorruptIndexException("Illegal termStateRelativeOffset= " + termStateRelativeOffset, blockInput);
+        throw new CorruptIndexException(
+            "Illegal termStateRelativeOffset= " + termStateRelativeOffset, blockInput);
       }
-      return reuse == null ?
-          new BlockLine(readIncrementallyEncodedTerm(blockInput, isIncrementalEncodingSeed, null), termStateRelativeOffset)
-          : reuse.reset(readIncrementallyEncodedTerm(blockInput, isIncrementalEncodingSeed, reuse.termBytes), termStateRelativeOffset);
+      return reuse == null
+          ? new BlockLine(
+              readIncrementallyEncodedTerm(blockInput, isIncrementalEncodingSeed, null),
+              termStateRelativeOffset)
+          : reuse.reset(
+              readIncrementallyEncodedTerm(blockInput, isIncrementalEncodingSeed, reuse.termBytes),
+              termStateRelativeOffset);
     }
 
     /**
-     * Writes a line and its offset to the corresponding term state details in
-     * the details region.
+     * Writes a line and its offset to the corresponding term state details in the details region.
      *
-     * @param blockOutput               The output pointing to the block terms region.
-     * @param termStateRelativeOffset   The offset to the corresponding term
-     *                                  state details in the details region.
-     * @param isIncrementalEncodingSeed Whether the term is a seed of
-     *                                  the incremental encoding. {@code true} for the first
-     *                                  and middle term, {@code false} for other terms.
+     * @param blockOutput The output pointing to the block terms region.
+     * @param termStateRelativeOffset The offset to the corresponding term state details in the
+     *     details region.
+     * @param isIncrementalEncodingSeed Whether the term is a seed of the incremental encoding.
+     *     {@code true} for the first and middle term, {@code false} for other terms.
      */
-    public void writeLine(DataOutput blockOutput, BlockLine line, BlockLine previousLine,
-                                 int termStateRelativeOffset, boolean isIncrementalEncodingSeed) throws IOException {
+    public void writeLine(
+        DataOutput blockOutput,
+        BlockLine line,
+        BlockLine previousLine,
+        int termStateRelativeOffset,
+        boolean isIncrementalEncodingSeed)
+        throws IOException {
       blockOutput.writeVInt(termStateRelativeOffset);
-      writeIncrementallyEncodedTerm(line.getTermBytes(), previousLine == null ? null : previousLine.getTermBytes(),
-          isIncrementalEncodingSeed, blockOutput);
+      writeIncrementallyEncodedTerm(
+          line.getTermBytes(),
+          previousLine == null ? null : previousLine.getTermBytes(),
+          isIncrementalEncodingSeed,
+          blockOutput);
     }
 
     /**
@@ -161,14 +164,22 @@ public class BlockLine implements Accountable {
      *
      * @param termStatesOutput The output pointing to the details region.
      */
-    protected void writeLineTermState(DataOutput termStatesOutput, BlockLine line,
-                                   FieldInfo fieldInfo, DeltaBaseTermStateSerializer encoder) throws IOException {
+    protected void writeLineTermState(
+        DataOutput termStatesOutput,
+        BlockLine line,
+        FieldInfo fieldInfo,
+        DeltaBaseTermStateSerializer encoder)
+        throws IOException {
       assert line.termState != null;
       encoder.writeTermState(termStatesOutput, fieldInfo, line.termState);
     }
 
-    protected void writeIncrementallyEncodedTerm(TermBytes termBytes, TermBytes previousTermBytes,
-                                                      boolean isIncrementalEncodingSeed, DataOutput blockOutput) throws IOException {
+    protected void writeIncrementallyEncodedTerm(
+        TermBytes termBytes,
+        TermBytes previousTermBytes,
+        boolean isIncrementalEncodingSeed,
+        DataOutput blockOutput)
+        throws IOException {
       BytesRef term = termBytes.getTerm();
       assert term.offset == 0;
       if (isIncrementalEncodingSeed) {
@@ -203,13 +214,16 @@ public class BlockLine implements Accountable {
       int numMdpBits = numBitsToEncode(previousTermBytes.getTerm().length);
       assert numBitsToEncode(termBytes.getMdpLength() - 1) <= numMdpBits;
 
-      long mdpAndSuffixLengths = (((long) termBytes.getSuffixLength()) << numMdpBits) | (termBytes.getMdpLength() - 1);
+      long mdpAndSuffixLengths =
+          (((long) termBytes.getSuffixLength()) << numMdpBits) | (termBytes.getMdpLength() - 1);
       assert mdpAndSuffixLengths != 0;
       blockOutput.writeVLong(mdpAndSuffixLengths);
       blockOutput.writeBytes(term.bytes, termBytes.getSuffixOffset(), termBytes.getSuffixLength());
     }
 
-    protected TermBytes readIncrementallyEncodedTerm(DataInput blockInput, boolean isIncrementalEncodingSeed, TermBytes reuse) throws IOException {
+    protected TermBytes readIncrementallyEncodedTerm(
+        DataInput blockInput, boolean isIncrementalEncodingSeed, TermBytes reuse)
+        throws IOException {
       assert currentTerm.offset == 0;
       int mdpLength;
       if (isIncrementalEncodingSeed) {
@@ -224,23 +238,26 @@ public class BlockLine implements Accountable {
           currentTerm.length = 0;
         } else {
           int numMdpBits = numBitsToEncode(currentTerm.length);
-          mdpLength = (int) (mdpAndSuffixLengths & ((1 << numMdpBits) - 1)) + 1; // Get rightmost numMdpBits.
+          mdpLength =
+              (int) (mdpAndSuffixLengths & ((1 << numMdpBits) - 1))
+                  + 1; // Get rightmost numMdpBits.
           int suffixLength = (int) (mdpAndSuffixLengths >>> numMdpBits); // Get remaining left bits.
           assert mdpLength >= 1;
           assert suffixLength >= 1;
           readBytes(blockInput, currentTerm, mdpLength - 1, suffixLength);
         }
       }
-      return reuse == null ?
-          new TermBytes(mdpLength, currentTerm)
+      return reuse == null
+          ? new TermBytes(mdpLength, currentTerm)
           : reuse.reset(mdpLength, currentTerm);
     }
 
     /**
-     * Reads {@code length} bytes from the given {@link DataInput} and stores
-     * them at {@code offset} in {@code bytes.bytes}.
+     * Reads {@code length} bytes from the given {@link DataInput} and stores them at {@code offset}
+     * in {@code bytes.bytes}.
      */
-    protected void readBytes(DataInput input, BytesRef bytes, int offset, int length) throws IOException {
+    protected void readBytes(DataInput input, BytesRef bytes, int offset, int length)
+        throws IOException {
       assert bytes.offset == 0;
       bytes.length = offset + length;
       bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length);
@@ -249,13 +266,12 @@ public class BlockLine implements Accountable {
 
     @Override
     public long ramBytesUsed() {
-      return BASE_RAM_USAGE
-          + RamUsageUtil.ramBytesUsed(currentTerm);
+      return BASE_RAM_USAGE + RamUsageUtil.ramBytesUsed(currentTerm);
     }
 
     /**
-     * Gets the number of bits required to encode the value of the provided int.
-     * Returns 0 for int value 0. Equivalent to (log2(i) + 1).
+     * Gets the number of bits required to encode the value of the provided int. Returns 0 for int
+     * value 0. Equivalent to (log2(i) + 1).
      */
     protected static int numBitsToEncode(int i) {
       return 32 - Integer.numberOfLeadingZeros(i);

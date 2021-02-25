@@ -44,10 +44,10 @@ public class FeatureSelectEvaluator extends RecursiveObjectEvaluator implements 
       double[][] data = matrix.getData();
 
       List<String> labels = matrix.getColumnLabels();
-      Set<String> features = new HashSet();
+      Set<String> features = new HashSet<>();
       loadFeatures(value2, features);
 
-      List<String> newColumnLabels = new ArrayList();
+      List<String> newColumnLabels = new ArrayList<>();
 
       for(String label : labels) {
         if(features.contains(label)) {
@@ -81,6 +81,7 @@ public class FeatureSelectEvaluator extends RecursiveObjectEvaluator implements 
   }
 
   private void loadFeatures(Object o, Set<String> features) {
+    @SuppressWarnings({"rawtypes"})
     List list = (List)o;
     for(Object v : list) {
       if(v instanceof List) {

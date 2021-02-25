@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analyzer for Finnish.
- */
+/** Analyzer for Finnish. */
 package org.apache.lucene.analysis.fi;

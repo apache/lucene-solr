@@ -184,7 +184,7 @@ public class SpellCheckCollator {
         collations.add(collation);
       }
       if (log.isDebugEnabled()) {
-        log.debug("Collation: {} {}", collationQueryStr, (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : "")); // logOk
+        log.debug("Collation: {} {}", collationQueryStr, (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : "")); // nowarn
       }
     }
     return collations;

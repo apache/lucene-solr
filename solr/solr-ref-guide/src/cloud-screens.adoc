@@ -16,14 +16,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-When running in <<solrcloud.adoc#solrcloud,SolrCloud>> mode, a "Cloud" option will appear in the Admin UI between <<logging.adoc#logging,Logging>> and <<collections-core-admin.adoc#collections-core-admin,Collections>>.
+When running in <<solrcloud.adoc#,SolrCloud>> mode, a "Cloud" option will appear in the Admin UI between <<logging.adoc#,Logging>> and <<collections-core-admin.adoc#,Collections>>.
 
-This screen provides status information about each collection & node in your cluster, as well as access to the low level data being stored in <<using-zookeeper-to-manage-configuration-files.adoc#using-zookeeper-to-manage-configuration-files,ZooKeeper>>.
+This screen provides status information about each collection & node in your cluster, as well as access to the low level data being stored in <<using-zookeeper-to-manage-configuration-files.adoc#,ZooKeeper>>.
 
 .Only Visible When using SolrCloud
 [NOTE]
 ====
-The "Cloud" menu option is only available on Solr instances running in <<getting-started-with-solrcloud.adoc#getting-started-with-solrcloud,SolrCloud mode>>. Single node or master/slave replication instances of Solr will not display this option.
+The "Cloud" menu option is only available on Solr instances running in <<getting-started-with-solrcloud.adoc#,SolrCloud mode>>. Single node or leader/follower replication instances of Solr will not display this option.
 ====
 
 Click on the "Cloud" option in the left-hand navigation, and a small sub-menu appears with options called "Nodes", "Tree", "ZK Status" and "Graph". The sub-view selected by default is "Nodes".

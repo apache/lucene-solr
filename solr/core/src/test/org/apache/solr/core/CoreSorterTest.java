@@ -80,6 +80,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void integrationTest() {
     assumeWorkingMockito();
 
@@ -89,11 +90,11 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     // compute nodes, some live, some down
     final int maxNodesOfAType = perShardCounts.stream() // not too important how many we have, but lets have plenty
         .mapToInt(c -> c.totalReplicasInLiveNodes + c.totalReplicasInDownNodes + c.myReplicas).max().getAsInt();
-    List<String> liveNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.0." + i + "_8983").collect(Collectors.toList());
+    List<String> liveNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.0." + i + ":8983_").collect(Collectors.toList());
     Collections.shuffle(liveNodes, random());
     String thisNode = liveNodes.get(0);
     List<String> otherLiveNodes = liveNodes.subList(1, liveNodes.size());
-    List<String> downNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.1." + i + "_8983").collect(Collectors.toList());
+    List<String> downNodes = IntStream.range(0, maxNodesOfAType).mapToObj(i -> "192.168.1." + i + ":8983_").collect(Collectors.toList());
 
     // divide into two collections
     int numCol1 = random().nextInt(perShardCounts.size());
@@ -124,6 +125,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
         Map<String, Replica> replicaMap = replicas.stream().collect(Collectors.toMap(Replica::getName, Function.identity()));
         sliceMap.put(slice, new Slice(slice, replicaMap, map(), collection));
       }
+      @SuppressWarnings({"unchecked"})
       DocCollection col = new DocCollection(collection, sliceMap, map(), DocRouter.DEFAULT);
       collToState.put(collection, col);
     }
@@ -181,8 +183,9 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   }
 
   private CoreDescriptor newCoreDescriptor(Replica r) {
+    @SuppressWarnings({"unchecked"})
     Map<String,String> props = map(
-        CoreDescriptor.CORE_SHARD, r.getSlice(),
+        CoreDescriptor.CORE_SHARD, r.getShard(),
         CoreDescriptor.CORE_COLLECTION, r.getCollection(),
         CoreDescriptor.CORE_NODE_NAME, r.getNodeName()
     );
@@ -192,6 +195,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
   protected Replica addNewReplica(List<Replica> replicaList, String collection, String slice, List<String> possibleNodes) {
     String replica = "r" + replicaList.size();
     String node = possibleNodes.get(random().nextInt(possibleNodes.size())); // place on a random node
+    @SuppressWarnings({"unchecked"})
     Replica r = new Replica(replica, map("core", replica, "node_name", node), collection, slice);
     replicaList.add(r);
     return r;

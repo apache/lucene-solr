@@ -15,27 +15,6 @@
  * limitations under the License.
  */
 
-// TODO 1: the separation of sources between tools and refGuide is awkward; it'd be
-// better to separate the refGuideTools as a plain Java module and then depend on
-// it as a project dependency. This would enable this module to *not* be a java module at all
-// and inherit from base, adding just refGuide-related tasks.
-// OR (better) one could rewrite those tools in Groovy (or Kotlin) and use them directly, without
-// an additional compilation phase.
-
-// TODO 2: property expansion via ant properties is awkward in gradle. We can do cleaner than going
-// through ant -- we could use gradle's expand when copying or at least use some more humane
-// property names.
-
-// TODO 3: currently buildscript dependencies are hardcoded (asciidoctor) because they can't be resolved
-// using Palantir's plugin. This is another reason to switch to gradle-based tools -- then
-// only the build script dependencies would be needed and asciidoctorj would be removed from version
-// properties entirely (it is only used locally in this build file).
-
-import java.time.*
-import java.time.format.*
-import java.nio.file.*
-import org.asciidoctor.*
-
 buildscript {
     repositories {
         mavenCentral()
@@ -49,8 +28,15 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.jruby-gradle.base' version '2.0.0-alpha.7'
+    id 'com.github.jruby-gradle.base' version '2.0.0'
 }
+
+// This project does not contribute anything to main dependencies.
+versionsLock {
+    testProject()
+}
+
+description = 'Solr reference guide'
 
 // Use an internal proxy to ruby gems.
 repositories {
@@ -79,7 +65,6 @@ dependencies {
     depVer('org.apache.logging.log4j:log4j-core')
     depVer('org.apache.opennlp:opennlp-tools')
     depVer('org.apache.tika:tika-core')
-    depVer('org.apache.velocity.tools:velocity-tools-generic')
     depVer('org.apache.zookeeper:zookeeper')
 
     // jekyll dependencies
@@ -106,8 +91,6 @@ sourceSets {
     main {
         java {
             srcDirs = ['tools']
-            exclude "**/CustomizedAsciidoctorAntTask.java"
-            exclude "**/asciidoctor-antlib.xml"
         }
     }
 
@@ -119,235 +102,201 @@ sourceSets {
 }
 
 ext {
-    buildContentDir = file("${buildDir}/content")
     mainPage = "index"
 
+    // the "MAJOR.MINOR" version of solr this guide is about (guides aren't specific to BUGFIX releases)
+    // So on 'branch_9_9' where 'version' may be 9.9.0, 9.9.1, 9.9.9, etc..;  solrDocsVersion = 9.9
     solrDocsVersion = "${version}".replaceAll(/^(\d+\.\d+)(|\..*)$/, "\$1")
-    solrDocsVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2_0")
+    
+    // the "MAJOR_MINOR" version as a path for publishing the guide
+    // So on 'branch_9_9' where solrDocsVersion = 9.9; solrGuideVersionPath => 9_9
+    solrGuideVersionPath = "${solrDocsVersion}".replaceAll(/^(\d+)\.(\d+)$/, "\$1_\$2")
 
-    if (!project.hasProperty("solrGuideVersion")) {
-        solrGuideVersion = "${solrDocsVersion}-DRAFT"
-    }
-
-    solrRootPath = '../../../../solr/'
-    solrGuideDraftStatus = solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/) ? "" : "DRAFT"
-    solrGuideVersionPath = solrGuideVersion.replaceAll(/^(\d+)\.(\d+)(-DRAFT)?.*/, "\$1_\$2\$3")
-
-    javadocLink = "https://docs.oracle.com/en/java/javase/11/docs/api/"
-
-    if (project.hasProperty("local.javadocs")) {
-        htmlSolrJavadocs = "link:../../docs/"
-        htmlLuceneJavadocs = "link:../../../../lucene/build/docs/"
-    } else {
-        htmlSolrJavadocs = "https://lucene.apache.org/solr/${solrDocsVersionPath}/"
-        htmlLuceneJavadocs = "https://lucene.apache.org/core/${solrDocsVersionPath}/"
-    }
-
-    bareBonesDir = file("${buildDir}/bare-bones-html")
-
-    // Some additional version properties are lazily computed
-    // in setupLazyProps (because they need to be computed after evaluation is complete).
-    props = [
-            "solr-root-path"         : solrRootPath,
-            "solr-guide-draft-status": solrGuideDraftStatus,
-            "solr-guide-version"     : solrGuideVersion,
-            "solr-guide-version-path": solrGuideVersionPath,
-            "solr-docs-version"      : solrDocsVersion,
-            "javadoc.link"           : javadocLink,
-            "java-javadocs"          : javadocLink,
-            "solr-javadocs"          : htmlSolrJavadocs,
-            "html-solr-javadocs"     : htmlSolrJavadocs,
-            "lucene-javadocs"        : htmlLuceneJavadocs,
-            "html-lucene-javadocs"   : htmlLuceneJavadocs,
-            "build-date"             : buildDate,
-            "DSTAMP"                 : buildDate,
-            "build-year"             : buildYear,
-            "current.year"           : buildYear
+    // these will be used to dynamically build up (nearly) identical tasks with consistent names
+    // for building & link checking the ref guide.  One using absolute URLs to javadocs, the
+    // other using local paths that can be validated by the link checker.
+    htmlSiteDetails =
+        [name: 'Site',
+         path: 'html-site',
+         desc: 'HTML Site for publishing to the Solr website',
+         props: [
+            htmlSolrJavadocs: "https://lucene.apache.org/solr/${solrGuideVersionPath}_0/",
+            htmlLuceneJavadocs: "https://lucene.apache.org/core/${solrGuideVersionPath}_0/"
+        ]
     ]
-
-    asciiDocAttrs = [
-            'common': [
-                    'attribute-missing' : 'warn',
-                    'icons'             : 'font',
-                    'icon-set'          : 'fa',
-                    'figure-caption!'   : '',
-                    'idprefix'          : '',
-                    'idseparator'       : '-',
-                    'source-highlighter': 'coderay',
-                    'solr-root-path'    : solrRootPath,
-            ],
-            'html'  : [
-                    'imagesdir': buildContentDir.toString()
-            ]
+    linkCheckSiteDetails =
+        [name: 'LocalJavadocLinksSite',
+         path: 'local-jdoc-links-site',
+         desc: 'Local Site for checking javadoc links',
+         
+         // NOTE: extra '../' because we'll in a sub-dir of buildDir that will be built later...
+         props: [
+            htmlSolrJavadocs : 'link:../' + buildDir.toPath().relativize(project(':solr:documentation').docroot.toPath()).toString().replace(File.separator, '/'),
+            htmlLuceneJavadocs : 'link:../' + buildDir.toPath().relativize(project(':lucene:documentation').docroot.toPath()).toString().replace(File.separator, '/')
+        ]
     ]
 }
 
-task setupLazyProps {
-    doFirst {
-        // These properties have to be resolved after the configuration phase is complete (palantir's constraint)
-        // so we can't use them as input for caches.
+// dynamically define the 2 variations of each target that we need...
+[ htmlSiteDetails, linkCheckSiteDetails ].each{ details ->
+    final def contentDir = file("${buildDir}/${details.path}-content")
+    final def htmlDir = file("${buildDir}/${details.path}")
+    final def extraProps = details.props.clone()
+    extraProps.htmlOutDir = "../${details.path}"
+    
+    task "prepare${details.name}Sources"(type: PrepareSources) {
+        outDir contentDir
+        props extraProps
+    }
+    
+    task "build${details.name}"(type: com.github.jrubygradle.JRubyExec) {
+        dependsOn "prepare${details.name}Sources"
+        group "Documentation"
+        description "Builds the ${details.desc}"
+
+        inputs.dir contentDir
+        outputs.dir htmlDir
+
+        script 'jekyll'
+        scriptArgs 'build' //, '--verbose'
+        workingDir contentDir
+    }
+
+    task "check${details.name}"(type: JavaExec) {
+        dependsOn "build${details.name}"
+
+        classpath = sourceSets.main.runtimeClasspath
+        main = 'CheckLinksAndAnchors'
+        workingDir = contentDir
+
+        // NOTE: even for the 'real' site, we check all relative links
+        // (there will just be less of them, and this way any stray hardcoded
+        // '../../' paths can be caught more easily)
+        args([ htmlDir, "-check-all-relative-links" ])
+    }
+}
+
+// Hook in our dependency on all top level documentation in order to check local javadoc links
+checkLocalJavadocLinksSite.dependsOn ':documentation'
+
+// Hook up custom tasks with standard tasks. 
+check.dependsOn checkLocalJavadocLinksSite, checkSite
+
+// Hook site building to assemble.
+assemble.dependsOn buildSite 
+
+abstract class PrepareSources extends DefaultTask {
+    
+    /** Original Source files we'll be syncing <b>FROM</b> */
+    @InputDirectory
+    public File getSrcDir() {
+        return getProject().file("src")
+    }
+
+    /** 
+     * Where we sync the source files <b>TO</b>
+     */
+    public void setOutDir(File outDir) {
+        this.outDir = outDir;
+        getOutputs().dir(outDir);
+    }
+    public File outDir;
+
+    /**
+     * Task specific props
+     */
+    @Input
+    public Map<String,String> getProps() {
+        return props;
+    }
+    public void setProps(Map<String,String> props) {
+        this.props = props;
+    }
+    private Map<String,String> props;
+
+    /**
+     * Basic properties that should be the same for all tasks of this type
+     */
+    @Input
+    public Map<String,String> getStandardProps() {
+        final Project p = getProject();
+        return [
+            javadocLink : "https://docs.oracle.com/en/java/javase/11/docs/api/",
+            solrGuideDraftStatus : p.propertyOrDefault('solrGuideDraft', "true").toBoolean() ? "DRAFT" : "",
+            solrRootPath : p.project(':solr').projectDir.toString() + File.separator,
+            solrDocsVersion : p.property('solrDocsVersion'),
+            solrGuideVersionPath : p.property('solrGuideVersionPath'),
+            buildDate : p.property('buildDate'),
+            buildYear : p.property('buildYear'),
+        ];
+    }
+
+    public PrepareSources() {
+        // setup 'dependsOn classes, configurations.depVer' here
+        // so that it's not neccessary for every task impl to declare redundently
+        final Project p = getProject();
+        dependsOn(p.getConfigurations().getByName('depVer'))
+        dependsOn(p.getTasksByName('classes', false))
+        
+    }
+
+    @TaskAction
+    public void doCopy() {
+        final Project p = getProject();
+        final Configuration depVer = p.getConfigurations().getByName('depVer');
+        
+        // start with any task (instance) specific props.
+        final def props = getProps().clone();
+        // then add/override with anystandard props that should alwasy be used
+        getStandardProps().each { k, v -> props[k] = v };
+        
+        // These properties have to be resolved after the configuration phase is complete
+        // (palantir's constraint) so we can't use them as input for caches. But as this task
+        // depends on the configuration, it's used correctly
         [
-                ["ivyversions./commons-codec/commons-codec", "commons-codec", "commons-codec"],
-                ["ivyversions.io.dropwizard.metrics.version", "io.dropwizard.metrics", "metrics-core"],
-                ["ivyversions.org.apache.logging.log4j.version", "org.apache.logging.log4j", "log4j-core"],
-                ["ivyversions./org.apache.opennlp/opennlp-tools", "org.apache.opennlp", "opennlp-tools"],
-                ["ivyversions.org.apache.tika.version", "org.apache.tika", "tika-core"],
-                ["ivyversions.org.apache.velocity.tools.version", "org.apache.velocity.tools", "velocity-tools-generic"],
-                ["ivyversions./org.apache.zookeeper/zookeeper", "org.apache.zookeeper", "zookeeper"],
-
-                ["ivy-zookeeper-version", "org.apache.zookeeper", "zookeeper"],
-                ["ivy-log4j-version", "org.apache.logging.log4j", "log4j-core"],
-                ["ivy-tika-version", "org.apache.tika", "tika-core"],
-                ["ivy-opennlp-version", "org.apache.opennlp", "opennlp-tools"],
-                ["ivy-commons-codec-version", "commons-codec", "commons-codec"],
-                ["ivy-velocity-tools-version", "org.apache.velocity.tools", "velocity-tools-generic"],
-                ["ivy-dropwizard-version", "io.dropwizard.metrics", "metrics-core"]
-        ].each { antProp, depGroup, depId ->
-            props[antProp] = getVersion(depGroup, depId, configurations.depVer)
+            ["ivyCommonsCodec", "commons-codec", "commons-codec"],
+            ["ivyDropwizardMetrics", "io.dropwizard.metrics", "metrics-core"],
+            ["ivyLog4j", "org.apache.logging.log4j", "log4j-core"],
+            ["ivyOpennlpTools", "org.apache.opennlp", "opennlp-tools"],
+            ["ivyTika", "org.apache.tika", "tika-core"],
+            ["ivyZookeeper", "org.apache.zookeeper", "zookeeper"],
+        ].each { prop, depGroup, depId ->
+            props[prop] = p.getVersion(depGroup, depId, depVer)
         }
-
+        
+        final File intoDir = this.outDir;
+        
         // Emit info about properties for clarity.
-        logger.warn("Building ref guide with:\n" + props.collect({ k, v -> "  ${k} -> ${v}" }).join('\n'))
-    }
-}
-
-task prepareSources(type: Sync) {
-    dependsOn setupLazyProps
-
-    // If replaceable properties change, we have to rerun the task.
-    inputs.properties props
-
-    def dummyAntProject = new org.apache.tools.ant.Project()
-
-    from(file("src"), {
-       exclude '**/*.template'
-    })
-
-    from(file("src"), {
-        include '**/*.template'
-        rename '(.+)\\.template', '$1'
-        filteringCharset = 'UTF-8'
-        filter(org.apache.tools.ant.filters.ExpandProperties, project: dummyAntProject)
-    })
-
-    doFirst {
-        props.each { k, v ->
-          dummyAntProject.setProperty(k, v)
-        }
-    }
-
-    into buildContentDir
-}
-
-task buildNavDataFiles(type: JavaExec) {
-    dependsOn prepareSources, classes
-    classpath = sourceSets.main.runtimeClasspath
-
-    main = 'BuildNavDataFiles'
-    workingDir = buildContentDir
-
-    args([
-            "${buildContentDir}",
-            "${mainPage}"
-    ])
-
-    doFirst {
-        // Remove previously generated files first.
-        [
-                "scrollnav.json",
-                "sidebar.json"
-        ].each { name ->
-            project.delete(file("${buildContentDir}/_data/${name}"))
+        logger.lifecycle('Syncing source files to {} using props:\n{}',
+                         intoDir, props.collect({ k, v -> "  ${k} -> ${v}" }).join('\n'))
+        
+        // Escape all the properties, so they can be inserted into YAML templates.
+        final def escapedProps = props.collectEntries{k, v -> [k, v.replace("'","''")]}
+        
+        final WorkResult syncResult = p.sync({ copySpec ->
+            copySpec.setFilteringCharset('UTF-8');
+            copySpec.from(getSrcDir(), { raw -> 
+                raw.exclude('**/*.template')
+            })
+            
+            copySpec.from(getSrcDir(), { templated ->
+                templated.include('**/*.template')
+                templated.rename('(.+)\\.template', '$1')
+                templated.expand(escapedProps)
+            })
+            copySpec.into(intoDir);
+        });
+        setDidWork(syncResult.getDidWork());
+        if (syncResult.getDidWork()) {
+            // if sync did work, that means we need to rebuild the nav data files...
+            p.javaexec({ execSpec ->
+                execSpec.setClasspath( getProject().getConvention()
+                                      .getPlugin(JavaPluginConvention.class)
+                                      .getSourceSets().getByName("main").getRuntimeClasspath() )
+                execSpec.setWorkingDir( intoDir )
+                execSpec.setMain( 'BuildNavDataFiles' )
+                execSpec.args([ intoDir, p.property('mainPage') ])
+            })
         }
     }
 }
-
-task bareBonesAsciiDoctor {
-    dependsOn buildNavDataFiles
-
-    doLast {
-        // Regenerate fully.
-        project.delete(bareBonesDir)
-        bareBonesDir.mkdirs()
-
-        // Convert each file separately so that folders are preserved.
-        Path source = buildContentDir.toPath().toAbsolutePath().normalize()
-        Path target = bareBonesDir.toPath().toAbsolutePath().normalize()
-
-        Asciidoctor adoc = Asciidoctor.Factory.create()
-        fileTree(source, {
-            include "**/*.adoc"
-            exclude "**/_*"
-        }).each { file ->
-            Path relative = source.relativize(file.toPath())
-            Path targetDir = target.resolve(relative).getParent()
-
-            def opts = OptionsBuilder.options()
-                    .backend('html5')
-                    .docType("book")
-                    .headerFooter(false)
-                    .safe(SafeMode.UNSAFE)
-                    .baseDir(source.toFile())
-                    .toDir(targetDir.toFile())
-                    .destinationDir(targetDir.toFile())
-                    .mkDirs(true)
-                    .attributes(asciiDocAttrs.common + asciiDocAttrs.html + props)
-
-            adoc.convertFile(file, opts)
-        }
-    }
-}
-
-task bareBonesHtmlValidation(type: JavaExec) {
-    dependsOn bareBonesAsciiDoctor
-    description("Builds (w/o Jekyll) a very simple html version of the guide and runs link/anchor validation on it")
-
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'CheckLinksAndAnchors'
-    workingDir = buildContentDir
-
-    args([
-            "${bareBonesDir}",
-            "-bare-bones"
-    ])
-
-    if (project.hasProperty("local.javadocs")) {
-        args += "-check-all-relative-links"
-    }
-}
-
-task buildSiteJekyll(type: com.github.jrubygradle.JRubyExec) {
-    dependsOn buildNavDataFiles
-
-    inputs.dir buildContentDir
-    outputs.dir file("${buildDir}/html-site")
-
-    script 'jekyll'
-    scriptArgs 'build' //, '--verbose'
-    workingDir buildContentDir
-}
-
-task buildSite(type: JavaExec) {
-    group "Documentation"
-    description "Builds an HTML Site w/Jekyll and verifies the anchors+links are valid"
-
-    dependsOn buildSiteJekyll
-
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'CheckLinksAndAnchors'
-    workingDir = buildContentDir
-
-    args([
-            file("${buildDir}/html-site"),
-    ])
-
-    if (project.hasProperty("local.javadocs")) {
-        args += "-check-all-relative-links"
-    }
-}
-
-// Hook up custom tasks with standard tasks.
-check.dependsOn bareBonesHtmlValidation
-
-// Do not hook site building to assemble, at least for now.
-// assemble.dependsOn buildSite

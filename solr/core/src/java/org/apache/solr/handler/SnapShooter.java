@@ -86,6 +86,9 @@ public class SnapShooter {
     this.backupRepo = Objects.requireNonNull(backupRepo);
     this.baseSnapDirPath = location;
     this.snapshotName = snapshotName;
+    if ("file".equals(location.getScheme())) {
+      solrCore.getCoreContainer().assertPathAllowed(Paths.get(location));
+    }
     if (snapshotName != null) {
       directoryName = "snapshot." + snapshotName;
     } else {
@@ -131,7 +134,7 @@ public class SnapShooter {
   }
 
   protected void deleteSnapAsync(final ReplicationHandler replicationHandler) {
-    new Thread(() -> deleteNamedSnapshot(replicationHandler)).start();
+    new Thread(() -> deleteNamedSnapshot(replicationHandler), "DeleteNamedSnapshot").start();
   }
 
   public void validateCreateSnapshot() throws IOException {
@@ -148,6 +151,7 @@ public class SnapShooter {
     }
   }
 
+  @SuppressWarnings({"rawtypes"})
   public NamedList createSnapshot() throws Exception {
     final IndexCommit indexCommit = getAndSaveIndexCommit();
     try {
@@ -176,25 +180,7 @@ public class SnapShooter {
   private IndexCommit getAndSaveIndexCommit() throws IOException {
     final IndexDeletionPolicyWrapper delPolicy = solrCore.getDeletionPolicy();
     if (null != commitName) {
-      final SolrSnapshotMetaDataManager snapshotMgr = solrCore.getSnapshotMetaDataManager();
-      // We're going to tell the delPolicy to "save" this commit -- even though it's a named snapshot
-      // that will already be protected -- just in case another thread deletes the name.
-      // Because of this, we want to sync on the delPolicy to ensure there is no window of time after
-      // snapshotMgr confirms commitName exists, but before we have a chance to 'save' it, when
-      // the commitName might be deleted *and* the IndexWriter might call onCommit()
-      synchronized (delPolicy) { 
-        final Optional<IndexCommit> namedCommit = snapshotMgr.getIndexCommitByName(commitName);
-        if (namedCommit.isPresent()) {
-          final IndexCommit commit = namedCommit.get();
-          if (log.isDebugEnabled()) {
-            log.debug("Using named commit: name={}, generation={}", commitName, commit.getGeneration());
-          }
-          delPolicy.saveCommitPoint(commit.getGeneration());
-          return commit;
-        }
-      } // else...
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to find an index commit with name " +
-                                commitName + " for core " + solrCore.getName());
+      return getAndSaveNamedIndexCommit(solrCore, commitName);
     }
     // else: not a named commit...
     final IndexCommit commit = delPolicy.getAndSaveLatestCommit();
@@ -208,6 +194,30 @@ public class SnapShooter {
     return commit;
   }
 
+  public static IndexCommit getAndSaveNamedIndexCommit(SolrCore solrCore, String commitName) throws IOException {
+    final IndexDeletionPolicyWrapper delPolicy = solrCore.getDeletionPolicy();
+    final SolrSnapshotMetaDataManager snapshotMgr = solrCore.getSnapshotMetaDataManager();
+    // We're going to tell the delPolicy to "save" this commit -- even though it's a named snapshot
+    // that will already be protected -- just in case another thread deletes the name.
+    // Because of this, we want to sync on the delPolicy to ensure there is no window of time after
+    // snapshotMgr confirms commitName exists, but before we have a chance to 'save' it, when
+    // the commitName might be deleted *and* the IndexWriter might call onCommit()
+    synchronized (delPolicy) {
+      final Optional<IndexCommit> namedCommit = snapshotMgr.getIndexCommitByName(commitName);
+      if (namedCommit.isPresent()) {
+        final IndexCommit commit = namedCommit.get();
+        if (log.isDebugEnabled()) {
+          log.debug("Using named commit: name={}, generation={}", commitName, commit.getGeneration());
+        }
+        delPolicy.saveCommitPoint(commit.getGeneration());
+        return commit;
+      }
+    } // else...
+    throw new SolrException(ErrorCode.BAD_REQUEST, "Unable to find an index commit with name " +
+            commitName + " for core " + solrCore.getName());
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
   public void createSnapAsync(final int numberToKeep, Consumer<NamedList> result) throws IOException {
     //TODO should use Solr's ExecutorUtil
     new Thread(() -> {
@@ -227,7 +237,7 @@ public class SnapShooter {
         }
       }
       if (null != snapShootDetails) result.accept(snapShootDetails);
-    }).start();
+    }, "CreateSnapshot").start();
 
   }
 
@@ -242,6 +252,7 @@ public class SnapShooter {
    * @see IndexDeletionPolicyWrapper#saveCommitPoint
    * @see IndexDeletionPolicyWrapper#releaseCommitPoint
    */
+  @SuppressWarnings({"rawtypes"})
   protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
     assert indexCommit != null;
     if (log.isInfoEnabled()) {

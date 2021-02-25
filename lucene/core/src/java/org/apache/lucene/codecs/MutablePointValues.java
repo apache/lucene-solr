@@ -19,9 +19,12 @@ package org.apache.lucene.codecs;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.BytesRef;
 
-/** {@link PointValues} whose order of points can be changed.
- *  This class is useful for codecs to optimize flush.
- *  @lucene.internal */
+/**
+ * {@link PointValues} whose order of points can be changed. This class is useful for codecs to
+ * optimize flush.
+ *
+ * @lucene.internal
+ */
 public abstract class MutablePointValues extends PointValues {
 
   /** Sole constructor. */
@@ -38,5 +41,4 @@ public abstract class MutablePointValues extends PointValues {
 
   /** Swap the i-th and j-th values. */
   public abstract void swap(int i, int j);
-
 }

@@ -55,7 +55,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   private final Path solrHomeDirectory = createTempDir();
 
   private void setMeUp(String alternateCoreDir) throws Exception {
-    System.setProperty("solr.solr.home", solrHomeDirectory.toAbsolutePath().toString());
     String xmlStr = SOLR_XML;
     if (alternateCoreDir != null) {
       xmlStr = xmlStr.replace("<solr>", "<solr> <str name=\"coreRootDirectory\">" + alternateCoreDir + "</str> ");
@@ -114,7 +113,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private CoreContainer init() throws Exception {
-    final CoreContainer container = new CoreContainer(SolrPaths.locateSolrHome(), new Properties());
+    final CoreContainer container = new CoreContainer(solrHomeDirectory, new Properties());
     try {
       container.load();
     } catch (Exception e) {
@@ -141,6 +140,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has discoverCores
   // set and insure that we find all the cores and can load them.
   @Test
+  @SuppressWarnings({"try"})
   public void testDiscovery() throws Exception {
     setMeUp();
 
@@ -397,7 +397,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
       assertNull(cc.getCore("core0"));
 
       SolrCore core3 = cc.create("core3", ImmutableMap.of("configSet", "minimal"));
-      assertThat(core3.getCoreDescriptor().getInstanceDir().toAbsolutePath().toString(), containsString("relative"));
+      assertThat(core3.getCoreDescriptor().getInstanceDir().toString(), containsString("relative"));
 
     } finally {
       cc.shutdown();

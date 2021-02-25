@@ -22,7 +22,7 @@ import org.apache.lucene.index.BaseDocValuesFormatTestCase;
 /** Test AssertingDocValuesFormat directly */
 public class TestAssertingDocValuesFormat extends BaseDocValuesFormatTestCase {
   private final Codec codec = new AssertingCodec();
-  
+
   @Override
   protected Codec getCodec() {
     return codec;

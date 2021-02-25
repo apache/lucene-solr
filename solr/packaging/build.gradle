@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
 
 plugins {
   id 'base'
+  id 'distribution'
 }
+
+description = 'Solr distribution packaging'
 
 ext {
   distDir = file("$buildDir/solr-${version}")
@@ -36,6 +38,7 @@ configurations {
   contrib
   example
   server
+  docs
 }
 
 dependencies {
@@ -45,13 +48,11 @@ dependencies {
    ":solr:contrib:analytics",
    ":solr:contrib:extraction",
    ":solr:contrib:clustering",
-   ":solr:contrib:dataimporthandler",
-   ":solr:contrib:dataimporthandler-extras",
    ":solr:contrib:jaegertracer-configurator",
    ":solr:contrib:langid",
    ":solr:contrib:ltr",
    ":solr:contrib:prometheus-exporter",
-   ":solr:contrib:velocity",
+   ":solr:contrib:scripting"
   ].each { contribName ->
     distSolr project(contribName)
     contrib  project(path: contribName, configuration: "packaging")
@@ -63,59 +64,81 @@ dependencies {
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
+
+  // Copy files from documentation output
+  docs project(path: ':solr:documentation', configuration: 'minimalSite')
 }
 
-task toDir(type: Sync) {
-  from(project(":solr").projectDir, {
-    include "bin/**"
-    include "licenses/**"
-    include "CHANGES.txt"
-    include "LICENSE.txt"
-    include "NOTICE.txt"
-    include "README.md"
-  })
+distributions {
+  main {
+    distributionBaseName = 'solr'
+    contents {
+      // TODO: This is missing module README files, as compared to 8x
 
-  from(project(":lucene").projectDir, {
-    include "CHANGES.txt"
-    rename { file -> 'LUCENE_CHANGES.txt' }
-  })
+      // Manually correct posix permissions (matters when packaging on Windows).
+      filesMatching([
+          "**/*.sh",
+          "**/bin/post",
+          "**/bin/postlogs",
+          "**/bin/solr",
+          "**/bin/init.d/solr",
+          "**/bin/solr-exporter",
+      ]) { copy ->
+        copy.setMode(0755)
+      }
 
-  from(configurations.contrib, {
-    into "contrib"
-  })
+      from(project(":solr").projectDir, {
+        include "bin/**"
+        include "licenses/**"
+        exclude "licenses/README.committers.txt"
+        include "CHANGES.txt"
+        include "LICENSE.txt"
+        include "NOTICE.txt"
+        include "README.md"
+      })
 
-  from(configurations.distSolr, {
-    into "dist"
-  })
+      from(project(":lucene").projectDir, {
+        include "CHANGES.txt"
+        rename { file -> 'LUCENE_CHANGES.txt' }
+      })
 
-  from(configurations.distSolrj - configurations.distSolr, {
-    into "dist/solrj-lib"
-  })
+      from(configurations.contrib, {
+        into "contrib"
+      })
 
-  from(configurations.example, {
-    into "example"
-  })
+      from(configurations.distSolr, {
+        into "dist"
+      })
 
-  from(configurations.server, {
-    into "server"
-  })
+      from(configurations.distSolrj - configurations.distSolr, {
+        into "dist/solrj-lib"
+      })
 
-  // docs/   - TODO: this is assembled via XSLT... leaving out for now.
+      from(configurations.example, {
+        into "example"
+      })
 
-  into distDir
+      from(configurations.server, {
+        into "server"
+      })
 
-  doLast {
-    logger.lifecycle "Solr distribution assembled under: ${distDir}"
+      from(configurations.docs, {
+        into "docs"
+      })
+    }
   }
+}
+
+installDist {
+  into distDir
 }
 
 task dev(type: Copy) {
   description "Assemble Solr distribution into 'development' folder at ${devDir}"
   group "build"
 
-  from toDir.outputs
+  from installDist.outputs
   into devDir
 }
 
-assemble.dependsOn toDir
-
+assemble.dependsOn installDist

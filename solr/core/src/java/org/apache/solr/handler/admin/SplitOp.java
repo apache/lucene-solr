@@ -129,6 +129,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         }
         Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
         if (routerObj instanceof Map) {
+          @SuppressWarnings({"rawtypes"})
           Map routerProps = (Map) routerObj;
           routeFieldName = (String) routerProps.get("field");
         }
@@ -221,6 +222,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
         Object routerObj = collection.get(DOC_ROUTER); // for back-compat with Solr 4.4
         if (routerObj instanceof Map) {
+          @SuppressWarnings({"rawtypes"})
           Map routerProps = (Map) routerObj;
           routeFieldName = (String) routerProps.get("field");
         }

@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 
+description = 'Parent project for Apache Solr'
+
 subprojects {
   group "org.apache.solr"
 }
+
+

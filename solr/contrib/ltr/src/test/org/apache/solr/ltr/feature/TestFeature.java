@@ -30,6 +30,12 @@ public class TestFeature extends SolrTestCase {
     for (final Method scorerClassMethod : Scorer.class.getDeclaredMethods()) {
       try {
 
+        // the FilterFeatureScorer may simply inherit Scorer's default implementation
+        if (scorerClassMethod.getName().equals("twoPhaseIterator")) continue;
+
+        // the FilterFeatureScorer may simply inherit Scorer's default implementation
+        if (scorerClassMethod.getName().equals("smoothingScore")) continue;
+        
         // the FilterFeatureScorer's implementation does not influence its parent Weight
         if (scorerClassMethod.getName().equals("getWeight")) continue;
 

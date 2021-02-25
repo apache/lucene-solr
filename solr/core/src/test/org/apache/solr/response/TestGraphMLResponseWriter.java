@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,9 +45,12 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
   }
 
   @Test
+  @SuppressWarnings({"unchecked"})
   public void testGraphMLOutput() throws Exception {
     SolrQueryRequest request = req("blah", "blah"); // Just need a request to attach the stream and traversal to.
+    @SuppressWarnings({"rawtypes"})
     SolrQueryResponse response = new SolrQueryResponse();
+    @SuppressWarnings({"rawtypes"})
     Map context = request.getContext();
     TupleStream stream = new TestStream(); //Simulates a GatherNodesStream
     Traversal traversal = new Traversal();
@@ -59,7 +63,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
     String graphML = writer.toString();
 
     //Validate the nodes
-    String error = h.validateXPath(graphML,
+    String error = BaseTestHarness.validateXPath(graphML,
                                    "//graph/node[1][@id ='bill']",
                                    "//graph/node[2][@id ='jim']",
                                    "//graph/node[3][@id ='max']");
@@ -67,7 +71,7 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       throw new Exception(error);
     }
     //Validate the edges
-    error = h.validateXPath(graphML,
+    error = BaseTestHarness.validateXPath(graphML,
                             "//graph/edge[1][@source ='jim']",
                             "//graph/edge[1][@target ='bill']",
                             "//graph/edge[2][@source ='max']",
@@ -84,31 +88,35 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
 
   }
 
+  @SuppressWarnings({"unchecked"})
   private static class TestStream extends TupleStream {
 
     private Iterator<Tuple> tuples;
 
     public TestStream() {
         //Create some nodes
-      List<Tuple> testTuples = new ArrayList();
+      List<Tuple> testTuples = new ArrayList<>();
+      @SuppressWarnings({"rawtypes"})
       Map m1 = new HashMap();
 
-      List<String> an1 = new ArrayList();
+      List<String> an1 = new ArrayList<>();
       an1.add("jim");
       an1.add("max");
       m1.put("node", "bill");
       m1.put("ancestors", an1);
       testTuples.add(new Tuple(m1));
 
+      @SuppressWarnings({"rawtypes"})
       Map m2 = new HashMap();
-      List<String> an2 = new ArrayList();
+      List<String> an2 = new ArrayList<>();
       an2.add("max");
       m2.put("node", "jim");
       m2.put("ancestors", an2);
       testTuples.add(new Tuple(m2));
 
+      @SuppressWarnings({"rawtypes"})
       Map m3 = new HashMap();
-      List<String> an3 = new ArrayList();
+      List<String> an3 = new ArrayList<>();
       an3.add("jim");
       m3.put("node", "max");
       m3.put("ancestors", an3);
@@ -133,10 +141,12 @@ public class TestGraphMLResponseWriter extends SolrTestCaseJ4 {
       return null;
     }
 
+    @SuppressWarnings({"unchecked"})
     public Tuple read() {
       if(tuples.hasNext()) {
         return tuples.next();
       } else {
+        @SuppressWarnings({"rawtypes"})
         Map map = new HashMap();
         map.put("EOF", true);
         return new Tuple(map);

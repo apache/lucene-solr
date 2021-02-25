@@ -19,6 +19,7 @@ package org.apache.solr.pkg;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -30,6 +31,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -49,6 +51,8 @@ import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
  */
 public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  public static final String LATEST = "$LATEST";
+
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
@@ -57,6 +61,12 @@ public class PackageLoader implements Closeable {
 
   private PackageAPI packageAPI;
 
+
+  public Optional<Package.Version> getPackageVersion(String pkg, String version) {
+    Package p = packageClassLoaders.get(pkg);
+    if(p == null) return Optional.empty();
+    return Optional.ofNullable(p.getVersion(version));
+  }
 
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
@@ -73,6 +83,7 @@ public class PackageLoader implements Closeable {
     return packageClassLoaders.get(key);
   }
 
+  @SuppressWarnings({"unchecked"})
   public Map<String, Package> getPackages() {
     return Collections.EMPTY_MAP;
   }
@@ -166,6 +177,10 @@ public class PackageLoader implements Closeable {
       return deleted;
     }
 
+    public Set<String> allVersions() {
+      return myVersions.keySet();
+    }
+
 
     private synchronized void updateVersions(List<PackageAPI.PkgVersion> modified) {
       for (PackageAPI.PkgVersion v : modified) {
@@ -218,11 +233,16 @@ public class PackageLoader implements Closeable {
       return latest == null ? null : myVersions.get(latest);
     }
 
+    public Version getVersion(String version) {
+      if(version == null) return getLatest();
+      return myVersions.get(version);
+    }
+
     public Version getLatest(String lessThan) {
       if (lessThan == null) {
         return getLatest();
       }
-      String latest = findBiggest(lessThan, new ArrayList(sortedVersions));
+      String latest = findBiggest(lessThan, new ArrayList<>(sortedVersions));
       return latest == null ? null : myVersions.get(latest);
     }
 
@@ -269,7 +289,7 @@ public class PackageLoader implements Closeable {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
-        loader = new SolrResourceLoader(
+        loader = new PackageResourceLoader(
             "PACKAGE_LOADER: " + parent.name() + ":" + version,
             paths,
             Paths.get(coreContainer.getSolrHome()),
@@ -279,7 +299,11 @@ public class PackageLoader implements Closeable {
       public String getVersion() {
         return version.version;
       }
+      public PackageAPI.PkgVersion getPkgVersion(){
+        return version.copy();
+      }
 
+      @SuppressWarnings({"rawtypes"})
       public Collection getFiles() {
         return Collections.unmodifiableList(version.files);
       }
@@ -299,6 +323,42 @@ public class PackageLoader implements Closeable {
       public String toString() {
         return jsonStr();
       }
+    }
+  }
+  static class PackageResourceLoader extends SolrResourceLoader {
+    List<Path> paths;
+
+
+    PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
+      super(name, classpath, instanceDir, parent);
+      this.paths = classpath;
+    }
+
+    @Override
+    public <T> boolean addToCoreAware(T obj) {
+      //do not do anything
+      //this class is not aware of a SolrCore and it is totally not tied to
+      // the lifecycle of SolrCore. So, this returns 'false' & it should be
+      // taken care of by the caller
+      return false;
+    }
+
+    @Override
+    public <T> boolean addToResourceLoaderAware(T obj) {
+      // do not do anything
+      // this should be invoked only after the init() is invoked.
+      // The caller should take care of that
+      return false;
+    }
+
+    @Override
+    public  <T> void addToInfoBeans(T obj) {
+      //do not do anything. It should be handled externally
+    }
+
+    @Override
+    public InputStream openResource(String resource) {
+      return getClassLoader().getResourceAsStream(resource);
     }
   }
 

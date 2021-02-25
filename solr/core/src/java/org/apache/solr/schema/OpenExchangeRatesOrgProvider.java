@@ -27,7 +27,7 @@ import java.util.Set;
 
 import org.apache.solr.common.util.SuppressForbidden;
 import org.noggit.JSONParser;
-import org.apache.lucene.analysis.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -88,8 +88,8 @@ public class OpenExchangeRatesOrgProvider implements ExchangeRateProvider {
 
     reloadIfExpired();
 
-    Double source = (Double) rates.getRates().get(sourceCurrencyCode);
-    Double target = (Double) rates.getRates().get(targetCurrencyCode);
+    Double source = rates.getRates().get(sourceCurrencyCode);
+    Double target = rates.getRates().get(targetCurrencyCode);
 
     if (source == null || target == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, 

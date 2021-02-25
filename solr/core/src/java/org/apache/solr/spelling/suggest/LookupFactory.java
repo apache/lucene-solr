@@ -37,7 +37,7 @@ public abstract class LookupFactory {
    * Create a Lookup using config options in <code>params</code> and 
    * current <code>core</code>
    */
-  public abstract Lookup create(NamedList params, SolrCore core);
+  public abstract Lookup create(@SuppressWarnings({"rawtypes"})NamedList params, SolrCore core);
   
   /** 
    * <p>Returns the filename in which the in-memory data structure is stored </p>
