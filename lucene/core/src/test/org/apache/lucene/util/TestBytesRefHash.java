@@ -272,7 +272,7 @@ public class TestBytesRefHash extends LuceneTestCase {
   }
 
   @Test
-  public void testConcurrentFind() throws Exception {
+  public void testConcurrentAccessToUnmodifiableBytesRefHash() throws Exception {
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
       int numStrings = 797;
@@ -282,8 +282,13 @@ public class TestBytesRefHash extends LuceneTestCase {
         hash.add(new BytesRef(str));
         assertTrue(strings.add(str));
       }
+      int hashSize = hash.size();
 
-      AtomicInteger miss = new AtomicInteger();
+      UnmodifiableBytesRefHash unmodifiableHash = hash;
+
+      AtomicInteger notFound = new AtomicInteger();
+      AtomicInteger notEquals = new AtomicInteger();
+      AtomicInteger wrongSize = new AtomicInteger();
       int numThreads = 10;
       CountDownLatch latch = new CountDownLatch(numThreads);
       Thread[] threads = new Thread[numThreads];
@@ -292,6 +297,7 @@ public class TestBytesRefHash extends LuceneTestCase {
         threads[i] =
             new Thread(
                 () -> {
+                  BytesRef scratch = new BytesRef();
                   latch.countDown();
                   try {
                     latch.await();
@@ -301,8 +307,17 @@ public class TestBytesRefHash extends LuceneTestCase {
                   }
                   for (int k = 0; k < loops; k++) {
                     BytesRef find = new BytesRef(strings.get(k % strings.size()));
-                    if (hash.find(find) < 0) {
-                      miss.incrementAndGet();
+                    int id = unmodifiableHash.find(find);
+                    if (id < 0) {
+                      notFound.incrementAndGet();
+                    } else {
+                      unmodifiableHash.get(id, scratch);
+                      if (!scratch.bytesEquals(find)) {
+                        notEquals.incrementAndGet();
+                      }
+                    }
+                    if (unmodifiableHash.size() != hashSize) {
+                      wrongSize.incrementAndGet();
                     }
                   }
                 },
@@ -312,7 +327,9 @@ public class TestBytesRefHash extends LuceneTestCase {
       for (Thread t : threads) t.start();
       for (Thread t : threads) t.join();
 
-      assertEquals(0, miss.get());
+      assertEquals(0, notFound.get());
+      assertEquals(0, notEquals.get());
+      assertEquals(0, wrongSize.get());
       hash.clear();
       assertEquals(0, hash.size());
       hash.reinit();
