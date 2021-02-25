@@ -327,7 +327,7 @@ public class DocValuesNotIndexedTest extends SolrCloudTestCase {
 
       List<Group> fieldCommandGroups = fieldCommand.getValues();
 
-      if (prop.getName().startsWith("intGSF") && fieldCommandGroups.size() == 3) { // TODO: why?
+      if (prop.getName().endsWith("GSF") && fieldCommandGroups.size() == 3) { // TODO: why?
         // this can rarely end up with 3 instead of 4
         expected = 3;
         assertEquals("Did not find the expected number of groups for field " + prop.getName(), expected, fieldCommandGroups.size());

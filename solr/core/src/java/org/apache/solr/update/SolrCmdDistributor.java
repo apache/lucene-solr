@@ -123,7 +123,7 @@ public class SolrCmdDistributor implements Closeable {
             err.t);
 
     // this can happen in certain situations such as close
-    if (isRetry) {
+    if (isRetry && rspCode != -1) {
       // if it's a io exception exception, lets try again
       if (err.t instanceof SolrServerException) {
         if (((SolrServerException) err.t).getRootCause() instanceof IOException  && !(((SolrServerException) err.t).getRootCause() instanceof ClosedChannelException)) {
@@ -135,7 +135,7 @@ public class SolrCmdDistributor implements Closeable {
         doRetry = true;
       }
 
-      if (err.req.retries < maxRetries && doRetry) {
+      if (err.req.retries < maxRetries && doRetry && !isClosed.isClosed()) {
         err.req.retries++;
 
         SolrException.log(SolrCmdDistributor.log, "sending update to "

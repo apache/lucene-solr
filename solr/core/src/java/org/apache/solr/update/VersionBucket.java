@@ -27,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.common.SolrException;
 
 // TODO: make inner?
 // TODO: store the highest possible in the index on a commit (but how to not block adds?)
@@ -63,19 +64,38 @@ public class VersionBucket {
         LongAdder adder = new LongAdder();
         adder.increment();
         blockedIds.put(idBytes, adder);
+        lock.unlock();
       } else {
         LongAdder adder = blockedIds.get(idBytes);
-        adder.increment();
+
+        while (adder.longValue() > 0) {
+          try {
+            lockCondition.awaitNanos(250);
+          } catch (InterruptedException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+        }
+        adder = blockedIds.get(idBytes);
+        if (adder == null) {
+          adder = new LongAdder();
+          adder.increment();
+          blockedIds.put(idBytes, adder);
+        }
+        lock.unlock();
       }
       return function.apply();
     } finally {
       try {
-        LongAdder adder = blockedIds.get(idBytes);
-        adder.decrement();
-        if (adder.longValue() == 0L) {
-          blockedIds.remove(idBytes);
+        if (!lock.isHeldByCurrentThread()) {
+          lock.lock();
         }
-
+        LongAdder adder = blockedIds.get(idBytes);
+        if (adder != null) {
+          adder.decrement();
+          if (adder.longValue() == 0L) {
+            blockedIds.remove(idBytes);
+          }
+        }
       } finally {
         if (lock.isHeldByCurrentThread()) lock.unlock();
       }

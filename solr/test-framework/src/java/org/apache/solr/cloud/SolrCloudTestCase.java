@@ -107,7 +107,6 @@ public class SolrCloudTestCase extends SolrTestCase {
     }
   }
 
-
   @BeforeClass
   public static void beforeSolrCloudTestCase() throws Exception {
     qtp = getQtp();
@@ -116,9 +115,26 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   @AfterClass
   public static void afterSolrCloudTestCase() throws Exception {
+    if (cluster != null) {
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
+    }
     if (qtp != null) {
       IOUtils.closeQuietly(qtp);
       qtp = null;
+    }
+  }
+
+  public static void shutdownCluster() throws Exception {
+    if (cluster != null) {
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
     }
   }
 
@@ -302,17 +318,6 @@ public class SolrCloudTestCase extends SolrTestCase {
    */
   protected static Builder configureCluster(int nodeCount) {
     return new Builder(nodeCount, SolrTestUtil.createTempDir());
-  }
-
-  @AfterClass
-  public static void shutdownCluster() throws Exception {
-    if (cluster != null) {
-      try {
-        cluster.shutdown();
-      } finally {
-        cluster = null;
-      }
-    }
   }
 
   /* Cluster helper methods ************************************/

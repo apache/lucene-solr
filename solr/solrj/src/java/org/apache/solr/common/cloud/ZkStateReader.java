@@ -664,7 +664,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   private void refreshCollectionList() throws KeeperException, InterruptedException {
     List<String> children = null;
     try {
-      children = zkClient.getChildren(COLLECTIONS_ZKNODE, null, true);
+      children = zkClient.getChildren(COLLECTIONS_ZKNODE, null, null,true, false);
     } catch (KeeperException.NoNodeException e) {
       log.warn("Error fetching collection names: [{}]", e.getMessage());
       // fall through
@@ -808,7 +808,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       try {
 
         Stat stat = new Stat();
-        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, null, stat, true);
+        List<String> nodeList = zkClient.getChildren(LIVE_NODES_ZKNODE, null, stat, true, false);
         this.liveNodesVersion = stat.getCversion();
         newLiveNodes = new TreeSet<>(nodeList);
       } catch (KeeperException.NoNodeException e) {
@@ -1473,7 +1473,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       byte[] data = null;
 
       try {
-        data = getZkClient().getData(stateUpdatesPath, null, null, true);
+        data = getZkClient().getData(stateUpdatesPath, null, null, true, false);
       } catch (NoNodeException e) {
         log.info("No node found for {}", stateUpdatesPath);
         return;
@@ -1788,6 +1788,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   /**
    * Watches /collections children .
    */
+  // MRM TODO: persistent watch
   class CollectionsChildWatcher implements Watcher, Closeable {
 
     @Override
@@ -1936,7 +1937,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       int version = 0;
       if (exists != null) {
 
-        Stat stateStat = zkClient.exists(collectionPath, null, true);
+        Stat stateStat = zkClient.exists(collectionPath, null, true, false);
         if (stateStat != null) {
           version = stateStat.getVersion();
           if (log.isDebugEnabled()) log.debug("version for cs is {}", version);

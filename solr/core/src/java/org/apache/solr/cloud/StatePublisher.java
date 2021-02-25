@@ -151,8 +151,9 @@ public class StatePublisher implements Closeable {
           log.error("Bad state found for publish! {} {}", zkNodeProps, bulkMessage);
           return;
         }
-
-        bulkMessage.getProperties().put(core, collection + "," + Replica.State.getShortState(Replica.State.valueOf(state.toUpperCase(Locale.ROOT))));
+        String line = collection + "," + Replica.State.getShortState(Replica.State.valueOf(state.toUpperCase(Locale.ROOT)));
+        if (log.isDebugEnabled()) log.debug("Bulk publish core={} line={}", core, line);
+        bulkMessage.getProperties().put(core, line);
       }
     }
 

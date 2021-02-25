@@ -250,6 +250,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     }
     clients.clear();
     controlClient = null;
+    cluster = null;
     super.tearDown();
   }
 

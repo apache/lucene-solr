@@ -297,6 +297,11 @@ public class SolrZkClient implements Closeable {
     return exists(path, watcher, true);
   }
 
+  public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    return exists(path, watcher, retryOnConnLoss, true);
+  }
+
   /**
    * Return the stat of the node of the given path. Return null if no such a
    * node exists.
@@ -314,11 +319,11 @@ public class SolrZkClient implements Closeable {
    * @throws InterruptedException If the server transaction is interrupted.
    * @throws IllegalArgumentException if an invalid path is specified
    */
-  public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss)
+  public Stat exists(final String path, final Watcher watcher, boolean retryOnConnLoss, boolean retryOnSessionExpiration)
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.exists(path, watcher == null ? null : wrapWatcher(watcher)));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.exists(path, watcher == null ? null : wrapWatcher(watcher)), retryOnSessionExpiration);
     } else {
       return keeper.exists(path, watcher == null ? null : wrapWatcher(watcher));
     }
@@ -360,9 +365,14 @@ public class SolrZkClient implements Closeable {
 
   public List<String> getChildren(final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss)
       throws KeeperException, InterruptedException {
+    return getChildren(path, watcher, stat, retryOnConnLoss, true);
+  }
+
+  public List<String> getChildren(final String path, final Watcher watcher, Stat stat, boolean retryOnConnLoss,  boolean retrySessionExpiration)
+      throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.getChildren(path, watcher == null ? null : wrapWatcher(watcher), stat));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.getChildren(path, watcher == null ? null : wrapWatcher(watcher), stat), retrySessionExpiration);
     } else {
       return keeper.getChildren(path, watcher == null ? null : wrapWatcher(watcher));
     }
@@ -372,17 +382,22 @@ public class SolrZkClient implements Closeable {
     return getData(path, watcher, stat, true);
   }
 
+  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    return getData(path, watcher, stat, retryOnConnLoss, true);
+  }
+
       /**
        * Returns node's data
        */
-  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss)
+  public byte[] getData(final String path, final Watcher watcher, final Stat stat, boolean retryOnConnLoss, boolean retryOnSessionExpiration)
       throws KeeperException, InterruptedException {
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss && zkCmdExecutor != null) {
       if (keeper == null) {
         throw new IllegalStateException();
       }
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.getData(path, watcher == null ? null : wrapWatcher(watcher), stat));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.getData(path, watcher == null ? null : wrapWatcher(watcher), stat), retryOnSessionExpiration);
     } else {
       return keeper.getData(path, watcher == null ? null : wrapWatcher(watcher), stat);
     }

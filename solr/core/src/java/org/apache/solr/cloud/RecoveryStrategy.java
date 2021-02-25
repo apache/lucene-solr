@@ -612,6 +612,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
           return false;
         }
 
+        log.info("Begin buffering updates. core=[{}]", coreName);
+        // recalling buffer updates will drop the old buffer tlog
+        ulog.bufferUpdates();
+
         // we wait a bit so that any updates on the leader
         // that started before they saw recovering state
         // are sure to have finished (see SOLR-7141 for
@@ -649,6 +653,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
               // solrcloud_debug
               // cloudDebugLog(core, "synced");
 
+              log.info("Replaying updates buffered during PeerSync.");
+              replay(core);
+
               // sync success
               successfulRecovery = true;
             } else {
@@ -668,10 +675,6 @@ public class RecoveryStrategy implements Runnable, Closeable {
           log.info("Starting Replication Recovery.");
           didReplication = true;
           try {
-
-            log.info("Begin buffering updates. core=[{}]", coreName);
-            // recalling buffer updates will drop the old buffer tlog
-            ulog.bufferUpdates();
 
             //        try {
             //          if (prevSendPreRecoveryHttpUriRequest != null) {

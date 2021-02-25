@@ -21,6 +21,8 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -44,7 +47,30 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
   @BeforeClass
   public static void beforeSuperClass() throws Exception {
     useFactory(null);
-    //setErrorHook();
+    // schemaString = "schema15.xml";      // we need a string id
+    System.setProperty("solr.autoCommit.maxTime", "15000");
+    System.setProperty("solr.httpclient.retries", "1");
+    System.setProperty("solr.retries.on.forward", "1");
+    System.setProperty("solr.retries.to.followers", "1");
+    useFactory(null);
+    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
+
+    createControl = false;
+
+    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "-1"));
+    if (sliceCount == -1) {
+      sliceCount = random().nextInt(TEST_NIGHTLY ? 5 : 3) + 1;
+    }
+
+    replicationFactor = 3;
+
+    //    int numShards = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "-1"));
+    //    if (numShards == -1) {
+    //      // we make sure that there's at least one shard with more than one replica
+    //      // so that the ChaosMonkey has something to kill
+    //      numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2) + 1;
+    //    }
+    numJettys = sliceCount * replicationFactor;
   }
   
   @AfterClass
@@ -75,30 +101,6 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
 
   public ChaosMonkeySafeLeaderTest() throws Exception {
     super();
-   // schemaString = "schema15.xml";      // we need a string id
-    System.setProperty("solr.autoCommit.maxTime", "15000");
-    System.setProperty("solr.httpclient.retries", "1");
-    System.setProperty("solr.retries.on.forward", "1");
-    System.setProperty("solr.retries.to.followers", "1");
-    useFactory(null);
-    System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
-
-    createControl = true;
-
-    sliceCount = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.slicecount", "-1"));
-    if (sliceCount == -1) {
-      sliceCount = random().nextInt(TEST_NIGHTLY ? 5 : 3) + 1;
-    }
-
-    replicationFactor = 3;
-
-//    int numShards = Integer.parseInt(System.getProperty("solr.tests.cloud.cm.shardcount", "-1"));
-//    if (numShards == -1) {
-//      // we make sure that there's at least one shard with more than one replica
-//      // so that the ChaosMonkey has something to kill
-//      numShards = sliceCount + random().nextInt(TEST_NIGHTLY ? 12 : 2) + 1;
-//    }
-    this.numJettys = sliceCount * replicationFactor;
   }
 
   @Test
@@ -109,6 +111,7 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
     
     // randomly turn on 1 seconds 'soft' commit
     //randomlyEnableAutoSoftCommit();
+    cluster.waitForActiveCollection(COLLECTION, sliceCount, sliceCount * replicationFactor);
 
     tryDelete();
     
@@ -165,8 +168,23 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
     }
     
     for (StoppableIndexingThread indexThread : threads) {
-      assertTrue( indexThread.getFailCount() < 10);
+      assertTrue(String.valueOf(indexThread.getFailCount()), indexThread.getFailCount() < 10);
     }
+
+    cluster.getSolrClient().getZkStateReader().waitForState(COLLECTION, 10, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      if (collectionState == null) return false;
+      Collection<Slice> slices = collectionState.getSlices();
+      for (Slice slice : slices) {
+        for (Replica replica : slice.getReplicas()) {
+          if (cluster.getSolrClient().getZkStateReader().isNodeLive(replica.getNodeName())) {
+              if (replica.getState() != Replica.State.ACTIVE) {
+                return false;
+              }
+          }
+        }
+      }
+      return true;
+    });
 
     commit();
 

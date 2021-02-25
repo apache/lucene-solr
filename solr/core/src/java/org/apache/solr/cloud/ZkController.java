@@ -1321,7 +1321,7 @@ public class ZkController implements Closeable, Runnable {
 
       try {
         log.info("Waiting to see our entry in state.json {}", desc.getName());
-        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 5000), TimeUnit.MILLISECONDS, (l, c) -> { // MRM TODO: timeout
+        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 30000), TimeUnit.MILLISECONDS, (l, c) -> { // MRM TODO: timeout
           if (c == null) {
             return false;
           }
@@ -1340,11 +1340,8 @@ public class ZkController implements Closeable, Runnable {
       Replica replica = replicaRef.get();
 
       if (replica == null) {
-        replica = zkStateReader.getClusterState().getCollection(collection).getReplica(coreName);
-        if (replica == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica=" + coreName + " is removed from clusterstate \n"
-              + zkStateReader.getClusterState().getCollectionOrNull(collection));
-        }
+              + coll.get());
       }
 
       log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, replica.getType());
