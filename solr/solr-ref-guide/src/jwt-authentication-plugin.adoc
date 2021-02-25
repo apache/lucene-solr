@@ -161,6 +161,10 @@ Let's comment on this config:
 <12> Configure the audience claim. A token's 'aud' claim must match 'aud' for one of the configured issuers.
 <13> This issuer is auto configured through discovery, so 'iss' and JWK settings are not required
 
+=== Using non SSL URLs
+In Production you should always use SSL protected HTTPS connections since Solr is making an outbound connection,
+otherwise you open yourself up to attacks.   However, in development, it may be useful to use regular http urls, and bypass the
+security check that Solr makes. To support this you can set the environment variable `solr.auth.jwt.allowOutboundHttp=true`. 
 
 == Editing JWT Authentication Plugin Configuration
 

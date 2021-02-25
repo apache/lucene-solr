@@ -37,6 +37,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.jose4j.jwk.JsonWebKeySet;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.JSONUtil;
@@ -68,6 +69,12 @@ public class JWTIssuerConfigTest extends SolrTestCase {
         "  \"iss\":\"issuer\",\n" +
         "  \"authorizationEndpoint\":\"https://issuer/authz\"}";
   }
+  
+  @After
+  public void tearDown() throws Exception {
+    super.tearDown();
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = false;
+  }  
 
   @Test
   public void parseConfigMap() {
@@ -130,6 +137,8 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
   @Test
   public void jwksUrlwithHttpLogsaWarning() {
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true; // setup test
+    
     HashMap<String, Object> issuerConfigMap = new HashMap<>();
     issuerConfigMap.put("name", "myName");
     issuerConfigMap.put("iss", "myIss");
@@ -147,9 +156,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
       
     SolrDocumentList history = watcher.getHistory(-1, null);
     
-    if (history.stream().filter(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url in: " + history.toString());
-    }  
+    assertTrue("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url", history.stream().anyMatch(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))));  
     
   }
   
@@ -174,6 +181,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
 
   @Test
   public void wellKnownConfigWithHttpLogsAWarning() {
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true; // setup test
     
     LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
     @SuppressWarnings({"rawtypes"})
@@ -185,10 +193,8 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
         
     SolrDocumentList history = watcher.getHistory(-1, null);
-    
-    if (history.stream().filter(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))).count() == 0) {
-      fail("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url in: " + history.toString());
-    }   
+    assertTrue("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url in: " + history.toString(), history.stream().anyMatch(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))));
+
   }
   
   @Test

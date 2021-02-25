@@ -68,6 +68,11 @@ public class JWTIssuerConfig {
   private WellKnownDiscoveryConfig wellKnownDiscoveryConfig;
   private String clientId;
   private String authorizationEndpoint;
+  
+  public static boolean ALLOW_OUTBOUND_HTTP = Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+  public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG = "Outbound non SSL protected JWT authentication urls are not enabled, start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true.";
+
+
 
   /**
    * Create config for further configuration with setters, builder style.
@@ -357,11 +362,8 @@ public class JWTIssuerConfig {
     private HttpsJwks create(String url) {
       try {
         URL jwksUrl = new URL(url);
-        if ("http".equalsIgnoreCase(jwksUrl.getProtocol())) {
-          if (log.isWarnEnabled()) {
-            log.warn("{} should use HTTPS protocol. Consider enabling SSL to protect user credentials and data with encryption.", PARAM_JWKS_URL);
-          }
-        }
+        checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
+        
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
       }
@@ -393,11 +395,8 @@ public class JWTIssuerConfig {
         if (!Arrays.asList("https", "file", "http").contains(url.getProtocol())) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be one of HTTPS or HTTP or file");          
         }
-        if ("http".equalsIgnoreCase(url.getProtocol())) {
-          if (log.isWarnEnabled()) {
-            log.warn("Well-known config URL is using HTTP protocol. Consider enabling SSL to protect user credentials and data with encryption.");
-          }
-        }
+        checkAllowOutboundHttpConnections(PARAM_WELL_KNOWN_URL, url);
+
         return parse(url.openStream());
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + urlString + " is malformed", e);
@@ -444,6 +443,19 @@ public class JWTIssuerConfig {
     @SuppressWarnings("unchecked")
     public List<String> getResponseTypesSupported() {
       return (List<String>) securityConf.get("response_types_supported");
+    }
+  }
+
+  public static void checkAllowOutboundHttpConnections(String parameterName, URL url) {
+    if ("http".equalsIgnoreCase(url.getProtocol())) {
+      if (ALLOW_OUTBOUND_HTTP) {
+        if (log.isWarnEnabled()) {
+          log.warn("{} should use HTTPS protocol. Consider enabling SSL to protect user credentials and data with encryption.", parameterName);
+        }
+      }
+      else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ALLOW_OUTBOUND_HTTP_ERR_MSG + " Parameter " + parameterName + " should use HTTPS protocol instead of HTTP.");
+      }
     }
   }
 }
