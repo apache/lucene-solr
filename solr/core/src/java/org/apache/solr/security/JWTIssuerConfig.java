@@ -359,7 +359,7 @@ public class JWTIssuerConfig {
         URL jwksUrl = new URL(url);
         if ("http".equalsIgnoreCase(jwksUrl.getProtocol())) {
           if (log.isWarnEnabled()) {
-            log.warn(PARAM_JWKS_URL + " should use HTTPS protocol. Consider enabling SSL to protect user credentials and data with encryption.");
+            log.warn("{} should use HTTPS protocol. Consider enabling SSL to protect user credentials and data with encryption.", PARAM_JWKS_URL);
           }
         }
       } catch (MalformedURLException e) {
