@@ -111,14 +111,14 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, 1, 3)
         .setCreateNodeSet("")
         .process(cluster.getSolrClient());
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
 
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
-    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
+    CollectionAdminRequest.addReplicaToShard(collectionName, "s1")
         .setNode(cluster.getJettySolrRunner(2).getNodeName())
         .process(cluster.getSolrClient());
     
@@ -126,7 +126,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
     addDocs(collectionName, 3, 1);
 
-    final Replica oldLeader = getCollectionState(collectionName).getSlice("shard1").getLeader();
+    final Replica oldLeader = getCollectionState(collectionName).getSlice("s1").getLeader();
     assertEquals(cluster.getJettySolrRunner(0).getNodeName(), oldLeader.getNodeName());
 
     if (onRestart) {
@@ -149,7 +149,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
    */
   private void addDocToWhenOtherReplicasAreDown(String collection, Replica leader, int docId) throws Exception {
     cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
-    JettySolrRunner j1 = cluster.getShardLeaderJetty(collection, "shard1");
+    JettySolrRunner j1 = cluster.getShardLeaderJetty(collection, "s1");
 
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
       if (j != j1) {
@@ -187,7 +187,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     // the correct behavior is that this should time out, if it succeeds we have a problem...
     SolrTestCaseUtil.expectThrows(TimeoutException.class, "Did not time out waiting for new leader, out of sync replica became leader", () -> {
       cluster.getSolrClient().waitForState(collection, 3, TimeUnit.SECONDS, (l, state) -> {
-        Replica newLeader = state.getSlice("shard1").getLeader();
+        Replica newLeader = state.getSlice("s1").getLeader();
         if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
           // this is is the bad case, our "bad" state was found before timeout
           log.error("WTF: New Leader={} original Leader={}", newLeader, leader);
@@ -198,7 +198,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     });
 
     waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
-      Replica newLeader = collectionState.getLeader("shard1");
+      Replica newLeader = collectionState.getLeader("s1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
     cluster.waitForActiveCollection(collection, 1, 3);
@@ -212,7 +212,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
    */
   private void addDocWhenOtherReplicasAreNetworkPartitioned(String collection, Replica leader, int docId) throws Exception {
     cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
-    JettySolrRunner j1 = cluster.getShardLeaderJetty(collection, "shard1");
+    JettySolrRunner j1 = cluster.getShardLeaderJetty(collection, "s1");
 
     for (JettySolrRunner j : cluster.getJettySolrRunners()) {
       if (j != j1) {
@@ -249,7 +249,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     j1.start();
 
     waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState) -> {
-      Replica newLeader = collectionState.getLeader("shard1");
+      Replica newLeader = collectionState.getLeader("s1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
 
@@ -276,7 +276,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   private void assertDocsExistInAllReplicas(List<Replica> notLeaders,
                                               String testCollectionName, int firstDocId, int lastDocId) throws Exception {
     Replica leader =
-        cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
+        cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "s1", 10000);
     Http2SolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<Http2SolrClient> replicas =
             new ArrayList<>(notLeaders.size());

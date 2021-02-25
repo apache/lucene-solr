@@ -584,7 +584,7 @@ public class TestStressInPlaceUpdates extends SolrCloudBridgeTestCase {
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     Replica leader = null;
-    Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
+    Slice shard1 = clusterState.getCollection(COLLECTION).getSlice(SHARD1);
     leader = shard1.getLeader();
 
     for (int i = 0; i < clients.size(); i++) {

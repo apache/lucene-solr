@@ -71,7 +71,7 @@ public class RecoveryAfterSoftCommitTest extends SolrCloudBridgeTestCase {
 
     //Replica notLeader = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30).get(0);
     // ok, now introduce a network partition between the leader and the replica
-    Replica notLeader = cluster.getNonLeaderReplica(DEFAULT_COLLECTION);
+    Replica notLeader = cluster.getNonLeaderReplica(COLLECTION);
     SocketProxy proxy = cluster.getProxyForReplica(notLeader);
 
     proxy.close();
@@ -96,7 +96,7 @@ public class RecoveryAfterSoftCommitTest extends SolrCloudBridgeTestCase {
 
     proxy.reopen();
 
-    cluster.waitForActiveCollection(DEFAULT_COLLECTION, 1, 2);
+    cluster.waitForActiveCollection(COLLECTION, 1, 2);
   }
 }
 

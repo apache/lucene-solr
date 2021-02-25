@@ -244,45 +244,41 @@ public class HttpSolrCall {
 //    }
 
     // Parse a core or collection name from the path and attempt to see if it's a core name
-    int idx = path.indexOf("/", 1);
-    if (idx > 1) {
+    int idx = path.indexOf("/", 0);
+    int idx2 = -1;
+    if (idx > -1) {
 
-      int idx2 = path.indexOf('/', 2);
+      idx2 = path.indexOf('/', 1);
       if (idx2 > 0) {
         // save the portion after the ':' for a 'handler' path parameter
         origCorename = path.substring(1, idx2);
       } else {
-        origCorename = path.substring(1, idx);
-        path = path.substring(idx2);
+        origCorename = path.substring(1, path.length());
       }
 
       // Try to resolve a Solr core name
-
       core = cores.getCore(origCorename);
 
       if (core == null && (!cores.isZooKeeperAware() || QoSParams.INTERNAL.equals(req.getHeader(QoSParams.REQUEST_SOURCE))) && cores.isCoreLoading(origCorename)) {
         cores.waitForLoadingCore(origCorename, 2500);
+        core = cores.getCore(origCorename);
       }
 
       if (log.isDebugEnabled()) log.debug("tried to get core by name {} got {}, existing cores {} found={}", origCorename, core, cores.getAllCoreNames(), core != null);
 
       if (core != null) {
-        path = path.substring(idx);
+        if (idx2 > 0) {
+          path = path.substring(idx2);
+        }
         if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
       } else {
-        core = cores.getCore(origCorename);
-        if (core != null) {
-          path = path.substring(idx);
-          if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
-        } else {
-          if (!cores.isZooKeeperAware()) {
-            core = cores.getCore("");
-          }
+        if (!cores.isZooKeeperAware()) {
+          core = cores.getCore("");
         }
       }
     }
 
-    if (cores.isZooKeeperAware()) {
+    if (core == null && cores.isZooKeeperAware()) {
       // init collectionList (usually one name but not when there are aliases)
       String def = core != null ? core.getCoreDescriptor().getCollectionName() : origCorename;
       collectionsList = resolveCollectionListOrAlias(queryParams.get(COLLECTION_PROP, def)); // &collection= takes precedence
@@ -300,10 +296,10 @@ public class HttpSolrCall {
 
         core = getCoreByCollection(collectionName, isPreferLeader); // find a local replica/core for the collection
         if (core != null) {
-          if (idx > 0) {
-            path = path.substring(idx);
-            if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
+          if (idx2 > 0) {
+            path = path.substring(idx2);
           }
+          if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
         } else {
           // if we couldn't find it locally, look on other nodes
             if (log.isDebugEnabled()) log.debug("check remote path extraction {} {}", collectionName, origCorename);
@@ -311,13 +307,17 @@ public class HttpSolrCall {
             extractRemotePath(origCorename);
 
             if (action == REMOTEQUERY) {
-              path = path.substring(idx);
+              if (idx2 > 0) {
+                path = path.substring(idx2);
+              }
               if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
               return;
             } else {
               extractRemotePath(collectionName);
               if (action == REMOTEQUERY) {
-                path = path.substring(idx);
+                if (idx2 > 0) {
+                  path = path.substring(idx2);
+                }
                 if (log.isDebugEnabled()) log.debug("Path is parsed as {}", path);
                 return;
               }
@@ -355,6 +355,11 @@ public class HttpSolrCall {
 
         action = PROCESS;
         return; // we are done with a valid handler
+      } else {
+        if (req.getMethod().equals("HEAD")) {
+          action = RETURN;
+          return;
+        }
       }
     }
     log.debug("no handler or core retrieved for {}, follow through...", path);

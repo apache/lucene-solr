@@ -119,13 +119,13 @@ public class TestSolrConfigHandler extends RestTestBase {
 
 
   @Before
-  public void before() throws Exception {
+  public void setUp() throws Exception {
+    super.setUp();
     tmpSolrHome = SolrTestUtil.createTempDir().toFile();
     tmpConfDir = new File(tmpSolrHome, confDir);
     FileUtils.copyDirectory(new File(SolrTestUtil.TEST_HOME()), tmpSolrHome.getAbsoluteFile());
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
-
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
@@ -139,8 +139,11 @@ public class TestSolrConfigHandler extends RestTestBase {
   }
 
   @After
-  public void after() throws Exception {
-
+  public void tearDown() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+    }
+    super.tearDown();
   }
 
   public void testProperty() throws Exception {

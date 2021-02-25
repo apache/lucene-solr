@@ -156,6 +156,8 @@ public class SSLConfig {
         factory.setTrustStorePassword(getTrustStorePassword());
     }
 
+    factory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName", null));
+
     return factory;
   }
 

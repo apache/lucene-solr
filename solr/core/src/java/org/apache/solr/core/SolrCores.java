@@ -409,7 +409,6 @@ class SolrCores implements Closeable {
   
   // returns when core is finished loading, throws exception if no such core loading or loaded
   public void waitForLoadingCoreToFinish(String core, long timeoutMs) {
-    if (closed) return;
     long time = System.nanoTime();
     long timeout = time + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
 

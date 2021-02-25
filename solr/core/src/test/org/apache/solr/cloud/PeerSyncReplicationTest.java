@@ -119,7 +119,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
       long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
       assertEquals(docId, cloudClientDocs);
 
-      Replica initialLeaderInfo = getShardLeader(COLLECTION, "shard1", 10000);
+      Replica initialLeaderInfo = getShardLeader(COLLECTION, "s1", 10000);
       JettySolrRunner initialLeaderJetty = getJettyOnPort(getReplicaPort(initialLeaderInfo));
       List<JettySolrRunner> otherJetties = getOtherAvailableJetties(initialLeaderJetty);
 
@@ -156,9 +156,9 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
       log.info("Updating mappings from zk");
-      AbstractDistribZkTestBase.waitForNewLeader(cloudClient, "shard1", initialLeaderInfo, new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+      AbstractDistribZkTestBase.waitForNewLeader(cloudClient, "s1", initialLeaderInfo, new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
 
-      JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "shard1", 10000)));
+      JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 10000)));
 
       assertEquals("PeerSynced node did not become leader", nodePeerSynced, leaderJetty);
 
@@ -177,7 +177,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
       checkShardConsistency(false, true);*/
 
       // make sure leader has not changed after bringing initial leader back
-      assertEquals(nodePeerSynced, getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "shard1", 10000))));
+      assertEquals(nodePeerSynced, getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 10000))));
 
       // assert metrics
       SolrMetricManager manager = nodePeerSynced.getCoreContainer().getMetricManager();
@@ -272,7 +272,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
   private JettySolrRunner forceNodeFailureAndDoPeerSync(boolean disableFingerprint)
       throws Exception {
     // kill non leader - new leader could have all the docs or be missing one
-    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "shard1", 10000)));
+    JettySolrRunner leaderJetty = getJettyOnPort(getReplicaPort(getShardLeader(COLLECTION, "s1", 10000)));
     List<JettySolrRunner> nonLeaderJetties = getOtherAvailableJetties(leaderJetty);
     JettySolrRunner replicaToShutDown = nonLeaderJetties.get(random().nextInt(nonLeaderJetties.size())); // random non leader node
 
@@ -307,7 +307,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
 
     cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
-    List<JettySolrRunner> jetties = getJettysForShard("shard1");
+    List<JettySolrRunner> jetties = getJettysForShard("s1");
     jetties.removeAll(nodesDown);
     assertEquals(getShardCount() - nodesDown.size(), jetties.size());
     
@@ -326,7 +326,7 @@ public class PeerSyncReplicationTest extends SolrCloudBridgeTestCase {
   }
 
   private List<JettySolrRunner> getOtherAvailableJetties(JettySolrRunner leader) {
-    List<JettySolrRunner> candidates = getJettysForShard("shard1");
+    List<JettySolrRunner> candidates = getJettysForShard("s1");
 
     if (leader != null) {
       candidates.remove(leader);

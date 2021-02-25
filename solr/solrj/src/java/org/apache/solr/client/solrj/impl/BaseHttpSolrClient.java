@@ -40,7 +40,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
      * @param th Throwable to wrap with this Exception
      */
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
+      super(code, "(" + code + ")  Error from server at " + remoteHost + ": " + msg, th);
     }
   }
 

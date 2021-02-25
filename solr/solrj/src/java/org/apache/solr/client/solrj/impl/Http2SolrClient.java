@@ -49,7 +49,6 @@ import org.apache.solr.common.util.SolrInternalHttpClient;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SolrScheduledExecutorScheduler;
 import org.apache.solr.common.util.Utils;
-import org.eclipse.jetty.client.AbstractHttpClientTransport;
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
@@ -254,6 +253,17 @@ public class Http2SolrClient extends SolrClient {
       httpClient = new SolrInternalHttpClient(transport, sslContextFactory);
     } else {
       if (log.isTraceEnabled()) log.trace("Create Http2SolrClient with HTTP/2 transport");
+//
+//          if (log.isDebugEnabled()) {
+//            RuntimeException e = new RuntimeException();
+//            StackTraceElement[] stack = e.getStackTrace();
+//            for (int i = 0; i < Math.min(8, stack.length - 1); i++) {
+//              log.debug(stack[i].toString());
+//            }
+//
+//            log.debug("create http2solrclient {}", this);
+//          }
+
       HTTP2Client http2client = new HTTP2Client();
       http2client.setSelectors(3);
       http2client.setMaxConcurrentPushedStreams(512);
@@ -310,23 +320,6 @@ public class Http2SolrClient extends SolrClient {
     }
     closed = true;
     if (closeClient) {
-      try {
-        scheduler.stop();
-      } catch (Exception e) {
-        log.error("Exception closing httpClient scheduler", e);
-      }
-      try {
-        httpClientExecutor.stop();
-      } catch (Exception e) {
-        log.error("Exception closing httpClient httpClientExecutor", e);
-      }
-      try {
-        if (httpClient.getTransport() instanceof AbstractHttpClientTransport) {
-          ((AbstractHttpClientTransport) httpClient.getTransport()).stop();
-        }
-      } catch (Exception e) {
-        log.error("Exception closing httpClient", e);
-      }
       try {
         httpClient.stop();
       } catch (Exception e) {
@@ -1331,7 +1324,7 @@ public class Http2SolrClient extends SolrClient {
           (System.getProperty("javax.net.ssl.trustStorePassword"));
     }
 
-    sslContextFactory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName"));
+    sslContextFactory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName", null));
 
     return sslContextFactory;
   }

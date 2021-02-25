@@ -107,8 +107,6 @@ public class SolrCloudExampleTest extends SolrCloudBridgeTestCase {
     assertTrue("Collection '" + testCollectionName + "' doesn't exist after trying to create it!",
         cloudClient.getZkStateReader().getClusterState().hasCollection(testCollectionName));
 
-    cloudClient.getZkStateReader().waitForState(testCollectionName, 10, TimeUnit.SECONDS, ZkStateReader.expectedShardsAndActiveReplicas(2, 4));
-
     cloudClient.setDefaultCollection(testCollectionName);
 
     int invalidToolExitStatus = 1;

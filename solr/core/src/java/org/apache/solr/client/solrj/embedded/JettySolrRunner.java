@@ -116,7 +116,7 @@ public class JettySolrRunner implements Closeable {
 
   private LinkedList<FilterHolder> extraFilters;
 
-  private static final String excludePatterns = "/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+,/tpl/.+";
+  private static final String excludePatterns = "/partials/.+|/libs/.+|/css/.+|/js/.+|/img/.+|/templates/.+|/tpl/.+";
 
   private volatile int proxyPort = -1;
 

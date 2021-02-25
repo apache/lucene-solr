@@ -135,7 +135,7 @@ public class MiniSolrCloudCluster {
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
-  private volatile CloudHttp2SolrClient solrClient;
+  private CloudHttp2SolrClient solrClient;
   private final JettyConfig jettyConfig;
   private final boolean trackJettyMetrics;
 
@@ -651,9 +651,9 @@ public class MiniSolrCloudCluster {
         parWork.collect(shutdowns);
       }
 
-      IOUtils.closeQuietly(zkStateReader);
-
       IOUtils.closeQuietly(solrClient);
+
+      IOUtils.closeQuietly(zkStateReader);
 
       if (!externalZkServer) {
         IOUtils.closeQuietly(zkServer);
@@ -661,6 +661,7 @@ public class MiniSolrCloudCluster {
 
     } finally {
       System.clearProperty("zkHost");
+      solrClient = null;
       assert ObjectReleaseTracker.release(this);
     }
 

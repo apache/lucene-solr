@@ -738,7 +738,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
    * {@link ExternalPaths#DEFAULT_CONFIGSET}
    *
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
-   * @see #setDefaultConfigDirSysPropIfNotSet
    * @see ZkController#getDefaultConfigDirPath
    */
   @Test

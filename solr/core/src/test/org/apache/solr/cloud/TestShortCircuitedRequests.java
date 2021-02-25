@@ -45,9 +45,9 @@ public class TestShortCircuitedRequests extends SolrCloudBridgeTestCase {
     doQuery("a!doc1", "q", "*:*", ShardParams._ROUTE_, "a!"); // can go to any random node
 
     // query shard3 directly with _route_=a! so that we trigger the short circuited request path
-    Replica shard3 = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getLeader("s3");
+    Replica shard3 = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION).getLeader("s3");
     String nodeName = shard3.getNodeName();
-    try (SolrClient shard3Client = getClientByNode(DEFAULT_COLLECTION, nodeName)) {
+    try (SolrClient shard3Client = getClientByNode(COLLECTION, nodeName)) {
       QueryResponse response = shard3Client.query(new SolrQuery("*:*").add(ShardParams._ROUTE_, "a!").add(ShardParams.SHARDS_INFO, "true"));
 
       assertEquals("Could not find doc", 1, response.getResults().getNumFound());

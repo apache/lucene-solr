@@ -38,6 +38,7 @@ import org.apache.solr.util.IdUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,8 +189,9 @@ public class MoveReplicaTest extends SolrCloudTestCase {
   //17-Aug-2018 commented  @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   @LuceneTestCase.Nightly // may be flakey as well ...
+  @Ignore // MRM TODO:
   public void testFailedMove() throws Exception {
-    String coll = LuceneTestCase.getTestClass().getSimpleName() + "_failed_coll_" + inPlaceMove;
+    String coll = getSaferTestName() + "_failed_coll_" + inPlaceMove;
     int REPLICATION = 2;
 
     CloudHttp2SolrClient cloudClient = cluster.getSolrClient();

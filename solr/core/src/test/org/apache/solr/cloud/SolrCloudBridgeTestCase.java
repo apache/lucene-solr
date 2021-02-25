@@ -92,7 +92,6 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
 
   protected static String COLLECTION;
   protected static AtomicInteger collectionCount = new AtomicInteger(0);
-  protected static String DEFAULT_COLLECTION ;
 
   protected volatile static CloudHttp2SolrClient cloudClient;
   
@@ -153,7 +152,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
     Path TEST_PATH = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
 
     COLLECTION = "collection" + collectionCount.incrementAndGet();
-    DEFAULT_COLLECTION = COLLECTION;
+
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
@@ -289,27 +288,27 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   protected String getBaseUrl(HttpSolrClient client) {
     return client .getBaseURL().substring(
         0, client.getBaseURL().length()
-            - DEFAULT_COLLECTION.length() - 1);
+            - COLLECTION.length() - 1);
   }
 
   protected String getBaseUrl(Http2SolrClient client) {
     return client .getBaseURL().substring(
         0, client.getBaseURL().length()
-            - DEFAULT_COLLECTION.length() - 1);
+            - COLLECTION.length() - 1);
   }
 
   protected String getShardsString() {
     StringBuilder sb = new StringBuilder();
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       if (sb.length() > 0) sb.append(',');
-      sb.append(runner.getBaseUrl() + "/" + DEFAULT_COLLECTION);
+      sb.append(runner.getBaseUrl() + "/" + COLLECTION);
     }
 
     return sb.toString();
   }
   
   public Http2SolrClient getClient(int i) {
-    return getClient(DEFAULT_COLLECTION, i);
+    return getClient(COLLECTION, i);
   }
   
   public Http2SolrClient getClient(String collection, int i) {
@@ -609,7 +608,7 @@ public abstract class SolrCloudBridgeTestCase extends SolrCloudTestCase {
   }
   
   protected void waitForRecoveriesToFinish() throws InterruptedException, TimeoutException {
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION);
+    waitForRecoveriesToFinish(COLLECTION);
   }
   
   protected Replica getLeaderUrlFromZk(String collection, String slice) {

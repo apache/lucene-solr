@@ -1142,7 +1142,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
     } else if (ADMIN_PATHS.contains(request.getPath())) {
-      System.out.println("isadmin:" + request.getPath() + " livenodes:" + liveNodes);
       for (String liveNode : liveNodes) {
         theUrlList.add(Utils.getBaseUrlForNodeName(liveNode,
             getClusterStateProvider().getClusterProperty(ZkStateReader.URL_SCHEME,"http")));

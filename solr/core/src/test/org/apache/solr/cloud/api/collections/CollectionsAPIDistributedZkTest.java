@@ -59,7 +59,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCollectionsAPIDistributedZkTest() throws Exception {
     // we don't want this test to have zk timeouts
     System.setProperty("zkClientTimeout", "60000");
     if (TEST_NIGHTLY) {
@@ -75,7 +75,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
   }
   
   @AfterClass
-  public static void tearDownCluster() throws Exception {
+  public static void afterCollectionsAPIDistributedZkTest() throws Exception {
     if (cluster != null) cluster.shutdown();
     cluster = null;
   }
@@ -103,7 +103,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     });
 
     // in both cases, the collection should have default to the core name
-    //cluster.getSolrClient().getZkStateReader().forceUpdateCollection("noconfig");
+    cluster.getSolrClient().getZkStateReader().forciblyRefreshAllClusterStateSlow();
     assertFalse(CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains("noconfig"));
   }
 

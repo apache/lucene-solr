@@ -26,17 +26,20 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @LuceneTestCase.Nightly // MRM TODO: - the overseer priority test is disabled because that feature is disabled
+@Ignore // MRM-TEST TODO: convert to bridge base test class
 public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long MAX_WAIT_TIME = TimeUnit.NANOSECONDS.convert(15, TimeUnit.SECONDS);
 
-  public RollingRestartTest() {
+  public RollingRestartTest() throws Exception {
+    useFactory(null);
     sliceCount = 2;
     fixShardCount(TEST_NIGHTLY ? 16 : 2);
   }
@@ -44,7 +47,6 @@ public class RollingRestartTest extends AbstractFullDistribZkTestBase {
   @Override
   public void distribSetUp() throws Exception {
     super.distribSetUp();
-    useFactory("solr.StandardDirectoryFactory");
   }
 
   @Test

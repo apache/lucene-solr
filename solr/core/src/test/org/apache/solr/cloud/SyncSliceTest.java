@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -106,18 +107,20 @@ public class SyncSliceTest extends SolrCloudBridgeTestCase {
     
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", CollectionAction.SYNCSHARD.toString());
-    params.set("collection", "collection1");
+    params.set("collection", COLLECTION);
     params.set("shard", "s1");
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     
     String baseUrl = replicas.get(1).getBaseUrl();
     request.setBasePath(baseUrl);
-   // baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
+    baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
     
     // we only set the connect timeout, not so timeout
-    Http2SolrClient baseClient = cluster.getSolrClient().getHttpClient();
-    baseClient.request(request);
+
+    try (SolrClient baseClient = getClient(baseUrl)) {
+      baseClient.request(request);
+    }
 
 
    // waitForThingsToLevelOut(15, TimeUnit.SECONDS);

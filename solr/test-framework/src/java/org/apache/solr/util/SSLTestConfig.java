@@ -74,6 +74,7 @@ public class SSLTestConfig {
     this.checkPeerName = false;
     keyStore = null;
     trustStore = null;
+    log.info("New SSLTestConfig useSsl={} clientAuth={} checkPeername={}", useSsl, clientAuth, checkPeerName);
   }
   
   /**
@@ -117,6 +118,7 @@ public class SSLTestConfig {
 
     if (useSsl) {
       assumeSslIsSafeToTest();
+      System.setProperty("solr.jetty.ssl.verifyClientHostName", null);
     }
     
     final String resourceName = checkPeerName
@@ -126,6 +128,7 @@ public class SSLTestConfig {
       throw new IllegalStateException("Unable to locate keystore resource file in classpath: "
                                       + resourceName);
     }
+    log.info("New SSLTestConfig useSsl={} clientAuth={} checkPeername={}", this.useSsl, this.clientAuth, this.checkPeerName);
   }
 
   /** If true, then servers hostname/ip should be validated against the SSL Cert metadata */
@@ -197,6 +200,8 @@ public class SSLTestConfig {
       @Override
       public SslContextFactory.Client createClientContextFactory() {
         SslContextFactory.Client factory = new SslContextFactory.Client(!checkPeerName);
+        factory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName", null));
+
         try {
           factory.setSslContext(buildClientSSLContext());
         } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {

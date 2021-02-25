@@ -28,6 +28,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.BaseCloudSolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpListenerFactory;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -92,10 +93,11 @@ public class UpdateShardHandler implements SolrInfoBean {
       socketTimeout = cfg.getDistributedSocketTimeout();
       connectionTimeout = cfg.getDistributedConnectionTimeout();
     }
-    log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
+    if (log.isDebugEnabled()) {
+      log.debug("Created default UpdateShardHandler HTTP client with params: {}", clientParams);
+    }
 
     httpRequestExecutor = new InstrumentedHttpRequestExecutor(getMetricNameStrategy(cfg));
-    //updateHttpListenerFactory = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
 
     Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
     if (cfg != null) {
@@ -152,12 +154,12 @@ public class UpdateShardHandler implements SolrInfoBean {
     return metricNameStrategy;
   }
 
-//  private InstrumentedHttpListenerFactory.NameStrategy getNameStrategy(UpdateShardHandlerConfig cfg) {
-//    InstrumentedHttpListenerFactory.NameStrategy nameStrategy =
-//        InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
+//  private HttpListenerFactory.NameStrategy getNameStrategy(UpdateShardHandlerConfig cfg) {
+//    HttpListenerFactory.NameStrategy nameStrategy =
+//        HttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY);
 //
 //    if (cfg != null)  {
-//      nameStrategy = InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
+//      nameStrategy = HttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES.get(cfg.getMetricNameStrategy());
 //      if (nameStrategy == null) {
 //        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
 //            "Unknown metricNameStrategy: " + cfg.getMetricNameStrategy() + " found. Must be one of: " + KNOWN_METRIC_NAME_STRATEGIES.keySet());

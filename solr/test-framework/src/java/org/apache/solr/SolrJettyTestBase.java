@@ -66,10 +66,8 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     if (client == null && jetty != null) {
       SolrClient newClient = createNewSolrClient(jetty);
-      clients.add(newClient);
       client = newClient;
     }
-
   }
 
   @AfterClass
@@ -78,6 +76,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       IOUtils.closeQuietly(client);
     }
     clients.clear();
+    IOUtils.closeQuietly(client);
 
     for (JettySolrRunner jetty : jettys) {
       jetty.stop();
@@ -164,7 +163,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     super.tearDown();
   }
 
-  public synchronized SolrClient getSolrClient(JettySolrRunner jetty) {
+  public SolrClient getSolrClient(JettySolrRunner jetty) {
    return client;
   }
 

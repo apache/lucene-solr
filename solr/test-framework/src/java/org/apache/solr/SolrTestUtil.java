@@ -99,7 +99,11 @@ public class SolrTestUtil {
   public static SSLTestConfig buildSSLConfig() {
     Class<?> targetClass = RandomizedContext.current().getTargetClass();
     final SolrTestCase.AlwaysUseSSL alwaysUseSSL = (SolrTestCase.AlwaysUseSSL) targetClass.getAnnotation(SolrTestCase.AlwaysUseSSL.class);
-    if (!LuceneTestCase.TEST_NIGHTLY && alwaysUseSSL == null) {
+//    if (!LuceneTestCase.TEST_NIGHTLY && alwaysUseSSL == null) {
+//      return new SSLTestConfig();
+//    }
+    // MRM TODO: whats up with SSL in nightly tests and http2 client?
+    if (alwaysUseSSL == null) {
       return new SSLTestConfig();
     }
 

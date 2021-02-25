@@ -56,7 +56,7 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    chaosMonkey = new ClusterChaosMonkey(cluster, DEFAULT_COLLECTION);
+    chaosMonkey = new ClusterChaosMonkey(cluster, COLLECTION);
     //setErrorHook();
   }
 
@@ -170,7 +170,7 @@ public class ChaosMonkeySafeLeaderTest extends SolrCloudBridgeTestCase {
     commit();
 
     // MRM TODO: make test fail on compare fail
-    cluster.getSolrClient().getZkStateReader().checkShardConsistency(DEFAULT_COLLECTION, batchSize == 1, true);
+    cluster.getSolrClient().getZkStateReader().checkShardConsistency(COLLECTION, batchSize == 1, true);
     
     if (VERBOSE) System.out.println("control docs:" + controlClient.query(new SolrQuery("*:*")).getResults().getNumFound() + "\n\n");
     

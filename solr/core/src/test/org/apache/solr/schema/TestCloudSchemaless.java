@@ -86,7 +86,7 @@ public class TestCloudSchemaless extends SolrCloudBridgeTestCase {
     // This tests that the replicas properly handle schema additions.
 
     int slices = cloudClient.getZkStateReader().getClusterState()
-      .getCollection(DEFAULT_COLLECTION).getActiveSlices().size();
+      .getCollection(COLLECTION).getActiveSlices().size();
     int trials = TEST_NIGHTLY ? 50 : 15;
     // generate enough docs so that we can expect at least a doc per slice
     int numDocsPerTrial = (int)(slices * (Math.log(slices) + 1)) ;

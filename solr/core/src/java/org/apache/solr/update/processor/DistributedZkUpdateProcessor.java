@@ -202,29 +202,11 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
 
-        if (isLeader) {
-          SolrCmdDistributor.Node removeNode = null;
-          for (SolrCmdDistributor.Node node : nodes) {
-            if (node.getCoreName().equals(this.desc.getName())) {
-              removeNode = node;
-            }
-          }
-          if (removeNode != null) {
-            nodes.remove(removeNode);
-
-            sendCommitToReplicasAndLocalCommit(cmd, worker, leaderReplica, params);
-          }
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "processCommit - distrib commit isLeader={} commit_end_point={} replicaType={}",
+              isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
         }
-
-        if (nodes == null) {
-          // This could happen if there are only pull replicas
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Unable to distribute commit operation. No replicas available of types "
-                  + Replica.Type.TLOG + " or " + Replica.Type.NRT);
-        }
-        if (log.isDebugEnabled()) log.debug(
-            "processCommit - distrib commit isLeader={} commit_end_point={} replicaType={}",
-            isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
         if (req.getParams().get(COMMIT_END_POINT, "").equals("replicas")) {
           if (replicaType == Replica.Type.PULL) {
@@ -240,6 +222,20 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           sendCommitToReplicasAndLocalCommit(cmd, worker, leaderReplica, params);
         } else {
           // zk
+
+          if (isLeader) {
+            SolrCmdDistributor.Node removeNode = null;
+            for (SolrCmdDistributor.Node node : nodes) {
+              if (node.getCoreName().equals(this.desc.getName())) {
+                removeNode = node;
+              }
+            }
+            if (removeNode != null) {
+              nodes.remove(removeNode);
+
+              sendCommitToReplicasAndLocalCommit(cmd, worker, leaderReplica, params);
+            }
+          }
 
           List<SolrCmdDistributor.Node> useNodes = null;
           if (req.getParams().get(COMMIT_END_POINT) == null) {

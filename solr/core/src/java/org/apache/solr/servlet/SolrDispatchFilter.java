@@ -85,7 +85,6 @@ import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.security.AuditEvent;
@@ -444,6 +443,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
     if (!(_request instanceof HttpServletRequest)) return;
     HttpServletRequest request = closeShield((HttpServletRequest)_request, retry);
     HttpServletResponse response = closeShield((HttpServletResponse)_response, retry);
+
     Scope scope = null;
     Span span = null;
     try {
@@ -463,7 +463,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
 
       String requestPath = ServletUtils.getPathAfterContext(request);
       // No need to even create the HttpSolrCall object if this path is excluded.
-      if (excludePatterns != null) {
+      if (excludePatterns != null && requestPath.indexOf("/") > 0) {
         for (Pattern p : excludePatterns) {
           Matcher matcher = p.matcher(requestPath);
           if (matcher.lookingAt()) {

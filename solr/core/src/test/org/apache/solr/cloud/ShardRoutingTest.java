@@ -106,7 +106,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   @Ignore // MRM TODO:
   public void doHashingTest() throws Exception {
     log.info("### STARTING doHashingTest");
-    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION).getSlices().size());
+    assertEquals(4, cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION).getSlices().size());
     String shardKeys = ShardParams._ROUTE_;
     // for now,  we know how ranges will be distributed to shards.
     // may have to look it up in clusterstate if that assumption changes.
@@ -224,8 +224,8 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
   public void doTestNumRequests() throws Exception {
     log.info("### STARTING doTestNumRequests");
     long nStart = getNumRequests();
-    JettySolrRunner leader = cluster.getShardLeaderJetty(DEFAULT_COLLECTION, bucket1);
-    try (SolrClient client = leader.newClient(DEFAULT_COLLECTION)) {
+    JettySolrRunner leader = cluster.getShardLeaderJetty(COLLECTION, bucket1);
+    try (SolrClient client = leader.newClient(COLLECTION)) {
       client.add(SolrTestCaseJ4.sdoc("id", "b!doc1"));
       long nEnd = getNumRequests();
       // TODO why 2-4?
@@ -236,7 +236,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
     jetties.remove(leader);
     JettySolrRunner replica = jetties.iterator().next();
 
-    try (SolrClient client = replica.newClient(DEFAULT_COLLECTION)) {
+    try (SolrClient client = replica.newClient(COLLECTION)) {
       nStart = getNumRequests();
       client.add(SolrTestCaseJ4.sdoc("id", "b!doc1"));
       long nEnd = getNumRequests();
@@ -249,7 +249,7 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
       // MRM TODO: - can be 9?
       // assertEquals(3, nEnd - nStart);   // orig request + replica forwards to leader, which forward back to replica.
 
-      JettySolrRunner leader2 = cluster.getShardLeaderJetty(DEFAULT_COLLECTION, bucket2);
+      JettySolrRunner leader2 = cluster.getShardLeaderJetty(COLLECTION, bucket2);
       nStart = getNumRequests();
       client.query(params("q", "*:*", "shards", bucket1));
       nEnd = getNumRequests();
@@ -264,8 +264,8 @@ public class ShardRoutingTest extends SolrCloudBridgeTestCase {
     //  assertTrue(nEnd - nStart + "", nEnd - nStart == 1 || nEnd - nStart == 2);  // short circuit should prevent distrib search
     }
 
-    JettySolrRunner leader2 = cluster.getShardLeaderJetty(DEFAULT_COLLECTION, bucket2);
-    try (SolrClient client = leader2.newClient(DEFAULT_COLLECTION)) {
+    JettySolrRunner leader2 = cluster.getShardLeaderJetty(COLLECTION, bucket2);
+    try (SolrClient client = leader2.newClient(COLLECTION)) {
       nStart = getNumRequests();
       client.query(params("q", "*:*", ShardParams._ROUTE_, "b!"));
       long nEnd = getNumRequests();

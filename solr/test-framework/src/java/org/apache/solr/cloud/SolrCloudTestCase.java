@@ -309,16 +309,16 @@ public class SolrCloudTestCase extends SolrTestCase {
 
   @AfterClass
   public static void shutdownCluster() throws Exception {
+    if (qtp != null) {
+      qtp.close();
+      qtp = null;
+    }
     if (cluster != null) {
       try {
         cluster.shutdown();
       } finally {
         cluster = null;
       }
-    }
-    if (qtp != null) {
-      qtp.close();
-      qtp = null;
     }
   }
 

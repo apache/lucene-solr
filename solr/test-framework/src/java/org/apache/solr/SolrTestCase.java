@@ -270,7 +270,7 @@ public class SolrTestCase extends Assert {
    * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
    */
   @BeforeClass
-  public static void setDefaultConfigDirSysPropIfNotSet() throws Exception {
+  public static void beforeSolrTestCase() throws Exception {
     log.info("*******************************************************************");
     log.info("@BeforeClass ------------------------------------------------------");
 
@@ -286,8 +286,6 @@ public class SolrTestCase extends Assert {
     random = LuceneTestCase.random();
 
     testStartTime = System.nanoTime();
-
-    interruptThreadsOnTearDown(false,"-SendThread"); // zookeeper send thread that can pause in ClientCnxnSocketNIO#cleanup
 
     sslConfig = SolrTestUtil.buildSSLConfig();
     if (sslConfig != null && sslConfig.isSSLMode()) {

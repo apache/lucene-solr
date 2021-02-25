@@ -178,7 +178,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     Replica leader = null;
-    Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
+    Slice shard1 = clusterState.getCollection(COLLECTION).getSlice(SHARD1);
     leader = shard1.getLeader();
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
@@ -977,7 +977,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
       ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
       int numActiveReplicas = 0;
-      for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
+      for (Replica rep: state.getCollection(COLLECTION).getSlice(SHARD1).getReplicas())
         if (rep.getState().equals(Replica.State.ACTIVE))
           numActiveReplicas++;
 
@@ -1043,14 +1043,14 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
       }
       commit();
 
-      try (ZkShardTerms zkShardTerms = new ZkShardTerms(DEFAULT_COLLECTION, SHARD1, cloudClient.getZkStateReader().getZkClient())) {
+      try (ZkShardTerms zkShardTerms = new ZkShardTerms(COLLECTION, SHARD1, cloudClient.getZkStateReader().getZkClient())) {
         for (int i=0; i<100; i++) {
           Thread.sleep(10);
 
           ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
           int numActiveReplicas = 0;
-          for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
+          for (Replica rep: state.getCollection(COLLECTION).getSlice(SHARD1).getReplicas()) {
             assertTrue(zkShardTerms.canBecomeLeader(rep.getName()));
             if (rep.getState().equals(Replica.State.ACTIVE))
               numActiveReplicas++;
@@ -1154,12 +1154,12 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
     ur.deleteByQuery(query);
     ur.setParam("_version_", ""+version);
     ur.setParam("update.distrib", "FROMLEADER");
-    ur.setParam("distrib.from", baseUrl + DEFAULT_COLLECTION + "/");
+    ur.setParam("distrib.from", baseUrl + COLLECTION + "/");
     return ur;
   }
 
   private String getBaseUrl(String id) {
-    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
+    DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
     String baseUrl = slice.getLeader().getCoreUrl();
     return baseUrl;
@@ -1305,7 +1305,7 @@ public class TestInPlaceUpdatesDistrib extends SolrCloudBridgeTestCase {
       ClusterState state = cloudClient.getZkStateReader().getClusterState();
 
       int numActiveReplicas = 0;
-      for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
+      for (Replica rep: state.getCollection(COLLECTION).getSlice(SHARD1).getReplicas())
         if (rep.getState().equals(Replica.State.ACTIVE))
           numActiveReplicas++;
 

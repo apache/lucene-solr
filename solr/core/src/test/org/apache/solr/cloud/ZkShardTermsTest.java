@@ -182,6 +182,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   @Test
   @LuceneTestCase.Nightly
   public void testRaceConditionOnUpdates() throws Exception {
+    cluster.getZkClient().makePath("/collections/raceConditionOnUpdates/terms/s1", ZkStateReader.emptyJson, false);
     String collection = "raceConditionOnUpdates";
     List<String> replicas = Arrays.asList("rep1", "rep2", "rep3", "rep4");
     for (String replica : replicas) {

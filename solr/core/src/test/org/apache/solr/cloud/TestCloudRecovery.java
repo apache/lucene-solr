@@ -71,6 +71,7 @@ public class TestCloudRecovery extends SolrCloudTestCase {
 
   @Before
   public void beforeTest() throws Exception {
+    useFactory(null);
     configureCluster(2)
         .addConfig("config", SolrTestUtil.TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();

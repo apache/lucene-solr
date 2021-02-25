@@ -46,11 +46,11 @@ public class ShardRoutingCustomTest extends SolrCloudBridgeTestCase {
   private void doCustomSharding() throws Exception {
 
     assertEquals(0, CollectionAdminRequest
-        .createCollection(DEFAULT_COLLECTION, "_default", 1, 1)
+        .createCollection(COLLECTION, "_default", 1, 1)
         .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY)
         .process(cloudClient).getStatus());
     assertTrue(CollectionAdminRequest
-        .addReplicaToShard(DEFAULT_COLLECTION,"s1")
+        .addReplicaToShard(COLLECTION,"s1")
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .setType(useTlogReplicas() ? Replica.Type.TLOG: Replica.Type.NRT)
         .process(cloudClient).isSuccess());
