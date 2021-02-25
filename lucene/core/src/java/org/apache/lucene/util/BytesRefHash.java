@@ -170,9 +170,21 @@ public final class BytesRefHash implements Accountable {
   }
 
   private boolean equals(int id, BytesRef b) {
-    final BytesRef scratch = new BytesRef();
-    pool.setBytesRef(scratch, bytesStart[id]);
-    return scratch.bytesEquals(b);
+    final int textStart = bytesStart[id];
+    final byte[] bytes = pool.buffers[textStart >> BYTE_BLOCK_SHIFT];
+    int pos = textStart & BYTE_BLOCK_MASK;
+    final int length;
+    final int offset;
+    if ((bytes[pos] & 0x80) == 0) {
+      // length is 1 byte
+      length = bytes[pos];
+      offset = pos + 1;
+    } else {
+      // length is 2 bytes
+      length = (bytes[pos] & 0x7f) + ((bytes[pos + 1] & 0xff) << 7);
+      offset = pos + 2;
+    }
+    return Arrays.equals(bytes, offset, offset + length, b.bytes, b.offset, b.offset + b.length);
   }
 
   private boolean shrink(int targetSize) {
