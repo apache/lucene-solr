@@ -57,23 +57,23 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
       classloader = clazzClassloader;
     }
     if (clazzClassloader != null && !ClassLoaderUtils.isParentClassLoader(clazzClassloader, classloader)) {
-      reload(clazzClassloader);
+      load(clazzClassloader);
     }
-    reload(classloader);
+    load(classloader);
   }
 
-  /** 
+  /**
    * Reloads the internal SPI list from the given {@link ClassLoader}.
    * Changes to the service list are visible after the method ends, all
-   * iterators (e.g., from {@link #availableServices()},...) stay consistent. 
-   * 
+   * iterators (e.g., from {@link #availableServices()},...) stay consistent.
+   *
    * <p><b>NOTE:</b> Only new service providers are added, existing ones are
    * never removed or replaced.
-   * 
+   *
    * <p><em>This method is expensive and should only be called for discovery
    * of new service providers on the given classpath/classloader!</em>
    */
-  public synchronized void reload(ClassLoader classloader) {
+  public void load(ClassLoader classloader) {
     Objects.requireNonNull(classloader, "classloader");
     final LinkedHashMap<String,Class<? extends S>> services = new LinkedHashMap<>(this.services);
     final LinkedHashSet<String> originalNames = new LinkedHashSet<>(this.originalNames);
@@ -96,7 +96,7 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
             " has no service name field: [public static final String NAME]", cause);
       }
       // only add the first one for each name, later services will be ignored
-      // this allows to place services before others in classpath to make 
+      // this allows to place services before others in classpath to make
       // them used instead of others
       //
       // TODO: Should we disallow duplicate names here?
@@ -119,6 +119,11 @@ public final class AnalysisSPILoader<S extends AbstractAnalysisFactory> {
 
     this.services = Map.copyOf(services);
     this.originalNames = Set.copyOf(originalNames);
+  }
+
+ 
+  public void reload(ClassLoader classloader) {
+    // MRM TODO:
   }
 
   private boolean isValidName(String name) {

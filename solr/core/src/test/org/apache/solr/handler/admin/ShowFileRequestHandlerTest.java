@@ -50,6 +50,10 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
 
   @After
   public void tearDown() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+      jetty = null;
+    }
     super.tearDown();
   }
 
