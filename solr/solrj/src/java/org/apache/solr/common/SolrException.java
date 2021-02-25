@@ -256,4 +256,17 @@ public class SolrException extends RuntimeException {
     }
   }
 
+  public Throwable getRootCause() {
+    Throwable t = this;
+    while (true) {
+      Throwable cause = t.getCause();
+      if (cause!=null) {
+        t = cause;
+      } else {
+        break;
+      }
+    }
+    return t;
+  }
+
 }

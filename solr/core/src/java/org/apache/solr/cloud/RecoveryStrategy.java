@@ -64,6 +64,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -234,6 +235,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       leaderUrl = leader.getCoreUrl();
       commitOnLeader(leaderUrl);
     } catch (Exception e) {
+      if (e instanceof  SolrException && ((SolrException) e).getRootCause() instanceof RejectedExecutionException) {
+       throw new AlreadyClosedException("An executor is shutdown already");
+      }
+
       log.error("Commit on leader failed", e);
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }

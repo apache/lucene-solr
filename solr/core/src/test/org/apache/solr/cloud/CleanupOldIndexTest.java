@@ -134,8 +134,6 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
     TimeOut timeout2 = new TimeOut(500, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     timeout2.waitFor("", () -> !oldIndexDir2.exists());
-
-    jetty.stop();
   }
 
 

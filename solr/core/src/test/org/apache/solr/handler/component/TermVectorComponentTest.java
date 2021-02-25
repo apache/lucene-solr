@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.TermVectorParams;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -34,7 +35,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
   // ensure that we operate correctly with all valid combinations of the uniqueKey being
   // stored and/or in docValues.
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTermVectorComponentTest() throws Exception {
     switch (random().nextInt(3)) {
       case 0:
         System.setProperty("solr.tests.id.stored", "true");
@@ -53,6 +54,11 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
         break;
     }
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTermVectorComponentTest() throws Exception {
+    deleteCore();
   }
 
   static String tv = "/tvrh";
