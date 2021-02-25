@@ -183,7 +183,7 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
 
       ObjectName name = nameFactory.createName("gauge", registryName, "SEARCHER.searcher.numDocs");
 
-      timeout = new TimeOut(2000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      timeout = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
       Integer oldNumDocs = null;
       while (!timeout.hasTimedOut()) {
         nameFactory.createName("gauge", registryName, "SEARCHER.searcher.numDocs");
@@ -195,7 +195,9 @@ public class TestJmxIntegration extends SolrTestCaseJ4 {
         }
       }
 
-      assertNotNull("oldNumDocs should not be null", oldNumDocs);
+      if (oldNumDocs == null) {
+        oldNumDocs = 0;
+      }
 
       assertU(adoc("id", "1"));
       assertU("commit", commit());
