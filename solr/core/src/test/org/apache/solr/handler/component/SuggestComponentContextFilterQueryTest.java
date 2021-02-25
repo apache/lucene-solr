@@ -47,8 +47,8 @@ public class SuggestComponentContextFilterQueryTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    super.tearDown();
     deleteCore();
+    super.tearDown();
   }
 
   @Test

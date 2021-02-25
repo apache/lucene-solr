@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,8 +36,13 @@ public class DistributedQueryComponentCustomSortTest extends BaseDistributedSear
   }
 
   @BeforeClass
-  public static void setUpBeforeClass() throws Exception {
+  public static void beforeDistributedQueryComponentCustomSortTest() throws Exception {
     initCore("solrconfig.xml", "schema-custom-field.xml");
+  }
+
+  @AfterClass
+  public static void afterDistributedQueryComponentCustomSortTest() throws Exception {
+    deleteCore();
   }
 
   @Test

@@ -716,7 +716,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
   }
 
   private void notifyCloudCollectionsListeners() {
-    notifyCloudCollectionsListeners(false);
+    notifyCloudCollectionsListeners(true);
   }
 
   private void notifyCloudCollectionsListeners(boolean notifyIfSame) {

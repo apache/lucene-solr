@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.w3c.dom.Document;
@@ -39,6 +40,11 @@ public class TestDataConfig extends AbstractDataImportHandlerTestCase {
   @BeforeClass
   public static void beforeTestDataConfig() throws Exception {
     initCore("dataimport-nodatasource-solrconfig.xml", "dataimport-schema.xml");
+  }
+
+  @AfterClass
+  public static void afterTestDataConfig() throws Exception {
+    deleteCore();
   }
 
   @Test

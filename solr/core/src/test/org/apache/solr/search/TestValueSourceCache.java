@@ -29,6 +29,10 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty(SolrTestCaseJ4.NUMERIC_DOCVALUES_SYSPROP, "true");
+    System.setProperty(SolrTestCaseJ4.USE_NUMERIC_POINTS_SYSPROP, "true");
+
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
     initCore("solrconfig.xml", "schema.xml");
     try (SolrQueryRequest req = lrf.makeRequest()) {
       _func = QParser.getParser(null, FunctionQParserPlugin.NAME, req);
@@ -39,6 +43,7 @@ public class TestValueSourceCache extends SolrTestCaseJ4 {
   
   @AfterClass
   public static void afterClass() throws Exception {
+    deleteCore();
     _func = null;
   }
 

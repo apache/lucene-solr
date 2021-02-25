@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestUtil;
@@ -34,7 +33,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.FileUtils;
 import org.junit.After;
@@ -100,12 +98,6 @@ public class DeleteShardTest extends SolrCloudTestCase {
     ZkNodeProps m = new ZkNodeProps(propMap);
     inQueue.offer(Utils.toJSON(m));
 
-    cluster.getSolrClient().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (l, c)->{
-      if (c == null) return false;
-      if (c.getSlice(slice) == null) return false;
-
-      return c.getSlice(slice).getState() == state;
-    });
   }
 
   @Test

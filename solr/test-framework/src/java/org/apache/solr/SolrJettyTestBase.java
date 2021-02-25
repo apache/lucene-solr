@@ -72,15 +72,17 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
   @AfterClass
   public static void afterSolrJettyTestBase() throws Exception {
-    for (SolrClient client : clients) {
-      IOUtils.closeQuietly(client);
-    }
+    clients.forEach(solrClient -> IOUtils.closeQuietly(solrClient));
     clients.clear();
     IOUtils.closeQuietly(client);
 
-    for (JettySolrRunner jetty : jettys) {
-      jetty.stop();
-    }
+    jettys.forEach(jettySolrRunner -> {
+      try {
+        jettySolrRunner.stop();
+      } catch (Exception e) {
+        log.warn("", e);
+      }
+    });
     jettys.clear();
 
     jetty = null;

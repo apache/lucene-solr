@@ -49,13 +49,17 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
 
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty("enable.update.log", "false");
-    createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
+    jetty = createJettyAndHarness(tmpSolrHome.getAbsolutePath(), "solrconfig-managed-schema.xml", "schema-rest.xml",
         "/solr", true, extraServlets);
     super.setUp();
   }
 
   @After
   public void tearDown() throws Exception {
+    if (jetty != null) {
+      jetty.stop();
+      jetty = null;
+    }
     super.tearDown();
   }
 
