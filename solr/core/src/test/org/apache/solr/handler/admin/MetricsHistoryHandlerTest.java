@@ -115,9 +115,9 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
   public void testBasic() throws Exception {
     List<Pair<String, Long>> list = handler.getFactory().list(100);
 
-    if (list.size() == 0) {
-      TimeOut timeout = new TimeOut(3000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
-      while (!timeout.hasTimedOut() && list.size() <= 1) {
+    if (list.size() < 2) {
+      TimeOut timeout = new TimeOut(5000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+      while (!timeout.hasTimedOut() && list.size() < 2) {
         Thread.sleep(10);
         list = handler.getFactory().list(100);
       }
