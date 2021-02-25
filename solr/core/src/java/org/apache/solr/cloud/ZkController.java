@@ -702,7 +702,7 @@ public class ZkController implements Closeable, Runnable {
           props.put(COLLECTION_PROP, cd.getCollectionName());
           props.put(SHARD_ID_PROP, shard.getName());
           props.put(REPLICA_PROP, cd.getName());
-          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
+          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)), false);
 
           props.clear();
           props.put(Overseer.QUEUE_OPERATION, "addreplica");
@@ -710,7 +710,7 @@ public class ZkController implements Closeable, Runnable {
           props.put(SHARD_ID_PROP, shard.getName());
           props.put(ZkStateReader.REPLICA_TYPE, cd.getCloudDescriptor().getReplicaType().name().toUpperCase(Locale.ROOT));
           props.put(CoreAdminParams.NODE, getNodeName());
-          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)));
+          getOverseerCollectionQueue().offer(Utils.toJSON(new ZkNodeProps(props)), false);
         } catch (Exception e) {
           ParWork.propagateInterrupt(e);
           // Exceptions are not bubbled up. giveupLeadership is best effort, and is only called in case of some other

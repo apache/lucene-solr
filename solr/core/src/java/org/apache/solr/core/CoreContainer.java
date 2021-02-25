@@ -2048,15 +2048,6 @@ public class CoreContainer implements Closeable {
     }
   }
 
-  void deleteCoreNode(String collectionName, String nodeName, String baseUrl, String core) throws Exception {
-    ZkNodeProps m = new ZkNodeProps(
-        Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
-        ZkStateReader.CORE_NAME_PROP, core,
-        ZkStateReader.NODE_NAME_PROP, nodeName,
-        ZkStateReader.COLLECTION_PROP, collectionName);
-    getZkController().getOverseer().offerStateUpdate(Utils.toJSON(m));
-  }
-
   public void rename(String name, String toName) {
     SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {

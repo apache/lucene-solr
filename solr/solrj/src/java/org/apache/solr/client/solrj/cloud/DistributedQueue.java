@@ -16,11 +16,7 @@
  */
 package org.apache.solr.client.solrj.cloud;
 
-import java.util.Collection;
 import java.util.Map;
-import java.util.function.Predicate;
-
-import org.apache.solr.common.util.Pair;
 
 /**
  * Distributed queue component. Methods largely follow those in {@link java.util.Queue}.
@@ -29,10 +25,11 @@ public interface DistributedQueue {
 
   void offer(byte[] data) throws Exception;
 
+  void offer(byte[] data, boolean retryOnExpiration) throws Exception;
+
   /**
    * Retrieve statistics about the queue size, operations and their timings.
    */
   Map<String, Object> getStats();
-
 
 }

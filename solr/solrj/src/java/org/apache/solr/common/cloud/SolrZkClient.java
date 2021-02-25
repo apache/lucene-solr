@@ -461,7 +461,7 @@ public class SolrZkClient implements Closeable {
     List<ACL> acls = zkACLProvider.getACLsToAdd(path);
     ZooKeeper keeper = connManager.getKeeper();
     if (retryOnConnLoss) {
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.create(path, data, acls, createMode));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, () -> keeper.create(path, data, acls, createMode), retryOnSessionExp);
     } else {
       return keeper.create(path, data, acls, createMode);
     }

@@ -290,10 +290,11 @@ public class ZkStateWriter {
             }
 
             break;
-          //          case ADDROUTINGRULE:
-          //            return new SliceMutator(cloudManager).addRoutingRule(clusterState, message);
-          //          case REMOVEROUTINGRULE:
-          //            return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
+            // MRM TODO:
+//          case ADDROUTINGRULE:
+//            return new SliceMutator(cloudManager).addRoutingRule(clusterState, message);
+//          case REMOVEROUTINGRULE:
+//            return new SliceMutator(cloudManager).removeRoutingRule(clusterState, message);
           case UPDATESHARDSTATE:  // MRM TODO: look at how we handle this and make it so it can use StatePublisher
             String collection = message.getStr("collection");
             message.getProperties().remove("collection");

@@ -133,47 +133,15 @@ public class ZkDistributedQueue implements DistributedQueue {
    * will be immediately visible when this method returns.
    */
   @Override
-  public void offer(byte[] data) throws KeeperException, InterruptedException {
-//    CountDownLatch latch = new CountDownLatch(1);
-//    Stat stat = zookeeper.exists(dir, new Watcher() {
-//      @Override
-//      public void process(WatchedEvent event) {
-//        if (event.getType() == Watcher.Event.EventType.NodeChildrenChanged) {
-//          try {
-//            Stat stat = zookeeper.exists(dir, this);
-//            if (stat.getNumChildren() <= 30) {
-//              latch.countDown();
-//              try {
-//                zookeeper.getSolrZooKeeper().removeWatches(dir, this, WatcherType.Any, true);
-//              } catch (Exception e) {
-//                log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
-//              }
-//            }
-//          } catch (Exception e) {
-//            latch.countDown();
-//            log.error("", e);
-//          }
-//          return;
-//        }
-//        try {
-//          Stat stat2 = zookeeper.exists(dir, this);
-//          if (stat2.getNumChildren() <= 30) {
-//            latch.countDown();
-//          }
-//        } catch (Exception e) {
-//          latch.countDown();
-//          log.error("", e);
-//        }
-//      }
-//    });
-//
-//    if (stat.getNumChildren() > 15) {
-//      latch.await();
-//    }
+  public void offer(byte[] data, boolean retryOnExpiration) throws KeeperException, InterruptedException {
 
     // TODO - if too many items on the queue, just block
-    zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true);
-    return;
+    zookeeper.create(dir + "/" + PREFIX, data, CreateMode.PERSISTENT_SEQUENTIAL, true, retryOnExpiration);
+  }
+
+  @Override
+  public void offer(byte[] data) throws KeeperException, InterruptedException {
+    offer(data, true);
   }
 
   public Stats getZkStats() {

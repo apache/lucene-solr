@@ -723,7 +723,7 @@ public class Overseer implements SolrCloseable {
   }
 
   public void offerStateUpdate(byte[] data) throws KeeperException, InterruptedException {
-    getStateUpdateQueue().offer(data);
+    getStateUpdateQueue().offer(data, false);
   }
 
   public boolean processQueueItem(ZkNodeProps message) throws InterruptedException {
