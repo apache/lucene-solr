@@ -32,10 +32,12 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @Slow
 @LuceneTestCase.Nightly
+@Ignore // MRM TODO:
 public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
   private final static int NUM_REPLICAS_OF_SHARD1 = 5;
 

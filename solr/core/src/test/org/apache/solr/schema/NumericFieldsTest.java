@@ -32,6 +32,7 @@ public class NumericFieldsTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterNumericFieldsTest() throws Exception {
+    deleteCore();
     types = null;
   }
 

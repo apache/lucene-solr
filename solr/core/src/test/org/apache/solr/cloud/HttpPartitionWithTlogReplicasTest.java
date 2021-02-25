@@ -19,10 +19,12 @@ package org.apache.solr.cloud;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Ignore;
 
 @LuceneTestCase.Slow
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @LuceneTestCase.Nightly
+@Ignore // MRM TODO: base class needs new bridge
 public class HttpPartitionWithTlogReplicasTest extends HttpPartitionTest  {
 
   public HttpPartitionWithTlogReplicasTest() throws Exception {

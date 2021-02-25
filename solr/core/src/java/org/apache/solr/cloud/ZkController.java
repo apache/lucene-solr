@@ -358,7 +358,11 @@ public class ZkController implements Closeable, Runnable {
           return null;
         }
         if (zkController.cc.getAllCoreNames().contains(descriptor.getName())) {
-          zkController.register(descriptor.getName(), descriptor, afterExpiration);
+          try {
+            zkController.register(descriptor.getName(), descriptor, afterExpiration);
+          } catch (Exception e) {
+            log.error("Error registering core name={} afterExpireation={}", descriptor.getName(), afterExpiration);
+          }
         }
         return descriptor;
       } finally {

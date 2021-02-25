@@ -31,6 +31,7 @@ import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 @Slow
 @SolrTestCase.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @LuceneTestCase.Nightly // MRM TODO:, speed up and bridge
+@Ignore // MRM TODO: base class to bridge
 public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDistribZkTestBase {
   private static final int FAIL_TOLERANCE = 100;
 

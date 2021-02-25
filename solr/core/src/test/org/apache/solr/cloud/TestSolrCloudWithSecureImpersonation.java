@@ -95,7 +95,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @BeforeClass
-  public static void startup() throws Exception {
+  public static void beforeTestSolrCloudWithSecureImpersonation() throws Exception {
     HdfsTestUtil.checkAssumptions();
     
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
@@ -150,7 +150,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void shutdown() throws Exception {
+  public static void afterTestSolrCloudWithSecureImpersonation() throws Exception {
     if (solrClient != null) {
       IOUtils.closeQuietly(solrClient);
       solrClient = null;

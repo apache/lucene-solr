@@ -2869,7 +2869,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
               onDeckSearchers.set(0); // try and recover
             }
             // if we failed, we need to wake up at least one waiter to continue the process
-            searchLockCondition.notifyAll();
+            searchLockCondition.signalAll();
           } finally {
             searcherLock.unlock();
           }

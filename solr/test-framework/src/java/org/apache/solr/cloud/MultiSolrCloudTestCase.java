@@ -84,7 +84,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
         CollectionAdminRequest
         .createCollection(collection, "conf", numShards, numReplicas)
         .setMaxShardsPerNode(maxShardsPerNode)
-        .processAsync(cluster.getSolrClient());
+        .process(cluster.getSolrClient());
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
