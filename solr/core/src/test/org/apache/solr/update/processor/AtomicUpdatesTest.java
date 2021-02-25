@@ -1005,7 +1005,11 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '2']");
+    // note: by requesting only the id, the other field values will be LazyField instances in the
+    // document cache.
+    // This winds up testing that future fetches by RTG of this doc will handle it properly.
+    // See SOLR-13034
+    assertQ(req("q", "cat:*", "indent", "true", "fl", "id"), "//result[@numFound = '2']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '0']");
 
 
