@@ -235,7 +235,7 @@ public class ParWork implements Closeable {
   }
 
   public void collect(Object object) {
-   collect(object != null ? object.toString() : null, object);
+   collect(object != null ? object instanceof String ? (String) object : object.getClass().getSimpleName() : null, object);
   }
 
   public void collect(Object... objects) {

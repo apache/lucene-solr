@@ -35,9 +35,11 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Nightly
+@Ignore // MRM TODO:
 public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCase {
   
   public static final String SPECIAL = ""; 

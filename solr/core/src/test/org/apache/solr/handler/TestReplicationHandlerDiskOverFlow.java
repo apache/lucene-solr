@@ -42,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ import static org.apache.solr.handler.TestReplicationHandler.invokeReplicationCo
 @LogLevel("org.apache.solr.handler.IndexFetcher=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
 @LuceneTestCase.Nightly // MRM TODO: speed up
+@Ignore // MRM TODO:
 public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

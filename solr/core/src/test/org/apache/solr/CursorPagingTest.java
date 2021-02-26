@@ -28,7 +28,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark;
 import org.junit.After;
@@ -537,8 +536,8 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
-    final MetricsMap filterCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
+    final Gauge filterCacheStats =
+        (Gauge)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
     assertNotNull(filterCacheStats);
     final Gauge queryCacheStats =
         (Gauge)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
