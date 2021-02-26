@@ -32,11 +32,11 @@ public final class QueryResultKey implements Accountable {
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(QueryResultKey.class);
   private static final long BASE_SF_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(SortField.class);
 
-  final Query query;
-  final Sort sort;
+  public final Query query;
+  public final Sort sort;
   final SortField[] sfields;
-  final List<Query> filters;
-  final int nc_flags;  // non-comparable flags... ignored by hashCode and equals
+  public final List<Query> filters;
+  public final int nc_flags;  // non-comparable flags... ignored by hashCode and equals
   final int minExactCount;
 
   private final int hc;  // cached hashCode

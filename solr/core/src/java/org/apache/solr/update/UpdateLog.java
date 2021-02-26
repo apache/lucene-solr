@@ -1628,11 +1628,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       for (List<Update> singleList : updateList) {
         for (Update ptr : singleList) {
           if(Math.abs(ptr.version) > Math.abs(maxVersion)) continue;
-          if (ptr.version != 0) {
-            ret.add(ptr.version);
-          } else {
-            log.warn("Found version of 0 {} {} {}", ptr.pointer, ptr.previousVersion, ptr.log);
-          }
+          ret.add(ptr.version);
           if (--n <= 0) return ret;
         }
       }
@@ -1775,7 +1771,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
   public RecentUpdates getRecentUpdates() {
     Deque<TransactionLog> logList;
     tlogLock.lock();
-    RecentUpdates recentUpdates;
     try {
       logList = new LinkedList<>(logs);
       for (TransactionLog log : logList) {
@@ -1794,14 +1789,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         logList.addFirst(bufferTlog);
       }
 
-      recentUpdates = new RecentUpdates(logList, numRecordsToKeep);
+
     } finally {
       tlogLock.unlock();
     }
 
     // TODO: what if I hand out a list of updates, then do an update, then hand out another list (and
     // one of the updates I originally handed out fell off the list).  Over-request?
-    return recentUpdates;
+    return new RecentUpdates(logList, numRecordsToKeep);
   }
 
   public void bufferUpdates() {
@@ -2025,7 +2020,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         int operationAndFlags = 0;
         long nextCount = 0;
 
-        AtomicReference<SolrException> exceptionOnExecuteUpdate = null;
+        AtomicReference<SolrException> exceptionOnExecuteUpdate = new AtomicReference<>();
         for (; ; ) {
           Object o = null;
           if (cancelApplyBufferUpdate) break;
@@ -2079,12 +2074,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
           if (o == null) break;
           // fail fast
-         // if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
+          if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
 
           try {
 
             // should currently be a List<Oper,Ver,Doc/Id>
-            @SuppressWarnings({"rawtypes"}) List entry = (List) o;
+            @SuppressWarnings({"rawtypes"})
+            List entry = (List) o;
             operationAndFlags = (Integer) entry.get(UpdateLog.FLAGS_IDX);
             int oper = operationAndFlags & OPERATION_MASK;
             long version = (Long) entry.get(UpdateLog.VERSION_IDX);
@@ -2157,7 +2153,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         }
 
         waitForAllUpdatesGetExecuted(ogexecutor, pendingTasks);
-       // if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
+        if (exceptionOnExecuteUpdate.get() != null) throw exceptionOnExecuteUpdate.get();
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
         cmd.setVersion(commitVersion);
@@ -2229,7 +2225,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         executor.submit(getBucketHash(cmd), () -> {
           try {
             // fail fast
-         //   if (exceptionHolder.get() != null) return;
+            if (exceptionHolder.get() != null) return;
             if (cmd instanceof AddUpdateCommand) {
               proc.processAdd((AddUpdateCommand) cmd);
             } else {
@@ -2239,6 +2235,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: IOException reading log", e);
             // could be caused by an incomplete flush if recovering from log
+          } catch (SolrException e) {
+            if (e.code() == ErrorCode.SERVICE_UNAVAILABLE.code) {
+              exceptionHolder.compareAndSet(null, e);
+              return;
+            }
+            recoveryInfo.errors++;
+            loglog.warn("REPLAY_ERR: SolrException reading log", e);
           } catch (Exception e) {
             recoveryInfo.errors++;
             loglog.warn("REPLAY_ERR: Exception reading log", e);
@@ -2404,7 +2407,6 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   public void seedBucketsWithHighestVersion(SolrIndexSearcher newSearcher) {
     if (debug) log.debug("Looking up max value of version field to seed version buckets");
-    if (versionInfo != null) {
       versionInfo.blockUpdates();
       try {
         maxVersionFromIndex = seedBucketsWithHighestVersion(newSearcher, versionInfo);
@@ -2412,6 +2414,5 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
         versionInfo.unblockUpdates();
       }
     }
-  }
 }
 

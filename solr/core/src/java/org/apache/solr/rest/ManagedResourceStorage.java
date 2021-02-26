@@ -244,9 +244,9 @@ public abstract class ManagedResourceStorage {
       final String znodePath = getZnodeForResource(storedResourceId);
       byte[] znodeData = null;
       try {
-        if (zkClient.exists(znodePath)) {
-          znodeData = zkClient.getData(znodePath, null, null);
-        }
+        znodeData = zkClient.getData(znodePath, null, null);
+      } catch (KeeperException.NoNodeException e) {
+
       } catch (Exception e) {
         if (e instanceof IOException) {
           throw (IOException)e;

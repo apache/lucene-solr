@@ -46,7 +46,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import net.sf.saxon.Configuration;
 import net.sf.saxon.xpath.XPathFactoryImpl;
@@ -70,7 +69,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.FieldTypePluginLoader;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.apache.solr.schema.SimilarityFactory;
@@ -80,9 +78,11 @@ import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.XMLReader;
 
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 
 /**
  * @since solr 1.3
@@ -98,10 +98,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final URL[] EMPTY_URL_ARRAY = new URL[0];
-  private static XPathFactoryImpl xpathFactory;
+  private XPathFactoryImpl xpathFactory;
   private final SystemIdResolver sysIdResolver;
 
-  public static XPathFactoryImpl getXpathFactory() {
+  public XPathFactoryImpl getXpathFactory() {
     return xpathFactory;
   }
 
@@ -145,72 +145,74 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public static String schemaUniqueKeyPath = IndexSchema.stepsToPath(IndexSchema.SCHEMA, IndexSchema.UNIQUE_KEY, IndexSchema.TEXT_FUNCTION);
 
 
-  public static XPathExpression shardHandlerFactoryExp;
-  public static XPathExpression counterExp;
-  public static XPathExpression meterExp;
-  public static XPathExpression timerExp;
-  public static XPathExpression histoExp;
-  public static XPathExpression historyExp;
-  public static XPathExpression transientCoreCacheFactoryExp;
-  public static XPathExpression tracerConfigExp;
+  public XPathExpression shardHandlerFactoryExp;
+  public XPathExpression counterExp;
+  public XPathExpression meterExp;
+  public XPathExpression timerExp;
+  public XPathExpression histoExp;
+  public XPathExpression historyExp;
+  public XPathExpression transientCoreCacheFactoryExp;
+  public XPathExpression tracerConfigExp;
 
-  public static XPathExpression coreLoadThreadsExp;
-  public static XPathExpression persistentExp;
-  public static XPathExpression sharedLibExp;
-  public static XPathExpression zkHostExp;
-  public static XPathExpression coresExp;
+  public XPathExpression coreLoadThreadsExp;
+  public XPathExpression persistentExp;
+  public XPathExpression sharedLibExp;
+  public XPathExpression zkHostExp;
+  public XPathExpression coresExp;
 
-  public static XPathExpression xpathOrExp;
-  public static XPathExpression schemaNameExp;
-  public static XPathExpression schemaVersionExp;
-  public static XPathExpression schemaSimExp;
-  public static XPathExpression defaultSearchFieldExp;
-  public static XPathExpression solrQueryParserDefaultOpExp;
-  public static XPathExpression schemaUniqueKeyExp;
-  public static XPathExpression fieldTypeXPathExpressionsExp;
-  public static XPathExpression copyFieldsExp;
+  public XPathExpression xpathOrExp;
+  public XPathExpression schemaNameExp;
+  public XPathExpression schemaVersionExp;
+  public XPathExpression schemaSimExp;
+  public XPathExpression defaultSearchFieldExp;
+  public XPathExpression solrQueryParserDefaultOpExp;
+  public XPathExpression schemaUniqueKeyExp;
+  public XPathExpression fieldTypeXPathExpressionsExp;
+  public XPathExpression copyFieldsExp;
 
-  public static XPathExpression luceneMatchVersionExp;
-  public static XPathExpression indexDefaultsExp;
-  public static XPathExpression mainIndexExp;
-  public static XPathExpression nrtModeExp;
-  public static XPathExpression unlockOnStartupExp;
+  public XPathExpression luceneMatchVersionExp;
+  public XPathExpression indexDefaultsExp;
+  public XPathExpression mainIndexExp;
+  public XPathExpression nrtModeExp;
+  public XPathExpression unlockOnStartupExp;
 
-  public static XPathExpression metricsReporterExp;
+  public XPathExpression metricsReporterExp;
 
-  private final Configuration ourConf;
+  public XPathExpression analyzerQueryExp;
+  public XPathExpression analyzerMultiTermExp;
+
+  public XPathExpression analyzerIndexExp;
+  public XPathExpression similarityExp;
+  public XPathExpression charFilterExp;
+  public XPathExpression tokenizerExp;
+  public XPathExpression filterExp;
+
+  Configuration conf;
+
+  com.fasterxml.aalto.sax.SAXParserFactoryImpl parser = new com.fasterxml.aalto.sax.SAXParserFactoryImpl();
+
 
   {
-    Configuration conf = Configuration.newConfiguration();
-    conf.setNamePool(this.conf.getNamePool());
-    conf.setDocumentNumberAllocator(this.conf.getDocumentNumberAllocator());
-    conf.setXIncludeAware(true);
+
+    parser.setValidating(false);
+    parser.setXIncludeAware(false);
+    conf = Configuration.newConfiguration();
+    //conf.setSourceParserClass("com.fasterxml.aalto.sax.SAXParserFactoryImpl");
+//    conf.setNamePool(this.conf.getNamePool());
+//    conf.setDocumentNumberAllocator(this.conf.getDocumentNumberAllocator());
+   // conf.setXIncludeAware(true);
     conf.setExpandAttributeDefaults(false);
     conf.setValidation(false);
-    ourConf = conf;
-  }
 
-  static volatile Configuration conf;
-  static {
+    xpathFactory = new XPathFactoryImpl(conf);;
+
     refreshConf();
   }
 
-  public static void refreshConf() {
+
+
+  public void refreshConf() {
     try {
-      if (conf != null) {
-        try {
-          conf.close();
-        } catch (Exception e) {
-          log.info("Exception closing Configuration " + e.getClass().getName() + " " + e.getMessage());
-        }
-      }
-      conf = Configuration.newConfiguration();
-
-      conf.setValidation(false);
-      conf.setXIncludeAware(true);
-      conf.setExpandAttributeDefaults(true);
-
-      xpathFactory = new XPathFactoryImpl(conf);
 
       XPath xpath = xpathFactory.newXPath();
 
@@ -274,7 +276,44 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
       metricsReporterExp = xpath.compile(metricsReporterPath);
 
-      FieldTypePluginLoader.refreshConf();
+      try {
+        analyzerQueryExp = xpath.compile("./analyzer[@type='query']");
+      } catch (XPathExpressionException e) {
+        log.error("", e);
+      }
+      try {
+        analyzerMultiTermExp = xpath.compile("./analyzer[@type='multiterm']");
+      } catch (XPathExpressionException e) {
+        log.error("", e);
+      }
+
+      try {
+        analyzerIndexExp = xpath.compile("./analyzer[not(@type)] | ./analyzer[@type='index']");
+      } catch (XPathExpressionException e) {
+        log.error("", e);
+      }
+      try {
+        similarityExp = xpath.compile("./similarity");
+      } catch (XPathExpressionException e) {
+        log.error("", e);
+      }
+
+
+      try {
+        charFilterExp = xpath.compile("./charFilter");
+      } catch (XPathExpressionException e) {
+        log.error("", e);
+      }
+      try {
+        tokenizerExp = xpath.compile("./tokenizer");
+      } catch (XPathExpressionException e) {
+        log.error("", e);
+      }
+      try {
+        filterExp = xpath.compile("./filter");
+      } catch (XPathExpressionException e) {
+        log.error("", e);
+      }
 
     } catch (Exception e) {
       log.error("", e);
@@ -403,7 +442,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public Configuration getConf() {
-    return ourConf;
+    return conf;
+  }
+
+  public XMLReader getXmlReader() {
+    return (XMLReader) parser.newSAXParser();
   }
 
   /**
@@ -626,16 +669,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     }
   }
 
-  /*
-   * A static map of short class name to fully qualified class name
-   */
-  private final Map<String, String> classNameCache = new ConcurrentHashMap<>(256, 0.75f, 24);
-
-  @VisibleForTesting
-   void clearCache() {
-    classNameCache.clear();
-  }
-
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern =
       Pattern.compile("((\\Q" + base + ".analysis.\\E)|(\\Qsolr.\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
@@ -686,7 +719,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     if (!cname.startsWith("solr.") && cname.contains(".")) {
       //this is the fully qualified class name
       try {
-        return Class.forName(cname, true, classLoader).asSubclass(expectedType);
+        return Class.forName(cname, false, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
 
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'", e);
@@ -697,24 +730,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     if (trans != null) {
       //A short name is provided
       try {
-        return Class.forName(trans, true, classLoader).asSubclass(expectedType);
+        return Class.forName(trans, false, classLoader).asSubclass(expectedType);
       } catch (ClassNotFoundException e) {
 
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name +" Error loading class '" + cname + "'", e);
-      }
-    }
-
-    if (subpackages == null || subpackages.length == 0 || subpackages == packages) {
-      subpackages = packages;
-      String c = classNameCache.get(cname);
-      if (c != null) {
-        try {
-          return Class.forName(c, true, classLoader).asSubclass(expectedType);
-        } catch (ClassNotFoundException | ClassCastException e) {
-          // this can happen if the legacyAnalysisPattern below caches the wrong thing
-          log.warn("{} Unable to load cached class, attempting lookup. name={} shortname={} reason={}", name , c, cname, e);
-          classNameCache.remove(cname);
-        }
       }
     }
 
@@ -751,22 +770,11 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 //      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, name + " Error loading class '" + cname + "'" + " subpackages=" + Arrays.asList(subpackages));
 
     } finally {
-      if (clazz != null) {
-        //cache the shortname vs FQN if it is loaded by the webapp classloader  and it is loaded
-        // using a shortname
-        if (clazz.getClassLoader() == SolrResourceLoader.class.getClassLoader() &&
-            !cname.equals(clazz.getName()) &&
-            (subpackages.length == 0 || subpackages == packages)) {
-          //store in the cache
-          classNameCache.put(cname, clazz.getName());
-        }
-
         // print warning if class is deprecated
-        if (clazz.isAnnotationPresent(Deprecated.class)) {
-          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
-              cname);
-        }
-      }
+//        if (clazz.isAnnotationPresent(Deprecated.class)) {
+//          log.warn("Solr loaded a deprecated plugin/analysis class [{}]. Please consult documentation how to replace it accordingly.",
+//              cname);
+//        }
     }
   }
 
@@ -996,10 +1004,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   @Override
   public void close() throws IOException {
-    try {
-      ourConf.close();
-    } catch (Exception e) {
-      log.info("Exception closing Configuration " + e.getClass().getName() + " " + e.getMessage());
+    if (conf != null) {
+      try {
+        conf.close();
+      } catch (Exception e) {
+        log.info("Exception closing Configuration " + e.getClass().getName() + " " + e.getMessage());
+      }
     }
     IOUtils.close(classLoader);
     IOUtils.close(resourceClassLoader);

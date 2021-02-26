@@ -214,7 +214,6 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   public void testCacheWrongType() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader();
-    loader.clearCache();
     Class[] params = { Map.class };
     Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
     final String className = "solr.NGramTokenizerFactory";

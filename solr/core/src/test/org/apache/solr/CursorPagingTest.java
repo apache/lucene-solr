@@ -32,6 +32,7 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
@@ -62,7 +63,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       { "Not Available", "Low", "Medium", "High", "Critical" };
 
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeCursorPagingTest() throws Exception {
     // we need DVs on point fields to compute stats & facetsew
     System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     randomizeNumericTypesProperties();
@@ -70,6 +71,11 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     System.setProperty("solr.test.useFilterForSortedQuery", Boolean.toString(random().nextBoolean()));
     initCore(TEST_SOLRCONFIG_NAME, TEST_SCHEMAXML_NAME);
+  }
+
+  @AfterClass
+  public static void afterCursorPagingTest() throws Exception {
+    deleteCore();
   }
 
   @After

@@ -116,8 +116,10 @@ public class FieldTypeXmlAdapter {
     try {
 
       PipelineConfiguration plc = loader.getConf().makePipelineConfiguration();
+
       ParseOptions po = plc.getParseOptions();
       po.setEntityResolver(loader.getSysIdResolver());
+      po.setXMLReader(loader.getXmlReader());
       // Set via conf already
       // po.setXIncludeAware(true);
       //  po.setExpandAttributeDefaults(true);

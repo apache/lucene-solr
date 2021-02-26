@@ -171,6 +171,10 @@ public class IndexSchema {
 
   private Map<FieldType, PayloadDecoder> decoders = new HashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
 
+  static {
+    DynamicReplacement.DynamicPattern.createPattern(""); // early init
+  }
+
   /**
    * keys are all fields copied to, count is num of copyField
    * directives that target them.
@@ -1101,7 +1105,7 @@ public class IndexSchema {
 
 
   public static abstract class DynamicReplacement implements Comparable<DynamicReplacement> {
-    abstract protected static class DynamicPattern {
+    abstract public static class DynamicPattern {
       protected final String regex;
       protected final String fixedStr;
 

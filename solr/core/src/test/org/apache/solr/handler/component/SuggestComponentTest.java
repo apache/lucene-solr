@@ -44,7 +44,7 @@ public class SuggestComponentTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public void afterSuggestComponentTest() {
+  public static void afterSuggestComponentTest() {
     deleteCore();
   }
 

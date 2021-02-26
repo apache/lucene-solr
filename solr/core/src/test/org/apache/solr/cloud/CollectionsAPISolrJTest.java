@@ -86,21 +86,23 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeCollectionsAPISolrJTest() throws Exception {
-    System.setProperty("solr.zkclienttimeout", "4000");
-    System.setProperty("zkClientTimeout", "4000");
+    System.setProperty("solr.zkclienttimeout", "15000");
+    System.setProperty("zkClientTimeout", "15000");
 
-    System.setProperty("solr.http2solrclient.default.idletimeout", "60000");
-    System.setProperty("distribUpdateSoTimeout", "60000");
-    System.setProperty("socketTimeout", "60000");
-    System.setProperty("connTimeout", "60000");
-    System.setProperty("solr.test.socketTimeout.default", "60000");
-    System.setProperty("solr.connect_timeout.default", "60000");
-    System.setProperty("solr.so_commit_timeout.default", "60000");
-    System.setProperty("solr.httpclient.defaultConnectTimeout", "60000");
-    System.setProperty("solr.httpclient.defaultSoTimeout", "60000");
-    System.setProperty("solr.default.collection_op_timeout", "60000");
 
-    System.setProperty("solr.createCollectionTimeout", "60000");
+    String timeout = "640000";
+    System.setProperty("solr.http2solrclient.default.idletimeout", timeout);
+    System.setProperty("distribUpdateSoTimeout", timeout);
+    System.setProperty("socketTimeout", timeout);
+    System.setProperty("connTimeout", timeout);
+    System.setProperty("solr.test.socketTimeout.default", timeout);
+    System.setProperty("solr.connect_timeout.default", timeout);
+    System.setProperty("solr.so_commit_timeout.default", timeout);
+    System.setProperty("solr.httpclient.defaultConnectTimeout", timeout);
+    System.setProperty("solr.httpclient.defaultSoTimeout", timeout);
+    System.setProperty("solr.default.collection_op_timeout", timeout);
+    System.setProperty("solr.enableMetrics", "false");
+    System.setProperty("solr.createCollectionTimeout", timeout);
 
     System.setProperty("solr.suppressDefaultConfigBootstrap", "false");
     configureCluster( TEST_NIGHTLY ? 4 : 2).formatZk(true)
@@ -242,7 +244,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Ignore // MRM TODO: - testing large numbers
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";
-    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 36, 18)
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 12, 12)
             .process(cluster.getSolrClient());
 
 
@@ -257,11 +259,11 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 //      assertTrue(status.get("QTime") > 0);
 //    }
 
-    response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
-
-    assertEquals(0, response.getStatus());
-
-    assertFalse(zkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
+//    response = CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+//
+//    assertEquals(0, response.getStatus());
+//
+//    assertFalse(zkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
     // MRM TODO: what happened to success?
 //    assertTrue(response.toString(), response.isSuccess());
 //    Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();

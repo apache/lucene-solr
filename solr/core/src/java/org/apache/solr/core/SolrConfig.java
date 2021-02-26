@@ -54,6 +54,7 @@ import net.sf.saxon.om.NodeInfo;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.RecoveryStrategy;
@@ -71,10 +72,17 @@ import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
+import org.apache.solr.search.CacheRegenerator;
 import org.apache.solr.search.CaffeineCache;
+import org.apache.solr.search.DocList;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryResult;
+import org.apache.solr.search.QueryResultKey;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
+import org.apache.solr.search.facet.UnInvertedField;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.spelling.QueryConverter;
@@ -255,7 +263,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
 
-    org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
+    initRegenerators(this);
 
     if (get("jmx", null) != null) {
       log.warn("solrconfig.xml: <jmx> is no longer supported, use solr.xml:/metrics/reporter section instead");
@@ -311,6 +319,23 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     solrRequestParsers = new SolrRequestParsers(this);
     log.debug("Loaded SolrConfig: {}", name);
+  }
+
+  private void initRegenerators(SolrConfig solrConfig) {
+    {
+      if (solrConfig.fieldValueCacheConfig != null && solrConfig.fieldValueCacheConfig.getRegenerator() == null) {
+        solrConfig.fieldValueCacheConfig.setRegenerator(new SolrFieldCacheRegenerator());
+      }
+
+      if (solrConfig.filterCacheConfig != null && solrConfig.filterCacheConfig.getRegenerator() == null) {
+        solrConfig.filterCacheConfig.setRegenerator(new SolrFilterCacheRegenerator());
+      }
+
+      if (solrConfig.queryResultCacheConfig != null && solrConfig.queryResultCacheConfig.getRegenerator() == null) {
+        final int queryResultWindowSize = solrConfig.queryResultWindowSize;
+        solrConfig.queryResultCacheConfig.setRegenerator(new SolrQueryCacheRegenerator(queryResultWindowSize));
+      }
+    }
   }
 
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
@@ -1012,4 +1037,67 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return requestParams;
   }
 
+  private static class SolrQueryCacheRegenerator implements CacheRegenerator {
+    private final int queryResultWindowSize;
+
+    public SolrQueryCacheRegenerator(int queryResultWindowSize) {
+      this.queryResultWindowSize = queryResultWindowSize;
+    }
+
+    @Override
+    @SuppressWarnings({"rawtypes"})
+    public boolean regenerateItem(SolrIndexSearcher newSearcher, SolrCache newCache, SolrCache oldCache,
+        Object oldKey, Object oldVal) throws IOException {
+      QueryResultKey key = (QueryResultKey) oldKey;
+      int nDocs = 1;
+      // request 1 doc and let caching round up to the next window size...
+      // unless the window size is <=1, in which case we will pick
+      // the minimum of the number of documents requested last time and
+      // a reasonable number such as 40.
+      // TODO: make more configurable later...
+
+      if (queryResultWindowSize <= 1) {
+        DocList oldList = (DocList) oldVal;
+        int oldnDocs = oldList.offset() + oldList.size();
+        // 40 has factors of 2,4,5,10,20
+        nDocs = Math.min(oldnDocs, 40);
+      }
+
+      int flags = SolrIndexSearcher.NO_CHECK_QCACHE | key.nc_flags;
+      QueryCommand qc = new QueryCommand();
+      qc.setQuery(key.query)
+          .setFilterList(key.filters)
+          .setSort(key.sort)
+          .setLen(nDocs)
+          .setSupersetMaxDoc(nDocs)
+          .setFlags(flags);
+      QueryResult qr = new QueryResult();
+      newSearcher.getDocListC(qr, qc);
+      return true;
+    }
+  }
+
+  private static class SolrFieldCacheRegenerator implements CacheRegenerator {
+    @Override
+    public boolean regenerateItem(SolrIndexSearcher newSearcher,
+        @SuppressWarnings({"rawtypes"}) SolrCache newCache,
+        @SuppressWarnings({"rawtypes"})SolrCache oldCache,
+        Object oldKey, Object oldVal) throws IOException {
+      if (oldVal instanceof UnInvertedField) {
+        UnInvertedField.getUnInvertedField((String) oldKey, newSearcher);
+      }
+      return true;
+    }
+  }
+
+  private static class SolrFilterCacheRegenerator implements CacheRegenerator {
+    @Override
+    @SuppressWarnings({"rawtypes"})public boolean regenerateItem(SolrIndexSearcher newSearcher
+        , @SuppressWarnings({"rawtypes"}) SolrCache newCache
+        , @SuppressWarnings({"rawtypes"})SolrCache oldCache,
+        Object oldKey, Object oldVal) throws IOException {
+      newSearcher.cacheDocSet((Query) oldKey, null, false);
+      return true;
+    }
+  }
 }

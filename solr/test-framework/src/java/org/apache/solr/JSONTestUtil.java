@@ -80,6 +80,7 @@ public class JSONTestUtil {
     String path = pos>=0 ? pathAndExpected.substring(0,pos) : null;
     String expected = pos>=0 ? pathAndExpected.substring(pos+2) : pathAndExpected;
     Object expectObj = failRepeatedKeys ? new NoDupsObjectBuilder(new JSONParser(expected)).getVal() : ObjectBuilder.fromJSON(expected);
+    assert path != null;
     return matchObj(path, input, expectObj, delta);
   }
 
@@ -101,9 +102,9 @@ public class JSONTestUtil {
     }
 
     @Override
-    public void addKeyVal(Object map, Object key, Object val) throws IOException {
+    public void addKeyVal(Object map, Object key, Object val) {
       Object prev = ((Map<Object, Object>) map).put(key, val);
-      if (prev != null && !key.equals("requestMethod")) { // TODO: how does this get duped? see TestJsonFacets
+      if (prev != null) {
         throw new RuntimeException("REPEATED JSON OBJECT KEY: key=" + key + " prevValue=" + prev + " thisValue" + val);
       }
     }

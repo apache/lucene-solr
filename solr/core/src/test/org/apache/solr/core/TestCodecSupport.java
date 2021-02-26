@@ -231,7 +231,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     SolrConfig config = TestHarness.createConfig(testSolrHome, previousCoreName, "solrconfig_codec2.xml", loader);
     assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
     String path = IndexSchema.normalize("codecFactory", config.getPrefix());
-    LuceneTestCase.expectThrows(NoSuchElementException.class, () -> config.getNode(h.getXpath().compile(path), path, false).children().iterator().next());
+    LuceneTestCase.expectThrows(SolrException.class, () -> config.getNode(h.getXpath().compile(path), path, false).children().iterator().next());
     IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();

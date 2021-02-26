@@ -130,7 +130,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
     try {
       SAXSource source = new SAXSource(is);
-
+      source.setXMLReader(loader.getXmlReader());
       PipelineConfiguration plc = getResourceLoader().getConf().makePipelineConfiguration();
       //      if (is.getSystemId() != null) {
       //     plc.setURIResolver(loader.getSysIdResolver().asURIResolver());
@@ -159,8 +159,8 @@ public class XmlConfigFile { // formerly simply "Config"
         log.error("Exception handling xml doc", e);
         throw e;
       }  finally {
-        builder.close();
-        builder.reset();
+        //builder.close();
+        //builder.reset();
       }
 
       this.tree = docTree;

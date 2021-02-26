@@ -53,7 +53,6 @@ import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrQueuedThreadPool;
 import org.apache.solr.common.util.SysStats;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.CryptoKeys;
@@ -577,7 +576,6 @@ public class SolrTestCase extends Assert {
       ParWork.shutdownParWorkExecutor();
 
     } finally {
-      SolrResourceLoader.refreshConf();
       ObjectReleaseTracker.clear();
       TestInjection.reset();
     }
@@ -585,7 +583,7 @@ public class SolrTestCase extends Assert {
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
       TestInjection.reset();
-
+      JSONTestUtil.failRepeatedKeys = false;
       random = null;
       reusedKeys = null;
       sslConfig = null;

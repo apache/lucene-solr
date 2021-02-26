@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -52,61 +51,6 @@ public final class FieldTypePluginLoader
     = IndexSchema.LUCENE_MATCH_VERSION_PARAM;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private static XPathExpression analyzerQueryExp;
-  private static XPathExpression analyzerMultiTermExp;
-
-  private static XPathExpression analyzerIndexExp;
-  private static XPathExpression similarityExp;
-  private static XPathExpression charFilterExp;
-  private static XPathExpression tokenizerExp;
-  private static XPathExpression filterExp;
-
-  static {
-    refreshConf();
-  }
-
-  public static void refreshConf() {
-    XPath xpath = SolrResourceLoader.getXpathFactory().newXPath();
-    try {
-      analyzerQueryExp = xpath.compile("./analyzer[@type='query']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      analyzerMultiTermExp = xpath.compile("./analyzer[@type='multiterm']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-      analyzerIndexExp = xpath.compile("./analyzer[not(@type)] | ./analyzer[@type='index']");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      similarityExp = xpath.compile("./similarity");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-
-    try {
-      charFilterExp = xpath.compile("./charFilter");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      tokenizerExp = xpath.compile("./tokenizer");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      filterExp = xpath.compile("./filter");
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-  }
 
   /**
    * @param schema The schema that will be used to initialize the FieldTypes
@@ -138,22 +82,22 @@ public final class FieldTypePluginLoader
     FieldType ft = loader.newInstance(className, FieldType.class, "schema.");
     ft.setTypeName(name);
 
-    TinyElementImpl anode = (TinyElementImpl) analyzerQueryExp.evaluate(node, XPathConstants.NODE);
+    TinyElementImpl anode = (TinyElementImpl) loader.analyzerQueryExp.evaluate(node, XPathConstants.NODE);
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
-    anode = (TinyElementImpl)analyzerMultiTermExp.evaluate(node, XPathConstants.NODE);
+    anode = (TinyElementImpl) loader.analyzerMultiTermExp.evaluate(node, XPathConstants.NODE);
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
     Analyzer analyzer;
-    Object object = analyzerIndexExp
+    Object object = loader.analyzerIndexExp
         .evaluate(node, XPathConstants.NODE);
 
     anode = (TinyElementImpl) object;
     analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
-    object = similarityExp.evaluate(node, XPathConstants.NODE);
+    object = loader.similarityExp.evaluate(node, XPathConstants.NODE);
     SimilarityFactory simFactory;
     if (object instanceof TinyElementImpl) {
       anode = (TinyElementImpl) object;
@@ -260,11 +204,11 @@ public final class FieldTypePluginLoader
 
     // check for all of these up front, so we can error if used in
     // conjunction with an explicit analyzer class.
-    ArrayList<NodeInfo> charFilterNodes = (ArrayList)charFilterExp.evaluate
+    ArrayList<NodeInfo> charFilterNodes = (ArrayList) loader.charFilterExp.evaluate
       (node, XPathConstants.NODESET);
-    ArrayList<NodeInfo> tokenizerNodes = (ArrayList)tokenizerExp.evaluate
+    ArrayList<NodeInfo> tokenizerNodes = (ArrayList) loader.tokenizerExp.evaluate
       (node, XPathConstants.NODESET);
-    ArrayList<NodeInfo> tokenFilterNodes = (ArrayList)filterExp.evaluate
+    ArrayList<NodeInfo> tokenFilterNodes = (ArrayList) loader.filterExp.evaluate
       (node, XPathConstants.NODESET);
 
     if (analyzerName != null) {

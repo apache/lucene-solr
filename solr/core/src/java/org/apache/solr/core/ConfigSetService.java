@@ -34,6 +34,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StopWatch;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.schema.ManagedIndexSchemaFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,12 +86,7 @@ public abstract class ConfigSetService {
       }
       timeLoadConfigSetFlags.done();
 
-      boolean trusted =
-          (coreLoader instanceof ZkSolrResourceLoader
-              && flags != null
-              && flags.get("trusted") != null
-              && !flags.getBooleanArg("trusted")
-              ) ? false: true;
+      boolean trusted = !(coreLoader instanceof ZkSolrResourceLoader) || flags == null || flags.get("trusted") == null || flags.getBooleanArg("trusted");
 
       if (log.isDebugEnabled()) log.debug("Trusted configset={} {}", trusted, flags);
       StopWatch timeCreateSolrConfig = new StopWatch(dcore.getName() + "-createSolrConfig");
@@ -149,7 +145,15 @@ public abstract class ConfigSetService {
     //  we don't know for sure without examining what files exists in the configSet, and we don't
     //  want to pay the overhead of that at this juncture.  If we guess wrong, no schema sharing.
     //  The fix is usually to name your schema managed-schema instead of schema.xml.
-    IndexSchemaFactory indexSchemaFactory = IndexSchemaFactory.newIndexSchemaFactory(solrConfig);
+
+    PluginInfo info = solrConfig.getPluginInfo(IndexSchemaFactory.class.getName());
+    IndexSchemaFactory indexSchemaFactory;
+    if (null != info) {
+      indexSchemaFactory = solrConfig.getResourceLoader().newInstance(info.className, IndexSchemaFactory.class, "schema.");
+      indexSchemaFactory.init(info.initArgs);
+    } else {
+      indexSchemaFactory = solrConfig.getResourceLoader().newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);
+    }
 
     String configSet = cd.getConfigSet();
     if (configSet != null && schemaCache != null) {

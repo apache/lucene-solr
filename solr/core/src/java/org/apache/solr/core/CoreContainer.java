@@ -34,9 +34,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -45,7 +43,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CloseTracker;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -1518,27 +1515,25 @@ public class CoreContainer implements Closeable {
       try {
         if (core != null) {
           if (!registered) {
-            if (core != null) {
-
-              SolrCore finalCore1 = core;
-              try {
-                solrCoreExecutor.submit(() -> {
-                  finalCore1.closeAndWait();
-                });
-              } catch (RejectedExecutionException e) {
+            SolrCore finalCore1 = core;
+            try {
+              solrCoreExecutor.submit(() -> {
                 finalCore1.closeAndWait();
-              }
-              SolrCore finalOld = old;
+              });
+            } catch (RejectedExecutionException e) {
+              finalCore1.closeAndWait();
+            }
+            SolrCore finalOld = old;
+            if (finalOld != null) {
               try {
                 solrCoreExecutor.submit(() -> {
-                  if (finalOld != null) {
-                    finalOld.closeAndWait();
-                  }
+                  finalOld.closeAndWait();
                 });
               } catch (RejectedExecutionException e) {
                 finalOld.closeAndWait();
               }
             }
+
           }
           if (isShutDown) {
             SolrCore finalCore1 = core;

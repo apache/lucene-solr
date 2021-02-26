@@ -516,7 +516,7 @@ public class SolrXmlConfig {
   }
 
   private PluginInfo[] getMetricReporterPluginInfos(XmlConfigFile config) throws XPathExpressionException {
-    ArrayList<NodeInfo> nodes = (ArrayList) SolrResourceLoader.metricsReporterExp.evaluate(config.tree, XPathConstants.NODESET);
+    ArrayList<NodeInfo> nodes = (ArrayList<NodeInfo>) config.loader.metricsReporterExp.evaluate(config.tree, XPathConstants.NODESET);
     List<PluginInfo> configs = new ArrayList<>();
     boolean hasJmxReporter = false;
     if (nodes != null && nodes.size() > 0) {

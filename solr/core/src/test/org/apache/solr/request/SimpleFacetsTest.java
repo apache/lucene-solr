@@ -57,6 +57,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeSimpleFacetsTest() throws Exception {
+    pendingDocs = new ArrayList<>();
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig.xml","schema.xml");
@@ -67,6 +68,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public static void afterSimpleFacetsTest() throws Exception {
     deleteCore();
     pendingDocs.clear();
+    pendingDocs = null;
   }
 
   static int random_commit_percent = 30;
@@ -77,7 +79,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
       assertU(commit());
   }
 
-  static ArrayList<String[]> pendingDocs = new ArrayList<>();
+  static ArrayList<String[]> pendingDocs;
 
   // committing randomly gives different looking segments each time
   static void add_doc(String... fieldsAndValues) {

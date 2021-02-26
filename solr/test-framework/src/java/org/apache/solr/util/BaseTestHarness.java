@@ -19,7 +19,6 @@ package org.apache.solr.util;
 import net.sf.saxon.event.PipelineConfiguration;
 import net.sf.saxon.event.Sender;
 import net.sf.saxon.lib.ParseOptions;
-import net.sf.saxon.lib.Validation;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import org.apache.solr.common.SolrException;
@@ -90,28 +89,27 @@ abstract public class BaseTestHarness {
     try {
       builder.open();
       SAXSource source = new SAXSource(new InputSource(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))));
+      source.setXMLReader(resourceLoader.getXmlReader());
       //  source.getInputSource().setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
       ParseOptions po = plc.getParseOptions();
       if (resourceLoader != null) {
         po.setEntityResolver(resourceLoader.getSysIdResolver());
       }
       // Set via conf already
-      // po.setXIncludeAware(true);
-      // po.setCheckEntityReferences(false);
-      // po.setExpandAttributeDefaults(false);
-      po.setDTDValidationMode(Validation.STRIP);
+      po.setCheckEntityReferences(false);
+      po.setExpandAttributeDefaults(false);
       po.setPleaseCloseAfterUse(true);
       Sender.send(source, builder, po);
       docTree = (TinyDocumentImpl) builder.getCurrentRoot();
     } catch (XPathException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
-      try {
-        builder.close();
-        builder.reset();
-      } catch (XPathException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-      }
+//      try {
+//        builder.close();
+//        builder.reset();
+//      } catch (XPathException e) {
+//        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+//      }
     }
     return docTree;
   }
