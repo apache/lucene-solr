@@ -327,15 +327,19 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // Find any existing version in the document
     long versionOnUpdate = cmd.getVersion();
 
+    String versionFrom = "cmd";
+
     if (versionOnUpdate == 0) {
       SolrInputField versionField = cmd.getSolrInputDocument().getField(CommonParams.VERSION_FIELD);
       if (versionField != null) {
         Object o = versionField.getValue();
         versionOnUpdate = o instanceof Number ? ((Number) o).longValue() : Long.parseLong(o.toString());
+        versionFrom = "doc";
       } else {
         // Find the version
         String versionOnUpdateS = req.getParams().get(CommonParams.VERSION_FIELD);
         versionOnUpdate = versionOnUpdateS == null ? 0 : Long.parseLong(versionOnUpdateS);
+        versionFrom = "params";
       }
     }
 
@@ -360,14 +364,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     vinfo.lockForUpdate();
     try {
       long finalVersionOnUpdate = versionOnUpdate;
-      return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), new VersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket), idBytes);
+      return bucket.runWithLock(vinfo.getVersionBucketLockTimeoutMs(), new VersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket, versionFrom), idBytes);
     } finally {
       vinfo.unlockForUpdate();
     }
   }
 
-  private Future doVersionAdd(AddUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync,
-      boolean leaderLogic, boolean forwardedFromCollection, VersionBucket bucket) throws IOException {
+  private Future doVersionAdd(AddUpdateCommand cmd, long versionOnUpdate, boolean isReplayOrPeersync, boolean leaderLogic, boolean forwardedFromCollection,
+      VersionBucket bucket, String versionFrom) throws IOException {
 
     BytesRef idBytes = cmd.getIndexedId();
     bucket.signalAll();
@@ -423,7 +427,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             }
 
             throw new SolrException(ErrorCode.CONFLICT, "version conflict for " + cmd.getPrintableId()
-                + " expected=" + versionOnUpdate + " actual=" + foundVersion);
+                + " expected=" + versionOnUpdate + " actual=" + foundVersion + " versionFrom=" + versionFrom);
           }
         }
 
@@ -1481,19 +1485,22 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     private final boolean leaderLogic;
     private final boolean forwardedFromCollection;
     private final VersionBucket bucket;
+    private final String versionFrom;
 
-    public VersionAdd(AddUpdateCommand cmd, long finalVersionOnUpdate, boolean isReplayOrPeersync, boolean leaderLogic, boolean forwardedFromCollection, VersionBucket bucket) {
+    public VersionAdd(AddUpdateCommand cmd, long finalVersionOnUpdate, boolean isReplayOrPeersync, boolean leaderLogic, boolean forwardedFromCollection,
+        VersionBucket bucket, String versionFrom) {
       this.cmd = cmd;
       this.finalVersionOnUpdate = finalVersionOnUpdate;
       this.isReplayOrPeersync = isReplayOrPeersync;
       this.leaderLogic = leaderLogic;
       this.forwardedFromCollection = forwardedFromCollection;
       this.bucket = bucket;
+      this.versionFrom = versionFrom;
     }
 
     @Override
     public Future apply() throws IOException {
-      return doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket);
+      return doVersionAdd(cmd, finalVersionOnUpdate, isReplayOrPeersync, leaderLogic, forwardedFromCollection, bucket, versionFrom);
     }
   }
 

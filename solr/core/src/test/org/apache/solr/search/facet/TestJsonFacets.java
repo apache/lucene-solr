@@ -1060,6 +1060,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @Test
   @LuceneTestCase.Nightly
   public void testStats() throws Exception {
+    JSONTestUtil.failRepeatedKeys = false; // sub facet debug info can be duped by race
     doStats(Client.localClient, params("debugQuery", Boolean.toString(random().nextBoolean()) ));
   }
 

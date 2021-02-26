@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Start recovery of a core if its term is less than leader's term
  */
-public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher, Closeable {
+public class RecoveringCoreTermWatcher extends ZkShardTerms.CoreTermWatcher implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreDescriptor coreDescriptor;
   private final CoreContainer coreContainer;

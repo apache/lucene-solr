@@ -100,7 +100,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       }
 
     } finally {
-      ParWork.close(orderedExecutor);
+      orderedExecutor.shutdownAndAwaitTermination();
     }
   }
 
@@ -254,11 +254,6 @@ public class OrderedExecutorTest extends SolrTestCase {
     @Override
     public boolean isCallerThreadAllowed() {
       return false;
-    }
-
-    @Override
-    public String getLabel() {
-      return "orderedExecutor";
     }
   }
 }

@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -397,7 +398,7 @@ public class ZkTestServer implements Closeable {
       }
     }
 
-    ParWork.close(chRootClient);
+    IOUtils.closeQuietly(chRootClient);
     chRootClient = null;
 
     if (zkServer != null)  {

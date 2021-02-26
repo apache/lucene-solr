@@ -394,7 +394,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       ParWork.propagateInterrupt(e);
       log.warn("Exception in finding checksum of {}", f, e);
     } finally {
-      ParWork.close(fis);
+      org.apache.solr.common.util.IOUtils.closeQuietly(fis);
     }
     return null;
   }

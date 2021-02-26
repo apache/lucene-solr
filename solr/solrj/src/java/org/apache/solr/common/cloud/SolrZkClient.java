@@ -24,6 +24,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.CloseTracker;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
@@ -1142,7 +1143,7 @@ public class SolrZkClient implements Closeable {
           return writer.toString();
         }
       } finally {
-        ParWork.close(((StreamSource) xmlInput).getInputStream());
+        IOUtils.closeQuietly(((StreamSource) xmlInput).getInputStream());
       }
     } catch (Exception e) {
       log.error("prettyPrint(path={}, dataString={})", dataString, indent, e);

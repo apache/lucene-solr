@@ -26,6 +26,7 @@ import net.sf.saxon.tree.tiny.TinyDocumentImpl;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StopWatch;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.util.DOMUtil;
@@ -170,7 +171,7 @@ public class XmlConfigFile { // formerly simply "Config"
       throw new RuntimeException(e);
     } finally {
       // some XML parsers are broken and don't close the byte stream (but they should according to spec)
-      ParWork.close(is.getByteStream());
+      IOUtils.closeQuietly(is.getByteStream());
       parseXmlFile.done();
     }
 

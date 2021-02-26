@@ -149,9 +149,4 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   public boolean isCallerThreadAllowed() {
     return true;
   }
-
-  @Override
-  public String getLabel() {
-    return "mAuditLogger";
-  }
 }

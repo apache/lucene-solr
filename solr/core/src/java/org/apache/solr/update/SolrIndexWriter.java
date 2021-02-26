@@ -38,6 +38,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
@@ -390,7 +391,7 @@ public class SolrIndexWriter extends IndexWriter {
     }
     try {
       if (infoStream != null) {
-        ParWork.close(infoStream, true);
+        IOUtils.closeQuietly(infoStream);
       }
 
       if (releaseDirectory) {

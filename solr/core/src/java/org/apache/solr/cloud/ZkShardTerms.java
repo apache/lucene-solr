@@ -35,6 +35,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -88,7 +89,7 @@ public class ZkShardTerms implements Closeable {
   /**
    * Listener of a core for shard's term change events
    */
-  interface CoreTermWatcher {
+  abstract static class CoreTermWatcher implements Closeable {
     /**
      * Invoked with a Terms instance after update. <p>
      * Concurrent invocations of this method is not allowed so at a given time only one thread
@@ -101,9 +102,7 @@ public class ZkShardTerms implements Closeable {
      * @param terms instance
      * @return true if the listener wanna to be triggered in the next time
      */
-    boolean onTermChanged(ShardTerms terms);
-
-    void close();
+    abstract boolean onTermChanged(ShardTerms terms);
   }
 
   public ZkShardTerms(String collection, String shard, SolrZkClient zkClient) throws IOException, KeeperException {
@@ -172,7 +171,7 @@ public class ZkShardTerms implements Closeable {
   public void close() {
     // no watcher will be registered
     //isClosed.set(true);
-    ParWork.close(listeners);
+    listeners.forEach(coreTermWatcher -> IOUtils.closeQuietly(coreTermWatcher));
     listeners.clear();
     assert ObjectReleaseTracker.release(this);
   }

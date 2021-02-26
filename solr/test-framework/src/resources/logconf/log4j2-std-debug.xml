@@ -63,6 +63,7 @@
 
         <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
 
+        <AsyncLogger name="org.apache.solr.core.CoreContainer.Deprecation" level="OFF"/>
 
 
         <AsyncLogger name="com.google.inject.servlet" level="INFO"/>

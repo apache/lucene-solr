@@ -100,8 +100,4 @@ public class CallbackAuditLoggerPlugin extends AuditLoggerPlugin {
     return true;
   }
 
-  @Override
-  public String getLabel() {
-    return getName();
-  }
 }

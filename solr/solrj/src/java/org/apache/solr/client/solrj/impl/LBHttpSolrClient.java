@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.QoSParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 
 /**
@@ -198,7 +199,7 @@ public class LBHttpSolrClient extends LBSolrClient {
         client = http2SolrClientBuilder.build();
         SolrClient oldClient = urlToClient.put(server, client);
         if (oldClient != null) {
-          ParWork.close(oldClient);
+          IOUtils.closeQuietly(oldClient);
         }
       }
     } else if (httpSolrClientBuilder != null) {
@@ -217,7 +218,7 @@ public class LBHttpSolrClient extends LBSolrClient {
         client = httpSolrClientBuilder.build();
         SolrClient oldClient = urlToClient.put(server, client);
         if (oldClient != null) {
-          ParWork.close(oldClient);
+          IOUtils.closeQuietly(oldClient);
         }
       }
     } else {
@@ -234,7 +235,7 @@ public class LBHttpSolrClient extends LBSolrClient {
       }
       client = clientBuilder.build();
       SolrClient oldClient = urlToClient.put(server, client);
-      ParWork.close(oldClient);
+      IOUtils.closeQuietly(oldClient);
     }
     if (requestWriter != null) {
       ((HttpSolrClient)client).setRequestWriter(requestWriter);

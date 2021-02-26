@@ -22,6 +22,7 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -186,7 +187,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
 
     final ZkStateReader zkToClose = zkStateReader;
     if (zkToClose != null && closeZkStateReader) {
-      ParWork.close(zkToClose);
+      IOUtils.closeQuietly(zkToClose);
     }
     isClosed = true;
   }

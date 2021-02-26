@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 
 public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
@@ -33,7 +32,7 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
     assert ObjectReleaseTracker.track(this);
     if (httpClient == null) {
       this.clientIsInternal = true;
-      this.httpClient = HttpClientUtil.createClient(null);
+      this.httpClient = null;
     } else {
       this.clientIsInternal = false;
       this.httpClient = null;
@@ -48,9 +47,6 @@ public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
 
   @Override
   public void close() throws IOException {
-    if (this.clientIsInternal) {
-      ParWork.close(httpClient);
-    }
     assert ObjectReleaseTracker.release(this);
   }
 }

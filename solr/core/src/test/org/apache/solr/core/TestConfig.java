@@ -29,6 +29,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.update.SolrIndexConfig;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -44,9 +45,14 @@ import java.util.LinkedHashMap;
 public class TestConfig extends SolrTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTestConfig() throws Exception {
     System.setProperty("solr.tests.ramBufferSizeMB", "99");
     initCore("solrconfig-test-misc.xml","schema-reversed.xml");
+  }
+
+  @AfterClass
+  public static void afterTestConfig() throws Exception {
+    deleteCore();
   }
 
   @Test

@@ -258,7 +258,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       zkClient.disableCloseLock();
     }
 
-    ParWork.close(zkClient);
+    IOUtils.closeQuietly(zkClient);
   }
 
   private void setupJvmMetrics(CoreContainer coresInit)  {

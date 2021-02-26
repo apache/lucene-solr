@@ -17,7 +17,6 @@
 package org.apache.solr.handler;
 
 import com.google.common.base.Strings;
-import org.apache.jute.Index;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexCommit;
@@ -887,8 +886,8 @@ public class IndexFetcher {
         props.store(outFile, "Replication details");
         dir.sync(Collections.singleton(tmpFileName));
       } finally {
-        ParWork.close(outFile);
-        ParWork.close(out);
+        IOUtils.closeQuietly(outFile);
+        IOUtils.closeQuietly(out);
       }
       
       solrCore.getDirectoryFactory().renameWithOverwrite(dir, tmpFileName, REPLICATION_PROPERTIES);

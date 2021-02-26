@@ -41,7 +41,7 @@ public class ObjectReleaseTracker {
   public static StringBuilder getThreadLocalStringBuilder() {
     StringBuilder sw = THREAD_LOCAL_SB.get();
     if (sw == null) {
-      sw = new StringBuilder(2048);
+      sw = new StringBuilder(1024);
       THREAD_LOCAL_SB.set(sw);
     }
     return sw;
@@ -104,8 +104,8 @@ public class ObjectReleaseTracker {
         StringBuilderWriter sw = new StringBuilderWriter(sb);
         PrintWriter pw = new PrintWriter(sw);
         ObjectTrackerException ote = entry.getValue();
-        ote.printStackTrace(pw);
-        String stack = object + "\n" + sw.toString();
+        printStackTrace(ote, pw, 8);
+        String stack = object + "\n" + sw.toString().replaceAll("org\\.apache\\.solr", "o.a.s");
         error.append(entry.getKey() + "\n" + "StackTrace:\n" + stack + "\n");
       }
     }
@@ -114,7 +114,17 @@ public class ObjectReleaseTracker {
     }
     return error.toString();
   }
-  
+
+  private static void printStackTrace(Throwable t, PrintWriter p, int stack) {
+    // Print our stack trace
+    p.println(t);
+    StackTraceElement[] trace = t.getStackTrace();
+    for (int i = 0; i < stack; i++) {
+      StackTraceElement traceElement = trace[i];
+      p.println("at " + traceElement);
+    }
+  }
+
   public static class ObjectTrackerException extends RuntimeException {
     public ObjectTrackerException(String msg) {
       super(msg);

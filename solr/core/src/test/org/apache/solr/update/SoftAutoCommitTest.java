@@ -115,7 +115,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     CommitTracker softTracker = updater.softCommitTracker;
     
     // wait out any leaked commits
-    monitor.hard.poll(3000, MILLISECONDS);
+    monitor.hard.poll(1000, MILLISECONDS);
     monitor.soft.poll(0, MILLISECONDS);
     monitor.clear();
     
@@ -550,9 +550,9 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
 class MockEventListener implements SolrEventListener {
 
   // use capacity bound Queues just so we're sure we don't OOM 
-  public final BlockingQueue<Long> soft = new LinkedBlockingQueue<>(1000);
-  public final BlockingQueue<Long> hard = new LinkedBlockingQueue<>(1000);
-  public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<>(1000);
+  public final BlockingQueue<Long> soft = new LinkedBlockingQueue<>(10000);
+  public final BlockingQueue<Long> hard = new LinkedBlockingQueue<>(10000);
+  public final BlockingQueue<Long> searcher = new LinkedBlockingQueue<>(10000);
 
   // if non enpty, then at least one offer failed (queues full)
   private StringBuffer fail = new StringBuffer();

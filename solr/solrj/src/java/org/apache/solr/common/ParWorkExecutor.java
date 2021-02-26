@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -91,8 +90,8 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
   @Override
   protected void beforeExecute(Thread t, Runnable r) {
     if (r instanceof ParWork.SolrFutureTask) {
-      String label = ((ParWork.SolrFutureTask) r).getLabel();
-      t.setName(label);
+//      String label = ((ParWork.SolrFutureTask) r).getLabel();
+//      t.setName(label);
     }
   }
 

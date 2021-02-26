@@ -1165,11 +1165,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         if (reload) {
           if (updateHandler != null && updateHandler instanceof IndexWriterCloser && solrCoreState != null) {
             solrCoreState.decrefSolrCoreState((IndexWriterCloser) updateHandler);
-          } else {
+          } else if (solrCoreState != null) {
             solrCoreState.decrefSolrCoreState(null);
           }
         }
-        close();
+        doClose();
 
       } catch (Throwable t) {
         ParWork.propagateInterrupt("Error while closing", t);
@@ -2598,7 +2598,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
 
       if (!success && tmp != null) {
-        ParWork.close(tmp);
+        IOUtils.closeQuietly(tmp);
       }
     }
   }

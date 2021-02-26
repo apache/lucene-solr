@@ -29,6 +29,7 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
@@ -211,7 +212,7 @@ public class ConnectionManager implements Watcher, Closeable {
     keeperLock.lock();
     try {
       if (keeper != null) {
-        ParWork.close(keeper);
+        IOUtils.closeQuietly(keeper);
         if (beforeReconnect != null && expired) {
           try {
             beforeReconnect.command();
@@ -329,7 +330,7 @@ public class ConnectionManager implements Watcher, Closeable {
       } catch (Exception e) {
         SolrException.log(log, "", e);
         log.info("Could not connect due to error, trying again ..");
-        ParWork.close(keeper);
+        IOUtils.closeQuietly(keeper);
         break;
       }
 

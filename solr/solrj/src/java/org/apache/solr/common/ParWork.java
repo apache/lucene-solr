@@ -57,6 +57,8 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class ParWork implements Closeable {
+  private final static boolean TRACK_TIMES = false;
+
   public static final int PROC_COUNT = ManagementFactory.getOperatingSystemMXBean().getAvailableProcessors();
   public static final String ROOT_EXEC_NAME = "SOLR";
   private static final String WORK_WAS_INTERRUPTED = "Work was interrupted!";
@@ -70,7 +72,7 @@ public class ParWork implements Closeable {
   private final boolean callerThreadAllowed;
   private final String rootLabel;
 
-  private final Queue<ParObject> collectSet = new LinkedList<>();
+  private Queue<Object> collectSet = new LinkedList<>();
 
   private static volatile ParWorkExecutor EXEC;
 
@@ -120,13 +122,12 @@ public class ParWork implements Closeable {
   }
 
     private static class WorkUnit {
-    private final Set<ParObject> objects;
+    private final Collection<Object> objects;
     private final TimeTracker tracker;
 
-    public WorkUnit(Set<ParObject> objects, TimeTracker tracker) {
+    public WorkUnit(Collection<Object> objects, TimeTracker tracker) {
       this.objects = objects;
       this.tracker = tracker;
-
     }
   }
 
@@ -223,13 +224,16 @@ public class ParWork implements Closeable {
     this.callerThreadAllowed = callerThreadAllowed;
     this.rootLabel = object instanceof String ?
         (String) object : object.getClass().getSimpleName();
-    assert (tracker = new TimeTracker(object, object == null ? "NullObject" : object.getClass().getName())) != null;
+    if (TRACK_TIMES) tracker = new TimeTracker(object, object == null ? "NullObject" : object.getClass().getName());
     // constructor must stay very light weight
   }
 
   public void collect(String label, Object object) {
     if (object == null) {
       return;
+    }
+    if (collectSet == null) {
+      collectSet = new LinkedList<>();
     }
     gatherObjects(label, object, collectSet);
   }
@@ -261,60 +265,42 @@ public class ParWork implements Closeable {
   }
 
   public void addCollect() {
-    if (collectSet.isEmpty()) {
+    if (collectSet == null || collectSet.isEmpty()) {
       //if (log.isDebugEnabled()) log.debug("No work collected to submit", new RuntimeException());
       return;
     }
     try {
       add(collectSet);
     } finally {
-      collectSet.clear();
+      collectSet = null;
     }
   }
 
-  private void gatherObjects(String label, Object submittedObject, Collection<ParObject> collectSet) {
+  private void gatherObjects(String label, Object submittedObject, Collection<Object> collectSet) {
     if (submittedObject != null) {
       if (submittedObject instanceof Collection) {
         for (Object obj : (Collection) submittedObject) {
-          ParObject ob = new ParObject();
-          ob.object = obj;
-          ob.label = label;
-          verifyValidType(ob);
-          collectSet.add(ob);
+          verifyValidType(obj);
+          collectSet.add(obj);
         }
       } else if (submittedObject instanceof Map) {
         ((Map) submittedObject).forEach((k, v) -> {
-          ParObject ob = new ParObject();
-          ob.object = v;
-          ob.label = label;
-          verifyValidType(ob);
-          collectSet.add(ob);
+          verifyValidType(v);
+          collectSet.add(v);
         });
       } else {
-        if (submittedObject instanceof ParObject) {
-          verifyValidType((ParObject) submittedObject);
-          collectSet.add((ParObject) submittedObject);
-        } else {
-          ParObject ob = new ParObject();
-          ob.object = submittedObject;
-          ob.label = label;
-          verifyValidType(ob);
-          collectSet.add(ob);
-        }
+        verifyValidType(submittedObject);
+        collectSet.add(submittedObject);
       }
     }
   }
 
-  private void add(Collection<ParObject> objects) {
-    Set<ParObject> wuObjects = new HashSet<>(objects);
-
-    WorkUnit workUnit = new WorkUnit(wuObjects, tracker);
+  private void add(Collection<Object> objects) {
+    WorkUnit workUnit = new WorkUnit(objects, tracker);
     workUnits.add(workUnit);
   }
 
-  private void verifyValidType(ParObject parObject) {
-    Object object = parObject.object;
-
+  private void verifyValidType(Object object) {
     boolean ok = false;
     for (Class okobject : OK_CLASSES) {
       if (okobject.isAssignableFrom(object.getClass())) {
@@ -350,9 +336,9 @@ public class ParWork implements Closeable {
       for (WorkUnit workUnit : workUnits) {
         if (log.isTraceEnabled()) log.trace("Process workunit {} {}", rootLabel, workUnit.objects);
         TimeTracker workUnitTracker = null;
-        assert (workUnitTracker = workUnit.tracker.startSubClose(workUnit)) != null;
+        if (TRACK_TIMES) workUnitTracker = workUnit.tracker.startSubClose(workUnit);
         try {
-          Set<ParObject> objects = workUnit.objects;
+          Collection<Object> objects = workUnit.objects;
 
           if (objects.size() == 1) {
             handleObject(exception, workUnitTracker, objects.iterator().next());
@@ -360,7 +346,7 @@ public class ParWork implements Closeable {
 
             List<Callable<Object>> closeCalls = new ArrayList<>(objects.size());
 
-            for (ParObject object : objects) {
+            for (Object object : objects) {
 
               if (object == null) continue;
 
@@ -413,7 +399,7 @@ public class ParWork implements Closeable {
       }
     } finally {
 
-      assert tracker.doneClose();
+      if (TRACK_TIMES) tracker.doneClose();
       
       //System.out.println("DONE:" + tracker.getElapsedMS());
 
@@ -480,16 +466,15 @@ public class ParWork implements Closeable {
     return new PerThreadExecService(getRootSharedExecutor(), maximumPoolSize, callerThreadAllowed, noCallerRunsAvailableLimit);
   }
 
-  private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, ParObject ob) {
+  private void handleObject(AtomicReference<Throwable> exception, final TimeTracker workUnitTracker, Object ob) {
     if (log.isTraceEnabled()) log.trace(
           "handleObject(AtomicReference<Throwable> exception={}, CloseTimeTracker workUnitTracker={}, Object object={}) - start",
-          exception, workUnitTracker, ob.object);
+          exception, workUnitTracker, ob);
 
-    Object object = ob.object;
-
+    Object object = ob;
     Object returnObject = null;
     TimeTracker subTracker = null;
-    assert (subTracker = workUnitTracker.startSubClose(object)) != null;
+    if (TRACK_TIMES) subTracker = workUnitTracker.startSubClose(object);
     try {
       boolean handled = false;
       if (object instanceof OrderedExecutor) {
@@ -519,7 +504,7 @@ public class ParWork implements Closeable {
       }
 
       if (!handled) {
-        String msg = ob.label + " -> I do not know how to close " + ob.label  + ": " + object.getClass().getName();
+        String msg = " -> I do not know how to close " + object.getClass().getName();
         log.error(msg);
         IllegalArgumentException illegal = new IllegalArgumentException(msg);
         exception.set(illegal);
@@ -527,12 +512,12 @@ public class ParWork implements Closeable {
     } catch (Throwable t) {
       if (ignoreExceptions) {
         warns.add(t);
-        log.error("Error handling close for an object: " + ob.label + ": " + object.getClass().getSimpleName(), new ObjectReleaseTracker.ObjectTrackerException(t));
+        log.error("Error handling close for an object: " + object.getClass().getSimpleName(), new ObjectReleaseTracker.ObjectTrackerException(t));
         if (t instanceof Error && !(t instanceof AssertionError)) {
           throw (Error) t;
         }
       } else {
-        log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker + ", Label=" + ob.label + ")" + ", Object=" + object + ")", t);
+        log.error("handleObject(AtomicReference<Throwable>=" + exception + ", CloseTimeTracker=" + workUnitTracker + ")" + ", Object=" + object + ")", t);
         propagateInterrupt(t);
         if (t instanceof Error) {
           throw (Error) t;
@@ -545,28 +530,10 @@ public class ParWork implements Closeable {
       }
 
     } finally {
-      assert subTracker.doneClose(returnObject instanceof String ? (String) returnObject : (returnObject == null ? "" : returnObject.getClass().getName()));
+      if (TRACK_TIMES) subTracker.doneClose(returnObject instanceof String ? (String) returnObject : (returnObject == null ? "" : returnObject.getClass().getName()));
     }
 
     if (log.isTraceEnabled()) log.trace("handleObject(AtomicReference<Throwable>, CloseTimeTracker, List<Callable<Object>>, Object) - end");
-  }
-
-  /**
-   * Sugar method to close objects.
-   * 
-   * @param object to close
-   */
-  public static void close(Object object, boolean ignoreExceptions) {
-    if (object == null) return;
-    assert !(object instanceof ParObject);
-    try (ParWork dw = new ParWork(object, ignoreExceptions)) {
-      dw.collect(object);
-    }
-  }
-
-  public static void close(Object object) {
-    if (object == null) return;
-    close(object, false);
   }
 
   public static <K> Set<K> concSetSmallO() {
@@ -659,9 +626,6 @@ public class ParWork implements Closeable {
     public abstract Object call() throws Exception;
 
     public abstract boolean isCallerThreadAllowed();
-
-
-    public abstract String getLabel();
   }
 
   public static class SolrFutureTask extends FutureTask {
@@ -669,11 +633,9 @@ public class ParWork implements Closeable {
     private final boolean callerThreadAllowed;
     //private final SolrThread createThread;
     private final boolean callerThreadUsesAvailableLimit;
-    private String label;
 
     public SolrFutureTask(String label, Callable callable) {
       super(callable);
-      this.label = label;
       callerThreadAllowed = true;
       callerThreadUsesAvailableLimit = false;
     }
@@ -684,9 +646,7 @@ public class ParWork implements Closeable {
 
     public SolrFutureTask(Callable callable, boolean callerThreadAllowed) {
       super(callable);
-      if (callable instanceof ParWork.ParWorkCallableBase) {
-        this.label = ((ParWorkCallableBase<?>) callable).getLabel();
-      }
+
       this.callerThreadAllowed = callerThreadAllowed;
       this.callerThreadUsesAvailableLimit = false;
 //      Thread thread = Thread.currentThread();
@@ -695,10 +655,6 @@ public class ParWork implements Closeable {
 //      } else {
 //        this.createThread = null;
 //      }
-    }
-
-    public String getLabel() {
-      return label;
     }
 
     public SolrFutureTask(Runnable runnable, Object value) {
@@ -735,15 +691,10 @@ public class ParWork implements Closeable {
 //    }
   }
 
-  private static class ParObject {
-    String label;
-    Object object;
-  }
-
   public class ParWorkCallable extends ParWorkCallableBase<Object> {
     private final AtomicReference<Throwable> exception;
     private final TimeTracker finalWorkUnitTracker;
-    private final ParObject object;
+    private final Object object;
 
     private final boolean callerThreadAllowed;
     private final boolean callerThreadUsesAvailableLimit;
@@ -760,20 +711,16 @@ public class ParWork implements Closeable {
       this(null, null, null, callerThreadAllowed, callerThreadUsesAvailableLimit);
     }
 
-    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object, boolean callerThreadAllowed) {
+    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, Object object, boolean callerThreadAllowed) {
       this(exception, finalWorkUnitTracker, object, callerThreadAllowed, false);
     }
 
-    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, ParObject object, boolean callerThreadAllowed, boolean callerThreadUsesAvailableLimit) {
+    public ParWorkCallable(AtomicReference<Throwable> exception, TimeTracker finalWorkUnitTracker, Object object, boolean callerThreadAllowed, boolean callerThreadUsesAvailableLimit) {
       this.callerThreadAllowed = callerThreadAllowed;
       this.callerThreadUsesAvailableLimit = callerThreadUsesAvailableLimit;
       this.exception = exception;
       this.finalWorkUnitTracker = finalWorkUnitTracker;
       this.object = object;
-    }
-
-    public String getLabel() {
-      return object.label;
     }
 
     public boolean isCallerThreadAllowed() {

@@ -65,8 +65,4 @@ public class MockAuditLoggerPlugin extends AuditLoggerPlugin {
     return true;
   }
 
-  @Override
-  public String getLabel() {
-    return getName();
-  }
 }

@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -60,7 +61,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
 
   @AfterClass
   public static void afterRestTestBase() throws Exception {
-    ParWork.close(restTestHarness, true);
+    IOUtils.closeQuietly(restTestHarness);
     restTestHarness = null;
   }
 

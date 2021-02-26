@@ -63,7 +63,7 @@ public class ConfigSetProperties {
         try {
           return readFromInputStream(reader);
         } finally {
-          ParWork.close(reader);
+          org.apache.solr.common.util.IOUtils.closeQuietly(reader);
         }
       }
     } catch (SolrResourceNotFoundException ex) {
