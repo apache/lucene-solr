@@ -17,21 +17,6 @@
 
 package org.apache.lucene.luke.app.desktop.components;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JFormattedTextField;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -51,7 +36,21 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JFormattedTextField;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
+import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
+import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.ListSelectionModel;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.Term;
@@ -192,7 +191,8 @@ public final class SearchPanelProvider implements SearchTabOperator {
     panel.setOpaque(false);
     panel.setBorder(BorderFactory.createLineBorder(Color.gray));
 
-    JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
+    JSplitPane splitPane =
+        new JSplitPane(JSplitPane.VERTICAL_SPLIT, initUpperPanel(), initLowerPanel());
     splitPane.setOpaque(false);
     splitPane.setDividerLocation(350);
     panel.add(splitPane);
@@ -201,7 +201,8 @@ public final class SearchPanelProvider implements SearchTabOperator {
   }
 
   private JSplitPane initUpperPanel() {
-    JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, initQuerySettingsPane(), initQueryPane());
+    JSplitPane splitPane =
+        new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, initQuerySettingsPane(), initQueryPane());
     splitPane.setOpaque(false);
     splitPane.setDividerLocation(570);
     return splitPane;
@@ -263,7 +264,12 @@ public final class SearchPanelProvider implements SearchTabOperator {
     c.gridwidth = 3;
     c.weightx = 0.0;
     c.insets = new Insets(2, 0, 2, 2);
-    panel.add(new JScrollPane(queryStringTA, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER), c);
+    panel.add(
+        new JScrollPane(
+            queryStringTA,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER),
+        c);
 
     JLabel labelPQ = new JLabel(MessageUtils.getLocalizedMessage("search.label.parsed"));
     c.gridx = 0;
@@ -283,7 +289,9 @@ public final class SearchPanelProvider implements SearchTabOperator {
     c.insets = new Insets(2, 0, 2, 2);
     panel.add(new JScrollPane(parsedQueryTA), c);
 
-    parseBtn.setText(FontUtils.elegantIconHtml("&#xe0df;", MessageUtils.getLocalizedMessage("search.button.parse")));
+    parseBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#xe0df;", MessageUtils.getLocalizedMessage("search.button.parse")));
     parseBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     parseBtn.setMargin(new Insets(3, 0, 3, 0));
     parseBtn.addActionListener(listeners::execParse);
@@ -303,7 +311,9 @@ public final class SearchPanelProvider implements SearchTabOperator {
     c.insets = new Insets(5, 0, 0, 2);
     panel.add(rewriteCB, c);
 
-    searchBtn.setText(FontUtils.elegantIconHtml("&#x55;", MessageUtils.getLocalizedMessage("search.button.search")));
+    searchBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#x55;", MessageUtils.getLocalizedMessage("search.button.search")));
     searchBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     searchBtn.setMargin(new Insets(3, 0, 3, 0));
     searchBtn.addActionListener(listeners::execSearch);
@@ -323,7 +333,9 @@ public final class SearchPanelProvider implements SearchTabOperator {
     c.insets = new Insets(5, 0, 0, 2);
     panel.add(exactHitsCntCB, c);
 
-    mltBtn.setText(FontUtils.elegantIconHtml("&#xe030;", MessageUtils.getLocalizedMessage("search.button.mlt")));
+    mltBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#xe030;", MessageUtils.getLocalizedMessage("search.button.mlt")));
     mltBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     mltBtn.setMargin(new Insets(3, 0, 3, 0));
     mltBtn.addActionListener(listeners::execMLTSearch);
@@ -366,7 +378,10 @@ public final class SearchPanelProvider implements SearchTabOperator {
     JPanel panel = new JPanel(new GridLayout(1, 2));
     panel.setOpaque(false);
 
-    JLabel label = new JLabel(FontUtils.elegantIconHtml("&#xe025;", MessageUtils.getLocalizedMessage("search.label.results")));
+    JLabel label =
+        new JLabel(
+            FontUtils.elegantIconHtml(
+                "&#xe025;", MessageUtils.getLocalizedMessage("search.label.results")));
     label.setHorizontalTextPosition(JLabel.LEFT);
     label.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
     panel.add(label);
@@ -407,7 +422,9 @@ public final class SearchPanelProvider implements SearchTabOperator {
     sep.setPreferredSize(new Dimension(5, 1));
     resultsInfo.add(sep);
 
-    delBtn.setText(FontUtils.elegantIconHtml("&#xe07d;", MessageUtils.getLocalizedMessage("search.button.del_all")));
+    delBtn.setText(
+        FontUtils.elegantIconHtml(
+            "&#xe07d;", MessageUtils.getLocalizedMessage("search.button.del_all")));
     delBtn.setMargin(new Insets(5, 0, 5, 0));
     delBtn.setEnabled(false);
     delBtn.addActionListener(listeners::confirmDeletion);
@@ -427,7 +444,10 @@ public final class SearchPanelProvider implements SearchTabOperator {
     note.add(new JLabel(MessageUtils.getLocalizedMessage("search.label.results.note")));
     panel.add(note, BorderLayout.PAGE_START);
 
-    TableUtils.setupTable(resultsTable, ListSelectionModel.SINGLE_SELECTION, new SearchResultsTableModel(),
+    TableUtils.setupTable(
+        resultsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new SearchResultsTableModel(),
         new MouseAdapter() {
           @Override
           public void mousePressed(MouseEvent e) {
@@ -456,10 +476,10 @@ public final class SearchPanelProvider implements SearchTabOperator {
     tabbedPane.setEnabledAt(Tab.QPARSER.index(), false);
     tabbedPane.setEnabledAt(Tab.ANALYZER.index(), false);
     tabbedPane.setEnabledAt(Tab.SIMILARITY.index(), false);
-    if (tabbedPane.getSelectedIndex() == Tab.QPARSER.index() ||
-        tabbedPane.getSelectedIndex() == Tab.ANALYZER.index() ||
-        tabbedPane.getSelectedIndex() == Tab.SIMILARITY.index() ||
-        tabbedPane.getSelectedIndex() == Tab.MLT.index()) {
+    if (tabbedPane.getSelectedIndex() == Tab.QPARSER.index()
+        || tabbedPane.getSelectedIndex() == Tab.ANALYZER.index()
+        || tabbedPane.getSelectedIndex() == Tab.SIMILARITY.index()
+        || tabbedPane.getSelectedIndex() == Tab.MLT.index()) {
       tabbedPane.setSelectedIndex(Tab.SORT.index());
     }
     parseBtn.setEnabled(false);
@@ -489,24 +509,34 @@ public final class SearchPanelProvider implements SearchTabOperator {
       }
       String[] tmp = queryStringTA.getText().split(":");
       if (tmp.length < 2) {
-        throw new LukeException(String.format(Locale.ENGLISH, "Invalid query [ %s ]", queryStringTA.getText()));
+        throw new LukeException(
+            String.format(Locale.ENGLISH, "Invalid query [ %s ]", queryStringTA.getText()));
       }
       query = new TermQuery(new Term(tmp[0].trim(), tmp[1].trim()));
     } else {
       query = parse(false);
     }
-    SimilarityConfig simConfig = operatorRegistry.get(SimilarityTabOperator.class)
-        .map(SimilarityTabOperator::getConfig)
-        .orElse(new SimilarityConfig.Builder().build());
-    Sort sort = operatorRegistry.get(SortTabOperator.class)
-        .map(SortTabOperator::getSort)
-        .orElse(null);
-    Set<String> fieldsToLoad = operatorRegistry.get(FieldValuesTabOperator.class)
-        .map(FieldValuesTabOperator::getFieldsToLoad)
-        .orElse(Collections.emptySet());
-    SearchResults results = searchModel.search(query, simConfig, sort, fieldsToLoad, DEFAULT_PAGE_SIZE, exactHitsCntCB.isSelected());
+    SimilarityConfig simConfig =
+        operatorRegistry
+            .get(SimilarityTabOperator.class)
+            .map(SimilarityTabOperator::getConfig)
+            .orElse(new SimilarityConfig.Builder().build());
+    Sort sort =
+        operatorRegistry.get(SortTabOperator.class).map(SortTabOperator::getSort).orElse(null);
+    Set<String> fieldsToLoad =
+        operatorRegistry
+            .get(FieldValuesTabOperator.class)
+            .map(FieldValuesTabOperator::getFieldsToLoad)
+            .orElse(Collections.emptySet());
+    SearchResults results =
+        searchModel.search(
+            query, simConfig, sort, fieldsToLoad, DEFAULT_PAGE_SIZE, exactHitsCntCB.isSelected());
 
-    TableUtils.setupTable(resultsTable, ListSelectionModel.SINGLE_SELECTION, new SearchResultsTableModel(), null,
+    TableUtils.setupTable(
+        resultsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new SearchResultsTableModel(),
+        null,
         SearchResultsTableModel.Column.DOCID.getColumnWidth(),
         SearchResultsTableModel.Column.SCORE.getColumnWidth());
     populateResults(results);
@@ -529,19 +559,31 @@ public final class SearchPanelProvider implements SearchTabOperator {
       throw new LukeException("Doc num is not set.");
     }
     int docNum = (int) mltDocFTF.getValue();
-    MLTConfig mltConfig = operatorRegistry.get(MLTTabOperator.class)
-        .map(MLTTabOperator::getConfig)
-        .orElse(new MLTConfig.Builder().build());
-    Analyzer analyzer = operatorRegistry.get(AnalysisTabOperator.class)
-        .map(AnalysisTabOperator::getCurrentAnalyzer)
-        .orElse(new StandardAnalyzer());
+    MLTConfig mltConfig =
+        operatorRegistry
+            .get(MLTTabOperator.class)
+            .map(MLTTabOperator::getConfig)
+            .orElse(new MLTConfig.Builder().build());
+    Analyzer analyzer =
+        operatorRegistry
+            .get(AnalysisTabOperator.class)
+            .map(AnalysisTabOperator::getCurrentAnalyzer)
+            .orElse(new StandardAnalyzer());
     Query query = searchModel.mltQuery(docNum, mltConfig, analyzer);
-    Set<String> fieldsToLoad = operatorRegistry.get(FieldValuesTabOperator.class)
-        .map(FieldValuesTabOperator::getFieldsToLoad)
-        .orElse(Collections.emptySet());
-    SearchResults results = searchModel.search(query, new SimilarityConfig.Builder().build(), fieldsToLoad, DEFAULT_PAGE_SIZE, false);
+    Set<String> fieldsToLoad =
+        operatorRegistry
+            .get(FieldValuesTabOperator.class)
+            .map(FieldValuesTabOperator::getFieldsToLoad)
+            .orElse(Collections.emptySet());
+    SearchResults results =
+        searchModel.search(
+            query, new SimilarityConfig.Builder().build(), fieldsToLoad, DEFAULT_PAGE_SIZE, false);
 
-    TableUtils.setupTable(resultsTable, ListSelectionModel.SINGLE_SELECTION, new SearchResultsTableModel(), null,
+    TableUtils.setupTable(
+        resultsTable,
+        ListSelectionModel.SINGLE_SELECTION,
+        new SearchResultsTableModel(),
+        null,
         SearchResultsTableModel.Column.DOCID.getColumnWidth(),
         SearchResultsTableModel.Column.SCORE.getColumnWidth());
     populateResults(results);
@@ -550,16 +592,23 @@ public final class SearchPanelProvider implements SearchTabOperator {
   }
 
   private Query parse(boolean rewrite) {
-    String expr = StringUtils.isNullOrEmpty(queryStringTA.getText()) ? "*:*" : queryStringTA.getText();
-    String df = operatorRegistry.get(QueryParserTabOperator.class)
-        .map(QueryParserTabOperator::getDefaultField)
-        .orElse("");
-    QueryParserConfig config = operatorRegistry.get(QueryParserTabOperator.class)
-        .map(QueryParserTabOperator::getConfig)
-        .orElse(new QueryParserConfig.Builder().build());
-    Analyzer analyzer = operatorRegistry.get(AnalysisTabOperator.class)
-        .map(AnalysisTabOperator::getCurrentAnalyzer)
-        .orElse(new StandardAnalyzer());
+    String expr =
+        StringUtils.isNullOrEmpty(queryStringTA.getText()) ? "*:*" : queryStringTA.getText();
+    String df =
+        operatorRegistry
+            .get(QueryParserTabOperator.class)
+            .map(QueryParserTabOperator::getDefaultField)
+            .orElse("");
+    QueryParserConfig config =
+        operatorRegistry
+            .get(QueryParserTabOperator.class)
+            .map(QueryParserTabOperator::getConfig)
+            .orElse(new QueryParserConfig.Builder().build());
+    Analyzer analyzer =
+        operatorRegistry
+            .get(AnalysisTabOperator.class)
+            .map(AnalysisTabOperator::getCurrentAnalyzer)
+            .orElse(new StandardAnalyzer());
     return searchModel.parseQuery(expr, df, analyzer, config, rewrite);
   }
 
@@ -570,16 +619,27 @@ public final class SearchPanelProvider implements SearchTabOperator {
       endLbl.setText(String.valueOf(res.getOffset() + res.size()));
 
       prevBtn.setEnabled(res.getOffset() > 0);
-      nextBtn.setEnabled(res.getTotalHits().relation == TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO || res.getTotalHits().value > res.getOffset() + res.size());
+      nextBtn.setEnabled(
+          res.getTotalHits().relation == TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO
+              || res.getTotalHits().value > res.getOffset() + res.size());
 
       if (!indexHandler.getState().readOnly() && indexHandler.getState().hasDirectoryReader()) {
         delBtn.setEnabled(true);
       }
 
       resultsTable.setModel(new SearchResultsTableModel(res));
-      resultsTable.getColumnModel().getColumn(SearchResultsTableModel.Column.DOCID.getIndex()).setPreferredWidth(SearchResultsTableModel.Column.DOCID.getColumnWidth());
-      resultsTable.getColumnModel().getColumn(SearchResultsTableModel.Column.SCORE.getIndex()).setPreferredWidth(SearchResultsTableModel.Column.SCORE.getColumnWidth());
-      resultsTable.getColumnModel().getColumn(SearchResultsTableModel.Column.VALUE.getIndex()).setPreferredWidth(SearchResultsTableModel.Column.VALUE.getColumnWidth());
+      resultsTable
+          .getColumnModel()
+          .getColumn(SearchResultsTableModel.Column.DOCID.getIndex())
+          .setPreferredWidth(SearchResultsTableModel.Column.DOCID.getColumnWidth());
+      resultsTable
+          .getColumnModel()
+          .getColumn(SearchResultsTableModel.Column.SCORE.getIndex())
+          .setPreferredWidth(SearchResultsTableModel.Column.SCORE.getColumnWidth());
+      resultsTable
+          .getColumnModel()
+          .getColumn(SearchResultsTableModel.Column.VALUE.getIndex())
+          .setPreferredWidth(SearchResultsTableModel.Column.VALUE.getColumnWidth());
     } else {
       startLbl.setText("0");
       endLbl.setText("0");
@@ -590,10 +650,15 @@ public final class SearchPanelProvider implements SearchTabOperator {
   }
 
   private void confirmDeletion() {
-    new DialogOpener<>(confirmDialogFactory).open("Confirm Deletion", 400, 200, (factory) -> {
-      factory.setMessage(MessageUtils.getLocalizedMessage("search.message.delete_confirm"));
-      factory.setCallback(this::deleteDocs);
-    });
+    new DialogOpener<>(confirmDialogFactory)
+        .open(
+            "Confirm Deletion",
+            400,
+            200,
+            (factory) -> {
+              factory.setMessage(MessageUtils.getLocalizedMessage("search.message.delete_confirm"));
+              factory.setCallback(this::deleteDocs);
+            });
   }
 
   private void deleteDocs() {
@@ -601,7 +666,8 @@ public final class SearchPanelProvider implements SearchTabOperator {
     if (query != null) {
       toolsModel.deleteDocuments(query);
       indexHandler.reOpen();
-      messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("search.message.delete_success", query.toString()));
+      messageBroker.showStatusMessage(
+          MessageUtils.getLocalizedMessage("search.message.delete_success", query.toString()));
     }
     delBtn.setEnabled(false);
   }
@@ -610,25 +676,47 @@ public final class SearchPanelProvider implements SearchTabOperator {
     JPopupMenu popup = new JPopupMenu();
 
     // show explanation
-    JMenuItem item1 = new JMenuItem(MessageUtils.getLocalizedMessage("search.results.menu.explain"));
-    item1.addActionListener(e -> {
-      int docid = (int) resultsTable.getModel().getValueAt(resultsTable.getSelectedRow(), SearchResultsTableModel.Column.DOCID.getIndex());
-      Explanation explanation = searchModel.explain(parse(false), docid);
-      new DialogOpener<>(explainDialogProvider).open("Explanation", 600, 400,
-          (factory) -> {
-            factory.setDocid(docid);
-            factory.setExplanation(explanation);
-          });
-    });
+    JMenuItem item1 =
+        new JMenuItem(MessageUtils.getLocalizedMessage("search.results.menu.explain"));
+    item1.addActionListener(
+        e -> {
+          int docid =
+              (int)
+                  resultsTable
+                      .getModel()
+                      .getValueAt(
+                          resultsTable.getSelectedRow(),
+                          SearchResultsTableModel.Column.DOCID.getIndex());
+          Explanation explanation = searchModel.explain(parse(false), docid);
+          new DialogOpener<>(explainDialogProvider)
+              .open(
+                  "Explanation",
+                  600,
+                  400,
+                  (factory) -> {
+                    factory.setDocid(docid);
+                    factory.setExplanation(explanation);
+                  });
+        });
     popup.add(item1);
 
     // show all fields
-    JMenuItem item2 = new JMenuItem(MessageUtils.getLocalizedMessage("search.results.menu.showdoc"));
-    item2.addActionListener(e -> {
-      int docid = (int) resultsTable.getModel().getValueAt(resultsTable.getSelectedRow(), SearchResultsTableModel.Column.DOCID.getIndex());
-      operatorRegistry.get(DocumentsTabOperator.class).ifPresent(operator -> operator.displayDoc(docid));
-      tabSwitcher.switchTab(TabbedPaneProvider.Tab.DOCUMENTS);
-    });
+    JMenuItem item2 =
+        new JMenuItem(MessageUtils.getLocalizedMessage("search.results.menu.showdoc"));
+    item2.addActionListener(
+        e -> {
+          int docid =
+              (int)
+                  resultsTable
+                      .getModel()
+                      .getValueAt(
+                          resultsTable.getSelectedRow(),
+                          SearchResultsTableModel.Column.DOCID.getIndex());
+          operatorRegistry
+              .get(DocumentsTabOperator.class)
+              .ifPresent(operator -> operator.displayDoc(docid));
+          tabSwitcher.switchTab(TabbedPaneProvider.Tab.DOCUMENTS);
+        });
     popup.add(item2);
 
     return popup;
@@ -691,11 +779,12 @@ public final class SearchPanelProvider implements SearchTabOperator {
 
     void showContextMenuInResultsTable(MouseEvent e) {
       if (e.getClickCount() == 2 && !e.isConsumed()) {
-        SearchPanelProvider.this.setupResultsContextMenuPopup().show(e.getComponent(), e.getX(), e.getY());
+        SearchPanelProvider.this
+            .setupResultsContextMenuPopup()
+            .show(e.getComponent(), e.getX(), e.getY());
         setupResultsContextMenuPopup().show(e.getComponent(), e.getX(), e.getY());
       }
     }
-
   }
 
   private class Observer implements IndexObserver {
@@ -703,21 +792,35 @@ public final class SearchPanelProvider implements SearchTabOperator {
     @Override
     public void openIndex(LukeState state) {
       searchModel = searchFactory.newInstance(state.getIndexReader());
-      toolsModel = toolsFactory.newInstance(state.getIndexReader(), state.useCompound(), state.keepAllCommits());
-      operatorRegistry.get(QueryParserTabOperator.class).ifPresent(operator -> {
-        operator.setSearchableFields(searchModel.getSearchableFieldNames());
-        operator.setRangeSearchableFields(searchModel.getRangeSearchableFieldNames());
-      });
-      operatorRegistry.get(SortTabOperator.class).ifPresent(operator -> {
-        operator.setSearchModel(searchModel);
-        operator.setSortableFields(searchModel.getSortableFieldNames());
-      });
-      operatorRegistry.get(FieldValuesTabOperator.class).ifPresent(operator -> {
-        operator.setFields(searchModel.getFieldNames());
-      });
-      operatorRegistry.get(MLTTabOperator.class).ifPresent(operator -> {
-        operator.setFields(searchModel.getFieldNames());
-      });
+      toolsModel =
+          toolsFactory.newInstance(
+              state.getIndexReader(), state.useCompound(), state.keepAllCommits());
+      operatorRegistry
+          .get(QueryParserTabOperator.class)
+          .ifPresent(
+              operator -> {
+                operator.setSearchableFields(searchModel.getSearchableFieldNames());
+                operator.setRangeSearchableFields(searchModel.getRangeSearchableFieldNames());
+              });
+      operatorRegistry
+          .get(SortTabOperator.class)
+          .ifPresent(
+              operator -> {
+                operator.setSearchModel(searchModel);
+                operator.setSortableFields(searchModel.getSortableFieldNames());
+              });
+      operatorRegistry
+          .get(FieldValuesTabOperator.class)
+          .ifPresent(
+              operator -> {
+                operator.setFields(searchModel.getFieldNames());
+              });
+      operatorRegistry
+          .get(MLTTabOperator.class)
+          .ifPresent(
+              operator -> {
+                operator.setFields(searchModel.getFieldNames());
+              });
 
       queryStringTA.setText("*:*");
       parsedQueryTA.setText("");
@@ -742,16 +845,24 @@ public final class SearchPanelProvider implements SearchTabOperator {
       nextBtn.setEnabled(false);
       prevBtn.setEnabled(false);
       delBtn.setEnabled(false);
-      TableUtils.setupTable(resultsTable, ListSelectionModel.SINGLE_SELECTION, new SearchResultsTableModel(), null,
+      TableUtils.setupTable(
+          resultsTable,
+          ListSelectionModel.SINGLE_SELECTION,
+          new SearchResultsTableModel(),
+          null,
           SearchResultsTableModel.Column.DOCID.getColumnWidth(),
           SearchResultsTableModel.Column.SCORE.getColumnWidth());
     }
-
   }
 
   /** tabs in the Search panel */
   public enum Tab {
-    QPARSER(0), ANALYZER(1), SIMILARITY(2), SORT(3), VALUES(4), MLT(5);
+    QPARSER(0),
+    ANALYZER(1),
+    SIMILARITY(2),
+    SORT(3),
+    VALUES(4),
+    MLT(5);
 
     private int tabIdx;
 
@@ -764,7 +875,8 @@ public final class SearchPanelProvider implements SearchTabOperator {
     }
   }
 
-  static final class SearchResultsTableModel extends TableModelBase<SearchResultsTableModel.Column> {
+  static final class SearchResultsTableModel
+      extends TableModelBase<SearchResultsTableModel.Column> {
 
     enum Column implements TableColumnInfo {
       DOCID("Doc ID", 0, Integer.class, 50),
@@ -818,10 +930,14 @@ public final class SearchPanelProvider implements SearchTabOperator {
         } else {
           data[i][Column.SCORE.getIndex()] = 1.0f;
         }
-        List<String> concatValues = doc.getFieldValues().entrySet().stream().map(e -> {
-          String v = String.join(",", Arrays.asList(e.getValue()));
-          return e.getKey() + "=" + v + ";";
-        }).collect(Collectors.toList());
+        List<String> concatValues =
+            doc.getFieldValues().entrySet().stream()
+                .map(
+                    e -> {
+                      String v = String.join(",", Arrays.asList(e.getValue()));
+                      return e.getKey() + "=" + v + ";";
+                    })
+                .collect(Collectors.toList());
         data[i][Column.VALUE.getIndex()] = String.join(" ", concatValues);
       }
     }

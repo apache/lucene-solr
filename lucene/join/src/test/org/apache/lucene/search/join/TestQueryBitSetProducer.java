@@ -17,7 +17,6 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterDirectoryReader;
@@ -55,7 +54,7 @@ public class TestQueryBitSetProducer extends LuceneTestCase {
     IOUtils.close(reader, w, dir);
   }
 
-  public void testReaderNotSuitedForCaching() throws IOException{
+  public void testReaderNotSuitedForCaching() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -79,22 +78,25 @@ public class TestQueryBitSetProducer extends LuceneTestCase {
   private static class DummyDirectoryReader extends FilterDirectoryReader {
 
     public DummyDirectoryReader(DirectoryReader in) throws IOException {
-      super(in, new SubReaderWrapper() {
-        @Override
-        public LeafReader wrap(LeafReader reader) {
-          return new FilterLeafReader(reader) {
-
+      super(
+          in,
+          new SubReaderWrapper() {
             @Override
-            public CacheHelper getCoreCacheHelper() {
-              return null;
+            public LeafReader wrap(LeafReader reader) {
+              return new FilterLeafReader(reader) {
+
+                @Override
+                public CacheHelper getCoreCacheHelper() {
+                  return null;
+                }
+
+                @Override
+                public CacheHelper getReaderCacheHelper() {
+                  return null;
+                }
+              };
             }
-
-            @Override
-            public CacheHelper getReaderCacheHelper() {
-              return null;
-            }};
-        }
-      });
+          });
     }
 
     @Override

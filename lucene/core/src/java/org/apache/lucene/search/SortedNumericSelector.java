@@ -16,47 +16,40 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.util.NumericUtils;
 
-/** 
- * Selects a value from the document's list to use as the representative value 
- * <p>
- * This provides a NumericDocValues view over the SortedNumeric, for use with sorting,
+/**
+ * Selects a value from the document's list to use as the representative value
+ *
+ * <p>This provides a NumericDocValues view over the SortedNumeric, for use with sorting,
  * expressions, function queries, etc.
  */
 public class SortedNumericSelector {
-  
-  /** 
-   * Type of selection to perform.
-   */
+
+  /** Type of selection to perform. */
   public enum Type {
-    /** 
-     * Selects the minimum value in the set 
-     */
+    /** Selects the minimum value in the set */
     MIN,
-    /** 
-     * Selects the maximum value in the set 
-     */
+    /** Selects the maximum value in the set */
     MAX,
     // TODO: we could do MEDIAN in constant time (at most 2 lookups)
   }
-  
-  /** 
-   * Wraps a multi-valued SortedNumericDocValues as a single-valued view, using the specified selector 
-   * and numericType.
+
+  /**
+   * Wraps a multi-valued SortedNumericDocValues as a single-valued view, using the specified
+   * selector and numericType.
    */
-  public static NumericDocValues wrap(SortedNumericDocValues sortedNumeric, Type selector, SortField.Type numericType) {
-    if (numericType != SortField.Type.INT &&
-        numericType != SortField.Type.LONG && 
-        numericType != SortField.Type.FLOAT &&
-        numericType != SortField.Type.DOUBLE) {
+  public static NumericDocValues wrap(
+      SortedNumericDocValues sortedNumeric, Type selector, SortField.Type numericType) {
+    if (numericType != SortField.Type.INT
+        && numericType != SortField.Type.LONG
+        && numericType != SortField.Type.FLOAT
+        && numericType != SortField.Type.DOUBLE) {
       throw new IllegalArgumentException("numericType must be a numeric type");
     }
     final NumericDocValues view;
@@ -66,20 +59,20 @@ public class SortedNumericSelector {
       // so just sort on the underlying single-valued dv directly.
       // regardless of selector type, this optimization is safe!
       view = singleton;
-    } else { 
-      switch(selector) {
-        case MIN: 
+    } else {
+      switch (selector) {
+        case MIN:
           view = new MinValue(sortedNumeric);
           break;
         case MAX:
           view = new MaxValue(sortedNumeric);
           break;
-        default: 
+        default:
           throw new AssertionError();
       }
     }
     // undo the numericutils sortability
-    switch(numericType) {
+    switch (numericType) {
       case FLOAT:
         return new FilterNumericDocValues(view) {
           @Override
@@ -98,12 +91,12 @@ public class SortedNumericSelector {
         return view;
     }
   }
-  
+
   /** Wraps a SortedNumericDocValues and returns the first value (min) */
   static class MinValue extends NumericDocValues {
     final SortedNumericDocValues in;
     private long value;
-    
+
     MinValue(SortedNumericDocValues in) {
       this.in = in;
     }
@@ -149,13 +142,13 @@ public class SortedNumericSelector {
     public long longValue() {
       return value;
     }
-  }    
+  }
 
   /** Wraps a SortedNumericDocValues and returns the last value (max) */
   static class MaxValue extends NumericDocValues {
     final SortedNumericDocValues in;
     private long value;
-    
+
     MaxValue(SortedNumericDocValues in) {
       this.in = in;
     }
@@ -167,7 +160,7 @@ public class SortedNumericSelector {
 
     private void setValue() throws IOException {
       int count = in.docValueCount();
-      for(int i=0;i<count;i++) {
+      for (int i = 0; i < count; i++) {
         value = in.nextValue();
       }
     }
@@ -208,5 +201,5 @@ public class SortedNumericSelector {
     public long longValue() {
       return value;
     }
-  }    
+  }
 }

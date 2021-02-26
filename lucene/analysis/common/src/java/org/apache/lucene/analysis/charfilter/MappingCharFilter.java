@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.charfilter;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Map;
-
 import org.apache.lucene.analysis.CharFilter; // javadocs
 import org.apache.lucene.analysis.util.RollingCharBuffer;
 import org.apache.lucene.util.CharsRef;
@@ -28,14 +27,10 @@ import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Outputs;
 
 /**
- * Simplistic {@link CharFilter} that applies the mappings
- * contained in a {@link NormalizeCharMap} to the character
- * stream, and correcting the resulting changes to the
- * offsets.  Matching is greedy (longest pattern matching at
- * a given point wins).  Replacement is allowed to be the
- * empty string.
+ * Simplistic {@link CharFilter} that applies the mappings contained in a {@link NormalizeCharMap}
+ * to the character stream, and correcting the resulting changes to the offsets. Matching is greedy
+ * (longest pattern matching at a given point wins). Replacement is allowed to be the empty string.
  */
-
 public class MappingCharFilter extends BaseCharFilter {
 
   private final Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
@@ -43,7 +38,7 @@ public class MappingCharFilter extends BaseCharFilter {
   private final FST.BytesReader fstReader;
   private final RollingCharBuffer buffer = new RollingCharBuffer();
   private final FST.Arc<CharsRef> scratchArc = new FST.Arc<>();
-  private final Map<Character,FST.Arc<CharsRef>> cachedRootArcs;
+  private final Map<Character, FST.Arc<CharsRef>> cachedRootArcs;
 
   private CharsRef replacement;
   private int replacementPointer;
@@ -75,11 +70,12 @@ public class MappingCharFilter extends BaseCharFilter {
   @Override
   public int read() throws IOException {
 
-    //System.out.println("\nread");
-    while(true) {
+    // System.out.println("\nread");
+    while (true) {
 
       if (replacement != null && replacementPointer < replacement.length) {
-        //System.out.println("  return repl[" + replacementPointer + "]=" + replacement.chars[replacement.offset + replacementPointer]);
+        // System.out.println("  return repl[" + replacementPointer + "]=" +
+        // replacement.chars[replacement.offset + replacementPointer]);
         return replacement.chars[replacement.offset + replacementPointer++];
       }
 
@@ -141,7 +137,7 @@ public class MappingCharFilter extends BaseCharFilter {
 
       if (lastMatch != null) {
         inputOff += lastMatchLen;
-        //System.out.println("  match!  len=" + lastMatchLen + " repl=" + lastMatch);
+        // System.out.println("  match!  len=" + lastMatchLen + " repl=" + lastMatch);
 
         final int diff = lastMatchLen - lastMatch.length;
 
@@ -155,7 +151,7 @@ public class MappingCharFilter extends BaseCharFilter {
             // the "extra" chars all back to the same input
             // offset:
             final int outputStart = inputOff - prevCumulativeDiff;
-            for(int extraIDX=0;extraIDX<-diff;extraIDX++) {
+            for (int extraIDX = 0; extraIDX < -diff; extraIDX++) {
               addOffCorrectMap(outputStart + extraIDX, prevCumulativeDiff - extraIDX - 1);
             }
           }
@@ -178,7 +174,7 @@ public class MappingCharFilter extends BaseCharFilter {
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
     int numRead = 0;
-    for(int i = off; i < off + len; i++) {
+    for (int i = off; i < off + len; i++) {
       int c = read();
       if (c == -1) break;
       cbuf[i] = (char) c;

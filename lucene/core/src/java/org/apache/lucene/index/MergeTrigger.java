@@ -16,45 +16,31 @@
  */
 package org.apache.lucene.index;
 
-
 /**
- * MergeTrigger is passed to
- * {@link MergePolicy#findMerges(MergeTrigger, SegmentInfos, MergePolicy.MergeContext)} to indicate the
- * event that triggered the merge.
+ * MergeTrigger is passed to {@link MergePolicy#findMerges(MergeTrigger, SegmentInfos,
+ * MergePolicy.MergeContext)} to indicate the event that triggered the merge.
  */
 public enum MergeTrigger {
-  /**
-   * Merge was triggered by a segment flush.
-   */
+  /** Merge was triggered by a segment flush. */
   SEGMENT_FLUSH,
 
   /**
-   * Merge was triggered by a full flush. Full flushes
-   * can be caused by a commit, NRT reader reopen or a close call on the index writer.
+   * Merge was triggered by a full flush. Full flushes can be caused by a commit, NRT reader reopen
+   * or a close call on the index writer.
    */
   FULL_FLUSH,
 
-  /**
-   * Merge has been triggered explicitly by the user.
-   */
+  /** Merge has been triggered explicitly by the user. */
   EXPLICIT,
 
-  /**
-   * Merge was triggered by a successfully finished merge.
-   */
+  /** Merge was triggered by a successfully finished merge. */
   MERGE_FINISHED,
 
-  /**
-   * Merge was triggered by a closing IndexWriter.
-   */
+  /** Merge was triggered by a closing IndexWriter. */
   CLOSING,
 
-  /**
-   * Merge was triggered on commit.
-   */
+  /** Merge was triggered on commit. */
   COMMIT,
-  /**
-   * Merge was triggered on opening NRT readers.
-   */
+  /** Merge was triggered on opening NRT readers. */
   GET_READER,
 }

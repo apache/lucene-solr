@@ -86,7 +86,7 @@ public class MaxMetric extends Metric {
       if(l > longMax) {
         longMax = l;
       }
-    } else {
+    } else if(o instanceof Long) {
       long l = (long)o;
       if(l > longMax) {
         longMax = l;

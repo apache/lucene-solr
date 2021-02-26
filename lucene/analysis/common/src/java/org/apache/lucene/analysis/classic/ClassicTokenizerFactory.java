@@ -16,15 +16,14 @@
  */
 package org.apache.lucene.analysis.classic;
 
-
+import java.util.Map;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.AttributeFactory;
 
-import java.util.Map;
-
 /**
  * Factory for {@link ClassicTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_clssc" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -43,7 +42,7 @@ public class ClassicTokenizerFactory extends TokenizerFactory {
   private final int maxTokenLength;
 
   /** Creates a new ClassicTokenizerFactory */
-  public ClassicTokenizerFactory(Map<String,String> args) {
+  public ClassicTokenizerFactory(Map<String, String> args) {
     super(args);
     maxTokenLength = getInt(args, "maxTokenLength", StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH);
     if (!args.isEmpty()) {

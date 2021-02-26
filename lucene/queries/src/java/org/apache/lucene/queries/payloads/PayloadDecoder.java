@@ -19,19 +19,12 @@ package org.apache.lucene.queries.payloads;
 
 import org.apache.lucene.util.BytesRef;
 
-/**
- * Defines a way of converting payloads to float values, for use by {@link PayloadScoreQuery}
- */
+/** Defines a way of converting payloads to float values, for use by {@link PayloadScoreQuery} */
 public interface PayloadDecoder {
 
-  /**
-   * Compute a float value for the given payload
-   */
+  /** Compute a float value for the given payload */
   float computePayloadFactor(BytesRef payload);
 
-  /**
-   * A {@link PayloadDecoder} that interprets the bytes of a payload as a float
-   */
+  /** A {@link PayloadDecoder} that interprets the bytes of a payload as a float */
   PayloadDecoder FLOAT_DECODER = bytes -> bytes == null ? 1 : bytes.bytes[bytes.offset];
-
 }

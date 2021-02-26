@@ -22,27 +22,23 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.apache.lucene.util.BytesRef;
 
 /**
- * A {@link SpatialPrefixTree} which uses a
- * <a href="http://en.wikipedia.org/wiki/Quadtree">quad tree</a> in which an
- * indexed term will be generated for each cell, 'A', 'B', 'C', 'D'.
+ * A {@link SpatialPrefixTree} which uses a <a href="http://en.wikipedia.org/wiki/Quadtree">quad
+ * tree</a> in which an indexed term will be generated for each cell, 'A', 'B', 'C', 'D'.
  *
  * @lucene.experimental
  */
 public class QuadPrefixTree extends LegacyPrefixTree {
 
-  /**
-   * Factory for creating {@link QuadPrefixTree} instances with useful defaults
-   */
+  /** Factory for creating {@link QuadPrefixTree} instances with useful defaults */
   public static class Factory extends SpatialPrefixTreeFactory {
     @Override
     protected int getLevelForDistance(double degrees) {
@@ -51,8 +47,8 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
     @Override
     protected SpatialPrefixTree newSPT() {
-      QuadPrefixTree tree = new QuadPrefixTree(ctx,
-          maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
+      QuadPrefixTree tree =
+          new QuadPrefixTree(ctx, maxLevels != null ? maxLevels : MAX_LEVELS_POSSIBLE);
       @SuppressWarnings("deprecation")
       Version LUCENE_8_3_0 = Version.LUCENE_8_3_0;
       tree.robust = getVersion().onOrAfter(LUCENE_8_3_0);
@@ -60,7 +56,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     }
   }
 
-  public static final int MAX_LEVELS_POSSIBLE = 50;//not really sure how big this should be
+  public static final int MAX_LEVELS_POSSIBLE = 50; // not really sure how big this should be
 
   public static final int DEFAULT_MAX_LEVELS = 12;
   protected final double xmin;
@@ -76,10 +72,10 @@ public class QuadPrefixTree extends LegacyPrefixTree {
   final double[] levelW;
   final double[] levelH;
 
-  protected boolean robust = true; // for backward compatibility, use the old method if user specified old version.
+  protected boolean robust =
+      true; // for backward compatibility, use the old method if user specified old version.
 
-  public QuadPrefixTree(
-      SpatialContext ctx, Rectangle bounds, int maxLevels) {
+  public QuadPrefixTree(SpatialContext ctx, Rectangle bounds, int maxLevels) {
     super(ctx, maxLevels);
     this.xmin = bounds.getMinX();
     this.xmax = bounds.getMaxX();
@@ -91,10 +87,10 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
     gridW = xmax - xmin;
     gridH = ymax - ymin;
-    this.xmid = xmin + gridW/2.0;
-    this.ymid = ymin + gridH/2.0;
-    levelW[0] = gridW/2.0;
-    levelH[0] = gridH/2.0;
+    this.xmid = xmin + gridW / 2.0;
+    this.ymid = ymin + gridH / 2.0;
+    levelW[0] = gridW / 2.0;
+    levelH[0] = gridH / 2.0;
 
     for (int i = 1; i < levelW.length; i++) {
       levelW[i] = levelW[i - 1] / 2.0;
@@ -106,8 +102,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     this(ctx, DEFAULT_MAX_LEVELS);
   }
 
-  public QuadPrefixTree(
-      SpatialContext ctx, int maxLevels) {
+  public QuadPrefixTree(SpatialContext ctx, int maxLevels) {
     this(ctx, ctx.getWorldBounds(), maxLevels);
   }
 
@@ -129,12 +124,12 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
   @Override
   public int getLevelForDistance(double dist) {
-    if (dist == 0)//short circuit
-      return maxLevels;
-    for (int i = 0; i < maxLevels-1; i++) {
-      //note: level[i] is actually a lookup for level i+1
-      if(dist > levelW[i] && dist > levelH[i]) {
-        return i+1;
+    if (dist == 0) // short circuit
+    return maxLevels;
+    for (int i = 0; i < maxLevels - 1; i++) {
+      // note: level[i] is actually a lookup for level i+1
+      if (dist > levelW[i] && dist > levelH[i]) {
+        return i + 1;
       }
     }
     return maxLevels;
@@ -144,9 +139,16 @@ public class QuadPrefixTree extends LegacyPrefixTree {
   public Cell getCell(Point p, int level) {
     if (!robust) { // old method
       List<Cell> cells = new ArrayList<>(1);
-      buildNotRobustly(xmid, ymid, 0, cells, new BytesRef(maxLevels+1), ctx.getShapeFactory().pointXY(p.getX(),p.getY()), level);
+      buildNotRobustly(
+          xmid,
+          ymid,
+          0,
+          cells,
+          new BytesRef(maxLevels + 1),
+          ctx.getShapeFactory().pointXY(p.getX(), p.getY()),
+          level);
       if (!cells.isEmpty()) {
-        return cells.get(0);//note cells could be longer if p on edge
+        return cells.get(0); // note cells could be longer if p on edge
       }
     }
 
@@ -154,14 +156,14 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     double currentYmid = ymid;
     double xp = p.getX();
     double yp = p.getY();
-    BytesRef str = new BytesRef(maxLevels+1);
+    BytesRef str = new BytesRef(maxLevels + 1);
     int levelLimit = level > maxLevels ? maxLevels : level;
     SpatialRelation rel = SpatialRelation.CONTAINS;
-    for (int lvl = 0; lvl < levelLimit; lvl++){
+    for (int lvl = 0; lvl < levelLimit; lvl++) {
       int c = battenberg(currentXmid, currentYmid, xp, yp);
       double halfWidth = levelW[lvl + 1];
       double halfHeight = levelH[lvl + 1];
-      switch(c){
+      switch (c) {
         case 0:
           currentXmid -= halfWidth;
           currentYmid += halfHeight;
@@ -180,19 +182,13 @@ public class QuadPrefixTree extends LegacyPrefixTree {
           break;
         default:
       }
-      str.bytes[str.length++] = (byte)('A' + c);
+      str.bytes[str.length++] = (byte) ('A' + c);
     }
     return new QuadCell(str, rel);
   }
 
   private void buildNotRobustly(
-      double x,
-      double y,
-      int level,
-      List<Cell> matches,
-      BytesRef str,
-      Shape shape,
-      int maxLevel) {
+      double x, double y, int level, List<Cell> matches, BytesRef str, Shape shape, int maxLevel) {
     assert str.length == level;
     double w = levelW[level] / 2;
     double h = levelH[level] / 2;
@@ -228,17 +224,17 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     Rectangle rectangle = ctx.getShapeFactory().rect(cx - w, cx + w, cy - h, cy + h);
     SpatialRelation v = shape.relate(rectangle);
     if (SpatialRelation.CONTAINS == v) {
-      str.bytes[str.length++] = (byte)c;//append
-      //str.append(SpatialPrefixGrid.COVER);
+      str.bytes[str.length++] = (byte) c; // append
+      // str.append(SpatialPrefixGrid.COVER);
       matches.add(new QuadCell(BytesRef.deepCopyOf(str), v.transpose()));
     } else if (SpatialRelation.DISJOINT == v) {
       // nothing
     } else { // SpatialRelation.WITHIN, SpatialRelation.INTERSECTS
-      str.bytes[str.length++] = (byte)c;//append
+      str.bytes[str.length++] = (byte) c; // append
 
-      int nextLevel = level+1;
+      int nextLevel = level + 1;
       if (nextLevel >= maxLevel) {
-        //str.append(SpatialPrefixGrid.INTERSECTS);
+        // str.append(SpatialPrefixGrid.INTERSECTS);
         matches.add(new QuadCell(BytesRef.deepCopyOf(str), v.transpose()));
       } else {
         buildNotRobustly(cx, cy, nextLevel, matches, str, shape, maxLevel);
@@ -248,7 +244,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
   }
 
   /** Returns a Z-Order quadrant [0-3]. */
-  protected int battenberg(double xmid, double ymid, double xp, double yp){
+  protected int battenberg(double xmid, double ymid, double xp, double yp) {
     // http://en.wikipedia.org/wiki/Z-order_%28curve%29
     if (ymid <= yp) {
       if (xmid >= xp) {
@@ -280,25 +276,29 @@ public class QuadPrefixTree extends LegacyPrefixTree {
     }
 
     @Override
-    protected QuadPrefixTree getGrid() { return QuadPrefixTree.this; }
+    protected QuadPrefixTree getGrid() {
+      return QuadPrefixTree.this;
+    }
 
     @Override
-    protected int getMaxLevels() { return maxLevels; }
+    protected int getMaxLevels() {
+      return maxLevels;
+    }
 
     @Override
     protected Collection<Cell> getSubCells() {
       BytesRef source = getTokenBytesNoLeaf(null);
 
       List<Cell> cells = new ArrayList<>(4);
-      cells.add(new QuadCell(concat(source, (byte)'A'), null));
-      cells.add(new QuadCell(concat(source, (byte)'B'), null));
-      cells.add(new QuadCell(concat(source, (byte)'C'), null));
-      cells.add(new QuadCell(concat(source, (byte)'D'), null));
+      cells.add(new QuadCell(concat(source, (byte) 'A'), null));
+      cells.add(new QuadCell(concat(source, (byte) 'B'), null));
+      cells.add(new QuadCell(concat(source, (byte) 'C'), null));
+      cells.add(new QuadCell(concat(source, (byte) 'D'), null));
       return cells;
     }
 
     protected BytesRef concat(BytesRef source, byte b) {
-      //+2 for new char + potential leaf
+      // +2 for new char + potential leaf
       final byte[] buffer = new byte[source.length + 2];
       System.arraycopy(source.bytes, source.offset, buffer, 0, source.length);
       BytesRef target = new BytesRef(buffer);
@@ -314,13 +314,12 @@ public class QuadPrefixTree extends LegacyPrefixTree {
 
     @Override
     protected QuadCell getSubCell(Point p) {
-      return (QuadCell) QuadPrefixTree.this.getCell(p, getLevel() + 1);//not performant!
+      return (QuadCell) QuadPrefixTree.this.getCell(p, getLevel() + 1); // not performant!
     }
 
     @Override
     public Shape getShape() {
-      if (shape == null)
-        shape = makeShape();
+      if (shape == null) shape = makeShape();
       return shape;
     }
 
@@ -340,7 +339,7 @@ public class QuadPrefixTree extends LegacyPrefixTree {
             ymin += levelH[i];
             break;
           case 'C':
-            break;//nothing really
+            break; // nothing really
           case 'D':
             xmin += levelW[i];
             break;
@@ -351,13 +350,13 @@ public class QuadPrefixTree extends LegacyPrefixTree {
       int len = token.length;
       double width, height;
       if (len > 0) {
-        width = levelW[len-1];
-        height = levelH[len-1];
+        width = levelW[len - 1];
+        height = levelH[len - 1];
       } else {
         width = gridW;
         height = gridH;
       }
       return ctx.getShapeFactory().rect(xmin, xmin + width, ymin, ymin + height);
     }
-  }//QuadCell
+  } // QuadCell
 }

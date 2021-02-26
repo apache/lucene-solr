@@ -23,11 +23,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.Facets;
-import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsCollector;
+import org.apache.lucene.facet.FacetsCollector.MatchingDocs;
 import org.apache.lucene.facet.FacetsConfig;
 import org.apache.lucene.facet.LabelAndValue;
 import org.apache.lucene.facet.TopOrdAndIntQueue;
@@ -35,8 +34,8 @@ import org.apache.lucene.facet.sortedset.SortedSetDocValuesReaderState.OrdRange;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -46,23 +45,20 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LongValues;
 
-/** Compute facets counts from previously
- *  indexed {@link SortedSetDocValuesFacetField},
- *  without require a separate taxonomy index.  Faceting is
- *  a bit slower (~25%), and there is added cost on every
- *  {@link IndexReader} open to create a new {@link
- *  SortedSetDocValuesReaderState}.  Furthermore, this does
- *  not support hierarchical facets; only flat (dimension +
- *  label) facets, but it uses quite a bit less RAM to do
- *  so.
+/**
+ * Compute facets counts from previously indexed {@link SortedSetDocValuesFacetField}, without
+ * require a separate taxonomy index. Faceting is a bit slower (~25%), and there is added cost on
+ * every {@link IndexReader} open to create a new {@link SortedSetDocValuesReaderState}.
+ * Furthermore, this does not support hierarchical facets; only flat (dimension + label) facets, but
+ * it uses quite a bit less RAM to do so.
  *
- *  <p><b>NOTE</b>: this class should be instantiated and
- *  then used from a single thread, because it holds a
- *  thread-private instance of {@link SortedSetDocValues}.
- * 
+ * <p><b>NOTE</b>: this class should be instantiated and then used from a single thread, because it
+ * holds a thread-private instance of {@link SortedSetDocValues}.
+ *
  * <p><b>NOTE:</b>: tie-break is by unicode sort order
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public class SortedSetDocValuesFacetCounts extends Facets {
 
   final SortedSetDocValuesReaderState state;
@@ -71,8 +67,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
   final int[] counts;
 
   /** Returns all facet counts, same result as searching on {@link MatchAllDocsQuery} but faster. */
-  public SortedSetDocValuesFacetCounts(SortedSetDocValuesReaderState state)
-      throws IOException {
+  public SortedSetDocValuesFacetCounts(SortedSetDocValuesReaderState state) throws IOException {
     this(state, null);
   }
 
@@ -81,7 +76,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
       throws IOException {
     this.state = state;
     this.field = state.getField();
-    dv = state.getDocValues();    
+    dv = state.getDocValues();
     counts = new int[state.getSize()];
     if (hits == null) {
       // browse only
@@ -116,9 +111,9 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     int childCount = 0;
 
     TopOrdAndIntQueue.OrdAndValue reuse = null;
-    //System.out.println("getDim : " + ordRange.start + " - " + ordRange.end);
-    for(int ord=ordRange.start; ord<=ordRange.end; ord++) {
-      //System.out.println("  ord=" + ord + " count=" + counts[ord]);
+    // System.out.println("getDim : " + ordRange.start + " - " + ordRange.end);
+    for (int ord = ordRange.start; ord <= ordRange.end; ord++) {
+      // System.out.println("  ord=" + ord + " count=" + counts[ord]);
       if (counts[ord] > 0) {
         dimCount += counts[ord];
         childCount++;
@@ -146,7 +141,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     }
 
     LabelAndValue[] labelValues = new LabelAndValue[q.size()];
-    for(int i=labelValues.length-1;i>=0;i--) {
+    for (int i = labelValues.length - 1; i >= 0; i--) {
       TopOrdAndIntQueue.OrdAndValue ordAndValue = q.pop();
       final BytesRef term = dv.lookupOrd(ordAndValue.ord);
       String[] parts = FacetsConfig.stringToPath(term.utf8ToString());
@@ -156,7 +151,8 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     return new FacetResult(dim, new String[0], dimCount, labelValues, childCount);
   }
 
-  private void countOneSegment(OrdinalMap ordinalMap, LeafReader reader, int segOrd, MatchingDocs hits) throws IOException {
+  private void countOneSegment(
+      OrdinalMap ordinalMap, LeafReader reader, int segOrd, MatchingDocs hits) throws IOException {
     SortedSetDocValues segValues = reader.getSortedSetDocValues(field);
     if (segValues == null) {
       // nothing to count
@@ -184,36 +180,38 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
       int numSegOrds = (int) segValues.getValueCount();
 
-      if (hits != null && hits.totalHits < numSegOrds/10) {
-        //System.out.println("    remap as-we-go");
+      if (hits != null && hits.totalHits < numSegOrds / 10) {
+        // System.out.println("    remap as-we-go");
         // Remap every ord to global ord as we iterate:
         for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
           int term = (int) segValues.nextOrd();
           while (term != SortedSetDocValues.NO_MORE_ORDS) {
-            //System.out.println("      segOrd=" + segOrd + " ord=" + term + " globalOrd=" + ordinalMap.getGlobalOrd(segOrd, term));
+            // System.out.println("      segOrd=" + segOrd + " ord=" + term + " globalOrd=" +
+            // ordinalMap.getGlobalOrd(segOrd, term));
             counts[(int) ordMap.get(term)]++;
             term = (int) segValues.nextOrd();
           }
         }
       } else {
-        //System.out.println("    count in seg ord first");
+        // System.out.println("    count in seg ord first");
 
         // First count in seg-ord space:
         final int[] segCounts = new int[numSegOrds];
         for (int doc = it.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = it.nextDoc()) {
           int term = (int) segValues.nextOrd();
           while (term != SortedSetDocValues.NO_MORE_ORDS) {
-            //System.out.println("      ord=" + term);
+            // System.out.println("      ord=" + term);
             segCounts[term]++;
             term = (int) segValues.nextOrd();
           }
         }
 
         // Then, migrate to global ords:
-        for(int ord=0;ord<numSegOrds;ord++) {
+        for (int ord = 0; ord < numSegOrds; ord++) {
           int count = segCounts[ord];
           if (count != 0) {
-            //System.out.println("    migrate segOrd=" + segOrd + " ord=" + ord + " globalOrd=" + ordinalMap.getGlobalOrd(segOrd, ord));
+            // System.out.println("    migrate segOrd=" + segOrd + " ord=" + ord + " globalOrd=" +
+            // ordinalMap.getGlobalOrd(segOrd, ord));
             counts[(int) ordMap.get(ord)] += count;
           }
         }
@@ -229,13 +227,11 @@ public class SortedSetDocValuesFacetCounts extends Facets {
         }
       }
     }
-
-    
   }
 
   /** Does all the "real work" of tallying up the counts. */
   private final void count(List<MatchingDocs> matchingDocs) throws IOException {
-    //System.out.println("ssdv count");
+    // System.out.println("ssdv count");
 
     OrdinalMap ordinalMap;
 
@@ -247,17 +243,18 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     } else {
       ordinalMap = null;
     }
-    
+
     IndexReader reader = state.getReader();
 
-    for(MatchingDocs hits : matchingDocs) {
+    for (MatchingDocs hits : matchingDocs) {
 
       // LUCENE-5090: make sure the provided reader context "matches"
       // the top-level reader passed to the
       // SortedSetDocValuesReaderState, else cryptic
       // AIOOBE can happen:
       if (ReaderUtil.getTopLevelContext(hits.context).reader() != reader) {
-        throw new IllegalStateException("the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
+        throw new IllegalStateException(
+            "the SortedSetDocValuesReaderState provided to this class does not match the reader being searched; you must create a new SortedSetDocValuesReaderState every time you open a new IndexReader");
       }
 
       countOneSegment(ordinalMap, hits.context.reader(), hits.context.ord, hits);
@@ -266,7 +263,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
 
   /** Does all the "real work" of tallying up the counts. */
   private final void countAll() throws IOException {
-    //System.out.println("ssdv count");
+    // System.out.println("ssdv count");
 
     OrdinalMap ordinalMap;
 
@@ -278,8 +275,8 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     } else {
       ordinalMap = null;
     }
-    
-    for(LeafReaderContext context : state.getReader().leaves()) {
+
+    for (LeafReaderContext context : state.getReader().leaves()) {
       countOneSegment(ordinalMap, context.reader(), context.ord, null);
     }
   }
@@ -301,7 +298,7 @@ public class SortedSetDocValuesFacetCounts extends Facets {
   public List<FacetResult> getAllDims(int topN) throws IOException {
 
     List<FacetResult> results = new ArrayList<>();
-    for(Map.Entry<String,OrdRange> ent : state.getPrefixToOrdRange().entrySet()) {
+    for (Map.Entry<String, OrdRange> ent : state.getPrefixToOrdRange().entrySet()) {
       FacetResult fr = getDim(ent.getKey(), ent.getValue(), topN);
       if (fr != null) {
         results.add(fr);
@@ -309,19 +306,20 @@ public class SortedSetDocValuesFacetCounts extends Facets {
     }
 
     // Sort by highest count:
-    Collections.sort(results,
-                     new Comparator<FacetResult>() {
-                       @Override
-                       public int compare(FacetResult a, FacetResult b) {
-                         if (a.value.intValue() > b.value.intValue()) {
-                           return -1;
-                         } else if (b.value.intValue() > a.value.intValue()) {
-                           return 1;
-                         } else {
-                           return a.dim.compareTo(b.dim);
-                         }
-                       }
-                     });
+    Collections.sort(
+        results,
+        new Comparator<FacetResult>() {
+          @Override
+          public int compare(FacetResult a, FacetResult b) {
+            if (a.value.intValue() > b.value.intValue()) {
+              return -1;
+            } else if (b.value.intValue() > a.value.intValue()) {
+              return 1;
+            } else {
+              return a.dim.compareTo(b.dim);
+            }
+          }
+        });
 
     return results;
   }

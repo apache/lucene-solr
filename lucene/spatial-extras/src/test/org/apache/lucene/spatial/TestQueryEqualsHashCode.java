@@ -18,7 +18,6 @@ package org.apache.lucene.spatial;
 
 import java.util.ArrayList;
 import java.util.Collection;
-
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -44,17 +43,24 @@ public class TestQueryEqualsHashCode extends LuceneTestCase {
   @Test
   public void testEqualsHashCode() {
 
-    switch (random().nextInt(4)) {//0-3
-      case 0: predicate = SpatialOperation.Contains; break;
-      case 1: predicate = SpatialOperation.IsWithin; break;
+    switch (random().nextInt(4)) { // 0-3
+      case 0:
+        predicate = SpatialOperation.Contains;
+        break;
+      case 1:
+        predicate = SpatialOperation.IsWithin;
+        break;
 
-      default: predicate = SpatialOperation.Intersects; break;
+      default:
+        predicate = SpatialOperation.Intersects;
+        break;
     }
-    final SpatialPrefixTree gridQuad = new QuadPrefixTree(ctx,10);
-    final SpatialPrefixTree gridGeohash = new GeohashPrefixTree(ctx,10);
+    final SpatialPrefixTree gridQuad = new QuadPrefixTree(ctx, 10);
+    final SpatialPrefixTree gridGeohash = new GeohashPrefixTree(ctx, 10);
 
     Collection<SpatialStrategy> strategies = new ArrayList<>();
-    RecursivePrefixTreeStrategy recursive_geohash = new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash");
+    RecursivePrefixTreeStrategy recursive_geohash =
+        new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash");
     strategies.add(recursive_geohash);
     strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
     strategies.add(PointVectorStrategy.newInstance(ctx, "pointvector"));
@@ -70,18 +76,24 @@ public class TestQueryEqualsHashCode extends LuceneTestCase {
   private void testEqualsHashcode(final SpatialStrategy strategy) {
     final SpatialArgs args1 = makeArgs1();
     final SpatialArgs args2 = makeArgs2();
-    testEqualsHashcode(args1, args2, new ObjGenerator() {
-      @Override
-      public Object gen(SpatialArgs args) {
-        return strategy.makeQuery(args);
-      }
-    });
-    testEqualsHashcode(args1, args2, new ObjGenerator() {
-      @Override
-      public Object gen(SpatialArgs args) {
-        return strategy.makeDistanceValueSource(args.getShape().getCenter());
-      }
-    });
+    testEqualsHashcode(
+        args1,
+        args2,
+        new ObjGenerator() {
+          @Override
+          public Object gen(SpatialArgs args) {
+            return strategy.makeQuery(args);
+          }
+        });
+    testEqualsHashcode(
+        args1,
+        args2,
+        new ObjGenerator() {
+          @Override
+          public Object gen(SpatialArgs args) {
+            return strategy.makeDistanceValueSource(args.getShape().getCenter());
+          }
+        });
   }
 
   private void testEqualsHashcode(SpatialArgs args1, SpatialArgs args2, ObjGenerator generator) {
@@ -91,13 +103,12 @@ public class TestQueryEqualsHashCode extends LuceneTestCase {
     } catch (UnsupportedOperationException e) {
       return;
     }
-    if (first == null)
-      return;//unsupported op?
-    Object second = generator.gen(args1);//should be the same
+    if (first == null) return; // unsupported op?
+    Object second = generator.gen(args1); // should be the same
     assertEquals(first, second);
     assertEquals(first.hashCode(), second.hashCode());
     assertTrue(args1.equals(args2) == false);
-    second = generator.gen(args2);//now should be different
+    second = generator.gen(args2); // now should be different
     assertTrue(first.equals(second) == false);
     assertTrue(first.hashCode() != second.hashCode());
   }
@@ -115,5 +126,4 @@ public class TestQueryEqualsHashCode extends LuceneTestCase {
   interface ObjGenerator {
     Object gen(SpatialArgs args);
   }
-
 }

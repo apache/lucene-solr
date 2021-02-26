@@ -1,5 +1,37 @@
 # Apache Lucene Migration Guide
 
+## NativeUnixDirectory removed and replaced by DirectIODirectory (LUCENE-8982)
+
+Java 11 supports to use Direct IO without native wrappers from Java code.
+NativeUnixDirectory in the misc module was therefore removed and replaced
+by DirectIODirectory. To use it, you need a JVM and operating system that
+supports Direct IO.
+
+## BM25Similarity.setDiscountOverlaps and LegacyBM25Similarity.setDiscountOverlaps methods removed (LUCENE-9646)
+
+The discount discountOverlaps parameter for both BM25Similarity and LegacyBM25Similarity
+is now set by the constructor of those classes.
+
+## Packages in misc module are renamed (LUCENE-9600)
+
+Following package names in misc module are renamed.
+
+- o.a.l.document is renamed to o.a.l.misc.document
+- o.a.l.index is renamed to o.a.l.misc.index
+- o.a.l.search is renamed to o.a.l.misc.search
+- o.a.l.store is renamed to o.a.l.misc.store
+- o.a.l.util is renamed to o.a.l.misc.util
+
+Also, o.a.l.document.InetAddressPoint and o.a.l.document.InetAddressRange are moved to core module.
+
+## Packages in sandbox module are renamed (LUCENE-9319)
+
+Following package names in sandbox module are renamed.
+
+- o.a.l.codecs is renamed to o.a.l.sandbox.codecs
+- o.a.l.document is renamed to o.a.l.sandbox.document
+- o.a.l.search is renamed to o.a.l.sandbox.search
+
 ## Backward codecs are renamed (LUCENE-9318)
 
 o.a.l.codecs package in `lucene-backward-codecs` module is renamed to o.a.l.backward_codecs.

@@ -112,7 +112,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     DocCollection b1x1 = clusterState.getCollection("b1x1");
     Collection<Replica> replicas = b1x1.getSlice("shard1").getReplicas();
     assertEquals(1, replicas.size());
-    String baseUrl = replicas.iterator().next().getStr(ZkStateReader.BASE_URL_PROP);
+    String baseUrl = replicas.iterator().next().getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     try (HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2", 2000, 5000)) {
 
@@ -171,7 +171,6 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     //Simulate a replica being in down state.
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-        ZkStateReader.BASE_URL_PROP, notLeader.getStr(ZkStateReader.BASE_URL_PROP),
         ZkStateReader.NODE_NAME_PROP, notLeader.getStr(ZkStateReader.NODE_NAME_PROP),
         ZkStateReader.COLLECTION_PROP, "football",
         ZkStateReader.SHARD_ID_PROP, "shard1",
@@ -182,14 +181,21 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     if (log.isInfoEnabled()) {
       log.info("Forcing {} to go into 'down' state", notLeader.getStr(ZkStateReader.CORE_NAME_PROP));
     }
-    ZkDistributedQueue q = jettys.get(0).getCoreContainer().getZkController().getOverseer().getStateUpdateQueue();
-    q.offer(Utils.toJSON(m));
+
+    final Overseer overseer = jettys.get(0).getCoreContainer().getZkController().getOverseer();
+    if (overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+      overseer.getDistributedClusterStateUpdater().doSingleStateUpdate(
+          DistributedClusterStateUpdater.MutatingCommand.ReplicaSetState, m, overseer.getSolrCloudManager(), overseer.getZkStateReader());
+    } else {
+      ZkDistributedQueue q = overseer.getStateUpdateQueue();
+      q.offer(Utils.toJSON(m));
+    }
 
     verifyReplicaStatus(cloudClient.getZkStateReader(), "football", "shard1", notLeader.getName(), Replica.State.DOWN);
 
     //Query against the node which hosts the down replica
 
-    String baseUrl = notLeader.getStr(ZkStateReader.BASE_URL_PROP);
+    String baseUrl = notLeader.getBaseUrl();
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
     log.info("Firing queries against path={}", path);

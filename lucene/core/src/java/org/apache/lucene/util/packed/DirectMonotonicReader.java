@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RandomAccessInput;
 import org.apache.lucene.util.Accountable;
@@ -28,26 +26,31 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Retrieves an instance previously written by {@link DirectMonotonicWriter}.
- * @see DirectMonotonicWriter 
+ *
+ * @see DirectMonotonicWriter
  */
 public final class DirectMonotonicReader extends LongValues implements Accountable {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(DirectMonotonicReader.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(DirectMonotonicReader.class);
 
   /** An instance that always returns {@code 0}. */
-  private static final LongValues EMPTY = new LongValues() {
+  private static final LongValues EMPTY =
+      new LongValues() {
 
-    @Override
-    public long get(long index) {
-      return 0;
-    }
+        @Override
+        public long get(long index) {
+          return 0;
+        }
+      };
 
-  };
-
-  /** In-memory metadata that needs to be kept around for
-   *  {@link DirectMonotonicReader} to read data from disk. */
+  /**
+   * In-memory metadata that needs to be kept around for {@link DirectMonotonicReader} to read data
+   * from disk.
+   */
   public static class Meta implements Accountable {
-    private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(Meta.class);
+    private static final long BASE_RAM_BYTES_USED =
+        RamUsageEstimator.shallowSizeOfInstance(Meta.class);
 
     final int blockShift;
     final int numBlocks;
@@ -79,9 +82,13 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
     }
   }
 
-  /** Load metadata from the given {@link IndexInput}.
-   *  @see DirectMonotonicReader#getInstance(Meta, RandomAccessInput) */
-  public static Meta loadMeta(IndexInput metaIn, long numValues, int blockShift) throws IOException {
+  /**
+   * Load metadata from the given {@link IndexInput}.
+   *
+   * @see DirectMonotonicReader#getInstance(Meta, RandomAccessInput)
+   */
+  public static Meta loadMeta(IndexInput metaIn, long numValues, int blockShift)
+      throws IOException {
     Meta meta = new Meta(numValues, blockShift);
     for (int i = 0; i < meta.numBlocks; ++i) {
       meta.mins[i] = metaIn.readLong();
@@ -92,10 +99,9 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
     return meta;
   }
 
-  /**
-   * Retrieves an instance from the specified slice.
-   */
-  public static DirectMonotonicReader getInstance(Meta meta, RandomAccessInput data) throws IOException {
+  /** Retrieves an instance from the specified slice. */
+  public static DirectMonotonicReader getInstance(Meta meta, RandomAccessInput data)
+      throws IOException {
     final LongValues[] readers = new LongValues[meta.numBlocks];
     for (int i = 0; i < meta.mins.length; ++i) {
       if (meta.bpvs[i] == 0) {
@@ -115,13 +121,16 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
   private final byte[] bpvs;
   private final int nonZeroBpvs;
 
-  private DirectMonotonicReader(int blockShift, LongValues[] readers, long[] mins, float[] avgs, byte[] bpvs) {
+  private DirectMonotonicReader(
+      int blockShift, LongValues[] readers, long[] mins, float[] avgs, byte[] bpvs) {
     this.blockShift = blockShift;
     this.readers = readers;
     this.mins = mins;
     this.avgs = avgs;
     this.bpvs = bpvs;
-    if (readers.length != mins.length || readers.length != avgs.length || readers.length != bpvs.length) {
+    if (readers.length != mins.length
+        || readers.length != avgs.length
+        || readers.length != bpvs.length) {
       throw new IllegalArgumentException();
     }
     int nonZeroBpvs = 0;
@@ -148,15 +157,15 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
     final long lowerBound = mins[block] + (long) (avgs[block] * blockIndex);
     final long upperBound = lowerBound + (1L << bpvs[block]) - 1;
     if (bpvs[block] == 64 || upperBound < lowerBound) { // overflow
-      return new long[] { Long.MIN_VALUE, Long.MAX_VALUE };
+      return new long[] {Long.MIN_VALUE, Long.MAX_VALUE};
     } else {
-      return new long[] { lowerBound, upperBound };
+      return new long[] {lowerBound, upperBound};
     }
   }
 
   /**
-   * Return the index of a key if it exists, or its insertion point otherwise
-   * like {@link Arrays#binarySearch(long[], int, int, long)}.
+   * Return the index of a key if it exists, or its insertion point otherwise like {@link
+   * Arrays#binarySearch(long[], int, int, long)}.
    *
    * @see Arrays#binarySearch(long[], int, int, long)
    */
@@ -194,9 +203,10 @@ public final class DirectMonotonicReader extends LongValues implements Accountab
   @Override
   public long ramBytesUsed() {
     // Don't include meta, which should be accounted separately
-    return BASE_RAM_BYTES_USED + RamUsageEstimator.shallowSizeOf(readers) +
+    return BASE_RAM_BYTES_USED
+        + RamUsageEstimator.shallowSizeOf(readers)
+        +
         // Assume empty objects for the readers
         nonZeroBpvs * RamUsageEstimator.alignObjectSize(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER);
   }
-
 }

@@ -16,9 +16,8 @@
  */
 package org.apache.lucene.util;
 
-
 public class TestStringHelper extends LuceneTestCase {
-  
+
   public void testBytesDifference() {
     BytesRef left = new BytesRef("foobar");
     BytesRef right = new BytesRef("foozo");
@@ -29,17 +28,19 @@ public class TestStringHelper extends LuceneTestCase {
     assertEquals(0, StringHelper.bytesDifference(new BytesRef("foo"), new BytesRef("g")));
     assertEquals(3, StringHelper.bytesDifference(new BytesRef("foo"), new BytesRef("food")));
     // we can detect terms are out of order if we see a duplicate
-    expectThrows(IllegalArgumentException.class, () -> {
-      StringHelper.bytesDifference(new BytesRef("ab"), new BytesRef("ab"));
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          StringHelper.bytesDifference(new BytesRef("ab"), new BytesRef("ab"));
+        });
   }
-  
+
   public void testStartsWith() {
     BytesRef ref = new BytesRef("foobar");
     BytesRef slice = new BytesRef("foo");
     assertTrue(StringHelper.startsWith(ref, slice));
   }
-  
+
   public void testEndsWith() {
     BytesRef ref = new BytesRef("foobar");
     BytesRef slice = new BytesRef("bar");
@@ -51,7 +52,7 @@ public class TestStringHelper extends LuceneTestCase {
     BytesRef slice = new BytesRef("foobar");
     assertTrue(StringHelper.startsWith(ref, slice));
   }
-  
+
   public void testEndsWithWhole() {
     BytesRef ref = new BytesRef("foobar");
     BytesRef slice = new BytesRef("foobar");
@@ -62,10 +63,20 @@ public class TestStringHelper extends LuceneTestCase {
     // Hashes computed using murmur3_32 from https://code.google.com/p/pyfasthash
     assertEquals(0xf6a5c420, StringHelper.murmurhash3_x86_32(new BytesRef("foo"), 0));
     assertEquals(0xcd018ef6, StringHelper.murmurhash3_x86_32(new BytesRef("foo"), 16));
-    assertEquals(0x111e7435, StringHelper.murmurhash3_x86_32(new BytesRef("You want weapons? We're in a library! Books! The best weapons in the world!"), 0));
-    assertEquals(0x2c628cd0, StringHelper.murmurhash3_x86_32(new BytesRef("You want weapons? We're in a library! Books! The best weapons in the world!"), 3476));
+    assertEquals(
+        0x111e7435,
+        StringHelper.murmurhash3_x86_32(
+            new BytesRef(
+                "You want weapons? We're in a library! Books! The best weapons in the world!"),
+            0));
+    assertEquals(
+        0x2c628cd0,
+        StringHelper.murmurhash3_x86_32(
+            new BytesRef(
+                "You want weapons? We're in a library! Books! The best weapons in the world!"),
+            3476));
   }
-  
+
   public void testSortKeyLength() throws Exception {
     assertEquals(3, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("for")));
     assertEquals(3, StringHelper.sortKeyLength(new BytesRef("foo1234"), new BytesRef("for1234")));
@@ -73,8 +84,10 @@ public class TestStringHelper extends LuceneTestCase {
     assertEquals(1, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("g")));
     assertEquals(4, StringHelper.sortKeyLength(new BytesRef("foo"), new BytesRef("food")));
     // we can detect terms are out of order if we see a duplicate
-    expectThrows(IllegalArgumentException.class, () -> {
-      StringHelper.sortKeyLength(new BytesRef("ab"), new BytesRef("ab"));
-    });
+    expectThrows(
+        IllegalArgumentException.class,
+        () -> {
+          StringHelper.sortKeyLength(new BytesRef("ab"), new BytesRef("ab"));
+        });
   }
 }

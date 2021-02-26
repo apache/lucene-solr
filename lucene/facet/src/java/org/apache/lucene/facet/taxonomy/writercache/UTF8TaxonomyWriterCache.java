@@ -19,8 +19,8 @@ package org.apache.lucene.facet.taxonomy.writercache;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.ByteBlockPool;
+import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefHash;
@@ -30,19 +30,21 @@ import org.apache.lucene.util.UnicodeUtil;
 
 /** A "cache" that never frees memory, and stores labels in a BytesRefHash (utf-8 encoding). */
 public final class UTF8TaxonomyWriterCache implements TaxonomyWriterCache, Accountable {
-  private final ThreadLocal<BytesRefBuilder> bytes = new ThreadLocal<BytesRefBuilder>() {
-      @Override
-      protected BytesRefBuilder initialValue() {
-        return new BytesRefBuilder();
-      }
-    };
+  private final ThreadLocal<BytesRefBuilder> bytes =
+      new ThreadLocal<BytesRefBuilder>() {
+        @Override
+        protected BytesRefBuilder initialValue() {
+          return new BytesRefBuilder();
+        }
+      };
 
   private final Counter bytesUsed = Counter.newCounter();
-  private final BytesRefHash map = new BytesRefHash(new ByteBlockPool(new DirectTrackingAllocator(bytesUsed)));
+  private final BytesRefHash map =
+      new BytesRefHash(new ByteBlockPool(new DirectTrackingAllocator(bytesUsed)));
 
-  private final static int PAGE_BITS = 16;
-  private final static int PAGE_SIZE = 1 << PAGE_BITS;
-  private final static int PAGE_MASK = PAGE_SIZE - 1;
+  private static final int PAGE_BITS = 16;
+  private static final int PAGE_SIZE = 1 << PAGE_BITS;
+  private static final int PAGE_MASK = PAGE_SIZE - 1;
 
   private volatile int[][] ordinals;
 
@@ -80,7 +82,13 @@ public final class UTF8TaxonomyWriterCache implements TaxonomyWriterCache, Accou
     int offset = id & PAGE_MASK;
     int oldOrd = ordinals[page][offset];
     if (oldOrd != ord) {
-      throw new IllegalArgumentException("label " + label + " was already cached, with old ord=" + oldOrd + " versus new ord=" + ord);
+      throw new IllegalArgumentException(
+          "label "
+              + label
+              + " was already cached, with old ord="
+              + oldOrd
+              + " versus new ord="
+              + ord);
     }
     return true;
   }
@@ -100,7 +108,8 @@ public final class UTF8TaxonomyWriterCache implements TaxonomyWriterCache, Accou
       int offset = id & PAGE_MASK;
       if (page == pageCount) {
         if (page == ordinals.length) {
-          int[][] newOrdinals = new int[ArrayUtil.oversize(page+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)][];
+          int[][] newOrdinals =
+              new int[ArrayUtil.oversize(page + 1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)][];
           System.arraycopy(ordinals, 0, newOrdinals, 0, ordinals.length);
           ordinals = newOrdinals;
         }
@@ -131,20 +140,19 @@ public final class UTF8TaxonomyWriterCache implements TaxonomyWriterCache, Accou
     pageCount = 0;
     assert bytesUsed.get() == 0;
   }
-    
+
   /** How many labels are currently stored in the cache. */
   public int size() {
     return count;
   }
-  
+
   @Override
   public synchronized long ramBytesUsed() {
     return bytesUsed.get() + pageCount * PAGE_SIZE * Integer.BYTES;
   }
-    
+
   @Override
-  public void close() {
-  }
+  public void close() {}
 
   private static final byte DELIM_CHAR = (byte) 0x1F;
 
@@ -157,7 +165,8 @@ public final class UTF8TaxonomyWriterCache implements TaxonomyWriterCache, Accou
         bytes.append(DELIM_CHAR);
       }
       bytes.grow(bytes.length() + UnicodeUtil.maxUTF8Length(part.length()));
-      bytes.setLength(UnicodeUtil.UTF16toUTF8(part, 0, part.length(), bytes.bytes(), bytes.length()));
+      bytes.setLength(
+          UnicodeUtil.UTF16toUTF8(part, 0, part.length(), bytes.bytes(), bytes.length()));
     }
     return bytes.get();
   }

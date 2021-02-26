@@ -21,6 +21,4 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public interface XYZSolid extends GeoArea, PlanetObject {
-}
-  
+public interface XYZSolid extends GeoArea, PlanetObject {}

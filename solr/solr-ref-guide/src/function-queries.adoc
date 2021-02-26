@@ -18,7 +18,7 @@
 
 Function queries enable you to generate a relevancy score using the actual value of one or more numeric fields.
 
-Function queries are supported by the <<the-dismax-query-parser.adoc#the-dismax-query-parser,DisMax>>, <<the-extended-dismax-query-parser.adoc#the-extended-dismax-query-parser,Extended DisMax>>, and <<the-standard-query-parser.adoc#the-standard-query-parser,standard>> query parsers.
+Function queries are supported by the <<the-dismax-query-parser.adoc#,DisMax>>, <<the-extended-dismax-query-parser.adoc#,Extended DisMax>>, and <<the-standard-query-parser.adoc#,standard>> query parsers.
 
 Function queries use _functions_. The functions can be a constant (numeric or string literal), a field, another function or a parameter substitution argument. You can use these functions to modify the ranking of results for users. These could be used to change the ranking of results based on a user's location, or some other calculation.
 
@@ -253,7 +253,7 @@ Use the `field(myfield,min)` <<field Function,syntax for selecting the minimum v
 === ms Function
 Returns milliseconds of difference between its arguments. Dates are relative to the Unix or POSIX time epoch, midnight, January 1, 1970 UTC.
 
-Arguments may be the name of a `DatePointField`, `TrieDateField`, or date math based on a <<working-with-dates.adoc#working-with-dates,constant date or `NOW`>>.
+Arguments may be the name of a `DatePointField`, `TrieDateField`, or date math based on a <<working-with-dates.adoc#,constant date or `NOW`>>.
 
 * `ms()`: Equivalent to `ms(NOW)`, number of milliseconds since the epoch.
 * `ms(a):` Returns the number of milliseconds since the epoch that the argument represents.
@@ -332,7 +332,7 @@ Returns the product of multiple values or functions, which are specified in a co
 * `mul(x,y)`
 
 === query Function
-Returns the score for the given subquery, or the default value for documents not matching the query. Any type of subquery is supported through either parameter de-referencing `$otherparam` or direct specification of the query string in the <<local-parameters-in-queries.adoc#local-parameters-in-queries,Local Parameters>> through the `v` key.
+Returns the score for the given subquery, or the default value for documents not matching the query. Any type of subquery is supported through either parameter de-referencing `$otherparam` or direct specification of the query string in the <<local-parameters-in-queries.adoc#,Local Parameters>> through the `v` key.
 
 *Syntax Examples*
 

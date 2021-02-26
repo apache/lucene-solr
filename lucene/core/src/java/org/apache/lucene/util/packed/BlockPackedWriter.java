@@ -16,51 +16,48 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.BitUtil.zigZagEncode;
 
 import java.io.IOException;
-
 import org.apache.lucene.store.DataOutput;
 
 /**
  * A writer for large sequences of longs.
- * <p>
- * The sequence is divided into fixed-size blocks and for each block, the
- * difference between each value and the minimum value of the block is encoded
- * using as few bits as possible. Memory usage of this class is proportional to
- * the block size. Each block has an overhead between 1 and 10 bytes to store
- * the minimum value and the number of bits per value of the block.
- * <p>
- * Format:
+ *
+ * <p>The sequence is divided into fixed-size blocks and for each block, the difference between each
+ * value and the minimum value of the block is encoded using as few bits as possible. Memory usage
+ * of this class is proportional to the block size. Each block has an overhead between 1 and 10
+ * bytes to store the minimum value and the number of bits per value of the block.
+ *
+ * <p>Format:
+ *
  * <ul>
- * <li>&lt;BLock&gt;<sup>BlockCount</sup>
- * <li>BlockCount: &lceil; ValueCount / BlockSize &rceil;
- * <li>Block: &lt;Header, (Ints)&gt;
- * <li>Header: &lt;Token, (MinValue)&gt;
- * <li>Token: a {@link DataOutput#writeByte(byte) byte}, first 7 bits are the
- *     number of bits per value (<code>bitsPerValue</code>). If the 8th bit is 1,
- *     then MinValue (see next) is <code>0</code>, otherwise MinValue and needs to
- *     be decoded
- * <li>MinValue: a
- *     <a href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag-encoded</a>
- *     {@link DataOutput#writeVLong(long) variable-length long} whose value
- *     should be added to every int from the block to restore the original
- *     values
- * <li>Ints: If the number of bits per value is <code>0</code>, then there is
- *     nothing to decode and all ints are equal to MinValue. Otherwise: BlockSize
- *     {@link PackedInts packed ints} encoded on exactly <code>bitsPerValue</code>
- *     bits per value. They are the subtraction of the original values and
- *     MinValue
+ *   <li>&lt;BLock&gt;<sup>BlockCount</sup>
+ *   <li>BlockCount: &lceil; ValueCount / BlockSize &rceil;
+ *   <li>Block: &lt;Header, (Ints)&gt;
+ *   <li>Header: &lt;Token, (MinValue)&gt;
+ *   <li>Token: a {@link DataOutput#writeByte(byte) byte}, first 7 bits are the number of bits per
+ *       value (<code>bitsPerValue</code>). If the 8th bit is 1, then MinValue (see next) is <code>0
+ *       </code>, otherwise MinValue and needs to be decoded
+ *   <li>MinValue: a <a
+ *       href="https://developers.google.com/protocol-buffers/docs/encoding#types">zigzag-encoded</a>
+ *       {@link DataOutput#writeVLong(long) variable-length long} whose value should be added to
+ *       every int from the block to restore the original values
+ *   <li>Ints: If the number of bits per value is <code>0</code>, then there is nothing to decode
+ *       and all ints are equal to MinValue. Otherwise: BlockSize {@link PackedInts packed ints}
+ *       encoded on exactly <code>bitsPerValue</code> bits per value. They are the subtraction of
+ *       the original values and MinValue
  * </ul>
+ *
  * @see BlockPackedReaderIterator
  * @see BlockPackedReader
  * @lucene.internal
  */
 public final class BlockPackedWriter extends AbstractBlockPackedWriter {
-  
+
   /**
    * Sole constructor.
+   *
    * @param blockSize the number of values of a single block, must be a power of 2
    */
   public BlockPackedWriter(DataOutput out, int blockSize) {
@@ -103,5 +100,4 @@ public final class BlockPackedWriter extends AbstractBlockPackedWriter {
 
     off = 0;
   }
-
 }

@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.junit.Test;
 
 public class TestFilterDirectory extends BaseDirectoryTestCase {
@@ -31,13 +29,15 @@ public class TestFilterDirectory extends BaseDirectoryTestCase {
   protected Directory getDirectory(Path path) {
     return new FilterDirectory(new ByteBuffersDirectory()) {};
   }
-  
+
   @Test
   public void testOverrides() throws Exception {
     // verify that all methods of Directory are overridden by FilterDirectory,
     // except those under the 'exclude' list
     Set<Method> exclude = new HashSet<>();
-    exclude.add(Directory.class.getMethod("copyFrom", Directory.class, String.class, String.class, IOContext.class));
+    exclude.add(
+        Directory.class.getMethod(
+            "copyFrom", Directory.class, String.class, String.class, IOContext.class));
     exclude.add(Directory.class.getMethod("openChecksumInput", String.class, IOContext.class));
     for (Method m : FilterDirectory.class.getMethods()) {
       if (m.getDeclaringClass() == Directory.class) {

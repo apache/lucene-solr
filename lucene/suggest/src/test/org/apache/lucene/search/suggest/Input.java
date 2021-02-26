@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest;
 
 import java.util.Set;
-
 import org.apache.lucene.util.BytesRef;
 
 /** corresponds to {@link InputIterator}'s entries */
@@ -32,27 +31,27 @@ public final class Input {
   public Input(BytesRef term, long v, BytesRef payload) {
     this(term, v, payload, true, null, false);
   }
-  
+
   public Input(String term, long v, BytesRef payload) {
     this(new BytesRef(term), v, payload);
   }
-  
+
   public Input(BytesRef term, long v, Set<BytesRef> contexts) {
     this(term, v, null, false, contexts, true);
   }
-  
+
   public Input(String term, long v, Set<BytesRef> contexts) {
     this(new BytesRef(term), v, null, false, contexts, true);
   }
-  
+
   public Input(BytesRef term, long v) {
     this(term, v, null, false, null, false);
   }
-  
+
   public Input(String term, long v) {
     this(new BytesRef(term), v, null, false, null, false);
   }
-  
+
   public Input(String term, int v, BytesRef payload, Set<BytesRef> contexts) {
     this(new BytesRef(term), v, payload, true, contexts, true);
   }
@@ -60,10 +59,13 @@ public final class Input {
   public Input(BytesRef term, long v, BytesRef payload, Set<BytesRef> contexts) {
     this(term, v, payload, true, contexts, true);
   }
-  
 
-  
-  public Input(BytesRef term, long v, BytesRef payload, boolean hasPayloads, Set<BytesRef> contexts, 
+  public Input(
+      BytesRef term,
+      long v,
+      BytesRef payload,
+      boolean hasPayloads,
+      Set<BytesRef> contexts,
       boolean hasContexts) {
     this.term = term;
     this.v = v;
@@ -72,11 +74,11 @@ public final class Input {
     this.contexts = contexts;
     this.hasContexts = hasContexts;
   }
-  
+
   public boolean hasContexts() {
     return hasContexts;
   }
-  
+
   public boolean hasPayloads() {
     return hasPayloads;
   }

@@ -16,19 +16,15 @@
  */
 package org.apache.lucene.analysis.ja.dict;
 
-
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.util.IOUtils;
 
-/**
- * Character category data.
- */
+/** Character category data. */
 public final class CharacterDefinition {
 
   public static final String FILENAME_SUFFIX = ".dat";
@@ -36,17 +32,28 @@ public final class CharacterDefinition {
   public static final int VERSION = 1;
 
   public static final int CLASS_COUNT = CharacterClass.values().length;
-  
+
   // only used internally for lookup:
   private static enum CharacterClass {
-    NGRAM, DEFAULT, SPACE, SYMBOL, NUMERIC, ALPHA, CYRILLIC, GREEK, HIRAGANA, KATAKANA, KANJI, KANJINUMERIC;
+    NGRAM,
+    DEFAULT,
+    SPACE,
+    SYMBOL,
+    NUMERIC,
+    ALPHA,
+    CYRILLIC,
+    GREEK,
+    HIRAGANA,
+    KATAKANA,
+    KANJI,
+    KANJINUMERIC;
   }
-      
+
   private final byte[] characterCategoryMap = new byte[0x10000];
-  
+
   private final boolean[] invokeMap = new boolean[CLASS_COUNT];
   private final boolean[] groupMap = new boolean[CLASS_COUNT];
-  
+
   // the classes:
   public static final byte NGRAM = (byte) CharacterClass.NGRAM.ordinal();
   public static final byte DEFAULT = (byte) CharacterClass.DEFAULT.ordinal();
@@ -60,7 +67,7 @@ public final class CharacterDefinition {
   public static final byte KATAKANA = (byte) CharacterClass.KATAKANA.ordinal();
   public static final byte KANJI = (byte) CharacterClass.KANJI.ordinal();
   public static final byte KANJINUMERIC = (byte) CharacterClass.KANJINUMERIC.ordinal();
-  
+
   private CharacterDefinition() throws IOException {
     InputStream is = null;
     boolean success = false;
@@ -84,24 +91,24 @@ public final class CharacterDefinition {
       }
     }
   }
-  
+
   public byte getCharacterClass(char c) {
     return characterCategoryMap[c];
   }
-  
+
   public boolean isInvoke(char c) {
     return invokeMap[characterCategoryMap[c]];
   }
-  
+
   public boolean isGroup(char c) {
     return groupMap[characterCategoryMap[c]];
   }
-  
+
   public boolean isKanji(char c) {
     final byte characterClass = characterCategoryMap[c];
     return characterClass == KANJI || characterClass == KANJINUMERIC;
   }
-  
+
   public static byte lookupCharacterClass(String characterClassName) {
     return (byte) CharacterClass.valueOf(characterClassName).ordinal();
   }
@@ -109,9 +116,10 @@ public final class CharacterDefinition {
   public static CharacterDefinition getInstance() {
     return SingletonHolder.INSTANCE;
   }
-  
+
   private static class SingletonHolder {
     static final CharacterDefinition INSTANCE;
+
     static {
       try {
         INSTANCE = new CharacterDefinition();
@@ -119,5 +127,5 @@ public final class CharacterDefinition {
         throw new RuntimeException("Cannot load CharacterDefinition.", ioe);
       }
     }
-   }
+  }
 }

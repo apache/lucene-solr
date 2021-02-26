@@ -16,35 +16,33 @@
  */
 package org.apache.lucene.codecs;
 
-
 import java.io.Closeable;
 import java.io.IOException;
-
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues;
 
-/** Abstract API to write points
+/**
+ * Abstract API to write points
  *
  * @lucene.experimental
  */
-
 public abstract class PointsWriter implements Closeable {
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected PointsWriter() {
-  }
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  protected PointsWriter() {}
 
   /** Write all values contained in the provided reader */
   public abstract void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException;
 
-  /** Default naive merge implementation for one field: it just re-indexes all the values
-   *  from the incoming segment.  The default codec overrides this for 1D fields and uses
-   *  a faster but more complex implementation. */
+  /**
+   * Default naive merge implementation for one field: it just re-indexes all the values from the
+   * incoming segment. The default codec overrides this for 1D fields and uses a faster but more
+   * complex implementation.
+   */
   protected void mergeOneField(MergeState mergeState, FieldInfo fieldInfo) throws IOException {
     long maxPointCount = 0;
     int docCount = 0;
-    for (int i=0;i<mergeState.pointsReaders.length;i++) {
+    for (int i = 0; i < mergeState.pointsReaders.length; i++) {
       PointsReader pointsReader = mergeState.pointsReaders[i];
       if (pointsReader != null) {
         FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldInfo.name);
@@ -59,17 +57,18 @@ public abstract class PointsWriter implements Closeable {
     }
     final long finalMaxPointCount = maxPointCount;
     final int finalDocCount = docCount;
-    writeField(fieldInfo,
+    writeField(
+        fieldInfo,
         new PointsReader() {
-          
+
           @Override
           public long ramBytesUsed() {
             return 0;
           }
-          
+
           @Override
           public void close() throws IOException {}
-          
+
           @Override
           public PointValues getValues(String fieldName) {
             if (fieldName.equals(fieldInfo.name) == false) {
@@ -77,10 +76,10 @@ public abstract class PointsWriter implements Closeable {
             }
 
             return new PointValues() {
-              
+
               @Override
               public void intersect(IntersectVisitor mergedVisitor) throws IOException {
-                for (int i=0;i<mergeState.pointsReaders.length;i++) {
+                for (int i = 0; i < mergeState.pointsReaders.length; i++) {
                   PointsReader pointsReader = mergeState.pointsReaders[i];
                   if (pointsReader == null) {
                     // This segment has no points
@@ -102,28 +101,30 @@ public abstract class PointsWriter implements Closeable {
                     continue;
                   }
                   MergeState.DocMap docMap = mergeState.docMaps[i];
-                  values.intersect(new IntersectVisitor() {
-                    @Override
-                    public void visit(int docID) {
-                      // Should never be called because our compare method never returns Relation.CELL_INSIDE_QUERY
-                      throw new IllegalStateException();
-                    }
+                  values.intersect(
+                      new IntersectVisitor() {
+                        @Override
+                        public void visit(int docID) {
+                          // Should never be called because our compare method never returns
+                          // Relation.CELL_INSIDE_QUERY
+                          throw new IllegalStateException();
+                        }
 
-                    @Override
-                    public void visit(int docID, byte[] packedValue) throws IOException {
-                      int newDocID = docMap.get(docID);
-                      if (newDocID != -1) {
-                        // Not deleted:
-                        mergedVisitor.visit(newDocID, packedValue);
-                      }
-                    }
+                        @Override
+                        public void visit(int docID, byte[] packedValue) throws IOException {
+                          int newDocID = docMap.get(docID);
+                          if (newDocID != -1) {
+                            // Not deleted:
+                            mergedVisitor.visit(newDocID, packedValue);
+                          }
+                        }
 
-                    @Override
-                    public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                      // Forces this segment's PointsReader to always visit all docs + values:
-                      return Relation.CELL_CROSSES_QUERY;
-                    }
-                  });
+                        @Override
+                        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                          // Forces this segment's PointsReader to always visit all docs + values:
+                          return Relation.CELL_CROSSES_QUERY;
+                        }
+                      });
                 }
               }
 
@@ -168,7 +169,7 @@ public abstract class PointsWriter implements Closeable {
               }
             };
           }
-          
+
           @Override
           public void checkIntegrity() throws IOException {
             throw new UnsupportedOperationException();
@@ -176,8 +177,10 @@ public abstract class PointsWriter implements Closeable {
         });
   }
 
-  /** Default merge implementation to merge incoming points readers by visiting all their points and
-   *  adding to this writer */
+  /**
+   * Default merge implementation to merge incoming points readers by visiting all their points and
+   * adding to this writer
+   */
   public void merge(MergeState mergeState) throws IOException {
     // check each incoming reader
     for (PointsReader reader : mergeState.pointsReaders) {

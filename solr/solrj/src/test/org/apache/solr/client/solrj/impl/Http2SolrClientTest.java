@@ -605,9 +605,15 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
     assertNull(Http2SolrClient.getDefaultSslContextFactory().getEndpointIdentificationAlgorithm());
 
     System.setProperty("solr.jetty.ssl.verifyClientHostName", "HTTPS");
+    System.setProperty("javax.net.ssl.keyStoreType", "foo");
+    System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory = Http2SolrClient.getDefaultSslContextFactory();
     assertEquals("HTTPS", sslContextFactory.getEndpointIdentificationAlgorithm());
+    assertEquals("foo", sslContextFactory.getKeyStoreType());
+    assertEquals("bar", sslContextFactory.getTrustStoreType());
     System.clearProperty("solr.jetty.ssl.verifyClientHostName");
+    System.clearProperty("javax.net.ssl.keyStoreType");
+    System.clearProperty("javax.net.ssl.trustStoreType");
   }
 
   /**

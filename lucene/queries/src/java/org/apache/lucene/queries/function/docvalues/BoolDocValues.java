@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function.docvalues;
 
 import java.io.IOException;
-
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -39,17 +38,17 @@ public abstract class BoolDocValues extends FunctionValues {
 
   @Override
   public byte byteVal(int doc) throws IOException {
-    return boolVal(doc) ? (byte)1 : (byte)0;
+    return boolVal(doc) ? (byte) 1 : (byte) 0;
   }
 
   @Override
   public short shortVal(int doc) throws IOException {
-    return boolVal(doc) ? (short)1 : (short)0;
+    return boolVal(doc) ? (short) 1 : (short) 0;
   }
 
   @Override
   public float floatVal(int doc) throws IOException {
-    return boolVal(doc) ? (float)1 : (float)0;
+    return boolVal(doc) ? (float) 1 : (float) 0;
   }
 
   @Override
@@ -59,12 +58,12 @@ public abstract class BoolDocValues extends FunctionValues {
 
   @Override
   public long longVal(int doc) throws IOException {
-    return boolVal(doc) ? (long)1 : (long)0;
+    return boolVal(doc) ? (long) 1 : (long) 0;
   }
 
   @Override
   public double doubleVal(int doc) throws IOException {
-    return boolVal(doc) ? (double)1 : (double)0;
+    return boolVal(doc) ? (double) 1 : (double) 0;
   }
 
   @Override

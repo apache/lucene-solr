@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
-
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.LongsRef;
 
@@ -34,7 +32,13 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
   final int iterations;
   int position;
 
-  PackedReaderIterator(PackedInts.Format format, int packedIntsVersion, int valueCount, int bitsPerValue, DataInput in, int mem) {
+  PackedReaderIterator(
+      PackedInts.Format format,
+      int packedIntsVersion,
+      int valueCount,
+      int bitsPerValue,
+      DataInput in,
+      int mem) {
     super(valueCount, bitsPerValue, in);
     this.format = format;
     this.packedIntsVersion = packedIntsVersion;
@@ -52,7 +56,7 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
     assert nextValues.length >= 0;
     assert count > 0;
     assert nextValues.offset + nextValues.length <= nextValues.longs.length;
-    
+
     nextValues.offset += nextValues.length;
 
     final int remaining = valueCount - position - 1;
@@ -82,5 +86,4 @@ final class PackedReaderIterator extends PackedInts.ReaderIteratorImpl {
   public int ord() {
     return position;
   }
-
 }

@@ -150,6 +150,35 @@ public class SolrMetricManager {
   }
 
   /**
+   * Return an object used for representing a null (missing) numeric value.
+   */
+  public Object nullNumber() {
+    return metricsConfig.getNullNumber();
+  }
+
+  /**
+   * Return an object used for representing a "Not A Number" (NaN) value.
+   */
+  public Object notANumber() {
+    return metricsConfig.getNotANumber();
+  }
+
+  /**
+   * Return an object used for representing a null (missing) string value.
+   */
+  public Object nullString() {
+    return metricsConfig.getNullString();
+  }
+
+  /**
+   * Return an object used for representing a null (missing) object value.
+   */
+  public Object nullObject() {
+    return metricsConfig.getNullObject();
+  }
+
+
+  /**
    * An implementation of {@link MetricFilter} that selects metrics
    * with names that start with one of prefixes.
    */
@@ -1115,8 +1144,8 @@ public class SolrMetricManager {
       log.warn("Interrupted while trying to obtain lock to modify reporters registry: {}", registry);
       return Collections.emptySet();
     }
-    log.info("Closing metric reporters for registry={} tag={}", registry, tag);
     try {
+      log.info("Closing metric reporters for registry={} tag={}", registry, tag);
       Map<String, SolrMetricReporter> perRegistry = reporters.get(registry);
       if (perRegistry != null) {
         Set<String> names = new HashSet<>(perRegistry.keySet());
@@ -1142,6 +1171,9 @@ public class SolrMetricManager {
       }
     } finally {
       reportersLock.unlock();
+      if (log.isDebugEnabled()) {
+        log.debug("Finished closing registry={}, tag={}", registry, tag);
+      }
     }
   }
 

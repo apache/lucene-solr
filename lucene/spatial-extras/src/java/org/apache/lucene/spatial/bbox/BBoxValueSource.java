@@ -17,7 +17,6 @@
 package org.apache.lucene.spatial.bbox;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -53,14 +52,17 @@ class BBoxValueSource extends ShapeValuesSource {
     final NumericDocValues maxX = DocValues.getNumeric(reader, strategy.field_maxX);
     final NumericDocValues maxY = DocValues.getNumeric(reader, strategy.field_maxY);
 
-    //reused
-    final Rectangle rect = strategy.getSpatialContext().getShapeFactory().rect(0,0,0,0);
+    // reused
+    final Rectangle rect = strategy.getSpatialContext().getShapeFactory().rect(0, 0, 0, 0);
 
     return new ShapeValues() {
 
       @Override
       public boolean advanceExact(int doc) throws IOException {
-        return minX.advanceExact(doc) && minY.advanceExact(doc) && maxX.advanceExact(doc) && maxY.advanceExact(doc);
+        return minX.advanceExact(doc)
+            && minY.advanceExact(doc)
+            && maxX.advanceExact(doc)
+            && maxY.advanceExact(doc);
       }
 
       @Override
@@ -72,14 +74,13 @@ class BBoxValueSource extends ShapeValuesSource {
         rect.reset(minXValue, maxXValue, minYValue, maxYValue);
         return rect;
       }
-
     };
   }
 
   @Override
   public boolean isCacheable(LeafReaderContext ctx) {
-    return DocValues.isCacheable(ctx,
-        strategy.field_minX, strategy.field_minY, strategy.field_maxX, strategy.field_maxY);
+    return DocValues.isCacheable(
+        ctx, strategy.field_minX, strategy.field_minY, strategy.field_maxX, strategy.field_maxY);
   }
 
   @Override

@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.analysis;
 
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCharFilter extends LuceneTestCase {
@@ -37,12 +35,12 @@ public class TestCharFilter extends LuceneTestCase {
 
   public void testCharFilter12() throws Exception {
     CharFilter cs = new CharFilter2(new CharFilter1(new StringReader("")));
-    assertEquals( "corrected offset is invalid", 3, cs.correctOffset(0));
+    assertEquals("corrected offset is invalid", 3, cs.correctOffset(0));
   }
 
   public void testCharFilter11() throws Exception {
     CharFilter cs = new CharFilter1(new CharFilter1(new StringReader("")));
-    assertEquals( "corrected offset is invalid", 2, cs.correctOffset(0));
+    assertEquals("corrected offset is invalid", 2, cs.correctOffset(0));
   }
 
   static class CharFilter1 extends CharFilter {
@@ -67,7 +65,7 @@ public class TestCharFilter extends LuceneTestCase {
     protected CharFilter2(Reader in) {
       super(in);
     }
-    
+
     @Override
     public int read(char[] cbuf, int off, int len) throws IOException {
       return input.read(cbuf, off, len);

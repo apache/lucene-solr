@@ -20,7 +20,7 @@ Faceting is the arrangement of search results into categories based on indexed t
 
 Searchers are presented with the indexed terms, along with numerical counts of how many matching documents were found for each term. Faceting makes it easy for users to explore search results, narrowing in on exactly the results they are looking for.
 
-See also <<json-facet-api.adoc#json-facet-api, JSON Facet API>> for an alternative approach to this.
+See also <<json-facet-api.adoc#, JSON Facet API>> for an alternative approach to this.
 
 == General Facet Parameters
 
@@ -47,7 +47,7 @@ Several parameters can be used to trigger faceting based on the indexed terms in
 When using these parameters, it is important to remember that "term" is a very specific concept in Lucene: it relates to the literal field/value pairs that are indexed after any analysis occurs. For text fields that include stemming, lowercasing, or word splitting, the resulting terms may not be what you expect.
 
 If you want Solr to perform both analysis (for searching) and faceting on the full literal strings, use the `copyField` directive in your Schema to create two versions of the field: one Text and one String. The Text field should have `indexed="true" docValues=“false"` if used for searching but not faceting and the String field should have `indexed="false" docValues="true"` if used for faceting but not searching.
-(For more information about the `copyField` directive, see <<documents-fields-and-schema-design.adoc#documents-fields-and-schema-design,Documents, Fields, and Schema Design>>.)
+(For more information about the `copyField` directive, see <<documents-fields-and-schema-design.adoc#,Documents, Fields, and Schema Design>>.)
 
 Unless otherwise specified, all of the parameters below can be specified on a per-field basis with the syntax of `f.<fieldname>.facet.<parameter>`
 
@@ -225,7 +225,7 @@ The `facet.range.method` parameter selects the type of algorithm or method Solr 
 --
 filter::: This method generates the ranges based on other facet.range parameters, and for each of them executes a filter that later intersects with the main query resultset to get the count. It will make use of the filterCache, so it will benefit of a cache large enough to contain all ranges.
 +
-dv::: This method iterates the documents that match the main query, and for each of them finds the correct range for the value. This method will make use of <<docvalues.adoc#docvalues,docValues>> (if enabled for the field) or fieldCache. The `dv` method is not supported for field type DateRangeField or when using <<result-grouping.adoc#result-grouping,group.facets>>.
+dv::: This method iterates the documents that match the main query, and for each of them finds the correct range for the value. This method will make use of <<docvalues.adoc#,docValues>> (if enabled for the field) or fieldCache. The `dv` method is not supported for field type DateRangeField or when using <<result-grouping.adoc#,group.facets>>.
 --
 +
 The default value for this parameter is `filter`.
@@ -237,7 +237,7 @@ The default value for this parameter is `filter`.
 ====
 Range faceting on date fields is a common situation where the <<working-with-dates.adoc#tz,`TZ`>> parameter can be useful to ensure that the "facet counts per day" or "facet counts per month" are based on a meaningful definition of when a given day/month "starts" relative to a particular TimeZone.
 
-For more information, see the examples in the <<working-with-dates.adoc#working-with-dates,Working with Dates>> section.
+For more information, see the examples in the <<working-with-dates.adoc#,Working with Dates>> section.
 ====
 
 === facet.mincount in Range Faceting
@@ -295,7 +295,7 @@ http://localhost:8983/solr/techproducts/select?q=*:*&facet.pivot=cat,popularity,
 
 === Combining Stats Component With Pivots
 
-In addition to some of the <<Local Parameters for Faceting,general local parameters>> supported by other types of faceting, a `stats` local parameters can be used with `facet.pivot` to refer to <<the-stats-component.adoc#the-stats-component,`stats.field`>> instances (by tag) that you would like to have computed for each Pivot Constraint.
+In addition to some of the <<Local Parameters for Faceting,general local parameters>> supported by other types of faceting, a `stats` local parameters can be used with `facet.pivot` to refer to <<the-stats-component.adoc#,`stats.field`>> instances (by tag) that you would like to have computed for each Pivot Constraint.
 
 In the example below, two different (overlapping) sets of statistics are computed for each of the facet.pivot result hierarchies:
 
@@ -526,7 +526,7 @@ Even though the same functionality can be achieved by using a facet query with r
 
 If you are concerned about the performance of your searches you should test with both options. Interval faceting tends to be better with multiple intervals for the same fields, while facet query tend to be better in environments where filter cache is more effective (static indexes for example).
 
-This method will use <<docvalues.adoc#docvalues,docValues>> if they are enabled for the field, will use fieldCache otherwise.
+This method will use <<docvalues.adoc#,docValues>> if they are enabled for the field, will use fieldCache otherwise.
 
 Use these parameters for interval faceting:
 
@@ -575,7 +575,7 @@ Interval faceting supports output key replacement described below. Output keys c
 
 == Local Parameters for Faceting
 
-The <<local-parameters-in-queries.adoc#local-parameters-in-queries,LocalParams syntax>> allows overriding global settings. It can also provide a method of adding metadata to other parameter values, much like XML attributes.
+The <<local-parameters-in-queries.adoc#,LocalParams syntax>> allows overriding global settings. It can also provide a method of adding metadata to other parameter values, much like XML attributes.
 
 === Tagging and Excluding Filters
 
@@ -622,4 +622,4 @@ This local parameter overrides default logic for `facet.sort`. if `facet.sort` i
 
 == Related Topics
 
-See also <<spatial-search.adoc#spatial-search,Heatmap Faceting (Spatial)>>.
+See also <<spatial-search.adoc#,Heatmap Faceting (Spatial)>>.

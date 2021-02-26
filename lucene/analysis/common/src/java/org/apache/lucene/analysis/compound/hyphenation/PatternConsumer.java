@@ -19,36 +19,33 @@ package org.apache.lucene.analysis.compound.hyphenation;
 import java.util.ArrayList;
 
 /**
- * This interface is used to connect the XML pattern file parser to the
- * hyphenation tree.
- * 
- * This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/). They have been slightly modified.
+ * This interface is used to connect the XML pattern file parser to the hyphenation tree.
+ *
+ * <p>This class has been taken from the Apache FOP project (http://xmlgraphics.apache.org/fop/).
+ * They have been slightly modified.
  */
 public interface PatternConsumer {
 
   /**
-   * Add a character class. A character class defines characters that are
-   * considered equivalent for the purpose of hyphenation (e.g. "aA"). It
-   * usually means to ignore case.
-   * 
+   * Add a character class. A character class defines characters that are considered equivalent for
+   * the purpose of hyphenation (e.g. "aA"). It usually means to ignore case.
+   *
    * @param chargroup character group
    */
   void addClass(String chargroup);
 
   /**
-   * Add a hyphenation exception. An exception replaces the result obtained by
-   * the algorithm for cases for which this fails or the user wants to provide
-   * his own hyphenation. A hyphenatedword is a vector of alternating String's
-   * and {@link Hyphen Hyphen} instances
+   * Add a hyphenation exception. An exception replaces the result obtained by the algorithm for
+   * cases for which this fails or the user wants to provide his own hyphenation. A hyphenatedword
+   * is a vector of alternating String's and {@link Hyphen Hyphen} instances
    */
   void addException(String word, ArrayList<Object> hyphenatedword);
 
   /**
    * Add hyphenation patterns.
-   * 
+   *
    * @param pattern the pattern
    * @param values interletter values expressed as a string of digit characters.
    */
   void addPattern(String pattern, String values);
-
 }

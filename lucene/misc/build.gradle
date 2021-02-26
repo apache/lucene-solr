@@ -22,4 +22,6 @@ description = 'Index tools and other miscellaneous code'
 dependencies {
   api project(':lucene:core')
   testImplementation project(':lucene:test-framework')
+
+  nativeDeps project(":lucene:misc:native")
 }

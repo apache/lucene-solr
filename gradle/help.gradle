@@ -22,6 +22,7 @@ configure(rootProject) {
       ["Workflow", "help/workflow.txt", "Typical workflow commands."],
       ["Ant", "help/ant.txt", "Ant-gradle migration help."],
       ["Tests", "help/tests.txt", "Tests, filtering, beasting, etc."],
+      ["Formatting", "help/formatting.txt", "Code formatting conventions."],
       ["Jvms", "help/jvms.txt", "Using alternative or EA JVM toolchains."],
       ["Deps", "help/dependencies.txt", "Declaring, inspecting and excluding dependencies."],
       ["ForbiddenApis", "help/forbiddenApis.txt", "How to add/apply rules for forbidden APIs."],
@@ -29,6 +30,7 @@ configure(rootProject) {
       ["Git", "help/git.txt", "Git assistance and guides."],
       ["ValidateLogCalls", "help/validateLogCalls.txt", "How to use logging calls efficiently."],
       ["IDEs", "help/IDEs.txt", "IDE support."],
+      ["Docker", "solr/docker/gradle-help.txt", "Building Solr Docker images."],
   ]
 
   helpFiles.each { section, path, sectionInfo ->

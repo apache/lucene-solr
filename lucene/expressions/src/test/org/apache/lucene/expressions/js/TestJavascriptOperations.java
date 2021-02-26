@@ -22,10 +22,10 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestJavascriptOperations extends LuceneTestCase {
   private void assertEvaluatesTo(String expression, long expected) throws Exception {
     Expression evaluator = JavascriptCompiler.compile(expression);
-    long actual = (long)evaluator.evaluate(null);
+    long actual = (long) evaluator.evaluate(null);
     assertEquals(expected, actual);
   }
-  
+
   public void testNegationOperation() throws Exception {
     assertEvaluatesTo("-1", -1);
     assertEvaluatesTo("--1", 1);
@@ -33,7 +33,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-0", 0);
     assertEvaluatesTo("--0", 0);
   }
-  
+
   public void testAddOperation() throws Exception {
     assertEvaluatesTo("1+1", 2);
     assertEvaluatesTo("1+0.5+0.5", 2);
@@ -45,7 +45,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("1+0", 1);
     assertEvaluatesTo("0+0", 0);
   }
-  
+
   public void testSubtractOperation() throws Exception {
     assertEvaluatesTo("1-1", 0);
     assertEvaluatesTo("5-10", -5);
@@ -57,7 +57,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("1-0", 1);
     assertEvaluatesTo("0-0", 0);
   }
-  
+
   public void testMultiplyOperation() throws Exception {
     assertEvaluatesTo("1*1", 1);
     assertEvaluatesTo("5*10", 50);
@@ -68,7 +68,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("10*0", 0);
     assertEvaluatesTo("0*0", 0);
   }
-  
+
   public void testDivisionOperation() throws Exception {
     assertEvaluatesTo("1*1", 1);
     assertEvaluatesTo("10/5", 2);
@@ -78,7 +78,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("27/(9/3)", 9);
     assertEvaluatesTo("1/0", 9223372036854775807L);
   }
-  
+
   public void testModuloOperation() throws Exception {
     assertEvaluatesTo("1%1", 0);
     assertEvaluatesTo("10%3", 1);
@@ -86,7 +86,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("(27%10)%4", 3);
     assertEvaluatesTo("27%(9%5)", 3);
   }
-  
+
   public void testLessThanOperation() throws Exception {
     assertEvaluatesTo("1 < 1", 0);
     assertEvaluatesTo("2 < 1", 0);
@@ -97,7 +97,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-1 < -2", 0);
     assertEvaluatesTo("-1 < 0", 1);
   }
-  
+
   public void testLessThanEqualsOperation() throws Exception {
     assertEvaluatesTo("1 <= 1", 1);
     assertEvaluatesTo("2 <= 1", 0);
@@ -108,7 +108,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-1 <= -2", 0);
     assertEvaluatesTo("-1 <= 0", 1);
   }
-  
+
   public void testGreaterThanOperation() throws Exception {
     assertEvaluatesTo("1 > 1", 0);
     assertEvaluatesTo("2 > 1", 1);
@@ -119,7 +119,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-1 > -2", 1);
     assertEvaluatesTo("-1 > 0", 0);
   }
-  
+
   public void testGreaterThanEqualsOperation() throws Exception {
     assertEvaluatesTo("1 >= 1", 1);
     assertEvaluatesTo("2 >= 1", 1);
@@ -130,7 +130,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-1 >= -2", 1);
     assertEvaluatesTo("-1 >= 0", 0);
   }
-  
+
   public void testEqualsOperation() throws Exception {
     assertEvaluatesTo("1 == 1", 1);
     assertEvaluatesTo("0 == 0", 1);
@@ -145,7 +145,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-2 == 1", 0);
     assertEvaluatesTo("-2 == -1", 0);
   }
-  
+
   public void testNotEqualsOperation() throws Exception {
     assertEvaluatesTo("1 != 1", 0);
     assertEvaluatesTo("0 != 0", 0);
@@ -160,7 +160,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-2 != 1", 1);
     assertEvaluatesTo("-2 != -1", 1);
   }
-  
+
   public void testBoolNotOperation() throws Exception {
     assertEvaluatesTo("!1", 0);
     assertEvaluatesTo("!!1", 1);
@@ -170,7 +170,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("!2", 0);
     assertEvaluatesTo("!-2", 0);
   }
-  
+
   public void testBoolAndOperation() throws Exception {
     assertEvaluatesTo("1 && 1", 1);
     assertEvaluatesTo("1 && 0", 0);
@@ -181,7 +181,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("0 && -1", 0);
     assertEvaluatesTo("-0 && -0", 0);
   }
-  
+
   public void testBoolOrOperation() throws Exception {
     assertEvaluatesTo("1 || 1", 1);
     assertEvaluatesTo("1 || 0", 1);
@@ -192,7 +192,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("0 || -1", 1);
     assertEvaluatesTo("-0 || -0", 0);
   }
-  
+
   public void testConditionalOperation() throws Exception {
     assertEvaluatesTo("1 ? 2 : 3", 2);
     assertEvaluatesTo("-1 ? 2 : 3", 2);
@@ -206,7 +206,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("(1 ? 1 : 0) ? 3 : 4", 3);
     assertEvaluatesTo("(0 ? 1 : 0) ? 3 : 4", 4);
   }
-  
+
   public void testBitShiftLeft() throws Exception {
     assertEvaluatesTo("1 << 1", 2);
     assertEvaluatesTo("2 << 1", 4);
@@ -220,7 +220,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-4195 << 70", -268480);
     assertEvaluatesTo("-15 << 62", 4611686018427387904L);
   }
-  
+
   public void testBitShiftRight() throws Exception {
     assertEvaluatesTo("1 >> 1", 0);
     assertEvaluatesTo("2 >> 1", 1);
@@ -234,7 +234,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-268480 >> 70", -4195);
     assertEvaluatesTo("-2147483646 >> 1", -1073741823);
   }
-  
+
   public void testBitShiftRightUnsigned() throws Exception {
     assertEvaluatesTo("1 >>> 1", 0);
     assertEvaluatesTo("2 >>> 1", 1);
@@ -248,7 +248,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("-268480 >>> 102", 67108863);
     assertEvaluatesTo("2147483648 >>> 1", 1073741824);
   }
-  
+
   public void testBitwiseAnd() throws Exception {
     assertEvaluatesTo("4 & 4", 4);
     assertEvaluatesTo("3 & 2", 2);
@@ -259,7 +259,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("0 & 1", 0);
     assertEvaluatesTo("1 & 0", 0);
   }
-  
+
   public void testBitwiseOr() throws Exception {
     assertEvaluatesTo("4 | 4", 4);
     assertEvaluatesTo("5 | 2", 7);
@@ -270,7 +270,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("0 | 1", 1);
     assertEvaluatesTo("1 | 0", 1);
   }
-  
+
   public void testBitwiseXor() throws Exception {
     assertEvaluatesTo("4 ^ 4", 0);
     assertEvaluatesTo("5 ^ 2", 7);
@@ -282,14 +282,14 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("1 ^ 0", 1);
     assertEvaluatesTo("0 ^ 0", 0);
   }
-  
+
   public void testBitwiseNot() throws Exception {
     assertEvaluatesTo("~-5", 4);
     assertEvaluatesTo("~25", -26);
     assertEvaluatesTo("~0", -1);
     assertEvaluatesTo("~-1", 0);
   }
-  
+
   public void testDecimalConst() throws Exception {
     assertEvaluatesTo("0", 0);
     assertEvaluatesTo("1", 1);
@@ -298,7 +298,7 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("5.6E+2", 560);
     assertEvaluatesTo("500E-2", 5);
   }
-  
+
   public void testHexConst() throws Exception {
     assertEvaluatesTo("0x0", 0);
     assertEvaluatesTo("0x1", 1);
@@ -309,14 +309,14 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("0x1 << 2", 0x1 << 2);
     assertEvaluatesTo("0xA << 2", 0xA << 2);
   }
-  
+
   public void testHexConst2() throws Exception {
     assertEvaluatesTo("0X0", 0);
     assertEvaluatesTo("0X1", 1);
     assertEvaluatesTo("0XF", 15);
     assertEvaluatesTo("0X1234ABCDEF", 78193085935L);
   }
-  
+
   public void testOctalConst() throws Exception {
     assertEvaluatesTo("00", 0);
     assertEvaluatesTo("01", 1);
@@ -326,6 +326,5 @@ public class TestJavascriptOperations extends LuceneTestCase {
     assertEvaluatesTo("1 << 010", 1 << 010);
     assertEvaluatesTo("01 << 2", 01 << 2);
     assertEvaluatesTo("010 << 2", 010 << 2);
-
   }
 }

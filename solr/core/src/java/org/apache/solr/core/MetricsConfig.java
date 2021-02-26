@@ -32,13 +32,18 @@ public class MetricsConfig {
   private final PluginInfo timerSupplier;
   private final PluginInfo histogramSupplier;
   private final PluginInfo historyHandler;
+  private final Object nullNumber;
+  private final Object notANumber;
+  private final Object nullString;
+  private final Object nullObject;
   private final boolean enabled;
 
   private MetricsConfig(boolean enabled,
                         PluginInfo[] metricReporters, Set<String> hiddenSysProps,
                         PluginInfo counterSupplier, PluginInfo meterSupplier,
                         PluginInfo timerSupplier, PluginInfo histogramSupplier,
-                        PluginInfo historyHandler) {
+                        PluginInfo historyHandler,
+                        Object nullNumber, Object notANumber, Object nullString, Object nullObject) {
     this.enabled = enabled;
     this.metricReporters = metricReporters;
     this.hiddenSysProps = hiddenSysProps;
@@ -47,6 +52,10 @@ public class MetricsConfig {
     this.timerSupplier = timerSupplier;
     this.histogramSupplier = histogramSupplier;
     this.historyHandler = historyHandler;
+    this.nullNumber = nullNumber;
+    this.notANumber = notANumber;
+    this.nullString = nullString;
+    this.nullObject = nullObject;
   }
 
   public boolean isEnabled() {
@@ -61,6 +70,22 @@ public class MetricsConfig {
     } else {
       return NO_OP_REPORTERS;
     }
+  }
+
+  public Object getNullNumber() {
+    return nullNumber;
+  }
+
+  public Object getNotANumber() {
+    return notANumber;
+  }
+
+  public Object getNullString() {
+    return nullString;
+  }
+
+  public Object getNullObject() {
+    return nullObject;
   }
 
   public Set<String> getHiddenSysProps() {
@@ -127,6 +152,10 @@ public class MetricsConfig {
     private PluginInfo timerSupplier;
     private PluginInfo histogramSupplier;
     private PluginInfo historyHandler;
+    private Object nullNumber = null;
+    private Object notANumber = null;
+    private Object nullString = null;
+    private Object nullObject = null;
     // default to metrics enabled
     private boolean enabled = true;
 
@@ -177,9 +206,30 @@ public class MetricsConfig {
       return this;
     }
 
+    public MetricsConfigBuilder setNullNumber(Object nullNumber) {
+      this.nullNumber = nullNumber;
+      return this;
+    }
+
+    public MetricsConfigBuilder setNotANumber(Object notANumber) {
+      this.notANumber = notANumber;
+      return this;
+    }
+
+    public MetricsConfigBuilder setNullString(Object nullString) {
+      this.nullString = nullString;
+      return this;
+    }
+
+    public MetricsConfigBuilder setNullObject(Object nullObject) {
+      this.nullObject = nullObject;
+      return this;
+    }
+
     public MetricsConfig build() {
       return new MetricsConfig(enabled, metricReporterPlugins, hiddenSysProps, counterSupplier, meterSupplier,
-          timerSupplier, histogramSupplier, historyHandler);
+          timerSupplier, histogramSupplier, historyHandler,
+          nullNumber, notANumber, nullString, nullObject);
     }
 
   }

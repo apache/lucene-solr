@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.codecs.blockterms;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermStats;
 import org.apache.lucene.index.FieldInfo;
@@ -36,43 +34,46 @@ import org.apache.lucene.util.packed.MonotonicBlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * Selects every Nth term as and index term, and hold term
- * bytes (mostly) fully expanded in memory.  This terms index
- * supports seeking by ord.  See {@link
- * VariableGapTermsIndexWriter} for a more memory efficient
- * terms index that does not support seeking by ord.
+ * Selects every Nth term as and index term, and hold term bytes (mostly) fully expanded in memory.
+ * This terms index supports seeking by ord. See {@link VariableGapTermsIndexWriter} for a more
+ * memory efficient terms index that does not support seeking by ord.
  *
- * @lucene.experimental */
+ * @lucene.experimental
+ */
 public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   protected IndexOutput out;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tii";
 
-  final static String CODEC_NAME = "FixedGapTermsIndex";
-  final static int VERSION_START = 4;
-  final static int VERSION_CURRENT = VERSION_START;
+  static final String CODEC_NAME = "FixedGapTermsIndex";
+  static final int VERSION_START = 4;
+  static final int VERSION_CURRENT = VERSION_START;
 
-  final static int BLOCKSIZE = 4096;
-  final private int termIndexInterval;
+  static final int BLOCKSIZE = 4096;
+  private final int termIndexInterval;
   public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
 
   private final List<SimpleFieldWriter> fields = new ArrayList<>();
-  
+
   public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
     this(state, DEFAULT_TERM_INDEX_INTERVAL);
   }
-  
-  public FixedGapTermsIndexWriter(SegmentWriteState state, int termIndexInterval) throws IOException {
+
+  public FixedGapTermsIndexWriter(SegmentWriteState state, int termIndexInterval)
+      throws IOException {
     if (termIndexInterval <= 0) {
       throw new IllegalArgumentException("invalid termIndexInterval: " + termIndexInterval);
     }
     this.termIndexInterval = termIndexInterval;
-    final String indexFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
+    final String indexFileName =
+        IndexFileNames.segmentFileName(
+            state.segmentInfo.name, state.segmentSuffix, TERMS_INDEX_EXTENSION);
     out = state.directory.createOutput(indexFileName, state.context);
     boolean success = false;
     try {
-      CodecUtil.writeIndexHeader(out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(
+          out, CODEC_NAME, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       out.writeVInt(termIndexInterval);
       out.writeVInt(PackedInts.VERSION_CURRENT);
       out.writeVInt(BLOCKSIZE);
@@ -86,15 +87,16 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
 
   @Override
   public FieldWriter addField(FieldInfo field, long termsFilePointer) {
-    //System.out.println("FGW: addFfield=" + field.name);
+    // System.out.println("FGW: addFfield=" + field.name);
     SimpleFieldWriter writer = new SimpleFieldWriter(field, termsFilePointer);
     fields.add(writer);
     return writer;
   }
 
-  /** NOTE: if your codec does not sort in unicode code
-   *  point order, you must override this method, to simply
-   *  return indexedTerm.length. */
+  /**
+   * NOTE: if your codec does not sort in unicode code point order, you must override this method,
+   * to simply return indexedTerm.length.
+   */
   protected int indexedTermPrefixLength(final BytesRef priorTerm, final BytesRef indexedTerm) {
     // As long as codec sorts terms in unicode codepoint
     // order, we can safely strip off the non-distinguishing
@@ -112,11 +114,13 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     private long numTerms;
 
     private ByteBuffersDataOutput offsetsBuffer = ByteBuffersDataOutput.newResettableInstance();
-    private MonotonicBlockPackedWriter termOffsets = new MonotonicBlockPackedWriter(offsetsBuffer, BLOCKSIZE);
+    private MonotonicBlockPackedWriter termOffsets =
+        new MonotonicBlockPackedWriter(offsetsBuffer, BLOCKSIZE);
     private long currentOffset;
 
     private ByteBuffersDataOutput addressBuffer = ByteBuffersDataOutput.newResettableInstance();
-    private MonotonicBlockPackedWriter termAddresses = new MonotonicBlockPackedWriter(addressBuffer, BLOCKSIZE);
+    private MonotonicBlockPackedWriter termAddresses =
+        new MonotonicBlockPackedWriter(addressBuffer, BLOCKSIZE);
 
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();
 
@@ -135,7 +139,7 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     @Override
     public boolean checkIndexTerm(BytesRef text, TermStats stats) throws IOException {
       // First term is first indexed term:
-      //System.out.println("FGW: checkIndexTerm text=" + text.utf8ToString());
+      // System.out.println("FGW: checkIndexTerm text=" + text.utf8ToString());
       if (0 == (numTerms++ % termIndexInterval)) {
         return true;
       } else {
@@ -157,7 +161,8 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       } else {
         indexedTermLength = indexedTermPrefixLength(lastTerm.get(), text);
       }
-      //System.out.println("FGW: add text=" + text.utf8ToString() + " " + text + " fp=" + termsFilePointer);
+      // System.out.println("FGW: add text=" + text.utf8ToString() + " " + text + " fp=" +
+      // termsFilePointer);
 
       // write only the min prefix that shows the diff
       // against prior term
@@ -206,17 +211,17 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       try {
         final long dirStart = out.getFilePointer();
         final int fieldCount = fields.size();
-        
+
         int nonNullFieldCount = 0;
-        for(int i=0;i<fieldCount;i++) {
+        for (int i = 0; i < fieldCount; i++) {
           SimpleFieldWriter field = fields.get(i);
           if (field.numIndexTerms > 0) {
             nonNullFieldCount++;
           }
         }
-        
+
         out.writeVInt(nonNullFieldCount);
-        for(int i=0;i<fieldCount;i++) {
+        for (int i = 0; i < fieldCount; i++) {
           SimpleFieldWriter field = fields.get(i);
           if (field.numIndexTerms > 0) {
             out.writeVInt(field.fieldInfo.number);

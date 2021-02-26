@@ -16,24 +16,21 @@
  */
 package org.apache.lucene.queryparser.flexible.precedence.processors;
 
+import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.precedence.PrecedenceQueryParser;
 import org.apache.lucene.queryparser.flexible.standard.processors.BooleanQuery2ModifierNodeProcessor;
 import org.apache.lucene.queryparser.flexible.standard.processors.StandardQueryNodeProcessorPipeline;
-import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 
 /**
- * <p>
- * This processor pipeline extends {@link StandardQueryNodeProcessorPipeline} and enables
- * boolean precedence on it.
- * </p>
- * <p>
- * EXPERT: the precedence is enabled by removing {@link BooleanQuery2ModifierNodeProcessor} from the
- * {@link StandardQueryNodeProcessorPipeline} and appending {@link BooleanModifiersQueryNodeProcessor}
- * to the pipeline.
- * </p>
- * 
+ * This processor pipeline extends {@link StandardQueryNodeProcessorPipeline} and enables boolean
+ * precedence on it.
+ *
+ * <p>EXPERT: the precedence is enabled by removing {@link BooleanQuery2ModifierNodeProcessor} from
+ * the {@link StandardQueryNodeProcessorPipeline} and appending {@link
+ * BooleanModifiersQueryNodeProcessor} to the pipeline.
+ *
  * @see PrecedenceQueryParser
- *  @see StandardQueryNodeProcessorPipeline
+ * @see StandardQueryNodeProcessorPipeline
  */
 public class PrecedenceQueryNodeProcessorPipeline extends StandardQueryNodeProcessorPipeline {
 
@@ -42,17 +39,14 @@ public class PrecedenceQueryNodeProcessorPipeline extends StandardQueryNodeProce
    */
   public PrecedenceQueryNodeProcessorPipeline(QueryConfigHandler queryConfig) {
     super(queryConfig);
-    
-    for (int i = 0 ; i < size() ; i++) {
-      
+
+    for (int i = 0; i < size(); i++) {
+
       if (get(i).getClass().equals(BooleanQuery2ModifierNodeProcessor.class)) {
         remove(i--);
       }
-      
     }
-    
-    add(new BooleanModifiersQueryNodeProcessor());
-    
-  }
 
+    add(new BooleanModifiersQueryNodeProcessor());
+  }
 }

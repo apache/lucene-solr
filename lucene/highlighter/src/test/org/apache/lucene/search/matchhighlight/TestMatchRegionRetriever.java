@@ -16,15 +16,30 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+
 import com.carrotsearch.randomizedtesting.RandomizedTest;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
+import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -53,19 +68,6 @@ import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static org.hamcrest.Matchers.containsInAnyOrder;
-
 public class TestMatchRegionRetriever extends LuceneTestCase {
   private static final String FLD_ID = IndexBuilder.FLD_ID;
 
@@ -87,6 +89,8 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
 
   private Analyzer analyzer;
 
+  private static final String STOPWORD1 = "stopword";
+
   @Before
   public void setup() throws IOException {
     TYPE_STORED_WITH_OFFSETS = new FieldType(TextField.TYPE_STORED);
@@ -98,15 +102,27 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
     TYPE_STORED_NO_POSITIONS.freeze();
 
     final int offsetGap = RandomizedTest.randomIntBetween(0, 2);
-    final int positionGap = RandomizedTest.randomFrom(new int[]{0, 1, 100});
+    final int positionGap = RandomizedTest.randomFrom(new int[] {0, 1, 100});
     Analyzer whitespaceAnalyzer =
-        new AnalyzerWithGaps(offsetGap, positionGap,
-            new WhitespaceAnalyzer(WhitespaceTokenizer.DEFAULT_MAX_WORD_LEN));
+        new AnalyzerWithGaps(
+            offsetGap,
+            positionGap,
+            new Analyzer() {
+              @Override
+              protected TokenStreamComponents createComponents(String fieldName) {
+                Tokenizer tokenizer = new WhitespaceTokenizer(CharTokenizer.DEFAULT_MAX_WORD_LEN);
+                TokenStream tokenStream;
+                tokenStream = new StopFilter(tokenizer, new CharArraySet(Set.of(STOPWORD1), true));
+                return new TokenStreamComponents(tokenizer, tokenStream);
+              }
+            });
 
-    SynonymMap synonymMap = TestMatchHighlighter.buildSynonymMap(new String[][] {
-        {"foo\u0000bar", "syn1"},
-        {"baz", "syn2\u0000syn3"},
-    });
+    SynonymMap synonymMap =
+        TestMatchHighlighter.buildSynonymMap(
+            new String[][] {
+              {"foo\u0000bar", "syn1"},
+              {"baz", "syn2\u0000syn3"},
+            });
 
     Analyzer synonymsAnalyzer =
         new Analyzer() {
@@ -157,13 +173,16 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         .doc(field, "bar foo baz")
         .doc(field, "bar baz foo")
         .doc(field, "bar bar bar irrelevant")
-        .build(analyzer, reader -> {
-          assertThat(highlights(reader, new TermQuery(new Term(field, "foo"))),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo< bar baz')", field),
-                  fmt("1: (%s: 'bar >foo< baz')", field),
-                  fmt("2: (%s: 'bar baz >foo<')", field)));
-        });
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(reader, new TermQuery(new Term(field, "foo"))),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo< bar baz')", field),
+                      fmt("1: (%s: 'bar >foo< baz')", field),
+                      fmt("2: (%s: 'bar baz >foo<')", field)));
+            });
   }
 
   @Test
@@ -188,13 +207,15 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         .doc(field, "foo bar baz abc")
         .doc(field, "bar foo baz def")
         .doc(field, "bar baz foo xyz")
-        .build(analyzer, reader -> {
-          assertThat(highlights(reader, query),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo bar baz< abc')", field),
-                  fmt("1: (%s: 'bar >foo baz< def')", field)));
-        }
-    );
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(reader, query),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo bar baz< abc')", field),
+                      fmt("1: (%s: 'bar >foo baz< def')", field)));
+            });
   }
 
   @Test
@@ -212,71 +233,80 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         .doc(field, "foo bar baz abc")
         .doc(field, "bar foo baz def")
         .doc(field, "bar baz foo xyz")
-        .build(analyzer, reader -> {
-          assertThat(highlights(reader, stdQueryParser.apply("foo baz", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo< bar >baz< abc')", field),
-                  fmt("1: (%s: 'bar >foo< >baz< def')", field),
-                  fmt("2: (%s: 'bar >baz< >foo< xyz')", field)));
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("foo baz", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo< bar >baz< abc')", field),
+                      fmt("1: (%s: 'bar >foo< >baz< def')", field),
+                      fmt("2: (%s: 'bar >baz< >foo< xyz')", field)));
 
-          assertThat(highlights(reader, stdQueryParser.apply("foo OR xyz", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo< bar baz abc')", field),
-                  fmt("1: (%s: 'bar >foo< baz def')", field),
-                  fmt("2: (%s: 'bar baz >foo< >xyz<')", field)));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("foo OR xyz", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo< bar baz abc')", field),
+                      fmt("1: (%s: 'bar >foo< baz def')", field),
+                      fmt("2: (%s: 'bar baz >foo< >xyz<')", field)));
 
-          assertThat(highlights(reader, stdQueryParser.apply("bas~2", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo >bar< >baz< >abc<')", field),
-                  fmt("1: (%s: '>bar< foo >baz< def')", field),
-                  fmt("2: (%s: '>bar< >baz< foo xyz')", field)));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("bas~2", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo >bar< >baz< >abc<')", field),
+                      fmt("1: (%s: '>bar< foo >baz< def')", field),
+                      fmt("2: (%s: '>bar< >baz< foo xyz')", field)));
 
-          assertThat(highlights(reader, stdQueryParser.apply("\"foo bar\"", field)),
-              containsInAnyOrder((fmt("0: (%s: '>foo bar< baz abc')", field))));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("\"foo bar\"", field)),
+                  containsInAnyOrder((fmt("0: (%s: '>foo bar< baz abc')", field))));
 
-          assertThat(highlights(reader, stdQueryParser.apply("\"foo bar\"~3", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo bar< baz abc')", field),
-                  fmt("1: (%s: '>bar foo< baz def')", field),
-                  fmt("2: (%s: '>bar baz foo< xyz')", field)));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("\"foo bar\"~3", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo bar< baz abc')", field),
+                      fmt("1: (%s: '>bar foo< baz def')", field),
+                      fmt("2: (%s: '>bar baz foo< xyz')", field)));
 
-          assertThat(highlights(reader, stdQueryParser.apply("ba*", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo >bar< >baz< abc')", field),
-                  fmt("1: (%s: '>bar< foo >baz< def')", field),
-                  fmt("2: (%s: '>bar< >baz< foo xyz')", field)));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("ba*", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo >bar< >baz< abc')", field),
+                      fmt("1: (%s: '>bar< foo >baz< def')", field),
+                      fmt("2: (%s: '>bar< >baz< foo xyz')", field)));
 
-          assertThat(highlights(reader, stdQueryParser.apply("[bar TO bas]", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo >bar< baz abc')", field),
-                  fmt("1: (%s: '>bar< foo baz def')", field),
-                  fmt("2: (%s: '>bar< baz foo xyz')", field)));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("[bar TO bas]", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo >bar< baz abc')", field),
+                      fmt("1: (%s: '>bar< foo baz def')", field),
+                      fmt("2: (%s: '>bar< baz foo xyz')", field)));
 
-          // Note how document '2' has 'bar' that isn't highlighted (because this
-          // document is excluded in the first clause).
-          assertThat(
-              highlights(reader, stdQueryParser.apply("([bar TO baz] -xyz) OR baz", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo >bar< >>baz<< abc')", field),
-                  fmt("1: (%s: '>bar< foo >>baz<< def')", field),
-                  fmt("2: (%s: 'bar >baz< foo xyz')", field)));
+              // Note how document '2' has 'bar' that isn't highlighted (because this
+              // document is excluded in the first clause).
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("([bar TO baz] -xyz) OR baz", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo >bar< >>baz<< abc')", field),
+                      fmt("1: (%s: '>bar< foo >>baz<< def')", field),
+                      fmt("2: (%s: 'bar >baz< foo xyz')", field)));
 
-          assertThat(highlights(reader, new MatchAllDocsQuery()),
-              Matchers.hasSize(0));
-        }
-    );
+              assertThat(highlights(reader, new MatchAllDocsQuery()), Matchers.hasSize(0));
+            });
 
     new IndexBuilder(this::toField)
         .doc(field, "foo baz foo")
         .doc(field, "bas baz foo")
         .doc(field, "bar baz foo xyz")
-        .build(analyzer, reader -> {
-          assertThat(
-              highlights(reader, stdQueryParser.apply("[bar TO baz] -bar", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo >baz< foo')", field), fmt("1: (%s: '>bas< >baz< foo')", field)));
-        }
-    );
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("[bar TO baz] -bar", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo >baz< foo')", field),
+                      fmt("1: (%s: '>bas< >baz< foo')", field)));
+            });
   }
 
   @Test
@@ -284,16 +314,17 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
     String field = FLD_TEXT_POS;
     new IndexBuilder(this::toField)
         .doc(field, "foo", "bar")
-        .build(analyzer, reader -> {
-          assertThat(
-              highlights(reader, new IntervalQuery(field,
-                  Intervals.unordered(
-                      Intervals.term("foo"),
-                      Intervals.term("bar")))),
-              containsInAnyOrder(
-                  fmt("0: (field_text: '>foo< | >bar<')", field)
-              ));
-        });
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(
+                          field,
+                          Intervals.unordered(Intervals.term("foo"), Intervals.term("bar")))),
+                  containsInAnyOrder(fmt("0: (field_text: '>foo< | >bar<')", field)));
+            });
   }
 
   @Test
@@ -304,61 +335,94 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         .doc(field, "foo baz foo")
         .doc(field, "bas baz foo")
         .doc(field, "bar baz foo xyz")
-        .build(analyzer, reader -> {
-          assertThat(
-              highlights(reader, new IntervalQuery(field,
-                  Intervals.unordered(
-                      Intervals.term("foo"),
-                      Intervals.term("bas"),
-                      Intervals.term("baz")))),
-              containsInAnyOrder(
-                  fmt("1: (field_text_offs: '>bas baz foo<')", field)
-              ));
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(
+                          field,
+                          Intervals.unordered(
+                              Intervals.term("foo"),
+                              Intervals.term("bas"),
+                              Intervals.term("baz")))),
+                  containsInAnyOrder(fmt("1: (field_text_offs: '>bas baz foo<')", field)));
 
-          assertThat(
-              highlights(reader, new IntervalQuery(field,
-                  Intervals.maxgaps(1,
-                      Intervals.unordered(
-                          Intervals.term("foo"),
-                          Intervals.term("bar"))))),
-              containsInAnyOrder(
-                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
-              ));
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(
+                          field,
+                          Intervals.maxgaps(
+                              1,
+                              Intervals.unordered(Intervals.term("foo"), Intervals.term("bar"))))),
+                  containsInAnyOrder(fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)));
 
-          assertThat(
-              highlights(reader, new IntervalQuery(field,
-                  Intervals.containing(
-                      Intervals.unordered(
-                          Intervals.term("foo"),
-                          Intervals.term("bar")),
-                      Intervals.term("foo")))),
-              containsInAnyOrder(
-                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
-              ));
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(
+                          field,
+                          Intervals.containing(
+                              Intervals.unordered(Intervals.term("foo"), Intervals.term("bar")),
+                              Intervals.term("foo")))),
+                  containsInAnyOrder(fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)));
 
-          assertThat(
-              highlights(reader, new IntervalQuery(field,
-                  Intervals.containedBy(
-                      Intervals.term("foo"),
-                      Intervals.unordered(
-                          Intervals.term("foo"),
-                          Intervals.term("bar"))))),
-              containsInAnyOrder(
-                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
-              ));
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(
+                          field,
+                          Intervals.containedBy(
+                              Intervals.term("foo"),
+                              Intervals.unordered(Intervals.term("foo"), Intervals.term("bar"))))),
+                  containsInAnyOrder(fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)));
 
-          assertThat(
-              highlights(reader, new IntervalQuery(field,
-                  Intervals.overlapping(
-                      Intervals.unordered(
-                          Intervals.term("foo"),
-                          Intervals.term("bar")),
-                      Intervals.term("foo")))),
-              containsInAnyOrder(
-                  fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)
-              ));
-        }
-    );
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(
+                          field,
+                          Intervals.overlapping(
+                              Intervals.unordered(Intervals.term("foo"), Intervals.term("bar")),
+                              Intervals.term("foo")))),
+                  containsInAnyOrder(fmt("2: (field_text_offs: '>bar baz foo< xyz')", field)));
+            });
+  }
+
+  @Test
+  public void testDegenerateIntervalsWithPositions() throws IOException {
+    testDegenerateIntervals(FLD_TEXT_POS);
+  }
+
+  @Test
+  @AwaitsFix(
+      bugUrl =
+          "https://issues.apache.org/jira/browse/LUCENE-9634: "
+              + "Highlighting of degenerate spans on fields with offsets doesn't work properly")
+  public void testDegenerateIntervalsWithOffsets() throws IOException {
+    testDegenerateIntervals(FLD_TEXT_POS_OFFS);
+  }
+
+  public void testDegenerateIntervals(String field) throws IOException {
+    new IndexBuilder(this::toField)
+        .doc(field, fmt("foo %s bar", STOPWORD1))
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(field, Intervals.extend(Intervals.term("bar"), 1, 3))),
+                  containsInAnyOrder(fmt("0: (%s: 'foo %s >bar<')", field, STOPWORD1)));
+
+              assertThat(
+                  highlights(
+                      reader,
+                      new IntervalQuery(field, Intervals.extend(Intervals.term("bar"), 5, 100))),
+                  containsInAnyOrder(fmt("0: (%s: '>foo %s bar<')", field, STOPWORD1)));
+            });
   }
 
   @Test
@@ -376,45 +440,49 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         .doc(field, "foo bar", "baz abc", "bad baz")
         .doc(field, "bar foo", "baz def")
         .doc(field, "bar baz", "foo xyz")
-        .build(analyzer, reader -> {
-          assertThat(highlights(reader, stdQueryParser.apply("baz", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>baz< abc | bad >baz<')", field),
-                  fmt("1: (%s: '>baz< def')", field),
-                  fmt("2: (%s: 'bar >baz<')", field)));
-        }
-    );
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(reader, stdQueryParser.apply("baz", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>baz< abc | bad >baz<')", field),
+                      fmt("1: (%s: '>baz< def')", field),
+                      fmt("2: (%s: 'bar >baz<')", field)));
+            });
   }
 
   @Test
   public void testMultiFieldHighlights() throws IOException {
     for (String[] fieldPairs :
-        new String[][]{
-            {FLD_TEXT_POS_OFFS1, FLD_TEXT_POS_OFFS2},
-            {FLD_TEXT_POS, FLD_TEXT_POS_OFFS2},
-            {FLD_TEXT_POS_OFFS1, FLD_TEXT_POS}
+        new String[][] {
+          {FLD_TEXT_POS_OFFS1, FLD_TEXT_POS_OFFS2},
+          {FLD_TEXT_POS, FLD_TEXT_POS_OFFS2},
+          {FLD_TEXT_POS_OFFS1, FLD_TEXT_POS}
         }) {
       String field1 = fieldPairs[0];
       String field2 = fieldPairs[1];
 
       new IndexBuilder(this::toField)
-          .doc(fields -> {
-            fields.add(field1, "foo bar", "baz abc");
-            fields.add(field2, "foo baz", "loo bar");
-          })
-          .build(analyzer, reader -> {
-            String ordered =
-                Stream.of(fmt("(%s: '>baz< abc')", field1), fmt("(%s: 'loo >bar<')", field2))
-                    .sorted()
-                    .collect(Collectors.joining(""));
+          .doc(
+              fields -> {
+                fields.add(field1, "foo bar", "baz abc");
+                fields.add(field2, "foo baz", "loo bar");
+              })
+          .build(
+              analyzer,
+              reader -> {
+                String ordered =
+                    Stream.of(fmt("(%s: '>baz< abc')", field1), fmt("(%s: 'loo >bar<')", field2))
+                        .sorted()
+                        .collect(Collectors.joining(""));
 
-            assertThat(
-                highlights(
-                    reader,
-                    stdQueryParser.apply(field1 + ":baz" + " OR " + field2 + ":bar", field1)),
-                containsInAnyOrder(fmt("0: %s", ordered)));
-          }
-      );
+                assertThat(
+                    highlights(
+                        reader,
+                        stdQueryParser.apply(field1 + ":baz" + " OR " + field2 + ":bar", field1)),
+                    containsInAnyOrder(fmt("0: %s", ordered)));
+              });
     }
   }
 
@@ -428,29 +496,32 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
     String field2 = FLD_TEXT_POS_OFFS2;
 
     new IndexBuilder(this::toField)
-        .doc(fields -> {
-          fields.add(field1, "0100");
-          fields.add(field2, "loo bar");
-        })
-        .doc(fields -> {
-          fields.add(field1, "0200");
-          fields.add(field2, "foo bar");
-        })
-        .build(analyzer, reader -> {
-          String expected = fmt("0: (%s: '>0100<')(%s: 'loo >bar<')", field1, field2);
-          assertThat(
-              highlights(
-                  reader,
-                  stdQueryParser.apply(fmt("+%s:01* OR %s:bar", field1, field2), field1)),
-              containsInAnyOrder(expected));
+        .doc(
+            fields -> {
+              fields.add(field1, "0100");
+              fields.add(field2, "loo bar");
+            })
+        .doc(
+            fields -> {
+              fields.add(field1, "0200");
+              fields.add(field2, "foo bar");
+            })
+        .build(
+            analyzer,
+            reader -> {
+              String expected = fmt("0: (%s: '>0100<')(%s: 'loo >bar<')", field1, field2);
+              assertThat(
+                  highlights(
+                      reader,
+                      stdQueryParser.apply(fmt("+%s:01* OR %s:bar", field1, field2), field1)),
+                  containsInAnyOrder(expected));
 
-          assertThat(
-              highlights(
-                  reader,
-                  stdQueryParser.apply(fmt("+%s:01* AND %s:bar", field1, field2), field1)),
-              containsInAnyOrder(expected));
-        }
-    );
+              assertThat(
+                  highlights(
+                      reader,
+                      stdQueryParser.apply(fmt("+%s:01* AND %s:bar", field1, field2), field1)),
+                  containsInAnyOrder(expected));
+            });
   }
 
   @Test
@@ -466,27 +537,28 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
   public void checkNestedQueryHits(String field) throws IOException {
     new IndexBuilder(this::toField)
         .doc(field, "foo bar baz abc")
-        .build(analyzer, reader -> {
-          assertThat(
-              highlights(
-                  reader,
-                  new BooleanQuery.Builder()
-                      .add(new PhraseQuery(1, field, "foo", "baz"), BooleanClause.Occur.SHOULD)
-                      .add(new TermQuery(new Term(field, "bar")), BooleanClause.Occur.SHOULD)
-                      .build()),
-              containsInAnyOrder(fmt("0: (%s: '>foo >bar< baz< abc')", field)));
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(
+                      reader,
+                      new BooleanQuery.Builder()
+                          .add(new PhraseQuery(1, field, "foo", "baz"), BooleanClause.Occur.SHOULD)
+                          .add(new TermQuery(new Term(field, "bar")), BooleanClause.Occur.SHOULD)
+                          .build()),
+                  containsInAnyOrder(fmt("0: (%s: '>foo >bar< baz< abc')", field)));
 
-          assertThat(
-              highlights(
-                  reader,
-                  new BooleanQuery.Builder()
-                      .add(new PhraseQuery(1, field, "foo", "baz"), BooleanClause.Occur.SHOULD)
-                      .add(new TermQuery(new Term(field, "bar")), BooleanClause.Occur.SHOULD)
-                      .add(new TermQuery(new Term(field, "baz")), BooleanClause.Occur.SHOULD)
-                      .build()),
-              containsInAnyOrder(fmt("0: (%s: '>foo >bar< >baz<< abc')", field)));
-        }
-    );
+              assertThat(
+                  highlights(
+                      reader,
+                      new BooleanQuery.Builder()
+                          .add(new PhraseQuery(1, field, "foo", "baz"), BooleanClause.Occur.SHOULD)
+                          .add(new TermQuery(new Term(field, "bar")), BooleanClause.Occur.SHOULD)
+                          .add(new TermQuery(new Term(field, "baz")), BooleanClause.Occur.SHOULD)
+                          .build()),
+                  containsInAnyOrder(fmt("0: (%s: '>foo >bar< >baz<< abc')", field)));
+            });
   }
 
   @Test
@@ -505,28 +577,31 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         .doc(field, "bar foo baz")
         .doc(field, "bar baz foo")
         .doc(field, "bar bar bar irrelevant")
-        .build(analyzer, reader -> {
-          assertThat(highlights(reader, new TermQuery(new Term(field, "syn1"))),
-              containsInAnyOrder(fmt("0: (%s: '>foo bar< baz')", field)));
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(reader, new TermQuery(new Term(field, "syn1"))),
+                  containsInAnyOrder(fmt("0: (%s: '>foo bar< baz')", field)));
 
-          // [syn2 syn3] = baz
-          // so both these queries highlight baz.
-          assertThat(highlights(reader, new TermQuery(new Term(field, "syn3"))),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo bar >baz<')", field),
-                  fmt("1: (%s: 'bar foo >baz<')", field),
-                  fmt("2: (%s: 'bar >baz< foo')", field)));
-          assertThat(
-              highlights(reader, stdQueryParser.apply(field + ":\"syn2 syn3\"", field)),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo bar >baz<')", field),
-                  fmt("1: (%s: 'bar foo >baz<')", field),
-                  fmt("2: (%s: 'bar >baz< foo')", field)));
-          assertThat(
-              highlights(reader, stdQueryParser.apply(field + ":\"foo syn2 syn3\"", field)),
-              containsInAnyOrder(fmt("1: (%s: 'bar >foo baz<')", field)));
-        }
-    );
+              // [syn2 syn3] = baz
+              // so both these queries highlight baz.
+              assertThat(
+                  highlights(reader, new TermQuery(new Term(field, "syn3"))),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo bar >baz<')", field),
+                      fmt("1: (%s: 'bar foo >baz<')", field),
+                      fmt("2: (%s: 'bar >baz< foo')", field)));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply(field + ":\"syn2 syn3\"", field)),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo bar >baz<')", field),
+                      fmt("1: (%s: 'bar foo >baz<')", field),
+                      fmt("2: (%s: 'bar >baz< foo')", field)));
+              assertThat(
+                  highlights(reader, stdQueryParser.apply(field + ":\"foo syn2 syn3\"", field)),
+                  containsInAnyOrder(fmt("1: (%s: 'bar >foo baz<')", field)));
+            });
   }
 
   @Test
@@ -545,56 +620,58 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
         .doc(field, "bar foo baz")
         .doc(field, "bar baz foo")
         .doc(field, "bar bar bar irrelevant")
-        .build(analyzer, reader -> {
-          assertThat(
-              highlights(
-                  reader,
-                  SpanNearQuery.newOrderedNearQuery(field)
-                      .addClause(new SpanTermQuery(new Term(field, "bar")))
-                      .addClause(new SpanTermQuery(new Term(field, "foo")))
-                      .build()),
-              containsInAnyOrder(fmt("1: (%s: '>bar foo< baz')", field)));
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(
+                      reader,
+                      SpanNearQuery.newOrderedNearQuery(field)
+                          .addClause(new SpanTermQuery(new Term(field, "bar")))
+                          .addClause(new SpanTermQuery(new Term(field, "foo")))
+                          .build()),
+                  containsInAnyOrder(fmt("1: (%s: '>bar foo< baz')", field)));
 
-          assertThat(
-              highlights(
-                  reader,
-                  SpanNearQuery.newOrderedNearQuery(field)
-                      .addClause(new SpanTermQuery(new Term(field, "bar")))
-                      .addGap(1)
-                      .addClause(new SpanTermQuery(new Term(field, "foo")))
-                      .build()),
-              containsInAnyOrder(fmt("2: (%s: '>bar baz foo<')", field)));
+              assertThat(
+                  highlights(
+                      reader,
+                      SpanNearQuery.newOrderedNearQuery(field)
+                          .addClause(new SpanTermQuery(new Term(field, "bar")))
+                          .addGap(1)
+                          .addClause(new SpanTermQuery(new Term(field, "foo")))
+                          .build()),
+                  containsInAnyOrder(fmt("2: (%s: '>bar baz foo<')", field)));
 
-          assertThat(
-              highlights(
-                  reader,
-                  SpanNearQuery.newUnorderedNearQuery(field)
-                      .addClause(new SpanTermQuery(new Term(field, "foo")))
-                      .addClause(new SpanTermQuery(new Term(field, "bar")))
-                      .build()),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo bar< baz')", field), fmt("1: (%s: '>bar foo< baz')", field)));
+              assertThat(
+                  highlights(
+                      reader,
+                      SpanNearQuery.newUnorderedNearQuery(field)
+                          .addClause(new SpanTermQuery(new Term(field, "foo")))
+                          .addClause(new SpanTermQuery(new Term(field, "bar")))
+                          .build()),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo bar< baz')", field),
+                      fmt("1: (%s: '>bar foo< baz')", field)));
 
-          assertThat(
-              highlights(
-                  reader,
-                  SpanNearQuery.newUnorderedNearQuery(field)
-                      .addClause(new SpanTermQuery(new Term(field, "foo")))
-                      .addClause(new SpanTermQuery(new Term(field, "bar")))
-                      .setSlop(1)
-                      .build()),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo bar< baz')", field),
-                  fmt("1: (%s: '>bar foo< baz')", field),
-                  fmt("2: (%s: '>bar baz foo<')", field)));
-        }
-    );
+              assertThat(
+                  highlights(
+                      reader,
+                      SpanNearQuery.newUnorderedNearQuery(field)
+                          .addClause(new SpanTermQuery(new Term(field, "foo")))
+                          .addClause(new SpanTermQuery(new Term(field, "bar")))
+                          .setSlop(1)
+                          .build()),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo bar< baz')", field),
+                      fmt("1: (%s: '>bar foo< baz')", field),
+                      fmt("2: (%s: '>bar baz foo<')", field)));
+            });
   }
 
   /**
-   * This test runs a term query against a field with no stored
-   * positions or offsets. This test checks the {@link OffsetsFromValues}
-   * strategy that returns highlights over entire indexed values.
+   * This test runs a term query against a field with no stored positions or offsets. This test
+   * checks the {@link OffsetsFromValues} strategy that returns highlights over entire indexed
+   * values.
    */
   @Test
   public void testTextFieldNoPositionsOffsetFromValues() throws Exception {
@@ -603,65 +680,63 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
     new IndexBuilder(this::toField)
         .doc(FLD_TEXT_NOPOS, "foo bar")
         .doc(FLD_TEXT_NOPOS, "foo bar", "baz baz")
-        .build(analyzer, reader -> {
-          OffsetsRetrievalStrategySupplier defaults = MatchRegionRetriever
-              .computeOffsetRetrievalStrategies(reader, analyzer);
-          OffsetsRetrievalStrategySupplier customSuppliers = (fld) -> {
-            if (fld.equals(field)) {
-              return new OffsetsFromValues(field, analyzer);
-            } else {
-              return defaults.apply(field);
-            }
-          };
+        .build(
+            analyzer,
+            reader -> {
+              OffsetsRetrievalStrategySupplier defaults =
+                  MatchRegionRetriever.computeOffsetRetrievalStrategies(reader, analyzer);
+              OffsetsRetrievalStrategySupplier customSuppliers =
+                  (fld) -> {
+                    if (fld.equals(field)) {
+                      return new OffsetsFromValues(field, analyzer);
+                    } else {
+                      return defaults.apply(field);
+                    }
+                  };
 
-          assertThat(
-              highlights(
-                  customSuppliers,
-                  reader,
-                  new TermQuery(new Term(field, "bar"))),
-              containsInAnyOrder(
-                  fmt("0: (%s: '>foo bar<')", field),
-                  fmt("1: (%s: '>foo bar< | >baz baz<')", field)));
-        }
-    );
+              assertThat(
+                  highlights(customSuppliers, reader, new TermQuery(new Term(field, "bar"))),
+                  containsInAnyOrder(
+                      fmt("0: (%s: '>foo bar<')", field),
+                      fmt("1: (%s: '>foo bar< | >baz baz<')", field)));
+            });
   }
 
   /**
-   * This test runs a term query against a field with no stored
-   * positions or offsets.
-   * <p>
-   * Such field structure is often useful for multivalued "keyword-like"
-   * fields.
+   * This test runs a term query against a field with no stored positions or offsets.
+   *
+   * <p>Such field structure is often useful for multivalued "keyword-like" fields.
    */
   @Test
   public void testTextFieldNoPositionsOffsetsFromTokens() throws Exception {
     String field = FLD_TEXT_NOPOS;
 
     new IndexBuilder(this::toField)
-        .doc(fields -> {
-          fields.add(FLD_TEXT_NOPOS, "foo bar");
-          fields.add(FLD_TEXT_POS, "bar bar");
-        })
+        .doc(
+            fields -> {
+              fields.add(FLD_TEXT_NOPOS, "foo bar");
+              fields.add(FLD_TEXT_POS, "bar bar");
+            })
         .doc(FLD_TEXT_NOPOS, "foo bar", "baz bar")
-        .build(analyzer, reader -> {
-          assertThat(
-              highlights(
-                  reader,
-                  new TermQuery(new Term(field, "bar"))),
-              containsInAnyOrder(
-                  fmt("0: (%s: 'foo >bar<')", field),
-                  fmt("1: (%s: 'foo >bar< | baz >bar<')", field)));
-        }
-    );
+        .build(
+            analyzer,
+            reader -> {
+              assertThat(
+                  highlights(reader, new TermQuery(new Term(field, "bar"))),
+                  containsInAnyOrder(
+                      fmt("0: (%s: 'foo >bar<')", field),
+                      fmt("1: (%s: 'foo >bar< | baz >bar<')", field)));
+            });
   }
 
   private List<String> highlights(IndexReader reader, Query query) throws IOException {
-    return highlights(MatchRegionRetriever.computeOffsetRetrievalStrategies(reader, analyzer),
-        reader, query);
+    return highlights(
+        MatchRegionRetriever.computeOffsetRetrievalStrategies(reader, analyzer), reader, query);
   }
 
-  private List<String> highlights(OffsetsRetrievalStrategySupplier offsetsStrategySupplier,
-                                  IndexReader reader, Query query) throws IOException {
+  private List<String> highlights(
+      OffsetsRetrievalStrategySupplier offsetsStrategySupplier, IndexReader reader, Query query)
+      throws IOException {
     IndexSearcher searcher = new IndexSearcher(reader);
     int maxDocs = 1000;
 
@@ -692,7 +767,8 @@ public class TestMatchRegionRetriever extends LuceneTestCase {
           }
         };
 
-    MatchRegionRetriever highlighter = new MatchRegionRetriever(searcher, rewrittenQuery, offsetsStrategySupplier);
+    MatchRegionRetriever highlighter =
+        new MatchRegionRetriever(searcher, rewrittenQuery, offsetsStrategySupplier);
     highlighter.highlightDocuments(topDocs, highlightCollector);
 
     return highlights;

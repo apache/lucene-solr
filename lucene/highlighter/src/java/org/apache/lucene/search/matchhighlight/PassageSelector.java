@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.search.matchhighlight;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.PriorityQueue;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,6 +23,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.RandomAccess;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.PriorityQueue;
 
 /** Selects fragments of text that score best for the given set of highlight markers. */
 public class PassageSelector {
@@ -101,7 +100,7 @@ public class PassageSelector {
     markers = splitOrTruncateToWindows(markers, maxPassageWindow, permittedPassageRanges);
 
     // Sort markers by their start offset, shortest first.
-    markers.sort(Comparator.<OffsetRange> comparingInt(r -> r.from).thenComparingInt(r -> r.to));
+    markers.sort(Comparator.<OffsetRange>comparingInt(r -> r.from).thenComparingInt(r -> r.to));
 
     final int max = markers.size();
     int markerIndex = 0;
@@ -226,10 +225,11 @@ public class PassageSelector {
     return Arrays.asList(passages);
   }
 
-  /**
-   * Truncate or split highlight markers that cross permitted value boundaries.
-   */
-  private List<? extends OffsetRange> splitOrTruncateToWindows(List<? extends OffsetRange> markers, int maxPassageWindow, List<OffsetRange> permittedPassageRanges) {
+  /** Truncate or split highlight markers that cross permitted value boundaries. */
+  private List<? extends OffsetRange> splitOrTruncateToWindows(
+      List<? extends OffsetRange> markers,
+      int maxPassageWindow,
+      List<OffsetRange> permittedPassageRanges) {
     // Process markers overlapping with each permitted window.
     ArrayList<OffsetRange> processedMarkers = new ArrayList<>(markers.size());
     for (OffsetRange marker : markers) {
@@ -277,7 +277,10 @@ public class PassageSelector {
    * Invoked when no passages could be selected (due to constraints or lack of highlight markers).
    */
   protected Passage[] pickDefaultPassage(
-      CharSequence value, int maxCharacterWindow, int maxPassages, List<OffsetRange> permittedPassageRanges) {
+      CharSequence value,
+      int maxCharacterWindow,
+      int maxPassages,
+      List<OffsetRange> permittedPassageRanges) {
     // Search for the first range that is not empty.
     ArrayList<Passage> defaultPassages = new ArrayList<>();
     for (OffsetRange o : permittedPassageRanges) {
@@ -287,7 +290,11 @@ public class PassageSelector {
 
       int to = Math.min(value.length(), o.to);
       if (o.from < to) {
-        defaultPassages.add(new Passage(o.from, o.from + Math.min(maxCharacterWindow, o.length()), Collections.emptyList()));
+        defaultPassages.add(
+            new Passage(
+                o.from,
+                o.from + Math.min(maxCharacterWindow, o.length()),
+                Collections.emptyList()));
       }
     }
 

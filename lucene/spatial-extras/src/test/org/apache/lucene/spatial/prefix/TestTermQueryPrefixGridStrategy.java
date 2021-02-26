@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.spatial.prefix;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Shape;
+import java.io.IOException;
+import java.util.Arrays;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -26,17 +26,16 @@ import org.apache.lucene.spatial.SpatialTestCase;
 import org.apache.lucene.spatial.prefix.tree.QuadPrefixTree;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Arrays;
-
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
 
 public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
 
   @Test
   public void testNGramPrefixGridLosAngeles() throws IOException {
     SpatialContext ctx = SpatialContext.GEO;
-    TermQueryPrefixTreeStrategy prefixGridStrategy = new TermQueryPrefixTreeStrategy(new QuadPrefixTree(ctx), "geo");
+    TermQueryPrefixTreeStrategy prefixGridStrategy =
+        new TermQueryPrefixTreeStrategy(new QuadPrefixTree(ctx), "geo");
 
     Shape point = ctx.makePoint(-118.243680, 34.052230);
 
@@ -45,19 +44,22 @@ public class TestTermQueryPrefixGridStrategy extends SpatialTestCase {
     for (Field field : prefixGridStrategy.createIndexableFields(point)) {
       losAngeles.add(field);
     }
-    losAngeles.add(new StoredField(prefixGridStrategy.getFieldName(), point.toString()));//just for diagnostics
+    losAngeles.add(
+        new StoredField(
+            prefixGridStrategy.getFieldName(), point.toString())); // just for diagnostics
 
     addDocumentsAndCommit(Arrays.asList(losAngeles));
 
     // This won't work with simple spatial context...
     SpatialArgsParser spatialArgsParser = new SpatialArgsParser();
     // TODO... use a non polygon query
-//    SpatialArgs spatialArgs = spatialArgsParser.parse(
-//        "Intersects(POLYGON((-127.00390625 39.8125,-112.765625 39.98828125,-111.53515625 31.375,-125.94921875 30.14453125,-127.00390625 39.8125)))",
-//        new SimpleSpatialContext());
+    //    SpatialArgs spatialArgs = spatialArgsParser.parse(
+    //        "Intersects(POLYGON((-127.00390625 39.8125,-112.765625 39.98828125,-111.53515625
+    // 31.375,-125.94921875 30.14453125,-127.00390625 39.8125)))",
+    //        new SimpleSpatialContext());
 
-//    Query query = prefixGridStrategy.makeQuery(spatialArgs, fieldInfo);
-//    SearchResults searchResults = executeQuery(query, 1);
-//    assertEquals(1, searchResults.numFound);
+    //    Query query = prefixGridStrategy.makeQuery(spatialArgs, fieldInfo);
+    //    SearchResults searchResults = executeQuery(query, 1);
+    //    assertEquals(1, searchResults.numFound);
   }
 }

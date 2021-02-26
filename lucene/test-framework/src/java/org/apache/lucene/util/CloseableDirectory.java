@@ -17,25 +17,23 @@
 package org.apache.lucene.util;
 
 import java.io.Closeable;
-
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.junit.Assert;
 
 /**
  * Attempts to close a {@link BaseDirectoryWrapper}.
- * 
+ *
  * @see LuceneTestCase#newDirectory(java.util.Random)
  */
 final class CloseableDirectory implements Closeable {
   private final BaseDirectoryWrapper dir;
   private final TestRuleMarkFailure failureMarker;
-  
-  public CloseableDirectory(BaseDirectoryWrapper dir,
-      TestRuleMarkFailure failureMarker) {
+
+  public CloseableDirectory(BaseDirectoryWrapper dir, TestRuleMarkFailure failureMarker) {
     this.dir = dir;
     this.failureMarker = failureMarker;
   }
-  
+
   @Override
   public void close() {
     // We only attempt to check open/closed state if there were no other test

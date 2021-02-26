@@ -16,45 +16,51 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
 public class TestFingerprintFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void test() throws Exception {
-    for (final boolean consumeAll : new boolean[]{true, false}) {
+    for (final boolean consumeAll : new boolean[] {true, false}) {
       Reader reader = new StringReader("A1 B2 A1 D4 C3");
       MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       tokenizer.setReader(reader);
       tokenizer.setEnableChecks(consumeAll);
       TokenStream stream = tokenizer;
-      stream = tokenFilterFactory("Fingerprint",
-          FingerprintFilterFactory.MAX_OUTPUT_TOKEN_SIZE_KEY, "256",
-          FingerprintFilterFactory.SEPARATOR_KEY, "_"
-      ).create(stream);
-      assertTokenStreamContents(stream, new String[]{"A1_B2_C3_D4"});
+      stream =
+          tokenFilterFactory(
+                  "Fingerprint",
+                  FingerprintFilterFactory.MAX_OUTPUT_TOKEN_SIZE_KEY,
+                  "256",
+                  FingerprintFilterFactory.SEPARATOR_KEY,
+                  "_")
+              .create(stream);
+      assertTokenStreamContents(stream, new String[] {"A1_B2_C3_D4"});
     }
   }
 
   public void testRequired() throws Exception {
     // no params are required
-      tokenFilterFactory("Fingerprint");
+    tokenFilterFactory("Fingerprint");
   }
 
-  /**
-   * Test that bogus arguments result in exception
-   */
+  /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Fingerprint",
-          FingerprintFilterFactory.MAX_OUTPUT_TOKEN_SIZE_KEY, "3",
-          "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory(
+                  "Fingerprint",
+                  FingerprintFilterFactory.MAX_OUTPUT_TOKEN_SIZE_KEY,
+                  "3",
+                  "bogusArg",
+                  "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

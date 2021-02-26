@@ -62,6 +62,10 @@ grant {
   permission java.lang.RuntimePermission "getClassLoader";
   permission java.lang.RuntimePermission "setContextClassLoader";
 
+  // Needed for loading native library (lucene:misc:native) in lucene:misc
+  permission java.lang.RuntimePermission "getFileStoreAttributes";
+  permission java.lang.RuntimePermission "writeFileDescriptor";
+
   // TestLockFactoriesMultiJVM opens a random port on 127.0.0.1 (port 0 = ephemeral port range):
   permission java.net.SocketPermission "127.0.0.1:0", "accept,listen,resolve";
 
@@ -86,6 +90,13 @@ grant {
 
   // allows LuceneTestCase#runWithRestrictedPermissions to execute with lower (or no) permission
   permission java.security.SecurityPermission "createAccessControlContext";
+
+  // Hunspell regression and validation tests can read from external files
+  // specified in system properties.
+  permission java.io.FilePermission "${hunspell.repo.path}${/}-", "read";
+  permission java.io.FilePermission "${hunspell.corpora}${/}-", "read";
+  permission java.io.FilePermission "${hunspell.dictionaries}", "read";
+  permission java.io.FilePermission "${hunspell.dictionaries}${/}-", "read";
 };
 
 // Permissions to support ant build

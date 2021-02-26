@@ -18,14 +18,13 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsReader;
+import org.apache.lucene.codecs.lucene90.Lucene90PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.ByteBuffersDataOutput;
@@ -33,9 +32,7 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
-/**
- *  {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher.
- */
+/** {@link UniformSplitPostingsFormat} with block encoding using ROT13 cypher. */
 public class UniformSplitRot13PostingsFormat extends PostingsFormat {
 
   public static volatile boolean encoderCalled;
@@ -64,7 +61,7 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState segmentWriteState) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(segmentWriteState);
+    PostingsWriterBase postingsWriter = new Lucene90PostingsWriter(segmentWriteState);
     boolean success = false;
     try {
       FieldsConsumer fieldsConsumer = createFieldsConsumer(segmentWriteState, postingsWriter);
@@ -77,20 +74,24 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
     }
   }
 
-  protected FieldsConsumer createFieldsConsumer(SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
-    return new UniformSplitTermsWriter(postingsWriter, segmentWriteState,
+  protected FieldsConsumer createFieldsConsumer(
+      SegmentWriteState segmentWriteState, PostingsWriterBase postingsWriter) throws IOException {
+    return new UniformSplitTermsWriter(
+        postingsWriter,
+        segmentWriteState,
         UniformSplitTermsWriter.DEFAULT_TARGET_NUM_BLOCK_LINES,
         UniformSplitTermsWriter.DEFAULT_DELTA_NUM_LINES,
-        getBlockEncoder()
-    ) {
+        getBlockEncoder()) {
       @Override
       protected void writeDictionary(IndexDictionary.Builder dictionaryBuilder) throws IOException {
         recordBlockEncodingCall();
         super.writeDictionary(dictionaryBuilder);
         recordDictionaryEncodingCall();
       }
+
       @Override
-      protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput) throws IOException {
+      protected void writeEncodedFieldsMetadata(ByteBuffersDataOutput fieldsOutput)
+          throws IOException {
         super.writeEncodedFieldsMetadata(fieldsOutput);
         recordFieldsMetadataEncodingCall();
       }
@@ -138,7 +139,7 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState segmentReadState) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene84PostingsReader(segmentReadState);
+    PostingsReaderBase postingsReader = new Lucene90PostingsReader(segmentReadState);
     boolean success = false;
     try {
       FieldsProducer fieldsProducer = createFieldsProducer(segmentReadState, postingsReader);
@@ -151,8 +152,10 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
     }
   }
 
-  protected FieldsProducer createFieldsProducer(SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
-    return new UniformSplitTermsReader(postingsReader, segmentReadState, getBlockDecoder(), dictionaryOnHeap);
+  protected FieldsProducer createFieldsProducer(
+      SegmentReadState segmentReadState, PostingsReaderBase postingsReader) throws IOException {
+    return new UniformSplitTermsReader(
+        postingsReader, segmentReadState, getBlockDecoder(), dictionaryOnHeap);
   }
 
   protected BlockDecoder getBlockDecoder() {

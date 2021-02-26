@@ -21,15 +21,14 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.queryparser.xml.builders.FuzzyLikeThisQueryBuilder;
 
 /**
- * Assembles a QueryBuilder which uses Query objects from
- * Lucene's <code>sandbox</code> and <code>queries</code>
- * modules in addition to core queries.
+ * Assembles a QueryBuilder which uses Query objects from Lucene's <code>sandbox</code> and <code>
+ * queries</code> modules in addition to core queries.
  */
 public class CorePlusExtensionsParser extends CorePlusQueriesParser {
 
   /**
-   * Construct an XML parser that uses a single instance QueryParser for handling
-   * UserQuery tags - all parse operations are synchronized on this parser
+   * Construct an XML parser that uses a single instance QueryParser for handling UserQuery tags -
+   * all parse operations are synchronized on this parser
    *
    * @param parser A QueryParser which will be synchronized on during parse calls.
    */
@@ -49,6 +48,5 @@ public class CorePlusExtensionsParser extends CorePlusQueriesParser {
   private CorePlusExtensionsParser(String defaultField, Analyzer analyzer, QueryParser parser) {
     super(defaultField, analyzer, parser);
     queryFactory.addBuilder("FuzzyLikeThisQuery", new FuzzyLikeThisQueryBuilder(analyzer));
-
   }
 }

@@ -46,5 +46,4 @@ public class TestLruTaxonomyWriterCache extends FacetTestCase {
     assertEquals(cache.get(a), 0);
     assertEquals(cache.get(b), 1);
   }
-
 }

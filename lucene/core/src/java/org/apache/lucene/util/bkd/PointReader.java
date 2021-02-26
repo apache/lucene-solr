@@ -16,16 +16,15 @@
  */
 package org.apache.lucene.util.bkd;
 
-
 import java.io.Closeable;
 import java.io.IOException;
 
-/** One pass iterator through all points previously written with a
- *  {@link PointWriter}, abstracting away whether points are read
- *  from (offline) disk or simple arrays in heap.
+/**
+ * One pass iterator through all points previously written with a {@link PointWriter}, abstracting
+ * away whether points are read from (offline) disk or simple arrays in heap.
  *
  * @lucene.internal
- * */
+ */
 public interface PointReader extends Closeable {
 
   /** Returns false once iteration is done, else true. */
@@ -33,6 +32,4 @@ public interface PointReader extends Closeable {
 
   /** Sets the packed value in the provided ByteRef */
   PointValue pointValue();
-
 }
-

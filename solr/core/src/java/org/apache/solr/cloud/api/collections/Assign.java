@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 import java.io.IOException;
@@ -42,7 +42,6 @@ import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.cluster.placement.PlacementPlugin;
 import org.apache.solr.cluster.placement.impl.PlacementPluginAssignStrategy;
-import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -52,6 +51,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.NumberUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -231,14 +231,14 @@ public class Assign {
     List<String> nodeList;
     final String createNodeSetStr = message.getStr(CREATE_NODE_SET);
     final List<String> createNodeList = (createNodeSetStr == null) ? null :
-        StrUtils.splitSmart((OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY.equals(createNodeSetStr) ?
+        StrUtils.splitSmart((CollectionHandlingUtils.CREATE_NODE_SET_EMPTY.equals(createNodeSetStr) ?
             "" : createNodeSetStr), ",", true);
 
     if (createNodeList != null) {
       nodeList = new ArrayList<>(createNodeList);
       nodeList.retainAll(liveNodes);
-      if (message.getBool(OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE,
-          OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE_DEFAULT)) {
+      if (message.getBool(CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE,
+          CollectionHandlingUtils.CREATE_NODE_SET_SHUFFLE_DEFAULT)) {
         Collections.shuffle(nodeList, random);
       }
     } else {
@@ -270,7 +270,8 @@ public class Assign {
   @SuppressWarnings({"unchecked"})
   public static List<ReplicaPosition> getNodesForNewReplicas(ClusterState clusterState, String collectionName,
                                                           String shard, int nrtReplicas, int tlogReplicas, int pullReplicas,
-                                                          Object createNodeSet, SolrCloudManager cloudManager) throws IOException, InterruptedException, AssignmentException {
+                                                          Object createNodeSet, SolrCloudManager cloudManager,
+                                                          CoreContainer coreContainer) throws IOException, InterruptedException, AssignmentException {
     log.debug("getNodesForNewReplicas() shard: {} , nrtReplicas : {} , tlogReplicas: {} , pullReplicas: {} , createNodeSet {}"
         , shard, nrtReplicas, tlogReplicas, pullReplicas, createNodeSet);
     DocCollection coll = clusterState.getCollection(collectionName);
@@ -296,7 +297,7 @@ public class Assign {
         .assignPullReplicas(pullReplicas)
         .onNodes(createNodeList)
         .build();
-    AssignStrategy assignStrategy = createAssignStrategy(cloudManager, clusterState, coll);
+    AssignStrategy assignStrategy = createAssignStrategy(coreContainer, clusterState, coll);
     return assignStrategy.assign(cloudManager, assignRequest);
   }
 
@@ -379,9 +380,46 @@ public class Assign {
     }
   }
 
+  /**
+   * Strategy for assigning replicas to nodes.
+   */
   public interface AssignStrategy {
+
+    /**
+     * Assign new replicas to nodes.
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param assignRequest assign request.
+     * @return list of {@link ReplicaPosition}-s for new replicas.
+     * @throws AssignmentException when assignment request cannot produce any valid assignments.
+     */
     List<ReplicaPosition> assign(SolrCloudManager solrCloudManager, AssignRequest assignRequest)
-        throws Assign.AssignmentException, IOException, InterruptedException;
+        throws AssignmentException, IOException, InterruptedException;
+
+    /**
+     * Verify that deleting a collection doesn't violate the replica assignment constraints.
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param collection collection to delete.
+     * @throws AssignmentException when deleting the collection would violate replica assignment constraints.
+     * @throws IOException on general errors.
+     */
+    default void verifyDeleteCollection(SolrCloudManager solrCloudManager, DocCollection collection)
+        throws AssignmentException, IOException, InterruptedException {
+
+    }
+
+    /**
+     * Verify that deleting these replicas doesn't violate the replica assignment constraints.
+     * @param solrCloudManager current instance of {@link SolrCloudManager}.
+     * @param collection collection to delete replicas from.
+     * @param shardName shard name.
+     * @param replicas replicas to delete.
+     * @throws AssignmentException when deleting the replicas would violate replica assignment constraints.
+     * @throws IOException on general errors.
+     */
+    default void verifyDeleteReplicas(SolrCloudManager solrCloudManager, DocCollection collection, String shardName, Set<Replica> replicas)
+        throws AssignmentException, IOException, InterruptedException {
+
+    }
   }
 
   public static class AssignRequest {
@@ -492,13 +530,14 @@ public class Assign {
   /**
    * Creates the appropriate instance of {@link AssignStrategy} based on how the cluster and/or individual collections are
    * configured.
+   * <p>If {@link PlacementPlugin} instance is null this call will return {@link LegacyAssignStrategy}, otherwise
+   * {@link PlacementPluginAssignStrategy} will be used.</p>
    */
-  public static AssignStrategy createAssignStrategy(SolrCloudManager solrCloudManager, ClusterState clusterState, DocCollection collection) {
-    PlacementPlugin plugin = PlacementPluginConfigImpl.getPlacementPlugin(solrCloudManager);
-
-    if (plugin != null) {
+  public static AssignStrategy createAssignStrategy(CoreContainer coreContainer, ClusterState clusterState, DocCollection collection) {
+    PlacementPlugin placementPlugin = coreContainer.getPlacementPluginFactory().createPluginInstance();
+    if (placementPlugin != null) {
       // If a cluster wide placement plugin is configured (and that's the only way to define a placement plugin)
-      return new PlacementPluginAssignStrategy(collection, plugin);
+      return new PlacementPluginAssignStrategy(collection, placementPlugin);
     }  else {
         return new LegacyAssignStrategy();
       }

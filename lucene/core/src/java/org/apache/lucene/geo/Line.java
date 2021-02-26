@@ -19,13 +19,15 @@ package org.apache.lucene.geo;
 import java.util.Arrays;
 
 /**
- * Represents a line on the earth's surface.  You can construct the Line directly with {@code double[]}
- * coordinates.
- * <p>
- * NOTES:
+ * Represents a line on the earth's surface. You can construct the Line directly with {@code
+ * double[]} coordinates.
+ *
+ * <p>NOTES:
+ *
  * <ol>
  *   <li>All latitude/longitude values must be in decimal degrees.
- *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras}
+ *       module
  * </ol>
  */
 public class Line extends LatLonGeometry {
@@ -43,9 +45,7 @@ public class Line extends LatLonGeometry {
   /** maximum longitude of this line's bounding box */
   public final double maxLon;
 
-  /**
-   * Creates a new Line from the supplied latitude/longitude array.
-   */
+  /** Creates a new Line from the supplied latitude/longitude array. */
   public Line(double[] lats, double[] lons) {
     if (lats == null) {
       throw new IllegalArgumentException("lats must not be null");
@@ -132,11 +132,7 @@ public class Line extends LatLonGeometry {
     StringBuilder sb = new StringBuilder();
     sb.append("LINE(");
     for (int i = 0; i < lats.length; i++) {
-      sb.append("[")
-          .append(lons[i])
-          .append(", ")
-          .append(lats[i])
-          .append("]");
+      sb.append("[").append(lons[i]).append(", ").append(lats[i]).append("]");
     }
     sb.append(')');
     return sb.toString();

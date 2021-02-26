@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 
-/** A Scorer for queries with a required subscorer
- * and an excluding (prohibited) sub {@link Scorer}.
+/**
+ * A Scorer for queries with a required subscorer and an excluding (prohibited) sub {@link Scorer}.
  */
 class ReqExclScorer extends Scorer {
 
@@ -34,7 +33,9 @@ class ReqExclScorer extends Scorer {
   private final TwoPhaseIterator reqTwoPhaseIterator;
   private final TwoPhaseIterator exclTwoPhaseIterator;
 
-  /** Construct a <code>ReqExclScorer</code>.
+  /**
+   * Construct a <code>ReqExclScorer</code>.
+   *
    * @param reqScorer The scorer that must match, except where
    * @param exclScorer indicates exclusion.
    */
@@ -55,8 +56,7 @@ class ReqExclScorer extends Scorer {
     }
   }
 
-  /** Confirms whether or not the given {@link TwoPhaseIterator}
-   *  matches on the current document. */
+  /** Confirms whether or not the given {@link TwoPhaseIterator} matches on the current document. */
   private static boolean matchesOrNull(TwoPhaseIterator it) throws IOException {
     return it == null || it.matches();
   }
@@ -98,10 +98,9 @@ class ReqExclScorer extends Scorer {
   }
 
   /**
-   * Estimation of the number of operations required to call DISI.advance.
-   * This is likely completely wrong, especially given that the cost of
-   * this method usually depends on how far you want to advance, but it's
-   * probably better than nothing.
+   * Estimation of the number of operations required to call DISI.advance. This is likely completely
+   * wrong, especially given that the cost of this method usually depends on how far you want to
+   * advance, but it's probably better than nothing.
    */
   private static final int ADVANCE_COST = 10;
 
@@ -118,8 +117,8 @@ class ReqExclScorer extends Scorer {
 
     // match cost of the prohibited clause: we need to advance the approximation
     // and match the two-phased iterator
-    final float exclMatchCost = ADVANCE_COST
-        + (exclTwoPhaseIterator == null ? 0 : exclTwoPhaseIterator.matchCost());
+    final float exclMatchCost =
+        ADVANCE_COST + (exclTwoPhaseIterator == null ? 0 : exclTwoPhaseIterator.matchCost());
 
     // upper value for the ratio of documents that reqApproximation matches that
     // exclApproximation also matches
@@ -129,7 +128,9 @@ class ReqExclScorer extends Scorer {
     } else if (exclApproximation.cost() <= 0) {
       ratio = 0f;
     } else {
-      ratio = (float) Math.min(reqApproximation.cost(), exclApproximation.cost()) / reqApproximation.cost();
+      ratio =
+          (float) Math.min(reqApproximation.cost(), exclApproximation.cost())
+              / reqApproximation.cost();
     }
     matchCost += ratio * exclMatchCost;
 
@@ -138,10 +139,12 @@ class ReqExclScorer extends Scorer {
 
   @Override
   public TwoPhaseIterator twoPhaseIterator() {
-    final float matchCost = matchCost(reqApproximation, reqTwoPhaseIterator, exclApproximation, exclTwoPhaseIterator);
+    final float matchCost =
+        matchCost(reqApproximation, reqTwoPhaseIterator, exclApproximation, exclTwoPhaseIterator);
 
     if (reqTwoPhaseIterator == null
-        || (exclTwoPhaseIterator != null && reqTwoPhaseIterator.matchCost() <= exclTwoPhaseIterator.matchCost())) {
+        || (exclTwoPhaseIterator != null
+            && reqTwoPhaseIterator.matchCost() <= exclTwoPhaseIterator.matchCost())) {
       // reqTwoPhaseIterator is LESS costly than exclTwoPhaseIterator, check it first
       return new TwoPhaseIterator(reqApproximation) {
 

@@ -16,24 +16,21 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
+import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-import java.io.IOException;
-
 /**
- * This TokenFilter limits its emitted tokens to those with positions that
- * are not greater than the configured limit.
- * <p>
- * By default, this filter ignores any tokens in the wrapped {@code TokenStream}
- * once the limit has been exceeded, which can result in {@code reset()} being 
- * called prior to {@code incrementToken()} returning {@code false}.  For most 
- * {@code TokenStream} implementations this should be acceptable, and faster 
- * then consuming the full stream. If you are wrapping a {@code TokenStream}
- * which requires that the full stream of tokens be exhausted in order to 
- * function properly, use the 
- * {@link #LimitTokenPositionFilter(TokenStream,int,boolean) consumeAllTokens}
+ * This TokenFilter limits its emitted tokens to those with positions that are not greater than the
+ * configured limit.
+ *
+ * <p>By default, this filter ignores any tokens in the wrapped {@code TokenStream} once the limit
+ * has been exceeded, which can result in {@code reset()} being called prior to {@code
+ * incrementToken()} returning {@code false}. For most {@code TokenStream} implementations this
+ * should be acceptable, and faster then consuming the full stream. If you are wrapping a {@code
+ * TokenStream} which requires that the full stream of tokens be exhausted in order to function
+ * properly, use the {@link #LimitTokenPositionFilter(TokenStream,int,boolean) consumeAllTokens}
  * option.
  */
 public final class LimitTokenPositionFilter extends TokenFilter {
@@ -42,15 +39,15 @@ public final class LimitTokenPositionFilter extends TokenFilter {
   private final boolean consumeAllTokens;
   private int tokenPosition = 0;
   private boolean exhausted = false;
-  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final PositionIncrementAttribute posIncAtt =
+      addAttribute(PositionIncrementAttribute.class);
 
   /**
-   * Build a filter that only accepts tokens up to and including the given maximum position.
-   * This filter will not consume any tokens with position greater than the maxTokenPosition limit.
-
+   * Build a filter that only accepts tokens up to and including the given maximum position. This
+   * filter will not consume any tokens with position greater than the maxTokenPosition limit.
+   *
    * @param in the stream to wrap
    * @param maxTokenPosition max position of tokens to produce (1st token always has position 1)
-   *                         
    * @see #LimitTokenPositionFilter(TokenStream,int,boolean)
    */
   public LimitTokenPositionFilter(TokenStream in, int maxTokenPosition) {
@@ -59,11 +56,11 @@ public final class LimitTokenPositionFilter extends TokenFilter {
 
   /**
    * Build a filter that limits the maximum position of tokens to emit.
-   * 
+   *
    * @param in the stream to wrap
    * @param maxTokenPosition max position of tokens to produce (1st token always has position 1)
-   * @param consumeAllTokens whether all tokens from the wrapped input stream must be consumed
-   *                         even if maxTokenPosition is exceeded.
+   * @param consumeAllTokens whether all tokens from the wrapped input stream must be consumed even
+   *     if maxTokenPosition is exceeded.
    */
   public LimitTokenPositionFilter(TokenStream in, int maxTokenPosition, boolean consumeAllTokens) {
     super(in);
@@ -84,7 +81,9 @@ public final class LimitTokenPositionFilter extends TokenFilter {
       if (tokenPosition <= maxTokenPosition) {
         return true;
       } else {
-        while (consumeAllTokens && input.incrementToken()) { /* NOOP */ }
+        while (consumeAllTokens && input.incrementToken()) {
+          /* NOOP */
+        }
         exhausted = true;
         return false;
       }

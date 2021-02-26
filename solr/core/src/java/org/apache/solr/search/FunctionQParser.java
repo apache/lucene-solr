@@ -356,15 +356,23 @@ public class FunctionQParser extends QParser {
         throw new SyntaxError("Missing param " + param + " while parsing function '" + sp.val + "'");
       }
 
-      QParser subParser = subQuery(val, "func");
-      if (subParser instanceof FunctionQParser) {
-        ((FunctionQParser)subParser).setParseMultipleSources(true);
-      }
-      Query subQuery = subParser.getQuery();
-      if (subQuery instanceof FunctionQuery) {
-        valueSource = ((FunctionQuery) subQuery).getValueSource();
+      if ((flags & FLAG_USE_FIELDNAME_SOURCE) != 0 && req.getSchema().getFieldOrNull(val) != null) {
+        // Don't try to create a ValueSource for the field, just use a placeholder.
+        // this handles the case like x=myfunc($qq)&qq=something
+        valueSource = new FieldNameValueSource(val);
       } else {
-        valueSource = new QueryValueSource(subQuery, 0.0f);
+        QParser subParser = subQuery(val, "func");
+        if (subParser instanceof FunctionQParser) {
+          ((FunctionQParser) subParser).setParseMultipleSources(true);
+        }
+        Query subQuery = subParser.getQuery();
+        if (subQuery == null) {
+          valueSource = new ConstValueSource(0.0f);
+        } else if (subQuery instanceof FunctionQuery) {
+          valueSource = ((FunctionQuery) subQuery).getValueSource();
+        } else {
+          valueSource = new QueryValueSource(subQuery, 0.0f);
+        }
       }
 
       /***

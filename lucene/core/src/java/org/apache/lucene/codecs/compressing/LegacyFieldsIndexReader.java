@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-
 import static org.apache.lucene.util.BitUtil.zigZagDecode;
 
 import java.io.IOException;
@@ -24,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.IndexInput;
@@ -36,11 +34,13 @@ import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Random-access reader for {@link FieldsIndexWriter}.
+ *
  * @lucene.internal
  */
 final class LegacyFieldsIndexReader extends FieldsIndex {
 
-  private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(LegacyFieldsIndexReader.class);
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(LegacyFieldsIndexReader.class);
 
   final int maxDoc;
   final int[] docBases;
@@ -65,7 +65,7 @@ final class LegacyFieldsIndexReader extends FieldsIndex {
 
     int blockCount = 0;
 
-    for (;;) {
+    for (; ; ) {
       final int numChunks = fieldsIndexIn.readVInt();
       if (numChunks == 0) {
         break;
@@ -85,18 +85,32 @@ final class LegacyFieldsIndexReader extends FieldsIndex {
       avgChunkDocs[blockCount] = fieldsIndexIn.readVInt();
       final int bitsPerDocBase = fieldsIndexIn.readVInt();
       if (bitsPerDocBase > 32) {
-        throw new CorruptIndexException("Corrupted bitsPerDocBase: " + bitsPerDocBase, fieldsIndexIn);
+        throw new CorruptIndexException(
+            "Corrupted bitsPerDocBase: " + bitsPerDocBase, fieldsIndexIn);
       }
-      docBasesDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerDocBase);
+      docBasesDeltas[blockCount] =
+          PackedInts.getReaderNoHeader(
+              fieldsIndexIn,
+              PackedInts.Format.PACKED,
+              packedIntsVersion,
+              numChunks,
+              bitsPerDocBase);
 
       // start pointers
       startPointers[blockCount] = fieldsIndexIn.readVLong();
       avgChunkSizes[blockCount] = fieldsIndexIn.readVLong();
       final int bitsPerStartPointer = fieldsIndexIn.readVInt();
       if (bitsPerStartPointer > 64) {
-        throw new CorruptIndexException("Corrupted bitsPerStartPointer: " + bitsPerStartPointer, fieldsIndexIn);
+        throw new CorruptIndexException(
+            "Corrupted bitsPerStartPointer: " + bitsPerStartPointer, fieldsIndexIn);
       }
-      startPointersDeltas[blockCount] = PackedInts.getReaderNoHeader(fieldsIndexIn, PackedInts.Format.PACKED, packedIntsVersion, numChunks, bitsPerStartPointer);
+      startPointersDeltas[blockCount] =
+          PackedInts.getReaderNoHeader(
+              fieldsIndexIn,
+              PackedInts.Format.PACKED,
+              packedIntsVersion,
+              numChunks,
+              bitsPerStartPointer);
 
       ++blockCount;
     }
@@ -182,7 +196,7 @@ final class LegacyFieldsIndexReader extends FieldsIndex {
 
     res += RamUsageEstimator.sizeOf(docBases);
     res += RamUsageEstimator.sizeOf(startPointers);
-    res += RamUsageEstimator.sizeOf(avgChunkDocs); 
+    res += RamUsageEstimator.sizeOf(avgChunkDocs);
     res += RamUsageEstimator.sizeOf(avgChunkSizes);
 
     return res;
@@ -191,19 +205,19 @@ final class LegacyFieldsIndexReader extends FieldsIndex {
   @Override
   public Collection<Accountable> getChildResources() {
     List<Accountable> resources = new ArrayList<>();
-    
+
     long docBaseDeltaBytes = RamUsageEstimator.shallowSizeOf(docBasesDeltas);
     for (PackedInts.Reader r : docBasesDeltas) {
       docBaseDeltaBytes += r.ramBytesUsed();
     }
     resources.add(Accountables.namedAccountable("doc base deltas", docBaseDeltaBytes));
-    
+
     long startPointerDeltaBytes = RamUsageEstimator.shallowSizeOf(startPointersDeltas);
     for (PackedInts.Reader r : startPointersDeltas) {
       startPointerDeltaBytes += r.ramBytesUsed();
     }
     resources.add(Accountables.namedAccountable("start pointer deltas", startPointerDeltaBytes));
-    
+
     return Collections.unmodifiableList(resources);
   }
 

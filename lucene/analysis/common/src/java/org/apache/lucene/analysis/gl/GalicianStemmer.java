@@ -16,22 +16,20 @@
  */
 package org.apache.lucene.analysis.gl;
 
-
 import java.util.Map;
-
 import org.apache.lucene.analysis.pt.RSLPStemmerBase;
 
 /**
  * Galician stemmer implementing "Regras do lematizador para o galego".
- * 
+ *
  * @see RSLPStemmerBase
  * @see <a href="http://bvg.udc.es/recursos_lingua/stemming.jsp">Description of rules</a>
  */
 public class GalicianStemmer extends RSLPStemmerBase {
   private static final Step plural, unification, adverb, augmentative, noun, verb, vowel;
-  
+
   static {
-    Map<String,Step> steps = parse(GalicianStemmer.class, "galician.rslp");
+    Map<String, Step> steps = parse(GalicianStemmer.class, "galician.rslp");
     plural = steps.get("Plural");
     unification = steps.get("Unification");
     adverb = steps.get("Adverb");
@@ -40,7 +38,7 @@ public class GalicianStemmer extends RSLPStemmerBase {
     verb = steps.get("Verb");
     vowel = steps.get("Vowel");
   }
-  
+
   /**
    * @param s buffer, oversized to at least <code>len+1</code>
    * @param len initial valid length of buffer
@@ -48,36 +46,47 @@ public class GalicianStemmer extends RSLPStemmerBase {
    */
   public int stem(char s[], int len) {
     assert s.length >= len + 1 : "this stemmer requires an oversized array of at least 1";
-    
+
     len = plural.apply(s, len);
     len = unification.apply(s, len);
     len = adverb.apply(s, len);
-    
+
     int oldlen;
     do {
       oldlen = len;
       len = augmentative.apply(s, len);
     } while (len != oldlen);
-    
+
     oldlen = len;
     len = noun.apply(s, len);
-    if (len == oldlen) { /* suffix not removed */
+    if (len == oldlen) {
+      /* suffix not removed */
       len = verb.apply(s, len);
     }
-      
+
     len = vowel.apply(s, len);
-    
+
     // RSLG accent removal
     for (int i = 0; i < len; i++)
-      switch(s[i]) {
-        case 'á': s[i] = 'a'; break;
+      switch (s[i]) {
+        case 'á':
+          s[i] = 'a';
+          break;
         case 'é':
-        case 'ê': s[i] = 'e'; break;
-        case 'í': s[i] = 'i'; break;
-        case 'ó': s[i] = 'o'; break;
-        case 'ú': s[i] = 'u'; break;
+        case 'ê':
+          s[i] = 'e';
+          break;
+        case 'í':
+          s[i] = 'i';
+          break;
+        case 'ó':
+          s[i] = 'o';
+          break;
+        case 'ú':
+          s[i] = 'u';
+          break;
       }
-    
+
     return len;
   }
 }

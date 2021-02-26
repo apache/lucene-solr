@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util.packed;
 
-
 import static org.apache.lucene.util.BitUtil.zigZagDecode;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.BPV_SHIFT;
 import static org.apache.lucene.util.packed.AbstractBlockPackedWriter.MAX_BLOCK_SIZE;
@@ -27,7 +26,6 @@ import static org.apache.lucene.util.packed.PackedInts.checkBlockSize;
 import static org.apache.lucene.util.packed.PackedInts.numBlocks;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
@@ -35,6 +33,7 @@ import org.apache.lucene.util.LongValues;
 
 /**
  * Provides random access to a stream written with {@link BlockPackedWriter}.
+ *
  * @lucene.internal
  */
 public final class BlockPackedReader extends LongValues implements Accountable {
@@ -46,7 +45,9 @@ public final class BlockPackedReader extends LongValues implements Accountable {
   private final long sumBPV;
 
   /** Sole constructor. */
-  public BlockPackedReader(IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct) throws IOException {
+  public BlockPackedReader(
+      IndexInput in, int packedIntsVersion, int blockSize, long valueCount, boolean direct)
+      throws IOException {
     this.valueCount = valueCount;
     blockShift = checkBlockSize(blockSize, MIN_BLOCK_SIZE, MAX_BLOCK_SIZE);
     blockMask = blockSize - 1;
@@ -73,10 +74,15 @@ public final class BlockPackedReader extends LongValues implements Accountable {
         final int size = (int) Math.min(blockSize, valueCount - (long) i * blockSize);
         if (direct) {
           final long pointer = in.getFilePointer();
-          subReaders[i] = PackedInts.getDirectReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
-          in.seek(pointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, size, bitsPerValue));
+          subReaders[i] =
+              PackedInts.getDirectReaderNoHeader(
+                  in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
+          in.seek(
+              pointer + PackedInts.Format.PACKED.byteCount(packedIntsVersion, size, bitsPerValue));
         } else {
-          subReaders[i] = PackedInts.getReaderNoHeader(in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
+          subReaders[i] =
+              PackedInts.getReaderNoHeader(
+                  in, PackedInts.Format.PACKED, packedIntsVersion, size, bitsPerValue);
         }
       }
     }
@@ -100,10 +106,17 @@ public final class BlockPackedReader extends LongValues implements Accountable {
     }
     return size;
   }
-  
+
   @Override
   public String toString() {
     long avgBPV = subReaders.length == 0 ? 0 : sumBPV / subReaders.length;
-    return getClass().getSimpleName() + "(blocksize=" + (1<<blockShift) + ",size=" + valueCount + ",avgBPV=" + avgBPV + ")";
+    return getClass().getSimpleName()
+        + "(blocksize="
+        + (1 << blockShift)
+        + ",size="
+        + valueCount
+        + ",avgBPV="
+        + avgBPV
+        + ")";
   }
 }

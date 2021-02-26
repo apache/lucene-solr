@@ -28,7 +28,7 @@ You can see a comparison between the Tika and LangDetect implementations here: h
 
 For specific information on each of these language identification implementations, including a list of supported languages for each, see the relevant project websites.
 
-For more information about language analysis in Solr, see <<language-analysis.adoc#language-analysis,Language Analysis>>.
+For more information about language analysis in Solr, see <<language-analysis.adoc#,Language Analysis>>.
 
 == Configuring Language Detection
 
@@ -80,7 +80,7 @@ Here is an example of a minimal OpenNLP `langid` configuration in `solrconfig.xm
 ==== OpenNLP-specific Parameters
 
 `langid.model`::
-An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/{ivy-opennlp-version}/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required.  See <<resource-loading.adoc#resource-loading,Resource Loading>> for information on where to put the model.
+An OpenNLP language detection model. The OpenNLP project provides a pre-trained 103 language model on the http://opennlp.apache.org/models.html[OpenNLP site's model dowload page]. Model training instructions are provided on the http://opennlp.apache.org/docs/{ivy-opennlp-version}/manual/opennlp.html#tools.langdetect[OpenNLP website]. This parameter is required.  See <<resource-loading.adoc#,Resource Loading>> for information on where to put the model.
 
 ==== OpenNLP Language Codes
 

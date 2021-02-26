@@ -16,12 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
-
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -52,20 +49,20 @@ public class TestFilterLeafReader extends LuceneTestCase {
         super(in);
       }
 
-      /** Scan for terms containing the letter 'e'.*/
+      /** Scan for terms containing the letter 'e'. */
       @Override
       public BytesRef next() throws IOException {
         BytesRef text;
         while ((text = in.next()) != null) {
-          if (text.utf8ToString().indexOf('e') != -1)
-            return text;
+          if (text.utf8ToString().indexOf('e') != -1) return text;
         }
         return null;
       }
 
       @Override
       public PostingsEnum postings(PostingsEnum reuse, int flags) throws IOException {
-        return new TestPositions(super.postings(reuse == null ? null : ((FilterPostingsEnum) reuse).in, flags));
+        return new TestPositions(
+            super.postings(reuse == null ? null : ((FilterPostingsEnum) reuse).in, flags));
       }
     }
 
@@ -80,13 +77,12 @@ public class TestFilterLeafReader extends LuceneTestCase {
       public int nextDoc() throws IOException {
         int doc;
         while ((doc = in.nextDoc()) != NO_MORE_DOCS) {
-          if ((doc % 2) == 1)
-            return doc;
+          if ((doc % 2) == 1) return doc;
         }
         return NO_MORE_DOCS;
       }
     }
-    
+
     public TestReader(LeafReader reader) throws IOException {
       super(reader);
     }
@@ -94,7 +90,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     @Override
     public Terms terms(String field) throws IOException {
       Terms terms = super.terms(field);
-      return terms==null ? null : new TestTerms(terms);
+      return terms == null ? null : new TestTerms(terms);
     }
 
     @Override
@@ -128,15 +124,17 @@ public class TestFilterLeafReader extends LuceneTestCase {
       return null;
     }
   }
-    
+
   /**
    * Tests the IndexReader.getFieldNames implementation
+   *
    * @throws Exception on error
    */
   public void testFilterIndexReader() throws Exception {
     Directory directory = newDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter writer =
+        new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
 
     Document d1 = new Document();
     d1.add(newTextField("default", "one two", Field.Store.YES));
@@ -163,14 +161,14 @@ public class TestFilterLeafReader extends LuceneTestCase {
     }
     writer.close();
     IndexReader reader = DirectoryReader.open(target);
-    
+
     TermsEnum terms = MultiTerms.getTerms(reader, "default").iterator();
     while (terms.next() != null) {
       assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
     }
-    
+
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seekCeil(new BytesRef("one")));
-    
+
     PostingsEnum positions = terms.postings(null, PostingsEnum.ALL);
     while (positions.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       assertTrue((positions.docID() % 2) == 1);
@@ -181,12 +179,17 @@ public class TestFilterLeafReader extends LuceneTestCase {
     target.close();
   }
 
-  private static void checkOverrideMethods(Class<?> clazz) throws NoSuchMethodException, SecurityException {
+  private static void checkOverrideMethods(Class<?> clazz)
+      throws NoSuchMethodException, SecurityException {
     final Class<?> superClazz = clazz.getSuperclass();
     for (Method m : superClazz.getMethods()) {
       final int mods = m.getModifiers();
-      if (Modifier.isStatic(mods) || Modifier.isAbstract(mods) || Modifier.isFinal(mods) || m.isSynthetic()
-          || m.getName().equals("attributes") || m.getName().equals("getStats")) {
+      if (Modifier.isStatic(mods)
+          || Modifier.isAbstract(mods)
+          || Modifier.isFinal(mods)
+          || m.isSynthetic()
+          || m.getName().equals("attributes")
+          || m.getName().equals("getStats")) {
         continue;
       }
       // The point of these checks is to ensure that methods that have a default
@@ -217,16 +220,18 @@ public class TestFilterLeafReader extends LuceneTestCase {
     w.addDocument(new Document());
     DirectoryReader dr = w.getReader();
     LeafReader r = dr.leaves().get(0).reader();
-    FilterLeafReader r2 = new FilterLeafReader(r) {
-      @Override
-      public CacheHelper getCoreCacheHelper() {
-        return in.getCoreCacheHelper();
-      }
-      @Override
-      public CacheHelper getReaderCacheHelper() {
-        return in.getReaderCacheHelper();
-      }
-    };
+    FilterLeafReader r2 =
+        new FilterLeafReader(r) {
+          @Override
+          public CacheHelper getCoreCacheHelper() {
+            return in.getCoreCacheHelper();
+          }
+
+          @Override
+          public CacheHelper getReaderCacheHelper() {
+            return in.getReaderCacheHelper();
+          }
+        };
     assertEquals(r, r2.getDelegate());
     assertEquals(r, FilterLeafReader.unwrap(r2));
     w.close();

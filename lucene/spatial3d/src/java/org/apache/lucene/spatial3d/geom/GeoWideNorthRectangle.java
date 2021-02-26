@@ -16,13 +16,12 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
- * Bounding box wider than PI but limited on three sides (
- * bottom lat, left lon, right lon).
+ * Bounding box wider than PI but limited on three sides ( bottom lat, left lon, right lon).
  *
  * @lucene.internal
  */
@@ -66,28 +65,37 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
   protected final GeoPoint[] edgePoints;
 
   /**
-   * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}.
-   * Horizontal angle must be greater than or equal to PI.
+   * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI ->
+   * PI}. Horizontal angle must be greater than or equal to PI.
+   *
    * @param planetModel is the planet model.
    * @param bottomLat is the bottom latitude.
    * @param leftLon is the left longitude.
    * @param rightLon is the right longitude.
    */
-  public GeoWideNorthRectangle(final PlanetModel planetModel, final double bottomLat, final double leftLon, double rightLon) {
+  public GeoWideNorthRectangle(
+      final PlanetModel planetModel,
+      final double bottomLat,
+      final double leftLon,
+      double rightLon) {
     super(planetModel);
     // Argument checking
-    if (bottomLat > Math.PI * 0.5 || bottomLat < -Math.PI * 0.5)
+    if (bottomLat > Math.PI * 0.5 || bottomLat < -Math.PI * 0.5) {
       throw new IllegalArgumentException("Bottom latitude out of range");
-    if (leftLon < -Math.PI || leftLon > Math.PI)
+    }
+    if (leftLon < -Math.PI || leftLon > Math.PI) {
       throw new IllegalArgumentException("Left longitude out of range");
-    if (rightLon < -Math.PI || rightLon > Math.PI)
+    }
+    if (rightLon < -Math.PI || rightLon > Math.PI) {
       throw new IllegalArgumentException("Right longitude out of range");
+    }
     double extent = rightLon - leftLon;
     if (extent < 0.0) {
       extent += 2.0 * Math.PI;
     }
-    if (extent < Math.PI)
+    if (extent < Math.PI) {
       throw new IllegalArgumentException("Width of rectangle too small");
+    }
 
     this.bottomLat = bottomLat;
     this.leftLon = leftLon;
@@ -101,8 +109,12 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
     final double cosRightLon = Math.cos(rightLon);
 
     // Now build the four points
-    this.LRHC = new GeoPoint(planetModel, sinBottomLat, sinRightLon, cosBottomLat, cosRightLon, bottomLat, rightLon);
-    this.LLHC = new GeoPoint(planetModel, sinBottomLat, sinLeftLon, cosBottomLat, cosLeftLon, bottomLat, leftLon);
+    this.LRHC =
+        new GeoPoint(
+            planetModel, sinBottomLat, sinRightLon, cosBottomLat, cosRightLon, bottomLat, rightLon);
+    this.LLHC =
+        new GeoPoint(
+            planetModel, sinBottomLat, sinLeftLon, cosBottomLat, cosLeftLon, bottomLat, leftLon);
 
     final double middleLat = (Math.PI * 0.5 + bottomLat) * 0.5;
     final double sinMiddleLat = Math.sin(middleLat);
@@ -115,27 +127,34 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
     final double sinMiddleLon = Math.sin(middleLon);
     final double cosMiddleLon = Math.cos(middleLon);
 
-    this.centerPoint = new GeoPoint(planetModel, sinMiddleLat, sinMiddleLon, cosMiddleLat, cosMiddleLon);
+    this.centerPoint =
+        new GeoPoint(planetModel, sinMiddleLat, sinMiddleLon, cosMiddleLat, cosMiddleLon);
 
     this.bottomPlane = new SidedPlane(centerPoint, planetModel, sinBottomLat);
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
 
-    this.bottomPlanePoints = new GeoPoint[]{LLHC, LRHC};
-    this.leftPlanePoints = new GeoPoint[]{planetModel.NORTH_POLE, LLHC};
-    this.rightPlanePoints = new GeoPoint[]{planetModel.NORTH_POLE, LRHC};
+    this.bottomPlanePoints = new GeoPoint[] {LLHC, LRHC};
+    this.leftPlanePoints = new GeoPoint[] {planetModel.NORTH_POLE, LLHC};
+    this.rightPlanePoints = new GeoPoint[] {planetModel.NORTH_POLE, LRHC};
 
     this.eitherBound = new EitherBound();
-    this.edgePoints = new GeoPoint[]{planetModel.NORTH_POLE};
+    this.edgePoints = new GeoPoint[] {planetModel.NORTH_POLE};
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public GeoWideNorthRectangle(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    this(planetModel, SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream), SerializableObject.readDouble(inputStream));
+  public GeoWideNorthRectangle(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
+    this(
+        planetModel,
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream));
   }
 
   @Override
@@ -151,30 +170,31 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
     final double newBottomLat = bottomLat - angle;
     // Figuring out when we escalate to a special case requires some prefiguring
     double currentLonSpan = rightLon - leftLon;
-    if (currentLonSpan < 0.0)
+    if (currentLonSpan < 0.0) {
       currentLonSpan += Math.PI * 2.0;
+    }
     double newLeftLon = leftLon - angle;
     double newRightLon = rightLon + angle;
     if (currentLonSpan + 2.0 * angle >= Math.PI * 2.0) {
       newLeftLon = -Math.PI;
       newRightLon = Math.PI;
     }
-    return GeoBBoxFactory.makeGeoBBox(planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
+    return GeoBBoxFactory.makeGeoBBox(
+        planetModel, newTopLat, newBottomLat, newLeftLon, newRightLon);
   }
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return
-        bottomPlane.isWithin(x, y, z) &&
-            (leftPlane.isWithin(x, y, z) ||
-                rightPlane.isWithin(x, y, z));
+    return bottomPlane.isWithin(x, y, z)
+        && (leftPlane.isWithin(x, y, z) || rightPlane.isWithin(x, y, z));
   }
 
   @Override
   public double getRadius() {
-    // Here we compute the distance from the middle point to one of the corners.  However, we need to be careful
-    // to use the longest of three distances: the distance to a corner on the top; the distnace to a corner on the bottom, and
-    // the distance to the right or left edge from the center.
+    // Here we compute the distance from the middle point to one of the corners.  However, we need
+    // to be careful to use the longest of three distances: the distance to a corner on the top;
+    // the distance to a corner on the bottom, and the distance to the right or left edge from the
+    // center.
     final double centerAngle = (rightLon - (rightLon + leftLon) * 0.5) * cosMiddleLat;
     final double bottomAngle = centerPoint.arcDistance(LLHC);
     return Math.max(centerAngle, bottomAngle);
@@ -191,58 +211,67 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
   }
 
   @Override
-  public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
-    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-    return
-        p.intersects(planetModel, bottomPlane, notablePoints, bottomPlanePoints, bounds, eitherBound) ||
-            p.intersects(planetModel, leftPlane, notablePoints, leftPlanePoints, bounds, bottomPlane) ||
-            p.intersects(planetModel, rightPlane, notablePoints, rightPlanePoints, bounds, bottomPlane);
+  public boolean intersects(
+      final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part
+    // of one requires crossing into the right part of the other.  So intersection can ignore the
+    // left/right bounds.
+    return p.intersects(
+            planetModel, bottomPlane, notablePoints, bottomPlanePoints, bounds, eitherBound)
+        || p.intersects(planetModel, leftPlane, notablePoints, leftPlanePoints, bounds, bottomPlane)
+        || p.intersects(
+            planetModel, rightPlane, notablePoints, rightPlanePoints, bounds, bottomPlane);
   }
 
   @Override
   public boolean intersects(final GeoShape geoShape) {
-    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part of one
-    // requires crossing into the right part of the other.  So intersection can ignore the left/right bounds.
-    return
-        geoShape.intersects(bottomPlane, bottomPlanePoints, eitherBound) ||
-            geoShape.intersects(leftPlane, leftPlanePoints, bottomPlane) ||
-            geoShape.intersects(rightPlane, rightPlanePoints, bottomPlane);
+    // Right and left bounds are essentially independent hemispheres; crossing into the wrong part
+    // of one requires crossing into the right part of the other.  So intersection can ignore the
+    // left/right bounds.
+    return geoShape.intersects(bottomPlane, bottomPlanePoints, eitherBound)
+        || geoShape.intersects(leftPlane, leftPlanePoints, bottomPlane)
+        || geoShape.intersects(rightPlane, rightPlanePoints, bottomPlane);
   }
 
   @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
-    bounds.isWide()
-      .addHorizontalPlane(planetModel, bottomLat, bottomPlane, eitherBound)
-      .addVerticalPlane(planetModel, leftLon, leftPlane, bottomPlane)
-      .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane)
-      .addIntersection(planetModel, leftPlane, rightPlane, bottomPlane)
-      .addPoint(LLHC).addPoint(LRHC).addPoint(planetModel.NORTH_POLE);
+    bounds
+        .isWide()
+        .addHorizontalPlane(planetModel, bottomLat, bottomPlane, eitherBound)
+        .addVerticalPlane(planetModel, leftLon, leftPlane, bottomPlane)
+        .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane)
+        .addIntersection(planetModel, leftPlane, rightPlane, bottomPlane)
+        .addPoint(LLHC)
+        .addPoint(LRHC)
+        .addPoint(planetModel.NORTH_POLE);
   }
 
   @Override
-  protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    final double bottomDistance = distanceStyle.computeDistance(planetModel, bottomPlane, x,y,z, eitherBound);
-    // Because the rectangle exceeds 180 degrees, it is safe to compute the horizontally 
+  protected double outsideDistance(
+      final DistanceStyle distanceStyle, final double x, final double y, final double z) {
+    final double bottomDistance =
+        distanceStyle.computeDistance(planetModel, bottomPlane, x, y, z, eitherBound);
+    // Because the rectangle exceeds 180 degrees, it is safe to compute the horizontally
     // unbounded distance to both the left and the right and only take the minimum of the two.
-    final double leftDistance = distanceStyle.computeDistance(planetModel, leftPlane, x,y,z, bottomPlane);
-    final double rightDistance = distanceStyle.computeDistance(planetModel, rightPlane, x,y,z, bottomPlane);
-    
-    final double LRHCDistance = distanceStyle.computeDistance(LRHC, x,y,z);
-    final double LLHCDistance = distanceStyle.computeDistance(LLHC, x,y,z);
-    
+    final double leftDistance =
+        distanceStyle.computeDistance(planetModel, leftPlane, x, y, z, bottomPlane);
+    final double rightDistance =
+        distanceStyle.computeDistance(planetModel, rightPlane, x, y, z, bottomPlane);
+
+    final double LRHCDistance = distanceStyle.computeDistance(LRHC, x, y, z);
+    final double LLHCDistance = distanceStyle.computeDistance(LLHC, x, y, z);
+
     return Math.min(
-      Math.min(
-        bottomDistance,
-        Math.min(leftDistance, rightDistance)),
-      Math.min(LRHCDistance, LLHCDistance));
+        Math.min(bottomDistance, Math.min(leftDistance, rightDistance)),
+        Math.min(LRHCDistance, LLHCDistance));
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoWideNorthRectangle))
+    if (!(o instanceof GeoWideNorthRectangle)) {
       return false;
+    }
     GeoWideNorthRectangle other = (GeoWideNorthRectangle) o;
     return super.equals(other) && other.LLHC.equals(LLHC) && other.LRHC.equals(LRHC);
   }
@@ -257,16 +286,27 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
 
   @Override
   public String toString() {
-    return "GeoWideNorthRectangle: {planetmodel="+planetModel+", bottomlat=" + bottomLat + "(" + bottomLat * 180.0 / Math.PI + "), leftlon=" + leftLon + "(" + leftLon * 180.0 / Math.PI + "), rightlon=" + rightLon + "(" + rightLon * 180.0 / Math.PI + ")}";
+    return "GeoWideNorthRectangle: {planetmodel="
+        + planetModel
+        + ", bottomlat="
+        + bottomLat
+        + "("
+        + bottomLat * 180.0 / Math.PI
+        + "), leftlon="
+        + leftLon
+        + "("
+        + leftLon * 180.0 / Math.PI
+        + "), rightlon="
+        + rightLon
+        + "("
+        + rightLon * 180.0 / Math.PI
+        + ")}";
   }
 
-  /** Membership implementation representing a wide (more than 180 degree) bound.
-   */
+  /** Membership implementation representing a wide (more than 180 degree) bound. */
   protected class EitherBound implements Membership {
-    /** Constructor.
-     */
-    public EitherBound() {
-    }
+    /** Constructor. */
+    public EitherBound() {}
 
     @Override
     public boolean isWithin(final Vector v) {
@@ -279,5 +319,3 @@ class GeoWideNorthRectangle extends GeoBaseBBox {
     }
   }
 }
-  
-

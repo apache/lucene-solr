@@ -20,9 +20,8 @@ import org.apache.lucene.index.OrdTermState;
 import org.apache.lucene.index.TermState;
 
 /**
- * Holds all state required for {@link PostingsReaderBase}
- * to produce a {@link org.apache.lucene.index.PostingsEnum} without re-seeking the
- * terms dict.
+ * Holds all state required for {@link PostingsReaderBase} to produce a {@link
+ * org.apache.lucene.index.PostingsEnum} without re-seeking the terms dict.
  *
  * @lucene.internal
  */
@@ -38,10 +37,8 @@ public class BlockTermState extends OrdTermState {
   // TODO: update BTR to nuke this
   public long blockFilePointer;
 
-  /** Sole constructor. (For invocation by subclass 
-   *  constructors, typically implicit.) */
-  protected BlockTermState() {
-  }
+  /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
+  protected BlockTermState() {}
 
   @Override
   public void copyFrom(TermState _other) {
@@ -56,6 +53,13 @@ public class BlockTermState extends OrdTermState {
 
   @Override
   public String toString() {
-    return "docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq + " termBlockOrd=" + termBlockOrd + " blockFP=" + blockFilePointer;
+    return "docFreq="
+        + docFreq
+        + " totalTermFreq="
+        + totalTermFreq
+        + " termBlockOrd="
+        + termBlockOrd
+        + " blockFP="
+        + blockFilePointer;
   }
 }

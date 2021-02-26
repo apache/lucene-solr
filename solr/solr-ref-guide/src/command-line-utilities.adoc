@@ -20,11 +20,11 @@ A ZooKeeper Command Line Interface (CLI) script is available to allow you to int
 
 While Solr's Administration UI includes pages dedicated to the state of your SolrCloud cluster, it does not allow you to download or modify related configuration files.
 
-TIP: See the section <<cloud-screens.adoc#cloud-screens,Cloud Screens>> for more information about using the Admin UI screens.
+TIP: See the section <<cloud-screens.adoc#,Cloud Screens>> for more information about using the Admin UI screens.
 
-The ZooKeeper CLI scripts found in `server/scripts/cloud-scripts` let you upload configuration information to ZooKeeper, in the same ways shown in the examples in <<parameter-reference.adoc#parameter-reference,Parameter Reference>>. It also provides a few other commands that let you link collection sets to collections, make ZooKeeper paths or clear them, and download configurations from ZooKeeper to the local filesystem.
+The ZooKeeper CLI scripts found in `server/scripts/cloud-scripts` let you upload configuration information to ZooKeeper, in the same ways shown in the examples in <<parameter-reference.adoc#,Parameter Reference>>. It also provides a few other commands that let you link collection sets to collections, make ZooKeeper paths or clear them, and download configurations from ZooKeeper to the local filesystem.
 
-Many of the functions provided by the zkCli.sh script are also provided by the <<solr-control-script-reference.adoc#solr-control-script-reference,Solr Control Script>>, which may be more familiar as the start script ZooKeeper maintenance commands are very similar to Unix commands.
+Many of the functions provided by the zkCli.sh script are also provided by the <<solr-control-script-reference.adoc#,Solr Control Script>>, which may be more familiar as the start script ZooKeeper maintenance commands are very similar to Unix commands.
 
 .Solr's zkcli.sh vs ZooKeeper's zkCli.sh
 [IMPORTANT]

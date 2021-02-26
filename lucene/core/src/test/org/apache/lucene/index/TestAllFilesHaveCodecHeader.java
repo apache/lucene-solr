@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
@@ -29,9 +27,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Test that a plain default puts codec headers in all files
- */
+/** Test that a plain default puts codec headers in all files */
 public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
@@ -51,25 +47,31 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
         riw.deleteDocuments(new Term("docid", Integer.toString(i)));
       }
       if (random().nextInt(15) == 0) {
-        riw.updateNumericDocValue(new Term("docid", Integer.toString(i)), "docid_intDV", Long.valueOf(i));
+        riw.updateNumericDocValue(
+            new Term("docid", Integer.toString(i)), "docid_intDV", Long.valueOf(i));
       }
     }
     riw.close();
-    checkHeaders(dir, new HashMap<String,String>());
+    checkHeaders(dir, new HashMap<String, String>());
     dir.close();
   }
-  
-  private void checkHeaders(Directory dir, Map<String,String> namesToExtensions) throws IOException {
+
+  private void checkHeaders(Directory dir, Map<String, String> namesToExtensions)
+      throws IOException {
     SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
     checkHeader(dir, sis.getSegmentsFileName(), namesToExtensions, sis.getId());
-    
+
     for (SegmentCommitInfo si : sis) {
       assertNotNull(si.info.getId());
       for (String file : si.files()) {
         checkHeader(dir, file, namesToExtensions, si.info.getId());
       }
       if (si.info.getUseCompoundFile()) {
-        try (Directory cfsDir = si.info.getCodec().compoundFormat().getCompoundReader(dir, si.info, newIOContext(random()))) {
+        try (Directory cfsDir =
+            si.info
+                .getCodec()
+                .compoundFormat()
+                .getCompoundReader(dir, si.info, newIOContext(random()))) {
           for (String cfsFile : cfsDir.listAll()) {
             checkHeader(cfsDir, cfsFile, namesToExtensions, si.info.getId());
           }
@@ -77,11 +79,14 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       }
     }
   }
-  
-  private void checkHeader(Directory dir, String file, Map<String,String> namesToExtensions, byte[] id) throws IOException {
+
+  private void checkHeader(
+      Directory dir, String file, Map<String, String> namesToExtensions, byte[] id)
+      throws IOException {
     try (IndexInput in = dir.openInput(file, newIOContext(random()))) {
       int val = in.readInt();
-      assertEquals(file + " has no codec header, instead found: " + val, CodecUtil.CODEC_MAGIC, val);
+      assertEquals(
+          file + " has no codec header, instead found: " + val, CodecUtil.CODEC_MAGIC, val);
       String codecName = in.readString();
       assertFalse(codecName.isEmpty());
       String extension = IndexFileNames.getExtension(file);
@@ -96,7 +101,7 @@ public class TestAllFilesHaveCodecHeader extends LuceneTestCase {
       // read version
       in.readInt();
       // read object id
-      CodecUtil.checkIndexHeaderID(in, id);      
+      CodecUtil.checkIndexHeaderID(in, id);
     }
   }
 }

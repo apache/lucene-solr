@@ -16,45 +16,43 @@
  */
 package org.apache.lucene.analysis.pattern;
 
-
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
- * Factory for {@link PatternTokenizer}.
- * This tokenizer uses regex pattern matching to construct distinct tokens
- * for the input stream.  It takes two arguments:  "pattern" and "group".
- * <br>
+ * Factory for {@link PatternTokenizer}. This tokenizer uses regex pattern matching to construct
+ * distinct tokens for the input stream. It takes two arguments: "pattern" and "group". <br>
+ *
  * <ul>
- * <li>"pattern" is the regular expression.</li>
- * <li>"group" says which group to extract into tokens.</li>
- *  </ul>
- * <p>
- * group=-1 (the default) is equivalent to "split".  In this case, the tokens will
- * be equivalent to the output from (without empty tokens):
- * {@link String#split(java.lang.String)}
- * </p>
- * <p>
- * Using group &gt;= 0 selects the matching group as the token.  For example, if you have:<br>
+ *   <li>"pattern" is the regular expression.
+ *   <li>"group" says which group to extract into tokens.
+ * </ul>
+ *
+ * <p>group=-1 (the default) is equivalent to "split". In this case, the tokens will be equivalent
+ * to the output from (without empty tokens): {@link String#split(java.lang.String)}
+ *
+ * <p>Using group &gt;= 0 selects the matching group as the token. For example, if you have:<br>
+ *
  * <pre>
  *  pattern = \'([^\']+)\'
  *  group = 0
  *  input = aaa 'bbb' 'ccc'
  * </pre>
- * the output will be two tokens: 'bbb' and 'ccc' (including the ' marks).  With the same input
- * but using group=1, the output would be: bbb and ccc (no ' marks)
- * <p>NOTE: This Tokenizer does not output tokens that are of zero length.</p>
+ *
+ * the output will be two tokens: 'bbb' and 'ccc' (including the ' marks). With the same input but
+ * using group=1, the output would be: bbb and ccc (no ' marks)
+ *
+ * <p>NOTE: This Tokenizer does not output tokens that are of zero length.
  *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_ptn" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
  *     &lt;tokenizer class="solr.PatternTokenizerFactory" pattern="\'([^\']+)\'" group="1"/&gt;
  *   &lt;/analyzer&gt;
- * &lt;/fieldType&gt;</pre> 
- * 
+ * &lt;/fieldType&gt;</pre>
+ *
  * @see PatternTokenizer
  * @since solr1.2
  * @lucene.spi {@value #NAME}
@@ -66,12 +64,12 @@ public class PatternTokenizerFactory extends TokenizerFactory {
 
   public static final String PATTERN = "pattern";
   public static final String GROUP = "group";
- 
+
   protected final Pattern pattern;
   protected final int group;
-  
+
   /** Creates a new PatternTokenizerFactory */
-  public PatternTokenizerFactory(Map<String,String> args) {
+  public PatternTokenizerFactory(Map<String, String> args) {
     super(args);
     pattern = getPattern(args, PATTERN);
     group = getInt(args, GROUP, -1);
@@ -79,15 +77,13 @@ public class PatternTokenizerFactory extends TokenizerFactory {
       throw new IllegalArgumentException("Unknown parameters: " + args);
     }
   }
-  
+
   /** Default ctor for compatibility with SPI */
   public PatternTokenizerFactory() {
     throw defaultCtorException();
   }
 
-  /**
-   * Split the input using configured pattern
-   */
+  /** Split the input using configured pattern */
   @Override
   public PatternTokenizer create(final AttributeFactory factory) {
     return new PatternTokenizer(factory, pattern, group);

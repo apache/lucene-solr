@@ -24,22 +24,21 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.util.SuppressForbidden;
 
 /**
- * Similar to {@link StringBuilder}, but with a more efficient growing strategy.
- * This class uses char array blocks to grow.
- * 
+ * Similar to {@link StringBuilder}, but with a more efficient growing strategy. This class uses
+ * char array blocks to grow.
+ *
  * @lucene.experimental
  */
 class CharBlockArray implements Appendable, Serializable, CharSequence {
 
   private static final long serialVersionUID = 1L;
 
-  private final static int DefaultBlockSize = 32 * 1024;  // 32 KB default size
+  private static final int DefaultBlockSize = 32 * 1024; // 32 KB default size
 
-  final static class Block implements Serializable, Cloneable {
+  static final class Block implements Serializable, Cloneable {
     private static final long serialVersionUID = 1L;
 
     final char[] chars;
@@ -173,7 +172,7 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
       int numToAppend = Math.min(remaining, b.length - indexInBlock);
       sb.append(b.chars, indexInBlock, numToAppend);
       remaining -= numToAppend;
-      indexInBlock = 0; // 2nd+ iterations read from start of the block 
+      indexInBlock = 0; // 2nd+ iterations read from start of the block
     }
     return sb.toString();
   }
@@ -187,7 +186,8 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
     return sb.toString();
   }
 
-  @SuppressForbidden(reason = "TODO: don't use java serialization here, inefficient and unnecessary")
+  @SuppressForbidden(
+      reason = "TODO: don't use java serialization here, inefficient and unnecessary")
   void flush(OutputStream out) throws IOException {
     ObjectOutputStream oos = null;
     try {
@@ -201,7 +201,8 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
     }
   }
 
-  @SuppressForbidden(reason = "TODO: don't use java serialization here, inefficient and unnecessary")
+  @SuppressForbidden(
+      reason = "TODO: don't use java serialization here, inefficient and unnecessary")
   public static CharBlockArray open(InputStream in) throws IOException, ClassNotFoundException {
     ObjectInputStream ois = null;
     try {
@@ -214,5 +215,4 @@ class CharBlockArray implements Appendable, Serializable, CharSequence {
       }
     }
   }
-
 }

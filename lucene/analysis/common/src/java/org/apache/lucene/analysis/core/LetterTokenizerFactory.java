@@ -16,17 +16,16 @@
  */
 package org.apache.lucene.analysis.core;
 
-
-import org.apache.lucene.analysis.util.CharTokenizer;
-import org.apache.lucene.analysis.TokenizerFactory;
-import org.apache.lucene.util.AttributeFactory;
-
-import java.util.Map;
-
 import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LENGTH_LIMIT;
 
+import java.util.Map;
+import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.analysis.util.CharTokenizer;
+import org.apache.lucene.util.AttributeFactory;
+
 /**
- * Factory for {@link LetterTokenizer}. 
+ * Factory for {@link LetterTokenizer}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_letter" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -35,10 +34,11 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  * &lt;/fieldType&gt;</pre>
  *
  * Options:
+ *
  * <ul>
- *   <li>maxTokenLen: max token length, must be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT (1024*1024).
- *       It is rare to need to change this
- *      else {@link CharTokenizer}::DEFAULT_MAX_TOKEN_LEN</li>
+ *   <li>maxTokenLen: max token length, must be greater than 0 and less than MAX_TOKEN_LENGTH_LIMIT
+ *       (1024*1024). It is rare to need to change this else {@link
+ *       CharTokenizer}::DEFAULT_MAX_TOKEN_LEN
  * </ul>
  *
  * @since 3.1
@@ -52,11 +52,15 @@ public class LetterTokenizerFactory extends TokenizerFactory {
   private final int maxTokenLen;
 
   /** Creates a new LetterTokenizerFactory */
-  public LetterTokenizerFactory(Map<String,String> args) {
+  public LetterTokenizerFactory(Map<String, String> args) {
     super(args);
     maxTokenLen = getInt(args, "maxTokenLen", CharTokenizer.DEFAULT_MAX_WORD_LEN);
     if (maxTokenLen > MAX_TOKEN_LENGTH_LIMIT || maxTokenLen <= 0) {
-      throw new IllegalArgumentException("maxTokenLen must be greater than 0 and less than " + MAX_TOKEN_LENGTH_LIMIT + " passed: " + maxTokenLen);
+      throw new IllegalArgumentException(
+          "maxTokenLen must be greater than 0 and less than "
+              + MAX_TOKEN_LENGTH_LIMIT
+              + " passed: "
+              + maxTokenLen);
     }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

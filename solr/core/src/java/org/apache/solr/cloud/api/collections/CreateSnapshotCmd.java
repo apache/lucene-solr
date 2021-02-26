@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
@@ -56,12 +56,12 @@ import org.slf4j.LoggerFactory;
 /**
  * This class implements the functionality of creating a collection level snapshot.
  */
-public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
+public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
+  private final CollectionCommandContext ccc;
 
-  public CreateSnapshotCmd (OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
+  public CreateSnapshotCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
@@ -72,14 +72,14 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String collectionName;
     if (followAliases) {
-      collectionName = ocmh.zkStateReader.getAliases().resolveSimpleAlias(extCollectionName);
+      collectionName = ccc.getZkStateReader().getAliases().resolveSimpleAlias(extCollectionName);
     } else {
       collectionName = extCollectionName;
     }
 
     String commitName =  message.getStr(CoreAdminParams.COMMIT_NAME);
     String asyncId = message.getStr(ASYNC);
-    SolrZkClient zkClient = ocmh.zkStateReader.getZkClient();
+    SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
     Date creationDate = new Date();
 
     if(SolrSnapshotManager.snapshotExists(zkClient, collectionName, commitName)) {
@@ -96,10 +96,10 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
     @SuppressWarnings({"rawtypes"})
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
-    ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler();
+    ShardHandler shardHandler = ccc.getShardHandler();
 
-    final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
-    for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
+    final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+    for (Slice slice : ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replica.getState() != State.ACTIVE) {
           if (log.isInfoEnabled()) {
@@ -169,7 +169,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
       // Now that we know number of failures per shard, we can figure out
       // if at-least one replica per shard was able to create a snapshot or not.
-      DocCollection collectionStatus = ocmh.zkStateReader.getClusterState().getCollection(collectionName);
+      DocCollection collectionStatus = ccc.getZkStateReader().getClusterState().getCollection(collectionName);
       for (Map.Entry<String,Integer> entry : failuresByShardId.entrySet()) {
         int replicaCount = collectionStatus.getSlice(entry.getKey()).getReplicas().size();
         if (replicaCount <= entry.getValue()) {

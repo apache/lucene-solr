@@ -21,13 +21,13 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.RandomIndexWriter;
 
-// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
+// See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows
+// machines occasionally
 public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
-  
+
   @Override
   protected Directory getDirectory(Path path) throws IOException {
     final MockDirectoryWrapper dir;
@@ -38,7 +38,7 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     }
     return dir;
   }
-  
+
   // we wrap the directory in slow stuff, so only run nightly
   @Override
   @Nightly
@@ -50,7 +50,7 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     // test writeBytes
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setMaxSizeInBytes(3);
-    final byte[] bytes = new byte[] { 1, 2};
+    final byte[] bytes = new byte[] {1, 2};
     IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT);
     out.writeBytes(bytes, bytes.length); // first write should succeed
     // close() to ensure the written bytes are not buffered and counted
@@ -61,7 +61,7 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     expectThrows(IOException.class, () -> out2.writeBytes(bytes, bytes.length));
     out2.close();
     dir.close();
-    
+
     // test copyBytes
     dir = newMockDirectory();
     dir.setMaxSizeInBytes(3);
@@ -72,11 +72,12 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     out.close();
 
     IndexOutput out3 = dir.createOutput("bar", IOContext.DEFAULT);
-    expectThrows(IOException.class, () -> out3.copyBytes(new ByteArrayDataInput(bytes), bytes.length));
+    expectThrows(
+        IOException.class, () -> out3.copyBytes(new ByteArrayDataInput(bytes), bytes.length));
     out3.close();
     dir.close();
   }
-  
+
   public void testMDWinsideOfMDW() throws Exception {
     // add MDW inside another MDW
     Directory dir = new MockDirectoryWrapper(random(), newMockDirectory());
@@ -96,23 +97,22 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     }
 
     @Override
-    public void close() {
-    }
+    public void close() {}
   }
 
   public void testCorruptOnCloseIsWorkingFSDir() throws Exception {
     Path path = createTempDir();
-    try(Directory dir = newFSDirectory(path)) {
+    try (Directory dir = newFSDirectory(path)) {
       testCorruptOnCloseIsWorking(dir);
     }
   }
 
   public void testCorruptOnCloseIsWorkingOnByteBuffersDirectory() throws Exception {
-    try(Directory dir = new ByteBuffersDirectory()) {
+    try (Directory dir = new ByteBuffersDirectory()) {
       testCorruptOnCloseIsWorking(dir);
     }
   }
-    
+
   private void testCorruptOnCloseIsWorking(Directory dir) throws Exception {
 
     dir = new PreventCloseDirectoryWrapper(dir);
@@ -126,10 +126,10 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
       RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
       iw.addDocument(new Document());
       iw.close();
-      
+
       // not sync'd!
       try (IndexOutput out = wrapped.createOutput("foo", IOContext.DEFAULT)) {
-        for(int i=0;i<100;i++) {
+        for (int i = 0; i < 100; i++) {
           out.writeInt(i);
         }
       }
@@ -146,7 +146,7 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
       changed = true;
     }
     if (in != null) {
-      for(int i=0;i<100;i++) {
+      for (int i = 0; i < 100; i++) {
         int x;
         try {
           x = in.readInt();
@@ -163,7 +163,8 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
       in.close();
     }
 
-    assertTrue("MockDirectoryWrapper on dir=" + dir + " failed to corrupt an unsync'd file", changed);
+    assertTrue(
+        "MockDirectoryWrapper on dir=" + dir + " failed to corrupt an unsync'd file", changed);
   }
 
   public void testAbuseClosedIndexInput() throws Exception {

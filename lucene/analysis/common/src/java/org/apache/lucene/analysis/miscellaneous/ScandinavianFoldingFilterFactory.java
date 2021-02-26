@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.Map;
-
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link ScandinavianFoldingFilter}.
+ *
  * <pre class="prettyprint">
  * &lt;fieldType name="text_scandfold" class="solr.TextField" positionIncrementGap="100"&gt;
  *   &lt;analyzer&gt;
@@ -31,6 +30,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;filter class="solr.ScandinavianFoldingFilterFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
  * @since 4.4.0
  * @lucene.spi {@value #NAME}
  */
@@ -39,7 +39,7 @@ public class ScandinavianFoldingFilterFactory extends TokenFilterFactory {
   /** SPI name */
   public static final String NAME = "scandinavianFolding";
 
-  public ScandinavianFoldingFilterFactory(Map<String,String> args) {
+  public ScandinavianFoldingFilterFactory(Map<String, String> args) {
     super(args);
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);

@@ -20,12 +20,18 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,79 +39,88 @@ import org.junit.Test;
  * Test for SuggesterComponent's response in Solrj
  *
  */
-public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
+public class TestSuggesterResponse extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore();
+    createAndStartJetty(legacyExampleCollection1SolrHome());
+  }
+
+  @Before
+  public void setUpClient() {
+    getSolrClient();
   }
 
   static String field = "cat";
 
   @Test
   public void testSuggesterResponseObject() throws Exception {
-    getSolrClient();
     addSampleDocs();
 
-    SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/suggest");
-    query.set("suggest.dictionary", "mySuggester");
-    query.set("suggest.q", "Com");
-    query.set("suggest.build", true);
-    QueryRequest request = new QueryRequest(query);
-    QueryResponse queryResponse = request.process(client);
-    SuggesterResponse response = queryResponse.getSuggesterResponse();
-    Map<String, List<Suggestion>> dictionary2suggestions = response.getSuggestions();
-    assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
+    try (SolrClient solrClient = createSuggestSolrClient()) {
+      SolrQuery query = new SolrQuery("*:*");
+      query.set(CommonParams.QT, "/suggest");
+      query.set("suggest.dictionary", "mySuggester");
+      query.set("suggest.q", "Com");
+      query.set("suggest.build", true);
+      QueryRequest request = new QueryRequest(query);
+      QueryResponse queryResponse = request.process(solrClient);
+      SuggesterResponse response = queryResponse.getSuggesterResponse();
+      Map<String, List<Suggestion>> dictionary2suggestions = response.getSuggestions();
+      assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
 
-    List<Suggestion> mySuggester = dictionary2suggestions.get("mySuggester");
-    assertEquals("Computational framework", mySuggester.get(0).getTerm());
-    assertEquals(0, mySuggester.get(0).getWeight());
-    assertEquals("", mySuggester.get(0).getPayload());
-    assertEquals("Computer", mySuggester.get(1).getTerm());
-    assertEquals(0, mySuggester.get(1).getWeight());
-    assertEquals("", mySuggester.get(1).getPayload());
+      List<Suggestion> mySuggester = dictionary2suggestions.get("mySuggester");
+      assertEquals("Computational framework", mySuggester.get(0).getTerm());
+      assertEquals(0, mySuggester.get(0).getWeight());
+      assertEquals("", mySuggester.get(0).getPayload());
+      assertEquals("Computer", mySuggester.get(1).getTerm());
+      assertEquals(0, mySuggester.get(1).getWeight());
+      assertEquals("", mySuggester.get(1).getPayload());
+    }
+
   }
 
   @Test
   public void testSuggesterResponseTerms() throws Exception {
-    getSolrClient();
     addSampleDocs();
 
-    SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/suggest");
-    query.set("suggest.dictionary", "mySuggester");
-    query.set("suggest.q", "Com");
-    query.set("suggest.build", true);
-    QueryRequest request = new QueryRequest(query);
-    QueryResponse queryResponse = request.process(client);
-    SuggesterResponse response = queryResponse.getSuggesterResponse();
-    Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
-    assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
+    try (SolrClient solrClient = createSuggestSolrClient()) {
+      SolrQuery query = new SolrQuery("*:*");
+      query.set(CommonParams.QT, "/suggest");
+      query.set("suggest.dictionary", "mySuggester");
+      query.set("suggest.q", "Com");
+      query.set("suggest.build", true);
+      QueryRequest request = new QueryRequest(query);
+      QueryResponse queryResponse = request.process(solrClient);
+      SuggesterResponse response = queryResponse.getSuggesterResponse();
+      Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
+      assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
 
-    List<String> mySuggester = dictionary2suggestions.get("mySuggester");
-    assertEquals("Computational framework", mySuggester.get(0));
-    assertEquals("Computer", mySuggester.get(1));
+      List<String> mySuggester = dictionary2suggestions.get("mySuggester");
+      assertEquals("Computational framework", mySuggester.get(0));
+      assertEquals("Computer", mySuggester.get(1));
+    }
   }
 
   @Test
   public void testEmptySuggesterResponse() throws Exception {
-    getSolrClient();
     addSampleDocs();
 
-    SolrQuery query = new SolrQuery("*:*");
-    query.set(CommonParams.QT, "/suggest");
-    query.set("suggest.dictionary", "mySuggester");
-    query.set("suggest.q", "Empty");
-    query.set("suggest.build", true);
-    QueryRequest request = new QueryRequest(query);
-    QueryResponse queryResponse = request.process(client);
-    SuggesterResponse response = queryResponse.getSuggesterResponse();
-    Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
-    assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
+    try (SolrClient solrClient = createSuggestSolrClient()) {
+      SolrQuery query = new SolrQuery("*:*");
+      query.set(CommonParams.QT, "/suggest");
+      query.set("suggest.dictionary", "mySuggester");
+      query.set("suggest.q", "Empty");
+      query.set("suggest.build", true);
+      QueryRequest request = new QueryRequest(query);
+      QueryResponse queryResponse = request.process(solrClient);
+      SuggesterResponse response = queryResponse.getSuggesterResponse();
+      Map<String, List<String>> dictionary2suggestions = response.getSuggestedTerms();
+      assertTrue(dictionary2suggestions.keySet().contains("mySuggester"));
 
-    List<String> mySuggester = dictionary2suggestions.get("mySuggester");
-    assertEquals(0, mySuggester.size());
+      List<String> mySuggester = dictionary2suggestions.get("mySuggester");
+      assertEquals(0, mySuggester.size());
+    }
   }
 
   private void addSampleDocs() throws SolrServerException, IOException {
@@ -126,4 +141,14 @@ public class TestSuggesterResponse extends EmbeddedSolrServerTestBase {
     client.commit(true, true);
   }
 
+  /*
+   * Randomizes the ResponseParser to test that both javabin and xml responses parse correctly.  See SOLR-15070
+   */
+  private SolrClient createSuggestSolrClient() {
+    final ResponseParser randomParser = random().nextBoolean() ? new BinaryResponseParser() : new XMLResponseParser();
+    return new HttpSolrClient.Builder()
+            .withBaseSolrUrl(jetty.getBaseUrl().toString() + "/collection1")
+            .withResponseParser(randomParser)
+            .build();
+  }
 }

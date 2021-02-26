@@ -16,15 +16,13 @@
  */
 package org.apache.lucene.benchmark.byTask.tasks;
 
-
 import java.io.IOException;
-
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 
 /**
- * Open a taxonomy index reader.
- * <br>Other side effects: taxonomy reader object in perfRunData is set.
+ * Open a taxonomy index reader. <br>
+ * Other side effects: taxonomy reader object in perfRunData is set.
  */
 public class OpenTaxonomyReaderTask extends PerfTask {
 
@@ -41,5 +39,4 @@ public class OpenTaxonomyReaderTask extends PerfTask {
     taxoReader.decRef();
     return 1;
   }
- 
 }

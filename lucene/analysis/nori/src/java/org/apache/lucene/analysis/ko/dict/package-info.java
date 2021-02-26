@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Korean dictionary implementation.
- */
+/** Korean dictionary implementation. */
 package org.apache.lucene.analysis.ko.dict;

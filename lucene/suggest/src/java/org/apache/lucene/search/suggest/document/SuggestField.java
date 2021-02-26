@@ -18,7 +18,6 @@ package org.apache.lucene.search.suggest.document;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter;
@@ -29,26 +28,22 @@ import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * <p>
- * Field that indexes a string value and a weight as a weighted completion
- * against a named suggester.
- * Field is tokenized, not stored and stores documents, frequencies and positions.
- * Field can be used to provide near real time document suggestions.
- * </p>
- * <p>
- * Besides the usual {@link org.apache.lucene.analysis.Analyzer}s,
- * {@link CompletionAnalyzer}
- * can be used to tune suggest field only parameters
- * (e.g. preserving token separators, preserving position increments
- * when converting the token stream to an automaton)
- * </p>
- * <p>
- * Example indexing usage:
+ * Field that indexes a string value and a weight as a weighted completion against a named
+ * suggester. Field is tokenized, not stored and stores documents, frequencies and positions. Field
+ * can be used to provide near real time document suggestions.
+ *
+ * <p>Besides the usual {@link org.apache.lucene.analysis.Analyzer}s, {@link CompletionAnalyzer} can
+ * be used to tune suggest field only parameters (e.g. preserving token separators, preserving
+ * position increments when converting the token stream to an automaton)
+ *
+ * <p>Example indexing usage:
+ *
  * <pre class="prettyprint">
  * document.add(new SuggestField(name, "suggestion", 4));
  * </pre>
- * To perform document suggestions based on the this field, use
- * {@link SuggestIndexSearcher#suggest(CompletionQuery, int, boolean)}
+ *
+ * To perform document suggestions based on the this field, use {@link
+ * SuggestIndexSearcher#suggest(CompletionQuery, int, boolean)}
  *
  * @lucene.experimental
  */
@@ -56,6 +51,7 @@ public class SuggestField extends Field {
 
   /** Default field type for suggest field */
   public static final FieldType FIELD_TYPE = new FieldType();
+
   static {
     FIELD_TYPE.setTokenized(true);
     FIELD_TYPE.setStored(false);
@@ -73,13 +69,11 @@ public class SuggestField extends Field {
   /**
    * Creates a {@link SuggestField}
    *
-   * @param name   field name
-   * @param value  field value to get suggestions on
+   * @param name field name
+   * @param value field value to get suggestions on
    * @param weight field weight
-   *
-   * @throws IllegalArgumentException if either the name or value is null,
-   * if value is an empty string, if the weight is negative, if value contains
-   * any reserved characters
+   * @throws IllegalArgumentException if either the name or value is null, if value is an empty
+   *     string, if the weight is negative, if value contains any reserved characters
    */
   public SuggestField(String name, String value, int weight) {
     super(name, value, FIELD_TYPE);
@@ -91,8 +85,14 @@ public class SuggestField extends Field {
     }
     for (int i = 0; i < value.length(); i++) {
       if (isReserved(value.charAt(i))) {
-        throw new IllegalArgumentException("Illegal input [" + value + "] UTF-16 codepoint [0x"
-            + Integer.toHexString((int) value.charAt(i))+ "] at position " + i + " is a reserved character");
+        throw new IllegalArgumentException(
+            "Illegal input ["
+                + value
+                + "] UTF-16 codepoint [0x"
+                + Integer.toHexString((int) value.charAt(i))
+                + "] at position "
+                + i
+                + " is a reserved character");
       }
     }
     this.surfaceForm = new BytesRef(value);
@@ -109,7 +109,7 @@ public class SuggestField extends Field {
   /**
    * Wraps a <code>stream</code> with a CompletionTokenStream.
    *
-   * Subclasses can override this method to change the indexing pipeline.
+   * <p>Subclasses can override this method to change the indexing pipeline.
    */
   protected CompletionTokenStream wrapTokenStream(TokenStream stream) {
     if (stream instanceof CompletionTokenStream) {
@@ -119,9 +119,7 @@ public class SuggestField extends Field {
     }
   }
 
-  /**
-   * Returns a byte to denote the type of the field
-   */
+  /** Returns a byte to denote the type of the field */
   protected byte type() {
     return TYPE;
   }

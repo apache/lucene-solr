@@ -8,6 +8,7 @@
     query-settings-in-solrconfig, \
     requestdispatcher-in-solrconfig, \
     update-request-processors, \
+    script-update-processor, \    
     codec-factory
 
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -29,7 +30,7 @@
 
 The `solrconfig.xml` file is the configuration file with the most parameters affecting Solr itself.
 
-While configuring Solr, you'll work with `solrconfig.xml` often, either directly or via the <<config-api.adoc#config-api,Config API>> to create "configuration overlays" (`configoverlay.json`) to override the values in `solrconfig.xml`.
+While configuring Solr, you'll work with `solrconfig.xml` often, either directly or via the <<config-api.adoc#,Config API>> to create "configuration overlays" (`configoverlay.json`) to override the values in `solrconfig.xml`.
 
 In `solrconfig.xml`, you configure important features such as:
 
@@ -41,22 +42,22 @@ In `solrconfig.xml`, you configure important features such as:
 
 * the Admin Web interface
 
-* parameters related to replication and duplication (these parameters are covered in detail in <<legacy-scaling-and-distribution.adoc#legacy-scaling-and-distribution,Legacy Scaling and Distribution>>)
+* parameters related to replication and duplication (these parameters are covered in detail in <<legacy-scaling-and-distribution.adoc#,Legacy Scaling and Distribution>>)
 
 The `solrconfig.xml` file is located in the `conf/` directory for each collection. Several well-commented example files can be found in the `server/solr/configsets/` directories demonstrating best practices for many different types of installations.
 
 We've covered the options in the following sections:
 
-* <<datadir-and-directoryfactory-in-solrconfig.adoc#datadir-and-directoryfactory-in-solrconfig,DataDir and DirectoryFactory in SolrConfig>>
-* <<schema-factory-definition-in-solrconfig.adoc#schema-factory-definition-in-solrconfig,Schema Factory Definition in SolrConfig>>
-* <<indexconfig-in-solrconfig.adoc#indexconfig-in-solrconfig,IndexConfig in SolrConfig>>
-* <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandlers and SearchComponents in SolrConfig>>
-* <<initparams-in-solrconfig.adoc#initparams-in-solrconfig,InitParams in SolrConfig>>
-* <<updatehandlers-in-solrconfig.adoc#updatehandlers-in-solrconfig,UpdateHandlers in SolrConfig>>
-* <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>>
-* <<requestdispatcher-in-solrconfig.adoc#requestdispatcher-in-solrconfig,RequestDispatcher in SolrConfig>>
-* <<update-request-processors.adoc#update-request-processors,Update Request Processors>>
-* <<codec-factory.adoc#codec-factory,Codec Factory>>
+* <<datadir-and-directoryfactory-in-solrconfig.adoc#,DataDir and DirectoryFactory in SolrConfig>>
+* <<schema-factory-definition-in-solrconfig.adoc#,Schema Factory Definition in SolrConfig>>
+* <<indexconfig-in-solrconfig.adoc#,IndexConfig in SolrConfig>>
+* <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#,RequestHandlers and SearchComponents in SolrConfig>>
+* <<initparams-in-solrconfig.adoc#,InitParams in SolrConfig>>
+* <<updatehandlers-in-solrconfig.adoc#,UpdateHandlers in SolrConfig>>
+* <<query-settings-in-solrconfig.adoc#,Query Settings in SolrConfig>>
+* <<requestdispatcher-in-solrconfig.adoc#,RequestDispatcher in SolrConfig>>
+* <<update-request-processors.adoc#,Update Request Processors>>
+* <<codec-factory.adoc#,Codec Factory>>
 
 Some SolrConfig aspects are covered in other sections.
 See <<libs.adoc#lib-directives-in-solrconfig,lib directives in SolrConfig>>, which can be used for both Plugins and Resources.
@@ -85,11 +86,11 @@ Which means the lock type defaults to "native" but when starting Solr, you could
 bin/solr start -Dsolr.lock.type=none
 ----
 
-In general, any Java system property that you want to set can be passed through the `bin/solr` script using the standard `-Dproperty=value` syntax. Alternatively, you can add common system properties to the `SOLR_OPTS` environment variable defined in the Solr include file (`bin/solr.in.sh` or `bin/solr.in.cmd`). For more information about how the Solr include file works, refer to: <<taking-solr-to-production.adoc#taking-solr-to-production,Taking Solr to Production>>.
+In general, any Java system property that you want to set can be passed through the `bin/solr` script using the standard `-Dproperty=value` syntax. Alternatively, you can add common system properties to the `SOLR_OPTS` environment variable defined in the Solr include file (`bin/solr.in.sh` or `bin/solr.in.cmd`). For more information about how the Solr include file works, refer to: <<taking-solr-to-production.adoc#,Taking Solr to Production>>.
 
 === Config API to Override solrconfig.xml
 
-The <<config-api.adoc#config-api,Config API>> allows you to use an API to modify Solr's configuration, specifically user defined properties. Changes made with this API are stored in a file named `configoverlay.json`. This file should only be edited with the API, but will look like this example:
+The <<config-api.adoc#,Config API>> allows you to use an API to modify Solr's configuration, specifically user defined properties. Changes made with this API are stored in a file named `configoverlay.json`. This file should only be edited with the API, but will look like this example:
 
 [source,json]
 ----
@@ -104,7 +105,7 @@ The <<config-api.adoc#config-api,Config API>> allows you to use an API to modify
       "components":["terms"]}}}
 ----
 
-For more details, see the section <<config-api.adoc#config-api,Config API>>.
+For more details, see the section <<config-api.adoc#,Config API>>.
 
 === solrcore.properties
 
@@ -127,7 +128,7 @@ solr.lock.type=none
 [IMPORTANT]
 ====
 
-The path and name of the `solrcore.properties` file can be overridden using the `properties` property in <<defining-core-properties.adoc#defining-core-properties,`core.properties`>>.
+The path and name of the `solrcore.properties` file can be overridden using the `properties` property in <<defining-core-properties.adoc#,`core.properties`>>.
 
 ====
 
@@ -195,7 +196,7 @@ For example, regardless of whether the name for a particular Solr core is explic
 </requestHandler>
 ----
 
-All implicit properties use the `solr.core.` name prefix, and reflect the runtime value of the equivalent <<defining-core-properties.adoc#defining-core-properties,`core.properties` property>>:
+All implicit properties use the `solr.core.` name prefix, and reflect the runtime value of the equivalent <<defining-core-properties.adoc#,`core.properties` property>>:
 
 * `solr.core.name`
 * `solr.core.config`

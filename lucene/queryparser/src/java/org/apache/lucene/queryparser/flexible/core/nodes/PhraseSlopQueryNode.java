@@ -16,26 +16,22 @@
  */
 package org.apache.lucene.queryparser.flexible.core.nodes;
 
-import org.apache.lucene.search.PhraseQuery; // javadocs
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeError;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
+import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
+import org.apache.lucene.search.PhraseQuery; // javadocs
 
-/**
- * Query node for {@link PhraseQuery}'s slop factor.
- */
+/** Query node for {@link PhraseQuery}'s slop factor. */
 public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode {
 
   private int value = 0;
 
-  /**
-   * @exception QueryNodeError throw in overridden method to disallow
-   */
+  /** @exception QueryNodeError throw in overridden method to disallow */
   public PhraseSlopQueryNode(QueryNode query, int value) {
     if (query == null) {
-      throw new QueryNodeError(new MessageImpl(
-          QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, "query", "null"));
+      throw new QueryNodeError(
+          new MessageImpl(QueryParserMessages.NODE_ACTION_NOT_SUPPORTED, "query", "null"));
     }
 
     this.value = value;
@@ -54,25 +50,24 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
 
   private CharSequence getValueString() {
     Float f = Float.valueOf(this.value);
-    if (f == f.longValue())
-      return "" + f.longValue();
-    else
-      return "" + f;
-
+    if (f == f.longValue()) return "" + f.longValue();
+    else return "" + f;
   }
 
   @Override
   public String toString() {
-    return "<phraseslop value='" + getValueString() + "'>" + "\n"
-        + getChild().toString() + "\n</phraseslop>";
+    return "<phraseslop value='"
+        + getValueString()
+        + "'>"
+        + "\n"
+        + getChild().toString()
+        + "\n</phraseslop>";
   }
 
   @Override
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {
-    if (getChild() == null)
-      return "";
-    return getChild().toQueryString(escapeSyntaxParser) + "~"
-        + getValueString();
+    if (getChild() == null) return "";
+    return getChild().toQueryString(escapeSyntaxParser) + "~" + getValueString();
   }
 
   @Override
@@ -93,7 +88,6 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
     }
 
     return null;
-
   }
 
   @Override
@@ -103,7 +97,5 @@ public class PhraseSlopQueryNode extends QueryNodeImpl implements FieldableNode 
     if (child instanceof FieldableNode) {
       ((FieldableNode) child).setField(fieldName);
     }
-
   }
-
 }

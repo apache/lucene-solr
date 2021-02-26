@@ -20,24 +20,21 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 
-/**  
- * A {@code FilterSeekableByteChannel} contains another 
- * {@code SeekableByteChannel}, which it uses as its basic 
- * source of data, possibly transforming the data along the 
- * way or providing additional functionality. 
+/**
+ * A {@code FilterSeekableByteChannel} contains another {@code SeekableByteChannel}, which it uses
+ * as its basic source of data, possibly transforming the data along the way or providing additional
+ * functionality.
  */
 public class FilterSeekableByteChannel implements SeekableByteChannel {
-  
-  /** 
-   * The underlying {@code SeekableByteChannel} instance. 
-   */
+
+  /** The underlying {@code SeekableByteChannel} instance. */
   protected final SeekableByteChannel delegate;
-  
+
   /**
-   * Construct a {@code FilterSeekableByteChannel} based on 
-   * the specified base channel.
-   * <p>
-   * Note that base channel is closed if this channel is closed.
+   * Construct a {@code FilterSeekableByteChannel} based on the specified base channel.
+   *
+   * <p>Note that base channel is closed if this channel is closed.
+   *
    * @param delegate specified base channel.
    */
   public FilterSeekableByteChannel(SeekableByteChannel delegate) {

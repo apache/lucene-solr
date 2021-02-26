@@ -120,6 +120,9 @@ configure(project(":lucene:queryparser")) {
           text = text.replace(
               "new java.util.ArrayList<int[]>",
               "new java.util.ArrayList<>")
+          text = text.replace(
+              "final private LookaheadSuccess jj_ls =",
+              "static final private LookaheadSuccess jj_ls =")
           return text
         })
       }
@@ -224,6 +227,22 @@ configure(project(":lucene:queryparser")) {
     }
   }
 
+  task regenerate() {
+    description "Regenerate any generated sources"
+    group "generation"
+
+    // Run regeneration tasks.
+    dependsOn javaccParserClassic, javaccParserSurround, javaccParserFlexible
+
+    // Clean up and reformat the generated sources after generation.
+    dependsOn "tidy"
+  }
+
+  // Make sure tidy runs after generation, if they're defined.
+  tasks.matching { it.name == "tidy" }.configureEach {
+    mustRunAfter javaccParserClassic, javaccParserSurround, javaccParserFlexible
+  }
+
   task javacc() {
     description "Regenerate query parsers (javacc syntax definitions)."
     group "generation"
@@ -240,7 +259,6 @@ configure(project(":solr:core")) {
     group "generation"
 
     javaccFile = file('src/java/org/apache/solr/parser/QueryParser.jj')
-
 
     afterGenerate << commonCleanups
     afterGenerate << { FileTree generatedFiles ->

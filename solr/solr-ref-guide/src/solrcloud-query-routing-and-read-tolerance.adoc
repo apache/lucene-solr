@@ -73,7 +73,7 @@ If `shards.tolerant=true` then partial results may be returned. If the returned 
 
 If `shards.tolerant=requireZkConnected` and the node serving the search request cannot communicate with ZooKeeper, the request will fail, rather than returning potentially stale or incorrect results.  This will also cause requests to fail when one or more queried shards are completely unavailable, just like when `shards.tolerant=false`.
 
-The client can specify '<<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,`shards.info`>>' along with the `shards.tolerant` parameter to retrieve more fine-grained details.
+The client can specify '<<distributed-search-with-index-sharding.adoc#,`shards.info`>>' along with the `shards.tolerant` parameter to retrieve more fine-grained details.
 
 Example response with `partialResults` flag set to `true`:
 

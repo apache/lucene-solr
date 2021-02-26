@@ -16,25 +16,24 @@
  */
 package org.apache.lucene.analysis.icu;
 
-
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 
 /** basic tests for {@link ICUNormalizer2FilterFactory} */
 public class TestICUNormalizer2FilterFactory extends BaseTokenStreamTestCase {
-  
+
   /** Test nfkc_cf defaults */
   public void testDefaults() throws Exception {
     Reader reader = new StringReader("This is a Ｔｅｓｔ");
-    ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory(new HashMap<String,String>());
+    ICUNormalizer2FilterFactory factory =
+        new ICUNormalizer2FilterFactory(new HashMap<String, String>());
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "this", "is", "a", "test" });
+    assertTokenStreamContents(stream, new String[] {"this", "is", "a", "test"});
   }
 
   /** Test nfkc form */
@@ -45,18 +44,24 @@ public class TestICUNormalizer2FilterFactory extends BaseTokenStreamTestCase {
     ICUNormalizer2FilterFactory factory = new ICUNormalizer2FilterFactory(args);
     TokenStream stream = whitespaceMockTokenizer(reader);
     stream = factory.create(stream);
-    assertTokenStreamContents(stream, new String[] { "This", "is", "a", "Test" });
+    assertTokenStreamContents(stream, new String[] {"This", "is", "a", "Test"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new ICUNormalizer2FilterFactory(new HashMap<String,String>() {{
-        put("bogusArg", "bogusValue");
-      }});
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              new ICUNormalizer2FilterFactory(
+                  new HashMap<String, String>() {
+                    {
+                      put("bogusArg", "bogusValue");
+                    }
+                  });
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
-  
+
   // TODO: add tests for different forms
 }

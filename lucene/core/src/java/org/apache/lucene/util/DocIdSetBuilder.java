@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSet;
@@ -27,20 +26,22 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * A builder of {@link DocIdSet}s.  At first it uses a sparse structure to gather
- * documents, and then upgrades to a non-sparse bit set once enough hits match.
+ * A builder of {@link DocIdSet}s. At first it uses a sparse structure to gather documents, and then
+ * upgrades to a non-sparse bit set once enough hits match.
  *
- * To add documents, you first need to call {@link #grow} in order to reserve
- * space, and then call {@link BulkAdder#add(int)} on the returned
- * {@link BulkAdder}.
+ * <p>To add documents, you first need to call {@link #grow} in order to reserve space, and then
+ * call {@link BulkAdder#add(int)} on the returned {@link BulkAdder}.
  *
  * @lucene.internal
  */
 public final class DocIdSetBuilder {
 
-  /** Utility class to efficiently add many docs in one go.
-   *  @see DocIdSetBuilder#grow */
-  public static abstract class BulkAdder {
+  /**
+   * Utility class to efficiently add many docs in one go.
+   *
+   * @see DocIdSetBuilder#grow
+   */
+  public abstract static class BulkAdder {
     public abstract void add(int doc);
   }
 
@@ -99,21 +100,23 @@ public final class DocIdSetBuilder {
   private long counter = -1;
   private BulkAdder adder;
 
-  /**
-   * Create a builder that can contain doc IDs between {@code 0} and {@code maxDoc}.
-   */
+  /** Create a builder that can contain doc IDs between {@code 0} and {@code maxDoc}. */
   public DocIdSetBuilder(int maxDoc) {
     this(maxDoc, -1, -1);
   }
 
-  /** Create a {@link DocIdSetBuilder} instance that is optimized for
-   *  accumulating docs that match the given {@link Terms}. */
+  /**
+   * Create a {@link DocIdSetBuilder} instance that is optimized for accumulating docs that match
+   * the given {@link Terms}.
+   */
   public DocIdSetBuilder(int maxDoc, Terms terms) throws IOException {
     this(maxDoc, terms.getDocCount(), terms.getSumDocFreq());
   }
 
-  /** Create a {@link DocIdSetBuilder} instance that is optimized for
-   *  accumulating docs that match the given {@link PointValues}. */
+  /**
+   * Create a {@link DocIdSetBuilder} instance that is optimized for accumulating docs that match
+   * the given {@link PointValues}.
+   */
   public DocIdSetBuilder(int maxDoc, PointValues values, String field) throws IOException {
     this(maxDoc, values.getDocCount(), values.size());
   }
@@ -130,7 +133,7 @@ public final class DocIdSetBuilder {
       this.numValuesPerDoc = (double) valueCount / docCount;
     }
 
-    assert numValuesPerDoc >= 1: "valueCount=" + valueCount + " docCount=" + docCount;
+    assert numValuesPerDoc >= 1 : "valueCount=" + valueCount + " docCount=" + docCount;
 
     // For ridiculously small sets, we'll just use a sorted int[]
     // maxDoc >>> 7 is a good value if you want to save memory, lower values
@@ -142,9 +145,9 @@ public final class DocIdSetBuilder {
   }
 
   /**
-   * Add the content of the provided {@link DocIdSetIterator} to this builder.
-   * NOTE: if you need to build a {@link DocIdSet} out of a single
-   * {@link DocIdSetIterator}, you should rather use {@link RoaringDocIdSet.Builder}.
+   * Add the content of the provided {@link DocIdSetIterator} to this builder. NOTE: if you need to
+   * build a {@link DocIdSet} out of a single {@link DocIdSetIterator}, you should rather use {@link
+   * RoaringDocIdSet.Builder}.
    */
   public void add(DocIdSetIterator iter) throws IOException {
     if (bitSet != null) {
@@ -166,8 +169,8 @@ public final class DocIdSetBuilder {
   }
 
   /**
-   * Reserve space and return a {@link BulkAdder} object that can be used to
-   * add up to {@code numDocs} documents.
+   * Reserve space and return a {@link BulkAdder} object that can be used to add up to {@code
+   * numDocs} documents.
    */
   public BulkAdder grow(int numDocs) {
     if (bitSet == null) {
@@ -247,9 +250,7 @@ public final class DocIdSetBuilder {
     this.adder = new FixedBitSetAdder(bitSet);
   }
 
-  /**
-   * Build a {@link DocIdSet} from the accumulated doc IDs.
-   */
+  /** Build a {@link DocIdSet} from the accumulated doc IDs. */
   public DocIdSet build() {
     try {
       if (bitSet != null) {
@@ -278,9 +279,8 @@ public final class DocIdSetBuilder {
   }
 
   /**
-   * Concatenate the buffers in any order, leaving at least one empty slot in
-   * the end
-   * NOTE: this method might reuse one of the arrays
+   * Concatenate the buffers in any order, leaving at least one empty slot in the end NOTE: this
+   * method might reuse one of the arrays
    */
   private static Buffer concat(List<Buffer> buffers) {
     int totalLength = 0;
@@ -327,9 +327,8 @@ public final class DocIdSetBuilder {
 
   private static boolean noDups(int[] a, int len) {
     for (int i = 1; i < len; ++i) {
-      assert a[i-1] < a[i];
+      assert a[i - 1] < a[i];
     }
     return true;
   }
-
 }

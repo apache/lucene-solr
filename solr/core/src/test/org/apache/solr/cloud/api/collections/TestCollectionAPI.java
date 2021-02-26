@@ -69,9 +69,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       } else {
         req = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1",2, 1, 0, 1);
       }
-      setV2(req);
       client.request(req);
-      assertV2CallsCount();
       createCollection(null, COLLECTION_NAME1, 1, 1, client, null, "conf1");
     }
 
@@ -414,8 +412,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusZNodeVersion() throws Exception {
     String cname = "clusterStatusZNodeVersion";
     try (CloudSolrClient client = createCloudClient(null)) {
-      setV2(CollectionAdminRequest.createCollection(cname, "conf1", 1, 1)).process(client);
-      assertV2CallsCount();
+      CollectionAdminRequest.createCollection(cname, "conf1", 1, 1).process(client);
       waitForRecoveriesToFinish(cname, true);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -438,9 +435,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(znodeVersion);
 
       CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(cname, "shard1");
-      setV2(addReplica);
       addReplica.process(client);
-      assertV2CallsCount();
       waitForRecoveriesToFinish(cname, true);
 
       rsp = client.request(request);
@@ -770,7 +765,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           "replica", c1_s1_r1,
           "property", "testprop",
           "property.value", "nonsense",
-          OverseerCollectionMessageHandler.SHARD_UNIQUE, "true");
+          CollectionHandlingUtils.SHARD_UNIQUE, "true");
 
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
@@ -787,7 +782,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           "replica", c1_s1_r1,
           "property", "property.testprop",
           "property.value", "true",
-          OverseerCollectionMessageHandler.SHARD_UNIQUE, "false");
+          CollectionHandlingUtils.SHARD_UNIQUE, "false");
 
       verifyPropertyVal(client, COLLECTION_NAME, c1_s1_r2, "preferredleader", "true");
       verifyPropertyVal(client, COLLECTION_NAME, c1_s2_r1, "preferredleader", "true");
@@ -818,7 +813,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
             "replica", c1_s1_r1,
             "property", "preferredLeader",
             "property.value", "true",
-            OverseerCollectionMessageHandler.SHARD_UNIQUE, "false");
+            CollectionHandlingUtils.SHARD_UNIQUE, "false");
         fail("Should have thrown an exception, setting shardUnique=false is not allowed for 'preferredLeader'.");
       } catch (SolrException se) {
         assertTrue("Should have received a specific error message",

@@ -18,7 +18,7 @@
 
 The `solr.xml` file defines some global configuration options that apply to all or many cores.
 
-This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>>.
+This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#,Defining core.properties>>.
 
 == Defining solr.xml
 
@@ -34,7 +34,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
 
   <solrcloud>
     <str name="host">${host:}</str>
-    <int name="hostPort">${jetty.port:8983}</int>
+    <int name="hostPort">${solr.port.advertise:0}</int>
     <str name="hostContext">${hostContext:solr}</str>
     <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
     <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
@@ -42,6 +42,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
@@ -134,9 +135,13 @@ The hostname Solr uses to access cores.
 The url context path.
 
 `hostPort`::
-The port Solr uses to access cores.
+The port Solr uses to access cores, and advertise Solr node locations through liveNodes.
+This option is only necessary if a Solr instance is listening on a different port than it wants other nodes to contact it at.
+For example, if the Solr node is running behind a proxy or in a cloud environment that allows for port mapping, such as Kubernetes.
+`hostPort` is the port that the Solr instance wants other nodes to contact it at.
 +
-In the default `solr.xml` file, this is set to `${jetty.port:8983}`, which will use the Solr port defined in Jetty, and otherwise fall back to 8983.
+In the default `solr.xml` file, this is set to `${solr.port.advertise:0}`.
+If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
 
 `leaderVoteWait`::
 When SolrCloud is starting up, how long each Solr node will wait for all known replicas for that shard to be found before assuming that any nodes that haven't reported are down.
@@ -156,8 +161,11 @@ In SolrCloud mode, the URL of the ZooKeeper host that Solr should use for cluste
 If `TRUE`, node names are not based on the address of the node, but on a generic name that identifies the core. When a different machine takes over serving that core things will be much easier to understand.
 
 `zkCredentialsProvider` & `zkACLProvider`::
-Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
 
+
+`distributedClusterStateUpdates`::
+If `TRUE`, the internal behavior of SolrCloud is changed to not use the Overseer for collections' `state.json` updates but do this directly against ZooKeeper.
 
 === The <logging> Element
 

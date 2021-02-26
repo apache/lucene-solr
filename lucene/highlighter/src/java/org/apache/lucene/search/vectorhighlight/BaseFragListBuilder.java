@@ -19,59 +19,66 @@ package org.apache.lucene.search.vectorhighlight;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
 
-/**
- * A abstract implementation of {@link FragListBuilder}.
- */
+/** A abstract implementation of {@link FragListBuilder}. */
 public abstract class BaseFragListBuilder implements FragListBuilder {
-  
+
   public static final int MARGIN_DEFAULT = 6;
   public static final int MIN_FRAG_CHAR_SIZE_FACTOR = 3;
 
   final int margin;
   final int minFragCharSize;
 
-  public BaseFragListBuilder( int margin ){
-    if( margin < 0 )
-      throw new IllegalArgumentException( "margin(" + margin + ") is too small. It must be 0 or higher." );
+  public BaseFragListBuilder(int margin) {
+    if (margin < 0)
+      throw new IllegalArgumentException(
+          "margin(" + margin + ") is too small. It must be 0 or higher.");
 
     this.margin = margin;
-    this.minFragCharSize = Math.max( 1, margin * MIN_FRAG_CHAR_SIZE_FACTOR );
+    this.minFragCharSize = Math.max(1, margin * MIN_FRAG_CHAR_SIZE_FACTOR);
   }
 
-  public BaseFragListBuilder(){
-    this( MARGIN_DEFAULT );
+  public BaseFragListBuilder() {
+    this(MARGIN_DEFAULT);
   }
-  
- protected FieldFragList createFieldFragList( FieldPhraseList fieldPhraseList, FieldFragList fieldFragList, int fragCharSize ){
-    if( fragCharSize < minFragCharSize )
-      throw new IllegalArgumentException( "fragCharSize(" + fragCharSize + ") is too small. It must be " + minFragCharSize + " or higher." );
-    
+
+  protected FieldFragList createFieldFragList(
+      FieldPhraseList fieldPhraseList, FieldFragList fieldFragList, int fragCharSize) {
+    if (fragCharSize < minFragCharSize)
+      throw new IllegalArgumentException(
+          "fragCharSize("
+              + fragCharSize
+              + ") is too small. It must be "
+              + minFragCharSize
+              + " or higher.");
+
     List<WeightedPhraseInfo> wpil = new ArrayList<>();
-    IteratorQueue<WeightedPhraseInfo> queue = new IteratorQueue<>(fieldPhraseList.getPhraseList().iterator());
+    IteratorQueue<WeightedPhraseInfo> queue =
+        new IteratorQueue<>(fieldPhraseList.getPhraseList().iterator());
     WeightedPhraseInfo phraseInfo = null;
     int startOffset = 0;
-    while((phraseInfo = queue.top()) != null){
+    while ((phraseInfo = queue.top()) != null) {
       // if the phrase violates the border of previous fragment, discard it and try next phrase
-      if( phraseInfo.getStartOffset() < startOffset )  {
+      if (phraseInfo.getStartOffset() < startOffset) {
         queue.removeTop();
         continue;
       }
-      
+
       wpil.clear();
       final int currentPhraseStartOffset = phraseInfo.getStartOffset();
       int currentPhraseEndOffset = phraseInfo.getEndOffset();
       int spanStart = Math.max(currentPhraseStartOffset - margin, startOffset);
       int spanEnd = Math.max(currentPhraseEndOffset, spanStart + fragCharSize);
-      if (acceptPhrase(queue.removeTop(),  currentPhraseEndOffset - currentPhraseStartOffset, fragCharSize)) {
+      if (acceptPhrase(
+          queue.removeTop(), currentPhraseEndOffset - currentPhraseStartOffset, fragCharSize)) {
         wpil.add(phraseInfo);
       }
-      while((phraseInfo = queue.top()) != null) { // pull until we crossed the current spanEnd
+      while ((phraseInfo = queue.top()) != null) { // pull until we crossed the current spanEnd
         if (phraseInfo.getEndOffset() <= spanEnd) {
           currentPhraseEndOffset = phraseInfo.getEndOffset();
-          if (acceptPhrase(queue.removeTop(),  currentPhraseEndOffset - currentPhraseStartOffset, fragCharSize)) {
+          if (acceptPhrase(
+              queue.removeTop(), currentPhraseEndOffset - currentPhraseStartOffset, fragCharSize)) {
             wpil.add(phraseInfo);
           }
         } else {
@@ -81,62 +88,61 @@ public abstract class BaseFragListBuilder implements FragListBuilder {
       if (wpil.isEmpty()) {
         continue;
       }
-      
+
       final int matchLen = currentPhraseEndOffset - currentPhraseStartOffset;
       // now recalculate the start and end position to "center" the result
-      final int newMargin = Math.max(0, (fragCharSize-matchLen)/2); // matchLen can be > fragCharSize prevent IAOOB here
+      // matchLen can be > fragCharSize prevent IAOOB here
+      final int newMargin = Math.max(0, (fragCharSize - matchLen) / 2);
       spanStart = currentPhraseStartOffset - newMargin;
       if (spanStart < startOffset) {
         spanStart = startOffset;
       }
       // whatever is bigger here we grow this out
-      spanEnd = spanStart + Math.max(matchLen, fragCharSize);  
+      spanEnd = spanStart + Math.max(matchLen, fragCharSize);
       startOffset = spanEnd;
       fieldFragList.add(spanStart, spanEnd, wpil);
     }
     return fieldFragList;
   }
- 
+
   /**
-   * A predicate to decide if the given {@link WeightedPhraseInfo} should be
-   * accepted as a highlighted phrase or if it should be discarded.
-   * <p>
-   * The default implementation discards phrases that are composed of more than one term
-   * and where the matchLength exceeds the fragment character size.
-   * 
+   * A predicate to decide if the given {@link WeightedPhraseInfo} should be accepted as a
+   * highlighted phrase or if it should be discarded.
+   *
+   * <p>The default implementation discards phrases that are composed of more than one term and
+   * where the matchLength exceeds the fragment character size.
+   *
    * @param info the phrase info to accept
    * @param matchLength the match length of the current phrase
    * @param fragCharSize the configured fragment character size
    * @return <code>true</code> if this phrase info should be accepted as a highligh phrase
    */
- protected boolean acceptPhrase(WeightedPhraseInfo info, int matchLength, int fragCharSize) {
-   return info.getTermsOffsets().size() <= 1 ||  matchLength <= fragCharSize;
- }
- 
- private static final class IteratorQueue<T> {
-   private final Iterator<T> iter;
-   private T top;
-   
-   public IteratorQueue(Iterator<T> iter) {
-     this.iter = iter;
-     T removeTop = removeTop();
-     assert removeTop == null;
-   }
-   
-   public T top() {
-     return top;
-   }
-   
-   public T removeTop() {
-     T currentTop = top;
-     if (iter.hasNext()) {
-       top = iter.next();
-     } else {
-       top = null;
-     }
-     return currentTop;
-   }
-   
- }
- 
+  protected boolean acceptPhrase(WeightedPhraseInfo info, int matchLength, int fragCharSize) {
+    return info.getTermsOffsets().size() <= 1 || matchLength <= fragCharSize;
+  }
+
+  private static final class IteratorQueue<T> {
+    private final Iterator<T> iter;
+    private T top;
+
+    public IteratorQueue(Iterator<T> iter) {
+      this.iter = iter;
+      T removeTop = removeTop();
+      assert removeTop == null;
+    }
+
+    public T top() {
+      return top;
+    }
+
+    public T removeTop() {
+      T currentTop = top;
+      if (iter.hasNext()) {
+        top = iter.next();
+      } else {
+        top = null;
+      }
+      return currentTop;
+    }
+  }
 }

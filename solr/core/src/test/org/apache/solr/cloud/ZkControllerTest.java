@@ -37,6 +37,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.*;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.LogLevel;
@@ -48,6 +49,7 @@ import org.junit.Test;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.mockito.Mockito.mock;
 
 @Slow
 @SolrTestCaseJ4.SuppressSSL
@@ -106,6 +108,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
           // getBaseUrlForNodeName
           assertEquals("http://zzz.xxx:1234/solr",
               zkStateReader.getBaseUrlForNodeName("zzz.xxx:1234_solr"));
+          assertEquals("http://zzz_xxx:1234/solr",
+              zkStateReader.getBaseUrlForNodeName("zzz_xxx:1234_solr"));
           assertEquals("http://xxx:99",
               zkStateReader.getBaseUrlForNodeName("xxx:99_"));
           assertEquals("http://foo-bar.baz.org:9999/some_dir",
@@ -284,7 +288,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
             CollectionParams.CollectionAction.CREATE.toLower(), ZkStateReader.NODE_NAME_PROP, nodeName, ZkStateReader.NUM_SHARDS_PROP, "1",
             "name", collectionName);
-        zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
+        if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          zkController.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.ClusterCreateCollection, m,
+              zkController.getSolrCloudManager(), zkController.getZkStateReader());
+        } else {
+          zkController.getOverseerJobQueue().offer(Utils.toJSON(m));
+        }
 
         HashMap<String, Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
@@ -293,7 +302,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         propMap.put(ZkStateReader.NODE_NAME_PROP, "non_existent_host1");
         propMap.put(ZkStateReader.CORE_NAME_PROP, collectionName);
         propMap.put(ZkStateReader.STATE_PROP, "active");
-        zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          zkController.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica, new ZkNodeProps(propMap),
+              zkController.getSolrCloudManager(), zkController.getZkStateReader());
+        } else {
+          zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        }
 
         propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
@@ -302,7 +316,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         propMap.put(ZkStateReader.NODE_NAME_PROP, "non_existent_host2");
         propMap.put(ZkStateReader.CORE_NAME_PROP, collectionName);
         propMap.put(ZkStateReader.STATE_PROP, "down");
-        zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        if (zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+          zkController.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica, new ZkNodeProps(propMap),
+              zkController.getSolrCloudManager(), zkController.getZkStateReader());
+        } else {
+          zkController.getOverseerJobQueue().offer(Utils.toJSON(propMap));
+        }
 
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
@@ -333,6 +352,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   private static class MockCoreContainer extends CoreContainer {
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+    SolrMetricManager metricManager;
 
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
@@ -340,6 +360,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       this.shardHandlerFactory = httpShardHandlerFactory;
       this.coreAdminHandler = new CoreAdminHandler();
+      this.metricManager = mock(SolrMetricManager.class);
     }
 
     @Override
@@ -356,5 +377,10 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
       updateShardHandler.close();
       super.shutdown();
     }
-  }    
+
+    @Override
+    public SolrMetricManager getMetricManager() {
+      return metricManager;
+    }
+  }
 }

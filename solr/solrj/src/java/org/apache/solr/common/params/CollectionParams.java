@@ -113,6 +113,8 @@ public interface CollectionParams {
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
     BACKUP(true, LockLevel.COLLECTION),
     RESTORE(true, LockLevel.COLLECTION),
+    LISTBACKUP(false, LockLevel.NONE),
+    DELETEBACKUP(true, LockLevel.COLLECTION),
     CREATESNAPSHOT(true, LockLevel.COLLECTION),
     DELETESNAPSHOT(true, LockLevel.COLLECTION),
     LISTSNAPSHOTS(false, LockLevel.NONE),

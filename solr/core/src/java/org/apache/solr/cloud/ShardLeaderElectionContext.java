@@ -46,22 +46,22 @@ import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// add core container and stop passing core around...
 final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CoreContainer cc;
   private final SyncStrategy syncStrategy;
+  private final DistributedClusterStateUpdater distributedClusterStateUpdater;
 
   private volatile boolean isClosed = false;
 
   public ShardLeaderElectionContext(LeaderElector leaderElector,
                                     final String shardId, final String collection,
                                     final String coreNodeName, ZkNodeProps props, ZkController zkController, CoreContainer cc) {
-    super(leaderElector, shardId, collection, coreNodeName, props,
-        zkController);
+    super(leaderElector, shardId, collection, coreNodeName, props, zkController);
     this.cc = cc;
-    syncStrategy = new SyncStrategy(cc);
+    this.syncStrategy = new SyncStrategy(cc);
+    this.distributedClusterStateUpdater = zkController.getDistributedClusterStateUpdater();
   }
 
   @Override
@@ -117,14 +117,19 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // Clear the leader in clusterstate. We only need to worry about this if there is actually more than one replica.
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
             ZkStateReader.SHARD_ID_PROP, shardId, ZkStateReader.COLLECTION_PROP, collection);
-        zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+
+        if (distributedClusterStateUpdater.isDistributedStateUpdate()) {
+          distributedClusterStateUpdater.doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceSetShardLeader, m,
+              zkController.getSolrCloudManager(), zkStateReader);
+        } else {
+          zkController.getOverseer().getStateUpdateQueue().offer(Utils.toJSON(m));
+        }
       }
 
-      boolean allReplicasInLine = false;
       if (!weAreReplacement) {
-        allReplicasInLine = waitForReplicasToComeUp(leaderVoteWait);
+        waitForReplicasToComeUp(leaderVoteWait);
       } else {
-        allReplicasInLine = areAllReplicasParticipating();
+        areAllReplicasParticipating();
       }
 
       if (isClosed) {
@@ -237,7 +242,6 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
       }
 
-      boolean isLeader = true;
       if (!isClosed) {
         try {
           if (replicaType == Replica.Type.TLOG) {
@@ -281,14 +285,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           throw new SolrException(ErrorCode.SERVER_ERROR,
               "ZK session expired - cancelling election for " + collection + " " + shardId);
         } catch (Exception e) {
-          isLeader = false;
           SolrException.log(log, "There was a problem trying to register as the leader", e);
 
           try (SolrCore core = cc.getCore(coreName)) {
 
             if (core == null) {
               if (log.isDebugEnabled()) {
-                log.debug("SolrCore not found: {} in {}", coreName, cc.getLoadedCoreNames());
+                log.debug("SolrCore not found: {} in {}", coreName, CloudUtil.getLoadedCoreNamesAsString(cc));
               }
               return;
             }

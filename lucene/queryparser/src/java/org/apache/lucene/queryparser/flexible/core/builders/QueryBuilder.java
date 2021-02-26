@@ -20,21 +20,17 @@ import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 
 /**
- * This interface is used by implementors classes that builds some kind of
- * object from a query tree.
- * 
+ * This interface is used by implementors classes that builds some kind of object from a query tree.
+ *
  * @see QueryTreeBuilder
  */
 public interface QueryBuilder {
 
   /**
    * Builds some kind of object from a query tree.
-   * 
-   * @param queryNode
-   *          the query tree root node
-   * 
+   *
+   * @param queryNode the query tree root node
    * @return some object generated from the query tree
    */
   Object build(QueryNode queryNode) throws QueryNodeException;
-
 }

@@ -16,17 +16,17 @@
  */
 package org.apache.lucene.util;
 
-
 import org.apache.lucene.search.DocIdSetIterator;
 
 /**
- * A {@link DocIdSetIterator} which iterates over set bits in a
- * bit set.
+ * A {@link DocIdSetIterator} which iterates over set bits in a bit set.
+ *
  * @lucene.internal
  */
 public class BitSetIterator extends DocIdSetIterator {
 
-  private static <T extends BitSet> T getBitSet(DocIdSetIterator iterator, Class<? extends T> clazz) {
+  private static <T extends BitSet> T getBitSet(
+      DocIdSetIterator iterator, Class<? extends T> clazz) {
     if (iterator instanceof BitSetIterator) {
       BitSet bits = ((BitSetIterator) iterator).bits;
       assert bits != null;
@@ -42,7 +42,9 @@ public class BitSetIterator extends DocIdSetIterator {
     return getBitSet(iterator, FixedBitSet.class);
   }
 
-  /** If the provided iterator wraps a {@link SparseFixedBitSet}, returns it, otherwise returns null. */
+  /**
+   * If the provided iterator wraps a {@link SparseFixedBitSet}, returns it, otherwise returns null.
+   */
   public static SparseFixedBitSet getSparseFixedBitSetOrNull(DocIdSetIterator iterator) {
     return getBitSet(iterator, SparseFixedBitSet.class);
   }
@@ -94,5 +96,4 @@ public class BitSetIterator extends DocIdSetIterator {
   public long cost() {
     return cost;
   }
-
 }

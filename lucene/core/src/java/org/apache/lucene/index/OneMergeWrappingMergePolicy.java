@@ -42,25 +42,33 @@ public class OneMergeWrappingMergePolicy extends FilterMergePolicy {
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+  public MergeSpecification findMerges(
+      MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
       throws IOException {
     return wrapSpec(in.findMerges(mergeTrigger, segmentInfos, mergeContext));
   }
 
   @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos, int maxSegmentCount,
-                                             Map<SegmentCommitInfo,Boolean> segmentsToMerge, MergeContext mergeContext) throws IOException {
-    return wrapSpec(in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext));
+  public MergeSpecification findForcedMerges(
+      SegmentInfos segmentInfos,
+      int maxSegmentCount,
+      Map<SegmentCommitInfo, Boolean> segmentsToMerge,
+      MergeContext mergeContext)
+      throws IOException {
+    return wrapSpec(
+        in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, mergeContext));
   }
 
   @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, MergeContext mergeContext)
-    throws IOException {
+  public MergeSpecification findForcedDeletesMerges(
+      SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
     return wrapSpec(in.findForcedDeletesMerges(segmentInfos, mergeContext));
   }
 
   @Override
-  public MergeSpecification findFullFlushMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+  public MergeSpecification findFullFlushMerges(
+      MergeTrigger mergeTrigger, SegmentInfos segmentInfos, MergeContext mergeContext)
+      throws IOException {
     return wrapSpec(in.findFullFlushMerges(mergeTrigger, segmentInfos, mergeContext));
   }
 
@@ -73,5 +81,4 @@ public class OneMergeWrappingMergePolicy extends FilterMergePolicy {
     }
     return wrapped;
   }
-
 }

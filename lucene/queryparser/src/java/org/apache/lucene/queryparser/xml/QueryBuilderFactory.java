@@ -16,14 +16,11 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import java.util.HashMap;
 import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 
-import java.util.HashMap;
-
-/**
- * Factory for {@link QueryBuilder}
- */
+/** Factory for {@link QueryBuilder} */
 public class QueryBuilderFactory implements QueryBuilder {
 
   HashMap<String, QueryBuilder> builders = new HashMap<>();
@@ -44,5 +41,4 @@ public class QueryBuilderFactory implements QueryBuilder {
   public QueryBuilder getQueryBuilder(String nodeName) {
     return builders.get(nodeName);
   }
-
 }

@@ -73,6 +73,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.TimeOut;
@@ -102,6 +103,7 @@ import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
 
 @Slow
+@SolrTestCaseJ4.SuppressSSL
 public class OverseerTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -186,7 +188,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
           ZkStateReader.REPLICATION_FACTOR, "1",
           ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards),
           "createNodeSet", "");
-      ZkDistributedQueue q = MiniSolrCloudCluster.getOpenOverseer(overseers).getStateUpdateQueue();
+      final Overseer overseer = MiniSolrCloudCluster.getOpenOverseer(overseers);
+      // This being an Overseer test, we force it to use the Overseer based cluster state update. Look for "new Overseer" calls in this class.
+      assertFalse(overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate());
+      ZkDistributedQueue q = overseer.getStateUpdateQueue();
       q.offer(Utils.toJSON(m));
     }
 
@@ -202,6 +207,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
             ZkStateReader.COLLECTION_PROP, collection);
+        assertFalse(overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate());
         ZkDistributedQueue q = overseer.getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
         return null;
@@ -213,8 +219,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName,
             ZkStateReader.COLLECTION_PROP, collection,
             ZkStateReader.SHARD_ID_PROP, shard,
-            ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards),
-            ZkStateReader.BASE_URL_PROP, "http://" + nodeName + "/solr/");
+            ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards));
         ZkDistributedQueue q = overseer.getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
       }
@@ -233,15 +238,14 @@ public class OverseerTest extends SolrTestCaseJ4 {
             zkClient.makePath("/collections/" + collection + "/leader_elect/"
                 + shardId + "/election", true);
           } catch (NodeExistsException nee) {}
-          ZkNodeProps props = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
-              "http://" + nodeName + "/solr/", ZkStateReader.NODE_NAME_PROP,
-              nodeName, ZkStateReader.CORE_NAME_PROP, coreName,
+          ZkNodeProps props = new ZkNodeProps(ZkStateReader.NODE_NAME_PROP, nodeName,
+              ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.SHARD_ID_PROP, shardId,
               ZkStateReader.COLLECTION_PROP, collection,
               ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
           LeaderElector elector = new LeaderElector(zkClient);
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
-              elector, shardId, collection, nodeName + "_" + coreName, props,
+              elector, shardId, collection, nodeName + coreName, props,
               MockSolrSource.makeSimpleMock(overseer, zkStateReader, null));
           elector.setup(ctx);
           electionContext.put(coreName, ctx);
@@ -387,7 +391,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         ZkStateReader.REPLICATION_FACTOR, "1",
         ZkStateReader.NUM_SHARDS_PROP, Integer.toString(numShards),
         "createNodeSet", "");
-    ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
+    ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
     q.offer(Utils.toJSON(m));
   }
 
@@ -405,7 +409,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        mockController = new MockZKController(server.getZkAddress(), "127.0.0.1", overseers);
+        mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
         final int numShards = 6; // this is not the number of shards in the collection
 
@@ -449,7 +453,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        mockController = new MockZKController(server.getZkAddress(), "127.0.0.1", overseers);
+        mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
         final int numShards = 3;
         mockController.createCollection(COLLECTION, 3);
@@ -516,7 +520,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       try (ZkStateReader reader = new ZkStateReader(zkClient)) {
         reader.createClusterStateWatchersAndUpdate();
 
-        mockController = new MockZKController(server.getZkAddress(), "127.0.0.1", overseers);
+        mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
         try (ZkController zkController = createMockZkController(server.getZkAddress(), zkClient, reader)) {
 
@@ -527,10 +531,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
           }
         }
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
-            ZkStateReader.NODE_NAME_PROP, "127.0.0.1");
+            ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr");
         List<ZkWriteCommand> commands = new NodeMutator().downNode(reader.getClusterState(), m);
 
-        ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
+        ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
 
         q.offer(Utils.toJSON(m));
 
@@ -586,13 +590,12 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
+      ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
 
       createCollection(COLLECTION, 1);
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "node1:8983_",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.CORE_NAME_PROP, "core1",
@@ -607,8 +610,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       //publish node state (active)
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "node1:8983_",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.CORE_NAME_PROP, "core1",
@@ -642,7 +644,15 @@ public class OverseerTest extends SolrTestCaseJ4 {
   }
 
   private Overseer getOpenOverseer() {
-    return MiniSolrCloudCluster.getOpenOverseer(overseers);
+    Overseer overseer = MiniSolrCloudCluster.getOpenOverseer(overseers);
+    assertFalse(overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate());
+    return overseer;
+  }
+
+  private Overseer getOverseerZero() {
+    Overseer overseer = overseers.get(0);
+    assertFalse(overseer.getDistributedClusterStateUpdater().isDistributedStateUpdate());
+    return overseer;
   }
 
   @Test
@@ -664,7 +674,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
+      mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
@@ -726,7 +736,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
+      mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
       LeaderElector overseerElector = new LeaderElector(zkClient);
       if (overseers.size() > 0) {
@@ -741,7 +751,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       httpShardHandlerFactory.init(new PluginInfo("shardHandlerFactory", Collections.emptyMap()));
       httpShardHandlerFactorys.add(httpShardHandlerFactory);
       Overseer overseer = new Overseer((HttpShardHandler) httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, zkController,
-          new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
+          new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").setUseDistributedClusterStateUpdates(false).build());
       overseers.add(overseer);
       ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
           server.getZkAddress().replaceAll("/", "_"));
@@ -899,13 +909,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
      electNewOverseer(server.getZkAddress());
 
-      // Create collection znode before repeatedly trying to enqueue the Cluster state change message
+      // Create collection znode before repeatedly trying to enqueue the cluster state update message
       zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE + "/" + COLLECTION, true);
 
       for (int i = 0; i < atLeast(4); i++) {
         killCounter.incrementAndGet(); // for each round allow 1 kill
 
-        mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
+        mockController = new MockZKController(server.getZkAddress(), "node1:8983_", overseers);
 
         TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
@@ -916,7 +926,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 ZkStateReader.REPLICATION_FACTOR, "1",
                 ZkStateReader.NUM_SHARDS_PROP, "1",
                 "createNodeSet", "");
-            ZkDistributedQueue q = MiniSolrCloudCluster.getOpenOverseer(overseers).getStateUpdateQueue();
+            ZkDistributedQueue q = getOpenOverseer().getStateUpdateQueue();
             q.offer(Utils.toJSON(m));
             break;
           } catch (SolrException | KeeperException | AlreadyClosedException e) {
@@ -953,7 +963,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
           }
         }
 
-        mockController2 = new MockZKController(server.getZkAddress(), "node2", overseers);
+        mockController2 = new MockZKController(server.getZkAddress(), "node2:8984_", overseers);
 
        timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
         while (!timeout.hasTimedOut()) {
@@ -1037,7 +1047,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
+      mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
@@ -1053,7 +1063,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       mockController.close();
 
-      mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
+      mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
       mockController.publishState(COLLECTION, "core1", "core_node1","shard1", Replica.State.RECOVERING, 1, true, overseers.get(0));
 
@@ -1095,7 +1105,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
-      mockController = new MockZKController(server.getZkAddress(), "node1", overseers);
+      mockController = new MockZKController(server.getZkAddress(), "127.0.0.1:8983_solr", overseers);
 
       final int MAX_COLLECTIONS = 10, MAX_CORES = 10, MAX_STATE_CHANGES = 20000;
 
@@ -1106,7 +1116,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkStateReader.NUM_SHARDS_PROP, "1",
             ZkStateReader.REPLICATION_FACTOR, "1"
             );
-        ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
+        ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
       }
 
@@ -1118,9 +1128,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
             ZkStateReader.SHARD_ID_PROP, "shard1",
             ZkStateReader.CORE_NODE_NAME_PROP, "node1",
             ZkStateReader.COLLECTION_PROP, "perf" + j,
-            ZkStateReader.NUM_SHARDS_PROP, "1",
-            ZkStateReader.BASE_URL_PROP, "http://" + "node1" + "/solr/");
-        ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
+            ZkStateReader.NUM_SHARDS_PROP, "1");
+        ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
         q.offer(Utils.toJSON(m));
         if (j >= MAX_COLLECTIONS - 1) j = 0;
         if (k >= MAX_CORES - 1) k = 0;
@@ -1212,17 +1221,15 @@ public class OverseerTest extends SolrTestCaseJ4 {
           "createNodeSet", "");
       queue.offer(Utils.toJSON(m));
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.CORE_NAME_PROP, "core1",
           ZkStateReader.ROLES_PROP, "",
           ZkStateReader.STATE_PROP, Replica.State.RECOVERING.toString());
       queue.offer(Utils.toJSON(m));
-      m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+      m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
+          ZkStateReader.NODE_NAME_PROP, "node1:8983_",
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.CORE_NAME_PROP, "core2",
@@ -1233,10 +1240,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
       overseerClient = electNewOverseer(server.getZkAddress());
 
       //submit to proper queue
-      queue = overseers.get(0).getStateUpdateQueue();
+      queue = getOverseerZero().getStateUpdateQueue();
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
           ZkStateReader.SHARD_ID_PROP, "shard1",
           ZkStateReader.COLLECTION_PROP, COLLECTION,
           ZkStateReader.CORE_NAME_PROP, "core3",
@@ -1271,14 +1277,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
+      ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
 
       createCollection("c1", 1);
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
           ZkStateReader.SHARD_ID_PROP, "shard1",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
           ZkStateReader.COLLECTION_PROP, "c1",
           ZkStateReader.CORE_NAME_PROP, "core1",
           ZkStateReader.CORE_NODE_NAME_PROP, "core_node1",
@@ -1291,9 +1296,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       verifyReplicaStatus(reader, "c1", "shard1", "core_node1", Replica.State.DOWN);
 
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
           ZkStateReader.SHARD_ID_PROP, "shard1",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
           ZkStateReader.COLLECTION_PROP, "c1",
           ZkStateReader.CORE_NAME_PROP, "core1",
           ZkStateReader.ROLES_PROP, "",
@@ -1303,9 +1307,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
 
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
           ZkStateReader.SHARD_ID_PROP, "shard1",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
           ZkStateReader.COLLECTION_PROP, "c1",
           ZkStateReader.CORE_NAME_PROP, "core1",
           ZkStateReader.ROLES_PROP, "",
@@ -1340,9 +1343,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
       m = new ZkNodeProps(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.ADDREPLICA.toLower(),
           "collection", testCollectionName,
           ZkStateReader.SHARD_ID_PROP, "x",
-          ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
           ZkStateReader.CORE_NODE_NAME_PROP, "core_node1",
-          ZkStateReader.NODE_NAME_PROP, "node1",
+          ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
           ZkStateReader.CORE_NAME_PROP, "core1",
           ZkStateReader.STATE_PROP, Replica.State.DOWN.toString()
       );
@@ -1393,8 +1395,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     ZkController zkController = createMockZkController(address, null, reader);
     zkControllers.add(zkController);
+    // Create an Overseer with associated configuration to NOT USE distributed state update. Tests in this class really test the Overseer.
     Overseer overseer = new Overseer((HttpShardHandler) httpShardHandlerFactory.getShardHandler(), updateShardHandler, "/admin/cores", reader, zkController,
-        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").build());
+        new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983, "").setUseDistributedClusterStateUpdates(false).build());
     overseers.add(overseer);
     ElectionContext ec = new OverseerElectionContext(zkClient, overseer,
         address.replaceAll("/", "_"));
@@ -1421,8 +1424,10 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
     CoreContainer mockAlwaysUpCoreContainer = mock(CoreContainer.class,
         Mockito.withSettings().defaultAnswer(Mockito.CALLS_REAL_METHODS));
+    SolrMetricManager mockMetricManager = mock(SolrMetricManager.class);
+    when(mockAlwaysUpCoreContainer.getMetricManager()).thenReturn(mockMetricManager);
     when(mockAlwaysUpCoreContainer.isShutDown()).thenReturn(testDone);  // Allow retry on session expiry
-    when(mockAlwaysUpCoreContainer.getResourceLoader()).thenReturn(new SolrResourceLoader());
+    when(mockAlwaysUpCoreContainer.getResourceLoader()).thenReturn(new SolrResourceLoader(createTempDir()));
     ClusterSingletons singletons = new ClusterSingletons(() -> true, r -> r.run());
     // don't wait for all singletons
     singletons.setReady();
@@ -1472,7 +1477,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       overseerClient = electNewOverseer(server.getZkAddress());
 
-      ZkDistributedQueue q = overseers.get(0).getStateUpdateQueue();
+      ZkDistributedQueue q = getOverseerZero().getStateUpdateQueue();
 
       // create collection
       {
@@ -1491,9 +1496,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
         for (int ss = 1; ss <= numShards; ++ss) {
           final int N = (numReplicas-rr)*numShards + ss;
           ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-              ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
               ZkStateReader.SHARD_ID_PROP, "shard"+ss,
-              ZkStateReader.NODE_NAME_PROP, "node"+N,
+              ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
               ZkStateReader.COLLECTION_PROP, COLLECTION,
               ZkStateReader.CORE_NAME_PROP, "core"+N,
               ZkStateReader.CORE_NODE_NAME_PROP, "core_node"+N,
@@ -1516,9 +1520,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
         for (int ss = 1; ss <= numShards; ++ss) {
           final int N = (numReplicas-rr)*numShards + ss;
           ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.STATE.toLower(),
-              ZkStateReader.BASE_URL_PROP, "http://127.0.0.1/solr",
               ZkStateReader.SHARD_ID_PROP, "shard"+ss,
-              ZkStateReader.NODE_NAME_PROP, "node"+N,
+              ZkStateReader.NODE_NAME_PROP, "127.0.0.1:8983_solr",
               ZkStateReader.COLLECTION_PROP, COLLECTION,
               ZkStateReader.CORE_NAME_PROP, "core"+N,
               ZkStateReader.ROLES_PROP, "",

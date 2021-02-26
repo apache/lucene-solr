@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
-
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexFileNames;
@@ -37,42 +36,40 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
 /**
- * A {@link ReplicationHandler} for replication of an index. Implements
- * {@link #revisionReady} by copying the files pointed by the client resolver to
- * the index {@link Directory} and then touches the index with
- * {@link IndexWriter} to make sure any unused files are deleted.
- * <p>
- * <b>NOTE:</b> this handler assumes that {@link IndexWriter} is not opened by
- * another process on the index directory. In fact, opening an
- * {@link IndexWriter} on the same directory to which files are copied can lead
- * to undefined behavior, where some or all the files will be deleted, override
- * other files or simply create a mess. When you replicate an index, it is best
- * if the index is never modified by {@link IndexWriter}, except the one that is
- * open on the source index, from which you replicate.
- * <p>
- * This handler notifies the application via a provided {@link Callable} when an
- * updated index commit was made available for it.
- * 
+ * A {@link ReplicationHandler} for replication of an index. Implements {@link #revisionReady} by
+ * copying the files pointed by the client resolver to the index {@link Directory} and then touches
+ * the index with {@link IndexWriter} to make sure any unused files are deleted.
+ *
+ * <p><b>NOTE:</b> this handler assumes that {@link IndexWriter} is not opened by another process on
+ * the index directory. In fact, opening an {@link IndexWriter} on the same directory to which files
+ * are copied can lead to undefined behavior, where some or all the files will be deleted, override
+ * other files or simply create a mess. When you replicate an index, it is best if the index is
+ * never modified by {@link IndexWriter}, except the one that is open on the source index, from
+ * which you replicate.
+ *
+ * <p>This handler notifies the application via a provided {@link Callable} when an updated index
+ * commit was made available for it.
+ *
  * @lucene.experimental
  */
 public class IndexReplicationHandler implements ReplicationHandler {
-  
+
   /**
-   * The component used to log messages to the {@link InfoStream#getDefault()
-   * default} {@link InfoStream}.
+   * The component used to log messages to the {@link InfoStream#getDefault() default} {@link
+   * InfoStream}.
    */
   public static final String INFO_STREAM_COMPONENT = "IndexReplicationHandler";
-  
+
   private final Directory indexDir;
   private final Callable<Boolean> callback;
-  
-  private volatile Map<String,List<RevisionFile>> currentRevisionFiles;
+
+  private volatile Map<String, List<RevisionFile>> currentRevisionFiles;
   private volatile String currentVersion;
   private volatile InfoStream infoStream = InfoStream.getDefault();
-  
+
   /**
-   * Returns the last {@link IndexCommit} found in the {@link Directory}, or
-   * {@code null} if there are no commits.
+   * Returns the last {@link IndexCommit} found in the {@link Directory}, or {@code null} if there
+   * are no commits.
    */
   public static IndexCommit getLastCommit(Directory dir) throws IOException {
     try {
@@ -87,16 +84,15 @@ public class IndexReplicationHandler implements ReplicationHandler {
     }
     return null;
   }
-  
+
   /**
-   * Verifies that the last file is segments_N and fails otherwise. It also
-   * removes and returns the file from the list, because it needs to be handled
-   * last, after all files. This is important in order to guarantee that if a
-   * reader sees the new segments_N, all other segment files are already on
-   * stable storage.
-   * <p>
-   * The reason why the code fails instead of putting segments_N file last is
-   * that this indicates an error in the Revision implementation.
+   * Verifies that the last file is segments_N and fails otherwise. It also removes and returns the
+   * file from the list, because it needs to be handled last, after all files. This is important in
+   * order to guarantee that if a reader sees the new segments_N, all other segment files are
+   * already on stable storage.
+   *
+   * <p>The reason why the code fails instead of putting segments_N file last is that this indicates
+   * an error in the Revision implementation.
    */
   public static String getSegmentsFile(List<String> files, boolean allowEmpty) {
     if (files.isEmpty()) {
@@ -106,18 +102,19 @@ public class IndexReplicationHandler implements ReplicationHandler {
         throw new IllegalStateException("empty list of files not allowed");
       }
     }
-    
+
     String segmentsFile = files.remove(files.size() - 1);
     if (!segmentsFile.startsWith(IndexFileNames.SEGMENTS)) {
-      throw new IllegalStateException("last file to copy+sync must be segments_N but got " + segmentsFile
-          + "; check your Revision implementation!");
+      throw new IllegalStateException(
+          "last file to copy+sync must be segments_N but got "
+              + segmentsFile
+              + "; check your Revision implementation!");
     }
     return segmentsFile;
   }
 
   /**
-   * Cleanup the index directory by deleting all given files. Called when file
-   * copy or sync failed.
+   * Cleanup the index directory by deleting all given files. Called when file copy or sync failed.
    */
   public static void cleanupFilesOnFailure(Directory dir, List<String> files) {
     for (String file : files) {
@@ -126,18 +123,17 @@ public class IndexReplicationHandler implements ReplicationHandler {
       IOUtils.deleteFilesIgnoringExceptions(dir, file);
     }
   }
-  
+
   /**
-   * Cleans up the index directory from old index files. This method uses the
-   * last commit found by {@link #getLastCommit(Directory)}. If it matches the
-   * expected segmentsFile, then all files not referenced by this commit point
-   * are deleted.
-   * <p>
-   * <b>NOTE:</b> this method does a best effort attempt to clean the index
-   * directory. It suppresses any exceptions that occur, as this can be retried
-   * the next time.
+   * Cleans up the index directory from old index files. This method uses the last commit found by
+   * {@link #getLastCommit(Directory)}. If it matches the expected segmentsFile, then all files not
+   * referenced by this commit point are deleted.
+   *
+   * <p><b>NOTE:</b> this method does a best effort attempt to clean the index directory. It
+   * suppresses any exceptions that occur, as this can be retried the next time.
    */
-  public static void cleanupOldIndexFiles(Directory dir, String segmentsFile, InfoStream infoStream) {
+  public static void cleanupOldIndexFiles(
+      Directory dir, String segmentsFile, InfoStream infoStream) {
     try {
       IndexCommit commit = getLastCommit(dir);
       // commit == null means weird IO errors occurred, ignore them
@@ -159,16 +155,15 @@ public class IndexReplicationHandler implements ReplicationHandler {
       // cleanup will have a chance to succeed the next time we get a new
       // revision.
       if (infoStream.isEnabled(INFO_STREAM_COMPONENT)) {
-        infoStream.message(INFO_STREAM_COMPONENT, "cleanupOldIndexFiles(): failed on error " + t.getMessage());
+        infoStream.message(
+            INFO_STREAM_COMPONENT, "cleanupOldIndexFiles(): failed on error " + t.getMessage());
       }
     }
   }
-  
-  /**
-   * Copies the files from the source directory to the target one, if they are
-   * not the same.
-   */
-  public static void copyFiles(Directory source, Directory target, List<String> files) throws IOException {
+
+  /** Copies the files from the source directory to the target one, if they are not the same. */
+  public static void copyFiles(Directory source, Directory target, List<String> files)
+      throws IOException {
     if (!source.equals(target)) {
       for (String file : files) {
         target.copyFrom(source, file, file, IOContext.READONCE);
@@ -177,10 +172,11 @@ public class IndexReplicationHandler implements ReplicationHandler {
   }
 
   /**
-   * Constructor with the given index directory and callback to notify when the
-   * indexes were updated.
+   * Constructor with the given index directory and callback to notify when the indexes were
+   * updated.
    */
-  public IndexReplicationHandler(Directory indexDir, Callable<Boolean> callback) throws IOException {
+  public IndexReplicationHandler(Directory indexDir, Callable<Boolean> callback)
+      throws IOException {
     this.callback = callback;
     this.indexDir = indexDir;
     currentRevisionFiles = null;
@@ -192,49 +188,58 @@ public class IndexReplicationHandler implements ReplicationHandler {
       currentVersion = IndexRevision.revisionVersion(commit);
       final InfoStream infoStream = InfoStream.getDefault();
       if (infoStream.isEnabled(INFO_STREAM_COMPONENT)) {
-        infoStream.message(INFO_STREAM_COMPONENT, "constructor(): currentVersion=" + currentVersion
-            + " currentRevisionFiles=" + currentRevisionFiles);
+        infoStream.message(
+            INFO_STREAM_COMPONENT,
+            "constructor(): currentVersion="
+                + currentVersion
+                + " currentRevisionFiles="
+                + currentRevisionFiles);
         infoStream.message(INFO_STREAM_COMPONENT, "constructor(): commit=" + commit);
       }
     }
   }
-  
+
   @Override
   public String currentVersion() {
     return currentVersion;
   }
-  
+
   @Override
-  public Map<String,List<RevisionFile>> currentRevisionFiles() {
+  public Map<String, List<RevisionFile>> currentRevisionFiles() {
     return currentRevisionFiles;
   }
-  
+
   @Override
-  public void revisionReady(String version, Map<String,List<RevisionFile>> revisionFiles,
-      Map<String,List<String>> copiedFiles, Map<String,Directory> sourceDirectory) throws IOException {
+  public void revisionReady(
+      String version,
+      Map<String, List<RevisionFile>> revisionFiles,
+      Map<String, List<String>> copiedFiles,
+      Map<String, Directory> sourceDirectory)
+      throws IOException {
     if (revisionFiles.size() > 1) {
-      throw new IllegalArgumentException("this handler handles only a single source; got " + revisionFiles.keySet());
+      throw new IllegalArgumentException(
+          "this handler handles only a single source; got " + revisionFiles.keySet());
     }
-    
+
     Directory clientDir = sourceDirectory.values().iterator().next();
     List<String> files = copiedFiles.values().iterator().next();
     String segmentsFile = getSegmentsFile(files, false);
     String pendingSegmentsFile = "pending_" + segmentsFile;
-    
+
     boolean success = false;
     try {
       // copy files from the client to index directory
       copyFiles(clientDir, indexDir, files);
-      
+
       // fsync all copied files (except segmentsFile)
       indexDir.sync(files);
-      
+
       // now copy and fsync segmentsFile as pending, then rename (simulating lucene commit)
       indexDir.copyFrom(clientDir, segmentsFile, pendingSegmentsFile, IOContext.READONCE);
       indexDir.sync(Collections.singletonList(pendingSegmentsFile));
       indexDir.rename(pendingSegmentsFile, segmentsFile);
       indexDir.syncMetaData();
-      
+
       success = true;
     } finally {
       if (!success) {
@@ -247,12 +252,16 @@ public class IndexReplicationHandler implements ReplicationHandler {
     // all files have been successfully copied + sync'd. update the handler's state
     currentRevisionFiles = revisionFiles;
     currentVersion = version;
-    
+
     if (infoStream.isEnabled(INFO_STREAM_COMPONENT)) {
-      infoStream.message(INFO_STREAM_COMPONENT, "revisionReady(): currentVersion=" + currentVersion
-          + " currentRevisionFiles=" + currentRevisionFiles);
+      infoStream.message(
+          INFO_STREAM_COMPONENT,
+          "revisionReady(): currentVersion="
+              + currentVersion
+              + " currentRevisionFiles="
+              + currentRevisionFiles);
     }
-    
+
     // Cleanup the index directory from old and unused index files.
     // NOTE: we don't use IndexWriter.deleteUnusedFiles here since it may have
     // side-effects, e.g. if it hits sudden IO errors while opening the index
@@ -278,5 +287,4 @@ public class IndexReplicationHandler implements ReplicationHandler {
     }
     this.infoStream = infoStream;
   }
-  
 }

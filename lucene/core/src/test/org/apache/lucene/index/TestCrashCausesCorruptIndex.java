@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.nio.file.Path;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -33,68 +31,65 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
+public class TestCrashCausesCorruptIndex extends LuceneTestCase {
 
   Path path;
-    
-  /**
-   * LUCENE-3627: This test fails.
-   */
+
+  /** LUCENE-3627: This test fails. */
   public void testCrashCorruptsIndexing() throws Exception {
     path = createTempDir("testCrashCorruptsIndexing");
-        
+
     indexAndCrashOnCreateOutputSegments2();
 
     searchForFleas(2);
 
     indexAfterRestart();
-        
+
     searchForFleas(3);
   }
-    
+
   /**
-   * index 1 document and commit.
-   * prepare for crashing.
-   * index 1 more document, and upon commit, creation of segments_2 will crash.
+   * index 1 document and commit. prepare for crashing. index 1 more document, and upon commit,
+   * creation of segments_2 will crash.
    */
   private void indexAndCrashOnCreateOutputSegments2() throws IOException {
     Directory realDirectory = FSDirectory.open(path);
     CrashAfterCreateOutput crashAfterCreateOutput = new CrashAfterCreateOutput(realDirectory);
-            
+
     // NOTE: cannot use RandomIndexWriter because it
     // sometimes commits:
-    IndexWriter indexWriter = new IndexWriter(crashAfterCreateOutput,
-                                              newIndexWriterConfig(new MockAnalyzer(random())));
-            
+    IndexWriter indexWriter =
+        new IndexWriter(crashAfterCreateOutput, newIndexWriterConfig(new MockAnalyzer(random())));
+
     indexWriter.addDocument(getDocument());
     // writes segments_1:
     indexWriter.commit();
-            
+
     crashAfterCreateOutput.setCrashAfterCreateOutput("pending_segments_2");
     indexWriter.addDocument(getDocument());
     // tries to write segments_2 but hits fake exc:
-    expectThrows(CrashingException.class, () -> {
-      indexWriter.commit();
-    });
+    expectThrows(
+        CrashingException.class,
+        () -> {
+          indexWriter.commit();
+        });
 
     // writes segments_3
     indexWriter.close();
     assertFalse(slowFileExists(realDirectory, "segments_2"));
     crashAfterCreateOutput.close();
   }
-    
-  /**
-   * Attempts to index another 1 document.
-   */
+
+  /** Attempts to index another 1 document. */
   private void indexAfterRestart() throws IOException {
     Directory realDirectory = newFSDirectory(path);
-            
+
     // LUCENE-3627 (before the fix): this line fails because
     // it doesn't know what to do with the created but empty
     // segments_2 file
-    IndexWriter indexWriter = new IndexWriter(realDirectory,
-                                              newIndexWriterConfig(new MockAnalyzer(random())));
-            
+    IndexWriter indexWriter =
+        new IndexWriter(realDirectory, newIndexWriterConfig(new MockAnalyzer(random())));
+
     // currently the test fails above.
     // however, to test the fix, the following lines should pass as well.
     indexWriter.addDocument(getDocument());
@@ -102,10 +97,8 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
     assertFalse(slowFileExists(realDirectory, "segments_2"));
     realDirectory.close();
   }
-    
-  /**
-   * Run an example search.
-   */
+
+  /** Run an example search. */
   private void searchForFleas(final int expectedTotalHits) throws IOException {
     Directory realDirectory = newFSDirectory(path);
     IndexReader indexReader = DirectoryReader.open(realDirectory);
@@ -118,42 +111,37 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
   }
 
   private static final String TEXT_FIELD = "text";
-    
-  /**
-   * Gets a document with content "my dog has fleas".
-   */
+
+  /** Gets a document with content "my dog has fleas". */
   private Document getDocument() {
     Document document = new Document();
     document.add(newTextField(TEXT_FIELD, "my dog has fleas", Field.Store.NO));
     return document;
   }
-    
-  /**
-   * The marker RuntimeException that we use in lieu of an
-   * actual machine crash.
-   */
+
+  /** The marker RuntimeException that we use in lieu of an actual machine crash. */
   private static class CrashingException extends RuntimeException {
     public CrashingException(String msg) {
       super(msg);
     }
   }
-    
+
   /**
-   * This test class provides direct access to "simulating" a crash right after 
+   * This test class provides direct access to "simulating" a crash right after
    * realDirectory.createOutput(..) has been called on a certain specified name.
    */
   private static class CrashAfterCreateOutput extends FilterDirectory {
-        
+
     private String crashAfterCreateOutput;
 
     public CrashAfterCreateOutput(Directory realDirectory) throws IOException {
       super(realDirectory);
     }
-        
+
     public void setCrashAfterCreateOutput(String name) {
       this.crashAfterCreateOutput = name;
     }
-    
+
     @Override
     public IndexOutput createOutput(String name, IOContext cxt) throws IOException {
       IndexOutput indexOutput = in.createOutput(name, cxt);
@@ -164,11 +152,9 @@ public class TestCrashCausesCorruptIndex extends LuceneTestCase  {
           System.out.println("TEST: now crash");
           new Throwable().printStackTrace(System.out);
         }
-        throw new CrashingException("crashAfterCreateOutput "+crashAfterCreateOutput);
+        throw new CrashingException("crashAfterCreateOutput " + crashAfterCreateOutput);
       }
       return indexOutput;
     }
-
   }
-  
 }

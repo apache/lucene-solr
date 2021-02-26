@@ -85,6 +85,28 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     return ret;
   }
 
+  public void testSolrHomeAndResourceLoader() throws Exception {
+    // regardless of what sys prop may be set, the CoreContainer's init arg should be the definitive
+    // solr home -- and nothing i nthe call stack should be "setting" the sys prop to make that work...
+    final Path fakeSolrHome = createTempDir().toAbsolutePath();
+    System.setProperty(SOLR_HOME_PROP, fakeSolrHome.toString());
+    final Path realSolrHome = createTempDir().toAbsolutePath();
+    final CoreContainer cc = init(realSolrHome, CONFIGSETS_SOLR_XML);
+    try {
+
+      // instance dir & resource loader for the CC
+      assertEquals(realSolrHome.toString(), cc.getSolrHome());
+      assertEquals(realSolrHome, cc.getResourceLoader().getInstancePath());
+
+    } finally {
+      cc.shutdown();
+    }
+    assertEquals("Nothing in solr should be overriding the solr home sys prop in order to work!",
+                 fakeSolrHome.toString(),
+                 System.getProperty(SOLR_HOME_PROP));
+  }
+
+  
   @Test
   public void testShareSchema() throws Exception {
     System.setProperty("shareSchema", "true");
@@ -197,7 +219,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       // time around. The final unload in the loop should delete the core and
       // allow the next time around to succeed.
       // This also checks the bookkeeping in CoreContainer.create
-      // that prevents muliple simulatneous creations,
+      // that prevents multiple simultaneous creations,
       // currently "inFlightCreations"
       String testName = "coreToTest";
       for (int thread = 0; thread < NUM_THREADS; ++thread) {
@@ -670,6 +692,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     // check that we get null accessing a non-existent core
     assertNull(cc.getCore("does_not_exist"));
+    assertFalse(cc.isLoaded("does_not_exist"));
     // check that we get a 500 accessing the core with an init failure
     SolrException thrown = expectThrows(SolrException.class, () -> {
       SolrCore c = cc.getCore("col_bad");
@@ -691,7 +714,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     assertNotNull("core names is null", cores);
     assertEquals("wrong number of cores", 2, cores.size());
     assertTrue("col_ok not found", cores.contains("col_ok"));
+    assertTrue(cc.isLoaded("col_ok"));
     assertTrue("col_bad not found", cores.contains("col_bad"));
+    assertTrue(cc.isLoaded("col_bad"));
 
     // check that we have the failures we expect
     failures = cc.getCoreInitFailures();

@@ -23,12 +23,10 @@ import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
-import org.apache.solr.client.solrj.request.beans.ClusterPropInfo;
-import org.apache.solr.client.solrj.request.beans.CreateConfigInfo;
-import org.apache.solr.client.solrj.request.beans.RateLimiterMeta;
+import org.apache.solr.client.solrj.request.beans.ClusterPropPayload;
+import org.apache.solr.client.solrj.request.beans.CreateConfigPayload;
+import org.apache.solr.client.solrj.request.beans.RateLimiterPayload;
 import org.apache.solr.cloud.OverseerConfigSetMessageHandler;
-import org.apache.solr.cluster.placement.impl.PlacementPluginConfigImpl;
-import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -47,7 +45,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.DELETE;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
-import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.PUT;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.REQUESTID;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
@@ -71,6 +70,13 @@ public class ClusterAPI {
   public ClusterAPI(CollectionsHandler ch, ConfigSetsHandler configSetsHandler) {
     this.collectionsHandler = ch;
     this.configSetsHandler = configSetsHandler;
+  }
+
+  @EndPoint(method = GET,
+      path = "/cluster/aliases",
+      permission = COLL_READ_PERM)
+  public void aliases(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    CollectionsHandler.CollectionOperation.LISTALIASES_OP.execute(req, rsp, getCoreContainer().getCollectionsHandler());
   }
 
   @EndPoint(method = GET,
@@ -121,7 +127,7 @@ public class ClusterAPI {
 
     @Command(name = "create")
     @SuppressWarnings("unchecked")
-    public void create(PayloadObj<CreateConfigInfo> obj) throws Exception {
+    public void create(PayloadObj<CreateConfigPayload> obj) throws Exception {
       Map<String, Object> mapVals = obj.get().toMap(new HashMap<>());
       Map<String,Object> customProps = (Map<String, Object>) mapVals.remove("properties");
       if(customProps!= null) {
@@ -131,6 +137,37 @@ public class ClusterAPI {
       configSetsHandler.handleRequestBody(wrapParams(obj.getRequest(), mapVals), obj.getResponse());
     }
 
+  }
+
+  @EndPoint(method = PUT,
+      path =   "/cluster/configs/{name}",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void uploadConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    req = wrapParams(req,
+            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+            CommonParams.NAME, req.getPathTemplateValues().get("name"),
+            ConfigSetParams.OVERWRITE, true,
+            ConfigSetParams.CLEANUP, false);
+    configSetsHandler.handleRequestBody(req, rsp);
+  }
+
+  @EndPoint(method = PUT,
+      path =   "/cluster/configs/{name}/*",
+      permission = CONFIG_EDIT_PERM
+  )
+  public void insertIntoConfigSet(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    String path = req.getPathTemplateValues().get("*");
+    if (path == null || path.isBlank()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "In order to insert a file in a configSet, a filePath must be provided in the url after the name of the configSet.");
+    }
+    req = wrapParams(req,
+            "action", ConfigSetParams.ConfigSetAction.UPLOAD.toString(),
+            CommonParams.NAME, req.getPathTemplateValues().get("name"),
+            ConfigSetParams.FILE_PATH, path,
+            ConfigSetParams.OVERWRITE, true,
+            ConfigSetParams.CLEANUP, false);
+    configSetsHandler.handleRequestBody(req, rsp);
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -193,7 +230,7 @@ public class ClusterAPI {
 
     @Command(name = "set-obj-property")
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public void setObjProperty(PayloadObj<ClusterPropInfo> obj) {
+    public void setObjProperty(PayloadObj<ClusterPropPayload> obj) {
       //Not using the object directly here because the API differentiate between {name:null} and {}
       Map m = obj.getDataMap();
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
@@ -211,29 +248,9 @@ public class ClusterAPI {
       collectionsHandler.handleRequestBody(wrapParams(obj.getRequest(), m), obj.getResponse());
     }
 
-    @Command(name = "set-placement-plugin")
-    public void setPlacementPlugin(PayloadObj<Map<String, Object>> obj) {
-      Map<String, Object> placementPluginConfig = obj.getDataMap();
-      if(placementPluginConfig.isEmpty()) placementPluginConfig = null;
-      ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
-      // When the json contains { "set-placement-plugin" : null }, the map is empty, not null.
-      // Very basic sanity check. Real validation will be done when the config is used...
-      if (!(placementPluginConfig == null) && !placementPluginConfig.containsKey(PlacementPluginConfigImpl.CONFIG_CLASS)) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Must contain " + PlacementPluginConfigImpl.CONFIG_CLASS + " attribute (or be null)");
-      }
-      try {
-        clusterProperties.update(placementPluginConfig == null?
-            null:
-            new MapWriterMap(placementPluginConfig),
-            PlacementPluginConfigImpl.PLACEMENT_PLUGIN_CONFIG_KEY);
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
-      }
-    }
-
     @Command(name = "set-ratelimiter")
-    public void setRateLimiters(PayloadObj<RateLimiterMeta> payLoad) {
-      RateLimiterMeta rateLimiterConfig = payLoad.get();
+    public void setRateLimiters(PayloadObj<RateLimiterPayload> payLoad) {
+      RateLimiterPayload rateLimiterConfig = payLoad.get();
       ClusterProperties clusterProperties = new ClusterProperties(getCoreContainer().getZkController().getZkClient());
 
       try {

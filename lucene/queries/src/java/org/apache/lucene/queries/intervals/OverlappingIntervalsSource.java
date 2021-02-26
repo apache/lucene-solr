@@ -42,8 +42,9 @@ class OverlappingIntervalsSource extends ConjunctionIntervalsSource {
     return new FilteringIntervalIterator(a, b) {
       @Override
       public int nextInterval() throws IOException {
-        if (bpos == false)
+        if (bpos == false) {
           return IntervalIterator.NO_MORE_INTERVALS;
+        }
         while (a.nextInterval() != IntervalIterator.NO_MORE_INTERVALS) {
           while (b.end() < a.start()) {
             if (b.nextInterval() == IntervalIterator.NO_MORE_INTERVALS) {
@@ -51,8 +52,9 @@ class OverlappingIntervalsSource extends ConjunctionIntervalsSource {
               return IntervalIterator.NO_MORE_INTERVALS;
             }
           }
-          if (b.start() <= a.end())
+          if (b.start() <= a.end()) {
             return a.start();
+          }
         }
         bpos = false;
         return IntervalIterator.NO_MORE_INTERVALS;
@@ -67,7 +69,9 @@ class OverlappingIntervalsSource extends ConjunctionIntervalsSource {
 
   @Override
   public Collection<IntervalsSource> pullUpDisjunctions() {
-    return Disjunctions.pullUp(Arrays.asList(source, reference), ss -> new OverlappingIntervalsSource(ss.get(0), ss.get(1)));
+    return Disjunctions.pullUp(
+        Arrays.asList(source, reference),
+        ss -> new OverlappingIntervalsSource(ss.get(0), ss.get(1)));
   }
 
   @Override

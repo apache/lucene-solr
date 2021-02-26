@@ -20,8 +20,8 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -47,22 +47,21 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import static org.apache.solr.search.facet.FacetField.FacetMethod;
-import static org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc.SWEEP_COLLECTION_DEBUG_KEY;
-
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.noggit.JSONUtil;
 import org.noggit.JSONWriter;
 import org.noggit.JSONWriter.Writable;
-  
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.search.facet.FacetField.FacetMethod;
+import static org.apache.solr.search.facet.SlotAcc.SweepingCountSlotAcc.SWEEP_COLLECTION_DEBUG_KEY;
 
 /** 
  * <p>
  * A randomized test of nested facets using the <code>relatedness()</code> function, that asserts the 
- * results are consistent and equivilent regardless of what <code>method</code> (ie: FacetFieldProcessor) 
+ * results are consistent and equivalent regardless of what <code>method</code> (ie: FacetFieldProcessor)
  * and/or <code>{@value RelatednessAgg#SWEEP_COLLECTION}</code> option is requested.
  * </p>
  * <p>
@@ -71,7 +70,7 @@ import org.slf4j.LoggerFactory;
  * because this test does not attempt to prove the results with validation requests.
  * </p>
  * <p>
- * This test only concerns itself with the equivilency of results
+ * This test only concerns itself with the equivalency of results
  * </p>
  * 
  * @see TestCloudJSONFacetSKG
@@ -133,6 +132,7 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
+        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
@@ -986,14 +986,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
      * </p>
      *
      * @return a Boolean, may be null
-     * @see <a href="https://issues.apache.org/jira/browse/SOLR-14514">SOLR-14514: allBuckets ignored by method:stream</a>
      */
     public static Boolean randomAllBucketsParam(final Random r, final String sort) {
-
-      if ("index asc".equals(sort)) {
-        return null;
-      }
-      
       switch(r.nextInt(4)) {
         case 0: return true;
         case 1: return false;

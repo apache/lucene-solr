@@ -16,14 +16,13 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.IOException;
 
 /**
- * 3D rectangle, bounded on six sides by X,Y,Z limits, degenerate in X and Z.
- * This figure, in fact, represents either zero, one, or two points, so the
- * actual data stored is minimal.
+ * 3D rectangle, bounded on six sides by X,Y,Z limits, degenerate in X and Z. This figure, in fact,
+ * represents either zero, one, or two points, so the actual data stored is minimal.
  *
  * @lucene.internal
  */
@@ -40,21 +39,22 @@ class dXYdZSolid extends BaseXYZSolid {
 
   /** The points in this figure on the planet surface; also doubles for edge points */
   protected final GeoPoint[] surfacePoints;
-  
+
   /**
    * Sole constructor
    *
-   *@param planetModel is the planet model.
-   *@param X is the X value.
-   *@param minY is the minimum Y value.
-   *@param maxY is the maximum Y value.
-   *@param Z is the Z value.
+   * @param planetModel is the planet model.
+   * @param X is the X value.
+   * @param minY is the minimum Y value.
+   * @param maxY is the maximum Y value.
+   * @param Z is the Z value.
    */
-  public dXYdZSolid(final PlanetModel planetModel,
-    final double X,
-    final double minY,
-    final double maxY,
-    final double Z) {
+  public dXYdZSolid(
+      final PlanetModel planetModel,
+      final double X,
+      final double minY,
+      final double maxY,
+      final double Z) {
     super(planetModel);
     // Argument checking
     if (maxY - minY < Vector.MINIMUM_RESOLUTION)
@@ -66,24 +66,27 @@ class dXYdZSolid extends BaseXYZSolid {
     this.Z = Z;
 
     // Build the planes and intersect them.
-    final Plane xPlane = new Plane(xUnitVector,-X);
-    final Plane zPlane = new Plane(zUnitVector,-Z);
-    final SidedPlane minYPlane = new SidedPlane(0.0,maxY,0.0,yUnitVector,-minY);
-    final SidedPlane maxYPlane = new SidedPlane(0.0,minY,0.0,yUnitVector,-maxY);
-    surfacePoints = xPlane.findIntersections(planetModel,zPlane,minYPlane,maxYPlane);
+    final Plane xPlane = new Plane(xUnitVector, -X);
+    final Plane zPlane = new Plane(zUnitVector, -Z);
+    final SidedPlane minYPlane = new SidedPlane(0.0, maxY, 0.0, yUnitVector, -minY);
+    final SidedPlane maxYPlane = new SidedPlane(0.0, minY, 0.0, yUnitVector, -maxY);
+    surfacePoints = xPlane.findIntersections(planetModel, zPlane, minYPlane, maxYPlane);
   }
 
   /**
    * Constructor for deserialization.
+   *
    * @param planetModel is the planet model.
    * @param inputStream is the input stream.
    */
-  public dXYdZSolid(final PlanetModel planetModel, final InputStream inputStream) throws IOException {
-    this(planetModel, 
-      SerializableObject.readDouble(inputStream),
-      SerializableObject.readDouble(inputStream),
-      SerializableObject.readDouble(inputStream),
-      SerializableObject.readDouble(inputStream));
+  public dXYdZSolid(final PlanetModel planetModel, final InputStream inputStream)
+      throws IOException {
+    this(
+        planetModel,
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream),
+        SerializableObject.readDouble(inputStream));
   }
 
   @Override
@@ -98,22 +101,23 @@ class dXYdZSolid extends BaseXYZSolid {
   protected GeoPoint[] getEdgePoints() {
     return surfacePoints;
   }
-  
+
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
     for (final GeoPoint p : surfacePoints) {
-      if (p.isIdentical(x,y,z))
+      if (p.isIdentical(x, y, z)) {
         return true;
+      }
     }
     return false;
   }
 
   @Override
   public int getRelationship(final GeoShape path) {
-    //System.err.println(this+" getrelationship with "+path);
+    // System.err.println(this + " getRelationship with " + path);
     final int insideRectangle = isShapeInsideArea(path);
     if (insideRectangle == SOME_INSIDE) {
-      //System.err.println(" some inside");
+      // System.err.println(" some inside");
       return OVERLAPS;
     }
 
@@ -124,33 +128,35 @@ class dXYdZSolid extends BaseXYZSolid {
     }
 
     if (insideRectangle == ALL_INSIDE && insideShape == ALL_INSIDE) {
-      //System.err.println(" inside of each other");
+      // System.err.println(" inside of each other");
       return OVERLAPS;
     }
 
     if (insideRectangle == ALL_INSIDE) {
       return WITHIN;
     }
-    
+
     if (insideShape == ALL_INSIDE) {
-      //System.err.println(" shape contains rectangle");
+      // System.err.println(" shape contains rectangle");
       return CONTAINS;
     }
-    //System.err.println(" disjoint");
+    // System.err.println(" disjoint");
     return DISJOINT;
   }
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof dXYdZSolid))
+    if (!(o instanceof dXYdZSolid)) {
       return false;
+    }
     dXYdZSolid other = (dXYdZSolid) o;
-    if (!super.equals(other) || surfacePoints.length != other.surfacePoints.length ) {
+    if (!super.equals(other) || surfacePoints.length != other.surfacePoints.length) {
       return false;
     }
     for (int i = 0; i < surfacePoints.length; i++) {
-      if (!surfacePoints[i].equals(other.surfacePoints[i]))
+      if (!surfacePoints[i].equals(other.surfacePoints[i])) {
         return false;
+      }
     }
     return true;
   }
@@ -159,7 +165,7 @@ class dXYdZSolid extends BaseXYZSolid {
   public int hashCode() {
     int result = super.hashCode();
     for (final GeoPoint p : surfacePoints) {
-      result = 31 * result  + p.hashCode();
+      result = 31 * result + p.hashCode();
     }
     return result;
   }
@@ -170,8 +176,6 @@ class dXYdZSolid extends BaseXYZSolid {
     for (final GeoPoint p : surfacePoints) {
       sb.append(" ").append(p).append(" ");
     }
-    return "dXYdZSolid: {planetmodel="+planetModel+", "+sb.toString()+"}";
+    return "dXYdZSolid: {planetmodel=" + planetModel + ", " + sb.toString() + "}";
   }
-  
 }
-  

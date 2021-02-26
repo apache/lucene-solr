@@ -16,33 +16,34 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
-
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilterFactory;
+import org.apache.lucene.analysis.TokenStream;
 
 /**
  * Factory for {@link CapitalizationFilter}.
- * <p>
- * The factory takes parameters:
+ *
+ * <p>The factory takes parameters:
+ *
  * <ul>
- * <li> "onlyFirstWord" - should each word be capitalized or all of the words?
- * <li> "keep" - a keep word list.  Each word that should be kept separated by whitespace.
- * <li> "keepIgnoreCase - true or false.  If true, the keep list will be considered case-insensitive.
- * <li> "forceFirstLetter" - Force the first letter to be capitalized even if it is in the keep list
- * <li> "okPrefix" - do not change word capitalization if a word begins with something in this list.
- * for example if "McK" is on the okPrefix list, the word "McKinley" should not be changed to
- * "Mckinley"
- * <li> "minWordLength" - how long the word needs to be to get capitalization applied.  If the
- * minWordLength is 3, "and" &gt; "And" but "or" stays "or"
- * <li>"maxWordCount" - if the token contains more then maxWordCount words, the capitalization is
- * assumed to be correct.
+ *   <li>"onlyFirstWord" - should each word be capitalized or all of the words?
+ *   <li>"keep" - a keep word list. Each word that should be kept separated by whitespace.
+ *   <li>"keepIgnoreCase - true or false. If true, the keep list will be considered
+ *       case-insensitive.
+ *   <li>"forceFirstLetter" - Force the first letter to be capitalized even if it is in the keep
+ *       list
+ *   <li>"okPrefix" - do not change word capitalization if a word begins with something in this
+ *       list. for example if "McK" is on the okPrefix list, the word "McKinley" should not be
+ *       changed to "Mckinley"
+ *   <li>"minWordLength" - how long the word needs to be to get capitalization applied. If the
+ *       minWordLength is 3, "and" &gt; "And" but "or" stays "or"
+ *   <li>"maxWordCount" - if the token contains more then maxWordCount words, the capitalization is
+ *       assumed to be correct.
  * </ul>
  *
  * <pre class="prettyprint">
@@ -51,7 +52,7 @@ import org.apache.lucene.analysis.TokenFilterFactory;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *     &lt;filter class="solr.CapitalizationFilterFactory" onlyFirstWord="true"
  *           keep="java solr lucene" keepIgnoreCase="false"
- *           okPrefix="McK McD McA"/&gt;   
+ *           okPrefix="McK McD McA"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
@@ -76,11 +77,13 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
 
   Collection<char[]> okPrefix = Collections.emptyList(); // for Example: McK
 
-  final int minWordLength;  // don't modify capitalization for words shorter then this
+  final int minWordLength; // don't modify capitalization for words shorter then this
   final int maxWordCount;
   final int maxTokenLength;
   final boolean onlyFirstWord;
-  final boolean forceFirstLetter; // make sure the first letter is capital even if it is in the keep list
+
+  // make sure the first letter is capital even if it is in the keep list
+  final boolean forceFirstLetter;
 
   /** Creates a new CapitalizationFilterFactory */
   public CapitalizationFilterFactory(Map<String, String> args) {
@@ -117,7 +120,14 @@ public class CapitalizationFilterFactory extends TokenFilterFactory {
 
   @Override
   public CapitalizationFilter create(TokenStream input) {
-    return new CapitalizationFilter(input, onlyFirstWord, keep, 
-      forceFirstLetter, okPrefix, minWordLength, maxWordCount, maxTokenLength);
+    return new CapitalizationFilter(
+        input,
+        onlyFirstWord,
+        keep,
+        forceFirstLetter,
+        okPrefix,
+        minWordLength,
+        maxWordCount,
+        maxTokenLength);
   }
 }

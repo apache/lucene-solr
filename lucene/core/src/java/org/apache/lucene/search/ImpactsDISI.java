@@ -17,16 +17,16 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-
 import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.ImpactsSource;
 import org.apache.lucene.search.similarities.Similarity.SimScorer;
 
 /**
- * {@link DocIdSetIterator} that skips non-competitive docs thanks to the
- * indexed impacts. Call {@link #setMinCompetitiveScore(float)} in order to
- * give this iterator the ability to skip low-scoring documents.
+ * {@link DocIdSetIterator} that skips non-competitive docs thanks to the indexed impacts. Call
+ * {@link #setMinCompetitiveScore(float)} in order to give this iterator the ability to skip
+ * low-scoring documents.
+ *
  * @lucene.internal
  */
 public final class ImpactsDISI extends DocIdSetIterator {
@@ -41,9 +41,10 @@ public final class ImpactsDISI extends DocIdSetIterator {
 
   /**
    * Sole constructor.
-   * @param in            wrapped iterator
+   *
+   * @param in wrapped iterator
    * @param impactsSource source of impacts
-   * @param scorer        scorer
+   * @param scorer scorer
    */
   public ImpactsDISI(DocIdSetIterator in, ImpactsSource impactsSource, SimScorer scorer) {
     this.in = in;
@@ -54,6 +55,7 @@ public final class ImpactsDISI extends DocIdSetIterator {
 
   /**
    * Set the minimum competitive score.
+   *
    * @see Scorer#setMinCompetitiveScore(float)
    */
   public void setMinCompetitiveScore(float minCompetitiveScore) {
@@ -68,8 +70,9 @@ public final class ImpactsDISI extends DocIdSetIterator {
   }
 
   /**
-   * Implement the contract of {@link Scorer#advanceShallow(int)} based on the
-   * wrapped {@link ImpactsEnum}.
+   * Implement the contract of {@link Scorer#advanceShallow(int)} based on the wrapped {@link
+   * ImpactsEnum}.
+   *
    * @see Scorer#advanceShallow(int)
    */
   public int advanceShallow(int target) throws IOException {
@@ -79,8 +82,9 @@ public final class ImpactsDISI extends DocIdSetIterator {
   }
 
   /**
-   * Implement the contract of {@link Scorer#getMaxScore(int)} based on the
-   * wrapped {@link ImpactsEnum} and {@link Scorer}.
+   * Implement the contract of {@link Scorer#getMaxScore(int)} based on the wrapped {@link
+   * ImpactsEnum} and {@link Scorer}.
+   *
    * @see Scorer#getMaxScore(int)
    */
   public float getMaxScore(int upTo) throws IOException {
@@ -145,5 +149,4 @@ public final class ImpactsDISI extends DocIdSetIterator {
   public long cost() {
     return in.cost();
   }
-
 }

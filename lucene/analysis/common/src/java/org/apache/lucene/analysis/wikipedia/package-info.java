@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Tokenizer that is aware of Wikipedia syntax.
- */
+/** Tokenizer that is aware of Wikipedia syntax. */
 package org.apache.lucene.analysis.wikipedia;

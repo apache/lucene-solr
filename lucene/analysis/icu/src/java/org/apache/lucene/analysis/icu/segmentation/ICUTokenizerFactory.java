@@ -16,7 +16,10 @@
  */
 package org.apache.lucene.analysis.icu.segmentation;
 
-
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
+import com.ibm.icu.text.BreakIterator;
+import com.ibm.icu.text.RuleBasedBreakIterator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,25 +27,17 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.lucene.util.ResourceLoader;
-import org.apache.lucene.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.IOUtils;
-
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
-import com.ibm.icu.text.BreakIterator;
-import com.ibm.icu.text.RuleBasedBreakIterator;
+import org.apache.lucene.util.ResourceLoader;
+import org.apache.lucene.util.ResourceLoaderAware;
 
 /**
- * Factory for {@link ICUTokenizer}.
- * Words are broken across script boundaries, then segmented according to
- * the BreakIterator and typing provided by the {@link DefaultICUTokenizerConfig}.
+ * Factory for {@link ICUTokenizer}. Words are broken across script boundaries, then segmented
+ * according to the BreakIterator and typing provided by the {@link DefaultICUTokenizerConfig}.
  *
- * <p>
- * To use the default set of per-script rules:
+ * <p>To use the default set of per-script rules:
  *
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_icu" class="solr.TextField" positionIncrementGap="100"&gt;
@@ -51,19 +46,16 @@ import com.ibm.icu.text.RuleBasedBreakIterator;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  *
- * <p>
- * You can customize this tokenizer's behavior by specifying per-script rule files,
- * which are compiled by the ICU RuleBasedBreakIterator.  See the
- * <a href="http://userguide.icu-project.org/boundaryanalysis#TOC-RBBI-Rules"
- * >ICU RuleBasedBreakIterator syntax reference</a>.
+ * <p>You can customize this tokenizer's behavior by specifying per-script rule files, which are
+ * compiled by the ICU RuleBasedBreakIterator. See the <a
+ * href="http://userguide.icu-project.org/boundaryanalysis#TOC-RBBI-Rules">ICU
+ * RuleBasedBreakIterator syntax reference</a>.
  *
- * <p>
- * To add per-script rules, add a "rulefiles" argument, which should contain a
- * comma-separated list of <code>code:rulefile</code> pairs in the following format:
- * <a href="http://unicode.org/iso15924/iso15924-codes.html"
- * >four-letter ISO 15924 script code</a>, followed by a colon, then a resource
- * path.  E.g. to specify rules for Latin (script code "Latn") and Cyrillic
- * (script code "Cyrl"):
+ * <p>To add per-script rules, add a "rulefiles" argument, which should contain a comma-separated
+ * list of <code>code:rulefile</code> pairs in the following format: <a
+ * href="http://unicode.org/iso15924/iso15924-codes.html" >four-letter ISO 15924 script code</a>,
+ * followed by a colon, then a resource path. E.g. to specify rules for Latin (script code "Latn")
+ * and Cyrillic (script code "Cyrl"):
  *
  * <pre class="prettyprint" >
  * &lt;fieldType name="text_icu_custom" class="solr.TextField" positionIncrementGap="100"&gt;
@@ -82,13 +74,13 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
   public static final String NAME = "icu";
 
   static final String RULEFILES = "rulefiles";
-  private final Map<Integer,String> tailored;
+  private final Map<Integer, String> tailored;
   private ICUTokenizerConfig config;
   private final boolean cjkAsWords;
   private final boolean myanmarAsWords;
-  
+
   /** Creates a new ICUTokenizerFactory */
-  public ICUTokenizerFactory(Map<String,String> args) {
+  public ICUTokenizerFactory(Map<String, String> args) {
     super(args);
     tailored = new HashMap<>();
     String rulefilesArg = get(args, RULEFILES);
@@ -97,7 +89,7 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
       for (String scriptAndResourcePath : scriptAndResourcePaths) {
         int colonPos = scriptAndResourcePath.indexOf(":");
         String scriptCode = scriptAndResourcePath.substring(0, colonPos).trim();
-        String resourcePath = scriptAndResourcePath.substring(colonPos+1).trim();
+        String resourcePath = scriptAndResourcePath.substring(colonPos + 1).trim();
         tailored.put(UCharacter.getPropertyValueEnum(UProperty.SCRIPT, scriptCode), resourcePath);
       }
     }
@@ -119,36 +111,39 @@ public class ICUTokenizerFactory extends TokenizerFactory implements ResourceLoa
     if (tailored.isEmpty()) {
       config = new DefaultICUTokenizerConfig(cjkAsWords, myanmarAsWords);
     } else {
-      final BreakIterator breakers[] = new BreakIterator[1 + UCharacter.getIntPropertyMaxValue(UProperty.SCRIPT)];
-      for (Map.Entry<Integer,String> entry : tailored.entrySet()) {
+      final BreakIterator breakers[] =
+          new BreakIterator[1 + UCharacter.getIntPropertyMaxValue(UProperty.SCRIPT)];
+      for (Map.Entry<Integer, String> entry : tailored.entrySet()) {
         int code = entry.getKey();
         String resourcePath = entry.getValue();
         breakers[code] = parseRules(resourcePath, loader);
       }
-      config = new DefaultICUTokenizerConfig(cjkAsWords, myanmarAsWords) {
-        
-        @Override
-        public RuleBasedBreakIterator getBreakIterator(int script) {
-          if (breakers[script] != null) {
-            return (RuleBasedBreakIterator) breakers[script].clone();
-          } else {
-            return super.getBreakIterator(script);
-          }
-        }
-        // TODO: we could also allow codes->types mapping
-      };
+      config =
+          new DefaultICUTokenizerConfig(cjkAsWords, myanmarAsWords) {
+
+            @Override
+            public RuleBasedBreakIterator getBreakIterator(int script) {
+              if (breakers[script] != null) {
+                return (RuleBasedBreakIterator) breakers[script].clone();
+              } else {
+                return super.getBreakIterator(script);
+              }
+            }
+            // TODO: we could also allow codes->types mapping
+          };
     }
   }
-  
+
   private BreakIterator parseRules(String filename, ResourceLoader loader) throws IOException {
     StringBuilder rules = new StringBuilder();
     InputStream rulesStream = loader.openResource(filename);
-    BufferedReader reader = new BufferedReader
-        (IOUtils.getDecodingReader(rulesStream, StandardCharsets.UTF_8));
+    BufferedReader reader =
+        new BufferedReader(IOUtils.getDecodingReader(rulesStream, StandardCharsets.UTF_8));
     String line = null;
     while ((line = reader.readLine()) != null) {
-      if ( ! line.startsWith("#"))
+      if (!line.startsWith("#")) {
         rules.append(line);
+      }
       rules.append('\n');
     }
     reader.close();

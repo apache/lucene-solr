@@ -16,36 +16,32 @@
  */
 package org.apache.lucene.queries.payloads;
 
+import java.io.IOException;
+import java.util.Random;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.ByteBuffersDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 
-import java.io.IOException;
-import java.util.Random;
-
-/**
- *
- *
- **/
+/** */
 public class PayloadHelper {
 
-  private byte[] payloadField = new byte[]{1};
-  private byte[] payloadMultiField1 = new byte[]{2};
-  private byte[] payloadMultiField2 = new byte[]{4};
+  private byte[] payloadField = new byte[] {1};
+  private byte[] payloadMultiField1 = new byte[] {2};
+  private byte[] payloadMultiField2 = new byte[] {4};
   public static final String NO_PAYLOAD_FIELD = "noPayloadField";
   public static final String MULTI_FIELD = "multiField";
   public static final String FIELD = "field";
@@ -69,7 +65,7 @@ public class PayloadHelper {
     private final String fieldName;
     private int numSeen = 0;
     private final PayloadAttribute payloadAtt;
-    
+
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
       this.fieldName = fieldName;
@@ -78,15 +74,14 @@ public class PayloadHelper {
 
     @Override
     public boolean incrementToken() throws IOException {
-      
+
       if (input.incrementToken()) {
         if (fieldName.equals(FIELD)) {
           payloadAtt.setPayload(new BytesRef(payloadField));
         } else if (fieldName.equals(MULTI_FIELD)) {
-          if (numSeen  % 2 == 0) {
+          if (numSeen % 2 == 0) {
             payloadAtt.setPayload(new BytesRef(payloadMultiField1));
-          }
-          else {
+          } else {
             payloadAtt.setPayload(new BytesRef(payloadMultiField2));
           }
           numSeen++;
@@ -104,8 +99,9 @@ public class PayloadHelper {
   }
 
   /**
-   * Sets up a RAM-resident Directory, and adds documents (using English.intToEnglish()) with two fields: field and multiField
-   * and analyzes them using the PayloadAnalyzer
+   * Sets up a RAM-resident Directory, and adds documents (using English.intToEnglish()) with two
+   * fields: field and multiField and analyzes them using the PayloadAnalyzer
+   *
    * @param similarity The Similarity class to use in the Searcher
    * @param numDocs The num docs to add
    * @return An IndexSearcher
@@ -116,13 +112,17 @@ public class PayloadHelper {
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
 
     // TODO randomize this
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        analyzer).setSimilarity(similarity));
+    IndexWriter writer =
+        new IndexWriter(directory, new IndexWriterConfig(analyzer).setSimilarity(similarity));
     // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(new TextField(FIELD, English.intToEnglish(i), Field.Store.YES));
-      doc.add(new TextField(MULTI_FIELD, English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES));
+      doc.add(
+          new TextField(
+              MULTI_FIELD,
+              English.intToEnglish(i) + "  " + English.intToEnglish(i),
+              Field.Store.YES));
       doc.add(new TextField(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }

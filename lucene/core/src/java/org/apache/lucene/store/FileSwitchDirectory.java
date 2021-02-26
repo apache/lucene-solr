@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.store;
 
-
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.NoSuchFileException;
@@ -29,27 +28,21 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.apache.lucene.util.IOUtils;
 
 /**
- * Expert: A Directory instance that switches files between
- * two other Directory instances.
-
- * <p>Files with the specified extensions are placed in the
- * primary directory; others are placed in the secondary
- * directory.  The provided Set must not change once passed
- * to this class, and must allow multiple threads to call
- * contains at once.</p>
+ * Expert: A Directory instance that switches files between two other Directory instances.
  *
- * <p>Locks with a name having the specified extensions are
- * delegated to the primary directory; others are delegated
- * to the secondary directory. Ideally, both Directory
- * instances should use the same lock factory.</p>
+ * <p>Files with the specified extensions are placed in the primary directory; others are placed in
+ * the secondary directory. The provided Set must not change once passed to this class, and must
+ * allow multiple threads to call contains at once.
+ *
+ * <p>Locks with a name having the specified extensions are delegated to the primary directory;
+ * others are delegated to the secondary directory. Ideally, both Directory instances should use the
+ * same lock factory.
  *
  * @lucene.experimental
  */
-
 public class FileSwitchDirectory extends Directory {
   private final Directory secondaryDir;
   private final Directory primaryDir;
@@ -57,7 +50,11 @@ public class FileSwitchDirectory extends Directory {
   private boolean doClose;
   private static final Pattern EXT_PATTERN = Pattern.compile("\\.([a-zA-Z]+)");
 
-  public FileSwitchDirectory(Set<String> primaryExtensions, Directory primaryDir, Directory secondaryDir, boolean doClose) {
+  public FileSwitchDirectory(
+      Set<String> primaryExtensions,
+      Directory primaryDir,
+      Directory secondaryDir,
+      boolean doClose) {
     if (primaryExtensions.contains("tmp")) {
       throw new IllegalArgumentException("tmp is a reserved extension");
     }
@@ -71,12 +68,12 @@ public class FileSwitchDirectory extends Directory {
   public Directory getPrimaryDir() {
     return primaryDir;
   }
-  
+
   /** Return the secondary directory */
   public Directory getSecondaryDir() {
     return secondaryDir;
   }
-  
+
   @Override
   public Lock obtainLock(String name) throws IOException {
     return getDirectory(name).obtainLock(name);
@@ -89,7 +86,7 @@ public class FileSwitchDirectory extends Directory {
       doClose = false;
     }
   }
-  
+
   @Override
   public String[] listAll() throws IOException {
     List<String> files = new ArrayList<>();
@@ -99,10 +96,12 @@ public class FileSwitchDirectory extends Directory {
     // in this case, we don't want to throw a NoSuchFileException
     NoSuchFileException exc = null;
     try {
-      for(String f : primaryDir.listAll()) {
+      for (String f : primaryDir.listAll()) {
         String ext = getExtension(f);
-        // we should respect the extension here as well to ensure that we don't list a file that is already
-        // deleted or rather in the one of the directories pending deletions if both directories point
+        // we should respect the extension here as well to ensure that we don't list a file that is
+        // already
+        // deleted or rather in the one of the directories pending deletions if both directories
+        // point
         // to the same filesystem path. This is quite common for instance to use NIOFS as a primary
         // and MMap as a secondary to only mmap files like docvalues or term dictionaries.
         if (primaryExtensions.contains(ext)) {
@@ -113,7 +112,7 @@ public class FileSwitchDirectory extends Directory {
       exc = e;
     }
     try {
-      for(String f : secondaryDir.listAll()) {
+      for (String f : secondaryDir.listAll()) {
         String ext = getExtension(f);
         if (primaryExtensions.contains(ext) == false) {
           files.add(f);
@@ -186,10 +185,14 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
-    // this is best effort - it's ok to create a tmp file with any prefix and suffix. Yet if this file is then
-    // in-turn used to rename they must match to the same directory hence we use the full file-name to find
-    // the right directory. Here we can't make a decision but we need to ensure that all other operations
+  public IndexOutput createTempOutput(String prefix, String suffix, IOContext context)
+      throws IOException {
+    // this is best effort - it's ok to create a tmp file with any prefix and suffix. Yet if this
+    // file is then
+    // in-turn used to rename they must match to the same directory hence we use the full file-name
+    // to find
+    // the right directory. Here we can't make a decision but we need to ensure that all other
+    // operations
     // map to the right directory.
     String tmpFileName = getTempFileName(prefix, suffix, 0);
     return getDirectory(tmpFileName).createTempOutput(prefix, suffix, context);
@@ -217,7 +220,8 @@ public class FileSwitchDirectory extends Directory {
     // won't happen with standard lucene index files since pending and commit will
     // always have the same extension ("")
     if (sourceDir != getDirectory(dest)) {
-      throw new AtomicMoveNotSupportedException(source, dest, "source and dest are in different directories");
+      throw new AtomicMoveNotSupportedException(
+          source, dest, "source and dest are in different directories");
     }
     sourceDir.rename(source, dest);
   }

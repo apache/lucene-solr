@@ -18,24 +18,22 @@ package org.apache.lucene.search.spell;
 
 import java.io.IOException;
 import java.util.Set;
-
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiTerms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
 /**
- * HighFrequencyDictionary: terms taken from the given field
- * of a Lucene index, which appear in a number of documents
- * above a given threshold.
+ * HighFrequencyDictionary: terms taken from the given field of a Lucene index, which appear in a
+ * number of documents above a given threshold.
  *
- * Threshold is a value in [0..1] representing the minimum
- * number of documents (of the total) where a term should appear.
- * 
- * Based on LuceneDictionary.
+ * <p>Threshold is a value in [0..1] representing the minimum number of documents (of the total)
+ * where a term should appear.
+ *
+ * <p>Based on LuceneDictionary.
  */
 public class HighFrequencyDictionary implements Dictionary {
   private IndexReader reader;
@@ -43,11 +41,10 @@ public class HighFrequencyDictionary implements Dictionary {
   private float thresh;
 
   /**
-   * Creates a new Dictionary, pulling source terms from
-   * the specified <code>field</code> in the provided <code>reader</code>.
-   * <p>
-   * Terms appearing in less than <code>thresh</code> percentage of documents
-   * will be excluded.
+   * Creates a new Dictionary, pulling source terms from the specified <code>field</code> in the
+   * provided <code>reader</code>.
+   *
+   * <p>Terms appearing in less than <code>thresh</code> percentage of documents will be excluded.
    */
   public HighFrequencyDictionary(IndexReader reader, String field, float thresh) {
     this.reader = reader;
@@ -73,13 +70,13 @@ public class HighFrequencyDictionary implements Dictionary {
       } else {
         termsEnum = null;
       }
-      minNumDocs = (int)(thresh * (float)reader.numDocs());
+      minNumDocs = (int) (thresh * (float) reader.numDocs());
     }
 
     private boolean isFrequent(int freq) {
       return freq >= minNumDocs;
     }
-    
+
     @Override
     public long weight() {
       return freq;
@@ -89,7 +86,7 @@ public class HighFrequencyDictionary implements Dictionary {
     public BytesRef next() throws IOException {
       if (termsEnum != null) {
         BytesRef next;
-        while((next = termsEnum.next()) != null) {
+        while ((next = termsEnum.next()) != null) {
           if (isFrequent(termsEnum.docFreq())) {
             freq = termsEnum.docFreq();
             spare.copyBytes(next);
@@ -97,7 +94,7 @@ public class HighFrequencyDictionary implements Dictionary {
           }
         }
       }
-      return  null;
+      return null;
     }
 
     @Override

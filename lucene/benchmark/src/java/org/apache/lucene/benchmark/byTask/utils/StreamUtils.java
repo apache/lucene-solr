@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.benchmark.byTask.utils;
 
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -27,13 +26,10 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 
-/**
- * Stream utilities.
- */
+/** Stream utilities. */
 public class StreamUtils {
 
   /** Buffer size used across the benchmark package */
@@ -48,26 +44,34 @@ public class StreamUtils {
     /** Plain text is used for anything which is not GZIP or BZIP. */
     PLAIN(null);
     private final String csfType;
+
     Type(String csfType) {
       this.csfType = csfType;
     }
+
     private InputStream inputStream(InputStream in) throws IOException {
       try {
-        return csfType==null ? in : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
+        return csfType == null
+            ? in
+            : new CompressorStreamFactory().createCompressorInputStream(csfType, in);
       } catch (CompressorException e) {
         throw new IOException(e.getMessage(), e);
       }
     }
+
     private OutputStream outputStream(OutputStream os) throws IOException {
       try {
-        return csfType==null ? os : new CompressorStreamFactory().createCompressorOutputStream(csfType, os);
+        return csfType == null
+            ? os
+            : new CompressorStreamFactory().createCompressorOutputStream(csfType, os);
       } catch (CompressorException e) {
         throw new IOException(e.getMessage(), e);
       }
     }
   }
 
-  private static final Map<String,Type> extensionToType = new HashMap<>();
+  private static final Map<String, Type> extensionToType = new HashMap<>();
+
   static {
     // these in are lower case, we will lower case at the test as well
     extensionToType.put(".bz2", Type.BZIP2);
@@ -75,12 +79,11 @@ public class StreamUtils {
     extensionToType.put(".gz", Type.GZIP);
     extensionToType.put(".gzip", Type.GZIP);
   }
-  
+
   /**
-   * Returns an {@link InputStream} over the requested file. This method
-   * attempts to identify the appropriate {@link InputStream} instance to return
-   * based on the file name (e.g., if it ends with .bz2 or .bzip, return a
-   * 'bzip' {@link InputStream}).
+   * Returns an {@link InputStream} over the requested file. This method attempts to identify the
+   * appropriate {@link InputStream} instance to return based on the file name (e.g., if it ends
+   * with .bz2 or .bzip, return a 'bzip' {@link InputStream}).
    */
   public static InputStream inputStream(Path file) throws IOException {
     // First, create a FileInputStream, as this will be required by all types.
@@ -97,12 +100,12 @@ public class StreamUtils {
     if (idx != -1) {
       type = extensionToType.get(fileName.substring(idx).toLowerCase(Locale.ROOT));
     }
-    return type==null ? Type.PLAIN : type;
+    return type == null ? Type.PLAIN : type;
   }
-  
+
   /**
-   * Returns an {@link OutputStream} over the requested file, identifying
-   * the appropriate {@link OutputStream} instance similar to {@link #inputStream(Path)}.
+   * Returns an {@link OutputStream} over the requested file, identifying the appropriate {@link
+   * OutputStream} instance similar to {@link #inputStream(Path)}.
    */
   public static OutputStream outputStream(Path file) throws IOException {
     // First, create a FileInputStream, as this will be required by all types.

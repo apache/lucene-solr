@@ -24,25 +24,26 @@ import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedGrowableWriter;
 import org.apache.lucene.util.packed.PagedMutable;
 
-
 /**
- * A {@link DocValuesFieldUpdates} which holds updates of documents, of a single
- * {@link NumericDocValuesField}.
- * 
+ * A {@link DocValuesFieldUpdates} which holds updates of documents, of a single {@link
+ * NumericDocValuesField}.
+ *
  * @lucene.experimental
  */
 final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   // TODO: can't this just be NumericDocValues now?  avoid boxing the long value...
-  final static class Iterator extends DocValuesFieldUpdates.AbstractIterator {
+  static final class Iterator extends DocValuesFieldUpdates.AbstractIterator {
     private final AbstractPagedMutable<?> values;
     private final long minValue;
     private long value;
 
-    Iterator(int size, long minValue, AbstractPagedMutable<?> values, PagedMutable docs, long delGen) {
+    Iterator(
+        int size, long minValue, AbstractPagedMutable<?> values, PagedMutable docs, long delGen) {
       super(size, docs, delGen);
       this.values = values;
       this.minValue = minValue;
     }
+
     @Override
     long longValue() {
       return value;
@@ -58,6 +59,7 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
       value = values.get(idx) + minValue;
     }
   }
+
   private AbstractPagedMutable<?> values;
   private final long minValue;
 
@@ -68,13 +70,16 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     minValue = 0;
   }
 
-  NumericDocValuesFieldUpdates(long delGen, String field, long minValue, long maxValue, int maxDoc) {
+  NumericDocValuesFieldUpdates(
+      long delGen, String field, long minValue, long maxValue, int maxDoc) {
     super(maxDoc, delGen, field, DocValuesType.NUMERIC);
-    assert minValue <= maxValue : "minValue must be <= maxValue [" + minValue + " > " + maxValue + "]";
+    assert minValue <= maxValue
+        : "minValue must be <= maxValue [" + minValue + " > " + maxValue + "]";
     int bitsPerValue = PackedInts.unsignedBitsRequired(maxValue - minValue);
     values = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.DEFAULT);
     this.minValue = minValue;
   }
+
   @Override
   void add(int doc, BytesRef value) {
     throw new UnsupportedOperationException();
@@ -88,7 +93,7 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
   @Override
   synchronized void add(int doc, long value) {
     int add = add(doc);
-    values.set(add, value-minValue);
+    values.set(add, value - minValue);
   }
 
   @Override
@@ -116,7 +121,7 @@ final class NumericDocValuesFieldUpdates extends DocValuesFieldUpdates {
     ensureFinished();
     return new Iterator(size, minValue, values, docs, delGen);
   }
-  
+
   @Override
   public long ramBytesUsed() {
     return values.ramBytesUsed()

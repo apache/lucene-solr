@@ -56,8 +56,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
+/**
+ * Tests for index backing up and restoring index snapshots.
+ *
+ * These tests use the deprecated "full-snapshot" based backup method.  For tests that cover similar snapshot
+ * functionality incrementally, see {@link org.apache.solr.handler.TestIncrementalCoreBackup}
+ */
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
 public class TestSolrCoreSnapshots extends SolrCloudTestCase {
@@ -97,8 +101,8 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     assertEquals(1, shard.getReplicas().size());
     Replica replica = shard.getReplicas().iterator().next();
 
-    String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-    String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+    String replicaBaseUrl = replica.getBaseUrl();
+    String coreName = replica.getCoreName();
     String backupName = TestUtil.randomSimpleString(random(), 1, 5);
     String commitName = TestUtil.randomSimpleString(random(), 1, 5);
     String duplicateName = commitName.concat("_duplicate");
@@ -133,6 +137,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
         params.put("name", backupName);
         params.put("commitName", commitName);
         params.put("location", location);
+        params.put("incremental", "false");
         BackupRestoreUtils.runCoreAdminCommand(replicaBaseUrl, coreName, CoreAdminAction.BACKUPCORE.toString(), params);
       }
 

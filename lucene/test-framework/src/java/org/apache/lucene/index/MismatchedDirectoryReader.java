@@ -19,19 +19,16 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Random;
 
-/**
- * A {@link DirectoryReader} that wraps all its subreaders with
- * {@link MismatchedLeafReader}
- */
+/** A {@link DirectoryReader} that wraps all its subreaders with {@link MismatchedLeafReader} */
 public class MismatchedDirectoryReader extends FilterDirectoryReader {
 
   static class MismatchedSubReaderWrapper extends SubReaderWrapper {
     final Random random;
-    
+
     MismatchedSubReaderWrapper(Random random) {
       this.random = random;
     }
-    
+
     @Override
     public LeafReader wrap(LeafReader reader) {
       return new MismatchedLeafReader(reader, random);

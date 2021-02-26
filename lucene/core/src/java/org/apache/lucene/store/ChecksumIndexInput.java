@@ -18,16 +18,27 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
-
-/** 
- * Extension of IndexInput, computing checksum as it goes. 
- * Callers can retrieve the checksum via {@link #getChecksum()}.
+/**
+ * Extension of IndexInput, computing checksum as it goes. Callers can retrieve the checksum via
+ * {@link #getChecksum()}.
  */
 public abstract class ChecksumIndexInput extends IndexInput {
-  
-  /** resourceDescription should be a non-null, opaque string
-   *  describing this resource; it's returned from
-   *  {@link #toString}. */
+
+  private static final int SKIP_BUFFER_SIZE = 1024;
+
+  /* This buffer is used when skipping bytes in skipBytes(). Skipping bytes
+   * still requires reading in the bytes we skip in order to update the checksum.
+   * The reason we need to use an instance member instead of sharing a single
+   * static instance across threads is that multiple instances invoking skipBytes()
+   * concurrently on different threads can clobber the contents of a shared buffer,
+   * corrupting the checksum. See LUCENE-5583 for additional context.
+   */
+  private byte[] skipBuffer;
+
+  /**
+   * resourceDescription should be a non-null, opaque string describing this resource; it's returned
+   * from {@link #toString}.
+   */
   protected ChecksumIndexInput(String resourceDescription) {
     super(resourceDescription);
   }
@@ -38,17 +49,35 @@ public abstract class ChecksumIndexInput extends IndexInput {
   /**
    * {@inheritDoc}
    *
-   * {@link ChecksumIndexInput} can only seek forward and seeks are expensive
-   * since they imply to read bytes in-between the current position and the
-   * target position in order to update the checksum.
+   * <p>{@link ChecksumIndexInput} can only seek forward and seeks are expensive since they imply to
+   * read bytes in-between the current position and the target position in order to update the
+   * checksum.
    */
   @Override
   public void seek(long pos) throws IOException {
     final long curFP = getFilePointer();
     final long skip = pos - curFP;
     if (skip < 0) {
-      throw new IllegalStateException(getClass() + " cannot seek backwards (pos=" + pos + " getFilePointer()=" + curFP + ")");
+      throw new IllegalStateException(
+          getClass() + " cannot seek backwards (pos=" + pos + " getFilePointer()=" + curFP + ")");
     }
-    skipBytes(skip);
+    skipByReading(skip);
+  }
+
+  /**
+   * Skip over <code>numBytes</code> bytes. The contract on this method is that it should have the
+   * same behavior as reading the same number of bytes into a buffer and discarding its content.
+   * Negative values of <code>numBytes</code> are not supported.
+   */
+  private void skipByReading(long numBytes) throws IOException {
+    if (skipBuffer == null) {
+      skipBuffer = new byte[SKIP_BUFFER_SIZE];
+    }
+    assert skipBuffer.length == SKIP_BUFFER_SIZE;
+    for (long skipped = 0; skipped < numBytes; ) {
+      final int step = (int) Math.min(SKIP_BUFFER_SIZE, numBytes - skipped);
+      readBytes(skipBuffer, 0, step, false);
+      skipped += step;
+    }
   }
 }

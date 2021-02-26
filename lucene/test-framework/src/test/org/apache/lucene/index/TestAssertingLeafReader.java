@@ -25,7 +25,8 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestAssertingLeafReader extends LuceneTestCase {
   public void testAssertBits() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    IndexWriter w =
+        new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
     // Not deleted:
     w.addDocument(new Document());
 
@@ -48,14 +49,15 @@ public class TestAssertingLeafReader extends LuceneTestCase {
     r = new AssertingDirectoryReader((DirectoryReader) r);
     final IndexReader r2 = r;
 
-    Thread thread = new Thread() {
-      @Override
-      public void run() {
-        for(LeafReaderContext context : r2.leaves()) {
-          context.reader().getLiveDocs().get(0);
-        }
-      }
-    };
+    Thread thread =
+        new Thread() {
+          @Override
+          public void run() {
+            for (LeafReaderContext context : r2.leaves()) {
+              context.reader().getLiveDocs().get(0);
+            }
+          }
+        };
     thread.start();
     thread.join();
 

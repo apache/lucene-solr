@@ -18,21 +18,19 @@
 package org.apache.lucene.analysis.opennlp;
 
 import java.io.IOException;
-
 import opennlp.tools.util.Span;
-
 import org.apache.lucene.analysis.opennlp.tools.NLPSentenceDetectorOp;
 import org.apache.lucene.analysis.opennlp.tools.NLPTokenizerOp;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.SegmentingTokenizerBase;
 import org.apache.lucene.util.AttributeFactory;
 
 /**
- * Run OpenNLP SentenceDetector and Tokenizer.
- * The last token in each sentence is marked by setting the {@link #EOS_FLAG_BIT} in the FlagsAttribute;
- * following filters can use this information to apply operations to tokens one sentence at a time.
+ * Run OpenNLP SentenceDetector and Tokenizer. The last token in each sentence is marked by setting
+ * the {@link #EOS_FLAG_BIT} in the FlagsAttribute; following filters can use this information to
+ * apply operations to tokens one sentence at a time.
  */
 public final class OpenNLPTokenizer extends SegmentingTokenizerBase {
   public static int EOS_FLAG_BIT = 1;
@@ -48,10 +46,13 @@ public final class OpenNLPTokenizer extends SegmentingTokenizerBase {
   private NLPSentenceDetectorOp sentenceOp = null;
   private NLPTokenizerOp tokenizerOp = null;
 
-  public OpenNLPTokenizer(AttributeFactory factory, NLPSentenceDetectorOp sentenceOp, NLPTokenizerOp tokenizerOp) throws IOException {
+  public OpenNLPTokenizer(
+      AttributeFactory factory, NLPSentenceDetectorOp sentenceOp, NLPTokenizerOp tokenizerOp)
+      throws IOException {
     super(factory, new OpenNLPSentenceBreakIterator(sentenceOp));
     if (sentenceOp == null || tokenizerOp == null) {
-      throw new IllegalArgumentException("OpenNLPTokenizer: both a Sentence Detector and a Tokenizer are required");
+      throw new IllegalArgumentException(
+          "OpenNLPTokenizer: both a Sentence Detector and a Tokenizer are required");
     }
     this.sentenceOp = sentenceOp;
     this.tokenizerOp = tokenizerOp;
@@ -62,7 +63,7 @@ public final class OpenNLPTokenizer extends SegmentingTokenizerBase {
     super.close();
     termSpans = null;
     termNum = sentenceStart = 0;
-  };
+  }
 
   @Override
   protected void setNextSentence(int sentenceStart, int sentenceEnd) {
@@ -80,10 +81,13 @@ public final class OpenNLPTokenizer extends SegmentingTokenizerBase {
     clearAttributes();
     Span term = termSpans[termNum];
     termAtt.copyBuffer(buffer, sentenceStart + term.getStart(), term.length());
-    offsetAtt.setOffset(correctOffset(offset + sentenceStart + term.getStart()),
-                        correctOffset(offset + sentenceStart + term.getEnd()));
+    offsetAtt.setOffset(
+        correctOffset(offset + sentenceStart + term.getStart()),
+        correctOffset(offset + sentenceStart + term.getEnd()));
     if (termNum == termSpans.length - 1) {
-      flagsAtt.setFlags(flagsAtt.getFlags() | EOS_FLAG_BIT); // mark the last token in the sentence with EOS_FLAG_BIT
+      flagsAtt.setFlags(
+          flagsAtt.getFlags()
+              | EOS_FLAG_BIT); // mark the last token in the sentence with EOS_FLAG_BIT
     }
     ++termNum;
     return true;

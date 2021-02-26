@@ -18,9 +18,7 @@ package org.apache.lucene.analysis.ko;
 
 import org.apache.lucene.analysis.ko.dict.Dictionary.Morpheme;
 
-/**
- * Analyzed token with morphological data.
- */
+/** Analyzed token with morphological data. */
 public abstract class Token {
   private final char[] surfaceForm;
   private final int offset;
@@ -40,69 +38,47 @@ public abstract class Token {
     this.endOffset = endOffset;
   }
 
-  /**
-   * @return surfaceForm
-   */
+  /** @return surfaceForm */
   public char[] getSurfaceForm() {
     return surfaceForm;
   }
 
-  /**
-   * @return offset into surfaceForm
-   */
+  /** @return offset into surfaceForm */
   public int getOffset() {
     return offset;
   }
 
-  /**
-   * @return length of surfaceForm
-   */
+  /** @return length of surfaceForm */
   public int getLength() {
     return length;
   }
 
-  /**
-   * @return surfaceForm as a String
-   */
+  /** @return surfaceForm as a String */
   public String getSurfaceFormString() {
     return new String(surfaceForm, offset, length);
   }
 
-  /**
-   * Get the {@link POS.Type} of the token.
-   */
+  /** Get the {@link POS.Type} of the token. */
   public abstract POS.Type getPOSType();
 
-  /**
-   * Get the left part of speech of the token.
-   */
+  /** Get the left part of speech of the token. */
   public abstract POS.Tag getLeftPOS();
 
-  /**
-   * Get the right part of speech of the token.
-   */
+  /** Get the right part of speech of the token. */
   public abstract POS.Tag getRightPOS();
 
-  /**
-   * Get the reading of the token.
-   */
+  /** Get the reading of the token. */
   public abstract String getReading();
 
-  /**
-   * Get the {@link Morpheme} decomposition of the token.
-   */
+  /** Get the {@link Morpheme} decomposition of the token. */
   public abstract Morpheme[] getMorphemes();
 
-  /**
-   * Get the start offset of the term in the analyzed text.
-   */
+  /** Get the start offset of the term in the analyzed text. */
   public int getStartOffset() {
     return startOffset;
   }
 
-  /**
-   * Get the end offset of the term in the analyzed text.
-   */
+  /** Get the end offset of the term in the analyzed text. */
   public int getEndOffset() {
     return endOffset;
   }

@@ -17,10 +17,9 @@
 package org.apache.lucene.backward_codecs.lucene50;
 
 import java.io.IOException;
-
+import org.apache.lucene.backward_codecs.lucene40.blocktree.Lucene40BlockTreeTermsWriter;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.IOUtils;
 
@@ -31,10 +30,12 @@ public class Lucene50RWPostingsFormat extends Lucene50PostingsFormat {
     PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
     boolean success = false;
     try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, 
-                                                    postingsWriter,
-                                                    BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, 
-                                                    BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
+      FieldsConsumer ret =
+          new Lucene40BlockTreeTermsWriter(
+              state,
+              postingsWriter,
+              Lucene40BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE,
+              Lucene40BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE);
       success = true;
       return ret;
     } finally {
@@ -43,5 +44,4 @@ public class Lucene50RWPostingsFormat extends Lucene50PostingsFormat {
       }
     }
   }
-
 }

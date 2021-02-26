@@ -18,14 +18,20 @@ package org.apache.lucene.queries.payloads;
 
 /**
  * Calculate the final score as the average score of all payloads seen.
- * <p>
- * Is thread safe and completely reusable. 
  *
- **/
-public class AveragePayloadFunction extends PayloadFunction{
+ * <p>Is thread safe and completely reusable.
+ */
+public class AveragePayloadFunction extends PayloadFunction {
 
   @Override
-  public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
+  public float currentScore(
+      int docId,
+      String field,
+      int start,
+      int end,
+      int numPayloadsSeen,
+      float currentScore,
+      float currentPayloadScore) {
     return currentPayloadScore + currentScore;
   }
 
@@ -44,12 +50,15 @@ public class AveragePayloadFunction extends PayloadFunction{
 
   @Override
   public boolean equals(Object obj) {
-    if (this == obj)
+    if (this == obj) {
       return true;
-    if (obj == null)
+    }
+    if (obj == null) {
       return false;
-    if (getClass() != obj.getClass())
+    }
+    if (getClass() != obj.getClass()) {
       return false;
+    }
     return true;
   }
 }

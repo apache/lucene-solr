@@ -19,16 +19,13 @@ package org.apache.lucene.spatial.util;
 
 import java.io.IOException;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 
-/**
- * Transforms a DoubleValuesSource using the formula v = k / (v + k)
- */
+/** Transforms a DoubleValuesSource using the formula v = k / (v + k) */
 public class ReciprocalDoubleValuesSource extends DoubleValuesSource {
 
   private final double distToEdge;
@@ -36,8 +33,9 @@ public class ReciprocalDoubleValuesSource extends DoubleValuesSource {
 
   /**
    * Creates a ReciprocalDoubleValuesSource
-   * @param distToEdge  the value k in v = k / (v + k)
-   * @param input       the input DoubleValuesSource to transform
+   *
+   * @param distToEdge the value k in v = k / (v + k)
+   * @param input the input DoubleValuesSource to transform
    */
   public ReciprocalDoubleValuesSource(double distToEdge, DoubleValuesSource input) {
     this.distToEdge = distToEdge;
@@ -75,10 +73,13 @@ public class ReciprocalDoubleValuesSource extends DoubleValuesSource {
   }
 
   @Override
-  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
+  public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation)
+      throws IOException {
     Explanation expl = input.explain(ctx, docId, scoreExplanation);
-    return Explanation.match(recip(expl.getValue().doubleValue()),
-        distToEdge + " / (v + " + distToEdge + "), computed from:", expl);
+    return Explanation.match(
+        recip(expl.getValue().doubleValue()),
+        distToEdge + " / (v + " + distToEdge + "), computed from:",
+        expl);
   }
 
   @Override
@@ -91,8 +92,7 @@ public class ReciprocalDoubleValuesSource extends DoubleValuesSource {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ReciprocalDoubleValuesSource that = (ReciprocalDoubleValuesSource) o;
-    return Double.compare(that.distToEdge, distToEdge) == 0 &&
-        Objects.equals(input, that.input);
+    return Double.compare(that.distToEdge, distToEdge) == 0 && Objects.equals(input, that.input);
   }
 
   @Override

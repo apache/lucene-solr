@@ -17,17 +17,16 @@
 package org.apache.solr.ltr;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -39,7 +38,6 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
-import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.model.ModelException;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedFeatureStore;
@@ -53,7 +51,7 @@ public class TestRerankBase extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader();
+  protected static final SolrResourceLoader solrResourceLoader = new SolrResourceLoader(Paths.get("").toAbsolutePath());
 
   protected static File tmpSolrHome;
   protected static File tmpConfDir;
@@ -390,24 +388,6 @@ public class TestRerankBase extends RestTestBase {
     return getFeatures(Arrays.asList(names));
   }
 
-  protected static void loadModelAndFeatures(String name, int allFeatureCount,
-      int modelFeatureCount) throws Exception {
-    final String[] features = new String[modelFeatureCount];
-    final String[] weights = new String[modelFeatureCount];
-    for (int i = 0; i < allFeatureCount; i++) {
-      final String featureName = "c" + i;
-      if (i < modelFeatureCount) {
-        features[i] = featureName;
-        weights[i] = "\"" + featureName + "\":1.0";
-      }
-      loadFeature(featureName, ValueFeature.ValueFeatureWeight.class.getCanonicalName(),
-          "{\"value\":" + i + "}");
-    }
-
-    loadModel(name, LinearModel.class.getCanonicalName(), features,
-        "{\"weights\":{" + String.join(",", weights) + "}}");
-  }
-
   protected static void bulkIndex() throws Exception {
     assertU(adoc("title", "bloomberg different bla", "description",
         "bloomberg", "id", "6", "popularity", "1"));
@@ -418,37 +398,6 @@ public class TestRerankBase extends RestTestBase {
     assertU(adoc("title", "bloomberg bloomberg bloomberg bloomberg",
         "description", "bloomberg", "id", "9", "popularity", "5"));
     assertU(commit());
-  }
-
-  protected static void buildIndexUsingAdoc(String filepath)
-      throws FileNotFoundException {
-    final Scanner scn = new Scanner(new File(filepath), "UTF-8");
-    StringBuffer buff = new StringBuffer();
-    scn.nextLine();
-    scn.nextLine();
-    scn.nextLine(); // Skip the first 3 lines then add everything else
-    final ArrayList<String> docsToAdd = new ArrayList<String>();
-    while (scn.hasNext()) {
-      String curLine = scn.nextLine();
-      if (curLine.contains("</doc>")) {
-        buff.append(curLine + "\n");
-        docsToAdd.add(buff.toString().replace("</add>", "")
-            .replace("<doc>", "<add>\n<doc>")
-            .replace("</doc>", "</doc>\n</add>"));
-        if (!scn.hasNext()) {
-          break;
-        } else {
-          curLine = scn.nextLine();
-        }
-        buff = new StringBuffer();
-      }
-      buff.append(curLine + "\n");
-    }
-    for (final String doc : docsToAdd) {
-      assertU(doc.trim());
-    }
-    assertU(commit());
-    scn.close();
   }
 
   protected static void doTestParamsToMap(String featureClassName,

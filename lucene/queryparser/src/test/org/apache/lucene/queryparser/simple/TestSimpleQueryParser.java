@@ -16,10 +16,20 @@
  */
 package org.apache.lucene.queryparser.simple;
 
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.AND_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.ESCAPE_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.FUZZY_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.NEAR_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.NOT_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.OR_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PHRASE_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PRECEDENCE_OPERATORS;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PREFIX_OPERATOR;
+import static org.apache.lucene.queryparser.simple.SimpleQueryParser.WHITESPACE_OPERATOR;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -38,23 +48,12 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.AND_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.ESCAPE_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.FUZZY_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.NOT_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.OR_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PHRASE_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PRECEDENCE_OPERATORS;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.PREFIX_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.NEAR_OPERATOR;
-import static org.apache.lucene.queryparser.simple.SimpleQueryParser.WHITESPACE_OPERATOR;
-
 /** Tests for {@link SimpleQueryParser} */
 public class TestSimpleQueryParser extends LuceneTestCase {
 
   /**
-   * helper to parse a query with whitespace+lowercase analyzer across "field",
-   * with default operator of MUST
+   * helper to parse a query with whitespace+lowercase analyzer across "field", with default
+   * operator of MUST
    */
   private Query parse(String text) {
     Analyzer analyzer = new MockAnalyzer(random());
@@ -64,13 +63,13 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   /**
-   * helper to parse a query with whitespace+lowercase analyzer across "field",
-   * with default operator of MUST
+   * helper to parse a query with whitespace+lowercase analyzer across "field", with default
+   * operator of MUST
    */
   private Query parse(String text, int flags) {
     Analyzer analyzer = new MockAnalyzer(random());
-    SimpleQueryParser parser = new SimpleQueryParser(analyzer,
-        Collections.singletonMap("field", 1f), flags);
+    SimpleQueryParser parser =
+        new SimpleQueryParser(analyzer, Collections.singletonMap("field", 1f), flags);
     parser.setDefaultOperator(Occur.MUST);
     return parser.parse(text);
   }
@@ -93,11 +92,13 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     assertEquals(regular, parse("foobar~1a"));
 
     BooleanQuery.Builder bool = new BooleanQuery.Builder();
-    FuzzyQuery fuzzy = new FuzzyQuery(new Term("field", "foo"), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
+    FuzzyQuery fuzzy =
+        new FuzzyQuery(new Term("field", "foo"), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     bool.add(fuzzy, Occur.MUST);
     bool.add(new TermQuery(new Term("field", "bar")), Occur.MUST);
 
-    assertEquals(bool.build(), parse("foo~" + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1 + " bar"));
+    assertEquals(
+        bool.build(), parse("foo~" + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1 + " bar"));
   }
 
   /** test a simple phrase */
@@ -413,7 +414,8 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
     assertEquals(expected.build(), parse("(star wars) | empire | (strikes back)"));
     assertEquals(expected.build(), parse("(star + wars) |empire | (strikes + back)"));
-    assertEquals(expected.build(), parse("(star + | wars |) | ----empire | + --(strikes + | --back) \\"));
+    assertEquals(
+        expected.build(), parse("(star + | wars |) | ----empire | + --(strikes + | --back) \\"));
   }
 
   public void testComplex05() throws Exception {
@@ -436,13 +438,15 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
     inner3.add(inner4.build(), Occur.MUST);
     inner2.add(inner3.build(), Occur.SHOULD);
-    
+
     expected.add(inner1.build(), Occur.SHOULD);
     expected.add(inner2.build(), Occur.SHOULD);
-    
+
     assertEquals(expected.build(), parse("(star wars) | (empire | (strikes back -jarjar))"));
     assertEquals(expected.build(), parse("(star + wars) |(empire | (strikes + back -jarjar) () )"));
-    assertEquals(expected.build(), parse("(star + | wars |) | --(--empire | + --(strikes + | --back + -jarjar) \"\" ) \""));
+    assertEquals(
+        expected.build(),
+        parse("(star + | wars |) | --(--empire | + --(strikes + | --back + -jarjar) \"\" ) \""));
   }
 
   public void testComplex06() throws Exception {
@@ -466,13 +470,16 @@ public class TestSimpleQueryParser extends LuceneTestCase {
     expected.add(inner1.build(), Occur.MUST);
 
     assertEquals(expected.build(), parse("star (wars | (empire | strikes back jar\\+\\|jar))"));
-    assertEquals(expected.build(), parse("star + (wars |(empire | strikes + back jar\\+\\|jar) () )"));
-    assertEquals(expected.build(), parse("star + (| wars | | --(--empire | + --strikes + | --back + jar\\+\\|jar) \"\" ) \""));
+    assertEquals(
+        expected.build(), parse("star + (wars |(empire | strikes + back jar\\+\\|jar) () )"));
+    assertEquals(
+        expected.build(),
+        parse("star + (| wars | | --(--empire | + --strikes + | --back + jar\\+\\|jar) \"\" ) \""));
   }
 
   /** test a term with field weights */
   public void testWeightedTerm() throws Exception {
-    Map<String,Float> weights = new LinkedHashMap<>();
+    Map<String, Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
 
@@ -491,7 +498,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
 
   /** test a more complex query with field weights */
   public void testWeightedOR() throws Exception {
-    Map<String,Float> weights = new LinkedHashMap<>();
+    Map<String, Float> weights = new LinkedHashMap<>();
     weights.put("field0", 5f);
     weights.put("field1", 10f);
 
@@ -522,9 +529,8 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   /** helper to parse a query with keyword analyzer across "field" */
   private Query parseKeyword(String text, int flags) {
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.KEYWORD, false);
-    SimpleQueryParser parser = new SimpleQueryParser(analyzer,
-        Collections.singletonMap("field", 1f),
-        flags);
+    SimpleQueryParser parser =
+        new SimpleQueryParser(analyzer, Collections.singletonMap("field", 1f), flags);
     return parser.parse(text);
   }
 
@@ -611,7 +617,7 @@ public class TestSimpleQueryParser extends LuceneTestCase {
   }
 
   public void testRandomQueries2() throws Exception {
-    char chars[] = new char[] { 'a', '1', '|', '&', ' ', '(', ')', '"', '-', '~'};
+    char chars[] = new char[] {'a', '1', '|', '&', ' ', '(', ')', '"', '-', '~'};
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < 1000; i++) {
       sb.setLength(0);

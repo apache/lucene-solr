@@ -97,9 +97,6 @@ public interface CommonParams {
   /** default query field */
   String DF = "df";
 
-  /** Transformer param -- used with XSLT */
-  String TR = "tr";
-  
   /** whether to include debug data for all components pieces, including doing explains*/
   String DEBUG_QUERY = "debugQuery";
 
@@ -277,13 +274,6 @@ public interface CommonParams {
    * Request Purpose parameter added to each internal shard request when using debug=track
    */
   String REQUEST_PURPOSE = "requestPurpose";
-
-  /**
-   * When querying a node, prefer local node's cores for distributed queries.
-   * @deprecated Use {@code ShardParams.SHARDS_PREFERENCE}
-   */
-  @Deprecated // SOLR-14035
-  String PREFER_LOCAL_SHARDS = "preferLocalShards";
 
   String JAVABIN = "javabin";
 

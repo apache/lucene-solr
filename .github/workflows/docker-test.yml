@@ -17,6 +17,10 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      SOLR_DOCKER_IMAGE_REPO: github-pr/solr
+      SOLR_DOCKER_IMAGE_TAG: ${{github.event.number}}
+
     steps:
     # Setup
     - uses: actions/checkout@v2
@@ -34,6 +38,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-docker-
           ${{ runner.os }}-gradle-
+    - name: Initialize gradle settings
+      run: ./gradlew localSettings
     - name: Build Docker image with Gradle
       run: ./gradlew solr:docker:docker
     - name: Run tests on Docker image

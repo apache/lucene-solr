@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -54,8 +53,7 @@ public class TestLongValuesSource extends LuceneTestCase {
       document.add(newTextField("oddeven", (i % 2 == 0) ? "even" : "odd", Field.Store.NO));
       document.add(new NumericDocValuesField("int", random().nextInt()));
       document.add(new NumericDocValuesField("long", random().nextLong()));
-      if (i == 545)
-        document.add(new NumericDocValuesField("onefield", LEAST_LONG_VALUE));
+      if (i == 545) document.add(new NumericDocValuesField("onefield", LEAST_LONG_VALUE));
       iw.addDocument(document);
     }
     reader = iw.getReader();
@@ -75,7 +73,8 @@ public class TestLongValuesSource extends LuceneTestCase {
 
     LongValuesSource onefield = LongValuesSource.fromLongField("onefield");
     // sort decreasing
-    TopDocs results = searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(true)));
+    TopDocs results =
+        searcher.search(new MatchAllDocsQuery(), 1, new Sort(onefield.getSortField(true)));
     FieldDoc first = (FieldDoc) results.scoreDocs[0];
     assertEquals(LEAST_LONG_VALUE, first.fields[0]);
 
@@ -108,8 +107,12 @@ public class TestLongValuesSource extends LuceneTestCase {
   }
 
   public void testSimpleFieldEquivalences() throws Exception {
-    checkSorts(new MatchAllDocsQuery(), new Sort(new SortField("int", SortField.Type.INT, random().nextBoolean())));
-    checkSorts(new MatchAllDocsQuery(), new Sort(new SortField("long", SortField.Type.LONG, random().nextBoolean())));
+    checkSorts(
+        new MatchAllDocsQuery(),
+        new Sort(new SortField("int", SortField.Type.INT, random().nextBoolean())));
+    checkSorts(
+        new MatchAllDocsQuery(),
+        new Sort(new SortField("long", SortField.Type.LONG, random().nextBoolean())));
   }
 
   public void testHashCodeAndEquals() {
@@ -137,10 +140,11 @@ public class TestLongValuesSource extends LuceneTestCase {
 
   Sort randomSort() throws Exception {
     boolean reversed = random().nextBoolean();
-    SortField fields[] = new SortField[] {
-        new SortField("int", SortField.Type.INT, reversed),
-        new SortField("long", SortField.Type.LONG, reversed)
-    };
+    SortField fields[] =
+        new SortField[] {
+          new SortField("int", SortField.Type.INT, reversed),
+          new SortField("long", SortField.Type.LONG, reversed)
+        };
     Collections.shuffle(Arrays.asList(fields), random());
     int numSorts = TestUtil.nextInt(random(), 1, fields.length);
     return new Sort(ArrayUtil.copyOfSubArray(fields, 0, numSorts));
@@ -181,8 +185,8 @@ public class TestLongValuesSource extends LuceneTestCase {
     CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
 
     if (size < actual.totalHits.value) {
-      expected = searcher.searchAfter(expected.scoreDocs[size-1], query, size, sort);
-      actual = searcher.searchAfter(actual.scoreDocs[size-1], query, size, mutatedSort);
+      expected = searcher.searchAfter(expected.scoreDocs[size - 1], query, size, sort);
+      actual = searcher.searchAfter(actual.scoreDocs[size - 1], query, size, mutatedSort);
       CheckHits.checkEqual(query, expected.scoreDocs, actual.scoreDocs);
     }
   }

@@ -27,9 +27,7 @@ import org.apache.lucene.search.Query;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-/**
- * Builder for {@link FuzzyLikeThisQuery}
- */
+/** Builder for {@link FuzzyLikeThisQuery} */
 public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
 
   private static final int DEFAULT_MAX_NUM_TERMS = 50;
@@ -53,7 +51,8 @@ public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
     final int nlLen = nl.getLength();
     for (int i = 0; i < nlLen; i++) {
       Element fieldElem = (Element) nl.item(i);
-      float minSimilarity = DOMUtils.getAttribute(fieldElem, "minSimilarity", DEFAULT_MIN_SIMILARITY);
+      float minSimilarity =
+          DOMUtils.getAttribute(fieldElem, "minSimilarity", DEFAULT_MIN_SIMILARITY);
       int prefixLength = DOMUtils.getAttribute(fieldElem, "prefixLength", DEFAULT_PREFIX_LENGTH);
       String fieldName = DOMUtils.getAttributeWithInheritance(fieldElem, "fieldName");
 
@@ -68,5 +67,4 @@ public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
     }
     return q;
   }
-
 }

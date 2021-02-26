@@ -24,10 +24,7 @@ import org.apache.lucene.queryparser.flexible.standard.processors.MultiTermRewri
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 
-/**
- * Builds a {@link PrefixQuery} object from a {@link PrefixWildcardQueryNode}
- * object.
- */
+/** Builds a {@link PrefixQuery} object from a {@link PrefixWildcardQueryNode} object. */
 public class PrefixWildcardQueryNodeBuilder implements StandardQueryBuilder {
 
   public PrefixWildcardQueryNodeBuilder() {
@@ -35,19 +32,20 @@ public class PrefixWildcardQueryNodeBuilder implements StandardQueryBuilder {
   }
 
   @Override
-  public PrefixQuery build(QueryNode queryNode) throws QueryNodeException {    
+  public PrefixQuery build(QueryNode queryNode) throws QueryNodeException {
 
     PrefixWildcardQueryNode wildcardNode = (PrefixWildcardQueryNode) queryNode;
 
-    String text = wildcardNode.getText().subSequence(0, wildcardNode.getText().length() - 1).toString();
+    String text =
+        wildcardNode.getText().subSequence(0, wildcardNode.getText().length() - 1).toString();
     PrefixQuery q = new PrefixQuery(new Term(wildcardNode.getFieldAsString(), text));
-    
-    MultiTermQuery.RewriteMethod method = (MultiTermQuery.RewriteMethod)queryNode.getTag(MultiTermRewriteMethodProcessor.TAG_ID);
+
+    MultiTermQuery.RewriteMethod method =
+        (MultiTermQuery.RewriteMethod) queryNode.getTag(MultiTermRewriteMethodProcessor.TAG_ID);
     if (method != null) {
       q.setRewriteMethod(method);
     }
-    
+
     return q;
   }
-
 }

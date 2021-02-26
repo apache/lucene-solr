@@ -47,10 +47,11 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -60,6 +61,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -72,6 +74,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -81,11 +84,14 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+
 
 /**
  * This test would be faster if we simulated the zk state instead.
  */
 @Slow
+@LogLevel("org.apache.solr.cloud.Overseer=INFO;org.apache.solr.common.cloud=INFO;org.apache.solr.cloud.api.collections=INFO;org.apache.solr.cloud.overseer=INFO")
 public class CloudSolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -141,7 +147,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testParallelUpdateQTime() throws Exception {
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     UpdateRequest req = new UpdateRequest();
     for (int i=0; i<10; i++)  {
@@ -158,6 +166,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   public void testOverwriteOption() throws Exception {
 
     CollectionAdminRequest.createCollection("overwrite", "conf", 1, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection("overwrite", 1, 1);
     
@@ -181,10 +190,14 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testAliasHandling() throws Exception {
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
 
-    CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION2, "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION2, 2, 2);
 
     CloudSolrClient client = getRandomClient();
@@ -229,7 +242,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testRouting() throws Exception {
-    CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("routing_collection", "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("routing_collection", 2, 2);
     
     AbstractUpdateRequest request = new UpdateRequest()
@@ -319,7 +334,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Map<String, Long> requestCountsMap = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
+        String baseURL = replica.getBaseUrl();
         requestCountsMap.put(baseURL, getNumRequests(baseURL, "routing_collection"));
       }
     }
@@ -330,8 +345,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Set<String> expectedBaseURLs = Sets.newHashSet();
     for (Slice expectedSlice : expectedSlices) {
       for (Replica replica : expectedSlice.getReplicas()) {
-        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
-        expectedBaseURLs.add(baseURL);
+        expectedBaseURLs.add(replica.getBaseUrl());
       }
     }
 
@@ -377,7 +391,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Map<String, Long> numRequestsToUnexpectedUrls = Maps.newHashMap();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        String baseURL = (String) replica.get(ZkStateReader.BASE_URL_PROP);
+        String baseURL = replica.getBaseUrl();
 
         Long prevNumRequests = requestCountsMap.get(baseURL);
         Long curNumRequests = getNumRequests(baseURL, "routing_collection");
@@ -399,21 +413,22 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   }
 
   /**
-   * Tests if the specification of 'preferLocalShards' in the query-params
+   * Tests if the specification of 'shards.preference=replica.location:local' in the query-params
    * limits the distributed query to locally hosted shards only
    */
   @Test
   // commented 4-Sep-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
-  public void preferLocalShardsTest() throws Exception {
+  public void queryWithLocalShardsPreferenceRulesTest() throws Exception {
 
     String collectionName = "localShardsTestColl";
 
     int liveNodes = cluster.getJettySolrRunners().size();
 
-    // For preferLocalShards to succeed in a test, every shard should have
+    // For this case every shard should have
     // all its cores on the same node.
     // Hence the below configuration for our collection
     CollectionAdminRequest.createCollection(collectionName, "conf", liveNodes, liveNodes)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, liveNodes, liveNodes * liveNodes);
     // Add some new documents
@@ -423,25 +438,17 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .add(id, "3", "a_t", "hello2")
         .commit(getRandomClient(), collectionName);
 
-    // Run the actual test for 'preferLocalShards'
-    queryWithShardsPreferenceRules(getRandomClient(), false, collectionName);
-    queryWithShardsPreferenceRules(getRandomClient(), true, collectionName);
+    queryWithShardsPreferenceRules(getRandomClient(), collectionName);
   }
 
   @SuppressWarnings("deprecation")
   private void queryWithShardsPreferenceRules(CloudSolrClient cloudClient,
-                                              boolean useShardsPreference,
-                                              String collectionName)
-      throws Exception
+                                              String collectionName) throws Exception
   {
     SolrQuery qRequest = new SolrQuery("*:*");
 
     ModifiableSolrParams qParams = new ModifiableSolrParams();
-    if (useShardsPreference) {
-      qParams.add(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
-    } else {
-      qParams.add(CommonParams.PREFER_LOCAL_SHARDS, "true");
-    }
+    qParams.add(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":" + ShardParams.REPLICA_LOCAL);
     qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);
 
@@ -492,7 +499,8 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     int liveNodes = cluster.getJettySolrRunners().size();
 
     // For testing replica.type, we want to have all replica types available for the collection
-    CollectionAdminRequest.createCollection(collectionName, "conf", 1, liveNodes/3, liveNodes/3, liveNodes/3)
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, liveNodes / 3, liveNodes / 3, liveNodes / 3)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
     cluster.waitForActiveCollection(collectionName, 1, liveNodes);
 
@@ -642,8 +650,10 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     try (CloudSolrClient client = getCloudSolrClient(cluster.getZkServer().getZkAddress())) {
 
       String async1 = CollectionAdminRequest.createCollection("multicollection1", "conf", 2, 1)
+          .setPerReplicaState(USE_PER_REPLICA_STATE)
           .processAsync(client);
       String async2 = CollectionAdminRequest.createCollection("multicollection2", "conf", 2, 1)
+          .setPerReplicaState(USE_PER_REPLICA_STATE)
           .processAsync(client);
 
       CollectionAdminRequest.waitForAsyncRequest(async1, client, TIMEOUT);
@@ -692,7 +702,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     SolrQuery q = new SolrQuery().setQuery("*:*");
     BaseHttpSolrClient.RemoteSolrException sse = null;
 
-    final String url = r.getStr(ZkStateReader.BASE_URL_PROP) + "/" + COLLECTION;
+    final String url = r.getBaseUrl() + "/" + COLLECTION;
     try (HttpSolrClient solrClient = getHttpSolrClient(url)) {
 
       if (log.isInfoEnabled()) {
@@ -719,7 +729,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     Set<String> allNodesOfColl = new HashSet<>();
     for (Slice slice : coll.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        allNodesOfColl.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
+        allNodesOfColl.add(replica.getBaseUrl());
       }
     }
     String theNode = null;
@@ -786,7 +796,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testVersionsAreReturned() throws Exception {
-    CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("versions_collection", 2, 2);
     
     // assert that "adds" are returned
@@ -835,7 +847,9 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   
   @Test
   public void testInitializationWithSolrUrls() throws Exception {
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
     CloudSolrClient client = httpBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
@@ -953,26 +967,18 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
         .commit(getRandomClient(), collectionName);
 
     // Run the actual tests for 'shards.preference=replica.type:*'
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", false, collectionName);
-    // Test to verify that preferLocalShards=true doesn't break this
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", true, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT", false, collectionName);
-    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", true, collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "PULL|TLOG", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "TLOG|PULL", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT", collectionName);
+    queryWithPreferReplicaTypes(getRandomClient(), "NRT|PULL", collectionName);
     CollectionAdminRequest.deleteCollection(collectionName)
         .processAndWait(cluster.getSolrClient(), TIMEOUT);
   }
 
   private void queryWithPreferReplicaTypes(CloudSolrClient cloudClient,
                                            String preferReplicaTypes,
-                                           boolean preferLocalShards,
                                            String collectionName)
       throws Exception
   {
@@ -989,13 +995,6 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
       rule.append(':');
       rule.append(type);
     });
-    if (preferLocalShards) {
-      if (rule.length() != 0) {
-        rule.append(',');
-      }
-      rule.append(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION);
-      rule.append(":local");
-    }
     qParams.add(ShardParams.SHARDS_PREFERENCE, rule.toString());  
     qParams.add(ShardParams.SHARDS_INFO, "true");
     qRequest.add(qParams);
@@ -1046,13 +1045,53 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
   @Test
   public void testPing() throws Exception {
     final String testCollection = "ping_test";
-    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
+        .setPerReplicaState(USE_PER_REPLICA_STATE)
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(testCollection, 2, 2);
     final SolrClient clientUnderTest = getRandomClient();
 
     final SolrPingResponse response = clientUnderTest.ping(testCollection);
 
     assertEquals("This should be OK", 0, response.getStatus());
+  }
+
+  public void testPerReplicaStateCollection() throws Exception {
+    CollectionAdminRequest.createCollection("versions_collection", "conf", 2, 1)
+        .process(cluster.getSolrClient());
+
+    String testCollection = "perReplicaState_test";
+    int liveNodes = cluster.getJettySolrRunners().size();
+    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
+        .setPerReplicaState(Boolean.TRUE)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 4);
+    final SolrClient clientUnderTest = getRandomClient();
+    final SolrPingResponse response = clientUnderTest.ping(testCollection);
+    assertEquals("This should be OK", 0, response.getStatus());
+    DocCollection c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+    PerReplicaStates prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+    assertEquals(4, prs.states.size());
+
+    // Now let's do an add replica
+    CollectionAdminRequest
+        .addReplicaToShard(testCollection, "shard1")
+        .process(cluster.getSolrClient());
+    prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+    assertEquals(5, prs.states.size());
+
+    testCollection = "perReplicaState_testv2";
+    new V2Request.Builder("/collections")
+        .withMethod(POST)
+        .withPayload("{create: {name: perReplicaState_testv2, config : conf, numShards : 2, nrtReplicas : 2, perReplicaState : true}}")
+        .build()
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 4);
+    c = cluster.getSolrClient().getZkStateReader().getCollection(testCollection);
+    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+    prs = PerReplicaStates.fetch(ZkStateReader.getCollectionPath(testCollection), cluster.getZkClient(), null);
+    assertEquals(4, prs.states.size());
   }
 
 }

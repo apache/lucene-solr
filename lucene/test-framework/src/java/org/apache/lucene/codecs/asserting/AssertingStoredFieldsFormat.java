@@ -18,7 +18,6 @@ package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
 import java.util.Collection;
-
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
@@ -32,28 +31,29 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Just like the default stored fields format but with additional asserts.
- */
+/** Just like the default stored fields format but with additional asserts. */
 public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
   private final StoredFieldsFormat in = TestUtil.getDefaultCodec().storedFieldsFormat();
 
   @Override
-  public StoredFieldsReader fieldsReader(Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
-    return new AssertingStoredFieldsReader(in.fieldsReader(directory, si, fn, context), si.maxDoc(), false);
+  public StoredFieldsReader fieldsReader(
+      Directory directory, SegmentInfo si, FieldInfos fn, IOContext context) throws IOException {
+    return new AssertingStoredFieldsReader(
+        in.fieldsReader(directory, si, fn, context), si.maxDoc(), false);
   }
 
   @Override
-  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context) throws IOException {
+  public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context)
+      throws IOException {
     return new AssertingStoredFieldsWriter(in.fieldsWriter(directory, si, context));
   }
-  
+
   static class AssertingStoredFieldsReader extends StoredFieldsReader {
     private final StoredFieldsReader in;
     private final int maxDoc;
     private final boolean merging;
     private final Thread creationThread;
-    
+
     AssertingStoredFieldsReader(StoredFieldsReader in, int maxDoc, boolean merging) {
       this.in = in;
       this.maxDoc = maxDoc;
@@ -64,7 +64,7 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
       assert ramBytesUsed() >= 0;
       assert getChildResources() != null;
     }
-    
+
     @Override
     public void close() throws IOException {
       in.close();
@@ -115,14 +115,16 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
   }
 
   enum Status {
-    UNDEFINED, STARTED, FINISHED;
+    UNDEFINED,
+    STARTED,
+    FINISHED;
   }
 
   static class AssertingStoredFieldsWriter extends StoredFieldsWriter {
     private final StoredFieldsWriter in;
     private int numWritten;
     private Status docStatus;
-    
+
     AssertingStoredFieldsWriter(StoredFieldsWriter in) {
       this.in = in;
       this.docStatus = Status.UNDEFINED;

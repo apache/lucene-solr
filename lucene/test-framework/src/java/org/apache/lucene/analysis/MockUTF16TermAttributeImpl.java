@@ -17,21 +17,21 @@
 package org.apache.lucene.analysis;
 
 import java.nio.charset.StandardCharsets;
-
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * Extension of {@link CharTermAttributeImpl} that encodes the term
- * text as UTF-16 bytes instead of as UTF-8 bytes.
+ * Extension of {@link CharTermAttributeImpl} that encodes the term text as UTF-16 bytes instead of
+ * as UTF-8 bytes.
  */
 public class MockUTF16TermAttributeImpl extends CharTermAttributeImpl {
-  
+
   /** Factory that returns an instance of this class for CharTermAttribute */
   public static final AttributeFactory UTF16_TERM_ATTRIBUTE_FACTORY =
-      AttributeFactory.getStaticImplementation(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, MockUTF16TermAttributeImpl.class);
-  
+      AttributeFactory.getStaticImplementation(
+          AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, MockUTF16TermAttributeImpl.class);
+
   @Override
   public BytesRef getBytesRef() {
     final BytesRef ref = this.builder.get();

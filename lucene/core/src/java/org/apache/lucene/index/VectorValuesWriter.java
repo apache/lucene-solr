@@ -19,9 +19,9 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.lucene.codecs.VectorWriter;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.TopDocs;
@@ -54,17 +54,26 @@ class VectorValuesWriter {
 
   /**
    * Adds a value for the given document. Only a single value may be added.
+   *
    * @param docID the value is added to this document
    * @param vectorValue the value to add
    * @throws IllegalArgumentException if a value has already been added to the given document
    */
   public void addValue(int docID, float[] vectorValue) {
     if (docID == lastDocID) {
-      throw new IllegalArgumentException("VectorValuesField \"" + fieldInfo.name + "\" appears more than once in this document (only one value is allowed per field)");
+      throw new IllegalArgumentException(
+          "VectorValuesField \""
+              + fieldInfo.name
+              + "\" appears more than once in this document (only one value is allowed per field)");
     }
     if (vectorValue.length != fieldInfo.getVectorDimension()) {
-      throw new IllegalArgumentException("Attempt to index a vector of dimension " + vectorValue.length +
-          " but \"" + fieldInfo.name + "\" has dimension " + fieldInfo.getVectorDimension());
+      throw new IllegalArgumentException(
+          "Attempt to index a vector of dimension "
+              + vectorValue.length
+              + " but \""
+              + fieldInfo.name
+              + "\" has dimension "
+              + fieldInfo.getVectorDimension());
     }
     assert docID > lastDocID;
     docsWithField.add(docID);
@@ -74,8 +83,11 @@ class VectorValuesWriter {
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = docsWithField.ramBytesUsed()
-            + vectors.size() * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER)
+    final long newBytesUsed =
+        docsWithField.ramBytesUsed()
+            + vectors.size()
+                * (RamUsageEstimator.NUM_BYTES_OBJECT_REF
+                    + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER)
             + vectors.size() * vectors.get(0).length * Float.BYTES;
     if (iwBytesUsed != null) {
       iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
@@ -85,12 +97,19 @@ class VectorValuesWriter {
 
   /**
    * Flush this field's values to storage, sorting the values in accordance with sortMap
-   * @param sortMap specifies the order of documents being flushed, or null if they are to be flushed in docid order
+   *
+   * @param sortMap specifies the order of documents being flushed, or null if they are to be
+   *     flushed in docid order
    * @param vectorWriter the Codec's vector writer that handles the actual encoding and I/O
    * @throws IOException if there is an error writing the field and its values
    */
   public void flush(Sorter.DocMap sortMap, VectorWriter vectorWriter) throws IOException {
-    VectorValues vectorValues = new BufferedVectorValues(docsWithField, vectors, fieldInfo.getVectorDimension(), fieldInfo.getVectorSearchStrategy());
+    VectorValues vectorValues =
+        new BufferedVectorValues(
+            docsWithField,
+            vectors,
+            fieldInfo.getVectorDimension(),
+            fieldInfo.getVectorSearchStrategy());
     if (sortMap != null) {
       vectorWriter.writeField(fieldInfo, new SortingVectorValues(vectorValues, sortMap));
     } else {
@@ -98,17 +117,18 @@ class VectorValuesWriter {
     }
   }
 
-  static class SortingVectorValues extends VectorValues {
+  static class SortingVectorValues extends VectorValues
+      implements RandomAccessVectorValuesProducer {
 
     private final VectorValues delegate;
-    private final VectorValues.RandomAccess randomAccess;
+    private final RandomAccessVectorValues randomAccess;
     private final int[] docIdOffsets;
     private final int[] ordMap;
     private int docId = -1;
 
     SortingVectorValues(VectorValues delegate, Sorter.DocMap sortMap) throws IOException {
       this.delegate = delegate;
-      randomAccess = delegate.randomAccess();
+      randomAccess = ((RandomAccessVectorValuesProducer) delegate).randomAccess();
       docIdOffsets = new int[sortMap.size()];
 
       int offset = 1; // 0 means no vector for this (field, document)
@@ -152,8 +172,8 @@ class VectorValuesWriter {
     }
 
     @Override
-    public float[] vectorValue() {
-      throw new UnsupportedOperationException();
+    public float[] vectorValue() throws IOException {
+      return randomAccess.vectorValue(docIdOffsets[docId] - 1);
     }
 
     @Override
@@ -177,49 +197,54 @@ class VectorValuesWriter {
     }
 
     @Override
+    public TopDocs search(float[] target, int k, int fanout) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long cost() {
       return size();
     }
 
     @Override
-    public RandomAccess randomAccess() {
-      RandomAccess ra = delegate.randomAccess();
-      return new RandomAccess() {
+    public RandomAccessVectorValues randomAccess() {
+
+      // Must make a new delegate randomAccess so that we have our own distinct float[]
+      final RandomAccessVectorValues delegateRA =
+          ((RandomAccessVectorValuesProducer) SortingVectorValues.this.delegate).randomAccess();
+
+      return new RandomAccessVectorValues() {
 
         @Override
         public int size() {
-          return delegate.size();
+          return delegateRA.size();
         }
 
         @Override
         public int dimension() {
-          return delegate.dimension();
+          return delegateRA.dimension();
         }
 
         @Override
         public SearchStrategy searchStrategy() {
-          return delegate.searchStrategy();
+          return delegateRA.searchStrategy();
         }
 
         @Override
         public float[] vectorValue(int targetOrd) throws IOException {
-          return ra.vectorValue(ordMap[targetOrd]);
+          return delegateRA.vectorValue(ordMap[targetOrd]);
         }
 
         @Override
         public BytesRef binaryValue(int targetOrd) {
           throw new UnsupportedOperationException();
         }
-
-        @Override
-        public TopDocs search(float[] target, int k, int fanout) {
-          throw new UnsupportedOperationException();
-        }
       };
     }
   }
 
-  private static class BufferedVectorValues extends VectorValues implements VectorValues.RandomAccess {
+  private static class BufferedVectorValues extends VectorValues
+      implements RandomAccessVectorValues, RandomAccessVectorValuesProducer {
 
     final DocsWithFieldSet docsWithField;
 
@@ -236,21 +261,25 @@ class VectorValuesWriter {
     DocIdSetIterator docsWithFieldIter;
     int ord = -1;
 
-    BufferedVectorValues(DocsWithFieldSet docsWithField, List<float[]> vectors, int dimension, SearchStrategy searchStrategy) {
+    BufferedVectorValues(
+        DocsWithFieldSet docsWithField,
+        List<float[]> vectors,
+        int dimension,
+        SearchStrategy searchStrategy) {
       this.docsWithField = docsWithField;
       this.vectors = vectors;
       this.dimension = dimension;
       this.searchStrategy = searchStrategy;
-      buffer = ByteBuffer.allocate(dimension * Float.BYTES);
+      buffer = ByteBuffer.allocate(dimension * Float.BYTES).order(ByteOrder.LITTLE_ENDIAN);
       binaryValue = new BytesRef(buffer.array());
-      raBuffer = ByteBuffer.allocate(dimension * Float.BYTES);
+      raBuffer = ByteBuffer.allocate(dimension * Float.BYTES).order(ByteOrder.LITTLE_ENDIAN);
       raBinaryValue = new BytesRef(raBuffer.array());
       docsWithFieldIter = docsWithField.iterator();
     }
 
     @Override
-    public RandomAccess randomAccess() {
-      return this;
+    public RandomAccessVectorValues randomAccess() {
+      return new BufferedVectorValues(docsWithField, vectors, dimension, searchStrategy);
     }
 
     @Override

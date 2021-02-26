@@ -16,46 +16,41 @@
  */
 package org.apache.lucene.analysis.id;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-/**
- * Simple tests to ensure the Indonesian stem filter factory is working.
- */
+/** Simple tests to ensure the Indonesian stem filter factory is working. */
 public class TestIndonesianStemFilterFactory extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Ensure the filter actually stems text.
-   */
+  /** Ensure the filter actually stems text. */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("dibukukannya");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("IndonesianStem").create(stream);
-    assertTokenStreamContents(stream, new String[] { "buku" });
+    assertTokenStreamContents(stream, new String[] {"buku"});
   }
-  
-  /**
-   * Test inflectional-only mode
-   */
+
+  /** Test inflectional-only mode */
   public void testStemmingInflectional() throws Exception {
     Reader reader = new StringReader("dibukukannya");
     TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    ((Tokenizer)stream).setReader(reader);
+    ((Tokenizer) stream).setReader(reader);
     stream = tokenFilterFactory("IndonesianStem", "stemDerivational", "false").create(stream);
-    assertTokenStreamContents(stream, new String[] { "dibukukan" });
+    assertTokenStreamContents(stream, new String[] {"dibukukan"});
   }
-  
+
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("IndonesianStem", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("IndonesianStem", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

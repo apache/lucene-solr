@@ -16,8 +16,9 @@
  */
 package org.apache.lucene.search.join;
 
-import java.io.IOException;
+import static org.apache.lucene.search.join.BlockJoinSelector.toIter;
 
+import java.io.IOException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FilterNumericDocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -35,11 +36,10 @@ import org.apache.lucene.search.comparators.LongComparator;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.NumericUtils;
 
-import static org.apache.lucene.search.join.BlockJoinSelector.toIter;
-
 /**
- * A special sort field that allows sorting parent docs based on nested / child level fields.
- * Based on the sort order it either takes the document with the lowest or highest field value into account.
+ * A special sort field that allows sorting parent docs based on nested / child level fields. Based
+ * on the sort order it either takes the document with the lowest or highest field value into
+ * account.
  *
  * @lucene.experimental
  */
@@ -50,7 +50,8 @@ public class ToParentBlockJoinSortField extends SortField {
   private final BitSetProducer childFilter;
 
   /**
-   * Create ToParentBlockJoinSortField. The parent document ordering is based on child document ordering (reverse).
+   * Create ToParentBlockJoinSortField. The parent document ordering is based on child document
+   * ordering (reverse).
    *
    * @param field The sort field on the nested / child level.
    * @param type The sort type on the nested / child level.
@@ -58,7 +59,12 @@ public class ToParentBlockJoinSortField extends SortField {
    * @param parentFilter Filter that identifies the parent documents.
    * @param childFilter Filter that defines which child documents participates in sorting.
    */
-  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, BitSetProducer parentFilter, BitSetProducer childFilter) {
+  public ToParentBlockJoinSortField(
+      String field,
+      Type type,
+      boolean reverse,
+      BitSetProducer parentFilter,
+      BitSetProducer childFilter) {
     super(field, type, reverse);
     switch (getType()) {
       case STRING:
@@ -86,7 +92,13 @@ public class ToParentBlockJoinSortField extends SortField {
    * @param parentFilter Filter that identifies the parent documents.
    * @param childFilter Filter that defines which child documents participates in sorting.
    */
-  public ToParentBlockJoinSortField(String field, Type type, boolean reverse, boolean order, BitSetProducer parentFilter, BitSetProducer childFilter) {
+  public ToParentBlockJoinSortField(
+      String field,
+      Type type,
+      boolean reverse,
+      boolean order,
+      BitSetProducer parentFilter,
+      BitSetProducer childFilter) {
     super(field, type, reverse);
     this.order = order;
     this.parentFilter = parentFilter;
@@ -112,14 +124,15 @@ public class ToParentBlockJoinSortField extends SortField {
   }
 
   private FieldComparator<?> getStringComparator(int numHits) {
-    return new FieldComparator.TermOrdValComparator(numHits, getField(), missingValue == STRING_LAST) {
+    return new FieldComparator.TermOrdValComparator(
+        numHits, getField(), missingValue == STRING_LAST) {
 
       @Override
-      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field) throws IOException {
+      protected SortedDocValues getSortedDocValues(LeafReaderContext context, String field)
+          throws IOException {
         SortedSetDocValues sortedSet = DocValues.getSortedSet(context.reader(), field);
-        final BlockJoinSelector.Type type = order
-            ? BlockJoinSelector.Type.MAX
-            : BlockJoinSelector.Type.MIN;
+        final BlockJoinSelector.Type type =
+            order ? BlockJoinSelector.Type.MAX : BlockJoinSelector.Type.MIN;
         final BitSet parents = parentFilter.getBitSet(context);
         final BitSet children = childFilter.getBitSet(context);
         if (children == null) {
@@ -127,7 +140,6 @@ public class ToParentBlockJoinSortField extends SortField {
         }
         return BlockJoinSelector.wrap(sortedSet, type, parents, toIter(children));
       }
-
     };
   }
 
@@ -137,11 +149,12 @@ public class ToParentBlockJoinSortField extends SortField {
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
         return new IntLeafComparator(context) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-            final BlockJoinSelector.Type type = order
-                    ? BlockJoinSelector.Type.MAX
-                    : BlockJoinSelector.Type.MIN;
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
+              throws IOException {
+            SortedNumericDocValues sortedNumeric =
+                DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type =
+                order ? BlockJoinSelector.Type.MAX : BlockJoinSelector.Type.MIN;
             final BitSet parents = parentFilter.getBitSet(context);
             final BitSet children = childFilter.getBitSet(context);
             if (children == null) {
@@ -160,11 +173,12 @@ public class ToParentBlockJoinSortField extends SortField {
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
         return new LongLeafComparator(context) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-            final BlockJoinSelector.Type type = order
-                    ? BlockJoinSelector.Type.MAX
-                    : BlockJoinSelector.Type.MIN;
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
+              throws IOException {
+            SortedNumericDocValues sortedNumeric =
+                DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type =
+                order ? BlockJoinSelector.Type.MAX : BlockJoinSelector.Type.MIN;
             final BitSet parents = parentFilter.getBitSet(context);
             final BitSet children = childFilter.getBitSet(context);
             if (children == null) {
@@ -183,17 +197,19 @@ public class ToParentBlockJoinSortField extends SortField {
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
         return new FloatLeafComparator(context) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-            final BlockJoinSelector.Type type = order
-                    ? BlockJoinSelector.Type.MAX
-                    : BlockJoinSelector.Type.MIN;
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
+              throws IOException {
+            SortedNumericDocValues sortedNumeric =
+                DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type =
+                order ? BlockJoinSelector.Type.MAX : BlockJoinSelector.Type.MIN;
             final BitSet parents = parentFilter.getBitSet(context);
             final BitSet children = childFilter.getBitSet(context);
             if (children == null) {
               return DocValues.emptyNumeric();
             }
-            return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children))) {
+            return new FilterNumericDocValues(
+                BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children))) {
               @Override
               public long longValue() throws IOException {
                 // undo the numericutils sortability
@@ -202,27 +218,31 @@ public class ToParentBlockJoinSortField extends SortField {
             };
           }
         };
-      };
+      }
+      ;
     };
   }
 
   private FieldComparator<?> getDoubleComparator(int numHits, int sortPost) {
-    return new DoubleComparator(numHits, getField(), (Double) missingValue, getReverse(), sortPost) {
+    return new DoubleComparator(
+        numHits, getField(), (Double) missingValue, getReverse(), sortPost) {
       @Override
       public LeafFieldComparator getLeafComparator(LeafReaderContext context) throws IOException {
         return new DoubleLeafComparator(context) {
           @Override
-          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(context.reader(), field);
-            final BlockJoinSelector.Type type = order
-                    ? BlockJoinSelector.Type.MAX
-                    : BlockJoinSelector.Type.MIN;
+          protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field)
+              throws IOException {
+            SortedNumericDocValues sortedNumeric =
+                DocValues.getSortedNumeric(context.reader(), field);
+            final BlockJoinSelector.Type type =
+                order ? BlockJoinSelector.Type.MAX : BlockJoinSelector.Type.MIN;
             final BitSet parents = parentFilter.getBitSet(context);
             final BitSet children = childFilter.getBitSet(context);
             if (children == null) {
               return DocValues.emptyNumeric();
             }
-            return new FilterNumericDocValues(BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children))) {
+            return new FilterNumericDocValues(
+                BlockJoinSelector.wrap(sortedNumeric, type, parents, toIter(children))) {
               @Override
               public long longValue() throws IOException {
                 // undo the numericutils sortability

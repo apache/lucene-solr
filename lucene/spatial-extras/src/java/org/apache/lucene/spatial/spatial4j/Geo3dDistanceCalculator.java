@@ -45,7 +45,8 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
     if (from instanceof Geo3dPointShape && to instanceof Geo3dPointShape) {
       GeoPointShape pointShape1 = ((Geo3dPointShape) from).shape;
       GeoPointShape pointShape2 = ((Geo3dPointShape) to).shape;
-      return planetModel.surfaceDistance(pointShape1.getCenter(), pointShape2.getCenter()) * DistanceUtils.RADIANS_TO_DEGREES;
+      return planetModel.surfaceDistance(pointShape1.getCenter(), pointShape2.getCenter())
+          * DistanceUtils.RADIANS_TO_DEGREES;
     }
     return distance(from, to.getX(), to.getY());
   }
@@ -56,13 +57,17 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
     if (from instanceof Geo3dPointShape) {
       fromGeoPoint = (((Geo3dPointShape) from).shape).getCenter();
     } else {
-      fromGeoPoint = new GeoPoint(planetModel,
-          from.getY() * DistanceUtils.DEGREES_TO_RADIANS,
-          from.getX() * DistanceUtils.DEGREES_TO_RADIANS);
+      fromGeoPoint =
+          new GeoPoint(
+              planetModel,
+              from.getY() * DistanceUtils.DEGREES_TO_RADIANS,
+              from.getX() * DistanceUtils.DEGREES_TO_RADIANS);
     }
-    GeoPoint toGeoPoint = new GeoPoint(planetModel,
-        toY * DistanceUtils.DEGREES_TO_RADIANS,
-        toX * DistanceUtils.DEGREES_TO_RADIANS);
+    GeoPoint toGeoPoint =
+        new GeoPoint(
+            planetModel,
+            toY * DistanceUtils.DEGREES_TO_RADIANS,
+            toX * DistanceUtils.DEGREES_TO_RADIANS);
     return planetModel.surfaceDistance(fromGeoPoint, toGeoPoint) * DistanceUtils.RADIANS_TO_DEGREES;
   }
 
@@ -72,7 +77,8 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
   }
 
   @Override
-  public Point pointOnBearing(Point from, double distDEG, double bearingDEG, SpatialContext ctx, Point reuse) {
+  public Point pointOnBearing(
+      Point from, double distDEG, double bearingDEG, SpatialContext ctx, Point reuse) {
     Geo3dPointShape geoFrom = (Geo3dPointShape) from;
     GeoPoint point = (GeoPoint) geoFrom.shape;
     double dist = DistanceUtils.DEGREES_TO_RADIANS * distDEG;
@@ -83,14 +89,14 @@ public class Geo3dDistanceCalculator implements DistanceCalculator {
     if (reuse != null) {
       reuse.reset(newLon, newLat);
       return reuse;
-    }
-    else {
+    } else {
       return ctx.getShapeFactory().pointXY(newLon, newLat);
     }
   }
 
   @Override
-  public Rectangle calcBoxByDistFromPt(Point from, double distDEG, SpatialContext ctx, Rectangle reuse) {
+  public Rectangle calcBoxByDistFromPt(
+      Point from, double distDEG, SpatialContext ctx, Rectangle reuse) {
     Circle circle = ctx.getShapeFactory().circle(from, distDEG);
     return circle.getBoundingBox();
   }

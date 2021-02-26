@@ -1,0 +1,4 @@
+FLAG long
+
+SFX A10 Y 1
+SFX A10 nout l .

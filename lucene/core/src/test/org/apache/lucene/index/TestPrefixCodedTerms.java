@@ -19,20 +19,19 @@ package org.apache.lucene.index;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.TreeSet;
-
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 public class TestPrefixCodedTerms extends LuceneTestCase {
-  
+
   public void testEmpty() {
     PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
     PrefixCodedTerms pb = b.finish();
     TermIterator iter = pb.iterator();
     assertNull(iter.next());
   }
-  
+
   public void testOne() {
     Term term = new Term("foo", "bogus");
     PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
@@ -44,25 +43,27 @@ public class TestPrefixCodedTerms extends LuceneTestCase {
     assertEquals("bogus", iter.bytes.utf8ToString());
     assertNull(iter.next());
   }
-  
+
   public void testRandom() {
     Set<Term> terms = new TreeSet<>();
     int nterms = atLeast(10000);
     for (int i = 0; i < nterms; i++) {
-      Term term = new Term(TestUtil.randomUnicodeString(random(), 2), TestUtil.randomUnicodeString(random()));
+      Term term =
+          new Term(
+              TestUtil.randomUnicodeString(random(), 2), TestUtil.randomUnicodeString(random()));
       terms.add(term);
-    }    
-    
+    }
+
     PrefixCodedTerms.Builder b = new PrefixCodedTerms.Builder();
-    for (Term ref: terms) {
+    for (Term ref : terms) {
       b.add(ref);
     }
     PrefixCodedTerms pb = b.finish();
-    
+
     TermIterator iter = pb.iterator();
     Iterator<Term> expected = terms.iterator();
     assertEquals(terms.size(), pb.size());
-    //System.out.println("TEST: now iter");
+    // System.out.println("TEST: now iter");
     while (iter.next() != null) {
       assertTrue(expected.hasNext());
       assertEquals(expected.next(), new Term(iter.field(), iter.bytes));

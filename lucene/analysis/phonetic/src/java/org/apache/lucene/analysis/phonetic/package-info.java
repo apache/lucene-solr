@@ -15,7 +15,5 @@
  * limitations under the License.
  */
 
-/**
- * Analysis components for phonetic search.
- */
+/** Analysis components for phonetic search. */
 package org.apache.lucene.analysis.phonetic;

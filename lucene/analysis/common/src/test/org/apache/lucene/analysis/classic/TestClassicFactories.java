@@ -16,66 +16,62 @@
  */
 package org.apache.lucene.analysis.classic;
 
-
 import java.io.Reader;
 import java.io.StringReader;
-
+import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.BaseTokenStreamFactoryTestCase;
 
-/**
- * Simple tests to ensure the classic lucene factories are working.
- */
+/** Simple tests to ensure the classic lucene factories are working. */
 public class TestClassicFactories extends BaseTokenStreamFactoryTestCase {
-  /**
-   * Test ClassicTokenizerFactory
-   */
+  /** Test ClassicTokenizerFactory */
   public void testClassicTokenizer() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
     Tokenizer stream = tokenizerFactory("Classic").create(newAttributeFactory());
     stream.setReader(reader);
-    assertTokenStreamContents(stream,
-        new String[]{"What's", "this", "thing", "do"});
+    assertTokenStreamContents(stream, new String[] {"What's", "this", "thing", "do"});
   }
-  
+
   public void testClassicTokenizerMaxTokenLength() throws Exception {
     StringBuilder builder = new StringBuilder();
-    for (int i = 0 ; i < 100 ; ++i) {
+    for (int i = 0; i < 100; ++i) {
       builder.append("abcdefg"); // 7 * 100 = 700 char "word"
     }
     String longWord = builder.toString();
     String content = "one two three " + longWord + " four five six";
     Reader reader = new StringReader(content);
-    Tokenizer stream = tokenizerFactory("Classic",
-        "maxTokenLength", "1000").create(newAttributeFactory());
+    Tokenizer stream =
+        tokenizerFactory("Classic", "maxTokenLength", "1000").create(newAttributeFactory());
     stream.setReader(reader);
-    assertTokenStreamContents(stream,
-        new String[]{"one", "two", "three", longWord, "four", "five", "six"});
+    assertTokenStreamContents(
+        stream, new String[] {"one", "two", "three", longWord, "four", "five", "six"});
   }
-  
-  /**
-   * Test ClassicFilterFactory
-   */
+
+  /** Test ClassicFilterFactory */
   public void testClassicFilter() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
     Tokenizer tokenizer = tokenizerFactory("Classic").create(newAttributeFactory());
     tokenizer.setReader(reader);
     TokenStream stream = tokenFilterFactory("Classic").create(tokenizer);
-    assertTokenStreamContents(stream, 
-        new String[] { "What", "this", "thing", "do" });
+    assertTokenStreamContents(stream, new String[] {"What", "this", "thing", "do"});
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenizerFactory("Classic", "bogusArg", "bogusValue");
-    });
+    IllegalArgumentException expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenizerFactory("Classic", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
 
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      tokenFilterFactory("Classic", "bogusArg", "bogusValue");
-    });
+    expected =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> {
+              tokenFilterFactory("Classic", "bogusArg", "bogusValue");
+            });
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

@@ -15,90 +15,189 @@
  * limitations under the License.
  */
 
-apply plugin: 'base'
-apply plugin: 'com.palantir.docker'
-
-subprojects {
-  apply plugin: 'base'
-  apply plugin: 'com.palantir.docker'
-}
+import com.google.common.base.Preconditions
+import com.google.common.base.Strings
 
 description = 'Solr Docker image'
 
-def dockerPackage = project(':solr:docker:package')
+apply plugin: 'base'
+
+// Solr Docker inputs
+def dockerImageRepo = propertyOrEnvOrDefault("solr.docker.imageRepo", "SOLR_DOCKER_IMAGE_REPO", "apache/solr")
+def dockerImageTag = propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", "${version}")
+def dockerImageName = propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}")
+def baseDockerImage = propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'openjdk:11-jre-slim')
+def githubUrlOrMirror = propertyOrEnvOrDefault("solr.docker.githubUrl", "SOLR_DOCKER_GITHUB_URL", 'github.com')
+
+// Build directory locations
+def dockerBuildDistribution = "$buildDir/distributions"
+def imageIdFile = "$buildDir/image-id"
+
+configurations {
+  packaging {
+    canBeResolved = true
+  }
+  dockerImage {
+    canBeResolved = true
+  }
+}
 
 dependencies {
-  docker dockerPackage
+  packaging project(path: ":solr:packaging", configuration: 'archives')
+
+  dockerImage files(imageIdFile) {
+    builtBy 'dockerBuild'
+  }
 }
 
-def dockerImageName = "apache/solr:${version}"
-def baseDockerImage = 'openjdk:11-jre-slim'
+task dockerTar(type: Tar) {
+  group = 'Docker'
+  description = 'Package docker context to prepare for docker build'
 
-docker {
-  name = dockerImageName
-  files file('include')
-  buildArgs(['BASE_IMAGE' : baseDockerImage, 'SOLR_PACKAGE_IMAGE' : 'apache/solr-build:local-package', 'SOLR_VERSION': "${version}"])
+  dependsOn configurations.packaging
+  into('scripts') {
+    from file('scripts')
+    fileMode 755
+  }
+  into('releases') {
+    from configurations.packaging
+    include '*.tgz'
+  }
+  from file('Dockerfile')
+  destinationDirectory = file(dockerBuildDistribution)
+  extension 'tgz'
+  compression = Compression.GZIP
 }
 
-tasks.docker {
-  // In order to create the solr docker image, the solr package image must be created first.
-  dependsOn(dockerPackage.tasks.docker)
+task dockerBuild(dependsOn: tasks.dockerTar) {
+  group = 'Docker'
+  description = 'Build Solr docker image'
+
+  // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
+  inputs.properties([
+          baseDockerImage: baseDockerImage,
+          githubUrlOrMirror: githubUrlOrMirror,
+          version: version
+  ])
+  inputs.dir(dockerBuildDistribution)
+
+  doLast {
+    exec {
+      standardInput = tasks.dockerTar.outputs.files.singleFile.newDataInputStream()
+      commandLine "docker", "build",
+              "--iidfile", imageIdFile,
+              "--build-arg", "BASE_IMAGE=${inputs.properties.baseDockerImage}",
+              "--build-arg", "SOLR_VERSION=${version}",
+              "--build-arg", "GITHUB_URL=${inputs.properties.githubUrlOrMirror}",
+              "-"
+    }
+  }
 
   // Print information on the image after it has been created
   doLast {
+    def dockerImageId = file(imageIdFile).text
     project.logger.lifecycle("Solr Docker Image Created")
-    project.logger.lifecycle("\tName: $dockerImageName")
-    project.logger.lifecycle("\tBase Image: $baseDockerImage")
+    project.logger.lifecycle("\tID: \t$dockerImageId")
+    project.logger.lifecycle("\tBase Image: \t$baseDockerImage")
+    project.logger.lifecycle("\tSolr Version: \t$version")
+  }
+
+  outputs.files(imageIdFile)
+}
+
+task dockerTag(dependsOn: tasks.dockerBuild) {
+  group = 'Docker'
+  description = 'Tag Solr docker image'
+
+  def dockerImageIdFile = file(imageIdFile)
+  // Ensure that the docker image is re-tagged if the image ID or desired tag changes
+  inputs.properties([
+          dockerImageName: dockerImageName,
+  ])
+  inputs.file(dockerImageIdFile)
+
+  doLast {
+    def dockerImageId = dockerImageIdFile.text
+
+    exec {
+      commandLine "docker", "tag", dockerImageId, inputs.properties.dockerImageName
+    }
+
+    // Print information on the image after it has been created
+    project.logger.lifecycle("Solr Docker Image Tagged")
+    project.logger.lifecycle("\tID: \t$dockerImageId")
+    project.logger.lifecycle("\tTag: \t$dockerImageName")
   }
 }
 
-abstract class DockerTestSuite extends DefaultTask {
-  private List<String> tests = new ArrayList<>();
-  private List<String> ignore = new ArrayList<>();
+task testDocker(dependsOn: tasks.dockerBuild) {
+  group = 'Docker'
+  description = 'Test Solr docker image'
 
-  @OutputDirectory
-  abstract DirectoryProperty getOutputDir()
+  def inputDir = "tests/cases"
+  def outputDir = "$buildDir/tmp/tests"
 
-  @Option(option = "tests", description = "Only run these specified tests, comma separated.")
-  public void setTests(List<String> tests) {
-    this.tests = tests;
-  }
+  // Ensure that the docker image is re-tested if the image ID changes or the test files change
+  inputs.properties([
+          includeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.include", "SOLR_DOCKER_TESTS_INCLUDE", ",").split(","))),
+          excludeTests: new HashSet(Arrays.asList(propertyOrEnvOrDefault("solr.docker.tests.exclude", "SOLR_DOCKER_TESTS_EXCLUDE", ",").split(",")))
+  ])
+  inputs.file(imageIdFile)
+  inputs.dir(inputDir)
 
-  @Input
-  public List<String> getTests() {
-    return tests;
-  }
+  doLast {
+    def solrImageId = tasks.dockerBuild.outputs.files.singleFile.text
+    def solrImageName = solrImageId.substring(7, 14)
 
-  @Option(option = "ignore", description = "Ignore these tests, comma separated.")
-  public void setIgnore(List<String> ignore) {
-    this.ignore = ignore;
-  }
+    // Print information on the image before it is tested
+    logger.lifecycle("Testing Solr Image:")
+    logger.lifecycle("\tID: $solrImageId\n")
 
-  @Input
-  public List<String> getIgnore() {
-    return ignore;
-  }
-
-  @TaskAction
-  void execute() {
-    def sourceDir = project.file("tests/cases")
+    // Run the tests
+    def sourceDir = file(inputDir)
     sourceDir.eachFile  { file ->
       def testName = file.getName()
-      def testCaseBuildDir = outputDir.dir(testName).get().toString()
+      def testCaseBuildDir = "${outputDir}/${testName}"
 
       // If specific tests are specified, only run those. Otherwise run all that are not ignored.
-      def runTest = !this.tests.isEmpty() ? tests.contains(testName) : !ignore.contains(testName)
+      def runTest = !inputs.properties.includeTests.isEmpty() ? inputs.properties.includeTests.contains(testName) : !inputs.properties.excludeTests.contains(testName)
       if (runTest) {
-        project.exec {
-          environment "TEST_DIR", "$file"
-          environment "BUILD_DIR", "$testCaseBuildDir"
-          commandLine "bash", "$file/test.sh", "apache/solr:${project.version}"
+        exec {
+          environment "TEST_DIR", file
+          environment "BUILD_DIR", testCaseBuildDir
+          commandLine "bash", "$file/test.sh", solrImageName
         }
       }
     }
   }
+
+  outputs.dir(outputDir)
 }
 
-task testDocker(type: DockerTestSuite) {
-  outputDir = project.file("$buildDir/tmp/tests")
+task dockerPush(dependsOn: tasks.dockerTag) {
+  group = 'Docker'
+  description = 'Push Solr docker image'
+
+  // Ensure that the docker image is re-pushed if the image ID or tag changes
+  inputs.properties([
+          dockerImageName: dockerImageName,
+  ])
+  inputs.file(imageIdFile)
+
+  // We don't want to push a docker image unless the tests have passed
+  mustRunAfter tasks.testDocker
+
+  doLast {
+    exec {
+      commandLine "docker", "push", dockerImageName
+    }
+
+    // Print information on the image after it has been created
+    project.logger.lifecycle("Solr Docker Image Pushed: \t$dockerImageName")
+  }
+}
+
+// One task to build and tag a Solr docker image
+task docker {
+  dependsOn tasks.dockerBuild, tasks.dockerTag
 }

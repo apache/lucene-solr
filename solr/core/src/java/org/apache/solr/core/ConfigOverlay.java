@@ -223,7 +223,7 @@ public class ConfigOverlay implements MapSerializable {
   public Map<String, String> getEditableSubProperties(String xpath) {
     Object o = Utils.getObjectByPath(props, false, StrUtils.splitSmart(xpath, '/'));
     if (o instanceof Map) {
-      return (Map) o;
+      return (Map<String,String>) o;
     } else {
       return null;
     }

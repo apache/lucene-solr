@@ -20,22 +20,22 @@ import java.io.IOException;
 
 /**
  * Delegates all operations, even optional ones, to the wrapped directory.
- * <p>
- * This class is used if you want the most realistic testing, but still
- * with a checkindex on close. If you want asserts and evil things,
- * use MockDirectoryWrapper instead.
+ *
+ * <p>This class is used if you want the most realistic testing, but still with a checkindex on
+ * close. If you want asserts and evil things, use MockDirectoryWrapper instead.
  */
 public final class RawDirectoryWrapper extends BaseDirectoryWrapper {
 
   public RawDirectoryWrapper(Directory delegate) {
     super(delegate);
   }
-  
+
   @Override
-  public void copyFrom(Directory from, String src, String dest, IOContext context) throws IOException {
+  public void copyFrom(Directory from, String src, String dest, IOContext context)
+      throws IOException {
     in.copyFrom(from, src, dest, context);
   }
-  
+
   @Override
   public ChecksumIndexInput openChecksumInput(String name, IOContext context) throws IOException {
     return in.openChecksumInput(name, context);

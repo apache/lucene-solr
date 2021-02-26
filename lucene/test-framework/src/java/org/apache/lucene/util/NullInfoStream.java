@@ -19,8 +19,9 @@ package org.apache.lucene.util;
 import java.io.IOException;
 
 /**
- * Prints nothing. Just to make sure tests pass w/ and without enabled InfoStream
- * without actually making noise.
+ * Prints nothing. Just to make sure tests pass w/ and without enabled InfoStream without actually
+ * making noise.
+ *
  * @lucene.experimental
  */
 public class NullInfoStream extends InfoStream {
@@ -30,7 +31,7 @@ public class NullInfoStream extends InfoStream {
     assert component != null;
     assert message != null;
   }
-  
+
   @Override
   public boolean isEnabled(String component) {
     assert component != null;
@@ -38,6 +39,5 @@ public class NullInfoStream extends InfoStream {
   }
 
   @Override
-  public void close() throws IOException {   
-  }
+  public void close() throws IOException {}
 }

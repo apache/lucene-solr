@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
@@ -34,12 +32,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
 
 /**
- * This class also provides the functionality behind
- * {@link MultiTermQuery#CONSTANT_SCORE_REWRITE}.
- * It tries to rewrite per-segment as a boolean query
- * that returns a constant score and otherwise fills a
- * bit set with matches and builds a Scorer on top of
- * this bit set.
+ * This class also provides the functionality behind {@link MultiTermQuery#CONSTANT_SCORE_REWRITE}.
+ * It tries to rewrite per-segment as a boolean query that returns a constant score and otherwise
+ * fills a bit set with matches and builds a Scorer on top of this bit set.
  */
 final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends Query {
 
@@ -77,11 +72,9 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
 
   protected final Q query;
 
-  /**
-   * Wrap a {@link MultiTermQuery} as a Filter.
-   */
+  /** Wrap a {@link MultiTermQuery} as a Filter. */
   protected MultiTermQueryConstantScoreWrapper(Q query) {
-      this.query = query;
+    this.query = query;
   }
 
   @Override
@@ -92,8 +85,8 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
 
   @Override
   public final boolean equals(final Object other) {
-    return sameClassAs(other) &&
-           query.equals(((MultiTermQueryConstantScoreWrapper<?>) other).query);
+    return sameClassAs(other)
+        && query.equals(((MultiTermQueryConstantScoreWrapper<?>) other).query);
   }
 
   @Override
@@ -102,34 +95,48 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
   }
 
   /** Returns the encapsulated query */
-  public Q getQuery() { return query; }
-  
+  public Q getQuery() {
+    return query;
+  }
+
   /** Returns the field name for this query */
-  public final String getField() { return query.getField(); }
+  public final String getField() {
+    return query.getField();
+  }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
+  public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
+      throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
-      /** Try to collect terms from the given terms enum and return true iff all
-       *  terms could be collected. If {@code false} is returned, the enum is
-       *  left positioned on the next term. */
-      private boolean collectTerms(LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms) throws IOException {
-        final int threshold = Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
+      /**
+       * Try to collect terms from the given terms enum and return true iff all terms could be
+       * collected. If {@code false} is returned, the enum is left positioned on the next term.
+       */
+      private boolean collectTerms(
+          LeafReaderContext context, TermsEnum termsEnum, List<TermAndState> terms)
+          throws IOException {
+        final int threshold =
+            Math.min(BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD, IndexSearcher.getMaxClauseCount());
         for (int i = 0; i < threshold; ++i) {
           final BytesRef term = termsEnum.next();
           if (term == null) {
             return true;
           }
           TermState state = termsEnum.termState();
-          terms.add(new TermAndState(BytesRef.deepCopyOf(term), state, termsEnum.docFreq(), termsEnum.totalTermFreq()));
+          terms.add(
+              new TermAndState(
+                  BytesRef.deepCopyOf(term),
+                  state,
+                  termsEnum.docFreq(),
+                  termsEnum.totalTermFreq()));
         }
         return termsEnum.next() == null;
       }
 
       /**
-       * On the given leaf context, try to either rewrite to a disjunction if
-       * there are few terms, or build a bitset containing matching docs.
+       * On the given leaf context, try to either rewrite to a disjunction if there are few terms,
+       * or build a bitset containing matching docs.
        */
       private WeightOrDocIdSet rewrite(LeafReaderContext context) throws IOException {
         final Terms terms = context.reader().terms(query.field);
@@ -208,7 +215,11 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         if (terms == null) {
           return null;
         }
-        return MatchesUtils.forField(query.field, () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query, query.field, query.getTermsEnum(terms)));
+        return MatchesUtils.forField(
+            query.field,
+            () ->
+                DisjunctionMatchesIterator.fromTermsEnum(
+                    context, doc, query, query.field, query.getTermsEnum(terms)));
       }
 
       @Override
@@ -225,7 +236,6 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
       public boolean isCacheable(LeafReaderContext ctx) {
         return true;
       }
-
     };
   }
 

@@ -25,18 +25,27 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.util.IOUtils;
 
-/** Handles one set of files that need copying, either because we have a
- *  new NRT point, or we are pre-copying merged files for merge warming. */
+/**
+ * Handles one set of files that need copying, either because we have a new NRT point, or we are
+ * pre-copying merged files for merge warming.
+ */
 class SimpleCopyJob extends CopyJob {
   final Connection c;
 
   final byte[] copyBuffer = new byte[65536];
   final CopyState copyState;
 
-  private Iterator<Map.Entry<String,FileMetaData>> iter;
+  private Iterator<Map.Entry<String, FileMetaData>> iter;
 
-  public SimpleCopyJob(String reason, Connection c, CopyState copyState, SimpleReplicaNode dest, Map<String,FileMetaData> files, boolean highPriority, OnceDone onceDone)
-    throws IOException {
+  public SimpleCopyJob(
+      String reason,
+      Connection c,
+      CopyState copyState,
+      SimpleReplicaNode dest,
+      Map<String, FileMetaData> files,
+      boolean highPriority,
+      OnceDone onceDone)
+      throws IOException {
     super(reason, files, dest, highPriority, onceDone);
     dest.message("create SimpleCopyJob o" + ord);
     this.c = c;
@@ -59,7 +68,7 @@ class SimpleCopyJob extends CopyJob {
           totBytes += current.metaData.length;
         }
 
-        for (Map.Entry<String,FileMetaData> ent : toCopy) {
+        for (Map.Entry<String, FileMetaData> ent : toCopy) {
           String fileName = ent.getKey();
           FileMetaData metaData = ent.getValue();
           totBytes += metaData.length;
@@ -72,15 +81,26 @@ class SimpleCopyJob extends CopyJob {
         c.s.shutdownOutput();
 
         if (current != null) {
-          // Do this only at the end, after sending all requested files, so we don't deadlock due to socket buffering waiting for primary to
+          // Do this only at the end, after sending all requested files, so we don't deadlock due to
+          // socket buffering waiting for primary to
           // send us this length:
           long len = c.in.readVLong();
           if (len != current.metaData.length) {
-            throw new IllegalStateException("file " + current.name + ": meta data says length=" + current.metaData.length + " but c.in says " + len);
+            throw new IllegalStateException(
+                "file "
+                    + current.name
+                    + ": meta data says length="
+                    + current.metaData.length
+                    + " but c.in says "
+                    + len);
           }
         }
 
-        dest.message("SimpleCopyJob.init: done start files count=" + toCopy.size() + " totBytes=" + totBytes);
+        dest.message(
+            "SimpleCopyJob.init: done start files count="
+                + toCopy.size()
+                + " totBytes="
+                + totBytes);
 
       } catch (Throwable t) {
         cancel("exc during start", t);
@@ -99,7 +119,7 @@ class SimpleCopyJob extends CopyJob {
   @Override
   public Set<String> getFileNamesToCopy() {
     Set<String> fileNames = new HashSet<>();
-    for(Map.Entry<String,FileMetaData> ent : toCopy) {
+    for (Map.Entry<String, FileMetaData> ent : toCopy) {
       fileNames.add(ent.getKey());
     }
     return fileNames;
@@ -127,16 +147,20 @@ class SimpleCopyJob extends CopyJob {
 
   @Override
   public void finish() throws IOException {
-    dest.message(String.format(Locale.ROOT,
-                               "top: file copy done; took %.1f msec to copy %d bytes; now rename %d tmp files",
-                               (System.nanoTime() - startNS)/1000000.0,
-                               totBytesCopied,
-                               copiedFiles.size()));
+    dest.message(
+        String.format(
+            Locale.ROOT,
+            "top: file copy done; took %.1f msec to copy %d bytes; now rename %d tmp files",
+            (System.nanoTime() - startNS) / 1000000.0,
+            totBytesCopied,
+            copiedFiles.size()));
 
-    // NOTE: if any of the files we copied overwrote a file in the current commit point, we (ReplicaNode) removed the commit point up
-    // front so that the commit is not corrupt.  This way if we hit exc here, or if we crash here, we won't leave a corrupt commit in
+    // NOTE: if any of the files we copied overwrote a file in the current commit point, we
+    // (ReplicaNode) removed the commit point up
+    // front so that the commit is not corrupt.  This way if we hit exc here, or if we crash here,
+    // we won't leave a corrupt commit in
     // the index:
-    for(Map.Entry<String,String> ent : copiedFiles.entrySet()) {
+    for (Map.Entry<String, String> ent : copiedFiles.entrySet()) {
       String tmpFileName = ent.getValue();
       String fileName = ent.getKey();
 
@@ -144,8 +168,10 @@ class SimpleCopyJob extends CopyJob {
         dest.message("rename file " + tmpFileName + " to " + fileName);
       }
 
-      // NOTE: if this throws exception, then some files have been moved to their true names, and others are leftover .tmp files.  I don't
-      // think heroic exception handling is necessary (no harm will come, except some leftover files),  nor warranted here (would make the
+      // NOTE: if this throws exception, then some files have been moved to their true names, and
+      // others are leftover .tmp files.  I don't
+      // think heroic exception handling is necessary (no harm will come, except some leftover
+      // files),  nor warranted here (would make the
       // code more complex, for the exceptional cases when something is wrong w/ your IO system):
       dest.dir.rename(tmpFileName, fileName);
     }
@@ -166,12 +192,18 @@ class SimpleCopyJob extends CopyJob {
         return true;
       }
 
-      Map.Entry<String,FileMetaData> next = iter.next();
+      Map.Entry<String, FileMetaData> next = iter.next();
       FileMetaData metaData = next.getValue();
       String fileName = next.getKey();
       long len = c.in.readVLong();
       if (len != metaData.length) {
-        throw new IllegalStateException("file " + fileName + ": meta data says length=" + metaData.length + " but c.in says " + len);
+        throw new IllegalStateException(
+            "file "
+                + fileName
+                + ": meta data says length="
+                + metaData.length
+                + " but c.in says "
+                + len);
       }
       current = new CopyOneFile(c.in, dest, fileName, metaData, copyBuffer);
     }
@@ -180,7 +212,8 @@ class SimpleCopyJob extends CopyJob {
       // This file is done copying
       copiedFiles.put(current.name, current.tmpName);
       totBytesCopied += current.getBytesCopied();
-      assert totBytesCopied <= totBytes: "totBytesCopied=" + totBytesCopied + " totBytes=" + totBytes;
+      assert totBytesCopied <= totBytes
+          : "totBytesCopied=" + totBytesCopied + " totBytes=" + totBytes;
       current = null;
       return false;
     }
@@ -213,15 +246,30 @@ class SimpleCopyJob extends CopyJob {
   public boolean getFailed() {
     return exc != null;
   }
-  
+
   @Override
   public String toString() {
-    return "SimpleCopyJob(ord=" + ord + " " + reason + " highPriority=" + highPriority + " files count=" + files.size() + " bytesCopied=" + totBytesCopied + " (of " + totBytes + ") filesCopied=" + copiedFiles.size() + ")";
+    return "SimpleCopyJob(ord="
+        + ord
+        + " "
+        + reason
+        + " highPriority="
+        + highPriority
+        + " files count="
+        + files.size()
+        + " bytesCopied="
+        + totBytesCopied
+        + " (of "
+        + totBytes
+        + ") filesCopied="
+        + copiedFiles.size()
+        + ")";
   }
 
   @Override
   public void runBlocking() throws IOException {
-    while (visit() == false);
+    while (visit() == false)
+      ;
 
     if (getFailed()) {
       throw new RuntimeException("copy failed: " + cancelReason, exc);
@@ -236,13 +284,13 @@ class SimpleCopyJob extends CopyJob {
   @Override
   public synchronized boolean conflicts(CopyJob _other) {
     Set<String> filesToCopy = new HashSet<>();
-    for(Map.Entry<String,FileMetaData> ent : toCopy) {
+    for (Map.Entry<String, FileMetaData> ent : toCopy) {
       filesToCopy.add(ent.getKey());
     }
 
     SimpleCopyJob other = (SimpleCopyJob) _other;
     synchronized (other) {
-      for(Map.Entry<String,FileMetaData> ent : other.toCopy) {
+      for (Map.Entry<String, FileMetaData> ent : other.toCopy) {
         if (filesToCopy.contains(ent.getKey())) {
           return true;
         }

@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.flexible.standard.processors;
 
 import java.util.List;
-
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
@@ -28,13 +27,12 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 import org.apache.lucene.queryparser.flexible.standard.nodes.MultiPhraseQueryNode;
 
 /**
- * This processor verifies if {@link ConfigurationKeys#PHRASE_SLOP}
- * is defined in the {@link QueryConfigHandler}. If it is, it looks for every
- * {@link TokenizedPhraseQueryNode} and {@link MultiPhraseQueryNode} that does
- * not have any {@link SlopQueryNode} applied to it and creates an
- * {@link SlopQueryNode} and apply to it. The new {@link SlopQueryNode} has the
- * same slop value defined in the configuration.
- * 
+ * This processor verifies if {@link ConfigurationKeys#PHRASE_SLOP} is defined in the {@link
+ * QueryConfigHandler}. If it is, it looks for every {@link TokenizedPhraseQueryNode} and {@link
+ * MultiPhraseQueryNode} that does not have any {@link SlopQueryNode} applied to it and creates an
+ * {@link SlopQueryNode} and apply to it. The new {@link SlopQueryNode} has the same slop value
+ * defined in the configuration.
+ *
  * @see SlopQueryNode
  * @see ConfigurationKeys#PHRASE_SLOP
  */
@@ -53,33 +51,27 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
     QueryConfigHandler queryConfig = getQueryConfigHandler();
 
     if (queryConfig != null) {
-      Integer defaultPhraseSlop = queryConfig.get(ConfigurationKeys.PHRASE_SLOP); 
-      
+      Integer defaultPhraseSlop = queryConfig.get(ConfigurationKeys.PHRASE_SLOP);
+
       if (defaultPhraseSlop != null) {
         this.defaultPhraseSlop = defaultPhraseSlop;
 
         return super.process(queryTree);
-
       }
-
     }
 
     return queryTree;
-
   }
 
   @Override
   protected QueryNode postProcessNode(QueryNode node) throws QueryNodeException {
 
-    if (node instanceof TokenizedPhraseQueryNode
-        || node instanceof MultiPhraseQueryNode) {
+    if (node instanceof TokenizedPhraseQueryNode || node instanceof MultiPhraseQueryNode) {
 
       return new SlopQueryNode(node, this.defaultPhraseSlop);
-
     }
 
     return node;
-
   }
 
   @Override
@@ -87,11 +79,9 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
 
     if (node instanceof SlopQueryNode) {
       this.processChildren = false;
-
     }
 
     return node;
-
   }
 
   @Override
@@ -103,15 +93,11 @@ public class DefaultPhraseSlopQueryNodeProcessor extends QueryNodeProcessorImpl 
     } else {
       this.processChildren = true;
     }
-
   }
 
   @Override
-  protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
-      throws QueryNodeException {
+  protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
 
     return children;
-
   }
-
 }

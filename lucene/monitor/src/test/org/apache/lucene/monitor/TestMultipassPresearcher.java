@@ -18,7 +18,6 @@
 package org.apache.lucene.monitor;
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -50,8 +49,8 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
           new MonitorQuery("3", parse("field:\"hello there world\"")),
           new MonitorQuery("4", parse("field:\"this and that\"")));
 
-      MatchingQueries<QueryMatch> matches = monitor.match(buildDoc("field", "hello world and goodbye"),
-          QueryMatch.SIMPLE_MATCHER);
+      MatchingQueries<QueryMatch> matches =
+          monitor.match(buildDoc("field", "hello world and goodbye"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(2, matches.getQueriesRun());
       assertNotNull(matches.matches("1"));
     }
@@ -62,8 +61,8 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
     try (Monitor monitor = newMonitor()) {
       monitor.register(new MonitorQuery("1", parse("field:(+foo +bar +(badger cormorant))")));
 
-      MatchingQueries<QueryMatch> matches
-          = monitor.match(buildDoc("field", "a badger walked into a bar"), QueryMatch.SIMPLE_MATCHER);
+      MatchingQueries<QueryMatch> matches =
+          monitor.match(buildDoc("field", "a badger walked into a bar"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(0, matches.getMatchCount());
       assertEquals(0, matches.getQueriesRun());
 
@@ -74,7 +73,6 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
       matches = monitor.match(buildDoc("field", "bar badger foo"), QueryMatch.SIMPLE_MATCHER);
       assertEquals(1, matches.getMatchCount());
     }
-
   }
 
   public void testQueryBuilder() throws IOException {
@@ -84,12 +82,13 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
 
     Directory dir = new ByteBuffersDirectory();
     IndexWriter writer = new IndexWriter(dir, iwc);
-    MonitorConfiguration config = new MonitorConfiguration(){
-      @Override
-      public IndexWriter buildIndexWriter() {
-        return writer;
-      }
-    };
+    MonitorConfiguration config =
+        new MonitorConfiguration() {
+          @Override
+          public IndexWriter buildIndexWriter() {
+            return writer;
+          }
+        };
     try (Monitor monitor = new Monitor(ANALYZER, presearcher, config)) {
 
       monitor.register(new MonitorQuery("1", parse("f:test")));
@@ -103,21 +102,41 @@ public class TestMultipassPresearcher extends PresearcherTestBase {
         QueryIndex.QueryTermFilter termFilter = new QueryIndex.QueryTermFilter(reader);
 
         BooleanQuery q = (BooleanQuery) presearcher.buildQuery(docsReader, termFilter);
-        BooleanQuery expected = new BooleanQuery.Builder()
-            .add(should(new BooleanQuery.Builder()
-                .add(must(new BooleanQuery.Builder().add(should(new TermInSetQuery("f_0", new BytesRef("test")))).build()))
-                .add(must(new BooleanQuery.Builder().add(should(new TermInSetQuery("f_1", new BytesRef("test")))).build()))
-                .add(must(new BooleanQuery.Builder().add(should(new TermInSetQuery("f_2", new BytesRef("test")))).build()))
-                .add(must(new BooleanQuery.Builder().add(should(new TermInSetQuery("f_3", new BytesRef("test")))).build()))
-                .build()))
-            .add(should(new TermQuery(new Term("__anytokenfield", "__ANYTOKEN__"))))
-            .build();
+        BooleanQuery expected =
+            new BooleanQuery.Builder()
+                .add(
+                    should(
+                        new BooleanQuery.Builder()
+                            .add(
+                                must(
+                                    new BooleanQuery.Builder()
+                                        .add(
+                                            should(new TermInSetQuery("f_0", new BytesRef("test"))))
+                                        .build()))
+                            .add(
+                                must(
+                                    new BooleanQuery.Builder()
+                                        .add(
+                                            should(new TermInSetQuery("f_1", new BytesRef("test"))))
+                                        .build()))
+                            .add(
+                                must(
+                                    new BooleanQuery.Builder()
+                                        .add(
+                                            should(new TermInSetQuery("f_2", new BytesRef("test"))))
+                                        .build()))
+                            .add(
+                                must(
+                                    new BooleanQuery.Builder()
+                                        .add(
+                                            should(new TermInSetQuery("f_3", new BytesRef("test"))))
+                                        .build()))
+                            .build()))
+                .add(should(new TermQuery(new Term("__anytokenfield", "__ANYTOKEN__"))))
+                .build();
 
         assertEquals(expected, q);
       }
-
     }
-
   }
-
 }

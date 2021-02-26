@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core.snapshots;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,8 +25,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -42,7 +40,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
@@ -53,6 +50,12 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Tests snapshot functionality in a SolrCloud cluster.
+ *
+ * This test uses the (now deprecated) traditional backup method/format.  For more thorough tests using the new format,
+ * see {@link org.apache.solr.handler.TestIncrementalCoreBackup}
+ */
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
 public class TestSolrCloudSnapshots extends SolrCloudTestCase {
@@ -146,8 +149,8 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           continue; // We know that the snapshot is not created for this replica.
         }
 
-        String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-        String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        String replicaBaseUrl = replica.getBaseUrl();
+        String coreName = replica.getCoreName();
 
         assertTrue(snapshotByCoreName.containsKey(coreName));
         CoreSnapshotMetaData coreSnapshot = snapshotByCoreName.get(coreName);
@@ -176,7 +179,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
     //Create a backup using the earlier created snapshot.
     {
       CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
-          .setLocation(backupLocation).setCommitName(commitName);
+          .setLocation(backupLocation).setCommitName(commitName).setIncremental(false);
       if (random().nextBoolean()) {
         assertEquals(0, backup.process(solrClient).getStatus());
       } else {
@@ -256,8 +259,8 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
           continue; // We know that the snapshot was not created for this replica.
         }
 
-        String replicaBaseUrl = replica.getStr(BASE_URL_PROP);
-        String coreName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        String replicaBaseUrl = replica.getBaseUrl();
+        String coreName = replica.getCoreName();
 
         try (SolrClient adminClient = getHttpSolrClient(replicaBaseUrl)) {
           Collection<SnapshotMetaData> snapshots = listCoreSnapshots(adminClient, coreName);

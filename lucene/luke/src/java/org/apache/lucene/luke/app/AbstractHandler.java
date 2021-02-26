@@ -20,7 +20,6 @@ package org.apache.lucene.luke.app;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.util.LoggerFactory;
 
@@ -45,5 +44,4 @@ public abstract class AbstractHandler<T extends Observer> {
   }
 
   protected abstract void notifyOne(T observer);
-
 }
