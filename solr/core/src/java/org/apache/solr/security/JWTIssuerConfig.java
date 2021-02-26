@@ -70,7 +70,7 @@ public class JWTIssuerConfig {
   private String authorizationEndpoint;
   
   public static boolean ALLOW_OUTBOUND_HTTP = Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
-  public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG = "Outbound non SSL protected JWT authentication urls are not enabled, start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true.";
+  public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG = "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
 
   /**
    * Create config for further configuration with setters, builder style.
@@ -452,7 +452,7 @@ public class JWTIssuerConfig {
         }
       }
       else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, ALLOW_OUTBOUND_HTTP_ERR_MSG + " Parameter " + parameterName + " should use HTTPS protocol instead of HTTP.");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, parameterName + " is using http protocol. " + ALLOW_OUTBOUND_HTTP_ERR_MSG);
       }
     }
   }
