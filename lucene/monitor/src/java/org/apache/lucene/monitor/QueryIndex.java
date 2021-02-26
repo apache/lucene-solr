@@ -220,7 +220,7 @@ class QueryIndex implements Closeable {
 
   static class QueryTermFilter implements BiPredicate<String, BytesRef> {
 
-    private final Map<String, UnmodifiableBytesRefHash> termsHash = new HashMap<>();
+    private final Map<String, UnmodifiableBytesRefHash> termsHash;
 
     QueryTermFilter(IndexReader reader) throws IOException {
       final Map<String, BytesRefHash> hashMap = new HashMap<>();
@@ -237,7 +237,10 @@ class QueryIndex implements Closeable {
           }
         }
       }
-      this.termsHash.putAll(hashMap);
+      this.termsHash = new HashMap<>(hashMap.size());
+      for (Map.Entry<String, BytesRefHash> entry : hashMap.entrySet()) {
+        this.termsHash.put(entry.getKey(), new UnmodifiableBytesRefHash(entry.getValue()));
+      }
     }
 
     @Override

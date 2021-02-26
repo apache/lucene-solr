@@ -18,19 +18,27 @@
 package org.apache.lucene.util;
 
 /**
- * {@link UnmodifiableBytesRefHash} interface lists methods of {@link BytesRefHash} that are not
- * modifying it structurally and as such can be used safely from multiple threads as long as {@link
- * BytesRefHash} is correctly published and accessed only through the methods of {@link
- * UnmodifiableBytesRefHash} interface.
+ * {@link UnmodifiableBytesRefHash} wraps {@link BytesRefHash} and forwards only those methods that
+ * are not modifying {@link BytesRefHash} structurally. Instance of {@link UnmodifiableBytesRefHash}
+ * can be safely used from multiple threads as long as {@link BytesRefHash} that was used to create
+ * it is no longer accessed directly.
  */
-public interface UnmodifiableBytesRefHash {
+public final class UnmodifiableBytesRefHash {
+
+  private final BytesRefHash bytesRefHash;
+
+  public UnmodifiableBytesRefHash(BytesRefHash bytesRefHash) {
+    this.bytesRefHash = bytesRefHash;
+  }
 
   /**
    * Returns the number of {@link BytesRef} values in this {@link UnmodifiableBytesRefHash}.
    *
    * @return the number of {@link BytesRef} values in this {@link UnmodifiableBytesRefHash}.
    */
-  int size();
+  public int size() {
+    return bytesRefHash.size();
+  }
 
   /**
    * Populates and returns a {@link BytesRef} with the bytes for the given bytesID.
@@ -42,7 +50,9 @@ public interface UnmodifiableBytesRefHash {
    * @param ref the {@link BytesRef} to populate
    * @return the given BytesRef instance populated with the bytes for the given bytesID
    */
-  BytesRef get(int bytesID, BytesRef ref);
+  public BytesRef get(int bytesID, BytesRef ref) {
+    return bytesRefHash.get(bytesID, ref);
+  }
 
   /**
    * Returns the id of the given {@link BytesRef}.
@@ -50,5 +60,7 @@ public interface UnmodifiableBytesRefHash {
    * @param bytes the bytes to look for
    * @return the id of the given bytes, or {@code -1} if there is no mapping for the given bytes.
    */
-  int find(BytesRef bytes);
+  public int find(BytesRef bytes) {
+    return bytesRefHash.find(bytes);
+  }
 }

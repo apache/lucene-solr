@@ -284,7 +284,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       }
       int hashSize = hash.size();
 
-      UnmodifiableBytesRefHash unmodifiableHash = hash;
+      UnmodifiableBytesRefHash unmodifiableHash = new UnmodifiableBytesRefHash(hash);
 
       AtomicInteger notFound = new AtomicInteger();
       AtomicInteger notEquals = new AtomicInteger();
@@ -311,8 +311,8 @@ public class TestBytesRefHash extends LuceneTestCase {
                     if (id < 0) {
                       notFound.incrementAndGet();
                     } else {
-                      unmodifiableHash.get(id, scratch);
-                      if (!scratch.bytesEquals(find)) {
+                      BytesRef get = unmodifiableHash.get(id, scratch);
+                      if (!get.bytesEquals(find)) {
                         notEquals.incrementAndGet();
                       }
                     }

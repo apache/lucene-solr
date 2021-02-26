@@ -34,8 +34,7 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
  * <p><strong>Note that this implementation is not synchronized.</strong> If multiple threads access
  * a {@link BytesRefHash} instance concurrently, and at least one of the threads modifies it
  * structurally, it <i>must</i> be synchronized externally. (A structural modification is any
- * operation on the map except operations explicitly listed in {@link UnmodifiableBytesRefHash}
- * interface).
+ * operation on it except operations allowed when wrapped with {@link UnmodifiableBytesRefHash}).
  *
  * <p>Note: The maximum capacity {@link BytesRef} instance passed to {@link #add(BytesRef)} must not
  * be longer than {@link ByteBlockPool#BYTE_BLOCK_SIZE}-2. The internal storage is limited to 2GB
@@ -43,7 +42,7 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
  *
  * @lucene.internal
  */
-public final class BytesRefHash implements Accountable, UnmodifiableBytesRefHash {
+public final class BytesRefHash implements Accountable {
   private static final long BASE_RAM_BYTES =
       RamUsageEstimator.shallowSizeOfInstance(BytesRefHash.class)
           +
@@ -99,7 +98,6 @@ public final class BytesRefHash implements Accountable, UnmodifiableBytesRefHash
    *
    * @return the number of {@link BytesRef} values in this {@link BytesRefHash}.
    */
-  @Override
   public int size() {
     return count;
   }
@@ -114,7 +112,6 @@ public final class BytesRefHash implements Accountable, UnmodifiableBytesRefHash
    * @param ref the {@link BytesRef} to populate
    * @return the given BytesRef instance populated with the bytes for the given bytesID
    */
-  @Override
   public BytesRef get(int bytesID, BytesRef ref) {
     assert bytesStart != null : "bytesStart is null - not initialized";
     assert bytesID < bytesStart.length : "bytesID exceeds byteStart len: " + bytesStart.length;
@@ -312,7 +309,6 @@ public final class BytesRefHash implements Accountable, UnmodifiableBytesRefHash
    * @param bytes the bytes to look for
    * @return the id of the given bytes, or {@code -1} if there is no mapping for the given bytes.
    */
-  @Override
   public int find(BytesRef bytes) {
     return ids[findHash(bytes)];
   }
