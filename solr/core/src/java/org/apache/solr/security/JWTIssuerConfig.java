@@ -72,8 +72,6 @@ public class JWTIssuerConfig {
   public static boolean ALLOW_OUTBOUND_HTTP = Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
   public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG = "Outbound non SSL protected JWT authentication urls are not enabled, start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true.";
 
-
-
   /**
    * Create config for further configuration with setters, builder style.
    * Once all values are set, call {@link #init()} before further use
