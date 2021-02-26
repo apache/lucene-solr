@@ -65,8 +65,8 @@ public abstract class ConfigSetService {
       try {
         Class<? extends ConfigSetService> clazz = loader.findClass(configSetServiceClass, ConfigSetService.class);
         Constructor<? extends ConfigSetService> constructor
-                = clazz.getConstructor(SolrResourceLoader.class, Boolean.TYPE, ZkController.class);
-        return constructor.newInstance(loader, nodeConfig.hasSchemaCache(), zkController);
+                = clazz.getConstructor(SolrResourceLoader.class, NodeConfig.class, ZkController.class);
+        return constructor.newInstance(loader, nodeConfig, zkController);
       } catch (Exception e) {
         throw new RuntimeException("create configSetService instance faild,configSetServiceClass:"+ configSetServiceClass,e);
       }

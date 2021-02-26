@@ -2027,7 +2027,7 @@ public class CoreContainer {
     return configSetsHandler;
   }
 
-  public ConfigSetService getCoreConfigService() {
+  public ConfigSetService getConfigSetService() {
     return this.coreConfigService;
   }
 

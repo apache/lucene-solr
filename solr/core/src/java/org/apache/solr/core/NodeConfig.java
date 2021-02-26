@@ -50,6 +50,8 @@ public class NodeConfig {
 
   private final UpdateShardHandlerConfig updateShardHandlerConfig;
 
+  private final String configSetServiceClass;
+
   private final String coreAdminHandlerClass;
 
   private final String collectionsAdminHandlerClass;
@@ -89,7 +91,6 @@ public class NodeConfig {
   private final boolean fromZookeeper;
   private final String defaultZkHost;
 
-  private final String configSetServiceClass;
 
   private NodeConfig(String nodeName, Path coreRootDirectory, Path solrDataHome, Integer booleanQueryMaxClauseCount,
                      Path configSetBaseDirectory, String sharedLibDirectory,
@@ -318,6 +319,7 @@ public class NodeConfig {
     private String sharedLibDirectory;
     private PluginInfo shardHandlerFactoryConfig;
     private UpdateShardHandlerConfig updateShardHandlerConfig = UpdateShardHandlerConfig.DEFAULT;
+    private String configSetServiceClass;
     private String coreAdminHandlerClass = DEFAULT_ADMINHANDLERCLASS;
     private String collectionsAdminHandlerClass = DEFAULT_COLLECTIONSHANDLERCLASS;
     private String healthCheckHandlerClass = DEFAULT_HEALTHCHECKHANDLERCLASS;
@@ -340,7 +342,6 @@ public class NodeConfig {
     private boolean fromZookeeper = false;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
-    private String configSetServiceClass;
 
     private final Path solrHome;
     private final String nodeName;

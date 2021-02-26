@@ -451,8 +451,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   public static class CustomConfigSetService extends ConfigSetService {
-    public CustomConfigSetService(SolrResourceLoader loader, boolean hasSchemaCache, ZkController zkController) {
-      super(loader,hasSchemaCache);
+    public CustomConfigSetService(SolrResourceLoader loader, NodeConfig nodeConfig, ZkController zkController) {
+      super(loader, true);
     }
 
     @Override
@@ -584,7 +584,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   public void testCustomConfigSetService() throws Exception {
     CoreContainer cc = init(CUSTOM_CONFIG_SET_SERVICE_SOLR_XML);
     try {
-      assertThat(cc.getCoreConfigService(), is(instanceOf(CustomConfigSetService.class)));
+      assertThat(cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
     }
     finally {
       cc.shutdown();
