@@ -80,9 +80,6 @@ public class FacetDebugInfo {
       List<Object> subfacet = new ArrayList<Object>();
       info.add("sub-facet", subfacet);
       for (FacetDebugInfo child : children) {
-        if (subfacet.contains("requestMethod") && child.getFacetDebugInfo().get("requestMethod") != null) {
-          child.getFacetDebugInfo().remove("requestMethod");
-        }
         subfacet.add(child.getFacetDebugInfo());
       }
 

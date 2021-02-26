@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import com.codahale.metrics.Gauge;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
@@ -533,13 +534,13 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     final MetricsMap filterCacheStats =
         (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache");
     assertNotNull(filterCacheStats);
-    final MetricsMap queryCacheStats =
-        (MetricsMap)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
+    final Gauge queryCacheStats =
+        (Gauge)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.queryResultCache");
     assertNotNull(queryCacheStats);
 
-    final long preQcIn = (Long) queryCacheStats.getValue().get("inserts");
-    final long preFcIn = (Long) filterCacheStats.getValue().get("inserts");
-    final long preFcHits = (Long) filterCacheStats.getValue().get("hits");
+    final long preQcIn = (Long) ((Map) queryCacheStats.getValue()).get("inserts");
+    final long preFcIn = (Long) ((Map)filterCacheStats.getValue()).get("inserts");
+    final long preFcHits = (Long) ((Map)filterCacheStats.getValue()).get("hits");
 
     SentinelIntSet ids = assertFullWalkNoDups
       (10, params("q", "*:*",
@@ -551,9 +552,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     
     assertEquals(6, ids.size());
 
-    final long postQcIn = (Long) queryCacheStats.getValue().get("inserts");
-    final long postFcIn = (Long) filterCacheStats.getValue().get("inserts");
-    final long postFcHits = (Long) filterCacheStats.getValue().get("hits");
+    final long postQcIn = (Long) ((Map)queryCacheStats.getValue()).get("inserts");
+    final long postFcIn = (Long) ((Map)filterCacheStats.getValue()).get("inserts");
+    final long postFcHits = (Long) ((Map)filterCacheStats.getValue()).get("hits");
     
     assertEquals("query cache inserts changed", preQcIn, postQcIn);
     // NOTE: use of pure negative filters causees "*:* to be tracked in filterCache

@@ -35,9 +35,11 @@ import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.junit.Ignore;
 import org.junit.Test;
 
 @LuceneTestCase.Nightly // can be a slow test - measure full test time, beforeClass + test + afterClass
+@Ignore // MRM TODO:
 public class DistributedFacetPivotSmallTest extends BaseDistributedSearchTestCase {
 
   public DistributedFacetPivotSmallTest() {

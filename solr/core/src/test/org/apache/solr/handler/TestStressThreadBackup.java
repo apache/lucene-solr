@@ -34,6 +34,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.TestUtil;
@@ -206,7 +207,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         // NOTE: we don't want to do this too often, or the SnapShotMetadataManager will protect
         // too many segment files "long term".  It's more important to stress the thread contention
         // between backups calling save/release vs the DelPolicy trying to delete segments
-        if ( 0 == random().nextInt(7 + namedSnapshots.size()) ) {
+        if ( 0 == LuceneTestCase.random().nextInt(7 + namedSnapshots.size()) ) {
           final String snapshotName = "snapshot_" + i;
           log.info("Creating snapshot: {}", snapshotName);
           impl.makeSnapshot(snapshotName);
@@ -216,8 +217,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
         // occasionally make a backup of a snapshot and remove it
         // the odds of doing this increase based on how many snapshots currently exist,
         // and how few iterations we have left
-        if (3 < namedSnapshots.size() &&
-            random().nextInt(3 + numBackupIters - i) < random().nextInt(namedSnapshots.size())) {
+        if (3 < namedSnapshots.size() && LuceneTestCase.random().nextInt(3 + numBackupIters - i) < LuceneTestCase.random().nextInt(namedSnapshots.size())) {
 
           assert 0 < namedSnapshots.size() : "Someone broke the conditionl";
           final String snapshotName = namedSnapshots.poll();
@@ -260,7 +260,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
       final List<File> allBackups = Arrays.asList(backupDir.listFiles());
       // insure consistent (arbitrary) ordering before shuffling
       Collections.sort(allBackups); 
-      Collections.shuffle(allBackups, random());
+      Collections.shuffle(allBackups, LuceneTestCase.random());
       for (int i = 0; i < numBackupsToCheck; i++) {
         final File backup = allBackups.get(i);
         validateBackup(backup);
@@ -321,7 +321,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   private static SolrInputDocument makeDoc(String id, String type) {
     final SolrInputDocument doc = new SolrInputDocument("id", id, "type_s", type);
     for (int f = 0; f < 100; f++) {
-      doc.addField(f + "_s", TestUtil.randomUnicodeString(random(), 20));
+      doc.addField(f + "_s", TestUtil.randomUnicodeString(LuceneTestCase.random(), 20));
     }
     return doc;
   }

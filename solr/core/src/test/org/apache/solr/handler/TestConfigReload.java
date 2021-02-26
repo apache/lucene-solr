@@ -32,6 +32,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +47,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @LuceneTestCase.Nightly
+@Ignore // MRM TODO:
 public class TestConfigReload extends SolrCloudBridgeTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

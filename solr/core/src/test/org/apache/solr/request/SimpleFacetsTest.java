@@ -42,6 +42,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TimeZoneUtils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -55,11 +56,17 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSimpleFacetsTest() throws Exception {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
     initCore("solrconfig.xml","schema.xml");
     createIndex();
+  }
+
+  @AfterClass
+  public static void afterSimpleFacetsTest() throws Exception {
+    deleteCore();
+    pendingDocs.clear();
   }
 
   static int random_commit_percent = 30;

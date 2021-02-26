@@ -144,7 +144,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
 
 
-    TimeOut timeout = new TimeOut(1000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(3000, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
     Gauge<Date> g = null;
     while (!timeout.hasTimedOut()) {
       Map<String, Metric> metrics = core.getCoreMetricManager().getRegistry().getMetrics();
