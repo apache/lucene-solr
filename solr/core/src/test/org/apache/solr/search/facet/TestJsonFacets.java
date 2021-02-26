@@ -97,7 +97,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
       servers = null;
     }
     deleteCore();
-    origDefaultFacetMethod = null;
   }
 
   // tip: when debugging failures, change this variable to DEFAULT_METHOD
@@ -3001,7 +3000,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     Random r = new Random(0);  // make deterministic
     int numCat = 1;
     int numWhere = 2000000000;
-    int commitPercent = 10;
+    int commitPercent = 5;
     int ndocs=TEST_NIGHTLY ? 1000 : 100;
 
     Map<Integer, Map<Integer, List<Integer>>> model = new HashMap<>();  // cat->where->list<ids>

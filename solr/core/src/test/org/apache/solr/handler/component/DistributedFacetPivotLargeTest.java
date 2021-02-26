@@ -24,6 +24,7 @@ import java.util.List;
 import junit.framework.AssertionFailedError;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
@@ -44,6 +45,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   public DistributedFacetPivotLargeTest() {
     // we need DVs on point fields to compute stats & facets
     if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) System.setProperty(NUMERIC_DOCVALUES_SYSPROP,"true");
+    SolrTestCaseJ4.randomizeNumericTypesProperties();
   }
   
   @Test
@@ -984,6 +986,11 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
   }
 
   private void setupDistributedPivotFacetDocuments() throws Exception{
+
+    //Clear docs
+    del("*:*");
+    commit();
+
     final int maxDocs = 50;
     final SolrClient zeroShard = clients.get(0);
     final SolrClient oneShard = clients.get(1);

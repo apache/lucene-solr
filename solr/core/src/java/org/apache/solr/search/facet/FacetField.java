@@ -66,7 +66,7 @@ public class FacetField extends FacetRequestSorted {
       }
     }
 
-    static FacetMethod DEFAULT_METHOD = SMART; // non-final for tests to vary
+    static volatile FacetMethod DEFAULT_METHOD = SMART; // non-final for tests to vary
   }
 
   @Override

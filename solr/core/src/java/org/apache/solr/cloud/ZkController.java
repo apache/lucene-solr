@@ -1347,7 +1347,7 @@ public class ZkController implements Closeable, Runnable {
       log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, replica.getType());
 
       log.info("Register terms for replica {}", coreName);
-      //ZkCollectionTerms ct = createCollectionTerms(collection);
+
       registerShardTerms(collection, cloudDesc.getShardId(), coreName);
 
       log.info("Create leader elector for replica {}", coreName);
@@ -1358,6 +1358,13 @@ public class ZkController implements Closeable, Runnable {
 
         if (oldElector != null) {
           IOUtils.closeQuietly(leaderElector);
+        }
+
+        if (cc.isShutDown()) {
+          IOUtils.closeQuietly(leaderElector);
+          IOUtils.closeQuietly(oldElector);
+          IOUtils.closeQuietly(getShardTermsOrNull(collection, shardId));
+          throw new AlreadyClosedException();
         }
       }
 

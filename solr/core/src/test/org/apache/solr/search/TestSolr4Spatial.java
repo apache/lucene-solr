@@ -32,6 +32,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
@@ -43,7 +44,7 @@ import org.locationtech.spatial4j.shape.Rectangle;
  * Lucene spatial has its own tests.  Some of these tests were ported from Solr 3 spatial tests.
  */
 @LuceneTestCase.Nightly // this test generates a lot of garbage
-// MRM TODO: debug this
+@Ignore // MRM TODO: debug this
 public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
   private final String fieldName;

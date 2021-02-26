@@ -34,7 +34,7 @@ import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.TestHarness;
-import org.junit.Before;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,18 +64,26 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeSoftAutoCommitTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void afterSoftAutoCommitTest() {
+    deleteCore();
   }
 
   private MockEventListener monitor;
   private DirectUpdateHandler2 updater;
-    
-  @Before
-  public void createMonitor() throws Exception {
-    LuceneTestCase.assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
-      Constants.WINDOWS);
+
   
+  @Override
+  public void setUp() throws Exception {
+    LuceneTestCase.assumeFalse("This test is not working on Windows (or maybe machines with only 2 CPUs)",
+        Constants.WINDOWS);
+
+    super.setUp();
+
     SolrCore core = h.getCore();
 
     updater = (DirectUpdateHandler2) core.getUpdateHandler();
@@ -86,14 +94,10 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     updater.registerSoftCommitCallback(monitor);
     updater.registerCommitCallback(monitor);
 
-    // isolate searcher getting ready from this test
-    monitor.searcher.poll(5000, MILLISECONDS);
-  }
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+    core.close();
 
+    // isolate searcher getting ready from this test
+    monitor.searcher.poll(1000, MILLISECONDS);
   }
   
   public void testSoftAndHardCommitMaxDocs() throws Exception {

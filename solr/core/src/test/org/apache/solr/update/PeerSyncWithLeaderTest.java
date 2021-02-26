@@ -29,9 +29,11 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.junit.Ignore;
 
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 @LuceneTestCase.Nightly // Slow test, > 10 seconds
+@Ignore // MRM TODO:
 public class PeerSyncWithLeaderTest extends PeerSyncTest {
 
   @Override

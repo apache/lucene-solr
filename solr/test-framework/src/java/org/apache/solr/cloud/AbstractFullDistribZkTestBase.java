@@ -439,7 +439,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // jetty instances are started)
     assertEquals(0, CollectionAdminRequest
             .createCollection(DEFAULT_COLLECTION, "_default", sliceCount, 1) // not real rep factor!
-            .setCreateNodeSet("") // empty node set prevents creation of cores
+            .setCreateNodeSet(ZkStateReader.CREATE_NODE_SET_EMPTY) // empty node set prevents creation of cores
             .process(cloudClient).getStatus());
 
     AtomicInteger numOtherReplicas = new AtomicInteger(numJettys - getPullReplicaCount() * sliceCount);
