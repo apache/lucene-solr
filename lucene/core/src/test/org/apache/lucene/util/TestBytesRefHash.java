@@ -303,7 +303,7 @@ public class TestBytesRefHash extends LuceneTestCase {
                     latch.await();
                   } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    e.printStackTrace();
+                    throw new RuntimeException(e);
                   }
                   for (int k = 0; k < loops; k++) {
                     BytesRef find = new BytesRef(strings.get(k % strings.size()));
