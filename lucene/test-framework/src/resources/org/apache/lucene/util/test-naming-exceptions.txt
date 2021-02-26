@@ -147,6 +147,7 @@
 !org.apache.lucene.spatial3d.geom.RandomGeoShapeRelationshipTest
 !org.apache.lucene.spatial3d.geom.RandomPlaneTest
 !org.apache.lucene.spatial3d.geom.XYZSolidTest
+!org.apache.lucene.store.LockStressTest
 !org.apache.lucene.util.automaton.FiniteStringsIteratorTest
 !org.apache.lucene.util.automaton.LimitedFiniteStringsIteratorTest
 !org.apache.solr.analysis.PathHierarchyTokenizerFactoryTest
