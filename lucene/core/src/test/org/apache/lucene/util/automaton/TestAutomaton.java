@@ -297,7 +297,7 @@ public class TestAutomaton extends LuceneTestCase {
         // System.out.println("TEST:   iter2=" + iter2 + " s=" + Arrays.toString(s));
 
         // Make sure reversed automaton accepts it
-        assertTrue(Operations.run(rda, new IntsRef(s, 0, s.length)));
+        assertTrue(Operations.run(rda, new IntsRef(s)));
       }
     }
   }

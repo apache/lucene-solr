@@ -40,7 +40,7 @@ public class Test2BFST extends LuceneTestCase {
     assumeWorkingMMapOnWindows();
 
     int[] ints = new int[7];
-    IntsRef input = new IntsRef(ints, 0, ints.length);
+    IntsRef input = new IntsRef(ints);
     long seed = random().nextLong();
 
     Directory dir = new MMapDirectory(createTempDir("2BFST"));
@@ -56,7 +56,7 @@ public class Test2BFST extends LuceneTestCase {
         int count = 0;
         Random r = new Random(seed);
         int[] ints2 = new int[200];
-        IntsRef input2 = new IntsRef(ints2, 0, ints2.length);
+        IntsRef input2 = new IntsRef(ints2);
         while (true) {
           // System.out.println("add: " + input + " -> " + output);
           for (int i = 10; i < ints2.length; i++) {

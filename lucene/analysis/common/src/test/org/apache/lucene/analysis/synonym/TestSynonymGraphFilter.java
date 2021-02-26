@@ -1500,7 +1500,7 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
     AutomatonTestUtil.RandomAcceptedStrings ras = new AutomatonTestUtil.RandomAcceptedStrings(a1);
     for (int i = 0; i < 2000; i++) {
       int[] ints = ras.getRandomAcceptedString(random());
-      IntsRef path = new IntsRef(ints, 0, ints.length);
+      IntsRef path = new IntsRef(ints);
       if (accepts(a2, path) == false) {
         throw new RuntimeException("a2 does not accept " + path);
       }

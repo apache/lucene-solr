@@ -113,7 +113,7 @@ class GeneratingSuggester {
           throw new AssertionError("Too large char");
         }
         ints[ints.length - 1]++;
-        next = fstEnum.seekCeil(new IntsRef(ints, 0, ints.length));
+        next = fstEnum.seekCeil(new IntsRef(ints));
       }
       return next;
     } catch (IOException e) {

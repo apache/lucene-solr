@@ -426,7 +426,7 @@ public class Hunspell {
 
   private boolean checkLastCompoundPart(
       char[] wordChars, int start, int length, List<IntsRef> words) {
-    IntsRef ref = new IntsRef(new int[1], 0, 1);
+    IntsRef ref = new IntsRef(new int[1]);
     words.add(ref);
 
     Stemmer.RootProcessor stopOnMatching =

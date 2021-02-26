@@ -48,6 +48,11 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
     ints = new int[capacity];
   }
 
+  /** A shortcut for {@link #IntsRef(int[], int, int)}, covering the whole array */
+  public IntsRef(int[] ints) {
+    this(ints, 0, ints.length);
+  }
+
   /** This instance will directly reference ints w/o making a copy. ints should not be null. */
   public IntsRef(int[] ints, int offset, int length) {
     this.ints = ints;
@@ -133,9 +138,7 @@ public final class IntsRef implements Comparable<IntsRef>, Cloneable {
    */
   public static IntsRef deepCopyOf(IntsRef other) {
     return new IntsRef(
-        ArrayUtil.copyOfSubArray(other.ints, other.offset, other.offset + other.length),
-        0,
-        other.length);
+        ArrayUtil.copyOfSubArray(other.ints, other.offset, other.offset + other.length));
   }
 
   /** Performs internal consistency checks. Always returns true (or throws IllegalStateException) */
