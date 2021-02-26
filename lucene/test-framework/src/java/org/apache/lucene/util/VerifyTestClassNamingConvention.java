@@ -17,8 +17,6 @@
 package org.apache.lucene.util;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
-import org.junit.Assume;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -33,22 +31,23 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.junit.Assume;
 
-/**
- * Enforce test naming convention.
- */
+/** Enforce test naming convention. */
 public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
   public static final Pattern ALLOWED_CONVENTION = Pattern.compile("(.+\\.)(Test)([^.]+)");
 
   private static Set<String> exceptions;
+
   static {
     try {
       exceptions = new HashSet<>();
       try (BufferedReader is =
-             new BufferedReader(
-                 new InputStreamReader(
-                   VerifyTestClassNamingConvention.class.getResourceAsStream("test-naming-exceptions.txt"),
-                   StandardCharsets.UTF_8))) {
+          new BufferedReader(
+              new InputStreamReader(
+                  VerifyTestClassNamingConvention.class.getResourceAsStream(
+                      "test-naming-exceptions.txt"),
+                  StandardCharsets.UTF_8))) {
         is.lines().forEach(exceptions::add);
       }
     } catch (IOException e) {
@@ -77,8 +76,7 @@ public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
     if (!matcher.matches()) {
       // if this class exists on the exception list, leave it.
       if (!exceptions.contains("!" + suiteName)) {
-        throw new AssertionError("Suite must follow Test*.java naming convention: "
-          + suiteName);
+        throw new AssertionError("Suite must follow Test*.java naming convention: " + suiteName);
       }
     } else if (matcher.groupCount() == 3) {
       // conventional suite name: package test class
@@ -86,8 +84,11 @@ public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
       String alternativeSuiteName = matcher.group(1) + matcher.group(3) + matcher.group(2);
       // if FooBarTest.java exists on the exception list, disallow TestFooBar.java addition
       if (exceptions.contains("!" + alternativeSuiteName)) {
-        throw new AssertionError("Please remove the '"+alternativeSuiteName+"' test-naming-exceptions.txt before adding a new suite that follows the Test*.java naming convention: "
-          + suiteName);
+        throw new AssertionError(
+            "Please remove the '"
+                + alternativeSuiteName
+                + "' test-naming-exceptions.txt before adding a new suite that follows the Test*.java naming convention: "
+                + suiteName);
       }
     }
   }
@@ -96,8 +97,9 @@ public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
     // Has to be a global unique path (not a temp file because temp files
     // are different for each JVM).
     Path temporaryFile = Paths.get("c:\\_tmp\\test-naming-exceptions.txt");
-    try (Writer w = Files.newBufferedWriter(temporaryFile,
-        StandardOpenOption.APPEND, StandardOpenOption.CREATE)) {
+    try (Writer w =
+        Files.newBufferedWriter(
+            temporaryFile, StandardOpenOption.APPEND, StandardOpenOption.CREATE)) {
       if (!ALLOWED_CONVENTION.matcher(suiteName).matches()) {
         w.append("!");
       }
