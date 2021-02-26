@@ -136,8 +136,7 @@ public class JWTIssuerConfigTest extends SolrTestCase {
   }
 
   @Test
-  public void jwksUrlwithHttpLogsaWarning() {
-    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true; // setup test
+  public void jwksUrlwithHttpBehaviors() {
     
     HashMap<String, Object> issuerConfigMap = new HashMap<>();
     issuerConfigMap.put("name", "myName");
@@ -145,19 +144,15 @@ public class JWTIssuerConfigTest extends SolrTestCase {
     issuerConfigMap.put("jwksUrl", "http://host/jwk");
 
     JWTIssuerConfig issuerConfig = new JWTIssuerConfig(issuerConfigMap);
-
-    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
-    @SuppressWarnings({"rawtypes"})
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
     
+    SolrException e = expectThrows(SolrException.class, () -> issuerConfig.getHttpsJwks());
+    assertEquals(400, e.code());
+    assertEquals("jwksUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.", e.getMessage());
+    
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
+
     assertEquals(1, issuerConfig.getHttpsJwks().size());
-    assertEquals("http://host/jwk", issuerConfig.getHttpsJwks().get(0).getLocation());
-
-      
-    SolrDocumentList history = watcher.getHistory(-1, null);
-    
-    assertTrue("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url", history.stream().anyMatch(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))));  
-    
+    assertEquals("http://host/jwk", issuerConfig.getHttpsJwks().get(0).getLocation());    
   }
   
   @Test
@@ -180,20 +175,19 @@ public class JWTIssuerConfigTest extends SolrTestCase {
   }
 
   @Test
-  public void wellKnownConfigWithHttpLogsAWarning() {
-    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true; // setup test
+  public void wellKnownConfigWithHttpBehaviors() {
+    SolrException e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
+    assertEquals(400, e.code());
+    assertEquals("wellKnownUrl is using http protocol. HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.", e.getMessage());
     
-    LogWatcherConfig watcherCfg = new LogWatcherConfig(true, null, "WARN", 100);
-    @SuppressWarnings({"rawtypes"})
-    LogWatcher watcher = LogWatcher.newRegisteredLogWatcher(watcherCfg, null);
+    JWTIssuerConfig.ALLOW_OUTBOUND_HTTP = true;
     
-    watcher.reset();
+    e = expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
+    assertEquals(500, e.code());
+    // We open a connection in the code path to a server that doesn't exist, which causes this.  Should really be mocked.
+    assertEquals("Well-known config could not be read from url http://127.0.0.1:45678/.well-known/config", e.getMessage());
     
-    // currently we throw an exception because we can't open a connection to this fake url and can't mock it.
-    expectThrows(SolrException.class, () -> JWTIssuerConfig.WellKnownDiscoveryConfig.parse("http://127.0.0.1:45678/.well-known/config"));
-        
-    SolrDocumentList history = watcher.getHistory(-1, null);
-    assertTrue("No 'org.apache.solr.security.JWTIssuerConfig' warnings about http url in: " + history.toString(), history.stream().anyMatch(d -> "org.apache.solr.security.JWTIssuerConfig".equals(d.getFirstValue("logger"))));
+            
 
   }
   

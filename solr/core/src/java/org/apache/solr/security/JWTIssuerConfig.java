@@ -446,14 +446,10 @@ public class JWTIssuerConfig {
 
   public static void checkAllowOutboundHttpConnections(String parameterName, URL url) {
     if ("http".equalsIgnoreCase(url.getProtocol())) {
-      if (ALLOW_OUTBOUND_HTTP) {
-        if (log.isWarnEnabled()) {
-          log.warn("{} should use HTTPS protocol. Consider enabling SSL to protect user credentials and data with encryption.", parameterName);
-        }
-      }
-      else {
+      if (!ALLOW_OUTBOUND_HTTP) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, parameterName + " is using http protocol. " + ALLOW_OUTBOUND_HTTP_ERR_MSG);
       }
     }
   }
+ 
 }
