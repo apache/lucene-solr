@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.util;
 
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 /**
@@ -210,5 +211,9 @@ public final class BytesRef implements Comparable<BytesRef>, Cloneable {
               + bytes.length);
     }
     return true;
+  }
+
+  public ByteBuffer wrapToByteBuffer() {
+    return ByteBuffer.wrap(bytes, offset, length);
   }
 }

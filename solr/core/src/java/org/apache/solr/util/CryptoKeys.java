@@ -42,12 +42,12 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +76,7 @@ public final class CryptoKeys {
     for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
       boolean verified;
       try {
-        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), data);
+        verified = CryptoKeys.verify(entry.getValue(), Base64.getDecoder().decode(sig), data);
         log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
@@ -94,7 +94,7 @@ public final class CryptoKeys {
     for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
       boolean verified;
       try {
-        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), is);
+        verified = CryptoKeys.verify(entry.getValue(), Base64.getDecoder().decode(sig), is);
         log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
@@ -258,7 +258,7 @@ public final class CryptoKeys {
     final int CIPHERTEXT_OFFSET = SALT_OFFSET + SALT_SIZE;
 
     try {
-      byte[] headerSaltAndCipherText = Base64.base64ToByteArray(base64CipherTxt);
+      byte[] headerSaltAndCipherText = Base64.getDecoder().decode(base64CipherTxt);
 
       // --- extract salt & encrypted ---
       // header is "Salted__", ASCII encoded, if salt is being used (the default)
@@ -307,7 +307,7 @@ public final class CryptoKeys {
   public static PublicKey deserializeX509PublicKey(String pubKey) {
     try {
       KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-      X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Base64.base64ToByteArray(pubKey));
+      X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Base64.getDecoder().decode(pubKey));
       return keyFactory.generatePublic(publicKeySpec);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
@@ -349,7 +349,7 @@ public final class CryptoKeys {
       java.security.KeyPair keyPair = keyGen.genKeyPair();
       privateKey = keyPair.getPrivate();
       publicKey = keyPair.getPublic();
-      pubKeyStr = Base64.byteArrayToBase64(publicKey.getEncoded());
+      pubKeyStr = Base64.getEncoder().encodeToString(publicKey.getEncoded());
     }
 
     /**
@@ -365,7 +365,7 @@ public final class CryptoKeys {
         String privateString = new String(inPrivate.readAllBytes(), StandardCharsets.UTF_8)
             .replaceAll("-----(BEGIN|END) PRIVATE KEY-----", "");
 
-        PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(java.util.Base64.getMimeDecoder().decode(privateString));
+        PKCS8EncodedKeySpec privateSpec = new PKCS8EncodedKeySpec(Base64.getMimeDecoder().decode(privateString));
         KeyFactory rsaFactory = KeyFactory.getInstance("RSA");
         privateKey = rsaFactory.generatePrivate(privateSpec);
       } catch (NoSuchAlgorithmException e) {
@@ -374,7 +374,7 @@ public final class CryptoKeys {
 
       try (InputStream inPublic = publicKeyResourceName.openStream()) {
         publicKey = getX509PublicKey(inPublic.readAllBytes());
-        pubKeyStr = Base64.byteArrayToBase64(publicKey.getEncoded());
+        pubKeyStr = Base64.getEncoder().encodeToString(publicKey.getEncoded());
       }
     }
 

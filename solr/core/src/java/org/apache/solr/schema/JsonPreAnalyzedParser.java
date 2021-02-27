@@ -19,6 +19,8 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -40,7 +42,6 @@ import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.schema.PreAnalyzedField.ParseResult;
 import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
 import org.noggit.JSONUtil;
@@ -100,7 +101,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
     res.str = (String)map.get(STRING_KEY);
     String bin = (String)map.get(BINARY_KEY);
     if (bin != null) {
-      byte[] data = Base64.base64ToByteArray(bin);
+      byte[] data = Base64.getDecoder().decode(bin);
       res.bin = data;
     }
     List<Object> tokens = (List<Object>)map.get(TOKENS_KEY);
@@ -166,7 +167,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
         } else if (key.equals(PAYLOAD_KEY)) {
           String str = String.valueOf(e.getValue());
           if (str.length() > 0) {
-            byte[] data = Base64.base64ToByteArray(str);
+            byte[] data = Base64.getDecoder().decode(str);
             PayloadAttribute p = parent.addAttribute(PayloadAttribute.class);
             if (data != null && data.length > 0) {
               p.setPayload(new BytesRef(data));
@@ -216,7 +217,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
       }
       BytesRef binaryValue = f.binaryValue();
       if (binaryValue != null) {
-        map.put(BINARY_KEY, Base64.byteArrayToBase64(binaryValue.bytes, binaryValue.offset, binaryValue.length));
+        map.put(BINARY_KEY, new String(Base64.getEncoder().encode(binaryValue.wrapToByteBuffer()).array(), StandardCharsets.ISO_8859_1));
       }
     }
     TokenStream ts = f.tokenStreamValue();
@@ -248,7 +249,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
             } else if (cl.isAssignableFrom(PayloadAttribute.class)) {
               BytesRef p = ((PayloadAttribute)att).getPayload();
               if (p != null && p.length > 0) {
-                tok.put(PAYLOAD_KEY, Base64.byteArrayToBase64(p.bytes, p.offset, p.length));
+                tok.put(PAYLOAD_KEY, new String(Base64.getEncoder().encode(p.wrapToByteBuffer()).array(), StandardCharsets.ISO_8859_1));
               }
             } else if (cl.isAssignableFrom(PositionIncrementAttribute.class)) {
               tok.put(POSINCR_KEY, ((PositionIncrementAttribute)att).getPositionIncrement());

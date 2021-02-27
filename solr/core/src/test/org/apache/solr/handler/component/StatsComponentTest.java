@@ -16,10 +16,12 @@
  */
 package org.apache.solr.handler.component;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
@@ -44,7 +46,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -1410,7 +1411,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
                         Collections.singletonList(distinctValsXpath));
     ExpectedStat.createSimple(Stat.countDistinct, "true", "long", "10");
     final String percentileShardXpath = kpre + "str[@name='percentiles'][.='" 
-      + Base64.byteArrayToBase64(tdigestBuf.array(), 0, tdigestBuf.array().length) + "']";
+      + new String(Base64.getEncoder().encode(tdigestBuf.array()), StandardCharsets.ISO_8859_1) + "']";
     final String p90 = "" + tdigest.quantile(0.90D);
     final String p99 = "" + tdigest.quantile(0.99D);
     ExpectedStat.create(Stat.percentiles, "'90, 99'",
@@ -1419,7 +1420,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
                                       kpre + "lst[@name='percentiles']/double[@name='90.0'][.="+p90+"]",
                                       kpre + "lst[@name='percentiles']/double[@name='99.0'][.="+p99+"]"));
     final String cardinalityShardXpath = kpre + "str[@name='cardinality'][.='" 
-      + Base64.byteArrayToBase64(hllBytes, 0, hllBytes.length) + "']";
+      + new String(Base64.getEncoder().encode(hllBytes),StandardCharsets.ISO_8859_1) + "']";
     final String cardinalityXpath = kpre + "long[@name='cardinality'][.='10']"; 
     ExpectedStat.create(Stat.cardinality, "true",
                         Collections.singletonList(cardinalityShardXpath),

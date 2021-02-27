@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Base64;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -33,7 +34,6 @@ import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
@@ -172,7 +172,7 @@ public class MetricsHistoryIntegrationTest extends SolrCloudTestCase {
       assertEquals(3, entry.size());
       entry.forEach((vk, vv) -> {
         String valString = (String)vv;
-        byte[] img = Base64.base64ToByteArray(valString);
+        byte[] img = Base64.getDecoder().decode(valString);
         try {
           ImageIO.read(new ByteArrayInputStream(img));
         } catch (IOException e) {

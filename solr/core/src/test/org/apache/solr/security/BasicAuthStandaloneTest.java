@@ -22,6 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Properties;
 
@@ -36,7 +37,6 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.SecurityConfHandlerLocalForTesting;
@@ -162,7 +162,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   public static void setBasicAuthHeader(AbstractHttpMessage httpMsg, String user, String pwd) {
     String userPass = user + ":" + pwd;
-    String encoded = Base64.byteArrayToBase64(userPass.getBytes(UTF_8));
+    String encoded = Base64.getEncoder().encodeToString(userPass.getBytes(UTF_8));
     httpMsg.setHeader(new BasicHeader("Authorization", "Basic " + encoded));
     log.info("Added Basic Auth security Header {}",encoded );
   }
