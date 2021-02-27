@@ -94,7 +94,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
       waitTimes = new int[] {300};
     }
 
-    Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
+    Thread.sleep(waitTimes[random().nextInt(waitTimes.length)]);
 
     // create some "old" index directories
     JettySolrRunner jetty = cluster.getRandomJetty(random());
@@ -121,7 +121,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     jetty.stop();
 
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
-    Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
+    Thread.sleep(waitTimes[random().nextInt(waitTimes.length)]);
 
     // bring shard replica up
     jetty.start();
