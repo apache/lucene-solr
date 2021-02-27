@@ -32,10 +32,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.logging.LogWatcher;
-import org.apache.solr.logging.LogWatcherConfig;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.junit.After;
 import org.junit.Before;
