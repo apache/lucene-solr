@@ -198,8 +198,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
 
   public void testWrongScoreExceptionForParent() throws Exception {
     final String aMode = ScoreMode.values()[random().nextInt(ScoreMode.values().length)].name();
-    final String wrongMode = LuceneTestCase.rarely()? "":(LuceneTestCase.rarely()? " ":
-        LuceneTestCase.rarely()? aMode.substring(1):aMode.toUpperCase(Locale.ROOT));
+    final String wrongMode = LuceneTestCase.rarely()? "":(LuceneTestCase.rarely()? "":
+        LuceneTestCase.rarely()? aMode.substring(1):aMode.toUpperCase(Locale.ROOT) + "k");
     assertQEx("wrong score mode", 
         req("q", "{!parent which=\"parent_s:[* TO *]\" score="+wrongMode+"}child_s:l","fl","score")
         , SolrException.ErrorCode.BAD_REQUEST.code);

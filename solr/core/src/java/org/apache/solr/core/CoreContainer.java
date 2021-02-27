@@ -968,6 +968,8 @@ public class CoreContainer implements Closeable {
               solrCores.markCoreAsNotLoading(cd);
             }
 
+          } catch (AlreadyClosedException e){
+            log.warn("Will not finish creating and registering core={} because we are shutting down", cd.getName(), e);
           } catch (Exception e){
             log.error("Error creating and register core {}", cd.getName(), e);
             throw e;
@@ -1257,7 +1259,7 @@ public class CoreContainer implements Closeable {
     }
 
     if (isShutDown()) {
-      throw new AlreadyClosedException("Already closed");
+      throw new AlreadyClosedException("Will not register SolrCore with ZooKeeper, already closed");
     }
 
     //    if (isShutDown) {

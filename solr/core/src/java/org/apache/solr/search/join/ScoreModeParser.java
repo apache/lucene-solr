@@ -44,7 +44,7 @@ class ScoreModeParser {
    * @throws SyntaxError when it's unable to parse
    * */
   static ScoreMode parse(String score) throws SyntaxError {
-    final ScoreMode scoreMode = lowerAndCapitalCase.get(score);
+    final ScoreMode scoreMode = lowerAndCapitalCase.get(score.toLowerCase(Locale.ROOT));
     if (scoreMode == null) {
       throw new SyntaxError("Unable to parse ScoreMode from: " + score);
     }
