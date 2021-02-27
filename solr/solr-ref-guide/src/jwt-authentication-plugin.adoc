@@ -90,8 +90,6 @@ To start enforcing authentication for all users, requiring a valid JWT in the `A
 }
 ----
 
-TIP: The configuration key `jwkUrl` is also supported as an alternative to `jwksUrl` for backwards compatibility with early versions of the plugin.
-
 === With Admin UI Support
 The next example shows configuring using https://openid.net/specs/openid-connect-discovery-1_0.html[OpenID Connect Discovery] with a well-known URI for automatic configuration of many common settings, including ability to use the Admin UI with an OpenID Connect enabled Identity Provider.
 

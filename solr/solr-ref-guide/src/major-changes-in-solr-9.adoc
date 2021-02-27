@@ -153,6 +153,8 @@ _(raw; not yet edited)_
 * SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
 escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
 
+* SOLR-15203: Remove the deprecated `jwkUrl` in favour of `jwksUrl` when configuring JWT authentication.
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
