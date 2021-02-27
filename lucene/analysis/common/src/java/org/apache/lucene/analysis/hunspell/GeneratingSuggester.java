@@ -181,28 +181,31 @@ class GeneratingSuggester {
   }
 
   private List<String> expandRoot(Root<String> root, String misspelled) {
-    List<String> crossProducts = new ArrayList<>();
+    List<char[]> crossProducts = new ArrayList<>();
     Set<String> result = new LinkedHashSet<>();
 
     if (!dictionary.hasFlag(root.entryId, dictionary.needaffix)) {
       result.add(root.word);
     }
 
+    char[] wordChars = root.word.toCharArray();
+
     // suffixes
     processAffixes(
         false,
         misspelled,
         (suffixLength, suffixId) -> {
-          if (!hasCompatibleFlags(root, suffixId) || !checkAffixCondition(suffixId, root.word)) {
+          int stripLength = affixStripLength(suffixId);
+          if (!hasCompatibleFlags(root, suffixId)
+              || !checkAffixCondition(suffixId, wordChars, 0, wordChars.length - stripLength)) {
             return;
           }
 
           String suffix = misspelled.substring(misspelled.length() - suffixLength);
-          String withSuffix =
-              root.word.substring(0, root.word.length() - affixStripLength(suffixId)) + suffix;
+          String withSuffix = root.word.substring(0, root.word.length() - stripLength) + suffix;
           result.add(withSuffix);
           if (dictionary.isCrossProduct(suffixId)) {
-            crossProducts.add(withSuffix);
+            crossProducts.add(withSuffix.toCharArray());
           }
         });
 
@@ -216,10 +219,12 @@ class GeneratingSuggester {
             return;
           }
 
+          int stripLength = affixStripLength(prefixId);
           String prefix = misspelled.substring(0, prefixLength);
-          for (String suffixed : crossProducts) {
-            if (checkAffixCondition(prefixId, suffixed)) {
-              result.add(prefix + suffixed.substring(affixStripLength(prefixId)));
+          for (char[] suffixed : crossProducts) {
+            int stemLength = suffixed.length - stripLength;
+            if (checkAffixCondition(prefixId, suffixed, stripLength, stemLength)) {
+              result.add(prefix + new String(suffixed, stripLength, stemLength));
             }
           }
         });
@@ -229,9 +234,12 @@ class GeneratingSuggester {
         true,
         misspelled,
         (prefixLength, prefixId) -> {
-          if (hasCompatibleFlags(root, prefixId) && checkAffixCondition(prefixId, root.word)) {
+          int stripLength = affixStripLength(prefixId);
+          int stemLength = wordChars.length - stripLength;
+          if (hasCompatibleFlags(root, prefixId)
+              && checkAffixCondition(prefixId, wordChars, stripLength, stemLength)) {
             String prefix = misspelled.substring(0, prefixLength);
-            result.add(prefix + root.word.substring(affixStripLength(prefixId)));
+            result.add(prefix + root.word.substring(stripLength));
           }
         });
 
@@ -243,6 +251,10 @@ class GeneratingSuggester {
     if (fst == null) return;
 
     FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<>());
+    if (arc.isFinal()) {
+      processAffixIds(0, arc.nextFinalOutput(), processor);
+    }
+
     FST.BytesReader reader = fst.getBytesReader();
 
     IntsRef output = fst.outputs.getNoOutput();
@@ -257,10 +269,14 @@ class GeneratingSuggester {
 
       if (arc.isFinal()) {
         IntsRef affixIds = fst.outputs.add(output, arc.nextFinalOutput());
-        for (int j = 0; j < affixIds.length; j++) {
-          processor.processAffix(prefixes ? i + 1 : length - i, affixIds.ints[affixIds.offset + j]);
-        }
+        processAffixIds(prefixes ? i + 1 : length - i, affixIds, processor);
       }
+    }
+  }
+
+  private void processAffixIds(int affixLength, IntsRef affixIds, AffixProcessor processor) {
+    for (int j = 0; j < affixIds.length; j++) {
+      processor.processAffix(affixLength, affixIds.ints[affixIds.offset + j]);
     }
   }
 
@@ -279,9 +295,9 @@ class GeneratingSuggester {
         && !dictionary.hasFlag(append, dictionary.onlyincompound);
   }
 
-  private boolean checkAffixCondition(int suffixId, String stem) {
+  private boolean checkAffixCondition(int suffixId, char[] word, int offset, int length) {
     int condition = dictionary.getAffixCondition(suffixId);
-    return condition == 0 || dictionary.patterns.get(condition).acceptsStem(stem);
+    return condition == 0 || dictionary.patterns.get(condition).acceptsStem(word, offset, length);
   }
 
   private int affixStripLength(int affixId) {

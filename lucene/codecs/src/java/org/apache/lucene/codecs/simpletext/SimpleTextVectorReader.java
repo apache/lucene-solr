@@ -40,6 +40,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -49,6 +50,10 @@ import org.apache.lucene.util.StringHelper;
  * @lucene.experimental
  */
 public class SimpleTextVectorReader extends VectorReader {
+  // shallowSizeOfInstance for fieldEntries map is included in ramBytesUsed() calculation
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(SimpleTextVectorReader.class)
+          + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class);
 
   private static final BytesRef EMPTY = new BytesRef("");
 
@@ -174,7 +179,16 @@ public class SimpleTextVectorReader extends VectorReader {
 
   @Override
   public long ramBytesUsed() {
-    return 0;
+    // mirror implementation of Lucene90VectorReader#ramBytesUsed
+    long totalBytes = BASE_RAM_BYTES_USED;
+    totalBytes += RamUsageEstimator.sizeOf(scratch.bytes());
+    totalBytes +=
+        RamUsageEstimator.sizeOfMap(
+            fieldEntries, RamUsageEstimator.shallowSizeOfInstance(FieldEntry.class));
+    for (FieldEntry entry : fieldEntries.values()) {
+      totalBytes += RamUsageEstimator.sizeOf(entry.ordToDoc);
+    }
+    return totalBytes;
   }
 
   @Override
