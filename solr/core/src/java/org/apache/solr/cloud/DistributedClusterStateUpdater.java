@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.overseer.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.*;
@@ -446,9 +447,11 @@ public class DistributedClusterStateUpdater {
         }
         // We've tried to update an existing state.json and got a BadVersionException. We'll try again a few times.
         // When only two threads compete, no point in waiting: if we lost this time we'll get it next time right away.
-        // But if more threads compete, then waiting a bit (random delay) can improve our chances. The delay should likely
-        // be proportional to the time between reading the cluster state and updating it. We can measure it in the loop above.
+        // But if more threads compete, then waiting a bit (random delay) can improve our chances. The delay should in
+        // theory grow as the number of concurrent threads attempting updates increase, but we don't know that number, so
+        // doing exponential backoff instead.
         // With "per replica states" collections, concurrent attempts of even just two threads are expected to be extremely rare.
+        Thread.sleep(CollectionHandlingUtils.RANDOM.nextInt(attempt < 13 ? 1 << attempt : 1 << 13)); // max wait 2^13ms=8.192 sec
       }
 
       // We made quite a few attempts but failed repeatedly. This is pretty bad but we can't loop trying forever.

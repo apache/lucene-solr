@@ -111,7 +111,7 @@ public class CollectionHandlingUtils {
       DocCollection.PER_REPLICA_STATE, null,
       ZkStateReader.PULL_REPLICAS, "0"));
 
-  protected static final Random RANDOM;
+  public static final Random RANDOM;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
     // based on the current seed
