@@ -641,7 +641,8 @@ public class RealTimeGetComponent extends SearchComponent
 
         SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
         if (onlyTheseNonStoredDVs != null) {
-          sid = new SolrInputDocument();
+          sid = SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get();
+          sid.clear();
         } else {
           Document luceneDocument = docFetcher.doc(docid);
           sid = toSolrInputDocument(luceneDocument, schema);

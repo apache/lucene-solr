@@ -356,33 +356,29 @@ public class ParWork implements Closeable {
             }
             if (closeCalls.size() > 0) {
 
-                List<Future<Object>> results = new ArrayList<>(closeCalls.size());
+              List<Future<Object>> results = new ArrayList<>(closeCalls.size());
 
-                for (Callable call : closeCalls) {
-                    Future future = executor.submit(call);
-                    results.add(future);
-                }
+              for (Callable call : closeCalls) {
+                Future future = executor.submit(call);
+                results.add(future);
+              }
 
-//                List<Future<Object>> results = executor.invokeAll(closeCalls, 8, TimeUnit.SECONDS);
               int i = 0;
-                for (Future<Object> future : results) {
-                  try {
-                    future.get(
-                        Long.getLong("solr.parwork.task_timeout", TimeUnit.MINUTES.toMillis(10)),
-                        TimeUnit.MILLISECONDS); // MRM TODO:
-                    if (!future.isDone() || future.isCancelled()) {
-                      log.warn("A task did not finish isDone={} isCanceled={}",
-                          future.isDone(), future.isCancelled());
-                      //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
-                    }
-                  } catch (TimeoutException e) {
-                    throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout", e); // TODO: add object info eg ParObject.label
-                  } catch (InterruptedException e1) {
-                    log.warn(WORK_WAS_INTERRUPTED);
-                    // TODO: save interrupted status and reset it at end?
+              for (Future<Object> future : results) {
+                try {
+                  future.get(Long.getLong("solr.parwork.task_timeout", TimeUnit.MINUTES.toMillis(10)), TimeUnit.MILLISECONDS); // MRM TODO:
+                  if (!future.isDone() || future.isCancelled()) {
+                    log.warn("A task did not finish isDone={} isCanceled={}", future.isDone(), future.isCancelled());
+                    //  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A task did nor finish" +future.isDone()  + " " + future.isCancelled());
                   }
-
+                } catch (TimeoutException e) {
+                  throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Timeout", e); // TODO: add object info eg ParObject.label
+                } catch (InterruptedException e1) {
+                  log.warn(WORK_WAS_INTERRUPTED);
+                  // TODO: save interrupted status and reset it at end?
                 }
+
+              }
             }
           }
         } finally {

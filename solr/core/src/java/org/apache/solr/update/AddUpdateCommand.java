@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.common.SkyHookDoc;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -139,14 +140,18 @@ public class AddUpdateCommand extends UpdateCommand {
            int count = field==null ? 0 : field.getValueCount();
            if (count == 0) {
              if (overwrite) {
-               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + sf.getName());
+               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Document is missing mandatory uniqueKey field: " + sf.getName() + solrDoc);
              }
            } else if (count  > 1) {
-             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + field);
+             throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Document contains multiple values for uniqueKey field: " + field);
            } else {
              BytesRefBuilder b = new BytesRefBuilder();
              sf.getType().readableToIndexed(field.getFirstValue().toString(), b);
              indexedId = b.get();
+
+             if (SkyHookDoc.skyHookDoc != null) {
+               SkyHookDoc.skyHookDoc.register(field.getFirstValue().toString());
+             }
            }
          }
        }
@@ -195,7 +200,7 @@ public class AddUpdateCommand extends UpdateCommand {
           if (overwrite) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Document is missing mandatory uniqueKey field: "
-                    + sf.getName());
+                    + sf.getName() + " solrDoc=" + solrDoc);
           }
         } else if (count > 1) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,

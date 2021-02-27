@@ -1328,6 +1328,10 @@ public class SolrZkClient implements Closeable {
     this.connManager.setDisconnectListener(dl);
   }
 
+  public void addWatch(String basePath, Watcher watcher, AddWatchMode mode) throws KeeperException, InterruptedException {
+    getSolrZooKeeper().addWatch(basePath, watcher == null ? null : wrapWatcher(watcher), mode);
+  }
+
   public void addWatch(String basePath, Watcher watcher, AddWatchMode mode, AsyncCallback.VoidCallback cb, Object ctx) {
     getSolrZooKeeper().addWatch(basePath, watcher == null ? null : wrapWatcher(watcher), mode, cb, ctx);
   }

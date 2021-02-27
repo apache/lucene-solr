@@ -115,6 +115,10 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
 
     private void processChildDoc(SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
+      if (sdoc == parent) {
+        throw new IllegalArgumentException("Parent and child must be different instances");
+      }
+
       if(storePath) {
         setPathField(sdoc, fullPath);
       }

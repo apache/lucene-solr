@@ -513,9 +513,13 @@ public class Overseer implements SolrCloseable {
       synchronized (this) {
         retry = !zkController.getCoreContainer().isShutDown() && !zkController.isShutdownCalled() && !zkController.isClosed() && !closeAndDone;
       }
-      if (retry) {
+      if (retry && zkController.getZkClient().isAlive()) {
         log.info("rejoining the overseer election after closing");
-        zkController.rejoinOverseerElection(false);
+        try {
+          zkController.rejoinOverseerElection(false);
+        } catch (AlreadyClosedException e) {
+          return;
+        }
       }
 
     }
@@ -880,10 +884,22 @@ public class Overseer implements SolrCloseable {
         overseer.writePendingUpdates();
 
         if (overseer.zkStateWriter != null) {
-          try {
-            zkController.getZkClient().delete(fullPaths, true);
-          } catch (Exception e) {
-            log.warn("Failed deleting processed items", e);
+          if (zkController.getZkClient().isAlive()) {
+            try {
+              zkController.getZkClient().delete(fullPaths, true);
+            } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
+              if (zkController.getZkClient().isAlive()) {
+                try {
+                  zkController.getZkClient().delete(fullPaths, true);
+                } catch (KeeperException keeperException) {
+                  log.warn("Failed deleting processed items", e);
+                }
+              } else {
+                log.warn("Failed deleting processed items", e);
+              }
+            } catch (Exception e) {
+              log.warn("Failed deleting processed items", e);
+            }
           }
         }
 

@@ -181,9 +181,15 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
     for(String fileName : fileNames) {
       unCache(fileName);
     }
-    //if (Boolean.getBoolean("solr.nrtDirSync")) { // MRM TODO:
+
+    // MRM TODO: we should prob link this setting to tlog sync
+    // with replicas, doesn't make a lot of sense to use, but without replicas
+    // or in certain cases, you would want to enable both - otherwise the cost
+    // is very high and a replica that goes out, by the time it comes back is generally
+    // going to just be recovering from the new leader
+    if (Boolean.getBoolean("solr.nrtDirSync")) {
       in.sync(fileNames);
-    //}
+    }
   }
 
   @Override

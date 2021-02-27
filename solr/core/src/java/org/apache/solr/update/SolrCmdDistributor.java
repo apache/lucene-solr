@@ -237,20 +237,22 @@ public class SolrCmdDistributor implements Closeable {
 
   private void submit(final Req req, String tag) {
 
-    if (cancelExeption != null) {
-      Throwable exp = cancelExeption;
-      cancelExeption = null;
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exp);
+//    if (cancelExeption != null) {
+//      Throwable exp = cancelExeption;
+//      cancelExeption = null;
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, exp);
+//    }
+
+//    if (log.isDebugEnabled()) {
+//      log.debug("sending update to " + req.node.getUrl() + " retry:" + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
+//    }
+    if (req.cmd instanceof AddUpdateCommand) {
+      log.info("sending update to " + req.node.getUrl() + " retry:" + req.retries + " docid=" + ((AddUpdateCommand) req.cmd).getPrintableId() + " " + req.cmd + " params:" + req.uReq.getParams());
+    } else {
+      log.info("sending update to " + req.node.getUrl() + " retry:" + req.retries + " docid=" + req.cmd + " params:" + req.uReq.getParams());
     }
 
-    if (log.isDebugEnabled()) {
-      log.debug("sending update to " + req.node.getUrl() + " retry:" + req.retries + " " + req.cmd + " params:" + req.uReq.getParams());
-    }
 
-    if (isClosed != null && isClosed.isClosed()) {
-      log.warn("Already closed, skippping update");
-      throw new AlreadyClosedException();
-    }
 
     req.uReq.setBasePath(req.node.getUrl());
 

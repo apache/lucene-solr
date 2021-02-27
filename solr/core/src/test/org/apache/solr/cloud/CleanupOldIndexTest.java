@@ -76,7 +76,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
 
     int[] maxDocList;
     if (TEST_NIGHTLY) {
-      maxDocList = new int[] {300, 500, 700};
+      maxDocList = new int[] {100, 200};
     } else {
       maxDocList = new int[] {30, 50, 70};
     }
@@ -89,9 +89,9 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     // give some time to index...
     int[] waitTimes;
     if (TEST_NIGHTLY) {
-      waitTimes = new int[] {3000, 4000};
+      waitTimes = new int[] {1000, 3000};
     } else {
-      waitTimes = new int[] {300, 600};
+      waitTimes = new int[] {300};
     }
 
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);

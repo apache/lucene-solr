@@ -102,6 +102,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
    */
   public void addField(String name, Object value) 
   {
+    if (value == this) {
+      throw new IllegalArgumentException("Parent and child must be different instances");
+    }
     SolrInputField field = _fields.get( name );
     if( field == null || field.value == null ) {
       setField(name, value);
@@ -160,6 +163,10 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     SolrInputField field = new SolrInputField( name );
     _fields.put( name, field );
     field.setValue( value );
+
+    if (SkyHookDoc.skyHookDoc != null && "id".equals(name)) {
+      SkyHookDoc.skyHookDoc.register(this);
+    }
   }
 
   /**
@@ -205,6 +212,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     if (_childDocuments != null) {
       clone._childDocuments = new ArrayList<>(_childDocuments.size());
       for (SolrInputDocument child : _childDocuments) {
+        if (child == clone) {
+          throw new IllegalArgumentException("Document cannot be child of itself");
+        }
         clone._childDocuments.add(child.deepCopy());
       }
     }
@@ -273,6 +283,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
 
   @Override
   public void addChildDocument(SolrInputDocument child) {
+    if (child == this) {
+      throw new IllegalArgumentException("Document cannot be child of itself");
+    }
    if (_childDocuments == null) {
      _childDocuments = new ArrayList<>();
    }

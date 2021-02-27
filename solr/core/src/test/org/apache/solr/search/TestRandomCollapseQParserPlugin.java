@@ -49,7 +49,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
     = new String[] {NULL_IGNORE, NULL_COLLAPSE, NULL_EXPAND};
   
   @BeforeClass
-  public static void buildIndexAndClient() throws Exception {
+  public static void beforeTestRandomCollapseQParserPlugin() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-sorts.xml");
     
     final int totalDocs = SolrTestUtil.atLeast(TEST_NIGHTLY ? 500 : 50);
@@ -78,7 +78,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
   
   @AfterClass
-  public static void cleanupStatics() throws Exception {
+  public static void afterTestRandomCollapseQParserPlugin() throws Exception {
     deleteCore();
     SOLR = null;
     ALL_SORT_FIELD_NAMES = ALL_COLLAPSE_FIELD_NAMES = null;
@@ -143,7 +143,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         final SolrParams mainP = params("q", q, "fl", "id,"+collapseField);
 
         final String csize = random().nextBoolean() ?
-          "" : " size=" + TestUtil.nextInt(random(),1,TEST_NIGHTLY ? 10000 : 10);
+          "" : " size=" + TestUtil.nextInt(random(),1,TEST_NIGHTLY ? 2500 : 10);
 
         final String nullPolicy = randomNullPolicy();
         final String nullPs = NULL_IGNORE.equals(nullPolicy)

@@ -240,8 +240,7 @@ public class JavaBinUpdateRequestCodec {
     }
 
     private SolrInputDocument listToSolrInputDocument(List<NamedList> namedList) {
-      SolrInputDocument doc = SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get();
-      doc.clear();
+      SolrInputDocument doc = new SolrInputDocument();
       for (int i = 0; i < namedList.size(); i++) {
         NamedList nl = namedList.get(i);
         if (i == 0) {

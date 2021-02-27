@@ -296,7 +296,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     try (SolrCore core = h.getCore()) {
       Gauge parentFilterCache = null;
       Gauge filterCache = null;
-      TimeOut timeout = new TimeOut(2, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      TimeOut timeout = new TimeOut(4, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       while (!timeout.hasTimedOut()) {
         parentFilterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegFilter"));
         filterCache = (Gauge) (core.getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.filterCache"));

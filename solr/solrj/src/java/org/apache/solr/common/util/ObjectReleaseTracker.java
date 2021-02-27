@@ -20,8 +20,6 @@ import org.apache.commons.io.output.StringBuilderWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -48,13 +46,13 @@ public class ObjectReleaseTracker {
   }
 
   public static boolean track(Object object) {
-    ObjectTrackerException ote = new ObjectTrackerException(object.getClass().getName());
-    OBJECTS.put(object, ote);
+    ObjectTrackerException ote = new ObjectTrackerException(object.getClass().getName() + "@" + Integer.toHexString(object.hashCode()));
+    OBJECTS.put(object.getClass().getName() + "@" + Integer.toHexString(object.hashCode()), ote);
     return true;
   }
   
   public static boolean release(Object object) {
-    OBJECTS.remove(object);
+    OBJECTS.remove(object.getClass().getName() + "@" + Integer.toHexString(object.hashCode()));
     return true;
   }
   
@@ -83,13 +81,6 @@ public class ObjectReleaseTracker {
       for (Entry<Object,ObjectTrackerException> entry : entries.entrySet()) {
         if (object != null && entry.getKey().getClass().getSimpleName().equals(object)) {
           entries.remove(entry.getKey());
-          if (entry.getKey() instanceof Closeable) {
-            try {
-              ((Closeable) entry.getKey()).close();
-            } catch (IOException e) {
-              log.warn("Exception trying to close", e);
-            }
-          }
           continue;
         }
         objects.add(entry.getKey().getClass().getSimpleName());
@@ -119,7 +110,7 @@ public class ObjectReleaseTracker {
     // Print our stack trace
     p.println(t);
     StackTraceElement[] trace = t.getStackTrace();
-    for (int i = 0; i < stack; i++) {
+    for (int i = 0; i < Math.min(stack, trace.length); i++) {
       StackTraceElement traceElement = trace[i];
       p.println("at " + traceElement);
     }

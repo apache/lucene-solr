@@ -75,6 +75,10 @@ public class MDCLoggingContext {
     }
   }
 
+  public static String getNodeName() {
+    return MDC.get(NODE_NAME_PROP);
+  }
+
   /**
    * Call this in a
    * finally.

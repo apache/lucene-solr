@@ -761,28 +761,20 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       gets.incrementAndGet();
       if (!allowCached || lastUpdateTime < 0 || System.nanoTime() - lastUpdateTime > LAZY_CACHE_TIME) {
         boolean shouldFetch = true;
-        DocCollection cached = cachedDocCollection;
-        if (cached != null) {
+        if (cachedDocCollection != null) {
           Stat exists = null;
           try {
             exists = zkClient.exists(getCollectionPath(collName), null, true);
           } catch (Exception e) {
-            ParWork.propagateInterrupt(e);
-            throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
-          if (exists != null && exists.getVersion() == cached.getZNodeVersion()) {
+          if (exists != null && exists.getVersion() == cachedDocCollection.getZNodeVersion()) {
             shouldFetch = false;
           }
         }
         if (shouldFetch) {
-          cached = getCollectionLive(ZkStateReader.this, collName);
+          cachedDocCollection = getCollectionLive(ZkStateReader.this, collName);
           lastUpdateTime = System.nanoTime();
-          cachedDocCollection = cached;
-          return cached;
         }
-      }
-      if (log.isDebugEnabled() && cachedDocCollection == null) {
-        log.debug("cached collection is null");
       }
       return cachedDocCollection;
     }
@@ -1422,11 +1414,13 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
 
     public void createWatch() {
       String collectionCSNPath = getCollectionSCNPath(coll);
+      CountDownLatch latch = new CountDownLatch(2);
       zkClient.addWatch(collectionCSNPath, this, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
         if (rc != 0) {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
           log.error("Exception creating watch for " + path, ex);
         }
+        latch.countDown();
       }, "collectionStateWatcher:" + coll);
 
       zkClient.addWatch(stateUpdateWatcher.stateUpdatesPath, stateUpdateWatcher, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
@@ -1434,10 +1428,18 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
           log.error("Exception creating watch for " + path, ex);
         }
+        latch.countDown();
       }, "collectionStateUpdatesWatcher:" + coll);
+
+      try {
+        latch.await(5, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      }
     }
 
     public void removeWatch() {
+      CountDownLatch latch = new CountDownLatch(2);
       String collectionCSNPath = getCollectionSCNPath(coll);
       zkClient.removeWatches(collectionCSNPath, this, WatcherType.Any, true, (rc, path, ctx) -> {
         if (rc != 0) {
@@ -1445,6 +1447,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
           if (!(ex instanceof KeeperException.NoWatcherException)) {
             log.error("Exception removing watch for " + path, ex);
           }
+          latch.countDown();
         }
       }, "collectionStateWatcher:" + coll);
 
@@ -1455,7 +1458,14 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
             log.error("Exception removing watch for " + path, ex);
           }
         }
+        latch.countDown();
       }, "collectionStateUpdatesWatcher:" + coll);
+
+      try {
+        latch.await(5, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        ParWork.propagateInterrupt(e);
+      }
     }
 
     public void refreshStateUpdates() {
@@ -1830,23 +1840,21 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     }
 
     public void createWatch() {
-      zkClient.addWatch(COLLECTIONS_ZKNODE, this, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
-        if (rc != 0) {
-          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception creating watch for " + path, ex);
-        }
-      }, "collectionsChildWatcher");
+      try {
+        zkClient.addWatch(COLLECTIONS_ZKNODE, this, AddWatchMode.PERSISTENT);
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
     }
 
     public void removeWatch() {
-      zkClient.removeWatches(COLLECTIONS_ZKNODE, this, WatcherType.Any, true, (rc, path, ctx) -> {
-        if (rc != 0) {
-          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          if (!(ex instanceof KeeperException.NoWatcherException)) {
-            log.error("Exception removing watch for " + path, ex);
-          }
-        }
-      }, "collectionsChildWatcher");
+      try {
+        zkClient.removeWatches(COLLECTIONS_ZKNODE, this, WatcherType.Any, true);
+      } catch (KeeperException.NoWatcherException e) {
+
+      } catch (Exception e) {
+        log.warn("Exception removing watch", e);
+      }
     }
 
     @Override
@@ -1866,9 +1874,6 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
       if (EventType.None.equals(event.getType())) {
         return;
       }
-      if (closed || zkClient.isClosed()) {
-        return;
-      }
       if (node != null) {
         MDCLoggingContext.setNode(node);
       }
@@ -1882,33 +1887,29 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
     public void refresh() {
       try {
         refreshLiveNodes();
-      } catch (KeeperException e) {
+      } catch (Exception e) {
         log.error("A ZK error has occurred", e);
-      } catch (InterruptedException e) {
-        log.warn("Interrupted", e);
       }
     }
 
     public void createWatch() {
-      zkClient.addWatch(LIVE_NODES_ZKNODE, this, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
-        if (rc != 0) {
-          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception creating watch for " + path, ex);
-        }
-      }, "liveNodesWatcher");
+      try {
+        zkClient.addWatch(LIVE_NODES_ZKNODE, this, AddWatchMode.PERSISTENT);
+      } catch (Exception e) {
+        log.warn("Exception creating watch", e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Exception creating watch", e);
+      }
     }
 
     public void removeWatch() {
-      zkClient.removeWatches(LIVE_NODES_ZKNODE, this, WatcherType.Any, true, (rc, path, ctx) -> {
-        if (rc != 0) {
-          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          if (!(ex instanceof KeeperException.NoWatcherException)) {
-            log.error("Exception removing watch for " + path, ex);
-          }
-        }
-      }, "liveNodesWatcher");
-    }
+      try {
+        zkClient.removeWatches(LIVE_NODES_ZKNODE, this, WatcherType.Any, true);
+      } catch (KeeperException.NoWatcherException e) {
 
+      } catch (Exception e) {
+        log.warn("Exception removing watch", e);
+      }
+    }
 
     @Override
     public void close() throws IOException {

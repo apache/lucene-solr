@@ -995,21 +995,18 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     }
   }
 
-  protected static int sendDocs(CloudHttp2SolrClient cloudClient, String collection, List<SolrInputDocument> batch) throws Exception {
+  protected static void sendDocs(CloudHttp2SolrClient cloudClient, String collection, SolrInputDocument doc) throws Exception {
     UpdateRequest up = new UpdateRequest();
-    up.add(batch);
+    up.add(doc);
     NamedList resp = null;
 
     try {
       resp = cloudClient.request(up, collection);
-      return cloudClient.getMinAchievedReplicationFactor(cloudClient.getDefaultCollection(), resp);
     } catch (Exception exc) {
       ParWork.propagateInterrupt(exc);
       Throwable rootCause = SolrException.getRootCause(exc);
-
-      log.error(" Add batch failed due to: {}", rootCause);
+      log.error(" Add doc failed due to: {}", rootCause);
       throw exc;
-
     }
   }
 

@@ -50,7 +50,8 @@ class SingleThreadedCSVLoader extends CSVLoaderBase {
     templateAdd.setReq(req);
     templateAdd.overwrite = overwrite;
     templateAdd.commitWithin = commitWithin;
-    SolrInputDocument doc = new SolrInputDocument();
+    SolrInputDocument doc = SolrInputDocument.THREAD_LOCAL_SolrInputDocument.get();
+    doc.clear();
     doAdd(line, vals, doc, templateAdd);
   }
 }

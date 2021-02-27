@@ -16,19 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
@@ -45,10 +32,10 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SkyHookDoc;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -58,6 +45,16 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.apache.solr.update.processor.DistributedUpdateProcessor.DISTRIB_FROM;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
@@ -84,7 +81,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     final String shardId = "s1";
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 1, 3)
-        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+        .process(cluster.getSolrClient());
 
     final ZkStateReader stateReader = cluster.getSolrClient().getZkStateReader();
 
@@ -100,7 +97,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     // verify doc is on the leader and replica
     final List<Replica> notLeaders = stateReader.getClusterState().getCollection(COLLECTION).getReplicas()
         .stream()
-        .filter(r -> r.getName().equals(leader.getName()) == false)
+        .filter(r -> r.getName().equals(leader.getName()) == false && stateReader.isNodeLive(r.getNodeName()) && r.getState() == Replica.State.ACTIVE)
         .collect(Collectors.toList());
     assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, 1, null);
 
@@ -156,15 +153,15 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         try {
           Thread.sleep(rand.nextInt(30)+1);
         } catch (InterruptedException e) {
-          return;
+          log.error("Fail", e);
         }
 
-        for (int i=0; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
+        for (int i=1; i < (TEST_NIGHTLY ? 1000 : 100); i++) {
           if (i % (rand.nextInt(20)+1) == 0) {
             try {
               Thread.sleep(rand.nextInt(50)+1);
             } catch (InterruptedException e) {
-              return;
+              log.error("Fail", e);
             }
           }
 
@@ -173,7 +170,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
             sendDoc(docId);
             docsSent.incrementAndGet();
           } catch (Exception e) {
-            log.error("id=" + docId, e);
+            log.error("Fail id=" + docId, e);
           }
         }
       }
@@ -188,7 +185,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         for (int i=0; i < 3; i++) {
           try {
             reloadCollection(leader, COLLECTION);
-          } catch (Exception e) {}
+          } catch (Exception e) {
+            log.error("Fail", e);
+          }
 
           try {
             Thread.sleep(rand.nextInt(300)+300);
@@ -216,6 +215,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
             if (!deletedDocs.contains(docToDelete)) {
               SolrTestCaseJ4.delI(String.valueOf(docToDelete));
               deletedDocs.add(docToDelete);
+              if (SkyHookDoc.skyHookDoc != null) {
+                SkyHookDoc.skyHookDoc.register(String.valueOf(docToDelete), "delete from test client");
+              }
             }
           }
         }
@@ -231,7 +233,9 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         for (int i=0; i < 20; i++) {
           try {
             cluster.getSolrClient().commit(COLLECTION);
-          } catch (Exception e) {}
+          } catch (Exception e) {
+            log.error("Fail", e);
+          }
 
           try {
             Thread.sleep(rand.nextInt(100)+100);
@@ -257,7 +261,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
       log.info("Total of {} docs deleted", deletedDocs.size());
     }
 
-    assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, TEST_NIGHTLY ? 1000 : 100, deletedDocs);
+    assertDocsExistInAllReplicas(leader, notLeaders, COLLECTION, 1, docsSent.get(), deletedDocs);
 
     maxOnLeader = getMaxVersionFromIndex(leader);
     maxOnReplica = getMaxVersionFromIndex(replica);
@@ -342,7 +346,10 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     doc.addField("id", String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     log.info("Send id={}", docId);
-    AbstractFullDistribZkTestBase.sendDocs(cluster.getSolrClient(), COLLECTION, Collections.singletonList(doc));
+    if (SkyHookDoc.skyHookDoc != null) {
+      SkyHookDoc.skyHookDoc.register(String.valueOf(docId), "send from test client");
+    }
+    AbstractFullDistribZkTestBase.sendDocs(cluster.getSolrClient(), COLLECTION, doc);
   }
 
   /**
@@ -371,10 +378,6 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     boolean reloadedOk = false;
     try (Http2SolrClient client = SolrTestCaseJ4.getHttpSolrClient(replica.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
-      long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
-
-      Thread.sleep(1000);
-
       // send reload command for the collection
       log.info("Sending RELOAD command for {}", testCollectionName);
       CollectionAdminRequest.reloadCollection(testCollectionName)

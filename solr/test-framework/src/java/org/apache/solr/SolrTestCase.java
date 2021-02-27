@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecutor;
+import org.apache.solr.common.SkyHookDoc;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -588,6 +589,11 @@ public class SolrTestCase extends Assert {
       reusedKeys = null;
       sslConfig = null;
 
+      if (SkyHookDoc.skyHookDoc != null) {
+        SkyHookDoc.skyHookDoc.logAll();
+        SkyHookDoc.skyHookDoc.clear();
+      }
+
       long testTime = TimeUnit.SECONDS.convert(System.nanoTime() - testStartTime, TimeUnit.NANOSECONDS);
       if (!LuceneTestCase.TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {
         log.error("This test suite is too long for non @Nightly runs! Please improve it's performance, break it up, make parts of it @Nightly or make the whole suite @Nightly: {}"
@@ -632,10 +638,9 @@ public class SolrTestCase extends Assert {
       log.info("*******************************************************************");
     }
 
-    StartupLoggingUtils.shutdown();
-
     checkForInterruptRequest();
     interuptThreadWithNameContains.clear();
+    StartupLoggingUtils.shutdown();
   }
 
   private static void checkForInterruptRequest() {

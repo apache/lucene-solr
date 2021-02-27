@@ -232,7 +232,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private final List<Runnable> confListeners = new CopyOnWriteArrayList<>();
 
-  private final ReentrantLock ruleExpiryLock;
   private final ReentrantLock snapshotDelLock; // A lock instance to guard against concurrent deletions.
 
   private volatile Timer newSearcherTimer;
@@ -734,7 +733,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         log.info("Wait for reload lock");
 
         while (!(lock.tryLock() || lock.tryLock(250, TimeUnit.MILLISECONDS))) {
-          if (closing) {
+          if (closing || coreContainer.isShutDown()) {
             log.warn("Skipping reload because we are closed");
             reloadyWaiting.decrementAndGet();
             throw new AlreadyClosedException();
@@ -1148,7 +1147,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       bufferUpdatesIfConstructing(coreDescriptor);
       timeBufferUpdatesIfConstructing.done();
 
-      this.ruleExpiryLock = new ReentrantLock();
       this.snapshotDelLock = new ReentrantLock();
 
     } catch (Throwable e) {
@@ -1750,7 +1748,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     if (count < -1) {
       refCount.set(-1);
-      throw new IllegalStateException("Already closed " + count);
+      log.warn("Already closed " + count);
+      return;
     }
 
 //    if (log.isDebugEnabled()) {
@@ -3408,10 +3407,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public SolrSnapshotMetaDataManager getSnapshotMetaDataManager() {
     return snapshotMgr;
-  }
-
-  public ReentrantLock getRuleExpiryLock() {
-    return ruleExpiryLock;
   }
 
   /////////////////////////////////////////////////////////////////////

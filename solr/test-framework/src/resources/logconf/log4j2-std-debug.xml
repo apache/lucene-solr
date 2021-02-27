@@ -24,7 +24,7 @@
         </Console>
 
         <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
-            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%t)}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </File>
 
     </Appenders>
@@ -54,8 +54,8 @@
         <AsyncLogger name="org.apache.solr.client.solrj.impl.LBSolrClient" level="INFO"/>
         <AsyncLogger name="org.apache.solr.cloud.ZkController" level="INFO"/>
         <AsyncLogger name="org.apache.solr.common.cloud.ZkMaintenanceUtils" level="INFO"/>
-        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="INFO"/>
-        <AsyncLogger name="org.apache.solr.update.processor.DistributedUpdateProcessor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="DEBUG"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedUpdateProcessor" level="DEBUG"/>
         <AsyncLogger name="org.apache.solr.update.SolrCmdDistributor" level="INFO"/>
         <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="INFO"/>
 
