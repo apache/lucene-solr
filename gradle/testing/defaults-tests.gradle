@@ -43,7 +43,7 @@ allprojects {
           [propName: 'tests.heapsize', value: "512m", description: "Heap size for test JVMs"],
           // Test forks
           [propName: 'tests.jvms',
-           value: { -> ((int) Math.max(4, Runtime.runtime.availableProcessors() / 2)) },
+           value: { -> ((int) Math.max(4l, Math.round(Runtime.runtime.availableProcessors() / 2))) },
            description: "Number of forked test JVMs"],
           [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
           [propName: 'tests.jvmargs',
