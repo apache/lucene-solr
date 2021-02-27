@@ -87,6 +87,9 @@ The default mime type for the JSON writer is `application/json`, however this ca
 </queryResponseWriter>
 ----
 
+WARNING: If you using the JSON formatted response with JSONP to query across boundaries, having Solr respond with `text/plain` mime type when the
+browser expects `application/json` will trigger the browser to block the request.
+
 === JSON-Specific Parameters
 
 ==== json.nl

@@ -1331,16 +1331,6 @@
      <queryResponseWriter name="schema.xml" class="solr.SchemaXmlResponseWriter"/>
     -->
 
-  <!-- Overriding the content-type of the response writer.
-   -->
-  <queryResponseWriter name="json" class="solr.JSONResponseWriter">
-     <!-- For the purposes of the tutorial, JSON responses are written as
-      plain text so that they are easy to read in *any* browser.
-      If you expect a MIME type of "application/json" just remove this override.
-     -->
-    <str name="content-type">text/plain; charset=UTF-8</str>
-  </queryResponseWriter>
-
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked
        every xsltCacheLifetimeSeconds.  This is part of the Scripting contrib module.
