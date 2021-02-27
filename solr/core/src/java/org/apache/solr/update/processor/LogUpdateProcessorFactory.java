@@ -31,6 +31,7 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.update.MergeIndexesCommand;
 import org.apache.solr.update.RollbackUpdateCommand;
+import org.apache.solr.update.UpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,6 +106,12 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       // call delegate first so we can log things like the version that get set later
       if (next != null) next.processAdd(cmd);
 
+      if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
+        // replays can come multi threaded from the replay executor
+        // and these lists are not thread safe or really that desirable anyway
+        return;
+      }
+
       // Add a list of added id's to the response
       if (adds == null) {
         adds = new ArrayList<>();
@@ -128,6 +135,11 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       if (next != null) next.processDelete(cmd);
 
+      if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
+        // replays can come multi threaded from the replay executor
+        // and these lists are not thread safe or really that desirable anyway
+        return;
+      }
       if (cmd.isDeleteById()) {
         if (deletes == null) {
           deletes = new ArrayList<>();
@@ -168,6 +180,11 @@ public class LogUpdateProcessorFactory extends UpdateRequestProcessorFactory imp
       }
       if (next != null) next.processCommit(cmd);
 
+      if ((cmd.getFlags() & UpdateCommand.REPLAY) != 0) {
+        // replays can come multi threaded from the replay executor
+        // and these lists are not thread safe or really that desirable anyway
+        return;
+      }
 
       final String msg = cmd.optimize ? "optimize" : "commit";
       toLog.add(msg, "");
