@@ -872,7 +872,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   public void inform(SolrCore core) {
     while (waitingForCore.size() > 0) {
-      try (ParWork worker = new ParWork(this, false, false)) {
+      try (ParWork worker = new ParWork(this, false, true)) {
         waitingForCore.forEach(aware -> {
           worker.collect("informSolrCore", ()-> {
             try {

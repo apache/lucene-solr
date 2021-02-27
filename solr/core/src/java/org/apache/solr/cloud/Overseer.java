@@ -744,11 +744,7 @@ public class Overseer implements SolrCloseable {
   }
 
   public void writePendingUpdates() {
-    if (zkStateWriter != null) {
-      new OverseerTaskExecutorTask.WriteTask(getCoreContainer(), zkStateWriter).run();
-    } else {
-      throw new AlreadyClosedException("No longer Overseer it seems, won't write pending updates");
-    }
+    new OverseerTaskExecutorTask.WriteTask(getCoreContainer(), zkStateWriter).run();
   }
 
   private static abstract class QueueWatcher implements Watcher, Closeable {

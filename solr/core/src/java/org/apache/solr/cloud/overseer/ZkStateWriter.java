@@ -75,8 +75,7 @@ public class ZkStateWriter {
 
   private volatile ClusterState cs;
 
-  protected final ReentrantLock ourLock = new ReentrantLock(true);
-  protected final ReentrantLock writeLock = new ReentrantLock(true);
+  protected final ReentrantLock ourLock = new ReentrantLock();
 
   private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 10), new TimeSource.NanoTimeSource(){
     public void sleep(long ms) throws InterruptedException {
@@ -208,7 +207,7 @@ public class ZkStateWriter {
               } else if (OverseerAction.RECOVERYNODE.equals(OverseerAction.get(entry.getKey()))) {
                 continue;
               } else {
-                log.info("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
+                if (log.isDebugEnabled()) log.debug("state cmd entry {} asOverseerCmd={}", entry, OverseerAction.get(entry.getKey()));
                 String core = entry.getKey();
                 String collectionAndStateString = (String) entry.getValue();
                 if (log.isDebugEnabled()) {
@@ -409,16 +408,16 @@ public class ZkStateWriter {
     // writeLock.lock();
     // try {
     //   log.info("Get our write lock");
+    if (log.isDebugEnabled()) {
+      log.debug("writePendingUpdates {}", cs);
+    }
+
     ourLock.lock();
     try {
  //     log.info("Got our write lock");
 
       throttle.minimumWaitBetweenActions();
       throttle.markAttemptingAction();
-
-      if (log.isTraceEnabled()) {
-        log.trace("writePendingUpdates {}", cs);
-      }
 
       if (failedUpdates.size() > 0) {
         Exception lfe = lastFailedException.get();

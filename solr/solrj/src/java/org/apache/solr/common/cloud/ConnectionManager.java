@@ -161,6 +161,10 @@ public class ConnectionManager implements Watcher, Closeable {
         log.warn("Fired connected when it appears we were last in a connected state zkstate={} closed={} cmconnected={}", getKeeper().getState(), isClosed, connected);
       }
 
+      if (isClosed) {
+        return;
+      }
+
       connected = true;
       disconnectedLatch = new CountDownLatch(1);
       lastConnectedState = 1;
@@ -252,7 +256,7 @@ public class ConnectionManager implements Watcher, Closeable {
         if (isClosed()) return;
         if (log.isDebugEnabled()) log.debug("zkClient has connected");
         // MRM TODO: - maybe use root shared
-        client.zkConnManagerCallbackExecutor.execute(() -> {
+        ParWork.getRootSharedExecutor().execute(() -> {
           connected();
         });
 

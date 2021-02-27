@@ -487,6 +487,8 @@ public class ZkController implements Closeable, Runnable {
 
               removeEphemeralLiveNode();
 
+              publishNodeAs(getNodeName(), OverseerAction.RECOVERYNODE);
+
               // recreate our watchers first so that they exist even on any problems below
               zkStateReader.createClusterStateWatchersAndUpdate();
 
@@ -1476,8 +1478,11 @@ public class ZkController implements Closeable, Runnable {
       desc.getCloudDescriptor().setHasRegistered(true);
 
       return shardId;
+    } catch (AlreadyClosedException e) {
+      log.warn("Won't register with ZooKeeper, already shutting down core={}", desc.getName());
+      throw e;
     } catch (Exception e) {
-      log.error("Error registering SolrCore with Zookeeper", e);
+      log.error("Error registering SolrCore with Zookeeper core={}", desc, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore with Zookeeper", e);
     } finally {
       if (isDcCalled() || isClosed()) {

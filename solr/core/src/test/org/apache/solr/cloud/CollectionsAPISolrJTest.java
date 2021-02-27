@@ -244,7 +244,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Ignore // MRM TODO: - testing large numbers
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = "solrj_test";
-    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 12, 12)
+    CollectionAdminResponse response = CollectionAdminRequest.createCollection(collectionName, "conf", 24, 24) // 24 * 24 = 576
             .process(cluster.getSolrClient());
 
 

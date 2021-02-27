@@ -109,6 +109,10 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
     public Stat getStat(){
       return stat;
     }
+
+    public byte[] getBytes() {
+      return buf;
+    }
   }
 
   public String getConfigSetZkPath() {

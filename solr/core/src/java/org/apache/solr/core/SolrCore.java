@@ -176,6 +176,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
@@ -1219,16 +1220,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // Processors initialized before the handlers
       updateProcessorChains = loadUpdateProcessorChains();
 
-      future.get();
-
       // Finally tell anyone who wants to know
       StopWatch timeInform = StopWatch.getStopWatch(this + "-startCore-inform");
       this.updateHandler.informEventListeners(this);
       resourceLoader.inform(resourceLoader);
-      resourceLoader.inform(this); // last call before the latch is released.
       timeInform.done();
 
-      searcherReadyLatch.countDown();
       // this must happen after the latch is released, because a JMX server impl may
       // choose to block on registering until properties can be fetched from an MBean,
       // and a SolrCoreAware MBean may have properties that depend on getting a Searcher
@@ -1236,6 +1233,12 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       StopWatch timeRInform = StopWatch.getStopWatch(this + "-startCore-resourceLoaderInform");
       resourceLoader.inform(infoRegistry);
       timeRInform.done();
+
+      future.get(120, TimeUnit.SECONDS);
+
+      resourceLoader.inform(this); // last call before the latch is released.
+
+      searcherReadyLatch.countDown();
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
       StopWatch timeWaitForSearcher = StopWatch.getStopWatch(this + "-startCore-waitForSearcher");
@@ -1273,11 +1276,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
       timeReloadAndDirChange.done();
 
-     // if (!isReloaded || dirChanged) { // MRM TODO: reload could move to a different index?
+      if (!isReloaded || dirChanged) { // MRM TODO: reload could move to a different index?
         StopWatch timeSeedVersions = StopWatch.getStopWatch(this + "-startCore-seedVersions");
         seedVersionBuckets();
         timeSeedVersions.done();
-     // }
+      }
 
       StopWatch timeRegConfListener = StopWatch.getStopWatch(this + "-startCore-regConfListener");
       registerConfListener();
@@ -1306,8 +1309,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 //      }
       try {
         throw e;
-      } catch (IOException | InterruptedException | ExecutionException ioException) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, ioException);
+      } catch (IOException | InterruptedException | ExecutionException | TimeoutException exception) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, exception);
       }
     } finally {
       timeStartCore.done();

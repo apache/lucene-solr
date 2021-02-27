@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<!-- Configuration for asynchronous logging -->
+<Configuration>
+    <Appenders>
+
+        <Console name="STDERR_COLOR" target="SYSTEM_ERR">
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+        </Console>
+
+        <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
+            <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+        </File>
+
+    </Appenders>
+    <Loggers>
+        <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
+        <AsyncLogger name="org.apache.zookeeper.ClientCnxn" level="ERROR"/>
+        <AsyncLogger name="org.apache.zookeeper.server.ZooKeeperCriticalThread" level="OFF"/>
+
+        <AsyncLogger name="org.apache.hadoop" level="WARN"/>
+        <AsyncLogger name="org.apache.directory" level="WARN"/>
+        <AsyncLogger name="org.apache.solr.hadoop" level="INFO"/>
+        <AsyncLogger name="org.eclipse.jetty" level="INFO"/>
+
+        <AsyncLogger name="org.apache.solr.core.SolrCore" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.core.DefaultSolrCore" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.core.SolrCoreState" level="INFO"/>
+
+        <AsyncLogger name="org.apache.solr.handler.admin.CollectionsHandler" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.cloud.api.collections.CreateCollectionCmd" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.cloud.overseer.ZkStateWriter" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.cloud.Overseer" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.cloud.OverseerTaskProcessor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.cloud.ZkDistributedQueue" level="INFO"/>
+        <!-- <AsyncLogger name="org.apache.solr.common.cloud.SolrZkClient" level="DEBUG"/> -->
+        <AsyncLogger name="org.apache.solr.cloud.overseer.SliceMutator" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.client.solrj.impl.LBSolrClient" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.cloud.ZkController" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.common.cloud.ZkMaintenanceUtils" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedZkUpdateProcessor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.processor.DistributedUpdateProcessor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.SolrCmdDistributor" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.update.processor.LogUpdateProcessorFactory" level="INFO"/>
+
+        <AsyncLogger name="org.apache.solr.common.ParWork" level="INFO"/>
+
+        <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="OFF"/>
+
+        <AsyncLogger name="org.apache.solr.core.CoreContainer.Deprecation" level="OFF"/>
+
+
+        <AsyncLogger name="com.google.inject.servlet" level="INFO"/>
+        <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="INFO"/>
+
+        <AsyncRoot level="INFO">
+            <AppenderRef ref="STDERR_COLOR"/>
+            <AppenderRef ref="FILE"/>
+         </AsyncRoot>
+     </Loggers>
+ </Configuration>

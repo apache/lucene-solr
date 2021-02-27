@@ -23,6 +23,7 @@ import net.sf.saxon.lib.Validation;
 import net.sf.saxon.om.NodeInfo;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.tree.tiny.TinyDocumentImpl;
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -30,7 +31,8 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.StopWatch;
 import org.apache.solr.common.util.XMLErrorLogger;
 import org.apache.solr.util.DOMUtil;
-import org.apache.solr.util.SystemIdResolver;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
@@ -48,6 +50,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +69,15 @@ public class XmlConfigFile { // formerly simply "Config"
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
+
+  private static Map CONFIG_CACHE = new ReferenceMap(ReferenceMap.HARD, ReferenceMap.WEAK) {
+    {
+      purgeBeforeRead();
+      purgeBeforeWrite();
+    }
+  };
+
+  private static Map<String, ZkSolrResourceLoader.ZkByteArrayInputStream> SYNC_CONFIG_CACHE = Collections.synchronizedMap(CONFIG_CACHE);
 
   protected final String prefix;
   private final String name;
@@ -115,18 +127,41 @@ public class XmlConfigFile { // formerly simply "Config"
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/")) ? prefix + '/' : prefix;
 
-    StopWatch parseXmlFile = new StopWatch(name + "-parseXmlFile");
+    StopWatch parseXmlFile = StopWatch.getStopWatch(name + "-parseXmlFile");
     if (is == null) {
       if (name == null || name.length() == 0) {
         throw new IllegalArgumentException("Null or empty name:" + name);
       }
-      InputStream in = loader.openResource(name);
+
+      InputStream in = null;
+
+      if (loader instanceof  ZkSolrResourceLoader) {
+        ZkSolrResourceLoader.ZkByteArrayInputStream cached = SYNC_CONFIG_CACHE.get(name);
+        if (cached != null) {
+          Stat checkStat;
+          try {
+            checkStat = ((ZkSolrResourceLoader) loader).getZkClient().exists(loader.getConfigDir() + "/" + name, null);
+          } catch (KeeperException | InterruptedException e) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+          }
+          if (checkStat != null && checkStat.getVersion() <- cached.getStat().getVersion()) {
+            in = new ZkSolrResourceLoader.ZkByteArrayInputStream(cached.getBytes(), cached.getStat());
+          }
+        }
+      }
+      if (in == null) {
+        in = loader.openResource(name);
+      }
+      
       if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+        SYNC_CONFIG_CACHE.put(name, (ZkSolrResourceLoader.ZkByteArrayInputStream) in);
         zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        log.debug("loaded config {} with version {} ", name, zkVersion);
+        if (log.isDebugEnabled()) {
+          log.debug("loaded config {} with version {} ", name, zkVersion);
+        }
       }
       is = new InputSource(in);
-      is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
+   //   is.setSystemId(SystemIdResolver.createSystemIdFromResourceName(name));
     }
 
     try {

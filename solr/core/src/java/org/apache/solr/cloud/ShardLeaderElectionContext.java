@@ -144,7 +144,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         try {
           if (zkShardTerms != null) {
             //  guarantees that a live-fetch will be enough for this core to see max term published
-            log.info("refresh shard terms for core {}", coreName);
+            if (log.isDebugEnabled()) log.debug("refresh shard terms for core {}", coreName);
             zkShardTerms.refreshTerms(false, -1);
           }
         } catch (Exception e) {

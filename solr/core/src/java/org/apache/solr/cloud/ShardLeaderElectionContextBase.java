@@ -157,7 +157,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           if (log.isDebugEnabled()) log.debug("Delete leader seq election path {} path we watch is {}", leaderSeqPath, watchedSeqPath);
           try {
             zkClient.delete(leaderSeqPath, -1);
-          } catch (NoNodeException e1) {
+          } catch (NoNodeException | AlreadyClosedException e1) {
             // fine
           }
         }

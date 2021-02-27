@@ -191,10 +191,10 @@ public class CoreContainer implements Closeable {
   private volatile UpdateShardHandler updateShardHandler;
 
   public final ThreadPoolExecutor solrCoreExecutor = (ThreadPoolExecutor) ParWork.getParExecutorService("Core",
-      4, Math.max(6, SysStats.PROC_COUNT * 2), 1000, new BlockingArrayQueue<>(256, 256));
+      4, 256, 1000, new BlockingArrayQueue<>(64, 64));
 
   public final ThreadPoolExecutor coreContainerExecutor = (ThreadPoolExecutor) ParWork.getParExecutorService("Core",
-      8, SysStats.PROC_COUNT, 1000, new BlockingArrayQueue<>(256, 256));
+      4, SysStats.PROC_COUNT * 2, 1000, new BlockingArrayQueue<>(64, 64));
 
   {
     solrCoreExecutor.prestartAllCoreThreads();

@@ -387,7 +387,7 @@ public class ZkShardTerms implements Closeable {
         Stat stat = new Stat();
         byte[] data = zkClient.getData(znodePath, setWatch ? watcher : null, stat, true);
         Map<String,Long> values = Collections.unmodifiableMap(new HashMap<>((Map<String,Long>) Utils.fromJSON(data)));
-        log.info("refresh shard terms to zk version {}", stat.getVersion());
+        if (log.isDebugEnabled()) log.debug("refresh shard terms to zk version {}", stat.getVersion());
         newTerms = new ShardTerms(values, stat.getVersion());
       } catch (KeeperException.NoNodeException e) {
         log.info("No node found for shard terms");
@@ -420,7 +420,7 @@ public class ZkShardTerms implements Closeable {
     int cnt = 0;
     for (;;)  {
       cnt++;
-      log.info("set new terms {} {}", newTerms, cnt);
+      if (log.isDebugEnabled()) log.debug("set new terms {} {}", newTerms, cnt);
       ShardTerms terms = this.terms.get();
       if (terms == null || newTerms.getVersion() > terms.getVersion())  {
         if (this.terms.compareAndSet(terms, newTerms))  {

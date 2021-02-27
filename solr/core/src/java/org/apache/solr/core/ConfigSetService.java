@@ -66,18 +66,18 @@ public abstract class ConfigSetService {
    */
   @SuppressWarnings({"rawtypes"})
   public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
-    StopWatch timeCreateResourceLoader = new StopWatch(dcore.getName() + "-createResourceLoader");
+    StopWatch timeCreateResourceLoader = StopWatch.getStopWatch(dcore.getName() + "-createResourceLoader");
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
     timeCreateResourceLoader.done();
     try {
-      StopWatch timeLoadConfigProps = new StopWatch(dcore.getName() + "-loadConfigProps");
+      StopWatch timeLoadConfigProps = StopWatch.getStopWatch(dcore.getName() + "-loadConfigProps");
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
       NamedList properties = loadConfigSetProperties(dcore, coreLoader);
       timeLoadConfigProps.done();
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
 
       // there are no flags in non cloud mode, it just returns null
-      StopWatch timeLoadConfigSetFlags = new StopWatch(dcore.getName() + "-loadConfigSetFlags");
+      StopWatch timeLoadConfigSetFlags = StopWatch.getStopWatch(dcore.getName() + "-loadConfigSetFlags");
       NamedList flags = null;
       try {
         flags = loadConfigSetFlags(dcore, coreLoader);
@@ -89,14 +89,14 @@ public abstract class ConfigSetService {
       boolean trusted = !(coreLoader instanceof ZkSolrResourceLoader) || flags == null || flags.get("trusted") == null || flags.getBooleanArg("trusted");
 
       if (log.isDebugEnabled()) log.debug("Trusted configset={} {}", trusted, flags);
-      StopWatch timeCreateSolrConfig = new StopWatch(dcore.getName() + "-createSolrConfig");
+      StopWatch timeCreateSolrConfig = StopWatch.getStopWatch(dcore.getName() + "-createSolrConfig");
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
       timeCreateSolrConfig.done();
-      StopWatch timeCreateSchema = new StopWatch(dcore.getName() + "-createSchema");
+      StopWatch timeCreateSchema = StopWatch.getStopWatch(dcore.getName() + "-createSchema");
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
       timeCreateSchema.done();
 
-      StopWatch timeCreateConfigSet = new StopWatch(dcore.getName() + "-createConfigSet");
+      StopWatch timeCreateConfigSet = StopWatch.getStopWatch(dcore.getName() + "-createConfigSet");
       ConfigSet configSet = new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
       timeCreateConfigSet.done();
 
