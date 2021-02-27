@@ -140,7 +140,7 @@ public class AddUpdateCommand extends UpdateCommand {
            int count = field==null ? 0 : field.getValueCount();
            if (count == 0) {
              if (overwrite) {
-               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Document is missing mandatory uniqueKey field: " + sf.getName() + solrDoc);
+               throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Document is missing mandatory uniqueKey field: " + sf.getName());
              }
            } else if (count  > 1) {
              throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Document contains multiple values for uniqueKey field: " + field);
@@ -200,7 +200,7 @@ public class AddUpdateCommand extends UpdateCommand {
           if (overwrite) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "Document is missing mandatory uniqueKey field: "
-                    + sf.getName() + " solrDoc=" + solrDoc);
+                    + sf.getName());
           }
         } else if (count > 1) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
