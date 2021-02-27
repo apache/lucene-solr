@@ -153,7 +153,7 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     try {
       // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudHttp2SolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(SolrTestUtil.configset("xcjf"), "xcjf");
+
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
@@ -230,9 +230,8 @@ public class XCJFQueryTest extends SolrCloudTestCase {
       System.setProperty("test.xcjf.solr.url." + i, runner.getBaseUrl().toString());
     }
     try {
-      // now we need to re-upload our config , now that we know a valid solr url for the cluster.
       CloudHttp2SolrClient client = cluster.getSolrClient();
-      ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(SolrTestUtil.configset("xcjf"), "xcjf");
+
       // reload the cores with the updated whitelisted solr url config.
       CollectionAdminRequest.Reload.reloadCollection("products").process(client);
       CollectionAdminRequest.Reload.reloadCollection("parts").process(client);

@@ -135,6 +135,7 @@ public class XmlConfigFile { // formerly simply "Config"
 
       InputStream in = null;
 
+      boolean usedCached = false;
       if (loader instanceof  ZkSolrResourceLoader) {
         ZkSolrResourceLoader.ZkByteArrayInputStream cached = SYNC_CONFIG_CACHE.get(name);
         if (cached != null) {
@@ -144,20 +145,24 @@ public class XmlConfigFile { // formerly simply "Config"
           } catch (KeeperException | InterruptedException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
           }
-          if (checkStat != null && checkStat.getVersion() <- cached.getStat().getVersion()) {
+          if (checkStat != null && checkStat.getVersion() <= cached.getStat().getVersion()) {
             in = new ZkSolrResourceLoader.ZkByteArrayInputStream(cached.getBytes(), cached.getStat());
+            zkVersion = cached.getStat().getVersion();
+            usedCached = true;
           }
         }
       }
       if (in == null) {
         in = loader.openResource(name);
       }
-      
-      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-        SYNC_CONFIG_CACHE.put(name, (ZkSolrResourceLoader.ZkByteArrayInputStream) in);
-        zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        if (log.isDebugEnabled()) {
-          log.debug("loaded config {} with version {} ", name, zkVersion);
+
+      if (!usedCached) {
+        if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+          SYNC_CONFIG_CACHE.put(name, (ZkSolrResourceLoader.ZkByteArrayInputStream) in);
+          zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+          if (log.isDebugEnabled()) {
+            log.debug("loaded config {} with version {} ", name, zkVersion);
+          }
         }
       }
       is = new InputSource(in);
