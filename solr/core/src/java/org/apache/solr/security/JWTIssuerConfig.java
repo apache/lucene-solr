@@ -68,6 +68,9 @@ public class JWTIssuerConfig {
   private WellKnownDiscoveryConfig wellKnownDiscoveryConfig;
   private String clientId;
   private String authorizationEndpoint;
+  
+  public static boolean ALLOW_OUTBOUND_HTTP = Boolean.parseBoolean(System.getProperty("solr.auth.jwt.allowOutboundHttp", "false"));
+  public static final String ALLOW_OUTBOUND_HTTP_ERR_MSG = "HTTPS required for IDP communication. Please use SSL or start your nodes with -Dsolr.auth.jwt.allowOutboundHttp=true to allow HTTP for test purposes.";
 
   /**
    * Create config for further configuration with setters, builder style.
@@ -349,13 +352,16 @@ public class JWTIssuerConfig {
       this.jwkCacheDuration = jwkCacheDuration;
       this.refreshReprieveThreshold = refreshReprieveThreshold;
     }
-
+    
+    /**
+     * While the class name is HttpsJwks, it actually works with plain http formatted url as well.
+     * @param url the Url to connect to for JWK details.
+     */
     private HttpsJwks create(String url) {
       try {
         URL jwksUrl = new URL(url);
-        if (!"https".equalsIgnoreCase(jwksUrl.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWKS_URL + " must use HTTPS");
-        }
+        checkAllowOutboundHttpConnections(PARAM_JWKS_URL, jwksUrl);
+        
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Url " + url + " configured in " + PARAM_JWKS_URL + " is not a valid URL");
       }
@@ -384,9 +390,11 @@ public class JWTIssuerConfig {
     public static WellKnownDiscoveryConfig parse(String urlString) {
       try {
         URL url = new URL(urlString);
-        if (!Arrays.asList("https", "file").contains(url.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be HTTPS or file");
+        if (!Arrays.asList("https", "file", "http").contains(url.getProtocol())) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be one of HTTPS or HTTP or file");          
         }
+        checkAllowOutboundHttpConnections(PARAM_WELL_KNOWN_URL, url);
+
         return parse(url.openStream());
       } catch (MalformedURLException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + urlString + " is malformed", e);
@@ -435,4 +443,13 @@ public class JWTIssuerConfig {
       return (List<String>) securityConf.get("response_types_supported");
     }
   }
+
+  public static void checkAllowOutboundHttpConnections(String parameterName, URL url) {
+    if ("http".equalsIgnoreCase(url.getProtocol())) {
+      if (!ALLOW_OUTBOUND_HTTP) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, parameterName + " is using http protocol. " + ALLOW_OUTBOUND_HTTP_ERR_MSG);
+      }
+    }
+  }
+ 
 }
