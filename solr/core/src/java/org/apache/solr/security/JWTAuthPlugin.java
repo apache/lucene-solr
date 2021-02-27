@@ -95,7 +95,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM, PARAM_ROLES_CLAIM,
       PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS,
       // These keys are supported for now to enable PRIMARY issuer config through top-level keys
-      JWTIssuerConfig.PARAM_JWK_URL, JWTIssuerConfig.PARAM_JWKS_URL, JWTIssuerConfig.PARAM_JWK, JWTIssuerConfig.PARAM_ISSUER,
+      JWTIssuerConfig.PARAM_JWKS_URL, JWTIssuerConfig.PARAM_JWK, JWTIssuerConfig.PARAM_ISSUER,
       JWTIssuerConfig.PARAM_CLIENT_ID, JWTIssuerConfig.PARAM_WELL_KNOWN_URL, JWTIssuerConfig.PARAM_AUDIENCE,
       JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT);
 
@@ -202,13 +202,10 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   @SuppressWarnings("unchecked")
   private Optional<JWTIssuerConfig> parseIssuerFromTopLevelConfig(Map<String, Object> conf) {
     try {
-      if (conf.get(JWTIssuerConfig.PARAM_JWK_URL) != null) {
-        log.warn("Configuration uses deprecated key {}. Please use {} instead", JWTIssuerConfig.PARAM_JWK_URL, JWTIssuerConfig.PARAM_JWKS_URL);
-      }
       JWTIssuerConfig primary = new JWTIssuerConfig(PRIMARY_ISSUER)
           .setIss((String) conf.get(JWTIssuerConfig.PARAM_ISSUER))
           .setAud((String) conf.get(JWTIssuerConfig.PARAM_AUDIENCE))
-          .setJwksUrl(conf.get(JWTIssuerConfig.PARAM_JWKS_URL) != null ? conf.get(JWTIssuerConfig.PARAM_JWKS_URL) : conf.get(JWTIssuerConfig.PARAM_JWK_URL))
+          .setJwksUrl(conf.get(JWTIssuerConfig.PARAM_JWKS_URL))
           .setAuthorizationEndpoint((String) conf.get(JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT))
           .setClientId((String) conf.get(JWTIssuerConfig.PARAM_CLIENT_ID))
           .setWellKnownUrl((String) conf.get(JWTIssuerConfig.PARAM_WELL_KNOWN_URL));

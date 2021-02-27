@@ -46,8 +46,6 @@ import org.slf4j.LoggerFactory;
 public class JWTIssuerConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final String PARAM_ISS_NAME = "name";
-  @Deprecated(since = "8.3") // Remove this option at some point
-  static final String PARAM_JWK_URL = "jwkUrl";
   static final String PARAM_JWKS_URL = "jwksUrl";
   static final String PARAM_JWK = "jwk";
   static final String PARAM_ISSUER = "iss";
@@ -128,10 +126,7 @@ public class JWTIssuerConfig {
     setIss((String) conf.get(PARAM_ISSUER));
     setClientId((String) conf.get(PARAM_CLIENT_ID));
     setAud((String) conf.get(PARAM_AUDIENCE));
-    if (conf.get(PARAM_JWK_URL) != null) {
-      log.warn("Configuration uses deprecated key {}. Please use {} instead", PARAM_JWK_URL, PARAM_JWKS_URL);
-    }
-    Object confJwksUrl = conf.get(PARAM_JWKS_URL) != null ? conf.get(PARAM_JWKS_URL) : conf.get(PARAM_JWK_URL);
+    Object confJwksUrl = conf.get(PARAM_JWKS_URL);
     setJwksUrl(confJwksUrl);
     setJsonWebKeySet(conf.get(PARAM_JWK));
     setAuthorizationEndpoint((String) conf.get(PARAM_AUTHORIZATION_ENDPOINT));
@@ -142,7 +137,6 @@ public class JWTIssuerConfig {
     conf.remove(PARAM_CLIENT_ID);
     conf.remove(PARAM_AUDIENCE);
     conf.remove(PARAM_JWKS_URL);
-    conf.remove(PARAM_JWK_URL);
     conf.remove(PARAM_JWK);
     conf.remove(PARAM_AUTHORIZATION_ENDPOINT);
 

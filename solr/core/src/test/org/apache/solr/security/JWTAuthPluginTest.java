@@ -183,17 +183,6 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Deprecated(since = "8.3")
-  public void initWithJwkUrlForBackwardsCompat() {
-    HashMap<String, Object> authConf = new HashMap<>();
-    authConf.put("jwkUrl", "https://127.0.0.1:9999/foo.jwk");
-    plugin = new JWTAuthPlugin();
-    plugin.init(authConf);
-    assertEquals(1, plugin.getIssuerConfigs().size());
-    assertEquals(1, plugin.getIssuerConfigs().get(0).getJwksUrls().size());
-  }
-
-  @Test
   public void initWithJwksUrl() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", "https://127.0.0.1:9999/foo.jwk");
