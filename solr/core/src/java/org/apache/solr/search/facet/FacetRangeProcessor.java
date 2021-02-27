@@ -143,37 +143,25 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    * @see FacetFieldProcessorByHashDV
    */
   public static Calc getNumericCalc(SchemaField sf) {
-    Calc calc;
     final FieldType ft = sf.getType();
 
-    if (ft instanceof TrieField || ft.isPointField()) {
+    if (ft.getNumberType() != null) {
       switch (ft.getNumberType()) {
         case FLOAT:
-          calc = new FloatCalc(sf);
-          break;
+          return new FloatCalc(sf);
         case DOUBLE:
-          calc = new DoubleCalc(sf);
-          break;
+          return new DoubleCalc(sf);
         case INTEGER:
-          calc = new IntCalc(sf);
-          break;
+          return new IntCalc(sf);
         case LONG:
-          calc = new LongCalc(sf);
-          break;
+          return new LongCalc(sf);
         case DATE:
-          calc = new DateCalc(sf, null);
-          break;
-        default:
-          throw new SolrException
-              (SolrException.ErrorCode.BAD_REQUEST,
-                  "Expected numeric field type :" + sf);
+          return new DateCalc(sf, null);
       }
-    } else {
-      throw new SolrException
-          (SolrException.ErrorCode.BAD_REQUEST,
-              "Expected numeric field type :" + sf);
     }
-    return calc;
+    
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+        "Expected numeric field type :" + sf);
   }
 
   /**

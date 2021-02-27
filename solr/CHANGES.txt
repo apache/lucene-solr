@@ -35,6 +35,9 @@ Improvements
 * SOLR-15038: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters to query elevation.
   (Dennis Berger, Tobias Kässmann via Bruno Roustant)
 
+* SOLR-15191: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some other/custom field types
+  too. (Thomas Wöckinger, David Smiley)
+
 * SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)  
 
 Optimizations
@@ -54,6 +57,8 @@ Bug Fixes
   cache and not know hot to deal with them when writing the updated doc to the update log.
   (David Smiley)
 
+* SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
+  (Thomas Wöckinger, David Smiley)
 
 Other Changes
 ---------------------
