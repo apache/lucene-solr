@@ -108,7 +108,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.setIssuedAtToNow();  // when the token was issued/created (now)
     claims.setNotBeforeMinutesInThePast(2); // time before which the token is not yet valid (2 minutes ago)
     claims.setSubject("solruser"); // the subject/principal is whom the token is about
-    claims.setStringClaim("scope", "solr:read"); 
+    claims.setStringClaim("scope", "solr:read");
     claims.setClaim("name", "Solr User"); // additional claims/attributes about the subject can be added
     claims.setClaim("customPrincipal", "custom"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim1", "foo"); // additional claims/attributes about the subject can be added
@@ -131,7 +131,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     testConfig.put("principalClaim", "customPrincipal");
     testConfig.put("jwk", testJwk);
     plugin.init(testConfig);
-    
+
     minimalConfig = new HashMap<>();
     minimalConfig.put("class", "org.apache.solr.security.JWTAuthPlugin");
   }
@@ -193,7 +193,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void initWithJwkUrlArray() {
+  public void initWithJwksUrlArray() {
     HashMap<String, Object> authConf = new HashMap<>();
     authConf.put("jwksUrl", Arrays.asList("https://127.0.0.1:9999/foo.jwk", "https://127.0.0.1:9999/foo2.jwk"));
     authConf.put("iss", "myIssuer");
@@ -364,7 +364,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     assertNull(resp.getPrincipal());
     assertEquals(SCOPE_MISSING, resp.getAuthCode());
   }
-  
+
   @Test
   public void noHeaderBlockUnknown() {
     testConfig.put("blockUnknown", true);
@@ -388,7 +388,7 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(null);
     assertEquals(JWTAuthPlugin.JWTAuthenticationResponse.AuthCode.PASS_THROUGH, resp.getAuthCode());
   }
-  
+
   @Test
   public void wellKnownConfigNoHeaderPassThrough() {
     String wellKnownUrl = TEST_PATH().resolve("security").resolve("jwt_well-known-config.json").toAbsolutePath().toUri().toString();
