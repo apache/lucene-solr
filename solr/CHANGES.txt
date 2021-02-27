@@ -38,6 +38,8 @@ Improvements
 * SOLR-15191: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some other/custom field types
   too. (Thomas Wöckinger, David Smiley)
 
+* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)  
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
