@@ -51,6 +51,11 @@ public class DeleteUpdateCommand extends UpdateCommand {
     query = null;
     indexedId = null;
     version = 0;
+    commitWithin = -1;
+
+    flags = 0;
+    route = null;
+    indexedId = null;
   }
 
   /** Returns the indexed ID for this delete.  The returned BytesRef is retained across multiple calls, and should not be modified. */

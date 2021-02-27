@@ -315,9 +315,8 @@ public class ConnectionManager implements Watcher, Closeable {
               }
             });
           }
-        } catch (InterruptedException | AlreadyClosedException e) {
-          ParWork.propagateInterrupt(e);
-          return;
+        } catch (AlreadyClosedException e) {
+          throw e;
         } catch (Exception e1) {
           log.error("Exception updating zk instance", e1);
           SolrException exp = new SolrException(SolrException.ErrorCode.SERVER_ERROR, e1);
@@ -326,7 +325,9 @@ public class ConnectionManager implements Watcher, Closeable {
 
       } catch (AlreadyClosedException e) {
         log.info("Ran into AlreadyClosedException on reconnect");
-        return;
+        if (!getKeeper().getState().isAlive()) {
+          return;
+        }
       } catch (Exception e) {
         SolrException.log(log, "", e);
         log.info("Could not connect due to error, trying again ..");

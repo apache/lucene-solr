@@ -160,6 +160,17 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
+    Replica leaderReplica;
+    try {
+      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, desc.getCloudDescriptor().getShardId());
+    } catch (Exception e) {
+      ParWork.propagateInterrupt(e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
+
+    }
+
+    isLeader = leaderReplica.getName().equals(desc.getName());
+    
     if (log.isDebugEnabled()) log.debug("processCommit - start commit isLeader={} commit_end_point={} replicaType={}", isLeader, req.getParams().get(COMMIT_END_POINT), replicaType);
 
       try (ParWork worker = new ParWork(this, false, false)) {
@@ -175,7 +186,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         updateCommand = cmd;
 
         List<SolrCmdDistributor.Node> nodes = null;
-        Replica leaderReplica = null;
+
         zkCheck();
 
         if (req.getParams().get(COMMIT_END_POINT, "").equals("terminal") || (req.getParams().getBool("dist") != null && !req.getParams().getBool("dist"))) {
@@ -184,16 +195,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           doLocalCommit(cmd);
           return;
         }
-
-        try {
-          leaderReplica = clusterState.getCollection(collection).getSlice(cloudDesc.getShardId()).getLeader();
-        } catch (Exception e) {
-          ParWork.propagateInterrupt(e);
-          throw new SolrException(ErrorCode.SERVER_ERROR,
-              "Exception finding leader for shard " + cloudDesc.getShardId(), e);
-
-        }
-        isLeader = leaderReplica.getName().equals(desc.getName());
 
         ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
 
@@ -214,7 +215,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           }
         } else if (req.getParams().get(COMMIT_END_POINT, "").equals("leaders")) {
 
-          sendCommitToReplicasAndLocalCommit(cmd, worker, leaderReplica, params);
+          sendCommitToReplicasAndLocalCommit(cmd, worker, leaderReplica.getName(), params);
         }  else if (req.getParams().get(COMMIT_END_POINT) == null) {
           // zk
           List<SolrCmdDistributor.Node> useNodes = getCollectionUrls(collection, EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT), true);
@@ -229,7 +230,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
             if (removeNode != null) {
               useNodes.remove(removeNode);
 
-              sendCommitToReplicasAndLocalCommit(cmd, worker, leaderReplica, params);
+              sendCommitToReplicasAndLocalCommit(cmd, worker, leaderReplica.getName(), params);
             }
           }
 
@@ -251,12 +252,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (log.isDebugEnabled()) log.debug("processCommit(CommitUpdateCommand) - end");
   }
 
-  private void sendCommitToReplicasAndLocalCommit(CommitUpdateCommand cmd, ParWork worker, Replica leaderReplica, ModifiableSolrParams params) {
+  private void sendCommitToReplicasAndLocalCommit(CommitUpdateCommand cmd, ParWork worker, String leaderName, ModifiableSolrParams params) {
     params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
     params.set(COMMIT_END_POINT, "replicas");
 
-    List<SolrCmdDistributor.Node> useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
+    List<SolrCmdDistributor.Node> useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderName);
 
     if (log.isDebugEnabled()) log.debug(
         "processCommit - Found the following replicas to send commit to {}",
@@ -948,9 +949,9 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     return false;
   }
 
-  protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
-    if (log.isDebugEnabled()) log.debug("leader is {}", leaderReplica.getName());
-    String leaderCoreNodeName = leaderReplica.getName();
+  protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, String leaderName) {
+    if (log.isDebugEnabled()) log.debug("leader is {}", leaderName);
+    String leaderCoreNodeName = leaderName;
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
         .getReplicas(EnumSet.of(Replica.Type.NRT, Replica.Type.TLOG));
