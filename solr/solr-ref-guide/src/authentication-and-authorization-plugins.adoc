@@ -85,7 +85,7 @@ Then use the `bin/solr zk` command to upload the file:
 
 [source,bash]
 ----
->bin/solr zk cp /security.json zk:security.json -z localhost:2181
+>bin/solr zk cp ./security.json zk:security.json -z localhost:2181
 ----
 
 [WARNING]
