@@ -74,7 +74,7 @@ public class FastJavaBinDecoder implements DataEntry.FastDecoder {
 
 
     public void skip(int sz) throws IOException {
-      ByteBuffer brr = getByteArr(128, false);
+      ByteBuffer brr = getByteArr(0);
       byte[] bytes = brr.array();
       while (sz > 0) {
         int read = dis.read(bytes, 0, Math.min(bytes.length, sz));

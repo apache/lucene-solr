@@ -33,12 +33,12 @@ public class TestMultipleAdditiveTreesModel extends TestRerankBase {
   public void before() throws Exception {
     setuptest(false);
 
-    assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity","1"));
-    assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity","2"));
-    assertU(adoc("id", "3", "title", "w3", "description", "w3", "popularity","3"));
-    assertU(adoc("id", "4", "title", "w4", "description", "w4", "popularity","4"));
-    assertU(adoc("id", "5", "title", "w5", "description", "w5", "popularity","5"));
-    assertU(commit());
+    restTestHarness.validateUpdate(adoc("id", "1", "title", "w1", "description", "w1", "popularity","1"));
+    restTestHarness.validateUpdate(adoc("id", "2", "title", "w2", "description", "w2", "popularity","2"));
+    restTestHarness.validateUpdate(adoc("id", "3", "title", "w3", "description", "w3", "popularity","3"));
+    restTestHarness.validateUpdate(adoc("id", "4", "title", "w4", "description", "w4", "popularity","4"));
+    restTestHarness.validateUpdate(adoc("id", "5", "title", "w5", "description", "w5", "popularity","5"));
+    restTestHarness.validateUpdate(commit());
   }
 
   @After

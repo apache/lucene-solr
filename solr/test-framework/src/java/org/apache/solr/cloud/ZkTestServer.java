@@ -111,7 +111,7 @@ public class ZkTestServer implements Closeable {
 
     @Override
     public int getTimeout() {
-      return 4000;
+      return 400;
     }
 
     @Override

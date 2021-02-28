@@ -19,6 +19,7 @@ package org.apache.solr.handler.loader;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.DataInputInputStream;
 import org.apache.solr.common.util.FastInputStream;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
@@ -71,7 +73,7 @@ public class JavabinLoader extends ContentStreamLoader {
       is = stream.getStream();
       parseAndLoadDocs(req, rsp, is, processor);
     } finally {
-      Utils.readFully(is);
+      IOUtils.closeQuietly(is);
     }
   }
   
@@ -85,8 +87,8 @@ public class JavabinLoader extends ContentStreamLoader {
     JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new MyStreamingUpdateHandler(req, processor);
     FastInputStream in = FastInputStream.wrap(stream);
     for (; ; ) {;
-      if (in.peek() == -1) return;
       try {
+        if (in.peek() == -1) return;
         update = new JavaBinUpdateRequestCodec()
             .unmarshal(in, handler);
       } catch (EOFException e) {

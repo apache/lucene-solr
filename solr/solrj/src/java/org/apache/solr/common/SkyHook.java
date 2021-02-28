@@ -28,18 +28,17 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SkyHookDoc {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class SkyHook {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass().getName());
   public static final int STACK = 10;
-  public static SkyHookDoc skyHookDoc = null;//new SkyHookDoc();
-
-  private final Map<String,ConcurrentLinkedDeque> map = Collections.synchronizedSortedMap(new TreeMap<>());
-
-  private final ReentrantLock lock = new ReentrantLock();
+  public static SkyHook skyHookDoc = null;//new SkyHook();
+  private static AtomicInteger cnt = new AtomicInteger();
 
   public final static Pattern FIELD_ID = Pattern.compile("\\<id\\:(\\d+)\\>");
 
@@ -64,7 +63,7 @@ public class SkyHookDoc {
       return;
     }
 
-    register(sId);
+    register(sId, "");
   }
 
   private void reg(String sId, String line) {
@@ -73,30 +72,9 @@ public class SkyHookDoc {
       log.info("found high one {}", sId);
     }
 
-    ConcurrentLinkedDeque<String> deque = map.get(sId);
+    log.info(cnt.incrementAndGet() +  " docid=" + sId + " " + line);
 
-    if (deque != null) {
-      deque.add(line);
-      return;
-    }
-
-    deque = map.get(sId);
-
-    if (deque != null) {
-      deque.add(line);
-      return;
-    }
-
-    deque = new ConcurrentLinkedDeque();
-    deque.add(line);
-
-    ConcurrentLinkedDeque old = map.put(sId, deque);
-
-    if (old != null) {
-      deque.addAll(old);
-    }
-
-    log.info("SkyHook add Send id={} map={}", sId, map.size());
+   // log.info("SkyHook add Send id={} map={}", sId, map.size());
   }
 
   public void register(String sId) {
@@ -127,31 +105,27 @@ public class SkyHookDoc {
     }
   }
 
-  public void clear() {
-    map.clear();
-  }
-
-  public void logAll() {
-    try {
-      log.info("SkyHookOutput");
-      synchronized (map) {
-        map.forEach((id, deque) -> {
-
-          log.info("⤞⤞⤞⤞⤞⤞⤠⤠⤠⤠⤠⤠⤠⤗⤗⤗⤗⤗");
-          log.info("⤞⤞⤞⤞⤞⤞⤠⤠⤠⤠⤠⤠⤠⤗⤗⤗⤗⤗ docid={}", id);
-
-          deque.forEach(line -> {
-            log.info("docid={} {}", id, line);
-          });
-
-        });
-      }
-      log.info("SkyHookOutput done");
-    } catch (Throwable t) {
-      log.error("SkyHook exception", t);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, t);
-    }
-  }
+//  public void logAll() {
+//    try {
+//      log.info("SkyHookOutput");
+//      synchronized (map) {
+//        map.forEach((id, deque) -> {
+//
+//          log.info("⤞⤞⤞⤞⤞⤞⤠⤠⤠⤠⤠⤠⤠⤗⤗⤗⤗⤗");
+//          log.info("⤞⤞⤞⤞⤞⤞⤠⤠⤠⤠⤠⤠⤠⤗⤗⤗⤗⤗ docid={}", id);
+//
+//          deque.forEach(line -> {
+//            log.info("docid={} {}", id, line);
+//          });
+//
+//        });
+//      }
+//      log.info("SkyHookOutput done");
+//    } catch (Throwable t) {
+//      log.error("SkyHook exception", t);
+//      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, t);
+//    }
+//  }
 
   private static void printStackTrace(Throwable t, PrintWriter p, int stack) {
     // Print our stack trace

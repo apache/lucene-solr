@@ -56,14 +56,14 @@ public class ParWorkExecutor extends ThreadPoolExecutor {
     }
     assert closeTracker != null ? closeTracker.close() : true;
     setKeepAliveTime(1, TimeUnit.NANOSECONDS);
-    for (int i = 0; i < Math.max(0, getPoolSize() - getActiveCount() + 1); i++) {
-      try {
-        submit(() -> {
-        });
-      } catch (RejectedExecutionException e) {
-        break;
-      }
-    }
+//    for (int i = 0; i < Math.max(0, getPoolSize() - getActiveCount() + 1); i++) {
+//      try {
+//        submit(() -> {
+//        });
+//      } catch (RejectedExecutionException e) {
+//        break;
+//      }
+//    }
     setKeepAliveTime(1, TimeUnit.NANOSECONDS);
     allowCoreThreadTimeOut(true);
 

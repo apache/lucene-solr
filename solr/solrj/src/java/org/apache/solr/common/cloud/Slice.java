@@ -38,6 +38,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
   public final String collection;
   private final Replica.NodeNameToBaseUrl nodeNameToBaseUrl;
+  private final HashMap<String,Replica> idToReplica;
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
   public static Map<String,Slice> loadAllFromMap(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, String collection, Map<String, Object> genericSlices) {
@@ -60,6 +61,9 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     return replicas.values().iterator();
   }
 
+  public Replica getReplicaById(String id) {
+    return idToReplica.get(id);
+  }
 
   /** The slice's state. */
   public enum State {
@@ -166,6 +170,16 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
     // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
     this.replicas = replicas != null ? replicas : makeReplicas(collection,name, (Map<String,Object>)propMap.get(REPLICAS));
+
+    this.idToReplica = new HashMap<>(this.replicas.size());
+
+    this.replicas.forEach((s, replica) -> {
+      String id = replica.getId();
+      if (id != null ) {
+        this.idToReplica.put(id, replica);
+      }
+    });
+
     propMap.put(REPLICAS, this.replicas);
 
     Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");

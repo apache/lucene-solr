@@ -663,7 +663,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       // put the leaderUrl first.
       sortedReplicas.add(0, leader);
 
-      ZkStateReader zkStateReader = getZkStateReader();
       urlMap.put(name, sortedReplicas.stream().map(replica -> replica.getCoreUrl()).collect(Collectors.toList()));
     }
     return urlMap;

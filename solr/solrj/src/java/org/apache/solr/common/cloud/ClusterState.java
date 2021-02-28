@@ -21,9 +21,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -45,8 +45,7 @@ public class ClusterState implements JSONWriter.Writable {
   
   private final Integer znodeVersion;
 
-  private final Map<String, CollectionRef> collectionStates, immutableCollectionStates;
-
+  private final Map<String, CollectionRef> collectionStates;
 
   public static ClusterState getRefCS(Map<String, DocCollection> collectionStates, Integer znodeVersion) {
     Map<String, CollectionRef> collRefs =  new LinkedHashMap<>(collectionStates.size());
@@ -62,7 +61,6 @@ public class ClusterState implements JSONWriter.Writable {
   public ClusterState(Map<String, CollectionRef> collectionStates, Integer znodeVersion){
     this.znodeVersion = znodeVersion;
     this.collectionStates = new LinkedHashMap<>(collectionStates);
-    this.immutableCollectionStates = Collections.unmodifiableMap(collectionStates);
   }
 
 
@@ -225,7 +223,7 @@ public class ClusterState implements JSONWriter.Writable {
       collections.put(collectionName, new CollectionRef(coll));
     }
 
-    return new ClusterState(collections,version);
+    return new ClusterState(collections, version);
   }
 
   // TODO move to static DocCollection.loadFromMap
@@ -335,6 +333,12 @@ public class ClusterState implements JSONWriter.Writable {
 
   }
 
+  public long getHighestId() {
+    long[] highest = new long[1];
+    collectionStates.forEach((name, coll) -> highest[0] = Math.max(highest[0], coll.get().getId()));
+    return highest[0];
+  }
+
   public static class CollectionRef {
     protected final AtomicInteger gets = new AtomicInteger();
     private final DocCollection coll;
@@ -373,7 +377,6 @@ public class ClusterState implements JSONWriter.Writable {
         return "null DocCollection ref";
       }
     }
-
   }
 
   public static void main(String[] args) throws UnsupportedEncodingException {

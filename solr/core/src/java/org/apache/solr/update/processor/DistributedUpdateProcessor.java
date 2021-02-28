@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SkyHookDoc;
+import org.apache.solr.common.SkyHook;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -251,14 +251,14 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       } else {
         // drop it
         log.info("drop docid={}", cmd.getPrintableId());
-        if (SkyHookDoc.skyHookDoc != null) {
-          SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "final notice of dropping update, returning from processAdd cmd=" + cmd);
+        if (SkyHook.skyHookDoc != null) {
+          SkyHook.skyHookDoc.register(cmd.getPrintableId(), "final notice of dropping update, returning from processAdd cmd=" + cmd);
         }
         return;
       }
     } else {
-      if (SkyHookDoc.skyHookDoc != null) {
-        SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "distribute update to replicas if necessary cmd=" + cmd);
+      if (SkyHook.skyHookDoc != null) {
+        SkyHook.skyHookDoc.register(cmd.getPrintableId(), "distribute update to replicas if necessary cmd=" + cmd);
       }
       doDistribAdd(cmd);
     }
@@ -310,8 +310,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     BytesRef idBytes = cmd.getIndexedId();
 
     if (idBytes == null) {
-      if (SkyHookDoc.skyHookDoc != null) {
-        SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "local add due to null idBytes cmd=" + cmd);
+      if (SkyHook.skyHookDoc != null) {
+        SkyHook.skyHookDoc.register(cmd.getPrintableId(), "local add due to null idBytes cmd=" + cmd);
       }
       super.processAdd(cmd);
       return CompletableFuture.completedFuture(null);
@@ -322,8 +322,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "Atomic document updates are not supported unless <updateLog/> is configured");
       } else {
-        if (SkyHookDoc.skyHookDoc != null) {
-          SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "local add due to null vinfo cmd=" + cmd);
+        if (SkyHook.skyHookDoc != null) {
+          SkyHook.skyHookDoc.register(cmd.getPrintableId(), "local add due to null vinfo cmd=" + cmd);
         }
         super.processAdd(cmd);
         return CompletableFuture.completedFuture(null);
@@ -370,8 +370,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       if (dependentVersionFound == -1) {
         // it means the document has been deleted by now at the leader. drop this update
         log.info("docid={} it means the document has been deleted by now at the leader. drop this update", cmd.getPrintableId());
-        if (SkyHookDoc.skyHookDoc != null) {
-          SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, dependent update has been deleted by the leader cmd=" + cmd);
+        if (SkyHook.skyHookDoc != null) {
+          SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, dependent update has been deleted by the leader cmd=" + cmd);
         }
         return null;
       }
@@ -428,8 +428,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           }
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.add(cmd);
-          if (SkyHookDoc.skyHookDoc != null) {
-            SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, leader logic applied, but we are buffering - added to ulog only");
+          if (SkyHook.skyHookDoc != null) {
+            SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, leader logic applied, but we are buffering - added to ulog only");
           }
           return null;
         }
@@ -442,8 +442,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             // specified it must exist (versionOnUpdate==1) and it does.
           } else {
             if(cmd.getReq().getParams().getBool(CommonParams.FAIL_ON_VERSION_CONFLICTS, true) == false) {
-              if (SkyHookDoc.skyHookDoc != null) {
-                SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, failed on version conflict but set not to fail");
+              if (SkyHook.skyHookDoc != null) {
+                SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, failed on version conflict but set not to fail");
               }
               return null;
             }
@@ -467,8 +467,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           cmd.setFlags(cmd.getFlags() | UpdateCommand.BUFFERING);
           ulog.add(cmd);
           log.info("docid={} dropped because not active and buffering and not a replay update", cmd.getPrintableId());
-          if (SkyHookDoc.skyHookDoc != null) {
-            SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, non logic applied, but we are buffering - added to ulog only");
+          if (SkyHook.skyHookDoc != null) {
+            SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, non logic applied, but we are buffering - added to ulog only");
           }
           return null;
         }
@@ -490,8 +490,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               }
               versionDelete((DeleteUpdateCommand) fetchedFromLeader);
               log.info("docid={} dropped due to missing dependent update", cmd.getPrintableId());
-              if (SkyHookDoc.skyHookDoc != null) {
-                SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, inplace update with too low a version");
+              if (SkyHook.skyHookDoc != null) {
+                SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, inplace update with too low a version");
               }
               return null;
             } else {
@@ -513,11 +513,11 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               // this means we got a newer full doc update and in that case it makes no sense to apply the older
               // inplace update. Drop this update
               log.info("Update was applied on version: {}, but last version I have is: {}. Dropping current update, docid={}", prev, lastVersion, cmd.getPrintableId());
-              if (SkyHookDoc.skyHookDoc != null) {
-                SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, leader logic applied, but we are buffering - added to ulog only");
+              if (SkyHook.skyHookDoc != null) {
+                SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, leader logic applied, but we are buffering - added to ulog only");
               }
-              if (SkyHookDoc.skyHookDoc != null) {
-                SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, we have a newer version for inplace update");
+              if (SkyHook.skyHookDoc != null) {
+                SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, we have a newer version for inplace update");
               }
               return null;
             } else {
@@ -541,8 +541,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               // This update is a repeat, or was reordered. We need to drop this update.
 
               log.info("Dropping add update due to version docid={} lastVersion={} versionOnUpdate={}", idBytes.utf8ToString(), lastVersion, versionOnUpdate);
-              if (SkyHookDoc.skyHookDoc != null) {
-                SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "dropping update, we have a newer version");
+              if (SkyHook.skyHookDoc != null) {
+                SkyHook.skyHookDoc.register(cmd.getPrintableId(), "dropping update, we have a newer version");
               }
               return null;
             }
@@ -584,8 +584,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
       try {
         if (log.isDebugEnabled()) log.debug("do local add for docid={}", cmd. getPrintableId());
-        if (SkyHookDoc.skyHookDoc != null) {
-          SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "do local add");
+        if (SkyHook.skyHookDoc != null) {
+          SkyHook.skyHookDoc.register(cmd.getPrintableId(), "do local add");
         }
         doLocalAdd(cmd);
       } catch (Exception e) {
@@ -1556,8 +1556,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         log.trace("Run distrib add collection");
       }
       try {
-        if (SkyHookDoc.skyHookDoc != null) {
-          SkyHookDoc.skyHookDoc.register(finalCloneCmd.getPrintableId(), "do distrib update after versionAdd");
+        if (SkyHook.skyHookDoc != null) {
+          SkyHook.skyHookDoc.register(finalCloneCmd.getPrintableId(), "do distrib update after versionAdd");
         }
 
         doDistribAdd(finalCloneCmd);

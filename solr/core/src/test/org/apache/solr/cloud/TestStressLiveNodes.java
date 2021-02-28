@@ -98,7 +98,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
           log.info("sleeping #{} to give watchers a chance to finish: {} != {}",
               i, expectedCount, result.size());
         }
-        Thread.sleep(200);
+        Thread.sleep(10);
       } else {
         break;
       }
@@ -114,7 +114,7 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
   public void testStress() throws Exception {
 
     // do many iters, so we have "bursts" of adding nodes that we then check
-    final int numIters = SolrTestUtil.atLeast(TEST_NIGHTLY ? 1000 : 100);
+    final int numIters = SolrTestUtil.atLeast(TEST_NIGHTLY ? 315 : 100);
     for (int iter = 0; iter < numIters; iter++) {
 
       // sanity check that ZK says there is in fact 1 live node

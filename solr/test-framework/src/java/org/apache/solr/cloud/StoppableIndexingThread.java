@@ -91,11 +91,11 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
     
     while (true && !stop) {
       if (numCycles != -1) {
-        if (numDone > numCycles) {
+        if (numDone >= numCycles) {
           break;
         }
       }
-      ++numDone;
+
       Object id;
       if (useLongId) {
          id = i;
@@ -166,6 +166,7 @@ public class StoppableIndexingThread extends AbstractFullDistribZkTestBase.Stopp
           return;
         }
       }
+      ++numDone;
     }
 
     if (log.isInfoEnabled()) {

@@ -147,8 +147,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     assertU(adoc("id", ""+(8000 + hardCommitMaxDocs), "subject", "testMaxDocs"));
 
     // now poll our monitors for the timestamps on the first commits
-    final Long firstSoftNanos = monitor.soft.poll(5000, MILLISECONDS);
-    final Long firstHardNanos = monitor.hard.poll(5000, MILLISECONDS);
+    final Long firstSoftNanos = monitor.soft.poll(2000, MILLISECONDS);
+    final Long firstHardNanos = monitor.hard.poll(2000, MILLISECONDS);
 
     assertNotNull("didn't get a single softCommit after adding the max docs", firstSoftNanos);
     assertNotNull("didn't get a single hardCommit after adding the max docs", firstHardNanos);
@@ -162,7 +162,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
 
     // wait a bit, w/o other action we shouldn't see any new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
-               monitor.hard.poll(1000, MILLISECONDS));
+               monitor.hard.poll(500, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
                monitor.soft.poll(0, MILLISECONDS));
     
@@ -191,8 +191,8 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     updater.setCommitWithinSoftCommit(commitWithinType.equals(CommitWithinType.SOFT));
     
     // wait out any leaked commits
-    monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
-    monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
+//    monitor.soft.poll(softCommitWaitMillis * 2, MILLISECONDS);
+//    monitor.hard.poll(hardCommitWaitMillis * 2, MILLISECONDS);
     
     int startingHardCommits = hardTracker.getCommitCount();
     int startingSoftCommits = softTracker.getCommitCount();
@@ -221,7 +221,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     assertNotNull("hard529 wasn't fast enough", hard529);
     
     // check for the searcher, should have happened right after soft commit
-    Long searcher529 = monitor.searcher.poll(5000, MILLISECONDS);
+    Long searcher529 = monitor.searcher.poll(2000, MILLISECONDS);
     assertNotNull("searcher529 wasn't fast enough", searcher529);
     monitor.assertSaneOffers();
 
@@ -386,11 +386,11 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
                searcher529 <= hard529);
 
     // ensure we wait for the last searcher we triggered with 550
-    monitor.searcher.poll(5000, MILLISECONDS);
+    monitor.searcher.poll(2000, MILLISECONDS);
     
     // ensure we wait for the commits on 550
-    monitor.hard.poll(5000, MILLISECONDS);
-    monitor.soft.poll(5000, MILLISECONDS);
+    monitor.hard.poll(2000, MILLISECONDS);
+    monitor.soft.poll(2000, MILLISECONDS);
     
     // clear commits
     monitor.hard.clear();
@@ -399,7 +399,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     // wait a bit, w/o other action we shouldn't see any 
     // new hard/soft commits 
     assertNull("Got a hard commit we weren't expecting",
-        monitor.hard.poll(1000, MILLISECONDS));
+        monitor.hard.poll(200, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
         monitor.soft.poll(0, MILLISECONDS));
 
@@ -473,7 +473,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     // w/o other action we shouldn't see any additional hard/soft commits
 
     assertNull("Got a hard commit we weren't expecting",
-               monitor.hard.poll(1000, MILLISECONDS));
+               monitor.hard.poll(250, MILLISECONDS));
     assertNull("Got a soft commit we weren't expecting",
                monitor.soft.poll(0, MILLISECONDS));
 

@@ -228,8 +228,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     while (expectedDocCount != numFound(res)
            && timeSlept < 30000) {
       log.info("Waiting for {} docs", expectedDocCount);
-      timeSlept += 100;
-      Thread.sleep(100);
+      timeSlept += 50;
+      Thread.sleep(50);
       res = query(query, client);
     }
     if (log.isInfoEnabled()) {

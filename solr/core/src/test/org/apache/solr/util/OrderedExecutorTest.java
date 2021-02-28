@@ -122,7 +122,7 @@ public class OrderedExecutorTest extends SolrTestCase {
       List<Future> futures = new ArrayList<>();
       for (int i = 0; i < parallelism; i++) {
         final int lockId = i;
-        futures.add(ParWork.getRootSharedExecutor().submit(() -> {
+        futures.add(getTestExecutor().submit(() -> {
             orderedExecutor.submit(lockId, () -> {
                 try {
                   log.info("Worker #{} starting", lockId);

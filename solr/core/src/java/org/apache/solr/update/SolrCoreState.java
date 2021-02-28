@@ -18,6 +18,7 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -41,7 +42,9 @@ import org.slf4j.LoggerFactory;
  */
 public abstract class SolrCoreState {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+  public final LongAdder releads = new LongAdder();
+  public final LongAdder successReloads = new LongAdder();
+
   protected volatile boolean closed = false;
   private final ReentrantLock updateLock = new ReentrantLock(true);
   private final ReentrantLock reloadLock = new ReentrantLock(true);

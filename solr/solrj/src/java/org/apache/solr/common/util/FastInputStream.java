@@ -78,15 +78,13 @@ public class FastInputStream extends DataInputInputStream {
   public int readUnsignedByte() throws IOException {
     if (pos >= end) {
       refill();
-      if (pos >= end) {
-        throw new EOFException();
-      }
+      if (pos >= end) throw new EOFException();
     }
     return buf[pos++] & 0xff;
   }
 
   public int readWrappedStream(byte[] target, int offset, int len) throws IOException {
-    if(in == null) return -1;
+    if (in == null) return -1;
     return in.read(target, offset, len);
   }
 

@@ -139,56 +139,54 @@ abstract public class SolrExampleTestsBase extends SolrJettyTestBase {
   }
   
   @Test
-  @LuceneTestCase.Nightly // some silly waiting
+  @LuceneTestCase.Nightly
   public void testCommitWithinOnDelete() throws Exception {
     // make sure it is empty...
-    try (SolrClient client = getSolrClient(jetty)) {
-      client.deleteByQuery("*:*");// delete everything!
-      client.commit();
-      QueryResponse rsp = client.query(new SolrQuery("*:*"));
-      Assert.assertEquals(0, rsp.getResults().getNumFound());
+    SolrClient client = getSolrClient(jetty);
+    client.deleteByQuery("*:*");// delete everything!
+    client.commit();
+    QueryResponse rsp = client.query(new SolrQuery("*:*"));
+    Assert.assertEquals(0, rsp.getResults().getNumFound());
 
-      // Now add one document...
-      SolrInputDocument doc3 = new SolrInputDocument();
-      doc3.addField("id", "id3");
-      doc3.addField("name", "doc3");
-      doc3.addField("price", 10);
-      client.add(doc3);
-      client.commit();
+    // Now add one document...
+    SolrInputDocument doc3 = new SolrInputDocument();
+    doc3.addField("id", "id3");
+    doc3.addField("name", "doc3");
+    doc3.addField("price", 10);
+    client.add(doc3);
+    client.commit();
 
-      // now check that it comes out...
+    // now check that it comes out...
+    rsp = client.query(new SolrQuery("id:id3"));
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
+
+    // now test commitWithin on a delete
+    UpdateRequest up = new UpdateRequest();
+    up.setCommitWithin(1000);
+    up.deleteById("id3");
+    up.process(client);
+
+    // the document should still be there
+    rsp = client.query(new SolrQuery("id:id3"));
+    Assert.assertEquals(1, rsp.getResults().getNumFound());
+
+    // check if the doc has been deleted every 250 ms for 30 seconds
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    do {
+      Thread.sleep(50); // wait 250 ms
+
       rsp = client.query(new SolrQuery("id:id3"));
-      Assert.assertEquals(1, rsp.getResults().getNumFound());
+      if (rsp.getResults().getNumFound() == 0) {
+        return;
+      }
+    } while (!timeout.hasTimedOut());
 
-      // now test commitWithin on a delete
-      UpdateRequest up = new UpdateRequest();
-      up.setCommitWithin(1000);
-      up.deleteById("id3");
-      up.process(client);
-
-      // the document should still be there
-      rsp = client.query(new SolrQuery("id:id3"));
-      Assert.assertEquals(1, rsp.getResults().getNumFound());
-
-      // check if the doc has been deleted every 250 ms for 30 seconds
-      TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-      do {
-        Thread.sleep(50); // wait 250 ms
-
-        rsp = client.query(new SolrQuery("id:id3"));
-        if (rsp.getResults().getNumFound() == 0) {
-          return;
-        }
-      } while (!timeout.hasTimedOut());
-
-      Assert.fail("commitWithin failed to commit");
-    }
+    Assert.fail("commitWithin failed to commit");
   }
   
   @Test
   public void testAddDelete() throws Exception {
     SolrClient client = getSolrClient(jetty);
-
 
     SolrInputDocument[] doc = new SolrInputDocument[3];
     for (int i = 0; i < 3; i++) {

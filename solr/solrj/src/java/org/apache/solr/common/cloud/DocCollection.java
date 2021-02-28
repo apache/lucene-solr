@@ -65,6 +65,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   private final Integer maxShardsPerNode;
   private final Boolean readOnly;
   private final boolean withStateUpdates;
+  private final Long id;
 
   public DocCollection(String name, Map<String, Slice> slices, Map<String, Object> props, DocRouter router) {
     this(name, slices, props, router, -1, false);
@@ -91,6 +92,8 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.maxShardsPerNode = (Integer) verifyProp(props, MAX_SHARDS_PER_NODE);
     Boolean readOnly = (Boolean) verifyProp(props, READ_ONLY);
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
+
+    this.id = (Long) props.get("id");
     
     Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
 
@@ -285,6 +288,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return null;
   }
 
+  public Replica getReplicaById(String id) {
+    for (Slice slice : slices.values()) {
+      Replica replica = slice.getReplicaById(id);
+      if (replica != null) return replica;
+    }
+    return null;
+  }
+
   public Slice getSlice(Replica replica) {
     for (Slice slice : slices.values()) {
       Replica r = slice.getReplica(replica.getName());
@@ -297,6 +308,17 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Slice slice = getSlice(sliceName);
     if (slice == null) return null;
     return slice.getLeader();
+  }
+
+  public long getId() {
+    return id;
+  }
+
+  public long getHighestReplicaId() {
+    long[] highest = new long[1];
+    List<Replica> replicas = getReplicas();
+    replicas.forEach(replica -> highest[0] = Math.max(highest[0], replica.id));
+    return highest[0];
   }
 
   /**

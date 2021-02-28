@@ -171,6 +171,7 @@ public class ClusterStateMockUtil {
           if (!leaderFound && !m.group(1).equals("p")) {
             replicaPropMap.put(Slice.LEADER, "true");
           }
+          replicaPropMap.put("id", "1");
           replica = new Replica(replicaName, replicaPropMap, collName, sliceName, nodeName -> "http://" + nodeName);
           replicas.put(replica.getName(), replica);
 

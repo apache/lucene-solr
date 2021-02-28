@@ -26,6 +26,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
@@ -145,15 +146,12 @@ public class StatePublisher implements Closeable {
       } else {
         String collection = zkNodeProps.getStr(ZkStateReader.COLLECTION_PROP);
         String core = zkNodeProps.getStr(ZkStateReader.CORE_NAME_PROP);
+        String id = zkNodeProps.getStr("id");
         String state = zkNodeProps.getStr(ZkStateReader.STATE_PROP);
 
-        if (collection == null || core == null || state == null) {
-          log.error("Bad state found for publish! {} {}", zkNodeProps, bulkMessage);
-          return;
-        }
-        String line = collection + "," + Replica.State.getShortState(Replica.State.valueOf(state.toUpperCase(Locale.ROOT)));
-        if (log.isDebugEnabled()) log.debug("Bulk publish core={} line={}", core, line);
-        bulkMessage.getProperties().put(core, line);
+        String line = Replica.State.getShortState(Replica.State.valueOf(state.toUpperCase(Locale.ROOT)));
+        if (log.isDebugEnabled()) log.debug("Bulk publish core={} id={} line={}", core, id, line);
+        bulkMessage.getProperties().put(id, line);
       }
     }
 
@@ -198,14 +196,16 @@ public class StatePublisher implements Closeable {
     try {
       if (stateMessage != TERMINATE_OP) {
         String operation = stateMessage.getStr(OPERATION);
+        String id = null;
         if (operation.equals("state")) {
           String core = stateMessage.getStr(ZkStateReader.CORE_NAME_PROP);
-          String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
           String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
+          String state = stateMessage.getStr(ZkStateReader.STATE_PROP);
 
           DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
           if (coll != null) {
             Replica replica = coll.getReplica(core);
+            id = replica.getId();
             String lastState = stateCache.get(core);
             if (collection != null && replica != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
               log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
@@ -217,21 +217,39 @@ public class StatePublisher implements Closeable {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
           }
 
-          stateCache.put(core, state);
+          stateMessage.getProperties().put("id", id);
+
+          stateCache.put(id, state);
         } else if (operation.equalsIgnoreCase(OverseerAction.DOWNNODE.toLower())) {
           // set all statecache entries for replica to a state
 
-          Collection<String> coreNames = cc.getAllCoreNames();
-          for (String core : coreNames) {
-            stateCache.put(core, Replica.State.getShortState(Replica.State.DOWN));
+          Collection<CoreDescriptor> cds= cc.getCoreDescriptors();
+          for (CoreDescriptor cd : cds) {
+            DocCollection doc = zkStateReader.getClusterState().getCollectionOrNull(cd.getCollectionName());
+            Replica replica = null;
+            if (doc != null) {
+              replica = doc.getReplica(cd.getName());
+
+              if (replica != null) {
+                stateCache.put(replica.getId(), Replica.State.getShortState(Replica.State.DOWN));
+              }
+            }
           }
 
         } else if (operation.equalsIgnoreCase(OverseerAction.RECOVERYNODE.toLower())) {
           // set all statecache entries for replica to a state
 
-          Collection<String> coreNames = cc.getAllCoreNames();
-          for (String core : coreNames) {
-            stateCache.put(core, Replica.State.getShortState(Replica.State.RECOVERING));
+          Collection<CoreDescriptor> cds = cc.getCoreDescriptors();
+          for (CoreDescriptor cd : cds) {
+            DocCollection doc = zkStateReader.getClusterState().getCollectionOrNull(cd.getCollectionName());
+            Replica replica = null;
+            if (doc != null) {
+              replica = doc.getReplica(cd.getName());
+
+              if (replica != null) {
+                stateCache.put(replica.getId(), Replica.State.getShortState(Replica.State.RECOVERING));
+              }
+            }
           }
 
         } else {

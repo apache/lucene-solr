@@ -66,6 +66,8 @@ public class CollectionReloadTest extends SolrCloudTestCase {
       return expiredReplica.getState() == Replica.State.ACTIVE;
     });
 
+    cluster.getZkClient().getConnectionManager().waitForConnected(1000);
+
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");
   }
 }

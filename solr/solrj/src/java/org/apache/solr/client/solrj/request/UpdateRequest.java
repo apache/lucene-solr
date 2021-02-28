@@ -55,6 +55,12 @@ import static org.apache.solr.common.params.ShardParams._ROUTE_;
  */
 public class UpdateRequest extends AbstractUpdateRequest {
 
+  public final static ThreadLocal<UpdateRequest> THREAD_LOCAL_UpdateRequest = new ThreadLocal<>(){
+    protected UpdateRequest initialValue() {
+      return new UpdateRequest();
+    }
+  };
+
   public static final String REPFACT = "rf";
   /**
    *   @deprecated Solr now always includes in the response the {@link #REPFACT}, this parameter
@@ -96,6 +102,10 @@ public class UpdateRequest extends AbstractUpdateRequest {
     if (deleteQuery != null) {
       deleteQuery.clear();
     }
+    if (docIterator != null) {
+      docIterator = null;
+    }
+    isLastDocInBatch = false;
   }
   
   // ---------------------------------------------------------------------------

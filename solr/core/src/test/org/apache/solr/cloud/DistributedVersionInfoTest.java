@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SkyHookDoc;
+import org.apache.solr.common.SkyHook;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -215,8 +215,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
             if (!deletedDocs.contains(docToDelete)) {
               SolrTestCaseJ4.delI(String.valueOf(docToDelete));
               deletedDocs.add(docToDelete);
-              if (SkyHookDoc.skyHookDoc != null) {
-                SkyHookDoc.skyHookDoc.register(String.valueOf(docToDelete), "delete from test client");
+              if (SkyHook.skyHookDoc != null) {
+                SkyHook.skyHookDoc.register(String.valueOf(docToDelete), "delete from test client");
               }
             }
           }
@@ -346,8 +346,8 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     doc.addField("id", String.valueOf(docId));
     doc.addField("a_t", "hello" + docId);
     log.info("Send id={}", docId);
-    if (SkyHookDoc.skyHookDoc != null) {
-      SkyHookDoc.skyHookDoc.register(String.valueOf(docId), "send from test client");
+    if (SkyHook.skyHookDoc != null) {
+      SkyHook.skyHookDoc.register(String.valueOf(docId), "send from test client");
     }
     AbstractFullDistribZkTestBase.sendDocs(cluster.getSolrClient(), COLLECTION, doc);
   }

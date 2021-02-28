@@ -499,7 +499,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
     cluster.stopJettyRunners();
     cluster.startJettyRunners();
 
- //   cluster.waitForActiveCollection(collectionName, 2, 4);
+    cluster.waitForActiveCollection(collectionName, 2, 4);
 
     cluster.getSolrClient().getZkStateReader().checkShardConsistency(collectionName, false, true);
     //checkShardConsistency(params("q","*:*", "rows", ""+(1 + numDocs),"_trace","addAll"));

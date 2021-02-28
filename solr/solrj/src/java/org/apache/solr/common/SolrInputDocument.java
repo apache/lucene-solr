@@ -164,8 +164,8 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
     _fields.put( name, field );
     field.setValue( value );
 
-    if (SkyHookDoc.skyHookDoc != null && "id".equals(name)) {
-      SkyHookDoc.skyHookDoc.register(this);
+    if (SkyHook.skyHookDoc != null && "id".equals(name)) {
+      SkyHook.skyHookDoc.register(this);
     }
   }
 

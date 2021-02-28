@@ -910,7 +910,7 @@ public class JavaBinCodec implements PushWriter {
     int maxSize = end * ByteUtils.MAX_UTF8_BYTES_PER_CHAR;
 
     if (maxSize <= MAX_UTF8_SIZE_FOR_ARRAY_GROW_STRATEGY) {
-      ByteBuffer brr = getByteArr(Math.max(8192, maxSize), true);
+      ByteBuffer brr = getByteArr(maxSize);
       byte[] b = brr.array();
       int sz = ByteUtils.UTF16toUTF8(s, 0, end, b, 0);
       writeTag(STR, sz);
@@ -919,7 +919,7 @@ public class JavaBinCodec implements PushWriter {
       // double pass logic for large strings, see SOLR-7971
       int sz = ByteUtils.calcUTF16toUTF8Length(s, 0, end);
       writeTag(STR, sz);
-      ByteBuffer brr = getByteArr(maxSize, true);
+      ByteBuffer brr = getByteArr(8192);
       byte[] b = brr.array();
       ByteUtils.writeUTF16toUTF8(s, 0, end, daos, b);
     }
@@ -928,9 +928,9 @@ public class JavaBinCodec implements PushWriter {
   public final static ThreadLocal<CharArr> THREAD_LOCAL_ARR = new ThreadLocal<>();
   public final static ThreadLocal<ByteBuffer> THREAD_LOCAL_BRR = new ThreadLocal<>();
 
-  public static ByteBuffer getByteArr(int sz, boolean resize) {
+  public static ByteBuffer getByteArr(int sz) {
     ByteBuffer brr = THREAD_LOCAL_BRR.get();
-    if (brr == null || resize) {
+    if (brr == null || brr.capacity() < sz) {
       brr = ByteBuffer.allocate(sz);
       THREAD_LOCAL_BRR.set(brr);
       return brr;
@@ -967,14 +967,13 @@ public class JavaBinCodec implements PushWriter {
   }
 
   private CharSequence _readStr(DataInputInputStream dis, StringCache stringCache, int sz) throws IOException {
-    ByteBuffer brr = getByteArr(Math.max(sz, 128), false);
-    if (brr.capacity() < sz) brr = getByteArr(sz, true);
+    ByteBuffer brr = getByteArr(sz);
     byte[] b = brr.array();
     dis.readFully(b, 0, sz);
     if (stringCache != null) {
       return stringCache.get(bytesRef.reset(b, 0, sz));
     } else {
-      CharArr arr = getCharArr(Math.max(sz, 128));
+      CharArr arr = getCharArr(sz);
       ByteUtils.UTF8toUTF16(b, 0, sz, arr);
       return arr.toString();
     }
@@ -1301,7 +1300,7 @@ public class JavaBinCodec implements PushWriter {
       if (result == null) {
         //make a copy because the buffer received may be changed later by the caller
         StringBytes copy = new StringBytes(Arrays.copyOfRange(b.bytes, b.offset, b.offset + b.length), 0, b.length);
-        CharArr arr = new CharArr(b.length);
+        CharArr arr = new CharArr();
         ByteUtils.UTF8toUTF16(b.bytes, b.offset, b.length, arr);
         result = arr.toString();
         cache.put(copy, result);

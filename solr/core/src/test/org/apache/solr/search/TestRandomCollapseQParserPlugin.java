@@ -143,7 +143,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         final SolrParams mainP = params("q", q, "fl", "id,"+collapseField);
 
         final String csize = random().nextBoolean() ?
-          "" : " size=" + TestUtil.nextInt(random(),1,TEST_NIGHTLY ? 2500 : 10);
+          "" : " size=" + TestUtil.nextInt(random(),1, TEST_NIGHTLY ? 1500 : 10);
 
         final String nullPolicy = randomNullPolicy();
         final String nullPs = NULL_IGNORE.equals(nullPolicy)

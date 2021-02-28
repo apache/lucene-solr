@@ -88,7 +88,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware, Per
     TupleStream tupleStream = null;
     try {
 
-      if(!isCloud) {
+      if (!isCloud) {
+        log.error(sqlNonCloudErrorMsg);
         throw new IllegalStateException(sqlNonCloudErrorMsg);
       }
 

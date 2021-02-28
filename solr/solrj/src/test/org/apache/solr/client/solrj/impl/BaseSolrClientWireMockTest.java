@@ -213,6 +213,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     props.put("maxShardsPerNode", "1");
     props.put("autoAddReplicas", "false");
     props.put("nrtReplicas", "1");
+    props.put("id", 1l);
 
     return new DocCollection(BUILT_IN_MOCK_COLLECTION, Slice.loadAllFromMap(nodeName -> mockSolr.baseUrl() + "/solr", BUILT_IN_MOCK_COLLECTION, slices), props, DocRouter.DEFAULT);
   }

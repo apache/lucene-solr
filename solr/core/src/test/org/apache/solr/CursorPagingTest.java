@@ -942,7 +942,7 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
     } else {
       // several SHOULD clauses on range queries
       int low = TestUtil.nextInt(random(), -2379, 2);
-      int high = TestUtil.nextInt(random(), 4, 5713);
+      int high = TestUtil.nextInt(random(), 4, 1305);
       return 
         numericFields.get(0) + ":[* TO 0] " +
         numericFields.get(1) + ":[0 TO *] " +

@@ -217,7 +217,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       OverseerCollectionMessageHandler.createConfNode(cloudManager.getDistribStateManager(), configName, collectionName);
 
-      DocCollection docCollection = buildDocCollection(cloudManager, message, true);
+      DocCollection docCollection = buildDocCollection(cloudManager, ocmh.overseer.getZkStateWriter().getHighestId(), message, true);
       clusterState = clusterState.copyWith(collectionName, docCollection);
       try {
         replicaPositions = buildReplicaPositions(cloudManager, message, shardNames);
@@ -516,7 +516,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  public static DocCollection buildDocCollection(SolrCloudManager cloudManager, ZkNodeProps message, boolean withDocRouter) {
+  public static DocCollection buildDocCollection(SolrCloudManager cloudManager, long id, ZkNodeProps message, boolean withDocRouter) {
     if (log.isDebugEnabled()) log.debug("buildDocCollection {}", message);
     String cName = message.getStr(NAME);
     DocRouter router = null;
@@ -565,6 +565,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
 
     Map<String,Object> collectionProps = new HashMap<>();
+
+    collectionProps.put("id", id);
 
     for (Map.Entry<String,Object> e : OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.entrySet()) {
       Object val = message.get(e.getKey());

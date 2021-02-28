@@ -237,7 +237,7 @@ public class PluginBag<T> implements AutoCloseable {
     if (plugin.isLoaded()) {
       if (core != null && core.getCoreContainer() != null) {
         try {
-          core.getCoreContainer().coreContainerExecutor.submit(() -> registerMBean(plugin.get(), core, name));
+         ParWork.getRootSharedExecutor().submit(() -> registerMBean(plugin.get(), core, name));
         } catch (RejectedExecutionException e) {
           registerMBean(plugin.get(), core, name);
         }

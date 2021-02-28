@@ -22,11 +22,33 @@
         <Console name="STDERR_COLOR" target="SYSTEM_ERR">
             <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </Console>
+        <Console name="STDERR" target="SYSTEM_ERR">
+            <PatternLayout pattern="%maxLen{%-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %c{1.} %m%notEmpty{
+        =>%ex{short}}}{10240}%n"/>
+        </Console>
 
         <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
             <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
         </File>
-
+        <RollingRandomAccessFile
+                name="SkyHookLogFile"
+                fileName="${sys:user.home}/solr_skyhook.log"
+                filePattern="${sys:user.home}/solr_skyhook.log.%i">
+            <PatternLayout>
+                <Pattern>
+                    %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{node_name} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+                </Pattern>
+            </PatternLayout>
+            <!-- <LogstashLayout dateTimeFormatPattern="yyyy-MM-dd'T'HH:mm:ss.SSSZZZ"
+                            eventTemplateUri="classpath:LogstashJsonEventLayoutV1.json"
+                            prettyPrintEnabled="true"
+                            stackTraceEnabled="true"/> -->
+            <Policies>
+                <OnStartupTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="64 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="2"/>
+        </RollingRandomAccessFile>
     </Appenders>
     <Loggers>
         <AsyncLogger name="org.apache.zookeeper" level="WARN"/>
@@ -69,9 +91,14 @@
         <AsyncLogger name="com.google.inject.servlet" level="INFO"/>
         <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="INFO"/>
 
+        <AsyncLogger name="org.apache.solr.common.SkyHook" level="INFO" additivity="false">
+            <AppenderRef ref="SkyHookLogFile"/>
+        </AsyncLogger>
+
+
         <AsyncRoot level="INFO">
-            <AppenderRef ref="STDERR_COLOR"/>
-            <AppenderRef ref="FILE"/>
+            <AppenderRef ref="STDERR"/>
+         <!--   <AppenderRef ref="FILE"/> -->
          </AsyncRoot>
      </Loggers>
  </Configuration>

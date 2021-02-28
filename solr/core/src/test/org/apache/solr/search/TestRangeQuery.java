@@ -34,6 +34,7 @@ import org.apache.solr.SolrTestCaseUtil;
 import org.apache.solr.SolrTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
@@ -518,7 +519,10 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
 
   private String[] getRandomRange(int max, String fieldName) {
     Number[] values = new Number[2];
-    FieldType ft = h.getCore().getLatestSchema().getField("field_" + fieldName).getType();
+    FieldType ft;
+    try (SolrCore core = h.getCore()) {
+      ft = core.getLatestSchema().getField("field_" + fieldName).getType();
+    }
     if (ft.getNumberType() == null) {
       assert ft instanceof StrField;
       values[0] = randomInt(max);

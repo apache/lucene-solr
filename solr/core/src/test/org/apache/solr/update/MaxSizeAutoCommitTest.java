@@ -73,6 +73,7 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
     initCore("solrconfig-tlog.xml", "schema.xml");
     core = h.getCore();
     updateHandler = (DirectUpdateHandler2) core.getUpdateHandler();
+    core.close();
 
     // we don't care about auto-commit's opening a new Searcher in this test, just skip it.
     updateHandler.softCommitTracker.setOpenSearcher(false);

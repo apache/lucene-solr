@@ -4664,7 +4664,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     // and then return so caller can check if wait
     // conditions are satisfied:
     try {
-      wait(1000);
+      wait(250);
     } catch (InterruptedException ie) {
       throw new ThreadInterruptedException(ie);
     }

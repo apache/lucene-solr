@@ -25,6 +25,16 @@ import org.apache.solr.common.util.Utils;
 
 public class Replica extends ZkNodeProps {
 
+  final Long id;
+  final Long collId;
+
+  public String getId() {
+    if (collId == null) {
+      return null;
+    }
+    return collId + "-" + id.toString();
+  }
+
   /**
    * The replica's state. In general, if the node the replica is hosted on is
    * not under {@code /live_nodes} in ZK, the replica's state should be
@@ -153,7 +163,8 @@ public class Replica extends ZkNodeProps {
     this.name = name;
 
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
-
+    this.id = propMap.containsKey("id") ? Long.parseLong((String) propMap.get("id")) : null;
+    this.collId = propMap.containsKey("collId") ? Long.parseLong((String) propMap.get("collId")) : null;
     this.baseUrl = nodeNameToBaseUrl.getBaseUrlForNodeName(this.nodeName);
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
     Objects.requireNonNull(this.collection, "'collection' must not be null");
@@ -161,6 +172,8 @@ public class Replica extends ZkNodeProps {
     Objects.requireNonNull(this.name, "'name' must not be null");
     Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
     Objects.requireNonNull(this.type, "'type' must not be null");
+    // Objects.requireNonNull(this.id, "'id' must not be null");
+
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
       if (propMap.get(ZkStateReader.STATE_PROP) instanceof  State) {
         this.state = (State) propMap.get(ZkStateReader.STATE_PROP);
@@ -179,6 +192,8 @@ public class Replica extends ZkNodeProps {
     this.slice = slice;
     this.name = name;
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
+    this.id = propMap.containsKey("id") ? Long.parseLong((String) propMap.get("id")) : null;
+    this.collId = propMap.containsKey("collId") ? Long.parseLong((String) propMap.get("collId")) : null;
     this.baseUrl =  baseUrl;
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {

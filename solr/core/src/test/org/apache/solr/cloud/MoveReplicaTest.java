@@ -77,19 +77,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
         .addConfig("conf2", SolrTestUtil.configset(getConfigSet()))
         .withSolrXml(SolrTestUtil.TEST_PATH().resolve("solr.xml"))
         .configure();
-
-    NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
-    JettySolrRunner overseerJetty = null;
-    String overseerLeader = (String) overSeerStatus.get("leader");
-    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      if (jetty.getNodeName().equals(overseerLeader)) {
-        overseerJetty = jetty;
-        break;
-      }
-    }
-    if (overseerJetty == null) {
-      fail("no overseer leader!");
-    }
   }
 
   @After

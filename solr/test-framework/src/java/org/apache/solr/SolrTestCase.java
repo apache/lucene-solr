@@ -46,7 +46,6 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.ParWorkExecutor;
-import org.apache.solr.common.SkyHookDoc;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.TimeTracker;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -321,8 +320,8 @@ public class SolrTestCase extends Assert {
       System.setProperty("urlScheme", "http");
     }
 
-    System.setProperty("useCompoundFile", "false");
-    System.setProperty("solr.tests.maxBufferedDocs", "200");
+    System.setProperty("useCompoundFile", "true");
+    System.setProperty("solr.tests.maxBufferedDocs", "1000");
 
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
@@ -473,6 +472,7 @@ public class SolrTestCase extends Assert {
 
       System.setProperty("solr.default.collection_op_timeout", "15000");
 
+      System.setProperty("useCompoundFile", "false");
 
       System.setProperty("solr.httpclient.retries", "1");
       System.setProperty("solr.retries.on.forward", "1");
@@ -588,11 +588,6 @@ public class SolrTestCase extends Assert {
       random = null;
       reusedKeys = null;
       sslConfig = null;
-
-      if (SkyHookDoc.skyHookDoc != null) {
-        SkyHookDoc.skyHookDoc.logAll();
-        SkyHookDoc.skyHookDoc.clear();
-      }
 
       long testTime = TimeUnit.SECONDS.convert(System.nanoTime() - testStartTime, TimeUnit.NANOSECONDS);
       if (!LuceneTestCase.TEST_NIGHTLY && testTime > SOLR_TEST_TIMEOUT) {

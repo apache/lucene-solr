@@ -37,7 +37,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.ParWork;
-import org.apache.solr.common.SkyHookDoc;
+import org.apache.solr.common.SkyHook;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -313,13 +313,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doDistribAdd(AddUpdateCommand cmd) throws IOException {
-   // if (log.isDebugEnabled()) log.debug("Distribute add cmd {} to {} {}", cmd, nodes, isLeader);
-    log.info("Distribute add docid={} cmd={} to {} leader={} isSubShardLeader={}", cmd.getPrintableId(), cmd, nodes, isLeader, isSubShardLeader);
+    if (log.isDebugEnabled()) log.debug("Distribute add docid={} cmd={} to {} leader={} isSubShardLeader={}", cmd.getPrintableId(), cmd, nodes, isLeader, isSubShardLeader);
 
-    if (SkyHookDoc.skyHookDoc != null) {
-      SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "do distrib add isLeader=" + isLeader + " isSubShardLeader=" + isSubShardLeader);
+    if (SkyHook.skyHookDoc != null) {
+      SkyHook.skyHookDoc.register(cmd.getPrintableId(), "do distrib add isLeader=" + isLeader + " isSubShardLeader=" + isSubShardLeader);
     }
-    if (isLeader && !isSubShardLeader && !forwardToLeader) {
+    if (isLeader && !isSubShardLeader) {
 
       DocCollection coll;
       String routeId;
@@ -346,13 +345,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
 
         if (log.isDebugEnabled()) log.debug("Distribute add getNodesByRoutingRules docid={} cmd={} to {} {}", cmd.getPrintableId(), cmd, nodes, isLeader);
-        final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, cmd.getRootIdUsingRouteParam(), cmd.getSolrInputDocument());
+        final List<SolrCmdDistributor.Node> nodesByRoutingRules = getNodesByRoutingRules(clusterState, coll, routeId, cmd.getSolrInputDocument());
 
         if (log.isDebugEnabled()) log.debug("Distribute add got NodesByRoutingRules docid={} cmd={} to {} {}", cmd.getPrintableId(), cmd, nodesByRoutingRules, isLeader);
         if (nodesByRoutingRules != null && !nodesByRoutingRules.isEmpty()) {
           try {
-            if (SkyHookDoc.skyHookDoc != null) {
-              SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "do distrib to replicas with nodesByRoutingRules");
+            if (SkyHook.skyHookDoc != null) {
+              SkyHook.skyHookDoc.register(cmd.getPrintableId(), "do distrib to replicas with nodesByRoutingRules");
             }
             ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
             params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
@@ -418,8 +417,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         //        if (!isLeader && params.get(DISTRIB_UPDATE_PARAM).equals(DistribPhase.FROMLEADER.toString())) {
         //          throw new IllegalStateException();
         //        }
-        if (SkyHookDoc.skyHookDoc != null) {
-          SkyHookDoc.skyHookDoc.register(cmd.getPrintableId(), "send update to cmdDistrib nodes=" + nodes + " cmd=" + cmd);
+        if (SkyHook.skyHookDoc != null) {
+          SkyHook.skyHookDoc.register(cmd.getPrintableId(), "send update to cmdDistrib nodes=" + nodes + " cmd=" + cmd);
         }
         if (log.isDebugEnabled()) log.debug("Distribute add, std old nodes docid={} cmd={} to {} {}", cmd.getPrintableId(), cmd, nodes, isLeader);
         try {
@@ -1000,12 +999,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#SPLITSHARD} */
   protected List<SolrCmdDistributor.Node> getSubShardLeaders(DocCollection coll, String shardId, String docId, SolrInputDocument doc, UpdateCommand cmd) {
-    if (SkyHookDoc.skyHookDoc != null && cmd instanceof AddUpdateCommand) {
-      SkyHookDoc.skyHookDoc.register(((AddUpdateCommand) cmd).getPrintableId(), "getSubShardLeaders isLeader=true");
+    if (SkyHook.skyHookDoc != null && cmd instanceof AddUpdateCommand) {
+      SkyHook.skyHookDoc.register(((AddUpdateCommand) cmd).getPrintableId(), "getSubShardLeaders isLeader=true");
     }
+    List<SolrCmdDistributor.Node> subLeaderNodes = null;
     try {
       Collection<Slice> allSlices = coll.getSlices();
-      List<SolrCmdDistributor.Node> nodes = null;
       for (Slice aslice : allSlices) {
         final Slice.State state = aslice.getState();
         if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
@@ -1030,7 +1029,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, t);
     }
-    return nodes;
+    if (log.isDebugEnabled()) log.debug("sub shard leaders are {}", subLeaderNodes);
+    return subLeaderNodes;
   }
 
   /** For {@link org.apache.solr.common.params.CollectionParams.CollectionAction#MIGRATE} */

@@ -194,8 +194,9 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     Response response = new Response();
 
     if (!onlyUpdateState) {
+      DocCollection finalCollection = collection;
       response.responseProps = createReplicas.stream().map(
-          createReplica -> new ZkNodeProps(ZkStateReader.COLLECTION_PROP, createReplica.collectionName, ZkStateReader.SHARD_ID_PROP, createReplica.sliceName, ZkStateReader.CORE_NAME_PROP,
+          createReplica -> ZkNodeProps.fromKeyVals("id", createReplica.id, "collId", finalCollection.getId(), ZkStateReader.COLLECTION_PROP, createReplica.collectionName, ZkStateReader.SHARD_ID_PROP, createReplica.sliceName, ZkStateReader.CORE_NAME_PROP,
               createReplica.coreName, ZkStateReader.NODE_NAME_PROP, createReplica.node)).collect(Collectors.toList());
       response.results = results;
 
@@ -362,12 +363,13 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     if (log.isDebugEnabled()) log.debug("Node Identified {} for creating new replica (core={}) of shard {} for collection {} currentReplicaCount {}", node, coreName, shard, collection, coll.getReplicas().size());
 
+    long id = coll.getHighestReplicaId();
     if (coreName == null) {
       coreName = Assign.buildSolrCoreName(coll, shard, replicaType);
     }
     if (log.isDebugEnabled()) log.debug("Returning CreateReplica command coreName={}", coreName);
 
-    return new CreateReplica(collection, shard, node, replicaType, coreName);
+    return new CreateReplica(id, collection, shard, node, replicaType, coreName);
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState, DocCollection collection,
@@ -423,9 +425,11 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     public final String sliceName;
     public final String node;
     public final Replica.Type replicaType;
+    private final long id;
     public String coreName;
 
-    CreateReplica(String collectionName, String sliceName, String node, Replica.Type replicaType, String coreName) {
+    CreateReplica(long id, String collectionName, String sliceName, String node, Replica.Type replicaType, String coreName) {
+      this.id = id;
       this.collectionName = collectionName;
       this.sliceName = sliceName;
       this.node = node;

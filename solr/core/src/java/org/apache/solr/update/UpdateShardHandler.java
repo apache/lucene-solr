@@ -217,14 +217,10 @@ public class UpdateShardHandler implements SolrInfoBean {
     if (searchOnlyClient != null) searchOnlyClient.disableCloseLock();
 
 
-    try (ParWork closer = new ParWork(this, true, false)) {
+    try (ParWork closer = new ParWork(this, false, true)) {
       closer.collect(recoveryOnlyClient);
       closer.collect(searchOnlyClient);
       closer.collect(updateOnlyClient);
-      closer.collect("SolrInfoBean", () -> {
-        SolrInfoBean.super.close();
-        return this;
-      });
     }
     try {
       SolrInfoBean.super.close();

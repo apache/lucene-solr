@@ -1140,23 +1140,6 @@ public class ZkController implements Closeable, Runnable {
           log.info("Overseer joining election {}", context.leaderProps.getNodeName());
           overseerElector.joinElection(false);
 
-       // });
-
-        //          worker.collect("publishDownState", () -> {
-        //            try {
-        //              Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null);
-        //              if (stat != null && stat.getNumChildren() > 0) {
-        //                publishDownStates();
-        //              }
-        //            } catch (InterruptedException e) {
-        //              ParWork.propagateInterrupt(e);
-        //              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        //            } catch (KeeperException e) {
-        //              throw new SolrException(ErrorCode.SERVER_ERROR, e);
-        //            }
-        //          });
-      //}
-
       publishNodeAs(getNodeName(), OverseerAction.RECOVERYNODE);
 
     } catch (InterruptedException e) {
@@ -1261,7 +1244,7 @@ public class ZkController implements Closeable, Runnable {
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     try {
       zkClient.delete(nodePath, -1);
-    } catch (NoNodeException e) {
+    } catch (NoNodeException | SessionExpiredException e) {
       // okay
     } catch (Exception e) {
       log.warn("Could not remove ephemeral live node {}", nodePath, e);
@@ -1577,6 +1560,7 @@ public class ZkController implements Closeable, Runnable {
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(CORE_NAME_PROP, cd.getName());
+    props.put("id", "-1");
 
     Replica replica = new Replica(cd.getName(), props, collection, shardId, zkStateReader);
     LeaderElector leaderElector;
@@ -1974,6 +1958,8 @@ public class ZkController implements Closeable, Runnable {
     }
     try {
       overseerElector.retryElection(joinAtHead);
+    } catch (AlreadyClosedException e) {
+      return;
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);

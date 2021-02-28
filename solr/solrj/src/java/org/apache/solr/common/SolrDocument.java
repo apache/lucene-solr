@@ -122,12 +122,12 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument> impleme
 
     _fields.put(name, value);
 
-    if (SkyHookDoc.skyHookDoc != null && "id".equals(name)) {
+    if (SkyHook.skyHookDoc != null && "id".equals(name)) {
       if (value instanceof SolrInputField) {
-        SkyHookDoc.skyHookDoc.register(String.valueOf(((SolrInputField) value).getValue()));
+        SkyHook.skyHookDoc.register(String.valueOf(((SolrInputField) value).getValue()));
       } else {
         try {
-          SkyHookDoc.skyHookDoc.register(String.valueOf(value));
+          SkyHook.skyHookDoc.register(String.valueOf(value));
         } catch (NumberFormatException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "class=" + value.getClass().getName(), e);
         }

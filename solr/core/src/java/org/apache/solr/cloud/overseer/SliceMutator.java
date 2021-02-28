@@ -70,7 +70,7 @@ public class SliceMutator {
       coreName = Assign.buildSolrCoreName(collection, slice, Replica.Type.get(message.getStr(ZkStateReader.REPLICA_TYPE)));
     }
     Replica replica = new Replica(coreName,
-        Utils.makeNonNullMap(
+        Utils.makeNonNullMap("id", String.valueOf(collection.getHighestReplicaId() + 1), "collId", String.valueOf(collection.getId()),
                     ZkStateReader.STATE_PROP, Replica.State.DOWN,
                     ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP),
                     ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP),

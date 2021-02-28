@@ -123,6 +123,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -769,7 +770,7 @@ public class HttpSolrCall {
           //System.out.println("resp code:" + resp.getStatus());
           for (HttpField field : resp.getHeaders()) {
             String headerName = field.getName();
-            String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
+            String lowerHeaderName = headerName.toLowerCase(Locale.ROOT);
 //            System.out.println("response header: " + headerName + " : " + field.getValue() + " status:" +
 //                    resp.getStatus());
             if (HOP_HEADERS.contains(lowerHeaderName))
@@ -782,9 +783,13 @@ public class HttpSolrCall {
         }
       };
 
-
       proxyRequest.send(listener);
 
+      try {
+        listener.get(5, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
 
       listener.getInputStream().transferTo(response.getOutputStream());
 

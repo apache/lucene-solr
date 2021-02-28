@@ -33,8 +33,10 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.TimeOut;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore // MRM TODO:
 public class SimpleCollectionCreateDeleteTest extends SolrCloudBridgeTestCase {
 
   public SimpleCollectionCreateDeleteTest() {

@@ -18,6 +18,7 @@ package org.apache.solr.schema;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.SolrCore;
 
 @Nightly // MRM TODO: speedup
 public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
@@ -222,7 +223,10 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
     try {
       System.setProperty("solr.schema.test.ver", String.valueOf(ver));
       initCore( "solrconfig-basic.xml", "schema-behavior.xml" );
-      IndexSchema s = h.getCore().getLatestSchema();
+      IndexSchema s;
+      try (SolrCore core = h.getCore()) {
+         s = core.getLatestSchema();
+      }
       assertEquals("Schema version not set correctly",
                    String.valueOf(ver),
                    String.valueOf(s.getVersion()));

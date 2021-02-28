@@ -30,7 +30,6 @@ public class ZkCmdExecutor {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient solrZkClient;
 
-  private long retryDelay = 500L;
   private int retryCount;
   private IsClosed isClosed;
 
@@ -60,9 +59,9 @@ public class ZkCmdExecutor {
   @SuppressWarnings("unchecked")
   public static <T> T retryOperation(ZkCmdExecutor zkCmdExecutor, ZkOperation operation, boolean retryOnSessionExp)
       throws KeeperException, InterruptedException {
-    if (zkCmdExecutor.solrZkClient.isClosed()) {
-      throw new AlreadyClosedException("SolrZkClient is already closed");
-    }
+//    if (zkCmdExecutor.solrZkClient.isClosed()) {
+//      throw new AlreadyClosedException("SolrZkClient is already closed");
+//    }
     KeeperException exception = null;
     int tryCnt = 0;
     while (tryCnt < zkCmdExecutor.retryCount) {
@@ -72,11 +71,11 @@ public class ZkCmdExecutor {
         if (!retryOnSessionExp && e instanceof KeeperException.SessionExpiredException) {
           throw e;
         }
-        log.warn("ConnectionLost or SessionExpiration", e);
+        log.warn(e.getClass().getSimpleName());
         if (exception == null) {
           exception = e;
         }
-        if (tryCnt > 2 && zkCmdExecutor.solrZkClient.isClosed()) {
+        if (zkCmdExecutor.solrZkClient.isClosed()) {
           throw e;
         }
         zkCmdExecutor.retryDelay(tryCnt);

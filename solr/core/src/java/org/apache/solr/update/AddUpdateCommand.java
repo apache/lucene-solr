@@ -24,7 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.solr.common.SkyHookDoc;
+import org.apache.solr.common.SkyHook;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -149,8 +149,8 @@ public class AddUpdateCommand extends UpdateCommand {
              sf.getType().readableToIndexed(field.getFirstValue().toString(), b);
              indexedId = b.get();
 
-             if (SkyHookDoc.skyHookDoc != null) {
-               SkyHookDoc.skyHookDoc.register(field.getFirstValue().toString());
+             if (SkyHook.skyHookDoc != null) {
+               SkyHook.skyHookDoc.register(field.getFirstValue().toString());
              }
            }
          }
