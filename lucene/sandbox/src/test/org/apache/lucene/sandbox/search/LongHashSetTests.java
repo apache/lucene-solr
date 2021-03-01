@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestLongHashSet extends LuceneTestCase {
+public class LongHashSetTests extends LuceneTestCase {
 
   private void assertEquals(Set<Long> set1, LongHashSet set2) {
     LuceneTestCase.assertEquals(set1, set2);

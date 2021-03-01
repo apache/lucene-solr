@@ -32,7 +32,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestMultiTermConstantScore extends TestBaseRangeFilter {
+public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
   /** threshold for comparing floats */
   public static final float SCORE_COMP_THRESH = 1e-6f;

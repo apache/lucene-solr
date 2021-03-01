@@ -38,7 +38,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestBaseRangeFilter extends LuceneTestCase {
+public class BaseTestRangeFilter extends LuceneTestCase {
 
   public static final boolean F = false;
   public static final boolean T = true;
