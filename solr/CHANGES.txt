@@ -32,6 +32,9 @@ New Features
 
 * SOLR-14787: Payload check query parser now supports inequalities. (Kevin Watters, Gus Heck)
 
+* SOLR-15130: Support for per-collection replica placement node sets, a.k.a "node type"
+  placements. (ab, ilan)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
@@ -217,7 +220,7 @@ Bug Fixes
 * SOLR-14546: Fix for a relatively hard to hit issue in OverseerTaskProcessor that could lead to out of order execution
   of Collection API tasks competing for a lock (Ilan Ginzburg).
 
-* SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh) 
+* SOLR-15162: Allow readOnly parameter to be used with v2 modify collection command (Eric Pugh)
 
 ==================  8.9.0 ==================
 
@@ -231,6 +234,8 @@ New Features
 
 * SOLR-15087: SolrCloud backups can now be restored to compatible existing collections, instead of requiring a new collection
   for each restore. (Jason Gerlowski, shalin, Cao Manh Dat)
+
+* SOLR-15132: Add temporal graph query to the nodes Streaming Expression (Joel Bernstein)
 
 Improvements
 ---------------------
@@ -250,6 +255,11 @@ Improvements
 * SOLR-15038: Add elevateOnlyDocsMatchingQuery and collectElevatedDocsWhenCollapsing parameters to query elevation.
   (Dennis Berger, Tobias Kässmann via Bruno Roustant)
 
+* SOLR-15191: Enhance hash method of JSON faceting to support EnumFieldType and perhaps some other/custom field types
+  too. (Thomas Wöckinger, David Smiley)
+
+* SOLR-15194: Allow Solr to make outbound non SSL calls to a JWT IDP via -Dsolr.auth.jwt.allowOutboundHttp=true property. (Eric Pugh)  
+
 Optimizations
 ---------------------
 * SOLR-15079: Block Collapse - Faster collapse code when groups are co-located via Block Join style nested doc indexing.
@@ -267,6 +277,8 @@ Bug Fixes
   cache and not know hot to deal with them when writing the updated doc to the update log.
   (David Smiley)
 
+* SOLR-15191: Fix JSON Faceting on EnumFieldType if allBuckets, numBuckets or missing is set.
+  (Thomas Wöckinger, David Smiley)
 
 Other Changes
 ---------------------

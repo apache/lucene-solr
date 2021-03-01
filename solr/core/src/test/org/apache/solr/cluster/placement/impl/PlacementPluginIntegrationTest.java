@@ -241,7 +241,7 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = AffinityPlacementFactory.class.getName();
-    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(COLLECTION, SECONDARY_COLLECTION));
+    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(COLLECTION, SECONDARY_COLLECTION), Map.of());
     V2Request req = new V2Request.Builder("/cluster/plugin")
         .forceV2(true)
         .POST()
@@ -300,6 +300,53 @@ public class PlacementPluginIntegrationTest extends SolrCloudTestCase {
     } catch (Exception e) {
       assertTrue(e.toString(), e.toString().contains("colocated collection"));
     }
+  }
+
+  // this functionality relies on System.getProperty which we cannot set on individual
+  // nodes in a mini cluster. For this reason this test is very basic - see
+  // AffinityPlacementFactoryTest for a more comprehensive test.
+  @Test
+  public void testNodeTypeIntegration() throws Exception {
+    // this functionality relies on System.getProperty which we cannot set on individual
+    // nodes in a mini cluster.
+    System.clearProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP);
+
+    String collectionName = "nodeTypeCollection";
+
+    PlacementPluginFactory<? extends PlacementPluginConfig> pluginFactory = cc.getPlacementPluginFactory();
+    assertTrue("wrong type " + pluginFactory.getClass().getName(), pluginFactory instanceof DelegatingPlacementPluginFactory);
+    DelegatingPlacementPluginFactory wrapper = (DelegatingPlacementPluginFactory) pluginFactory;
+    Phaser phaser = new Phaser();
+    wrapper.setDelegationPhaser(phaser);
+
+    int version = phaser.getPhase();
+
+    PluginMeta plugin = new PluginMeta();
+    plugin.name = PlacementPluginFactory.PLUGIN_NAME;
+    plugin.klass = AffinityPlacementFactory.class.getName();
+    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(), Map.of(collectionName, "type_0"));
+    V2Request req = new V2Request.Builder("/cluster/plugin")
+            .forceV2(true)
+            .POST()
+            .withPayload(singletonMap("add", plugin))
+            .build();
+    req.process(cluster.getSolrClient());
+
+    phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
+
+    try {
+      CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
+              .process(cluster.getSolrClient());
+      fail("should have failed due to no nodes with the types: " + rsp);
+    } catch (Exception e) {
+      assertTrue("should contain 'no nodes with types':" + e.toString(),
+              e.toString().contains("no nodes with types"));
+    }
+    System.setProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0");
+    CollectionAdminResponse rsp = CollectionAdminRequest.createCollection(collectionName, "conf", 1, 3)
+            .process(cluster.getSolrClient());
+
+    System.clearProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP);
   }
 
   @Test

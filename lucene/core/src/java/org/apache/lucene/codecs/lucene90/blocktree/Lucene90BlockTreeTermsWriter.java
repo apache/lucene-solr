@@ -917,6 +917,9 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
         // it out if the
         // average suffix length is greater than 6.
         if (suffixWriter.length() > 6L * numEntries) {
+          if (compressionHashTable == null) {
+            compressionHashTable = new LZ4.HighCompressionHashTable();
+          }
           LZ4.compress(
               suffixWriter.bytes(), 0, suffixWriter.length(), spareWriter, compressionHashTable);
           if (spareWriter.size() < suffixWriter.length() - (suffixWriter.length() >>> 2)) {
@@ -1139,8 +1142,7 @@ public final class Lucene90BlockTreeTermsWriter extends FieldsConsumer {
     private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
     private final ByteBuffersDataOutput spareWriter = ByteBuffersDataOutput.newResettableInstance();
     private byte[] spareBytes = BytesRef.EMPTY_BYTES;
-    private final LZ4.HighCompressionHashTable compressionHashTable =
-        new LZ4.HighCompressionHashTable();
+    private LZ4.HighCompressionHashTable compressionHashTable;
   }
 
   private boolean closed;

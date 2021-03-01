@@ -312,5 +312,17 @@ class ClusterAbstractionsForTest {
     public int hashCode() {
       return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
     }
+
+    @Override
+    public String toString() {
+      return "ReplicaImpl{" +
+              "replicaName='" + replicaName + '\'' +
+              ", coreName='" + coreName + '\'' +
+              ", shard='" + shard + '\'' +
+              ", replicaType=" + replicaType +
+              ", replicaState=" + replicaState +
+              ", node=" + node +
+              '}';
+    }
   }
 }
