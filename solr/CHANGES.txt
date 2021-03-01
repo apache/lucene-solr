@@ -32,6 +32,9 @@ New Features
 
 * SOLR-14787: Payload check query parser now supports inequalities. (Kevin Watters, Gus Heck)
 
+* SOLR-15130: Support for per-collection replica placement node sets, a.k.a "node type"
+  placements. (ab, ilan)
+
 Improvements
 ----------------------
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)

@@ -27,6 +27,7 @@ import org.apache.solr.cluster.*;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.Pair;
 
 import javax.annotation.Nonnull;
@@ -180,8 +181,17 @@ class SimpleClusterAbstractionsImpl {
     }
 
     @Override
+    public String toString() {
+      return "SolrCollectionImpl{" +
+              "collectionName='" + collectionName + '\'' +
+              ", shards=" + shards.keySet() +
+              ", docCollection=" + docCollection +
+              '}';
+    }
+
+    @Override
     public String getCustomProperty(String customPropertyName) {
-      return docCollection.getStr(customPropertyName);
+      return docCollection.getStr(CollectionAdminParams.PROPERTY_PREFIX + customPropertyName);
     }
   }
 
@@ -291,6 +301,17 @@ class SimpleClusterAbstractionsImpl {
 
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
+    }
+
+    @Override
+    public String toString() {
+      return "ShardImpl{" +
+              "shardName='" + shardName + '\'' +
+              ", collection='" + collection.getName() + '\'' +
+              ", shardState=" + shardState +
+              ", replicas=" + replicas.size() +
+              ", leader=" + leader +
+              '}';
     }
   }
 
@@ -431,6 +452,18 @@ class SimpleClusterAbstractionsImpl {
 
     public int hashCode() {
       return Objects.hash(replicaName, coreName, shard, replicaType, replicaState, node);
+    }
+
+    @Override
+    public String toString() {
+      return "ReplicaImpl{" +
+              "replicaName='" + replicaName + '\'' +
+              ", coreName='" + coreName + '\'' +
+              ", shard='" + shard.getShardName() + '\'' +
+              ", replicaType=" + replicaType +
+              ", replicaState=" + replicaState +
+              ", node='" + node + '\'' +
+              '}';
     }
   }
 }

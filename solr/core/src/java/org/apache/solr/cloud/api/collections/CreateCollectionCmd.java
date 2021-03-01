@@ -133,6 +133,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
       ZkStateReader zkStateReader = ccc.getZkStateReader();
 
+      // this also creates the collection zk node as a side-effect
       CollectionHandlingUtils.createConfNode(stateManager, configName, collectionName);
 
       Map<String,String> collectionParams = new HashMap<>();
