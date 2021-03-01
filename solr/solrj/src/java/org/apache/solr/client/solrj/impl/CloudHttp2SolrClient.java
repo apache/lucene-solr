@@ -32,10 +32,6 @@ import org.apache.solr.common.SolrException;
  * Solr endpoints for SolrCloud collections, and then use the
  * {@link LBHttp2SolrClient} to issue requests.
  *
- * This class assumes the id field for your documents is called
- * 'id' - if this is not the case, you must set the right name
- * with {@link #setIdField(String)}.
- *
  * @lucene.experimental
  * @since solr 8.0
  */

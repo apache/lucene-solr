@@ -38,10 +38,6 @@ import org.apache.solr.common.util.NamedList;
  * Instances of this class communicate with Zookeeper to discover
  * Solr endpoints for SolrCloud collections, and then use the 
  * {@link LBHttpSolrClient} to issue requests.
- * 
- * This class assumes the id field for your documents is called
- * 'id' - if this is not the case, you must set the right name
- * with {@link #setIdField(String)}.
  */
 @SuppressWarnings("serial")
 public class CloudSolrClient extends BaseCloudSolrClient {
