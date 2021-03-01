@@ -17,6 +17,8 @@ New Features
 * SOLR-15087: SolrCloud backups can now be restored to compatible existing collections, instead of requiring a new collection
   for each restore. (Jason Gerlowski, shalin, Cao Manh Dat)
 
+* SOLR-15132: Add temporal graph query to the nodes Streaming Expression (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-15081: Metrics for a core: add SolrCloud "isLeader" and "replicaState".  (David Smiley)
