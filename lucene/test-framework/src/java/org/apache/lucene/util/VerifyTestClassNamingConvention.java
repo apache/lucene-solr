@@ -41,8 +41,12 @@ public class VerifyTestClassNamingConvention extends AbstractBeforeAfterRule {
 
     Matcher matcher = namingConvention.matcher(suiteName);
     if (suiteName.startsWith(packagePrefix) && !matcher.matches()) {
-        throw new AssertionError(packagePrefix + " suite must follow " + namingConvention + " naming convention: " + suiteName);
+      throw new AssertionError(
+          packagePrefix
+              + " suite must follow "
+              + namingConvention
+              + " naming convention: "
+              + suiteName);
     }
   }
-
 }

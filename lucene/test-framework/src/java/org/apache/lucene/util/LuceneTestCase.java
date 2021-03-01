@@ -613,9 +613,9 @@ public abstract class LuceneTestCase extends Assert {
         RuleChain.outerRule(new TestRuleIgnoreTestSuites())
             .around(ignoreAfterMaxFailures)
             .around(suiteFailureMarker = new TestRuleMarkFailure())
-            .around(new VerifyTestClassNamingConvention(
-                "org.apache.lucene",
-                Pattern.compile("(.+\\.)(Test)([^.]+)")))
+            .around(
+                new VerifyTestClassNamingConvention(
+                    "org.apache.lucene", Pattern.compile("(.+\\.)(Test)([^.]+)")))
             .around(new TestRuleAssertionsRequired())
             .around(new TestRuleLimitSysouts(suiteFailureMarker))
             .around(tempFilesCleanupRule = new TestRuleTemporaryFilesCleanup(suiteFailureMarker));
