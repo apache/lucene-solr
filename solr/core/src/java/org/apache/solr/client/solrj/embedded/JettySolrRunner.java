@@ -84,6 +84,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -706,29 +707,29 @@ public class JettySolrRunner implements Closeable {
         throw new RuntimeException(e);
       }
 
-//      if (wait && coreContainer != null && coreContainer
-//          .isZooKeeperAware()) {
-//        log.info("waitForJettyToStop: {}", getLocalPort());
-//        String nodeName = getNodeName();
-//        if (nodeName == null) {
-//          log.info("Cannot wait for Jetty with null node name");
-//        } else {
-//
-//          log.info("waitForNode: {}", getNodeName());
-//
-//          ZkStateReader reader = coreContainer.getZkController().getZkStateReader();
-//
-//          try {
-//            if (!reader.isClosed() && reader.getZkClient().isConnected()) {
-//              reader.waitForLiveNodes(10, TimeUnit.SECONDS, (n) -> !n.contains(nodeName));
-//            }
-//          } catch (InterruptedException e) {
-//            ParWork.propagateInterrupt(e);
-//          } catch (TimeoutException e) {
-//            log.error("Timeout waiting for live node");
-//          }
-//        }
-//      }
+      if (wait && coreContainer != null && coreContainer
+          .isZooKeeperAware()) {
+        log.info("waitForJettyToStop: {}", getLocalPort());
+        String nodeName = getNodeName();
+        if (nodeName == null) {
+          log.info("Cannot wait for Jetty with null node name");
+        } else {
+
+          log.info("waitForNode: {}", getNodeName());
+
+          ZkStateReader reader = coreContainer.getZkController().getZkStateReader();
+
+          try {
+            if (!reader.isClosed() && reader.getZkClient().isConnected()) {
+              reader.waitForLiveNodes(10, TimeUnit.SECONDS, (n) -> !n.contains(nodeName));
+            }
+          } catch (InterruptedException e) {
+            ParWork.propagateInterrupt(e);
+          } catch (TimeoutException e) {
+            log.error("Timeout waiting for live node");
+          }
+        }
+      }
 
     } catch (Exception e) {
       SolrZkClient.checkInterrupted(e);

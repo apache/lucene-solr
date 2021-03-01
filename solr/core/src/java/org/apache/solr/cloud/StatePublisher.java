@@ -156,25 +156,25 @@ public class StatePublisher implements Closeable {
     }
 
     private void clearStatesForNode(ZkNodeProps bulkMessage, String nodeName) {
-      Set<String> removeCores = new HashSet<>();
-      Set<String> cores = bulkMessage.getProperties().keySet();
-      for (String core : cores) {
-        if (core.equals(OverseerAction.DOWNNODE.toLower()) || core.equals(OverseerAction.RECOVERYNODE.toLower())) {
+      Set<String> removeIds = new HashSet<>();
+      Set<String> ids = bulkMessage.getProperties().keySet();
+      for (String id : ids) {
+        if (id.equals(OverseerAction.DOWNNODE.toLower()) || id.equals(OverseerAction.RECOVERYNODE.toLower())) {
           continue;
         }
         Collection<DocCollection> collections = zkStateReader.getClusterState().getCollectionsMap().values();
         for (DocCollection collection : collections) {
-          Replica replica = collection.getReplica(core);
+          Replica replica = collection.getReplicaById(id);
           if (replica != null) {
             if (replica.getNodeName().equals(nodeName)) {
-              removeCores.add(core);
+              removeIds.add(id);
             }
           }
         }
 
       }
-      for (String core : removeCores) {
-        bulkMessage.getProperties().remove(core);
+      for (String id : removeIds) {
+        bulkMessage.getProperties().remove(id);
       }
     }
 
@@ -206,7 +206,7 @@ public class StatePublisher implements Closeable {
           if (coll != null) {
             Replica replica = coll.getReplica(core);
             id = replica.getId();
-            String lastState = stateCache.get(core);
+            String lastState = stateCache.get(id);
             if (collection != null && replica != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
               log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
               return;

@@ -50,13 +50,12 @@ import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrConfig.UpdateHandlerInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -835,10 +834,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
     if (log.isDebugEnabled()) {
       log.debug("closing {}", this);
     }
-    try (ParWork closer = new ParWork(this, true, false)) {
-      closer.collect(commitTracker);
-      closer.collect(softCommitTracker);
-    }
+
+    IOUtils.closeQuietly(commitTracker);
+    IOUtils.closeQuietly(softCommitTracker);
+
     super.close();
     numDocsPending.reset();
 

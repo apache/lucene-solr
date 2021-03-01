@@ -142,7 +142,6 @@ public class ZkStateWriter {
             if (latestColl == null) {
               //log.info("no node exists, using version 0");
               trackVersions.remove(collection.getName());
-              idToCollection.remove(collection.getId());
             } else {
               cs.getCollectionStates().put(latestColl.getName(), new ClusterState.CollectionRef(latestColl));
               //log.info("got version from zk {}", existsStat.getVersion());
@@ -152,13 +151,8 @@ public class ZkStateWriter {
             }
           }
 
-          DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
-          if (currentCollection != null) {
-            idToCollection.put(currentCollection.getId(), currentCollection.getName());
-          } else {
-            idToCollection.put(collection.getId(), collection.getName());
-          }
 
+          DocCollection currentCollection = cs.getCollectionOrNull(collection.getName());
           collection.getProperties().remove("pullReplicas");
           collection.getProperties().remove("replicationFactor");
           collection.getProperties().remove("maxShardsPerNode");
@@ -234,18 +228,10 @@ public class ZkStateWriter {
                 }
 
                 long collectionId = Long.parseLong(id.split("-")[0]);
-                String collection = idToCollection.get(collectionId);
+                String collection = reader.getClusterState().getCollection(collectionId);
 
                 if (collection == null) {
-                  String[] cname = new String[1];
-                  this.cs.forEachCollection( col -> {if (col.getId() == collectionId) cname[0]=col.getName();});
-
-                  if (cname[0] != null) {
-                    collection = cname[0];
-                  }
-                  if (collection == null) {
-                    continue;
-                  }
+                  continue;
                 }
 
                 String setState = Replica.State.shortStateToState(stateString).toString();
@@ -381,8 +367,6 @@ public class ZkStateWriter {
         //   ver = docColl.getZNodeVersion();
         if (ver == null) {
           ver = 0;
-        } else {
-
         }
       }
       updates.getProperties().put("_cs_ver_", ver.toString());

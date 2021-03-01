@@ -38,15 +38,14 @@ final class OverseerElectionContext extends ShardLeaderElectionContextBase {
   private final Overseer overseer;
 
   public OverseerElectionContext(final String zkNodeName, SolrZkClient zkClient, Overseer overseer) {
-    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica("-1", getIDMap(zkNodeName, overseer), "overseer", "overseer", overseer.getZkStateReader()), null, zkClient);
+    super(zkNodeName, Overseer.OVERSEER_ELECT, Overseer.OVERSEER_ELECT + "/leader", new Replica("overseer:" + overseer.getZkController().getNodeName(), getIDMap(zkNodeName, overseer), "overseer", "overseer", overseer.getZkStateReader()), null, zkClient);
     this.overseer = overseer;
     this.zkClient = zkClient;
   }
 
   private static Map<String,Object> getIDMap(String zkNodeName, Overseer overseer) {
     Map<String,Object> idMap = new HashMap<>(2);
-    idMap.put("id", "-1");
-    idMap.put("zknode", zkNodeName);
+    idMap.put("id", zkNodeName);
     idMap.put(ZkStateReader.NODE_NAME_PROP, overseer.getZkController().getNodeName());
     return idMap;
   }

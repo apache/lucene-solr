@@ -66,7 +66,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     //      return;
     //    }
     super.cancelElection();
-    if (zkClient.isAlive()) {
+  //  if (zkClient.isAlive()) {
       try {
         if (leaderZkNodeParentVersion != null) {
           try {
@@ -165,7 +165,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         log.info("Exception trying to cancel election {} {}", e.getClass().getName(), e.getMessage());
       }
       leaderZkNodeParentVersion = null;
-    }
+ //   }
   }
 
   @Override

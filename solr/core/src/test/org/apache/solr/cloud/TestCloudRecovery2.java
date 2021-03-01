@@ -69,8 +69,6 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       node2.stop();
 
-      cluster.waitForActiveCollection(COLLECTION, 1, 1, true);
-
       cluster.getSolrClient().getZkStateReader().waitForLiveNodes(5, TimeUnit.SECONDS, (newLiveNodes) -> newLiveNodes.size() == 1);
 
       UpdateRequest req = new UpdateRequest();

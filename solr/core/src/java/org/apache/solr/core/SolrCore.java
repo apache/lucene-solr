@@ -734,7 +734,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       CoreDescriptor cd = getCoreDescriptor();
       cd.loadExtraProperties(); //Reload the extra properties
       //  coreMetricManager.close();
-      if (coreContainer.isShutDown()) {
+      if (coreContainer.isShutDown() || closing) {
         throw new AlreadyClosedException();
       }
       core = new SolrCore(coreContainer, getName(), coreConfig, cd, getDataDir(), updateHandler, solrDelPolicy, currentCore, true);
@@ -2387,7 +2387,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       SolrIndexSearcher tmp = null;
       RefCounted<SolrIndexSearcher> newestSearcher = null;
       boolean success = false;
-      if (coreContainer.isShutDown()) {
+      if (coreContainer.isShutDown() || closing) {
         throw new AlreadyClosedException();
       }
       try {
@@ -2410,7 +2410,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
         searcherLock.lock();
         try {
-          if (coreContainer.isShutDown()) { // if we start new searchers after close we won't close them
+          if (coreContainer.isShutDown() || closing) { // if we start new searchers after close we won't close them
             throw new SolrCoreState.CoreIsClosedException();
           }
 
@@ -2472,7 +2472,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           // (caches take a little while to instantiate)
           final boolean useCaches = !realtime;
           final String newName = realtime ? "realtime" : "main";
-          if (coreContainer.isShutDown()) { // if we start new searchers after close we won't close them
+          if (coreContainer.isShutDown() || closing) { // if we start new searchers after close we won't close them
             throw new SolrCoreState.CoreIsClosedException();
           }
 
@@ -2586,7 +2586,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
      */
     public RefCounted<SolrIndexSearcher> getSearcher ( boolean forceNew, boolean returnSearcher, @SuppressWarnings({"rawtypes"}) final Future[] waitSearcher,
     boolean updateHandlerReopens){
-      if (coreContainer.isShutDown()) { // if we start new searchers after close we won't close them
+      if (coreContainer.isShutDown() || closing) { // if we start new searchers after close we won't close them
         throw new SolrCoreState.CoreIsClosedException();
       }
 

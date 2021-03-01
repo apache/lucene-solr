@@ -25,7 +25,7 @@ import org.apache.solr.common.util.Utils;
 
 public class Replica extends ZkNodeProps {
 
-  final Long id;
+  Long id;
   final Long collId;
 
   public String getId() {
@@ -163,7 +163,12 @@ public class Replica extends ZkNodeProps {
     this.name = name;
 
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
-    this.id = propMap.containsKey("id") ? Long.parseLong((String) propMap.get("id")) : null;
+
+    String rawId = (String) propMap.get("id");
+    if (rawId != null && !rawId.contains(":")) {
+      this.id = Long.parseLong(rawId);
+    }
+
     this.collId = propMap.containsKey("collId") ? Long.parseLong((String) propMap.get("collId")) : null;
     this.baseUrl = nodeNameToBaseUrl.getBaseUrlForNodeName(this.nodeName);
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));

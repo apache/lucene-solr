@@ -23,7 +23,6 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.cloud.overseer.OverseerAction;
-import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -362,6 +361,7 @@ public class ZkController implements Closeable, Runnable {
             zkController.register(descriptor.getName(), descriptor, afterExpiration);
           } catch (Exception e) {
             log.error("Error registering core name={} afterExpireation={}", descriptor.getName(), afterExpiration);
+            throw new SolrException(ErrorCode.SERVER_ERROR, e);
           }
         }
         return descriptor;
@@ -486,8 +486,6 @@ public class ZkController implements Closeable, Runnable {
             try {
 
               removeEphemeralLiveNode();
-
-              publishNodeAs(getNodeName(), OverseerAction.RECOVERYNODE);
 
               // recreate our watchers first so that they exist even on any problems below
               zkStateReader.createClusterStateWatchersAndUpdate();
@@ -1304,72 +1302,50 @@ public class ZkController implements Closeable, Runnable {
         getZkStateReader().registerCore(cloudDesc.getCollectionName());
       }
 
-      try {
-        log.info("Waiting to see our entry in state.json {}", desc.getName());
-        zkStateReader.waitForState(collection, Integer.getInteger("solr.zkregister.leaderwait", 30000), TimeUnit.MILLISECONDS, (l, c) -> { // MRM TODO: timeout
-          if (c == null) {
-            return false;
-          }
-          coll.set(c);
-          Replica r = c.getReplica(coreName);
-          if (r != null) {
-            replicaRef.set(r);
-            return true;
-          }
-          return false;
-        });
-      } catch (TimeoutException e) {
-        log.warn("Timeout waiting to see core " + coreName + " \ncollection=" + collection + " " + coll.get());
-      }
-
-      Replica replica = replicaRef.get();
-
-      if (replica == null) {
-          throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, replica=" + coreName + " is removed from clusterstate \n"
-              + coll.get());
-      }
-
-      log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, replica.getType());
+      log.info("Register replica - core:{} address:{} collection:{} shard:{} type={}", coreName, baseUrl, collection, shardId, cloudDesc.getReplicaType());
 
       log.info("Register terms for replica {}", coreName);
 
       registerShardTerms(collection, cloudDesc.getShardId(), coreName);
 
       log.info("Create leader elector for replica {}", coreName);
-      leaderElector = leaderElectors.get(replica.getName());
+      leaderElector = leaderElectors.get(coreName);
       if (leaderElector == null) {
         leaderElector = new LeaderElector(this);
-        LeaderElector oldElector = leaderElectors.putIfAbsent(replica.getName(), leaderElector);
+        LeaderElector oldElector = leaderElectors.putIfAbsent(coreName, leaderElector);
 
         if (oldElector != null) {
           IOUtils.closeQuietly(leaderElector);
         }
 
-        if (cc.isShutDown()) {
-          IOUtils.closeQuietly(leaderElector);
-          IOUtils.closeQuietly(oldElector);
-          IOUtils.closeQuietly(getShardTermsOrNull(collection, shardId));
-          throw new AlreadyClosedException();
-        }
+//        if (cc.isShutDown()) {
+//          IOUtils.closeQuietly(leaderElector);
+//          IOUtils.closeQuietly(oldElector);
+//          IOUtils.closeQuietly(getShardTermsOrNull(collection, shardId));
+//          throw new AlreadyClosedException();
+//        }
       }
 
       // If we're a preferred leader, insert ourselves at the head of the queue
-      boolean joinAtHead = replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
-      if (replica.getType() != Type.PULL) {
+      boolean joinAtHead = false; //replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false);
+
+      if (cloudDesc.getReplicaType() != Type.PULL) {
         //getCollectionTerms(collection).register(cloudDesc.getShardId(), coreName);
         // MRM TODO: review joinAtHead
         joinElection(desc, joinAtHead);
       }
 
       log.info("Wait to see leader for {}, {}", collection, shardId);
-      Replica leader = null;
+      String leaderName = null;
+
       for (int i = 0; i < 60; i++) {
         if (leaderElector.isLeader()) {
-          leader = replica;
+          leaderName = coreName;
           break;
         }
         try {
-          leader = zkStateReader.getLeaderRetry(collection, shardId, 3000, true);
+          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 3000, true);
+          leaderName = leader.getName();
 
         } catch (TimeoutException timeoutException) {
           if (isClosed() || isDcCalled() || cc.isShutDown()) {
@@ -1380,15 +1356,15 @@ public class ZkController implements Closeable, Runnable {
         }
       }
 
-      if (leader == null) {
+      if (leaderName == null) {
         log.error("No leader found while trying to register " + coreName + " with zookeeper");
         throw new SolrException(ErrorCode.SERVER_ERROR, "No leader found while trying to register " + coreName + " with zookeeper");
       }
 
-      String ourUrl = replica.getCoreUrl();
-      boolean isLeader = leader.getName().equals(coreName);
 
-      log.info("We are {} and leader is {} isLeader={}", ourUrl, leader.getCoreUrl(), isLeader);
+      boolean isLeader = leaderName.equals(coreName);
+
+      log.info("We are {} and leader is {} isLeader={}", coreName, leaderName, isLeader);
 
       log.info("Check if we should recover isLeader={}", isLeader);
       //assert !(isLeader && replica.getType() == Type.PULL) : "Pull replica became leader!";
@@ -1404,7 +1380,7 @@ public class ZkController implements Closeable, Runnable {
         }
 
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        boolean isTlogReplicaAndNotLeader = replica.getType() == Replica.Type.TLOG && !isLeader;
+        boolean isTlogReplicaAndNotLeader = cloudDesc.getReplicaType() == Replica.Type.TLOG && !isLeader;
         if (isTlogReplicaAndNotLeader) {
           String commitVersion = ReplicateFromLeader.getCommitVersion(core);
           if (commitVersion != null) {
@@ -1415,7 +1391,7 @@ public class ZkController implements Closeable, Runnable {
         if (!afterExpiration && !core.isReloaded() && ulog != null && !isTlogReplicaAndNotLeader) {
           // disable recovery in case shard is in construction state (for shard splits)
           Slice slice = getClusterState().getCollection(collection).getSlice(shardId);
-          if (slice.getState() != Slice.State.CONSTRUCTION || (slice.getState() == Slice.State.CONSTRUCTION  && !isLeader)) {
+          if (slice.getState() != Slice.State.CONSTRUCTION || !isLeader) {
             Future<UpdateLog.RecoveryInfo> recoveryFuture = core.getUpdateHandler().getUpdateLog().recoverFromLog();
             if (recoveryFuture != null) {
               log.info("Replaying tlog for {} during startup... NOTE: This can take a while.", core);
@@ -1431,20 +1407,17 @@ public class ZkController implements Closeable, Runnable {
           }
         }
 
-        if (replica.getType() != Type.PULL) {
-          checkRecovery(isLeader, core, cc);
-        }
-
-        if (isTlogReplicaAndNotLeader) {
+        if (cloudDesc.getReplicaType() != Type.PULL && !isLeader) {
+          checkRecovery(core, cc);
+        } else if (isTlogReplicaAndNotLeader) {
           startReplicationFromLeader(coreName, true);
         }
 
-        if (replica.getType() == Type.PULL) {
+        if (cloudDesc.getReplicaType() == Type.PULL) {
           startReplicationFromLeader(coreName, false);
-          publish(desc, Replica.State.ACTIVE);
         }
 
-        if (replica.getType() != Type.PULL) {
+        if (cloudDesc.getReplicaType() != Type.PULL) {
           shardTerms = getShardTerms(collection, cloudDesc.getShardId());
           // the watcher is added to a set so multiple calls of this method will left only one watcher
           if (log.isDebugEnabled()) log.debug("add shard terms listener for {}", coreName);
@@ -1590,19 +1563,11 @@ public class ZkController implements Closeable, Runnable {
   /**
    * Returns whether or not a recovery was started
    */
-  private void checkRecovery(final boolean isLeader, SolrCore core, CoreContainer cc) {
-
-    if (!isLeader) {
-
+  private void checkRecovery(SolrCore core, CoreContainer cc) {
       if (log.isInfoEnabled()) {
         log.info("Core needs to recover:{}", core.getName());
       }
       core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
-
-    } else {
-      log.info("I am the leader, no recovery necessary");
-    }
-
   }
 
 
@@ -1958,8 +1923,6 @@ public class ZkController implements Closeable, Runnable {
     }
     try {
       overseerElector.retryElection(joinAtHead);
-    } catch (AlreadyClosedException e) {
-      return;
     } catch (Exception e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to rejoin election", e);
@@ -2119,14 +2082,13 @@ public class ZkController implements Closeable, Runnable {
     if (confListeners.confDirListeners.isEmpty()) {
       // no more listeners for this confDir, remove it from the map
       if (log.isDebugEnabled()) log.debug("No more listeners for config directory [{}]", confDir);
-      zkClient.removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true, (rc, path, ctx) -> {
-        if (rc != 0) {
-          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          if (!(ex instanceof KeeperException.NoWatcherException)) {
-            log.error("Exception removing watch for " + path, ex);
-          }
-        }
-      }, "confWatcher");
+      try {
+        zkClient.removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true);
+      } catch (KeeperException.NoWatcherException e) {
+
+      } catch (Exception e) {
+        log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
+      }
       confDirectoryListeners.remove(confDir);
     }
   }
@@ -2239,12 +2201,7 @@ public class ZkController implements Closeable, Runnable {
 
   private static void setConfWatcher(String zkDir, Watcher watcher, Stat stat, CoreContainer cc, Map<String, ConfListeners> confDirectoryListeners, SolrZkClient zkClient) {
     try {
-      zkClient.addWatch(zkDir, watcher, AddWatchMode.PERSISTENT, (rc, path, ctx) -> {
-        if (rc != 0) {
-          KeeperException ex = KeeperException.create(KeeperException.Code.get(rc), path);
-          log.error("Exception creating watch for " + path, ex);
-        }
-      }, "confWatcher");
+      zkClient.addWatch(zkDir, watcher, AddWatchMode.PERSISTENT);
       Stat newStat = zkClient.exists(zkDir, null);
       if (stat != null && newStat.getVersion() > stat.getVersion()) {
         //a race condition where a we missed an event fired

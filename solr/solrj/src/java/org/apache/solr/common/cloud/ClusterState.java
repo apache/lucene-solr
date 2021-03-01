@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
@@ -337,6 +338,16 @@ public class ClusterState implements JSONWriter.Writable {
     long[] highest = new long[1];
     collectionStates.forEach((name, coll) -> highest[0] = Math.max(highest[0], coll.get().getId()));
     return highest[0];
+  }
+
+  public String getCollection(long id) {
+    Set<Entry<String,CollectionRef>> entries = collectionStates.entrySet();
+    for (Entry<String,CollectionRef> entry : entries) {
+      if (entry.getValue().get().getId() == id) {
+        return entry.getKey();
+      }
+    }
+    return null;
   }
 
   public static class CollectionRef {

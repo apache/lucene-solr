@@ -823,18 +823,13 @@ public class Overseer implements SolrCloseable {
 
     @Override
     public void close() {
-      ourLock.lock();
-      try {
-        this.closed = true;
-        closeWatcher();
-      } finally {
-        ourLock.unlock();
-      }
+      this.closed = true;
+      closeWatcher();
     }
 
     private void closeWatcher() {
       try {
-        zkController.getZkClient().removeWatches(path, this, WatcherType.Data, true);
+        zkController.getZkClient().removeWatches(path, this, WatcherType.Any, true);
       } catch (KeeperException.NoWatcherException e) {
 
       } catch (Exception e) {
@@ -883,16 +878,6 @@ public class Overseer implements SolrCloseable {
           if (zkController.getZkClient().isAlive()) {
             try {
               zkController.getZkClient().delete(fullPaths, true);
-            } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
-              if (zkController.getZkClient().isAlive()) {
-                try {
-                  zkController.getZkClient().delete(fullPaths, true);
-                } catch (KeeperException keeperException) {
-                  log.warn("Failed deleting processed items", e);
-                }
-              } else {
-                log.warn("Failed deleting processed items", e);
-              }
             } catch (Exception e) {
               log.warn("Failed deleting processed items", e);
             }
