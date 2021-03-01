@@ -59,7 +59,7 @@ public class TestKnnGraph extends LuceneTestCase {
   public void setup() {
     randSeed = random().nextLong();
     if (random().nextBoolean()) {
-      maxConn = random().nextInt(256) + 2;
+      maxConn = random().nextInt(256) + 3;
     }
     int strategy = random().nextInt(SearchStrategy.values().length - 1) + 1;
     searchStrategy = SearchStrategy.values()[strategy];
