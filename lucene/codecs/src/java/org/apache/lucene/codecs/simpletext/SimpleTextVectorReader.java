@@ -39,6 +39,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -48,6 +50,10 @@ import org.apache.lucene.util.StringHelper;
  * @lucene.experimental
  */
 public class SimpleTextVectorReader extends VectorReader {
+  // shallowSizeOfInstance for fieldEntries map is included in ramBytesUsed() calculation
+  private static final long BASE_RAM_BYTES_USED =
+      RamUsageEstimator.shallowSizeOfInstance(SimpleTextVectorReader.class)
+          + RamUsageEstimator.shallowSizeOfInstance(BytesRef.class);
 
   private static final BytesRef EMPTY = new BytesRef("");
 
@@ -63,6 +69,13 @@ public class SimpleTextVectorReader extends VectorReader {
             readState.segmentInfo.name,
             readState.segmentSuffix,
             SimpleTextVectorFormat.META_EXTENSION);
+    String vectorFileName =
+        IndexFileNames.segmentFileName(
+            readState.segmentInfo.name,
+            readState.segmentSuffix,
+            SimpleTextVectorFormat.VECTOR_EXTENSION);
+
+    boolean success = false;
     try (ChecksumIndexInput in =
         readState.directory.openChecksumInput(metaFileName, IOContext.DEFAULT)) {
       int fieldNumber = readInt(in, FIELD_NUMBER);
@@ -86,21 +99,23 @@ public class SimpleTextVectorReader extends VectorReader {
         fieldNumber = readInt(in, FIELD_NUMBER);
       }
       SimpleTextUtil.checkFooter(in);
-    }
 
-    String vectorFileName =
-        IndexFileNames.segmentFileName(
-            readState.segmentInfo.name,
-            readState.segmentSuffix,
-            SimpleTextVectorFormat.VECTOR_EXTENSION);
-    dataIn = readState.directory.openInput(vectorFileName, IOContext.DEFAULT);
+      dataIn = readState.directory.openInput(vectorFileName, IOContext.DEFAULT);
+      success = true;
+    } finally {
+      if (success == false) {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
   }
 
   @Override
   public VectorValues getVectorValues(String field) throws IOException {
     FieldInfo info = readState.fieldInfos.fieldInfo(field);
     if (info == null) {
-      throw new IllegalStateException("No vectors indexed for field=\"" + field + "\"");
+      // mirror the handling in Lucene90VectorReader#getVectorValues
+      // needed to pass TestSimpleTextVectorFormat#testDeleteAllVectorDocs
+      return null;
     }
     int dimension = info.getVectorDimension();
     if (dimension == 0) {
@@ -108,7 +123,9 @@ public class SimpleTextVectorReader extends VectorReader {
     }
     FieldEntry fieldEntry = fieldEntries.get(field);
     if (fieldEntry == null) {
-      throw new IllegalStateException("No entry found for vector field=\"" + field + "\"");
+      // mirror the handling in Lucene90VectorReader#getVectorValues
+      // needed to pass TestSimpleTextVectorFormat#testDeleteAllVectorDocs
+      return null;
     }
     if (dimension != fieldEntry.dimension) {
       throw new IllegalStateException(
@@ -133,6 +150,15 @@ public class SimpleTextVectorReader extends VectorReader {
     // in SimpleTextUtil.CHECKSUM):
     long footerStartPos = dataIn.length() - (SimpleTextUtil.CHECKSUM.length + 21);
     ChecksumIndexInput input = new BufferedChecksumIndexInput(clone);
+
+    // when there's no actual vector data written (e.g. tested in
+    // TestSimpleTextVectorFormat#testDeleteAllVectorDocs)
+    // the first line in dataInput will be, checksum 00000000000000000000
+    if (footerStartPos == 0) {
+      SimpleTextUtil.checkFooter(input);
+      return;
+    }
+
     while (true) {
       SimpleTextUtil.readLine(input, scratch);
       if (input.getFilePointer() >= footerStartPos) {
@@ -153,7 +179,16 @@ public class SimpleTextVectorReader extends VectorReader {
 
   @Override
   public long ramBytesUsed() {
-    return 0;
+    // mirror implementation of Lucene90VectorReader#ramBytesUsed
+    long totalBytes = BASE_RAM_BYTES_USED;
+    totalBytes += RamUsageEstimator.sizeOf(scratch.bytes());
+    totalBytes +=
+        RamUsageEstimator.sizeOfMap(
+            fieldEntries, RamUsageEstimator.shallowSizeOfInstance(FieldEntry.class));
+    for (FieldEntry entry : fieldEntries.values()) {
+      totalBytes += RamUsageEstimator.sizeOf(entry.ordToDoc);
+    }
+    return totalBytes;
   }
 
   @Override
@@ -244,7 +279,13 @@ public class SimpleTextVectorReader extends VectorReader {
     public int docID() {
       if (curOrd == -1) {
         return -1;
+      } else if (curOrd >= entry.size()) {
+        // when call to advance / nextDoc below already returns NO_MORE_DOCS, calling docID
+        // immediately afterward should also return NO_MORE_DOCS
+        // this is needed for TestSimpleTextVectorFormat.testAdvance test case
+        return NO_MORE_DOCS;
       }
+
       return entry.ordToDoc[curOrd];
     }
 

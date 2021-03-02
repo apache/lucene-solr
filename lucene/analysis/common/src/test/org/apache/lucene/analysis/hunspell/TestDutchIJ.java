@@ -27,6 +27,5 @@ public class TestDutchIJ extends StemmerTestBase {
   public void testStemming() {
     assertStemsTo("ijs", "ijs");
     assertStemsTo("IJs", "ijs");
-    assertStemsTo("Ijs");
   }
 }

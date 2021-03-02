@@ -28,7 +28,8 @@ import org.apache.solr.cluster.placement.Builders;
 import org.apache.solr.cluster.placement.impl.ModificationRequestImpl;
 import org.apache.solr.cluster.placement.impl.PlacementRequestImpl;
 import org.apache.solr.common.util.Pair;
-import org.junit.BeforeClass;
+import org.apache.solr.common.util.StrUtils;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,19 +47,23 @@ import java.util.stream.StreamSupport;
 public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static PlacementPlugin plugin;
+  private PlacementPlugin plugin;
 
   private final static long MINIMAL_FREE_DISK_GB = 10L;
   private final static long PRIORITIZED_FREE_DISK_GB = 50L;
   private final static String secondaryCollectionName = "withCollection_secondary";
   private final static String primaryCollectionName = "withCollection_primary";
 
-  @BeforeClass
-  public static void setupPlugin() {
-    AffinityPlacementConfig config = new AffinityPlacementConfig(
-        MINIMAL_FREE_DISK_GB,
-        PRIORITIZED_FREE_DISK_GB,
-        Map.of(primaryCollectionName, secondaryCollectionName));
+  static AffinityPlacementConfig defaultConfig = new AffinityPlacementConfig(
+          MINIMAL_FREE_DISK_GB,
+          PRIORITIZED_FREE_DISK_GB);
+
+  @Before
+  public void setupPlugin() {
+    configurePlugin(defaultConfig);
+  }
+
+  private void configurePlugin(AffinityPlacementConfig config) {
     AffinityPlacementFactory factory = new AffinityPlacementFactory();
     factory.configure(config);
     plugin = factory.createPluginInstance();
@@ -297,8 +302,8 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
         acceptedReplicaType = NRT_REPLICA_TYPE;
       }
 
-      nodeBuilders.get(i).setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, az)
-          .setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, acceptedReplicaType)
+      nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP, az)
+          .setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, acceptedReplicaType)
           .setCoreCount(numcores)
           .setFreeDiskGB(freedisk);
     }
@@ -349,7 +354,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
     LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
     for (int i = 0; i < 9; i++) {
-      nodeBuilders.get(i).setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "AZ" + (i / 3))
+      nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP, "AZ" + (i / 3))
           .setCoreCount(i)
           .setFreeDiskGB((double)(PRIORITIZED_FREE_DISK_GB + 10));
     }
@@ -499,9 +504,9 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       nodeBuilder.setCoreCount(0);
       nodeBuilder.setFreeDiskGB(100.0);
       if (i < NUM_NODES / 2) {
-        nodeBuilder.setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "az1");
+        nodeBuilder.setSysprop(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP, "az1");
       } else {
-        nodeBuilder.setSysprop(AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP, "az2");
+        nodeBuilder.setSysprop(AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP, "az2");
       }
     }
 
@@ -526,7 +531,7 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     Map<Replica.ReplicaType, Map<String, Map<String, AtomicInteger>>> replicas = new HashMap<>();
     AttributeValues attributeValues = placementContext.getAttributeFetcher().fetchAttributes();
     for (ReplicaPlacement rp : pp.getReplicaPlacements()) {
-      Optional<String> azOptional = attributeValues.getSystemProperty(rp.getNode(), AffinityPlacementFactory.AVAILABILITY_ZONE_SYSPROP);
+      Optional<String> azOptional = attributeValues.getSystemProperty(rp.getNode(), AffinityPlacementConfig.AVAILABILITY_ZONE_SYSPROP);
       if (!azOptional.isPresent()) {
         fail("missing AZ sysprop for node " + rp.getNode());
       }
@@ -556,10 +561,10 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
       nodeBuilder.setCoreCount(0);
       nodeBuilder.setFreeDiskGB(100.0);
       if (i < NUM_NODES / 3 * 2) {
-        nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Nrt, TlOg");
+        nodeBuilder.setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, "Nrt, TlOg");
         nodeBuilder.setSysprop("group", "one");
       } else {
-        nodeBuilder.setSysprop(AffinityPlacementFactory.REPLICA_TYPE_SYSPROP, "Pull,foobar");
+        nodeBuilder.setSysprop(AffinityPlacementConfig.REPLICA_TYPE_SYSPROP, "Pull,foobar");
         nodeBuilder.setSysprop("group", "two");
       }
     }
@@ -653,6 +658,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testWithCollectionPlacement() throws Exception {
+    AffinityPlacementConfig config = new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(primaryCollectionName, secondaryCollectionName), Map.of());
+    configurePlugin(config);
+
     int NUM_NODES = 3;
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
@@ -695,6 +706,12 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
 
   @Test
   public void testWithCollectionModificationRejected() throws Exception {
+    AffinityPlacementConfig config = new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(primaryCollectionName, secondaryCollectionName), Map.of());
+    configurePlugin(config);
+
     int NUM_NODES = 2;
     Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
     Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(secondaryCollectionName);
@@ -742,6 +759,109 @@ public class AffinityPlacementFactoryTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testNodeType() throws Exception {
+    Builders.ClusterBuilder clusterBuilder = Builders.newClusterBuilder().initializeLiveNodes(9);
+    LinkedList<Builders.NodeBuilder> nodeBuilders = clusterBuilder.getLiveNodeBuilders();
+    for (int i = 0; i < 9; i++) {
+      nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_" + (i % 3));
+    }
+
+    String collectionName = "nodeTypeCollection";
+    Builders.CollectionBuilder collectionBuilder = Builders.newCollectionBuilder(collectionName);
+    collectionBuilder.initializeShardsReplicas(1, 0, 0, 0, clusterBuilder.getLiveNodeBuilders());
+
+    // test single node type in collection
+    AffinityPlacementConfig config = new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(), Map.of(collectionName, "type_0"));
+    configurePlugin(config);
+
+    clusterBuilder.addCollection(collectionBuilder);
+
+    PlacementContext placementContext = clusterBuilder.buildPlacementContext();
+    Map<String, Set<String>> nodeNamesByType = new HashMap<>();
+    Cluster cluster = placementContext.getCluster();
+    AttributeValues attributeValues = placementContext.getAttributeFetcher()
+            .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
+            .fetchAttributes();
+    placementContext.getCluster().getLiveNodes().forEach(n ->
+            nodeNamesByType
+                    .computeIfAbsent(attributeValues.getSystemProperty(n, AffinityPlacementConfig.NODE_TYPE_SYSPROP).get(), type -> new HashSet<>())
+                    .add(n.getName())
+    );
+    SolrCollection collection = placementContext.getCluster().getCollection(collectionName);
+    PlacementRequestImpl placementRequest = new PlacementRequestImpl(collection,
+            Set.of("shard1"), placementContext.getCluster().getLiveNodes(), 3, 0, 0);
+
+    PlacementPlan pp = plugin.computePlacement(placementRequest, placementContext);
+    assertEquals("expected 3 placements: " + pp, 3, pp.getReplicaPlacements().size());
+    Set<String> type0nodes = nodeNamesByType.get("type_0");
+    Set<String> type1nodes = nodeNamesByType.get("type_1");
+    Set<String> type2nodes = nodeNamesByType.get("type_2");
+
+    for (ReplicaPlacement p : pp.getReplicaPlacements()) {
+      assertTrue(type0nodes.contains(p.getNode().getName()));
+    }
+
+    // test 2 node types in collection
+    config = new AffinityPlacementConfig(
+            MINIMAL_FREE_DISK_GB,
+            PRIORITIZED_FREE_DISK_GB,
+            Map.of(), Map.of(collectionName, "type_0,type_1"));
+    configurePlugin(config);
+
+    placementContext = clusterBuilder.buildPlacementContext();
+    collection = placementContext.getCluster().getCollection(collectionName);
+    placementRequest = new PlacementRequestImpl(collection,
+            Set.of("shard1"), placementContext.getCluster().getLiveNodes(), 6, 0, 0);
+
+    pp = plugin.computePlacement(placementRequest, placementContext);
+    assertEquals("expected 6 placements: " + pp, 6, pp.getReplicaPlacements().size());
+    for (ReplicaPlacement p : pp.getReplicaPlacements()) {
+      assertTrue(type0nodes.contains(p.getNode().getName()) ||
+              type1nodes.contains(p.getNode().getName()));
+    }
+
+    // test 2 node types in nodes
+    for (int i = 0; i < 9; i++) {
+      if (i < 3) {
+        nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_0,type_1");
+      } else if (i < 6) {
+        nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_1,type_2");
+      } else {
+        nodeBuilders.get(i).setSysprop(AffinityPlacementConfig.NODE_TYPE_SYSPROP, "type_2");
+      }
+    }
+
+    placementContext = clusterBuilder.buildPlacementContext();
+    collection = placementContext.getCluster().getCollection(collectionName);
+    placementRequest = new PlacementRequestImpl(collection,
+            Set.of("shard1"), placementContext.getCluster().getLiveNodes(), 6, 0, 0);
+    pp = plugin.computePlacement(placementRequest, placementContext);
+    assertEquals("expected 6 placements: " + pp, 6, pp.getReplicaPlacements().size());
+    nodeNamesByType.clear();
+    AttributeValues attributeValues2 = placementContext.getAttributeFetcher()
+            .requestNodeSystemProperty(AffinityPlacementConfig.NODE_TYPE_SYSPROP)
+            .fetchAttributes();
+    placementContext.getCluster().getLiveNodes().forEach(n -> {
+      String nodeTypesStr = attributeValues2.getSystemProperty(n, AffinityPlacementConfig.NODE_TYPE_SYSPROP).get();
+      for (String nodeType : StrUtils.splitSmart(nodeTypesStr, ',')) {
+        nodeNamesByType
+                .computeIfAbsent(nodeType, type -> new HashSet<>())
+                .add(n.getName());
+      }
+    });
+    type0nodes = nodeNamesByType.get("type_0");
+    type1nodes = nodeNamesByType.get("type_1");
+
+    for (ReplicaPlacement p : pp.getReplicaPlacements()) {
+      assertTrue(type0nodes.contains(p.getNode().getName()) ||
+              type1nodes.contains(p.getNode().getName()));
+    }
+
+  }
   @Test @Slow
   public void testScalability() throws Exception {
     log.info("==== numNodes ====");

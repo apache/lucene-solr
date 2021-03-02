@@ -50,15 +50,24 @@ public class SimpleTextVectorWriter extends VectorWriter {
   SimpleTextVectorWriter(SegmentWriteState state) throws IOException {
     assert state.fieldInfos.hasVectorValues();
 
-    String metaFileName =
-        IndexFileNames.segmentFileName(
-            state.segmentInfo.name, state.segmentSuffix, SimpleTextVectorFormat.META_EXTENSION);
-    meta = state.directory.createOutput(metaFileName, state.context);
+    boolean success = false;
+    // exception handling to pass TestSimpleTextVectorFormat#testRandomExceptions
+    try {
+      String metaFileName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, SimpleTextVectorFormat.META_EXTENSION);
+      meta = state.directory.createOutput(metaFileName, state.context);
 
-    String vectorDataFileName =
-        IndexFileNames.segmentFileName(
-            state.segmentInfo.name, state.segmentSuffix, SimpleTextVectorFormat.VECTOR_EXTENSION);
-    vectorData = state.directory.createOutput(vectorDataFileName, state.context);
+      String vectorDataFileName =
+          IndexFileNames.segmentFileName(
+              state.segmentInfo.name, state.segmentSuffix, SimpleTextVectorFormat.VECTOR_EXTENSION);
+      vectorData = state.directory.createOutput(vectorDataFileName, state.context);
+      success = true;
+    } finally {
+      if (success == false) {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
   }
 
   @Override
@@ -71,7 +80,9 @@ public class SimpleTextVectorWriter extends VectorWriter {
       docIds.add(docV);
     }
     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;
-    writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, docIds);
+    if (vectorDataLength > 0) {
+      writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, docIds);
+    }
   }
 
   private void writeVectorValue(VectorValues vectors) throws IOException {

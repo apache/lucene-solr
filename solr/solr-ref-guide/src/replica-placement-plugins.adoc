@@ -76,6 +76,10 @@ curl -X POST -H 'Content-type: application/json' -d '{
           "withCollections": {
             "A_primary": "A_secondary",
             "B_primary": "B_secondary"
+          },
+          "nodeType": {
+            "collection_A": "searchNode,indexNode",
+            "collection_B": "analyticsNode"
           }
         }
     }}'
@@ -119,9 +123,14 @@ The autoscaling specification in the configuration linked above aimed to do the 
 ** minimize cores per node, or
 ** minimize disk usage.
 
-Additionally, it supports the `withCollection` constraint that enforces the placement of
-co-located collections' replicas on the same nodes, and prevents deletions of collections and
-replicas that would break this constraint.
+It also supports additional per-collection constraints:
+
+* `withCollection` constraint enforces the placement of co-located collections' replicas on the
+same nodes, and prevents deletions of collections and replicas that would break this constraint.
+* `nodeType` constraint limits the nodes eligible for placement to only those that match one or
+more of the specified node types.
+
+See below for more details on these constraints.
 
 Overall strategy of this plugin:
 
@@ -170,6 +179,9 @@ The plugin preserves this co-location by rejecting delete operation of secondary
 removed from the co-located nodes, or the configuration must be changed to remove the
 co-location mapping for the primary collection.
 
+===== `nodeType` constraint
+
+
 ===== Configuration
 This plugin supports the following configuration parameters:
 
@@ -185,10 +197,18 @@ not an option, replicas can still be assigned to nodes with less than this amoun
 Default value is 100.
 
 `withCollection`::
-(optional, map) this property defines additional constraints that primary collections (keys)
+(optional, map) this property defines an additional constraint that primary collections (keys)
 must be located on the same nodes as the secondary collections (values). The plugin will
 assume that the secondary collection replicas are already in place and ignore candidate
 nodes where they are not already present. Default value is none.
+
+`nodeType`::
+(optional, map) this property defines an additional constraint that collections (keys)
+must be located only on the nodes that are labeled with one or more of the matching
+"node type" labels (values in the map are comma-separated labels). Nodes are labeled using the
+`node_type` system property with the value being an arbitrary comma-separated list of labels.
+Correspondingly, the plugin configuration can specify that a particular collection must be placed
+only on the nodes that match at least one of the (comma-separated) labels defined here.
 
 === Example configurations
 This is a simple configuration that uses default values:
@@ -232,6 +252,27 @@ curl -X POST -H 'Content-type: application/json' -d '{
           "withCollection": {
             "A_primary": "Common_secondary",
             "B_primary": "Common_secondary"
+          }
+        }
+    }}'
+  http://localhost:8983/api/cluster/plugin
+----
+
+This configuration defines that collection `collection_A` must be placed only on the nodes with
+the `node_type` system property containing either `searchNode` or `indexNode` (for example, a node
+may be labeled as `-Dnode_type=searchNode,indexNode,uiNode,zkNode`). Similarly, the
+collection `collection_B` must be placed only on the nodes that contain the `analyticsNode` label:
+
+[source,bash]
+----
+curl -X POST -H 'Content-type: application/json' -d '{
+    "add":{
+        "name": ".placement-plugin",
+        "class": "org.apache.solr.cluster.placement.plugins.AffinityPlacementFactory",
+        "config": {
+          "nodeType": {
+            "collection_A": "searchNode,indexNode",
+            "collection_B": "analyticsNode"
           }
         }
     }}'

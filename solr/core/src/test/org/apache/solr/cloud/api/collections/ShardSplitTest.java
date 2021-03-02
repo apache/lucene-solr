@@ -797,7 +797,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try (CloudSolrClient client = createCloudClient(null)) {
       Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, replicationFactor,
-          OverseerCollectionMessageHandler.NUM_SLICES, numShards,
+          CollectionHandlingUtils.NUM_SLICES, numShards,
           "router.field", shard_fld);
 
       createCollection(collectionInfos, collectionName, props, client);
@@ -856,7 +856,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try (CloudSolrClient client = createCloudClient(null)) {
       Map<String, Object> props = Utils.makeMap(
           REPLICATION_FACTOR, replicationFactor,
-          OverseerCollectionMessageHandler.NUM_SLICES, numShards);
+          CollectionHandlingUtils.NUM_SLICES, numShards);
 
       createCollection(collectionInfos, collectionName,props,client);
     }

@@ -90,8 +90,6 @@ public class AttributeFetcherImpl implements AttributeFetcher {
     return this;
   }
 
-  private static final double GB = 1024 * 1024 * 1024;
-
   @Override
   public AttributeValues fetchAttributes() {
 

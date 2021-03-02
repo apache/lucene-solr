@@ -488,6 +488,9 @@ public class SolrXmlConfig {
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
           break;
+        case "distributedClusterStateUpdates":
+          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
       }

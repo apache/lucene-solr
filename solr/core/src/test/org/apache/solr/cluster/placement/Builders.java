@@ -55,6 +55,7 @@ public class Builders {
         NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n); // Default name, can be changed
         nodeBuilder.setTotalDiskGB(10000.0);
         nodeBuilder.setFreeDiskGB(5000.0);
+        nodeBuilder.setCoreCount(0);
         nodeBuilders.add(nodeBuilder);
       }
       return this;

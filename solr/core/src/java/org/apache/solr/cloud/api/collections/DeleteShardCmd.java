@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
@@ -34,6 +33,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -45,20 +45,18 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
+public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final OverseerCollectionMessageHandler ocmh;
-  private final TimeSource timeSource;
 
-  public DeleteShardCmd(OverseerCollectionMessageHandler ocmh) {
-    this.ocmh = ocmh;
-    this.timeSource = ocmh.cloudManager.getTimeSource();
+  private final CollectionCommandContext ccc;
+
+  public DeleteShardCmd(CollectionCommandContext ccc) {
+    this.ccc = ccc;
   }
 
   @Override
@@ -70,7 +68,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
     String collectionName;
     if (followAliases) {
-      collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+      collectionName = ccc.getSolrCloudManager().getClusterStateProvider().resolveSimpleAlias(extCollectionName);
     } else {
       collectionName = extCollectionName;
     }
@@ -97,7 +95,19 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       propMap.put(sliceId, Slice.State.CONSTRUCTION.toString());
       propMap.put(ZkStateReader.COLLECTION_PROP, collectionName);
       ZkNodeProps m = new ZkNodeProps(propMap);
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        // In this DeleteShardCmd.call() method there are potentially two cluster state updates. This is the first one.
+        // Even though the code of this method does not wait for it to complete, it does call the Collection API before
+        // it issues the second state change below. The collection API will be doing its own state change(s), and these will
+        // happen after this one (given it's for the same collection). Therefore we persist this state change
+        // immediately and do not group it with the one done further down.
+        // Once the Collection API is also distributed (and not only the cluster state updates), we will likely be able
+        // to batch more/all cluster state updates done by this command (DeleteShardCmd). TODO SOLR-15146
+        ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.SliceUpdateShardState, m,
+            ccc.getSolrCloudManager(), ccc.getZkStateReader());
+      } else {
+        ccc.offerStateUpdate(Utils.toJSON(m));
+      }
     }
 
     String asyncId = message.getStr(ASYNC);
@@ -113,7 +123,7 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
         @SuppressWarnings({"rawtypes"})
         NamedList deleteResult = new NamedList();
         try {
-          ((DeleteReplicaCmd)ocmh.commandMap.get(DELETEREPLICA)).deleteReplica(clusterState, replica, deleteResult, () -> {
+          new DeleteReplicaCmd(ccc).deleteReplica(clusterState, replica, deleteResult, () -> {
             cleanupLatch.countDown();
             if (deleteResult.get("failure") != null) {
               synchronized (results) {
@@ -143,8 +153,13 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
-      ZkStateReader zkStateReader = ocmh.zkStateReader;
-      ocmh.overseer.offerStateUpdate(Utils.toJSON(m));
+      ZkStateReader zkStateReader = ccc.getZkStateReader();
+      if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
+        ccc.getDistributedClusterStateUpdater().doSingleStateUpdate(DistributedClusterStateUpdater.MutatingCommand.CollectionDeleteShard, m,
+            ccc.getSolrCloudManager(), ccc.getZkStateReader());
+      } else {
+        ccc.offerStateUpdate(Utils.toJSON(m));
+      }
 
       zkStateReader.waitForState(collectionName, 45, TimeUnit.SECONDS, (c) -> c.getSlice(sliceId) == null);
 

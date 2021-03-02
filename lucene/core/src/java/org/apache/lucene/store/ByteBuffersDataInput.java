@@ -17,6 +17,7 @@
 package org.apache.lucene.store;
 
 import java.io.EOFException;
+import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -256,6 +257,15 @@ public final class ByteBuffersDataInput extends DataInput
       this.pos = size();
       throw new EOFException();
     }
+  }
+
+  @Override
+  public void skipBytes(long numBytes) throws IOException {
+    if (numBytes < 0) {
+      throw new IllegalArgumentException("numBytes must be >= 0, got " + numBytes);
+    }
+    long skipTo = position() + numBytes;
+    seek(skipTo);
   }
 
   public ByteBuffersDataInput slice(long offset, long length) {

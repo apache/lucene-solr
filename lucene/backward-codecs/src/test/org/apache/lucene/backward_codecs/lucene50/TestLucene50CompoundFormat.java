@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.backward_codecs.lucene50;
 
-import org.apache.lucene.backward_codecs.Lucene87.Lucene87RWCodec;
+import org.apache.lucene.backward_codecs.lucene87.Lucene87RWCodec;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.BaseCompoundFormatTestCase;
 

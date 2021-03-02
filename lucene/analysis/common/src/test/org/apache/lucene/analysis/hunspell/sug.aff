@@ -13,6 +13,7 @@
 
 # switch off ngram suggestion for testing
 MAXNGRAMSUGS 0
+TRY -b
 REP 2
 REP alot a_lot
 REP inspite in_spite

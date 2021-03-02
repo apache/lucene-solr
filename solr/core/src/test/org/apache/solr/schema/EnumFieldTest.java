@@ -570,4 +570,29 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
       doInitCore();
     }
   }
+  
+  @Test
+  public void testFacetEnumSearch() throws Exception {
+    assumeFalse("Skipping testing of EnumFieldType without docValues, which is unsupported.",
+        System.getProperty("solr.tests.EnumFieldType").equals("solr.EnumFieldType")
+            && System.getProperty("solr.tests.numeric.dv").equals("false"));
+
+    clearIndex();
+
+    assertU(adoc("id", "0", FIELD_NAME, "Not Available"));
+    assertU(adoc("id", "1", FIELD_NAME, "Low"));
+    assertU(adoc("id", "2", FIELD_NAME, "Medium"));
+    assertU(adoc("id", "3", FIELD_NAME, "High"));
+    assertU(adoc("id", "4", FIELD_NAME, "Critical"));
+    assertU(adoc("id", "5", FIELD_NAME, "Critical"));
+
+    assertU(commit());
+    
+    final String jsonFacetParam = "{ " + FIELD_NAME + " : { type : terms, field : " + FIELD_NAME + ", "+
+        "missing : true, exists : true, allBuckets : true, method : enum }}";
+
+    assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam),
+        "//*[@name='facets']/int/text()=6",
+        "//*[@name='allBuckets']/long/text()=6");
+  }
 }

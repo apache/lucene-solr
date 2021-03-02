@@ -20,7 +20,11 @@ package org.apache.lucene.backward_codecs.lucene87;
 import java.util.Objects;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50CompoundFormat;
 import org.apache.lucene.backward_codecs.lucene50.Lucene50LiveDocsFormat;
+import org.apache.lucene.backward_codecs.lucene50.Lucene50TermVectorsFormat;
 import org.apache.lucene.backward_codecs.lucene60.Lucene60FieldInfosFormat;
+import org.apache.lucene.backward_codecs.lucene80.Lucene80DocValuesFormat;
+import org.apache.lucene.backward_codecs.lucene80.Lucene80NormsFormat;
+import org.apache.lucene.backward_codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
@@ -34,10 +38,6 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
@@ -113,12 +113,12 @@ public class Lucene87Codec extends Codec {
   }
 
   @Override
-  public final TermVectorsFormat termVectorsFormat() {
+  public TermVectorsFormat termVectorsFormat() {
     return vectorsFormat;
   }
 
   @Override
-  public final PostingsFormat postingsFormat() {
+  public PostingsFormat postingsFormat() {
     return postingsFormat;
   }
 
@@ -187,7 +187,7 @@ public class Lucene87Codec extends Codec {
   private final NormsFormat normsFormat = new Lucene80NormsFormat();
 
   @Override
-  public final NormsFormat normsFormat() {
+  public NormsFormat normsFormat() {
     return normsFormat;
   }
 }
