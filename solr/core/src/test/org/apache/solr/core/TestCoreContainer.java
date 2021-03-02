@@ -41,7 +41,6 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
-import org.apache.solr.cloud.ZkController;
 import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
