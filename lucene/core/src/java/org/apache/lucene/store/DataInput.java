@@ -41,8 +41,8 @@ public abstract class DataInput implements Cloneable {
 
   private static final int SKIP_BUFFER_SIZE = 1024;
 
-  /* This buffer is used to skip over bytes with the default implementation of
-   * skipBytes. The reason why we need to use an instance member instead of
+  /* This buffer is used to skip over bytes with the slow implementation of
+   * skipBytesSlowly. The reason why we need to use an instance member instead of
    * sharing a single instance across threads is that some delegating
    * implementations of DataInput might want to reuse the provided buffer in
    * order to eg. update the checksum. If we shared the same buffer across
@@ -348,8 +348,12 @@ public abstract class DataInput implements Cloneable {
    * Skip over <code>numBytes</code> bytes. The contract on this method is that it should have the
    * same behavior as reading the same number of bytes into a buffer and discarding its content.
    * Negative values of <code>numBytes</code> are not supported.
+   *
+   * @deprecated Implementing subclasses should override #skipBytes with a more performant solution
+   *     where possible.
    */
-  public void skipBytes(final long numBytes) throws IOException {
+  @Deprecated
+  protected void skipBytesSlowly(final long numBytes) throws IOException {
     if (numBytes < 0) {
       throw new IllegalArgumentException("numBytes must be >= 0, got " + numBytes);
     }
@@ -363,4 +367,11 @@ public abstract class DataInput implements Cloneable {
       skipped += step;
     }
   }
+
+  /**
+   * Skip over <code>numBytes</code> bytes. This method may skip bytes in whatever way is most
+   * optimal, and may not have the same behavior as reading the skipped bytes. In general, negative
+   * <code>numBytes</code> are not supported.
+   */
+  public abstract void skipBytes(final long numBytes) throws IOException;
 }

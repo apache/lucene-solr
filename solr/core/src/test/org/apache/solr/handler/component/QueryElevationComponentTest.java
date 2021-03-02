@@ -37,6 +37,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.FileUtils;
 import org.junit.Before;
@@ -927,6 +928,106 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
       assertEquals(toIdSet("10", "11", "12"), elevationProvider.getElevationForQuery("bb DD CC vv").elevatedIds);
       assertEquals(toIdSet("10", "11", "12", "13"), elevationProvider.getElevationForQuery("BB Cc").elevatedIds);
       assertEquals(toIdSet("10", "11", "12", "14"), elevationProvider.getElevationForQuery("aa bb dd cc aa").elevatedIds);
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testOnlyDocsInSearchResultsWillBeElevated() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "XXXX", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "YYYY", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ", "str_s1", "c"));
+
+      assertU(adoc("id", "4", "title", "XXXX XXXX", "str_s1", "x"));
+      assertU(adoc("id", "5", "title", "YYYY YYYY", "str_s1", "y"));
+      assertU(adoc("id", "6", "title", "XXXX XXXX", "str_s1", "z"));
+      assertU(adoc("id", "7", "title", "AAAA", "str_s1", "a"));
+
+      assertU(commit());
+
+      // default behaviour
+      assertQ("", req(
+              CommonParams.Q, "YYYY",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "false",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='3']",
+              "//result/doc[1]/str[@name='id'][.='1']",
+              "//result/doc[2]/str[@name='id'][.='2']",
+              "//result/doc[3]/str[@name='id'][.='5']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // only docs that matches q
+      assertQ("", req(
+              CommonParams.Q, "YYYY",
+              CommonParams.QT, "/elevate",
+              QueryElevationParams.ELEVATE_ONLY_DOCS_MATCHING_QUERY, "true",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='2']",
+              "//result/doc[1]/str[@name='id'][.='2']",
+              "//result/doc[2]/str[@name='id'][.='5']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='false']"
+      );
+
+
+
+    } finally {
+      delete();
+    }
+  }
+
+  @Test
+  public void testOnlyRepresentativeIsVisibleWhenCollapsing() throws Exception {
+    try {
+      init("schema12.xml");
+      assertU(adoc("id", "1", "title", "ZZZZ", "str_s1", "a"));
+      assertU(adoc("id", "2", "title", "ZZZZ", "str_s1", "b"));
+      assertU(adoc("id", "3", "title", "ZZZZ ZZZZ", "str_s1", "a"));
+      assertU(adoc("id", "4", "title", "ZZZZ ZZZZ", "str_s1", "c"));
+
+      assertU(commit());
+
+      // default behaviour - all elevated docs are visible
+      assertQ("", req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "true",
+              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='4']",
+              "//result/doc[1]/str[@name='id'][.='1']",
+              "//result/doc[2]/str[@name='id'][.='2']",
+              "//result/doc[3]/str[@name='id'][.='3']",
+              "//result/doc[4]/str[@name='id'][.='4']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[4]/bool[@name='[elevated]'][.='false']"
+      );
+
+      // only representative elevated doc visible
+      assertQ("", req(
+              CommonParams.Q, "ZZZZ",
+              CommonParams.QT, "/elevate",
+              CollapsingQParserPlugin.COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, "false",
+              CommonParams.FQ, "{!collapse field=str_s1 sort='score desc'}",
+              CommonParams.FL, "id, score, [elevated]"),
+              "//*[@numFound='3']",
+              "//result/doc[1]/str[@name='id'][.='2']",
+              "//result/doc[2]/str[@name='id'][.='3']",
+              "//result/doc[3]/str[@name='id'][.='4']",
+              "//result/doc[1]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[2]/bool[@name='[elevated]'][.='true']",
+              "//result/doc[3]/bool[@name='[elevated]'][.='false']"
+      );
+
     } finally {
       delete();
     }

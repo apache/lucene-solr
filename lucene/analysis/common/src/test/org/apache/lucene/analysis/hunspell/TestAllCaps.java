@@ -37,8 +37,9 @@ public class TestAllCaps extends StemmerTestBase {
   }
 
   public void testWrong() {
-    assertStemsTo("Openoffice.org");
-    assertStemsTo("Unicef");
-    assertStemsTo("Unicef's");
+    // "hunspell -s" still stems them
+    assertStemsTo("Openoffice.org", "Openoffice.org");
+    assertStemsTo("Unicef", "Unicef");
+    assertStemsTo("Unicef's", "Unicef");
   }
 }

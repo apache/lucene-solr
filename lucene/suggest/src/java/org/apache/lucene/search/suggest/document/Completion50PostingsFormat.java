@@ -20,9 +20,9 @@ import org.apache.lucene.codecs.PostingsFormat;
 
 /**
  * {@link org.apache.lucene.search.suggest.document.CompletionPostingsFormat} for {@code
- * org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat}. This format is only used for
+ * org.apache.lucene.backward_codecs.lucene50.Lucene50PostingsFormat}. This format is only used for
  * backward-compatibility of the index format and cannot be used to write data, use {@link
- * Completion84PostingsFormat} on new indices.
+ * Completion90PostingsFormat} on new indices.
  *
  * @lucene.experimental
  */

@@ -20,51 +20,34 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 
 public class ZkWriteCommand {
+  /**
+   * Single NO_OP instance, can be compared with ==
+   */
+  static final ZkWriteCommand NO_OP = new ZkWriteCommand(null, null);
 
   public final String name;
   public final DocCollection collection;
+  public final boolean isPerReplicaStateCollection;
 
-  public final boolean noop;
   // persist the collection state. If this is false, it means the collection state is not modified
-  public final boolean persistCollState;
+  public final boolean persistJsonState;
   public final PerReplicaStatesOps ops;
 
-  public ZkWriteCommand(String name, DocCollection collection, PerReplicaStatesOps replicaOps, boolean persistCollState) {
-    boolean isPerReplicaState = collection.isPerReplicaState();
+  public ZkWriteCommand(String name, DocCollection collection, PerReplicaStatesOps replicaOps, boolean persistJsonState) {
+    isPerReplicaStateCollection = collection != null && collection.isPerReplicaState();
     this.name = name;
     this.collection = collection;
-    this.noop = false;
-    this.ops = isPerReplicaState ? replicaOps : null;
-    this.persistCollState = isPerReplicaState ? persistCollState : true;
+    this.ops = replicaOps;
+    this.persistJsonState = persistJsonState || !isPerReplicaStateCollection; // Always persist for non "per replica state" collections
   }
+
   public ZkWriteCommand(String name, DocCollection collection) {
-    this.name = name;
-    this.collection = collection;
-    this.noop = false;
-    persistCollState = true;
-    this.ops = collection != null && collection.isPerReplicaState() ?
-        PerReplicaStatesOps.touchChildren():
-        null;
-  }
-
-  /**
-   * Returns a no-op
-   */
-  protected ZkWriteCommand() {
-    this.noop = true;
-    this.name = null;
-    this.collection = null;
-    this.ops = null;
-    persistCollState = true;
-  }
-
-  public static ZkWriteCommand noop() {
-    return new ZkWriteCommand();
+    this(name, collection, null, true);
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + ": " + (noop ? "no-op" : name + "=" + collection);
+    return getClass().getSimpleName() + ": " + (this == NO_OP ? "no-op" : name + "=" + collection);
   }
 }
 

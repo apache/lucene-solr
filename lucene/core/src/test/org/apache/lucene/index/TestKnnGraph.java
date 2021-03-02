@@ -59,7 +59,7 @@ public class TestKnnGraph extends LuceneTestCase {
   public void setup() {
     randSeed = random().nextLong();
     if (random().nextBoolean()) {
-      maxConn = random().nextInt(256) + 2;
+      maxConn = random().nextInt(256) + 3;
     }
     int strategy = random().nextInt(SearchStrategy.values().length - 1) + 1;
     searchStrategy = SearchStrategy.values()[strategy];
@@ -213,8 +213,10 @@ public class TestKnnGraph extends LuceneTestCase {
   public void testSearch() throws Exception {
     // We can't use dot product here since the vectors are laid out on a grid, not a sphere.
     searchStrategy = SearchStrategy.EUCLIDEAN_HNSW;
+    IndexWriterConfig config = newIndexWriterConfig();
+    config.setCodec(Codec.forName("Lucene90")); // test is not compatible with simpletext
     try (Directory dir = newDirectory();
-        IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig())) {
+        IndexWriter iw = new IndexWriter(dir, config)) {
       // Add a document for every cartesian point in an NxN square so we can
       // easily know which are the nearest neighbors to every point. Insert by iterating
       // using a prime number that is not a divisor of N*N so that we will hit each point once,

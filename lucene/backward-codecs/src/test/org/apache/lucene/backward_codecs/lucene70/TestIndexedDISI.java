@@ -137,7 +137,8 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testFewMissingDocs() throws IOException {
     try (Directory dir = newDirectory()) {
-      for (int iter = 0; iter < 100; ++iter) {
+      int numIters = atLeast(10);
+      for (int iter = 0; iter < numIters; ++iter) {
         int maxDoc = TestUtil.nextInt(random(), 1, 100000);
         FixedBitSet set = new FixedBitSet(maxDoc);
         set.set(0, maxDoc);
@@ -152,7 +153,8 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testRandom() throws IOException {
     try (Directory dir = newDirectory()) {
-      for (int i = 0; i < 10; ++i) {
+      int numIters = atLeast(3);
+      for (int i = 0; i < numIters; ++i) {
         doTestRandom(dir);
       }
     }

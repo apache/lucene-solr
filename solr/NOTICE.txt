@@ -596,3 +596,10 @@ Noggit is a  fast streaming JSON parser for java. The code is included
 into Solr codebase.
 
 https://github.com/yonik/noggit
+
+=========================================================================
+==         ui-grid notice                                               ==
+=========================================================================
+
+This product includes the Angular UI UI Grid JavaScript library.
+Copyright (c) 2015 the AngularUI Team, http://angular-ui.github.com

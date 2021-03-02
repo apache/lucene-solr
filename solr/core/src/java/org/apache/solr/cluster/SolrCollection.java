@@ -62,7 +62,7 @@ public interface SolrCollection {
 
     /**
      * <p>Returns the value of a custom property name set on the {@link SolrCollection} or {@code null} when no such
-     * property was set. Properties are set through the Collection API. See for example {@code COLLECTIONPROP} in the Solr reference guide.
+     * property was set. Properties are set through the Collection API. See for example {@code MODIFYCOLLECTION} in the Solr reference guide.
      *
      * <p><b>{@link PlacementPlugin} related note:</b></p>
      * <p>Using custom properties in conjunction with ad hoc {@link PlacementPlugin} code allows customizing placement

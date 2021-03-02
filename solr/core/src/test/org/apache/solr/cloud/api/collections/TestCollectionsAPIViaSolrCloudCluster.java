@@ -88,7 +88,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     }
     
-    if (createNodeSet != null && createNodeSet.equals(OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY)) {
+    if (createNodeSet != null && createNodeSet.equals(CollectionHandlingUtils.CREATE_NODE_SET_EMPTY)) {
       cluster.waitForActiveCollection(collectionName, numShards, 0);
     } else {
       cluster.waitForActiveCollection(collectionName, numShards, numShards * numReplicas);
@@ -190,7 +190,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertFalse(cluster.getJettySolrRunners().isEmpty());
 
     // create collection
-    createCollection(collectionName, OverseerCollectionMessageHandler.CREATE_NODE_SET_EMPTY);
+    createCollection(collectionName, CollectionHandlingUtils.CREATE_NODE_SET_EMPTY);
 
     // check the collection's corelessness
     int coreCount = 0;

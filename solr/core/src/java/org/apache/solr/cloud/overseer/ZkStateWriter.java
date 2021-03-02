@@ -28,6 +28,7 @@ import org.apache.solr.cloud.Stats;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
@@ -59,7 +60,7 @@ public class ZkStateWriter {
   /**
    * Represents a no-op {@link ZkWriteCommand} which will result in no modification to cluster state
    */
-  public static ZkWriteCommand NO_OP = ZkWriteCommand.noop();
+  public static ZkWriteCommand NO_OP = ZkWriteCommand.NO_OP;
 
   protected final ZkStateReader reader;
   protected final Stats stats;
@@ -217,14 +218,17 @@ public class ZkStateWriter {
           ZkWriteCommand cmd = entry.getValue();
           DocCollection c = cmd.collection;
 
-          if(cmd.ops != null && cmd.ops.isPreOp()) {
+          // Update the Per Replica State znodes if needed
+          if (cmd.ops != null) {
             cmd.ops.persist(path, reader.getZkClient());
             clusterState = clusterState.copyWith(name,
                   cmd.collection.copyWith(PerReplicaStates.fetch(cmd.collection.getZNode(), reader.getZkClient(), null)));
           }
-          if (!cmd.persistCollState) continue;
+
+          // Update the state.json file if needed
+          if (!cmd.persistJsonState) continue;
           if (c == null) {
-            // let's clean up the state.json of this collection only, the rest should be clean by delete collection cmd
+            // let's clean up the state.json of this collection only, the rest should be cleaned by delete collection cmd
             log.debug("going to delete state.json {}", path);
             reader.getZkClient().clean(path);
           } else {
@@ -243,13 +247,18 @@ public class ZkStateWriter {
               clusterState = clusterState.copyWith(name, newCollection);
             }
           }
-            if(cmd.ops != null && !cmd.ops.isPreOp()) {
-              cmd.ops.persist(path, reader.getZkClient());
-              DocCollection currentCollState = clusterState.getCollection(cmd.name);
-              if ( currentCollState != null) {
-                clusterState = clusterState.copyWith(name,
-                        currentCollState.copyWith(PerReplicaStates.fetch(currentCollState.getZNode(), reader.getZkClient(), null)));
-              }
+
+          // When dealing with a per replica collection that did not do any update to the per replica states znodes but did
+          // update state.json, we add then remove a dummy node to change the cversion of the parent znode.
+          // This is not needed by Solr, there's no code watching the children and not watching the state.json node itself.
+          // It would be useful for external code watching the collection's Zookeeper state.json node children but not the node itself.
+          if (cmd.ops == null && cmd.isPerReplicaStateCollection) {
+            PerReplicaStatesOps.touchChildren().persist(path, reader.getZkClient());
+            DocCollection currentCollState = clusterState.getCollection(cmd.name);
+            if (currentCollState != null) {
+              clusterState = clusterState.copyWith(name,
+                      currentCollState.copyWith(PerReplicaStates.fetch(currentCollState.getZNode(), reader.getZkClient(), null)));
+            }
           }
         }
 

@@ -151,25 +151,25 @@
  *       field names. These are used to store auxiliary information about the document, such as its
  *       title, url, or an identifier to access a database. The set of stored fields are what is
  *       returned for each hit when searching. This is keyed by document number.
- *   <li>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term dictionary}. A
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term dictionary}. A
  *       dictionary containing all of the terms used in all of the indexed fields of all of the
  *       documents. The dictionary also contains the number of documents which contain the term, and
  *       pointers to the term's frequency and proximity data.
- *   <li>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Frequency data}. For
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Frequency data}. For
  *       each term in the dictionary, the numbers of all the documents that contain that term, and
  *       the frequency of the term in that document, unless frequencies are omitted ({@link
  *       org.apache.lucene.index.IndexOptions#DOCS IndexOptions.DOCS})
- *   <li>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Proximity data}. For
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Proximity data}. For
  *       each term in the dictionary, the positions that the term occurs in each document. Note that
  *       this will not exist if all fields in all documents omit position data.
- *   <li>{@link org.apache.lucene.codecs.lucene80.Lucene80NormsFormat Normalization factors}. For
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90NormsFormat Normalization factors}. For
  *       each field in each document, a value is stored that is multiplied into the score for hits
  *       on that field.
- *   <li>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vectors}. For each
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90TermVectorsFormat Term Vectors}. For each
  *       field in each document, the term vector (sometimes called document vector) may be stored. A
  *       term vector consists of term text and term frequency. To add Term Vectors to your index see
  *       the {@link org.apache.lucene.document.Field Field} constructors
- *   <li>{@link org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat Per-document values}. Like
+ *   <li>{@link org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat Per-document values}. Like
  *       stored values, these are also keyed by document number, but are generally intended to be
  *       loaded into main memory for fast access. Whereas stored values are generally intended for
  *       summary results from searches, per-document values are useful for things like scoring
@@ -255,47 +255,47 @@
  * <td>The stored fields for documents</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Dictionary}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Dictionary}</td>
  * <td>.tim</td>
  * <td>The term dictionary, stores term info</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Index}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Term Index}</td>
  * <td>.tip</td>
  * <td>The index into the Term Dictionary</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Frequencies}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Frequencies}</td>
  * <td>.doc</td>
  * <td>Contains the list of docs which contain each term along with frequency</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Positions}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Positions}</td>
  * <td>.pos</td>
  * <td>Stores position information about where a term occurs in the index</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Payloads}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90PostingsFormat Payloads}</td>
  * <td>.pay</td>
  * <td>Stores additional per-position metadata information such as character offsets and user payloads</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene80.Lucene80NormsFormat Norms}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90NormsFormat Norms}</td>
  * <td>.nvd, .nvm</td>
  * <td>Encodes length and boost factors for docs and fields</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat Per-Document Values}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90DocValuesFormat Per-Document Values}</td>
  * <td>.dvd, .dvm</td>
  * <td>Encodes additional scoring factors or other per-document information.</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vector Index}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90TermVectorsFormat Term Vector Index}</td>
  * <td>.tvx</td>
  * <td>Stores offset into the document data file</td>
  * </tr>
  * <tr>
- * <td>{@link org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat Term Vector Data}</td>
+ * <td>{@link org.apache.lucene.codecs.lucene90.Lucene90TermVectorsFormat Term Vector Data}</td>
  * <td>.tvd</td>
  * <td>Contains term vector data.</td>
  * </tr>
