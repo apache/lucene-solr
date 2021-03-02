@@ -440,9 +440,9 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       "</solr>";
 
   private static final String CUSTOM_CONFIG_SET_SERVICE_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
-          "<solr>" +
-          " <str name=\"configSetService\">" + CustomConfigSetService.class.getName() + "</str>" +
-          "</solr>";
+      "<solr>" +
+      " <str name=\"configSetService\">" + CustomConfigSetService.class.getName() + "</str>" +
+      "</solr>";
 
   public static class CustomCollectionsHandler extends CollectionsHandler {
     public CustomCollectionsHandler(CoreContainer cc) {
@@ -451,8 +451,8 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
   }
 
   public static class CustomConfigSetService extends ConfigSetService {
-    public CustomConfigSetService(SolrResourceLoader loader, NodeConfig nodeConfig, ZkController zkController) {
-      super(loader, true);
+    public CustomConfigSetService(CoreContainer coreContainer) {
+      super(coreContainer.getResourceLoader(), true);
     }
 
     @Override
