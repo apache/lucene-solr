@@ -63,7 +63,9 @@ public class Lucene87Codec extends Codec {
         Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
         Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
 
+    /** compression mode for stored fields */
     protected final Lucene87StoredFieldsFormat.Mode storedMode;
+    /** compression mode for doc value fields */
     protected final Lucene80DocValuesFormat.Mode dvMode;
 
     private Mode(Lucene87StoredFieldsFormat.Mode storedMode, Lucene80DocValuesFormat.Mode dvMode) {
@@ -98,10 +100,15 @@ public class Lucene87Codec extends Codec {
 
   private final StoredFieldsFormat storedFieldsFormat;
 
+  /** Instantiates a new codec. */
   public Lucene87Codec() {
     this(Mode.BEST_COMPRESSION);
   }
-  /** Instantiates a new codec. */
+  /**
+   * Instantiates a new codec, specifying the compression mode to use.
+   *
+   * @param mode compression mode to use for newly flushed/merged segments.
+   */
   public Lucene87Codec(Mode mode) {
     super("Lucene87");
     this.storedFieldsFormat = new Lucene87StoredFieldsFormat(mode.storedMode);
