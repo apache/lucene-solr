@@ -26,8 +26,8 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 /**
- * A codec that uses {@link Lucene90CompressingStoredFieldsFormat} for its stored fields and delegates to
- * the default codec for everything else.
+ * A codec that uses {@link Lucene90CompressingStoredFieldsFormat} for its stored fields and
+ * delegates to the default codec for everything else.
  */
 public abstract class CompressingCodec extends FilterCodec {
 

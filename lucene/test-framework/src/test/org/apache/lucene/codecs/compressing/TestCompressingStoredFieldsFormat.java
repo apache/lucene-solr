@@ -297,7 +297,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
       // examine dirty counts:
       for (LeafReaderContext leaf : ir2.leaves()) {
         CodecReader sr = (CodecReader) leaf.reader();
-        Lucene90CompressingStoredFieldsReader reader = (Lucene90CompressingStoredFieldsReader) sr.getFieldsReader();
+        Lucene90CompressingStoredFieldsReader reader =
+            (Lucene90CompressingStoredFieldsReader) sr.getFieldsReader();
         assertTrue(reader.getNumDirtyDocs() > 0);
         assertTrue(reader.getNumDirtyDocs() < 100); // can't be gte the number of docs per chunk
         assertEquals(1, reader.getNumDirtyChunks());
@@ -310,7 +311,8 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
     ir.close();
     ir = ir2;
     CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
-    Lucene90CompressingStoredFieldsReader reader = (Lucene90CompressingStoredFieldsReader) sr.getFieldsReader();
+    Lucene90CompressingStoredFieldsReader reader =
+        (Lucene90CompressingStoredFieldsReader) sr.getFieldsReader();
     // we could get lucky, and have zero, but typically one.
     assertTrue(reader.getNumDirtyChunks() <= 1);
     ir.close();
