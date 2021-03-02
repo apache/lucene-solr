@@ -196,7 +196,7 @@ public class StatePublisher implements Closeable {
     try {
       if (stateMessage != TERMINATE_OP) {
         String operation = stateMessage.getStr(OPERATION);
-        String id = null;
+        String id = stateMessage.getStr("id");
         if (operation.equals("state")) {
           String core = stateMessage.getStr(ZkStateReader.CORE_NAME_PROP);
           String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
@@ -207,11 +207,12 @@ public class StatePublisher implements Closeable {
             Replica replica = coll.getReplica(core);
             id = replica.getId();
             String lastState = stateCache.get(id);
-            if (collection != null && replica != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
+            if (collection != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
               log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
               return;
             }
           }
+
           if (core == null || state == null) {
             log.error("Nulls in published state");
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
@@ -223,7 +224,7 @@ public class StatePublisher implements Closeable {
         } else if (operation.equalsIgnoreCase(OverseerAction.DOWNNODE.toLower())) {
           // set all statecache entries for replica to a state
 
-          Collection<CoreDescriptor> cds= cc.getCoreDescriptors();
+          Collection<CoreDescriptor> cds = cc.getCoreDescriptors();
           for (CoreDescriptor cd : cds) {
             DocCollection doc = zkStateReader.getClusterState().getCollectionOrNull(cd.getCollectionName());
             Replica replica = null;

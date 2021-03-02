@@ -30,6 +30,8 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
 import org.apache.solr.common.ParWork;
+import org.apache.solr.core.ConfigXpathExpressions;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -101,7 +103,8 @@ public class VersionInfo {
     this.ulog = ulog;
     IndexSchema schema = ulog.uhandler.core.getLatestSchema(); 
     versionField = getAndCheckVersionField(schema);
-    versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().getInt("updateHandler/versionBucketLockTimeoutMs",
+    versionBucketLockTimeoutMs = ulog.uhandler.core.getSolrConfig().getInt(ulog.uhandler.core.getSolrConfig().getResourceLoader().configXpathExpressions
+            .mergeFactorExp, ConfigXpathExpressions.mergeFactorPath,
         Integer.parseInt(System.getProperty(SYS_PROP_BUCKET_VERSION_LOCK_TIMEOUT_MS, "0")));
     buckets = new VersionBucket[ BitUtil.nextHighestPowerOfTwo(nBuckets) ];
 //    for (int i=0; i<buckets.length; i++) {

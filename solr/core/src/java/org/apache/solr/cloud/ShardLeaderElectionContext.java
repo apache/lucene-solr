@@ -270,7 +270,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         ZkNodeProps zkNodes = ZkNodeProps
-            .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(),
+            .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(), "id", leaderProps.getId(),
                 ZkStateReader.STATE_PROP, "leader");
 
         log.info("I am the new leader, publishing as active: " + leaderProps.getCoreUrl() + " " + shardId);

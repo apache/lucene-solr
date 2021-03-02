@@ -82,22 +82,22 @@ public final class FieldTypePluginLoader
     FieldType ft = loader.newInstance(className, FieldType.class, "schema.");
     ft.setTypeName(name);
 
-    TinyElementImpl anode = (TinyElementImpl) loader.analyzerQueryExp.evaluate(node, XPathConstants.NODE);
+    TinyElementImpl anode = (TinyElementImpl) loader.configXpathExpressions.analyzerQueryExp.evaluate(node, XPathConstants.NODE);
     Analyzer queryAnalyzer = readAnalyzer(anode);
 
-    anode = (TinyElementImpl) loader.analyzerMultiTermExp.evaluate(node, XPathConstants.NODE);
+    anode = (TinyElementImpl) loader.configXpathExpressions.analyzerMultiTermExp.evaluate(node, XPathConstants.NODE);
     Analyzer multiAnalyzer = readAnalyzer(anode);
 
     // An analyzer without a type specified, or with type="index"
     Analyzer analyzer;
-    Object object = loader.analyzerIndexExp
+    Object object = loader.configXpathExpressions.analyzerIndexExp
         .evaluate(node, XPathConstants.NODE);
 
     anode = (TinyElementImpl) object;
     analyzer = readAnalyzer(anode);
 
     // a custom similarity[Factory]
-    object = loader.similarityExp.evaluate(node, XPathConstants.NODE);
+    object = loader.configXpathExpressions.similarityExp.evaluate(node, XPathConstants.NODE);
     SimilarityFactory simFactory;
     if (object instanceof TinyElementImpl) {
       anode = (TinyElementImpl) object;
@@ -204,11 +204,11 @@ public final class FieldTypePluginLoader
 
     // check for all of these up front, so we can error if used in
     // conjunction with an explicit analyzer class.
-    ArrayList<NodeInfo> charFilterNodes = (ArrayList) loader.charFilterExp.evaluate
+    ArrayList<NodeInfo> charFilterNodes = (ArrayList) loader.configXpathExpressions.charFilterExp.evaluate
       (node, XPathConstants.NODESET);
-    ArrayList<NodeInfo> tokenizerNodes = (ArrayList) loader.tokenizerExp.evaluate
+    ArrayList<NodeInfo> tokenizerNodes = (ArrayList) loader.configXpathExpressions.tokenizerExp.evaluate
       (node, XPathConstants.NODESET);
-    ArrayList<NodeInfo> tokenFilterNodes = (ArrayList) loader.filterExp.evaluate
+    ArrayList<NodeInfo> tokenFilterNodes = (ArrayList) loader.configXpathExpressions.filterExp.evaluate
       (node, XPathConstants.NODESET);
 
     if (analyzerName != null) {

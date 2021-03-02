@@ -20,7 +20,6 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -67,13 +66,13 @@ public class LeaderElector implements Closeable {
   public final static Pattern LEADER_SEQ = Pattern.compile(".*?/?.*?-n_(\\d+)");
   private final static Pattern SESSION_ID = Pattern.compile(".*?/?(.*?-.*?)-n_\\d+");
 
-  private static final String JOIN = "j1";
-  private static final String CHECK_IF_LEADER = "lc";
-  private static final String OUT_OF_ELECTION = "o";
-  private static final String POT_LEADER = "pt";
-  private static final String LEADER = "l";
-  private static final String CLOSED = "c";
-  private static final String WAITING_IN_ELECTION = "w";
+  private static final char JOIN = 'j';
+  private static final char CHECK_IF_LEADER = 'k';
+  private static final char OUT_OF_ELECTION = 'o';
+  private static final char POT_LEADER = 'p';
+  private static final char LEADER = 'l';
+  private static final char CLOSED = 'c';
+  private static final char WAITING_IN_ELECTION = 'w';
 
   protected final SolrZkClient zkClient;
   private final ZkController zkController;
@@ -88,7 +87,7 @@ public class LeaderElector implements Closeable {
 
   private final ExecutorService executor = ParWork.getExecutorService(1);
 
-  private volatile String state = OUT_OF_ELECTION;
+  private volatile char state = OUT_OF_ELECTION;
 
   //  public LeaderElector(SolrZkClient zkClient) {
 //    this.zkClient = zkClient;
@@ -514,7 +513,7 @@ public class LeaderElector implements Closeable {
     return isClosed;
   }
 
-  public String getState() {
+  public char getState() {
     return state;
   }
 
@@ -538,7 +537,7 @@ public class LeaderElector implements Closeable {
 
       if (log.isDebugEnabled()) log.debug("Got event on node we where watching in leader line {} watchedNode={}", myNode, watchedNode);
 
-      if (state.equals(LEADER)) {
+      if (state == LEADER) {
         log.info("Election watcher fired, but we are already leader");
         return;
       }
@@ -626,6 +625,6 @@ public class LeaderElector implements Closeable {
   }
 
   public boolean isLeader() {
-    return LEADER.equals(state);
+    return LEADER == state;
   }
 }

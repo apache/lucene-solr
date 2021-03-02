@@ -52,7 +52,7 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
    * otherwise it will attempt to resolve resources using any jar files found in
    * the "lib/" directory in the specified instance directory.
    */
-  public ZkSolrResourceLoader(Path instanceDir, String configSet, ClassLoader parent,
+  public ZkSolrResourceLoader(Path instanceDir, String configSet, SolrResourceLoader parent,
                               ZkController zooKeeperController) {
     super(instanceDir, parent);
     this.zkClient = zooKeeperController.getZkClient();

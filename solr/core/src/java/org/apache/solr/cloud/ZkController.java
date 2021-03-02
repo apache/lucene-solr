@@ -1533,7 +1533,7 @@ public class ZkController implements Closeable, Runnable {
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(CORE_NAME_PROP, cd.getName());
-    props.put("id", "-1");
+    props.put("id", cd.getCoreProperty("id", "-1"));
 
     Replica replica = new Replica(cd.getName(), props, collection, shardId, zkStateReader);
     LeaderElector leaderElector;
@@ -1600,6 +1600,7 @@ public class ZkController implements Closeable, Runnable {
 
       props.put(Overseer.QUEUE_OPERATION, "state");
       props.put(ZkStateReader.STATE_PROP, state.toString());
+      props.put("id", cd.getCoreProperty("id", "-1"));
       //  props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
       props.put(CORE_NAME_PROP, cd.getName());
       //  props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());

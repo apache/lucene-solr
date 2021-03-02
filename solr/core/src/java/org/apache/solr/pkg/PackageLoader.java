@@ -271,7 +271,7 @@ public class PackageLoader implements Closeable {
             "PACKAGE_LOADER: " + parent.name() + ":" + version,
             paths,
             Paths.get(coreContainer.getSolrHome()),
-            coreContainer.getResourceLoader().getClassLoader());
+            coreContainer.getResourceLoader());
       }
 
       public String getVersion() {
@@ -301,7 +301,7 @@ public class PackageLoader implements Closeable {
   }
   static class PackageResourceLoader extends SolrResourceLoader {
 
-    PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
+    PackageResourceLoader(String name, List<Path> classpath, Path instanceDir, SolrResourceLoader parent) {
       super(name, classpath, instanceDir, parent);
     }
 

@@ -164,6 +164,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         " }";
     runConfigCommand(harness, "/config", payload);
 
+
     MapWriter m = getRespMap("/config/overlay", harness);
     MapWriter props =null;
     assertEquals("100", m._getStr("overlay/props/updateHandler/autoCommit/maxDocs", null));
@@ -177,7 +178,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     m =  getRespMap("/config", harness);
     assertNotNull(m);
 
-    assertEquals("100", m._getStr("config/updateHandler/autoCommit/maxDocs",null));
+    assertEquals(m.toString(), "100", m._getStr("config/updateHandler/autoCommit/maxDocs",null));
     assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime",null));
     assertEquals("true", m._getStr("config/requestDispatcher/requestParsers/addHttpRequestToContext",null));
     payload = "{\n" +

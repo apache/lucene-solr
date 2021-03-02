@@ -334,7 +334,7 @@ public class XmlConfigFile { // formerly simply "Config"
               name + " contains more than one value for config path: " + path);
         }
         NodeInfo nd = nodes.get(0);
-        log.trace("{}:{}={}", name, expression, nd);
+        if (log.isTraceEnabled()) log.trace("{}:{}={}", name, expression, nd);
         return nd;
 
       } catch (XPathExpressionException e) {
@@ -469,15 +469,15 @@ public class XmlConfigFile { // formerly simply "Config"
 
       String txt = DOMUtil.getText(nd);
 
-      log.debug("{} {}={}", name, expression, txt);
+      if (log.isDebugEnabled()) log.debug("{} {}={}", name, expression, txt);
       return txt;
     }
 
-    public String get (XPathExpression expression, String path){
+    public String get(XPathExpression expression, String path){
       return getVal(expression, path, true);
     }
 
-    public String get (XPathExpression expression,  String path, String def){
+    public String get(XPathExpression expression,  String path, String def){
       String val = getVal(expression, path, false);
       if (val == null || val.length() == 0) {
         return def;
@@ -491,6 +491,9 @@ public class XmlConfigFile { // formerly simply "Config"
 
     public int getInt (XPathExpression expression,  String path, int def){
       String val = getVal(expression, path, false);
+      if (val != null && val.equals("-1")) {
+        return def;
+      }
       return val != null ? Integer.parseInt(val) : def;
     }
 
@@ -500,6 +503,9 @@ public class XmlConfigFile { // formerly simply "Config"
 
     public boolean getBool (XPathExpression expression, String path, boolean def){
       String val = getVal(expression, path, false);
+      if (val != null && val.equals("-1")) {
+        return def;
+      }
       return val != null ? Boolean.parseBoolean(val) : def;
     }
 
@@ -509,6 +515,9 @@ public class XmlConfigFile { // formerly simply "Config"
 
     public float getFloat (XPathExpression expression, String path, float def){
       String val = getVal(expression, path, false);
+      if (val != null && val.equals("-1")) {
+        return def;
+      }
       return val != null ? Float.parseFloat(val) : def;
     }
 
@@ -518,6 +527,9 @@ public class XmlConfigFile { // formerly simply "Config"
 
     public double getDouble (XPathExpression expression, String path, double def){
       String val = getVal(expression, path, false);
+      if (val != null && val.equals("-1")) {
+        return def;
+      }
       return val != null ? Double.parseDouble(val) : def;
     }
 

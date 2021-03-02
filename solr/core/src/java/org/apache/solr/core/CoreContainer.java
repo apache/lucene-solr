@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -93,7 +92,6 @@ import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.SystemIdResolver;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.slf4j.Logger;
@@ -141,7 +139,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -251,27 +248,6 @@ public class CoreContainer implements Closeable {
 
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
-
-  // private Set<Future> zkRegFutures = zkRegFutures = ConcurrentHashMap.newKeySet();
-
-  private SystemIdResolver sysIdResolver;
- // public XPathFactoryImpl xpathFactory = new XPathFactoryImpl();
-
-
-  {
-//    PipelineConfiguration plc = XmlConfigFile.conf1.makePipelineConfiguration();
-//
-//    ParseOptions po = plc.getParseOptions();
-//    // if (is.getSystemId() != null) {
-//    po.setEntityResolver(CoreContainer..getSysIdResolver());
-//    // }
-//
-//    po.setXIncludeAware(true);
-//    po.setSchemaValidationMode(0);
-//    po.setExpandAttributeDefaults(true);
-//    //conf.setURIResolver(sysIdResolver.asURIResolver());
-//    xpathFactory.setConfiguration(plc.getConfiguration());
-  }
 
   // Bits for the state variable.
   public final static long LOAD_COMPLETE = 0x1L;

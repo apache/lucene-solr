@@ -33,6 +33,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.ConfigXpathExpressions;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.core.PluginInfo;
@@ -49,9 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.core.XmlConfigFile.assertWarnOrFail;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpression;
-import javax.xml.xpath.XPathExpressionException;
 
 /**
  * This config object encapsulates IndexWriter config params,
@@ -59,25 +57,6 @@ import javax.xml.xpath.XPathExpressionException;
  */
 public class SolrIndexConfig implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private XPathExpression indexConfigExp;
-  private XPathExpression mergeSchedulerExp;
-  private XPathExpression mergePolicyExp;
-  private XPathExpression ramBufferSizeMBExp;
-  private XPathExpression checkIntegrityAtMergeExp;
-
-
-  static String indexConfigPath = "indexConfig";
-
-  static String mergeSchedulerPath = indexConfigPath + "/mergeScheduler";
-
-  static String mergePolicyPath = indexConfigPath + "/mergePolicy";
-
-
-  static String ramBufferSizeMBPath = indexConfigPath + "/ramBufferSizeMB";
-
-  static String checkIntegrityAtMergePath = indexConfigPath + "/checkIntegrityAtMerge";
-
 
   private static final String NO_SUB_PACKAGES[] = new String[0];
 
@@ -117,38 +96,6 @@ public class SolrIndexConfig implements MapSerializable {
     // enable coarse-grained metrics by default
     metricsInfo = new PluginInfo("metrics", Collections.emptyMap(), null, null);
 
-    initExpressions(solrConfig);
-  }
-
-  private void initExpressions(SolrConfig solrConfig) {
-    XPath xPath = solrConfig.getResourceLoader().getXPath();
-    try {
-
-      indexConfigExp = xPath.compile(indexConfigPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-
-    try {
-      mergeSchedulerExp = xPath.compile(mergeSchedulerPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      mergePolicyExp = xPath.compile(mergePolicyPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      ramBufferSizeMBExp = xPath.compile(ramBufferSizeMBPath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
-    try {
-      checkIntegrityAtMergeExp = xPath.compile(checkIntegrityAtMergePath);
-    } catch (XPathExpressionException e) {
-      log.error("", e);
-    }
   }
 
   /**
@@ -162,37 +109,36 @@ public class SolrIndexConfig implements MapSerializable {
       prefix = "indexConfig";
       log.debug("Defaulting to prefix '{}' for index configuration", prefix);
     }
-
-    initExpressions(solrConfig);
     
     if (def == null) {
       def = new SolrIndexConfig(solrConfig);
     }
 
+    SolrResourceLoader loader = solrConfig.getResourceLoader();
     // sanity check: this will throw an error for us if there is more then one
     // config section
-   // Object unused = solrConfig.getNode(indexConfigExp, indexConfigPath, false);
+    Object unused = solrConfig.getNode(loader.configXpathExpressions.indexConfigExp, ConfigXpathExpressions.indexConfigPath, false);
 
     // Assert that end-of-life parameters or syntax is not in our config.
     // Warn for luceneMatchVersion's before LUCENE_3_6, fail fast above
     assertWarnOrFail("The <mergeScheduler>myclass</mergeScheduler> syntax is no longer supported in solrconfig.xml. Please use syntax <mergeScheduler class=\"myclass\"/> instead.",
-        !((solrConfig.getNode(mergeSchedulerExp, mergeSchedulerPath, false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
+        !((solrConfig.getNode(loader.configXpathExpressions.mergeSchedulerExp, ConfigXpathExpressions.mergeSchedulerPath, false) != null) && (solrConfig.get(prefix + "/mergeScheduler/@class", null) == null)),
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergePolicy>myclass</mergePolicy> is no longer supported, use <mergePolicyFactory> instead.",
-        !((solrConfig.getNode(mergePolicyExp,  mergePolicyPath, false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
+        !((solrConfig.getNode(loader.configXpathExpressions.mergePolicyExp,  ConfigXpathExpressions.mergePolicyPath, false) != null) && (solrConfig.get(prefix + "/mergePolicy/@class", null) == null)),
         true);
     assertWarnOrFail("The <luceneAutoCommit>true|false</luceneAutoCommit> parameter is no longer valid in solrconfig.xml.",
         solrConfig.get(prefix + "/luceneAutoCommit", null) == null,
         true);
 
-    useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
-    maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
-    ramBufferSizeMB = solrConfig.getDouble(ramBufferSizeMBExp, ramBufferSizeMBPath, def.ramBufferSizeMB);
+    useCompoundFile = solrConfig.getBool(loader.configXpathExpressions.useCompoundFileExp, ConfigXpathExpressions.useCompoundFilePath, def.useCompoundFile);
+    maxBufferedDocs = solrConfig.getInt(loader.configXpathExpressions.maxBufferedDocsExp, ConfigXpathExpressions.maxBufferedDocsPath, def.maxBufferedDocs);
+    ramBufferSizeMB = solrConfig.getDouble(loader.configXpathExpressions.ramBufferSizeMBExp, ConfigXpathExpressions.ramBufferSizeMBPath, def.ramBufferSizeMB);
 
     // how do we validate the value??
-    ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
+    ramPerThreadHardLimitMB = solrConfig.getInt(loader.configXpathExpressions.ramPerThreadHardLimitMBExp, ConfigXpathExpressions.ramPerThreadHardLimitMBPath, def.ramPerThreadHardLimitMB);
 
-    writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
+    writeLockTimeout=solrConfig.getInt(loader.configXpathExpressions.writeLockTimeoutExp, ConfigXpathExpressions.writeLockTimeoutPath, def.writeLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
 
     List<PluginInfo> infos = solrConfig.readPluginInfos(prefix + "/metrics", false, false);
@@ -208,10 +154,10 @@ public class SolrIndexConfig implements MapSerializable {
         getPluginInfo(prefix + "/mergePolicy", solrConfig, null) == null,
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <maxMergeDocs> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        solrConfig.getInt(prefix+"/maxMergeDocs", 0) == 0,
+        solrConfig.getInt(loader.configXpathExpressions.maxMergeDocsExp, ConfigXpathExpressions.maxMergeDocPath, 0) == 0,
         true);
     assertWarnOrFail("Beginning with Solr 7.0, <mergeFactor> is no longer supported, configure it on the relevant <mergePolicyFactory> instead.",
-        solrConfig.getInt(prefix+"/mergeFactor", 0) == 0,
+        solrConfig.getInt(loader.configXpathExpressions.mergeFactorExp, ConfigXpathExpressions.mergeFactorPath, 0) == 0,
         true);
 
     String val = solrConfig.get(prefix + "/termIndexInterval", null);
@@ -219,7 +165,7 @@ public class SolrIndexConfig implements MapSerializable {
       throw new IllegalArgumentException("Illegal parameter 'termIndexInterval'");
     }
 
-    boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
+    boolean infoStreamEnabled = solrConfig.getBool(loader.configXpathExpressions.infoStreamExp, ConfigXpathExpressions.infoStreamPath, false);
     if(infoStreamEnabled) {
       String infoStreamFile = solrConfig.get(prefix + "/infoStream/@file", null);
       if (infoStreamFile == null) {
@@ -232,7 +178,7 @@ public class SolrIndexConfig implements MapSerializable {
     mergedSegmentWarmerInfo = getPluginInfo(prefix + "/mergedSegmentWarmer", solrConfig, def.mergedSegmentWarmerInfo);
 
     assertWarnOrFail("Beginning with Solr 5.0, <checkIntegrityAtMerge> option is no longer supported and should be removed from solrconfig.xml (these integrity checks are now automatic)",
-        (null == solrConfig.getNode(checkIntegrityAtMergeExp, checkIntegrityAtMergePath, false)),
+        (null == solrConfig.getNode(loader.configXpathExpressions.checkIntegrityAtMergeExp, ConfigXpathExpressions.checkIntegrityAtMergePath, false)),
         true);
   }
 

@@ -24,35 +24,38 @@ import org.apache.solr.util.PropertiesUtil;
 import java.util.HashMap;
 import java.util.Properties;
 
-public class SolrTinyBuilder extends TinyBuilder  {
+public class SolrTinyBuilder extends TinyBuilder {
   private final Properties substituteProps;
-  private final HashMap sysProperties;
+  private final Properties sysProperties;
 
   /**
    * Create a TinyTree builder
    *
-   * @param pipe information about the pipeline leading up to this Builder
+   * @param pipe            information about the pipeline leading up to this Builder
    * @param substituteProps
    */
   public SolrTinyBuilder(PipelineConfiguration pipe, Properties substituteProps) {
     super(pipe);
     this.substituteProps = substituteProps;
-    this.sysProperties = new HashMap(System.getProperties());
+    this.sysProperties = System.getProperties();
   }
 
   protected int makeTextNode(CharSequence chars, int len) {
-    String sub = PropertiesUtil
-        .substituteProperty(chars.subSequence(0, len).toString(),
-            substituteProps, sysProperties);
+    String val = chars.subSequence(0, len).toString();
+    if (val.contains("${")) {
+      String sub = PropertiesUtil.substituteProperty(val, substituteProps, sysProperties);
+      return super.makeTextNode(sub, sub.length());
+    }
 
-    return super.makeTextNode(sub, sub.length());
+    return super.makeTextNode(chars, len);
   }
 
   protected String getAttValue(AttributeInfo att) {
-    String sub = PropertiesUtil
-        .substituteProperty(att.getValue(),
-            substituteProps, sysProperties);
-    return sub;
+    String attValue = att.getValue();
+    if (attValue.contains("${")) {
+      return PropertiesUtil.substituteProperty(attValue, substituteProps, sysProperties);
+    }
+    return attValue;
   }
 
 }

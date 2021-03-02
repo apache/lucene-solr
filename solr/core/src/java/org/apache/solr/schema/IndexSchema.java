@@ -41,6 +41,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StopWatch;
+import org.apache.solr.core.ConfigXpathExpressions;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
@@ -553,7 +554,7 @@ public class IndexSchema {
       StopWatch timeParseSchemaDom = new StopWatch(SCHEMA + "-parseSchemaDom");
       NodeInfo  document = schemaConf.getTree();
     //  Document domDoc = (Document) DocumentOverNodeInfo.wrap(document);
-      TinyAttributeImpl nd = (TinyAttributeImpl) loader.schemaNameExp.evaluate(document, XPathConstants.NODE);
+      TinyAttributeImpl nd = (TinyAttributeImpl) loader.configXpathExpressions.schemaNameExp.evaluate(document, XPathConstants.NODE);
       StringBuilder sb = new StringBuilder(32);
       // Another case where the initialization from the test harness is different than the "real world"
       if (nd==null) {
@@ -569,10 +570,10 @@ public class IndexSchema {
       }
 
       //                      /schema/@version
-      String path = normalize(SolrResourceLoader.schemaVersionPath, schemaConf.getPrefix());
+      String path = normalize(ConfigXpathExpressions.schemaVersionPath, schemaConf.getPrefix());
       XPathExpression exp;
       if (path.equals("/schema/@version")) {
-        exp = loader.schemaVersionExp;
+        exp = loader.configXpathExpressions.schemaVersionExp;
       } else {
         throw new UnsupportedOperationException();
       }
@@ -584,7 +585,7 @@ public class IndexSchema {
       // load the Field Types
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
 
-      ArrayList<NodeInfo> nodes = (ArrayList) loader.fieldTypeXPathExpressionsExp.evaluate(document, XPathConstants.NODESET);
+      ArrayList<NodeInfo> nodes = (ArrayList) loader.configXpathExpressions.fieldTypeXPathExpressionsExp.evaluate(document, XPathConstants.NODESET);
       this.fieldTypes = fieldTypes;
 
       typeLoader.load(loader, nodes);
@@ -597,7 +598,7 @@ public class IndexSchema {
       timeLoadFields.done();
 
       StopWatch timeLoadSim = new StopWatch(SCHEMA + "-loadSim");
-      TinyElementImpl node = (TinyElementImpl) loader.schemaSimExp.evaluate(document, XPathConstants.NODE);
+      TinyElementImpl node = (TinyElementImpl) loader.configXpathExpressions.schemaSimExp.evaluate(document, XPathConstants.NODE);
       similarityFactory = readSimilarity(loader, node);
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
@@ -623,20 +624,20 @@ public class IndexSchema {
       timeLoadSim.done();
       //                      /schema/defaultSearchField/text()
 
-      Object node2 = loader.defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
+      Object node2 = loader.configXpathExpressions.defaultSearchFieldExp.evaluate(document, XPathConstants.NODE);
       if (node2 != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting defaultSearchField in schema not supported since Solr 7");
       }
 
       //                      /schema/solrQueryParser/@defaultOperator
 
-      node2 = loader.solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
+      node2 = loader.configXpathExpressions.solrQueryParserDefaultOpExp.evaluate(document, XPathConstants.NODE);
       if (node2 != null) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Setting default operator in schema (solrQueryParser/@defaultOperator) not supported");
       }
 
       //                      /schema/uniqueKey/text()
-      TinyTextualElement.TinyTextualElementText tnode = (TinyTextualElement.TinyTextualElementText) loader.schemaUniqueKeyExp.evaluate(document, XPathConstants.NODE);
+      TinyTextualElement.TinyTextualElementText tnode = (TinyTextualElement.TinyTextualElementText) loader.configXpathExpressions.schemaUniqueKeyExp.evaluate(document, XPathConstants.NODE);
       if (tnode==null) {
         log.warn("no {} specified in schema.", UNIQUE_KEY);
       } else {
@@ -746,7 +747,7 @@ public class IndexSchema {
     //                  /schema/field | /schema/dynamicField | /schema/fields/field | /schema/fields/dynamicField
     ArrayList<DynamicField> dFields = new ArrayList<>();
     Map<String,SchemaField> fields = new HashMap<>();
-    ArrayList<NodeInfo> nodes = (ArrayList) loader.xpathOrExp.evaluate(document, XPathConstants.NODESET);
+    ArrayList<NodeInfo> nodes = (ArrayList) loader.configXpathExpressions.xpathOrExp.evaluate(document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.size(); i++) {
       NodeInfo node = nodes.get(i);
@@ -829,8 +830,7 @@ public class IndexSchema {
    * Loads the copy fields
    */
   protected void loadCopyFields(NodeInfo document) throws XPathExpressionException {
-    String expression = "//" + COPY_FIELD;
-    ArrayList<NodeInfo> nodes = (ArrayList) loader.copyFieldsExp.evaluate(document, XPathConstants.NODESET);
+    ArrayList<NodeInfo> nodes = (ArrayList) loader.configXpathExpressions.copyFieldsExp.evaluate(document, XPathConstants.NODESET);
 
     for (int i=0; i<nodes.size(); i++) {
       NodeInfo node = nodes.get(i);

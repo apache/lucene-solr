@@ -29,6 +29,22 @@ import java.util.Properties;
  * the DOM (they came from DomUtils) and it's really confusing to see them in something labeled DOM
  */
 public class PropertiesUtil {
+  public final static ThreadLocal<StringBuilder> THREAD_LOCAL_StringBuilder = new ThreadLocal<>(){
+    protected StringBuilder initialValue() {
+      return new StringBuilder();
+    }
+  };
+  public final static ThreadLocal<ArrayList> THREAD_LOCAL_fragments = new ThreadLocal<>(){
+    protected ArrayList initialValue() {
+      return new ArrayList();
+    }
+  };
+  public final static ThreadLocal<ArrayList> THREAD_LOCAL_propertyRefs = new ThreadLocal<>(){
+    protected ArrayList initialValue() {
+      return new ArrayList();
+    }
+  };
+
   /*
   * This method borrowed from Ant's PropertyHelper.replaceProperties:
   *   http://svn.apache.org/repos/asf/ant/core/trunk/src/main/org/apache/tools/ant/PropertyHelper.java
@@ -38,11 +54,15 @@ public class PropertiesUtil {
       return value;
     }
 
-    List<String> fragments = new ArrayList<>();
-    List<String> propertyRefs = new ArrayList<>();
+    List<String> fragments = THREAD_LOCAL_fragments.get();
+    List<String> propertyRefs = THREAD_LOCAL_propertyRefs.get();
+    fragments.clear();
+    propertyRefs.clear();
     parsePropertyString(value, fragments, propertyRefs);
 
-    StringBuilder sb = new StringBuilder();
+    StringBuilder sb = THREAD_LOCAL_StringBuilder.get();
+    sb.setLength(0);
+
     Iterator<String> i = fragments.iterator();
     Iterator<String> j = propertyRefs.iterator();
 
@@ -71,7 +91,12 @@ public class PropertiesUtil {
       }
       sb.append(fragment);
     }
-    return sb.toString();
+    String returnString = sb.toString();
+
+    sb.setLength(0);
+    fragments.clear();
+    propertyRefs.clear();
+    return  returnString;
   }
 
   /*

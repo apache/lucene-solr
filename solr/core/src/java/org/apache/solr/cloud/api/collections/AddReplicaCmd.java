@@ -268,7 +268,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     }
   }
 
-  private ModifiableSolrParams getReplicaParams(   DocCollection collection, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results,
+  private ModifiableSolrParams getReplicaParams(DocCollection collection, ZkNodeProps message, @SuppressWarnings({"rawtypes"})NamedList results,
       boolean skipCreateReplicaInClusterState,
       ShardHandler shardHandler, CreateReplica createReplica) throws IOException, InterruptedException, KeeperException {
 
@@ -319,6 +319,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
     if (bufferOnStart) {
       params.set(CoreAdminParams.PROPERTY_PREFIX + "bufferOnStart", "true");
     }
+    params.set(CoreAdminParams.PROPERTY_PREFIX + "id", Long.toString(createReplica.id));
 
     log.info("Creating SolrCore with name={}", createReplica.coreName);
     if (createReplica.sliceName != null) {

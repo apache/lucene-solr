@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathExpression;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -96,22 +96,16 @@ public class CacheConfig implements MapSerializable{
 
 
   @SuppressWarnings({"unchecked"})
-  public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
-    // nocomit look at precompile
-    NodeInfo node = null;
-    try {
-      String path = IndexSchema.normalize(xpath, "/config/");
-      node = solrConfig.getNode(solrConfig.getResourceLoader().getXPath().compile(path), path, false);
-    } catch (XPathExpressionException e) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+  public static CacheConfig getConfig(SolrConfig solrConfig, String xpath, XPathExpression xpathExpression) {
+    String path = IndexSchema.normalize(xpath, "/config/");
+    NodeInfo node = solrConfig.getNode(xpathExpression, path, false);
+    if (node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
+      Map<String,String> m = solrConfig.getOverlay().getEditableSubProperties(path);
+      if (m == null) return null;
+      List<String> parts = StrUtils.splitSmart(path, '/');
+      return getConfig(solrConfig, parts.get(parts.size() - 1), Collections.EMPTY_MAP, path);
     }
-    if(node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
-      Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
-      if(m==null) return null;
-      List<String> parts = StrUtils.splitSmart(xpath, '/');
-      return getConfig(solrConfig,parts.get(parts.size()-1) , Collections.EMPTY_MAP,xpath);
-    }
-    return getConfig(solrConfig, node.getDisplayName(),DOMUtil.toMap(node.attributes()), xpath);
+    return getConfig(solrConfig, node.getDisplayName(), DOMUtil.toMap(node.attributes()), path);
   }
 
 

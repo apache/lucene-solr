@@ -21,6 +21,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -190,21 +191,21 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs(loader, isConfigsetTrusted);
-    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(loader.luceneMatchVersionExp, SolrResourceLoader.luceneMatchVersionPath, true));
+    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(loader.configXpathExpressions.luceneMatchVersionExp, ConfigXpathExpressions.luceneMatchVersionPath, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
     String indexConfigPrefix;
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0_0.
     // For older solrconfig.xml's we allow the old sections, but never mixed with the new <indexConfig>
-    boolean hasDeprecatedIndexConfig = (getNode(loader.indexDefaultsExp, SolrResourceLoader.indexDefaultsPath, false) != null) || (getNode(loader.mainIndexExp, SolrResourceLoader.mainIndexPath, false) != null);
+    boolean hasDeprecatedIndexConfig = (getNode(loader.configXpathExpressions.indexDefaultsExp, ConfigXpathExpressions.indexDefaultsPath, false) != null) || (getNode(loader.configXpathExpressions.mainIndexExp, ConfigXpathExpressions.mainIndexPath, false) != null);
     if (hasDeprecatedIndexConfig) {
       throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
     } else {
       indexConfigPrefix = "indexConfig";
     }
     assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
-            " This config will be removed in future versions.", getNode(loader.nrtModeExp, SolrResourceLoader.nrtModePath, false) == null,
+            " This config will be removed in future versions.", getNode(loader.configXpathExpressions.nrtModeExp, ConfigXpathExpressions.nrtModePath, false) == null,
         true
     );
     assertWarnOrFail("Solr no longer supports forceful unlocking via the 'unlockOnStartup' option.  "+
@@ -212,14 +213,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
                      "it would be dangerous and should not be done.  For other lockTypes and/or "+
                      "directoryFactory options it may also be dangerous and users must resolve "+
                      "problematic locks manually.",
-                     null == getNode(loader.unlockOnStartupExp, SolrResourceLoader.unlockOnStartupPath, false),
+                     null == getNode(loader.configXpathExpressions.unlockOnStartupExp, ConfigXpathExpressions.unlockOnStartupPath, false),
                      true // 'fail' in trunk
                      );
                      
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
-    booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", IndexSearcher.getMaxClauseCount());
+    booleanQueryMaxClauseCount = getInt(loader.configXpathExpressions.maxBooleanClausesExp, ConfigXpathExpressions.maxBooleanClausesPath, IndexSearcher.getMaxClauseCount());
     if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
       log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} {}"
           , booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount()
@@ -238,17 +239,17 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 //    filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
 //    filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
 
-    useFilterForSortedQuery = getBool("query/useFilterForSortedQuery", false);
-    queryResultWindowSize = Math.max(1, getInt("query/queryResultWindowSize", 1));
-    queryResultMaxDocsCached = getInt("query/queryResultMaxDocsCached", Integer.MAX_VALUE);
-    enableLazyFieldLoading = getBool("query/enableLazyFieldLoading", false);
+    useFilterForSortedQuery = getBool(loader.configXpathExpressions.useFilterForSortedQueryExp, ConfigXpathExpressions.useFilterForSortedQueryPath, false);
+    queryResultWindowSize = Math.max(1, getInt(loader.configXpathExpressions.queryResultWindowSizeeExp, ConfigXpathExpressions.queryResultWindowSizePath, 1));
+    queryResultMaxDocsCached = getInt(loader.configXpathExpressions.queryResultMaxDocsCachedExp, ConfigXpathExpressions.queryResultMaxDocsCachedPath, Integer.MAX_VALUE);
+    enableLazyFieldLoading = getBool(loader.configXpathExpressions.enableLazyFieldLoadingExp, ConfigXpathExpressions.enableLazyFieldLoadingPath, false);
     
-    useRangeVersionsForPeerSync = getBool("peerSync/useRangeVersions", true);
+    useRangeVersionsForPeerSync = getBool(loader.configXpathExpressions.useRangeVersionsExp, ConfigXpathExpressions.useRangeVersionsPath, true);
 
-    filterCacheConfig = CacheConfig.getConfig(this, "query/filterCache");
-    queryResultCacheConfig = CacheConfig.getConfig(this, "query/queryResultCache");
-    documentCacheConfig = CacheConfig.getConfig(this, "query/documentCache");
-    CacheConfig conf = CacheConfig.getConfig(this, "query/fieldValueCache");
+    filterCacheConfig = CacheConfig.getConfig(this, ConfigXpathExpressions.filterCachePath, loader.configXpathExpressions.filterCacheExp);
+    queryResultCacheConfig = CacheConfig.getConfig(this, ConfigXpathExpressions.queryResultCachePath, loader.configXpathExpressions.queryResultCacheExp);
+    documentCacheConfig = CacheConfig.getConfig(this, ConfigXpathExpressions.documentCachePath, loader.configXpathExpressions.documentCacheExp);
+    CacheConfig conf = CacheConfig.getConfig(this, ConfigXpathExpressions.fieldValueCachePath, loader.configXpathExpressions.fieldValueCacheExp);
     if (conf == null) {
       Map<String, String> args = new HashMap<>();
       args.put(NAME, "fieldValueCache");
@@ -258,7 +259,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       conf = new CacheConfig(CaffeineCache.class, args, null);
     }
     fieldValueCacheConfig = conf;
-    useColdSearcher = getBool("query/useColdSearcher", false);
+    useColdSearcher = getBool(loader.configXpathExpressions.useColdSearcherExp, ConfigXpathExpressions.useColdSearcherPath, false);
     dataDir = get("dataDir", null);
     if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
@@ -271,8 +272,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     httpCachingConfig = new HttpCachingConfig(this);
 
-    maxWarmingSearchers = getInt("query/maxWarmingSearchers", 1);
-    slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
+    maxWarmingSearchers = getInt(loader.configXpathExpressions.maxWarmingSearchersExp, ConfigXpathExpressions.maxWarmingSearchersPath, 1);
+    slowQueryThresholdMillis = getInt(loader.configXpathExpressions.slowQueryThresholdMillisExp, ConfigXpathExpressions.slowQueryThresholdMillisPath, -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
     Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
@@ -287,24 +288,24 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     updateHandlerInfo = loadUpdatehandlerInfo();
 
     multipartUploadLimitKB = getInt(
-        "requestDispatcher/requestParsers/@multipartUploadLimitInKB", Integer.MAX_VALUE);
+        loader.configXpathExpressions.multipartUploadLimitInKBExp, ConfigXpathExpressions.multipartUploadLimitInKBPath, Integer.MAX_VALUE);
     if (multipartUploadLimitKB == -1) multipartUploadLimitKB = Integer.MAX_VALUE;
 
     formUploadLimitKB = getInt(
-        "requestDispatcher/requestParsers/@formdataUploadLimitInKB", Integer.MAX_VALUE);
+        loader.configXpathExpressions.formdataUploadLimitInKBExp, ConfigXpathExpressions.formdataUploadLimitInKBPath, Integer.MAX_VALUE);
     if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
     enableRemoteStreams = getBool(
-        "requestDispatcher/requestParsers/@enableRemoteStreaming", false);
+        loader.configXpathExpressions.enableRemoteStreamingExp, ConfigXpathExpressions.enableRemoteStreamingPath, false);
 
     enableStreamBody = getBool(
-        "requestDispatcher/requestParsers/@enableStreamBody", false);
+        loader.configXpathExpressions.enableStreamBodyExp, ConfigXpathExpressions.enableStreamBodyPath, false);
 
     handleSelect = getBool(
-        "requestDispatcher/@handleSelect", false);
+        loader.configXpathExpressions.handleSelectExp, ConfigXpathExpressions.handleSelectPath, false);
 
     addHttpRequestToContext = getBool(
-        "requestDispatcher/requestParsers/@addHttpRequestToContext", false);
+       loader.configXpathExpressions.addHttpRequestToContextExp, ConfigXpathExpressions.addHttpRequestToContextPath, false);
 
     Collection<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
     if (argsInfos != null) {
@@ -464,14 +465,14 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   protected UpdateHandlerInfo loadUpdatehandlerInfo() {
     return new UpdateHandlerInfo(get("updateHandler/@class", null),
-        getInt("updateHandler/autoCommit/maxDocs", -1),
-        getInt("updateHandler/autoCommit/maxTime", -1),
-        convertHeapOptionStyleConfigStringToBytes(get("updateHandler/autoCommit/maxSize", "")),
-        getBool("updateHandler/indexWriter/closeWaitsForMerges", true),
-        getBool("updateHandler/autoCommit/openSearcher", true),
-        getInt("updateHandler/autoSoftCommit/maxDocs", -1),
-        getInt("updateHandler/autoSoftCommit/maxTime", -1),
-        getBool("updateHandler/commitWithin/softCommit", true));
+        getInt(loader.configXpathExpressions.autoCommitMaxDocsExp, ConfigXpathExpressions.autoCommitMaxDocsPath, -1),
+        getInt(loader.configXpathExpressions.autoCommitMaxTimeExp, ConfigXpathExpressions.autoCommitMaxTimePath, -1),
+        convertHeapOptionStyleConfigStringToBytes(get(loader.configXpathExpressions.autoCommitMaxSizeExp, ConfigXpathExpressions.autoCommitMaxSizePath, "")),
+        getBool(loader.configXpathExpressions.indexWriterCloseWaitsForMergesExp, ConfigXpathExpressions.indexWriterCloseWaitsForMergesPath, true),
+        getBool(loader.configXpathExpressions.autoCommitOpenSearcherExp, ConfigXpathExpressions.autoCommitOpenSearcherPath, true),
+        getInt(loader.configXpathExpressions.autoSoftCommitMaxDocsExp, ConfigXpathExpressions.autoSoftCommitMaxDocsPath, -1),
+        getInt(loader.configXpathExpressions.autoSoftCommitMaxTimeExp, ConfigXpathExpressions.autoSoftCommitMaxTimePath, -1),
+        getBool(loader.configXpathExpressions.commitWithinSoftCommitExp, ConfigXpathExpressions.commitWithinSoftCommitPath,true));
   }
 
   /**
@@ -627,7 +628,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
     private HttpCachingConfig(SolrConfig conf) {
 
-      never304 = conf.getBool(CACHE_PRE + "@never304", false);
+      never304 = conf.getBool(conf.getResourceLoader().configXpathExpressions.never304Exp, ConfigXpathExpressions.never304Path, false);
 
       etagSeed = conf.get(CACHE_PRE + "@etagSeed", "Solr");
 
@@ -868,46 +869,37 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     return enableStreamBody;
   }
 
-  public int getInt(String path) {
-    return getInt(path, 0);
+  public int getInt(XPathExpression expression, String path) {
+    return getInt(expression, path, 0);
   }
 
-  // MRM TODO: don't like these syncs I guess?...
-  public int getInt(String path, int def) {
+  public int getInt(XPathExpression expression, String path, int def) {
     Object val;
-    synchronized (this) {
-      val = overlay.getXPathProperty(path);
-    }
+
+    val = overlay.getXPathProperty(path);
+
     if (val != null) return Integer.parseInt(val.toString());
-    try {
-      path = super.normalize(path);
-      XPath xPath = loader.getXPath();
-      return super.getInt(xPath.compile(path), path, def);
-    } catch (XPathExpressionException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, e);
-    }
+    path = super.normalize(path);
+    return super.getInt(expression, path, def);
   }
 
-  public boolean getBool(String path, boolean def) {
+  public boolean getBool(XPathExpression expression, String path, boolean def) {
     Object val;
-    synchronized (this) {
-      val = overlay.getXPathProperty(path);
+    if (path.contains("lazy")) {
+      log.info("");
     }
+    val = overlay.getXPathProperty(path);
+
     if (val != null) return Boolean.parseBoolean(val.toString());
-    try {
-      path = super.normalize(path);
-      XPath xPath = loader.getXPath();
-      return super.getBool(xPath.compile(path), path, def);
-    } catch (XPathExpressionException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, e);
-    }
+    path = super.normalize(path);
+    return super.getBool(expression, path, def);
   }
 
   public String get(String path) {
     Object val;
-    synchronized (this) {
-      val = overlay.getXPathProperty(path, true);
-    }
+
+    val = overlay.getXPathProperty(path);
+
     try {
       path = super.normalize(path);
       XPath xPath = loader.getXPath();
@@ -919,9 +911,9 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   public String get(String path, String def) {
     Object val;
-    synchronized (this) {
-      val = overlay.getXPathProperty(path, true);
-    }
+
+    val = overlay.getXPathProperty(path);
+
     try {
       path = super.normalize(path);
       XPath xPath = loader.getXPath();
@@ -956,9 +948,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           items.put(info.name, info);
         }
 
-        synchronized (this) {
-          for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
-        }
+        for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
+
         result.put(tag, items);
       } else {
         if (plugin.options.contains(MULTI_OK)) {

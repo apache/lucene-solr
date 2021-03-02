@@ -46,7 +46,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
   
   public void testResolving() throws Exception {
     final Path testHome = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
-    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
+    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"));
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     final String fileUri = new File(testHome+"/crazy-path-to-config.xml").toURI().toASCIIString();
     
@@ -98,7 +98,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
     
     final Path testHome = SolrTestUtil.getFile("solr/collection1").getParentFile().toPath();
-    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"), this.getClass().getClassLoader());
+    final SolrResourceLoader loader = new SolrResourceLoader(testHome.resolve("collection1"));
     final SystemIdResolver resolver = new SystemIdResolver(loader);
     
     assertEntityResolving(resolver, SystemIdResolver.createSystemIdFromResourceName(testHome+"/crazy-path-to-schema.xml"),

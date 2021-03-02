@@ -169,11 +169,11 @@ public class SolrXmlConfig {
   private void checkForIllegalConfig(XmlConfigFile config) {
     // was resource killer - note: perhaps not as bad now that xml is more efficient?
     SolrResourceLoader loader = config.getResourceLoader();
-    failIfFound(config, loader.coreLoadThreadsExp, loader.coreLoadThreadsPath);
-    failIfFound(config, loader.persistentExp, loader.persistentPath);
-    failIfFound(config, loader.sharedLibExp, loader.sharedLibPath);
-    failIfFound(config, loader.zkHostExp, loader.zkHostPath);
-    failIfFound(config, loader.coresExp, loader.coresPath);
+    failIfFound(config, loader.configXpathExpressions.coreLoadThreadsExp, loader.configXpathExpressions.coreLoadThreadsPath);
+    failIfFound(config, loader.configXpathExpressions.persistentExp, loader.configXpathExpressions.persistentPath);
+    failIfFound(config, loader.configXpathExpressions.sharedLibExp, loader.configXpathExpressions.sharedLibPath);
+    failIfFound(config, loader.configXpathExpressions.zkHostExp, loader.configXpathExpressions.zkHostPath);
+    failIfFound(config, loader.configXpathExpressions.coresExp, loader.configXpathExpressions.coresPath);
 
     assertSingleInstance("solrcloud", config);
     assertSingleInstance("logging", config);
@@ -469,7 +469,7 @@ public class SolrXmlConfig {
   }
 
   private PluginInfo getShardHandlerFactoryPluginInfo(XmlConfigFile config) {
-    NodeInfo node = config.getNode(config.getResourceLoader().shardHandlerFactoryExp, SolrResourceLoader.shardHandlerFactoryPath, false);
+    NodeInfo node = config.getNode(config.getResourceLoader().configXpathExpressions.shardHandlerFactoryExp, ConfigXpathExpressions.shardHandlerFactoryPath, false);
     return (node == null) ? null : new PluginInfo(node, "shardHandlerFactory", false, true);
   }
 
@@ -487,23 +487,23 @@ public class SolrXmlConfig {
   private MetricsConfig getMetricsConfig(XmlConfigFile config) throws XPathExpressionException {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
     SolrResourceLoader loader = config.getResourceLoader();
-    NodeInfo node = config.getNode(loader.counterExp, SolrResourceLoader.counterExpPath, false);
+    NodeInfo node = config.getNode(loader.configXpathExpressions.counterExp, ConfigXpathExpressions.counterExpPath, false);
     if (node != null) {
       builder = builder.setCounterSupplier(new PluginInfo(node, "counterSupplier", false, false));
     }
-    node = config.getNode(loader.meterExp, SolrResourceLoader.meterPath, false);
+    node = config.getNode(loader.configXpathExpressions.meterExp, ConfigXpathExpressions.meterPath, false);
     if (node != null) {
       builder = builder.setMeterSupplier(new PluginInfo(node, "meterSupplier", false, false));
     }
-    node = config.getNode(loader.timerExp, SolrResourceLoader.timerPath, false);
+    node = config.getNode(loader.configXpathExpressions.timerExp, ConfigXpathExpressions.timerPath, false);
     if (node != null) {
       builder = builder.setTimerSupplier(new PluginInfo(node, "timerSupplier", false, false));
     }
-    node = config.getNode(loader.histoExp, SolrResourceLoader.histoPath, false);
+    node = config.getNode(loader.configXpathExpressions.histoExp, ConfigXpathExpressions.histoPath, false);
     if (node != null) {
       builder = builder.setHistogramSupplier(new PluginInfo(node, "histogramSupplier", false, false));
     }
-    node = config.getNode(loader.historyExp, SolrResourceLoader.historyPath, false);
+    node = config.getNode(loader.configXpathExpressions.historyExp, ConfigXpathExpressions.historyPath, false);
     if (node != null) {
       builder = builder.setHistoryHandler(new PluginInfo(node, "history", false, false));
     }
@@ -516,7 +516,7 @@ public class SolrXmlConfig {
   }
 
   private PluginInfo[] getMetricReporterPluginInfos(XmlConfigFile config) throws XPathExpressionException {
-    ArrayList<NodeInfo> nodes = (ArrayList<NodeInfo>) config.loader.metricsReporterExp.evaluate(config.tree, XPathConstants.NODESET);
+    ArrayList<NodeInfo> nodes = (ArrayList<NodeInfo>) config.loader.configXpathExpressions.metricsReporterExp.evaluate(config.tree, XPathConstants.NODESET);
     List<PluginInfo> configs = new ArrayList<>();
     boolean hasJmxReporter = false;
     if (nodes != null && nodes.size() > 0) {
@@ -566,12 +566,12 @@ public class SolrXmlConfig {
   }
 
   private PluginInfo getTransientCoreCacheFactoryPluginInfo(XmlConfigFile config) {
-    NodeInfo node = config.getNode(config.getResourceLoader().transientCoreCacheFactoryExp, SolrResourceLoader.transientCoreCacheFactoryPath, false);
+    NodeInfo node = config.getNode(config.getResourceLoader().configXpathExpressions.transientCoreCacheFactoryExp, ConfigXpathExpressions.transientCoreCacheFactoryPath, false);
     return (node == null) ? null : new PluginInfo(node, "transientCoreCacheFactory", false, true);
   }
 
   private PluginInfo getTracerPluginInfo(XmlConfigFile config) {
-    NodeInfo node = config.getNode(config.getResourceLoader().tracerConfigExp, SolrResourceLoader.tracerConfigPath, false);
+    NodeInfo node = config.getNode(config.getResourceLoader().configXpathExpressions.tracerConfigExp, ConfigXpathExpressions.tracerConfigPath, false);
     return (node == null) ? null : new PluginInfo(node, "tracerConfig", false, true);
   }
 }

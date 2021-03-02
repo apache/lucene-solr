@@ -57,6 +57,10 @@ public class ConfigOverlay implements MapSerializable {
   }
 
   public Object getXPathProperty(String xpath, boolean onlyPrimitive) {
+    if (xpath.startsWith("/")) {
+      xpath = xpath.substring(xpath.indexOf('/', 1) + 1);
+    }
+
     List<String> hierarchy = checkEditable(xpath, true, false);
     if (hierarchy == null) return null;
     return Utils.getObjectByPath(props, onlyPrimitive, hierarchy);
