@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-import org.apache.lucene.codecs.lucene87.LZ4WithPresetDictCompressionMode;
-
 /** CompressionCodec that uses {@link LZ4WithPresetDictCompressionMode}. */
 public class LZ4WithPresetCompressingCodec extends CompressingCodec {
 

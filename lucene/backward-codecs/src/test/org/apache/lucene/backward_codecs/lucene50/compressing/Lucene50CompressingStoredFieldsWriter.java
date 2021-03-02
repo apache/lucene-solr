@@ -14,8 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.backward_codecs.lucene50.compressing;
 
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.BYTE_ARR;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.FIELDS_EXTENSION;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.INDEX_CODEC_NAME;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.INDEX_EXTENSION;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.META_EXTENSION;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.NUMERIC_DOUBLE;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.NUMERIC_FLOAT;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.NUMERIC_INT;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.NUMERIC_LONG;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.STRING;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.TYPE_BITS;
+import static org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsReader.VERSION_CURRENT;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
@@ -24,7 +36,9 @@ import java.util.List;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsReader.SerializedDocument;
+import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.compressing.Compressor;
+import org.apache.lucene.codecs.compressing.MatchingReaders;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocIDMerger;
 import org.apache.lucene.index.FieldInfo;
@@ -47,38 +61,11 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link StoredFieldsWriter} impl for {@link CompressingStoredFieldsFormat}.
+ * {@link StoredFieldsWriter} impl for {@link Lucene50CompressingStoredFieldsFormat}.
  *
  * @lucene.experimental
  */
-public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
-
-  /** Extension of stored fields file */
-  public static final String FIELDS_EXTENSION = "fdt";
-  /** Extension of stored fields index */
-  public static final String INDEX_EXTENSION = "fdx";
-  /** Extension of stored fields meta */
-  public static final String META_EXTENSION = "fdm";
-  /** Codec name for the index. */
-  public static final String INDEX_CODEC_NAME = "Lucene85FieldsIndex";
-
-  static final int STRING = 0x00;
-  static final int BYTE_ARR = 0x01;
-  static final int NUMERIC_INT = 0x02;
-  static final int NUMERIC_FLOAT = 0x03;
-  static final int NUMERIC_LONG = 0x04;
-  static final int NUMERIC_DOUBLE = 0x05;
-
-  static final int TYPE_BITS = PackedInts.bitsRequired(NUMERIC_DOUBLE);
-  static final int TYPE_MASK = (int) PackedInts.maxValue(TYPE_BITS);
-
-  static final int VERSION_START = 1;
-  static final int VERSION_OFFHEAP_INDEX = 2;
-  /** Version where all metadata were moved to the meta file. */
-  static final int VERSION_META = 3;
-
-  static final int VERSION_CURRENT = VERSION_META;
-  static final int META_VERSION_START = 0;
+public final class Lucene50CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
   private final String segment;
   private FieldsIndexWriter indexWriter;
@@ -99,7 +86,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   private long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
 
   /** Sole constructor. */
-  CompressingStoredFieldsWriter(
+  Lucene50CompressingStoredFieldsWriter(
       Directory directory,
       SegmentInfo si,
       String segmentSuffix,
@@ -514,7 +501,7 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
   // we try to be extra safe with this impl, but add an escape hatch to
   // have a workaround for undiscovered bugs.
   static final String BULK_MERGE_ENABLED_SYSPROP =
-      CompressingStoredFieldsWriter.class.getName() + ".enableBulkMerge";
+      Lucene50CompressingStoredFieldsWriter.class.getName() + ".enableBulkMerge";
   static final boolean BULK_MERGE_ENABLED;
 
   static {
@@ -540,9 +527,9 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
       List<CompressingStoredFieldsMergeSub> subs = new ArrayList<>();
       for (int i = 0; i < mergeState.storedFieldsReaders.length; i++) {
         if (matching.matchingReaders[i]
-            && mergeState.storedFieldsReaders[i] instanceof CompressingStoredFieldsReader) {
-          CompressingStoredFieldsReader storedFieldsReader =
-              (CompressingStoredFieldsReader) mergeState.storedFieldsReaders[i];
+            && mergeState.storedFieldsReaders[i] instanceof Lucene50CompressingStoredFieldsReader) {
+          Lucene50CompressingStoredFieldsReader storedFieldsReader =
+              (Lucene50CompressingStoredFieldsReader) mergeState.storedFieldsReaders[i];
           storedFieldsReader.checkIntegrity();
           subs.add(
               new CompressingStoredFieldsMergeSub(
@@ -559,7 +546,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           break;
         }
         assert sub.mappedDocID == docCount;
-        SerializedDocument doc = sub.reader.document(sub.docID);
+        Lucene50CompressingStoredFieldsReader.SerializedDocument doc =
+            sub.reader.document(sub.docID);
         startDocument();
         bufferedDocs.copyBytes(doc.in, doc.length);
         numStoredFieldsInDoc = doc.numStoredFields;
@@ -572,12 +560,12 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
 
     for (int readerIndex = 0; readerIndex < numReaders; readerIndex++) {
       MergeVisitor visitor = new MergeVisitor(mergeState, readerIndex);
-      CompressingStoredFieldsReader matchingFieldsReader = null;
+      Lucene50CompressingStoredFieldsReader matchingFieldsReader = null;
       if (matching.matchingReaders[readerIndex]) {
         final StoredFieldsReader fieldsReader = mergeState.storedFieldsReaders[readerIndex];
         // we can only bulk-copy if the matching reader is also a CompressingStoredFieldsReader
-        if (fieldsReader != null && fieldsReader instanceof CompressingStoredFieldsReader) {
-          matchingFieldsReader = (CompressingStoredFieldsReader) fieldsReader;
+        if (fieldsReader != null && fieldsReader instanceof Lucene50CompressingStoredFieldsReader) {
+          matchingFieldsReader = (Lucene50CompressingStoredFieldsReader) fieldsReader;
         }
       }
 
@@ -688,7 +676,8 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
           if (liveDocs != null && liveDocs.get(docID) == false) {
             continue;
           }
-          SerializedDocument doc = matchingFieldsReader.document(docID);
+          Lucene50CompressingStoredFieldsReader.SerializedDocument doc =
+              matchingFieldsReader.document(docID);
           startDocument();
           bufferedDocs.copyBytes(doc.in, doc.length);
           numStoredFieldsInDoc = doc.numStoredFields;
@@ -709,19 +698,19 @@ public final class CompressingStoredFieldsWriter extends StoredFieldsWriter {
    * some worst-case situations (e.g. frequent reopen with tiny flushes), over time the compression
    * ratio can degrade. This is a safety switch.
    */
-  boolean tooDirty(CompressingStoredFieldsReader candidate) {
+  boolean tooDirty(Lucene50CompressingStoredFieldsReader candidate) {
     // more than 1% dirty, or more than hard limit of 1024 dirty chunks
     return candidate.getNumDirtyChunks() > 1024
         || candidate.getNumDirtyDocs() * 100 > candidate.getNumDocs();
   }
 
   private static class CompressingStoredFieldsMergeSub extends DocIDMerger.Sub {
-    private final CompressingStoredFieldsReader reader;
+    private final Lucene50CompressingStoredFieldsReader reader;
     private final int maxDoc;
     int docID = -1;
 
     CompressingStoredFieldsMergeSub(
-        CompressingStoredFieldsReader reader, MergeState.DocMap docMap, int maxDoc) {
+        Lucene50CompressingStoredFieldsReader reader, MergeState.DocMap docMap, int maxDoc) {
       super(docMap);
       this.maxDoc = maxDoc;
       this.reader = reader;

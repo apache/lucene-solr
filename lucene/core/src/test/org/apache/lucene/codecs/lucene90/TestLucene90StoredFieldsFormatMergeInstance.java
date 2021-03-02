@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene87;
+package org.apache.lucene.codecs.lucene90;
 
-/** Test the merge instance of the Lucene50 stored fields format. */
-public class TestLucene87StoredFieldsFormatMergeInstance extends TestLucene87StoredFieldsFormat {
+/** Test the merge instance of the Lucene90 stored fields format. */
+public class TestLucene90StoredFieldsFormatMergeInstance extends TestLucene90StoredFieldsFormat {
 
   @Override
   protected boolean shouldTestMergeInstance() {

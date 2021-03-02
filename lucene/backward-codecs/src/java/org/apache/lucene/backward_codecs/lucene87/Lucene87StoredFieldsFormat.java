@@ -14,15 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene87;
+package org.apache.lucene.backward_codecs.lucene87;
 
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50CompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
+import org.apache.lucene.codecs.compressing.DeflateWithPresetDictCompressionMode;
+import org.apache.lucene.codecs.compressing.LZ4WithPresetDictCompressionMode;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -139,28 +141,16 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context)
       throws IOException {
-    String previous = si.putAttribute(MODE_KEY, mode.name());
-    if (previous != null && previous.equals(mode.name()) == false) {
-      throw new IllegalStateException(
-          "found existing value for "
-              + MODE_KEY
-              + " for segment: "
-              + si.name
-              + "old="
-              + previous
-              + ", new="
-              + mode.name());
-    }
-    return impl(mode).fieldsWriter(directory, si, context);
+    throw new UnsupportedOperationException("Old codecs may only be used for reading");
   }
 
   StoredFieldsFormat impl(Mode mode) {
     switch (mode) {
       case BEST_SPEED:
-        return new CompressingStoredFieldsFormat(
+        return new Lucene50CompressingStoredFieldsFormat(
             "Lucene87StoredFieldsFastData", BEST_SPEED_MODE, BEST_SPEED_BLOCK_LENGTH, 1024, 10);
       case BEST_COMPRESSION:
-        return new CompressingStoredFieldsFormat(
+        return new Lucene50CompressingStoredFieldsFormat(
             "Lucene87StoredFieldsHighData",
             BEST_COMPRESSION_MODE,
             BEST_COMPRESSION_BLOCK_LENGTH,
@@ -172,14 +162,14 @@ public class Lucene87StoredFieldsFormat extends StoredFieldsFormat {
   }
 
   // Shoot for 10 sub blocks of 48kB each.
-  private static final int BEST_COMPRESSION_BLOCK_LENGTH = 10 * 48 * 1024;
+  protected static final int BEST_COMPRESSION_BLOCK_LENGTH = 10 * 48 * 1024;
 
   /** Compression mode for {@link Mode#BEST_COMPRESSION} */
   public static final CompressionMode BEST_COMPRESSION_MODE =
       new DeflateWithPresetDictCompressionMode();
 
   // Shoot for 10 sub blocks of 60kB each.
-  private static final int BEST_SPEED_BLOCK_LENGTH = 10 * 60 * 1024;
+  protected static final int BEST_SPEED_BLOCK_LENGTH = 10 * 60 * 1024;
 
   /** Compression mode for {@link Mode#BEST_SPEED} */
   public static final CompressionMode BEST_SPEED_MODE = new LZ4WithPresetDictCompressionMode();

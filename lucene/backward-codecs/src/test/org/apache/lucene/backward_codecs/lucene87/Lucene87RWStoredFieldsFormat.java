@@ -14,27 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.backward_codecs.lucene50;
+package org.apache.lucene.backward_codecs.lucene87;
 
 import java.io.IOException;
 import org.apache.lucene.backward_codecs.lucene50.compressing.Lucene50RWCompressingStoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.StoredFieldsWriter;
-import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-/** RW impersonation of Lucene50StoredFieldsFormat. */
-public final class Lucene50RWStoredFieldsFormat extends Lucene50StoredFieldsFormat {
+;
 
-  /** No-argument constructor. */
-  public Lucene50RWStoredFieldsFormat() {
-    super();
-  }
+/** RW impersonation of Lucene87StoredFieldsFormat. */
+public class Lucene87RWStoredFieldsFormat extends Lucene87StoredFieldsFormat {
 
-  /** Constructor that takes a mode. */
-  public Lucene50RWStoredFieldsFormat(Lucene50StoredFieldsFormat.Mode mode) {
+  public Lucene87RWStoredFieldsFormat(Mode mode) {
     super(mode);
   }
 
@@ -61,10 +56,14 @@ public final class Lucene50RWStoredFieldsFormat extends Lucene50StoredFieldsForm
     switch (mode) {
       case BEST_SPEED:
         return new Lucene50RWCompressingStoredFieldsFormat(
-            "Lucene50StoredFieldsFastData", CompressionMode.FAST, 1 << 14, 128, 10);
+            "Lucene87StoredFieldsFastData", BEST_SPEED_MODE, BEST_SPEED_BLOCK_LENGTH, 1024, 10);
       case BEST_COMPRESSION:
         return new Lucene50RWCompressingStoredFieldsFormat(
-            "Lucene50StoredFieldsHighData", CompressionMode.HIGH_COMPRESSION, 61440, 512, 10);
+            "Lucene87StoredFieldsHighData",
+            BEST_COMPRESSION_MODE,
+            BEST_COMPRESSION_BLOCK_LENGTH,
+            4096,
+            10);
       default:
         throw new AssertionError();
     }

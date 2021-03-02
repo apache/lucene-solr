@@ -21,7 +21,6 @@ import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.FieldsIndexWriter;
 import org.apache.lucene.codecs.compressing.Lucene90CompressingTermVectorsFormat;
-import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.BlockPackedWriter;
 import org.apache.lucene.util.packed.PackedInts;
@@ -29,7 +28,7 @@ import org.apache.lucene.util.packed.PackedInts;
 /**
  * Lucene 9.0 {@link TermVectorsFormat term vectors format}.
  *
- * <p>Very similarly to {@link Lucene87StoredFieldsFormat}, this format is based on compressed
+ * <p>Very similarly to {@link Lucene90StoredFieldsFormat}, this format is based on compressed
  * chunks of data, with document-level granularity so that a document can never span across distinct
  * chunks. Moreover, data is made as compact as possible:
  *

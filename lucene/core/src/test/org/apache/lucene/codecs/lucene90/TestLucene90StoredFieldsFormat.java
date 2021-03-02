@@ -14,25 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.codecs.lucene90;
 
-/** CompressionCodec that uses {@link DeflateWithPresetDictCompressionMode}. */
-public class DeflateWithPresetCompressingCodec extends CompressingCodec {
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.apache.lucene.util.TestUtil;
 
-  /** Constructor that allows to configure the chunk size. */
-  public DeflateWithPresetCompressingCodec(
-      int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super(
-        "DeflateWithPresetCompressingStoredFieldsData",
-        withSegmentSuffix ? "DeflateWithPresetCompressingStoredFields" : "",
-        new DeflateWithPresetDictCompressionMode(),
-        chunkSize,
-        maxDocsPerChunk,
-        blockSize);
-  }
-
-  /** No-arg constructor. */
-  public DeflateWithPresetCompressingCodec() {
-    this(1 << 18, 512, false, 10);
+public class TestLucene90StoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
+  @Override
+  protected Codec getCodec() {
+    return TestUtil.getDefaultCodec();
   }
 }

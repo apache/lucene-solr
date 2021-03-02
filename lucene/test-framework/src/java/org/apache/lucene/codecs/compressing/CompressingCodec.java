@@ -26,7 +26,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 /**
- * A codec that uses {@link CompressingStoredFieldsFormat} for its stored fields and delegates to
+ * A codec that uses {@link Lucene90CompressingStoredFieldsFormat} for its stored fields and delegates to
  * the default codec for everything else.
  */
 public abstract class CompressingCodec extends FilterCodec {
@@ -101,7 +101,7 @@ public abstract class CompressingCodec extends FilterCodec {
         RandomNumbers.randomIntBetween(random, 1, 1024));
   }
 
-  private final CompressingStoredFieldsFormat storedFieldsFormat;
+  private final Lucene90CompressingStoredFieldsFormat storedFieldsFormat;
   private final Lucene90CompressingTermVectorsFormat termVectorsFormat;
 
   /** Creates a compressing codec with a given segment suffix */
@@ -114,7 +114,7 @@ public abstract class CompressingCodec extends FilterCodec {
       int blockShift) {
     super(name, TestUtil.getDefaultCodec());
     this.storedFieldsFormat =
-        new CompressingStoredFieldsFormat(
+        new Lucene90CompressingStoredFieldsFormat(
             name, segmentSuffix, compressionMode, chunkSize, maxDocsPerChunk, blockShift);
     this.termVectorsFormat =
         new Lucene90CompressingTermVectorsFormat(

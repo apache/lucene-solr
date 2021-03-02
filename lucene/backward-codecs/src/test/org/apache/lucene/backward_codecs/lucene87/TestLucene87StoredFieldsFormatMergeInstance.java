@@ -14,9 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.backward_codecs.lucene87;
 
-/**
- * Components from the Lucene 8.7 index format. See {@link org.apache.lucene.codecs.lucene90} for an
- * overview of the current index format.
- */
-package org.apache.lucene.codecs.lucene87;
+/** Test the merge instance of the Lucene87 stored fields format. */
+public class TestLucene87StoredFieldsFormatMergeInstance extends TestLucene87StoredFieldsFormat {
+
+  @Override
+  protected boolean shouldTestMergeInstance() {
+    return true;
+  }
+}

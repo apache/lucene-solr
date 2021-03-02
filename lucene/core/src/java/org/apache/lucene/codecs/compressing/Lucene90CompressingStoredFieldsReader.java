@@ -16,29 +16,27 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.BYTE_ARR;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.DAY_ENCODING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.FIELDS_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.HOUR_ENCODING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_CODEC_NAME;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.INDEX_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.META_EXTENSION;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.META_VERSION_START;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_FLOAT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_INT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.NUMERIC_LONG;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.SECOND;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.SECOND_ENCODING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.STRING;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_BITS;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.TYPE_MASK;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_CURRENT;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_META;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_OFFHEAP_INDEX;
-import static org.apache.lucene.codecs.compressing.CompressingStoredFieldsWriter.VERSION_START;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.BYTE_ARR;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.DAY;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.DAY_ENCODING;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.FIELDS_EXTENSION;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.HOUR;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.HOUR_ENCODING;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.INDEX_CODEC_NAME;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.INDEX_EXTENSION;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.META_EXTENSION;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.META_VERSION_START;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_DOUBLE;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_FLOAT;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_INT;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.NUMERIC_LONG;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.SECOND;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.SECOND_ENCODING;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.STRING;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.TYPE_BITS;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.TYPE_MASK;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_CURRENT;
+import static org.apache.lucene.codecs.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_START;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -71,11 +69,11 @@ import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.packed.PackedInts;
 
 /**
- * {@link StoredFieldsReader} impl for {@link CompressingStoredFieldsFormat}.
+ * {@link StoredFieldsReader} impl for {@link Lucene90CompressingStoredFieldsFormat}.
  *
  * @lucene.experimental
  */
-public final class CompressingStoredFieldsReader extends StoredFieldsReader {
+public final class Lucene90CompressingStoredFieldsReader extends StoredFieldsReader {
 
   private final int version;
   private final FieldInfos fieldInfos;
@@ -94,7 +92,8 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   private boolean closed;
 
   // used by clone
-  private CompressingStoredFieldsReader(CompressingStoredFieldsReader reader, boolean merging) {
+  private Lucene90CompressingStoredFieldsReader(
+      Lucene90CompressingStoredFieldsReader reader, boolean merging) {
     this.version = reader.version;
     this.fieldInfos = reader.fieldInfos;
     this.fieldsStream = reader.fieldsStream.clone();
@@ -113,7 +112,7 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   }
 
   /** Sole constructor. */
-  public CompressingStoredFieldsReader(
+  public Lucene90CompressingStoredFieldsReader(
       Directory d,
       SegmentInfo si,
       String segmentSuffix,
@@ -140,25 +139,19 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix)
           == fieldsStream.getFilePointer();
 
-      if (version >= VERSION_OFFHEAP_INDEX) {
-        final String metaStreamFN =
-            IndexFileNames.segmentFileName(segment, segmentSuffix, META_EXTENSION);
-        metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
-        CodecUtil.checkIndexHeader(
-            metaIn,
-            INDEX_CODEC_NAME + "Meta",
-            META_VERSION_START,
-            version,
-            si.getId(),
-            segmentSuffix);
-      }
-      if (version >= VERSION_META) {
-        chunkSize = metaIn.readVInt();
-        packedIntsVersion = metaIn.readVInt();
-      } else {
-        chunkSize = fieldsStream.readVInt();
-        packedIntsVersion = fieldsStream.readVInt();
-      }
+      final String metaStreamFN =
+          IndexFileNames.segmentFileName(segment, segmentSuffix, META_EXTENSION);
+      metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
+      CodecUtil.checkIndexHeader(
+          metaIn,
+          INDEX_CODEC_NAME + "Meta",
+          META_VERSION_START,
+          version,
+          si.getId(),
+          segmentSuffix);
+
+      chunkSize = metaIn.readVInt();
+      packedIntsVersion = metaIn.readVInt();
 
       decompressor = compressionMode.newDecompressor();
       this.merging = false;
@@ -173,61 +166,17 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
       long maxPointer = -1;
       FieldsIndex indexReader = null;
 
-      if (version < VERSION_OFFHEAP_INDEX) {
-        // Load the index into memory
-        final String indexName = IndexFileNames.segmentFileName(segment, segmentSuffix, "fdx");
-        try (ChecksumIndexInput indexStream = d.openChecksumInput(indexName, context)) {
-          Throwable priorE = null;
-          try {
-            assert formatName.endsWith("Data");
-            final String codecNameIdx =
-                formatName.substring(0, formatName.length() - "Data".length()) + "Index";
-            final int version2 =
-                CodecUtil.checkIndexHeader(
-                    indexStream,
-                    codecNameIdx,
-                    VERSION_START,
-                    VERSION_CURRENT,
-                    si.getId(),
-                    segmentSuffix);
-            if (version != version2) {
-              throw new CorruptIndexException(
-                  "Version mismatch between stored fields index and data: "
-                      + version2
-                      + " != "
-                      + version,
-                  indexStream);
-            }
-            assert CodecUtil.indexHeaderLength(codecNameIdx, segmentSuffix)
-                == indexStream.getFilePointer();
-            indexReader = new LegacyFieldsIndexReader(indexStream, si);
-            maxPointer = indexStream.readVLong();
-          } catch (Throwable exception) {
-            priorE = exception;
-          } finally {
-            CodecUtil.checkFooter(indexStream, priorE);
-          }
-        }
-      } else {
-        FieldsIndexReader fieldsIndexReader =
-            new FieldsIndexReader(
-                d, si.name, segmentSuffix, INDEX_EXTENSION, INDEX_CODEC_NAME, si.getId(), metaIn);
-        indexReader = fieldsIndexReader;
-        maxPointer = fieldsIndexReader.getMaxPointer();
-      }
+      FieldsIndexReader fieldsIndexReader =
+          new FieldsIndexReader(
+              d, si.name, segmentSuffix, INDEX_EXTENSION, INDEX_CODEC_NAME, si.getId(), metaIn);
+      indexReader = fieldsIndexReader;
+      maxPointer = fieldsIndexReader.getMaxPointer();
 
       this.maxPointer = maxPointer;
       this.indexReader = indexReader;
 
-      if (version >= VERSION_META) {
-        numDirtyChunks = metaIn.readVLong();
-        numDirtyDocs = metaIn.readVLong();
-      } else {
-        // Old versions of this format did not record numDirtyDocs. Since bulk
-        // merges are disabled on version increments anyway, we make no effort
-        // to get valid values of numDirtyChunks and numDirtyDocs.
-        numDirtyChunks = numDirtyDocs = -1;
-      }
+      numDirtyChunks = metaIn.readVLong();
+      numDirtyDocs = metaIn.readVLong();
 
       if (metaIn != null) {
         CodecUtil.checkFooter(metaIn, null);
@@ -718,13 +667,13 @@ public final class CompressingStoredFieldsReader extends StoredFieldsReader {
   @Override
   public StoredFieldsReader clone() {
     ensureOpen();
-    return new CompressingStoredFieldsReader(this, false);
+    return new Lucene90CompressingStoredFieldsReader(this, false);
   }
 
   @Override
   public StoredFieldsReader getMergeInstance() {
     ensureOpen();
-    return new CompressingStoredFieldsReader(this, true);
+    return new Lucene90CompressingStoredFieldsReader(this, true);
   }
 
   int getVersion() {
