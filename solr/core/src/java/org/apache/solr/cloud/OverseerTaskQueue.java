@@ -24,6 +24,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -33,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -132,13 +132,10 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     private final String path;
     private final SolrZkClient zkClient;
     private volatile WatchedEvent event;
-    private final Event.EventType latchEventType;
-    private volatile boolean closed;
 
-    LatchWatcher(Event.EventType eventType, String path, SolrZkClient zkClient) {
+    LatchWatcher(String path, SolrZkClient zkClient) {
       this.lock = new ReentrantLock();
       this.eventReceived = lock.newCondition();
-      this.latchEventType = eventType;
       this.path = path;
       this.zkClient = zkClient;
     }
@@ -152,52 +149,39 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
       }
       // If latchEventType is not null, only fire if the type matches
 
-      if (log.isDebugEnabled()) log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
+      if (log.isDebugEnabled()) log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState());
 
-      if (latchEventType == null || event.getType() == latchEventType) {
-        try {
-          Stat stat = zkClient.exists(path, this, true);
-          if (stat != null && stat.getDataLength() > 0) {
-            close();
-            lock.lock();
-            try {
-              this.event = new WatchedEvent(Event.EventType.NodeDataChanged, Event.KeeperState.SyncConnected, path);
-              eventReceived.signalAll();
-            } finally {
-              lock.unlock();
-            }
-          }
-        } catch (Exception e) {
-          log.error("", e);
-        }
+      checkResult();
+    }
 
-        lock.lock();
-        try {
-          this.event = event;
-          eventReceived.signalAll();
-        } finally {
-          lock.unlock();
-        }
-      } else {
-        try {
-          Stat stat = zkClient.exists(path, this, true);
-          if (stat != null && stat.getDataLength() > 0) {
-            close();
-            lock.lock();
-            try {
-              this.event = new WatchedEvent(Event.EventType.NodeDataChanged, Event.KeeperState.SyncConnected, path);
-              eventReceived.signalAll();
-            } finally {
-              lock.unlock();
-            }
+    private void checkResult() {
+      try {
+        Stat stat = zkClient.exists(path, null, true);
+        if (stat != null && stat.getDataLength() > 0) {
+          lock.lock();
+          try {
+            this.event = new WatchedEvent(Event.EventType.NodeDataChanged, Event.KeeperState.SyncConnected, path);
+            eventReceived.signalAll();
+          } finally {
+            lock.unlock();
           }
-        } catch (Exception e) {
-          log.error("", e);
         }
+      } catch (Exception e) {
+        log.error("", e);
       }
     }
 
     public void await(long timeoutMs) {
+
+      createWatch();
+
+      checkResult();
+
+      if (event != null) {
+        close();
+        return;
+      }
+
       TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
       lock.lock();
       try {
@@ -214,6 +198,15 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         }
       } finally {
         lock.unlock();
+        close();
+      }
+    }
+
+    private void createWatch() {
+      try {
+        zkClient.addWatch(path, this, AddWatchMode.PERSISTENT);
+      } catch (Exception e) {
+       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
 
@@ -222,8 +215,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     }
 
     @Override
-    public void close() throws IOException {
-      this.closed = true;
+    public void close() {
       try {
         zkClient.removeWatches(path, this, WatcherType.Data, true);
       }  catch (KeeperException.NoWatcherException e) {
@@ -277,8 +269,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
       if (log.isDebugEnabled()) log.debug("watchId for response node {}, setting a watch ... ", watchID);
 
-      watcher = new LatchWatcher(Watcher.Event.EventType.NodeDataChanged, watchID, zookeeper);
-      Stat stat = zookeeper.exists(watchID, watcher, true);
+      watcher = new LatchWatcher(watchID, zookeeper);
 
       // create the request node
       String path = createRequestNode(data, watchID);

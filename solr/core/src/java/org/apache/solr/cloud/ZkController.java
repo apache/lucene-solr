@@ -1318,12 +1318,12 @@ public class ZkController implements Closeable, Runnable {
           IOUtils.closeQuietly(leaderElector);
         }
 
-//        if (cc.isShutDown()) {
-//          IOUtils.closeQuietly(leaderElector);
-//          IOUtils.closeQuietly(oldElector);
-//          IOUtils.closeQuietly(getShardTermsOrNull(collection, shardId));
-//          throw new AlreadyClosedException();
-//        }
+        if (cc.isShutDown()) {
+          IOUtils.closeQuietly(leaderElector);
+          IOUtils.closeQuietly(oldElector);
+          IOUtils.closeQuietly(getShardTermsOrNull(collection, shardId));
+          throw new AlreadyClosedException();
+        }
       }
 
       // If we're a preferred leader, insert ourselves at the head of the queue
