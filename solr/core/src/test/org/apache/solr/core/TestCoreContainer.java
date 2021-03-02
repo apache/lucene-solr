@@ -438,9 +438,35 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       " <str name=\"configSetsHandler\">" + CustomConfigSetsHandler.class.getName() + "</str>" +
       "</solr>";
 
+  private static final String CUSTOM_CONFIG_SET_SERVICE_SOLR_XML = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
+      "<solr>" +
+      " <str name=\"configSetService\">" + CustomConfigSetService.class.getName() + "</str>" +
+      "</solr>";
+
   public static class CustomCollectionsHandler extends CollectionsHandler {
     public CustomCollectionsHandler(CoreContainer cc) {
       super(cc);
+    }
+  }
+
+  public static class CustomConfigSetService extends ConfigSetService {
+    public CustomConfigSetService(CoreContainer coreContainer) {
+      super(coreContainer.getResourceLoader(), true);
+    }
+
+    @Override
+    public String configSetName(CoreDescriptor cd){
+      return null;
+    }
+
+    @Override
+    protected SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd){
+      return null;
+    }
+
+    @Override
+    protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
+      return null;
     }
   }
 
@@ -551,6 +577,17 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
       cc.shutdown();
     }
 
+  }
+
+  @Test
+  public void testCustomConfigSetService() throws Exception {
+    CoreContainer cc = init(CUSTOM_CONFIG_SET_SERVICE_SOLR_XML);
+    try {
+      assertThat(cc.getConfigSetService(), is(instanceOf(CustomConfigSetService.class)));
+    }
+    finally {
+      cc.shutdown();
+    }
   }
 
   private static class MockCoresLocator implements CoresLocator {

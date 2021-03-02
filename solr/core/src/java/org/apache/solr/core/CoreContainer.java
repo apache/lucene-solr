@@ -785,7 +785,7 @@ public class CoreContainer {
     metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jvm);
     metricManager.loadReporters(metricReporters, loader, this, null, null, SolrInfoBean.Group.jetty);
 
-    coreConfigService = ConfigSetService.createConfigSetService(cfg, loader, zkSys.zkController);
+    coreConfigService = ConfigSetService.createConfigSetService(this);
 
     containerProperties.putAll(cfg.getSolrProperties());
 
@@ -2028,6 +2028,10 @@ public class CoreContainer {
 
   public ConfigSetsHandler getConfigSetsHandler() {
     return configSetsHandler;
+  }
+
+  public ConfigSetService getConfigSetService() {
+    return this.coreConfigService;
   }
 
   public String getHostName() {

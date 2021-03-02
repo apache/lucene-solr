@@ -63,6 +63,13 @@ As you can see, the discovery Solr configuration is "SolrCloud friendly". Howeve
 
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`. The tables below list the child nodes of each XML element in `solr.xml`.
 
+`configSetService`::
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from ConfigSetService , and you must provide a constructor with one param which the type is `org.apache.solr.core.CoreContainer` . For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
++
+If this attribute isn't set, Solr uses the default configSetService , with zookeeper aware of `org.apache.solr.cloud.CloudConfigSetService`, without zookeeper aware of `org.apache.solr.core.ConfigSetService.Standalone`.
+
 `adminHandler`::
 This attribute does not need to be set.
 +
