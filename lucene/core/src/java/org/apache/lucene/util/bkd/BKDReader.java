@@ -30,9 +30,7 @@ public final class BKDReader extends PointValues {
 
   final BKDIndexInput in;
 
-  /**
-   * Sole constructor
-   */
+  /** Sole constructor */
   public BKDReader(BKDIndexInput in) throws IOException {
     this.in = in;
   }
