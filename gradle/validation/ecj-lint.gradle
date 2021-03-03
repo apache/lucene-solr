@@ -74,6 +74,11 @@ allprojects {
         args += [ "-enableJavadoc" ]
         args += [ "-properties", file("${resources}/ecj.javadocs.prefs").absolutePath ]
 
+        if (skipLucene) {
+          // disable for now because individual file excludes cannot be applied to ecj.
+          enabled = false
+        }
+
         doFirst {
           tmpDst.mkdirs()
 

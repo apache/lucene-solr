@@ -15,21 +15,29 @@
  * limitations under the License.
  */
 
+// Source test classes from Lucene won't be accessible anymore after the split.
 
-apply plugin: 'java-library'
-
-description = 'Search Results Clustering Integraton'
-
-dependencies {
-  implementation project(':solr:core')
-
-  if (skipLucene) {
-    implementation "org.apache.lucene:lucene-analysis-common"
-  } else {
-    implementation project(':lucene:analysis:common')
+configure(project(":solr:contrib:analysis-extras")) {
+  afterEvaluate {
+    sourceSets {
+      test {
+        java {
+          exclude '**/TestICUCollationField.java'
+        }
+      }
+    }
   }
+}
 
-  implementation 'org.carrot2:carrot2-core'
-
-  testImplementation project(':solr:test-framework')
+configure(project(":solr:core")) {
+  afterEvaluate {
+    sourceSets {
+      test {
+        java {
+          exclude '**/TestLuceneIndexBackCompat.java'
+          exclude '**/TestXmlQParser.java'
+        }
+      }
+    }
+  }
 }

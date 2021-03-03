@@ -55,6 +55,7 @@ allprojects {
 
 ext {
   skipSolr = (System.getProperty("skip.solr") as Boolean)
+  skipLucene = (System.getProperty("skip.lucene") as Boolean)
 
   // "base" version is stripped of the qualifier. Compute it.
   baseVersion = {
@@ -150,20 +151,25 @@ apply from: file('gradle/validation/ecj-lint.gradle')
 apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
 apply from: file('gradle/validation/check-broken-links.gradle')
-apply from: file('gradle/validation/spotless.gradle')
+
+if (!skipLucene) {
+  apply from: file('gradle/validation/spotless.gradle')
+}
 
 if (!skipSolr) {
   apply from: file('gradle/validation/solr.config-file-sanity.gradle') // SOLR ONLY
 }
 
 // Source or data regeneration tasks
-apply from: file('gradle/generation/jflex.gradle')
+if (!skipLucene) {
+  apply from: file('gradle/generation/jflex.gradle')
+  apply from: file('gradle/generation/util.gradle')
+  apply from: file('gradle/generation/snowball.gradle')
+  apply from: file('gradle/generation/kuromoji.gradle')
+  apply from: file('gradle/generation/nori.gradle')
+  apply from: file('gradle/generation/icu.gradle')
+}
 apply from: file('gradle/generation/javacc.gradle')
-apply from: file('gradle/generation/util.gradle')
-apply from: file('gradle/generation/snowball.gradle')
-apply from: file('gradle/generation/kuromoji.gradle')
-apply from: file('gradle/generation/nori.gradle')
-apply from: file('gradle/generation/icu.gradle')
 
 // Shared configuration of subprojects containing native code.
 apply from: file('gradle/native/disable-native.gradle')
@@ -181,7 +187,10 @@ apply from: file('gradle/help.gradle')
 // here so that we can coexist with current ant build but they are indicative
 // of potential problems with the build conventions, dependencies, etc.
 apply from: file('gradle/ant-compat/misc.gradle')
-apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
+
+if (!skipLucene) {
+  apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
+}
 
 if (!skipSolr) {
   apply from: file('gradle/ant-compat/force-versions.gradle') // SOLR ONLY
@@ -200,6 +209,10 @@ if (!skipSolr) {
 }
 apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
+
+if (skipLucene) {
+  apply from: file('gradle/solr/inaccessible-test-sources.gradle')
+}
 
 if (!skipSolr) {
   apply from: file('gradle/solr/packaging.gradle') // SOLR ONLY

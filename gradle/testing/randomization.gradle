@@ -113,7 +113,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
       testOptions += [
           [propName: 'tests.luceneMatchVersion', value: baseVersion, description: "Base Lucene version."],
           [propName: 'common-solr.dir',
-           value: { -> file("${commonDir}/../solr").path },
+           value: project(":solr").projectDir,
            description: "Solr base dir.",
            includeInReproLine: false
           ],
@@ -195,7 +195,9 @@ allprojects {
             systemProperty 'java.security.policy', file("${resources}/policies/solr-tests.policy")
           }
 
-          systemProperty 'common.dir', commonDir
+          if (!skipLucene) {
+            systemProperty 'common.dir', commonDir
+          }
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()
           systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')

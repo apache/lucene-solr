@@ -20,15 +20,17 @@ configure(rootProject) {
   def refguideUrlVersion = project.baseVersion.replaceFirst(/^(\d+)\.(\d+).*$/, '$1_$2')
 
   ext {
-    luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', {
-      if (project.version != project.baseVersion) {
-        // non-release build
-        new File(project('lucene:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
-      } else {
-        // release build
-        "https://lucene.apache.org/core/${urlVersion}"
-      }
-    }())
+    if (!skipLucene) {
+      luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', {
+        if (project.version != project.baseVersion) {
+          // non-release build
+          new File(project('lucene:documentation').buildDir, 'site').toURI().toASCIIString().minus(~'/$')
+        } else {
+          // release build
+          "https://lucene.apache.org/core/${urlVersion}"
+        }
+      }())
+    }
 
     // SOLR ONLY
     if (!skipSolr) {
@@ -50,7 +52,9 @@ configure(rootProject) {
     group = 'documentation'
     description = 'Generate all documentation'
 
-    dependsOn ':lucene:documentation:assemble'
+    if (!skipLucene) {
+      dependsOn ':lucene:documentation:assemble'
+    }
     dependsOn ':solr:documentation:assemble'
   }
 }

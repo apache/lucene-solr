@@ -88,10 +88,12 @@ subprojects {
   check.dependsOn validateSourcePatterns
 }
 
-configure(project(':lucene:benchmark')) {
-  project.tasks.withType(ValidateSourcePatternsTask) {
-    sourceFiles.exclude 'temp/**'
-    sourceFiles.exclude 'work/**'
+if (!skipLucene) {
+  configure(project(':lucene:benchmark')) {
+    project.tasks.withType(ValidateSourcePatternsTask) {
+      sourceFiles.exclude 'temp/**'
+      sourceFiles.exclude 'work/**'
+    }
   }
 }
 
@@ -129,6 +131,10 @@ configure(rootProject) {
 
       if (skipSolr) {
         exclude "solr/**"
+      }
+
+      if (skipLucene) {
+        exclude "lucene/**"
       }
 
       // default excludes.

@@ -62,7 +62,10 @@ allprojects {
 
       testsCwd = file("${buildDir}/tmp/tests-cwd")
       testsTmpDir = file(resolvedTestOption("tests.workDir"))
-      commonDir = project(":lucene").projectDir
+
+      if (!skipLucene) {
+        commonDir = project(":lucene").projectDir
+      }
 
       // SOLR ONLY
       if (!skipSolr) {

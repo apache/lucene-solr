@@ -49,51 +49,53 @@ configure(rootProject) {
     }
 }
 
-configure(project(":lucene:analysis:common")) {
-    rat {
-        srcExcludes += [
-            "**/*.aff",
-            "**/*.dic",
-            "**/*.wrong",
-            "**/*.good",
-            "**/*.sug",
-            "**/charfilter/*.htm*",
-            "**/*LuceneResourcesWikiPage.html"
-        ]
+if (!skipLucene) {
+    configure(project(":lucene:analysis:common")) {
+        rat {
+            srcExcludes += [
+                "**/*.aff",
+                "**/*.dic",
+                "**/*.wrong",
+                "**/*.good",
+                "**/*.sug",
+                "**/charfilter/*.htm*",
+                "**/*LuceneResourcesWikiPage.html"
+            ]
+        }
     }
-}
 
-configure(project(":lucene:analysis:kuromoji")) {
-    rat {
-        srcExcludes += [
-            // whether rat detects this as binary or not is platform dependent?!
-            "**/bocchan.utf-8"
-        ]
+    configure(project(":lucene:analysis:kuromoji")) {
+        rat {
+            srcExcludes += [
+                // whether rat detects this as binary or not is platform dependent?!
+                "**/bocchan.utf-8"
+            ]
+        }
     }
-}
 
-configure(project(":lucene:analysis:opennlp")) {
-    rat {
-        excludes += [
-            "src/tools/test-model-data/*.txt",
-        ]
+    configure(project(":lucene:analysis:opennlp")) {
+        rat {
+            excludes += [
+                "src/tools/test-model-data/*.txt",
+            ]
+        }
     }
-}
 
-configure(project(":lucene:highlighter")) {
-    rat {
-        srcExcludes += [
-            "**/CambridgeMA.utf8"
-        ]
+    configure(project(":lucene:highlighter")) {
+        rat {
+            srcExcludes += [
+                "**/CambridgeMA.utf8"
+            ]
+        }
     }
-}
 
-configure(project(":lucene:suggest")) {
-    rat {
-        srcExcludes += [
-            "**/Top50KWiki.utf8",
-            "**/stop-snowball.txt"
-        ]
+    configure(project(":lucene:suggest")) {
+        rat {
+            srcExcludes += [
+                "**/Top50KWiki.utf8",
+                "**/stop-snowball.txt"
+            ]
+        }
     }
 }
 

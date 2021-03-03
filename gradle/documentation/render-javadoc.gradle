@@ -96,124 +96,125 @@ allprojects {
 }
 
 // Configure project-specific tweaks and to-dos.
-
-configure(project(":lucene:analysis:common")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing javadocs
-    javadocMissingLevel = "class"
+if (!skipLucene) {
+  configure(project(":lucene:analysis:common")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing javadocs
+      javadocMissingLevel = "class"
+    }
   }
-}
 
-configure([
-    project(":lucene:analysis:kuromoji"),
-    project(":lucene:analysis:nori"),
-    project(":lucene:analysis:opennlp"),
-    project(":lucene:analysis:smartcn"),
-    project(":lucene:benchmark"),
-    project(":lucene:codecs"),
-    project(":lucene:grouping"),
-    project(":lucene:highlighter"),
-    project(":lucene:luke"),
-    project(":lucene:monitor"),
-    project(":lucene:queries"),
-    project(":lucene:queryparser"),
-    project(":lucene:replicator"),
-    project(":lucene:spatial-extras"),
+  configure([
+      project(":lucene:analysis:kuromoji"),
+      project(":lucene:analysis:nori"),
+      project(":lucene:analysis:opennlp"),
+      project(":lucene:analysis:smartcn"),
+      project(":lucene:benchmark"),
+      project(":lucene:codecs"),
+      project(":lucene:grouping"),
+      project(":lucene:highlighter"),
+      project(":lucene:luke"),
+      project(":lucene:monitor"),
+      project(":lucene:queries"),
+      project(":lucene:queryparser"),
+      project(":lucene:replicator"),
+      project(":lucene:spatial-extras"),
   ]) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing javadocs
-    javadocMissingLevel = "class"
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing javadocs
+      javadocMissingLevel = "class"
+    }
   }
-}
 
-configure([
-    project(":lucene:analysis:icu"),
-    project(":lucene:analysis:morfologik"),
-    project(":lucene:analysis:phonetic"),
-    project(":lucene:analysis:stempel"),
-    project(":lucene:classification"),
-    project(":lucene:demo"),
-    project(":lucene:expressions"),
-    project(":lucene:facet"),
-    project(":lucene:join"),
-    project(":lucene:spatial3d"),
-    project(":lucene:suggest"),
+  configure([
+      project(":lucene:analysis:icu"),
+      project(":lucene:analysis:morfologik"),
+      project(":lucene:analysis:phonetic"),
+      project(":lucene:analysis:stempel"),
+      project(":lucene:classification"),
+      project(":lucene:demo"),
+      project(":lucene:expressions"),
+      project(":lucene:facet"),
+      project(":lucene:join"),
+      project(":lucene:spatial3d"),
+      project(":lucene:suggest"),
   ]) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing @param tags
-    javadocMissingLevel = "method"
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing @param tags
+      javadocMissingLevel = "method"
+    }
   }
-}
 
-configure(project(":lucene:backward-codecs")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing @param tags
-    javadocMissingLevel = "method"
+  configure(project(":lucene:backward-codecs")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing @param tags
+      javadocMissingLevel = "method"
+    }
   }
-}
 
-configure(project(":lucene:test-framework")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing javadocs
-    javadocMissingLevel = "class"
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.lucene.analysis",
-        "org.apache.lucene.analysis.standard",
-        "org.apache.lucene.codecs",
-        "org.apache.lucene.codecs.blockterms",
-        "org.apache.lucene.codecs.bloom",
-        "org.apache.lucene.codecs.compressing",
-        "org.apache.lucene.codecs.uniformsplit",
-        "org.apache.lucene.codecs.uniformsplit.sharedterms",
-        "org.apache.lucene.geo",
-        "org.apache.lucene.index",
-        "org.apache.lucene.search",
-        "org.apache.lucene.search.similarities",
-        "org.apache.lucene.search.spans",
-        "org.apache.lucene.store",
-        "org.apache.lucene.util",
-        "org.apache.lucene.util.automaton",
-        "org.apache.lucene.util.fst"
-    ]
+  configure(project(":lucene:test-framework")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing javadocs
+      javadocMissingLevel = "class"
+      // TODO: clean up split packages
+      javadocMissingIgnore = [
+          "org.apache.lucene.analysis",
+          "org.apache.lucene.analysis.standard",
+          "org.apache.lucene.codecs",
+          "org.apache.lucene.codecs.blockterms",
+          "org.apache.lucene.codecs.bloom",
+          "org.apache.lucene.codecs.compressing",
+          "org.apache.lucene.codecs.uniformsplit",
+          "org.apache.lucene.codecs.uniformsplit.sharedterms",
+          "org.apache.lucene.geo",
+          "org.apache.lucene.index",
+          "org.apache.lucene.search",
+          "org.apache.lucene.search.similarities",
+          "org.apache.lucene.search.spans",
+          "org.apache.lucene.store",
+          "org.apache.lucene.util",
+          "org.apache.lucene.util.automaton",
+          "org.apache.lucene.util.fst"
+      ]
+    }
   }
-}
 
-configure(project(":lucene:sandbox")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing javadocs
-    javadocMissingLevel = "class"
+  configure(project(":lucene:sandbox")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing javadocs
+      javadocMissingLevel = "class"
+    }
   }
-}
 
-configure(project(":lucene:misc")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing javadocs
-    javadocMissingLevel = "class"
+  configure(project(":lucene:misc")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing javadocs
+      javadocMissingLevel = "class"
+    }
   }
-}
 
-configure(project(":lucene:core")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing javadocs
-    javadocMissingLevel = "class"
-    // some packages are fixed already
-    javadocMissingMethod = [
-        "org.apache.lucene.util.automaton",
-        "org.apache.lucene.analysis.standard",
-        "org.apache.lucene.analysis.tokenattributes",
-        "org.apache.lucene.document",
-        "org.apache.lucene.search.similarities",
-        "org.apache.lucene.index",
-        "org.apache.lucene.codecs",
-        "org.apache.lucene.codecs.lucene50",
-        "org.apache.lucene.codecs.lucene60",
-        "org.apache.lucene.codecs.lucene80",
-        "org.apache.lucene.codecs.lucene84",
-        "org.apache.lucene.codecs.lucene86",
-        "org.apache.lucene.codecs.lucene87",
-        "org.apache.lucene.codecs.perfield"
-    ]
+  configure(project(":lucene:core")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing javadocs
+      javadocMissingLevel = "class"
+      // some packages are fixed already
+      javadocMissingMethod = [
+          "org.apache.lucene.util.automaton",
+          "org.apache.lucene.analysis.standard",
+          "org.apache.lucene.analysis.tokenattributes",
+          "org.apache.lucene.document",
+          "org.apache.lucene.search.similarities",
+          "org.apache.lucene.index",
+          "org.apache.lucene.codecs",
+          "org.apache.lucene.codecs.lucene50",
+          "org.apache.lucene.codecs.lucene60",
+          "org.apache.lucene.codecs.lucene80",
+          "org.apache.lucene.codecs.lucene84",
+          "org.apache.lucene.codecs.lucene86",
+          "org.apache.lucene.codecs.lucene87",
+          "org.apache.lucene.codecs.perfield"
+      ]
+    }
   }
 }
 
@@ -280,22 +281,24 @@ if (!skipSolr) {
 // (by removing all the packages which are part of lucene-core)
 // See: https://issues.apache.org/jira/browse/LUCENE-8738?focusedCommentId=16818106&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-16818106
 // LUCENE-9499: This workaround should be applied only to test-framework (we have no split package in other modules).
-configure(project(":lucene:test-framework")) {
-  project.tasks.withType(RenderJavadocTask) {
-    doLast {
-      Set luceneCorePackages = file("${project(':lucene:core').tasks[name].outputDir}/element-list").readLines('UTF-8').toSet();
-      File elementFile = file("${outputDir}/element-list");
-      List elements = elementFile.readLines('UTF-8');
-      elements.removeAll(luceneCorePackages)
-      elementFile.write(elements.join('\n').concat('\n'), 'UTF-8');
+if (!skipLucene) {
+  configure(project(":lucene:test-framework")) {
+    project.tasks.withType(RenderJavadocTask) {
+      doLast {
+        Set luceneCorePackages = file("${project(':lucene:core').tasks[name].outputDir}/element-list").readLines('UTF-8').toSet();
+        File elementFile = file("${outputDir}/element-list");
+        List elements = elementFile.readLines('UTF-8');
+        elements.removeAll(luceneCorePackages)
+        elementFile.write(elements.join('\n').concat('\n'), 'UTF-8');
+      }
     }
   }
-}
 
-configure(project(':lucene:demo')) {
-  project.tasks.withType(RenderJavadocTask) {
-    // For the demo, we link the example source in the javadocs, as it's ref'ed elsewhere
-    linksource = true
+  configure(project(':lucene:demo')) {
+    project.tasks.withType(RenderJavadocTask) {
+      // For the demo, we link the example source in the javadocs, as it's ref'ed elsewhere
+      linksource = true
+    }
   }
 }
 
@@ -354,7 +357,7 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = "${->project.luceneDocUrl}"
+  def luceneDocUrl = "${-> project.skipLucene ? null : project.luceneDocUrl }"
 
   // SOLR ONLY
   @Input
