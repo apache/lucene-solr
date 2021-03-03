@@ -25,6 +25,13 @@ import java.util.Optional;
 
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
+import org.mockito.Mockito;
+
+import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
   private static final String ANY_CHROOT = "/ANY_CHROOT";
@@ -70,7 +77,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
   @Test
   public void testByDefaultConfiguresClientToSendUpdatesOnlyToShardLeaders() throws IOException {
     try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
-      assertTrue(createdClient.isUpdatesToLeaders() == true);
+      assertTrue(createdClient.isUpdatesToLeaders());
     }
   }
 
@@ -79,6 +86,51 @@ public class CloudHttp2SolrClientBuilderTest extends SolrTestCase {
     try(CloudHttp2SolrClient createdClient = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT)).build()) {
       assertFalse(createdClient.isDirectUpdatesToLeadersOnly());
     }
+  }
+
+  @Test
+  public void testExternalClientAndInternalBuilderTogether() {
+    assumeWorkingMockito();
+    expectThrows(IllegalStateException.class, () -> new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withHttpClient(Mockito.mock(Http2SolrClient.class))
+            .withInternalClientBuilder(Mockito.mock(Http2SolrClient.Builder.class))
+            .build());
+    expectThrows(IllegalStateException.class, () -> new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withInternalClientBuilder(Mockito.mock(Http2SolrClient.Builder.class))
+            .withHttpClient(Mockito.mock(Http2SolrClient.class))
+            .build());
+  }
+
+  @Test
+  public void testProvideInternalBuilder() throws IOException {
+    assumeWorkingMockito();
+    Http2SolrClient http2Client = Mockito.mock(Http2SolrClient.class);
+    Http2SolrClient.Builder http2ClientBuilder = Mockito.mock(Http2SolrClient.Builder.class);
+    when(http2ClientBuilder.build()).thenReturn(http2Client);
+    CloudHttp2SolrClient.Builder clientBuilder = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withInternalClientBuilder(http2ClientBuilder);
+    verify(http2ClientBuilder, never()).build();
+    try (CloudHttp2SolrClient client = clientBuilder.build()) {
+      assertEquals(http2Client, client.getHttpClient());
+      verify(http2ClientBuilder, times(1)).build();
+      verify(http2Client, never()).close();
+    }
+    // it's internal, should be closed when closing CloudSolrClient
+    verify(http2Client, times(1)).close();
+  }
+
+  @Test
+  public void testProvideExternalClient() throws IOException {
+    assumeWorkingMockito();
+    Http2SolrClient http2Client = Mockito.mock(Http2SolrClient.class);
+    CloudHttp2SolrClient.Builder clientBuilder = new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
+            .withHttpClient(http2Client);
+    try (CloudHttp2SolrClient client = clientBuilder.build()) {
+      assertEquals(http2Client, client.getHttpClient());
+    }
+    // it's external, should be NOT closed when closing CloudSolrClient
+    verify(http2Client, never()).close();
+    http2Client.close();
   }
 
 }
