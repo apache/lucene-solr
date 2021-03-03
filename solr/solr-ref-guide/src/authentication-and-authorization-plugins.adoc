@@ -70,17 +70,23 @@ Here is a more detailed `security.json` example. In this, the Basic authenticati
 
 === In SolrCloud Mode
 
-While configuring Solr to use an authentication or authorization plugin, you will need to upload a `security.json` file to ZooKeeper. The following command writes the file as it uploads it - you could also upload a file that you have already created locally.
+While configuring Solr to use an authentication or authorization plugin, you will need to upload a `security.json` file to ZooKeeper.
 
-[source,bash]
+Create the file `security.json` with the contents:
+
+[source,json]
 ----
->server/scripts/cloud-scripts/zkcli.sh -zkhost localhost:2181 -cmd put /security.json
-  '{"authentication": {"class": "org.apache.solr.security.KerberosPlugin"}}'
+{"authentication": {"class": "org.apache.solr.security.KerberosPlugin"}}
 ----
 
 Note that this example defines the `KerberosPlugin` for authentication. You will want to modify this section as appropriate for the plugin you are using.
 
-This example also defines `security.json` on the command line, but you can also define a file locally and upload it to ZooKeeper.
+Then use the `bin/solr zk` command to upload the file:
+
+[source,bash]
+----
+>bin/solr zk cp ./security.json zk:security.json -z localhost:2181
+----
 
 [WARNING]
 ====
