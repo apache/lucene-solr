@@ -16,28 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr ships with two Command Line Interface (CLI) tools to allow you to interact directly with Solr configuration files stored in ZooKeeper.
-
-The `bin/solr zk` commands are higher level and you are probably already using this CLI.
-
-See the section <<solr-control-script-reference.adoc#zookeeper-operations,Zookeeper Operations>> of the Solr Control Script Reference for more information about using this higher level CLI.
-
-The lower level CLI is found in `server/scripts/cloud-scripts` and can be useful in certain situations.
-
-.Comparing common commands between the two tools
-[cols="1,1",width=50%,options="header"]
-|===
-|bin/solr zk |zkcli
-|upconfig |upconfig
-|downconfig |downconfig
-|cp |putfile
-|rm |clear
-|mv |
-|ls |ls
-|mkroot |makepath
-|===
-
-This page focuses on the lower level cloud scripts CLI.
+A ZooKeeper Command Line Interface (CLI) script is available to allow you to interact directly with Solr configuration files stored in ZooKeeper.
 
 While Solr's Administration UI includes pages dedicated to the state of your SolrCloud cluster, it does not allow you to download or modify related configuration files.
 
