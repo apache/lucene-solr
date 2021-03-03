@@ -1217,23 +1217,33 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     conf.setMergePolicy(NoMergePolicy.INSTANCE);
     IndexWriter writer = new IndexWriter(dir, conf);
 
-    // first segment with NDV
+    // first segment with ndv and ndv2 fields
     Document doc = new Document();
     doc.add(new StringField("id", "doc0", Store.NO));
-    doc.add(new StringField("ndv", "mock-value", Store.NO));
     doc.add(new NumericDocValuesField("ndv", 5));
+    doc.add(new StringField("ndv2", "10", Store.NO));
+    doc.add(new NumericDocValuesField("ndv2", 10));
     writer.addDocument(doc);
     writer.commit();
 
-    // second segment with no NDV
+    // second segment with no ndv and ndv2 fields
     doc = new Document();
     doc.add(new StringField("id", "doc1", Store.NO));
-    doc.add(new StringField("ndv", "mock-value", Store.NO));
     writer.addDocument(doc);
     writer.commit();
 
-    // update document in the second segment
+    // update docValues of "ndv" field in the second segment
+    // since global "ndv" field is docValues only field this is allowed
     writer.updateNumericDocValue(new Term("id", "doc1"), "ndv", 5L);
+
+    // update docValues of "ndv2" field in the second segment
+    // since global "ndv2" field is not docValues only field this NOT allowed
+    IllegalArgumentException exception =
+        expectThrows(
+            IllegalArgumentException.class,
+            () -> writer.updateNumericDocValue(new Term("id", "doc1"), "ndv2", 10L));
+    String expectedErrMsg = "can only update existing numeric docvalues only fields!";
+    assertEquals(expectedErrMsg, exception.getMessage());
     writer.close();
 
     DirectoryReader reader = DirectoryReader.open(dir);

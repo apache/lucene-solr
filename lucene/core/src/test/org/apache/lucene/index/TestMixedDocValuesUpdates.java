@@ -740,10 +740,14 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
       } else if (random().nextBoolean()) {
         writer.commit();
       }
-      IllegalArgumentException exception = expectThrows(IllegalArgumentException.class,
-        () -> writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField("id", 1))
-      );
-      assertEquals("cannot change field \"id\" from index options=DOCS to inconsistent index options=NONE", exception.getMessage());
+      IllegalArgumentException exception =
+          expectThrows(
+              IllegalArgumentException.class,
+              () ->
+                  writer.updateDocValues(new Term("id", "1"), new NumericDocValuesField("id", 1)));
+      assertEquals(
+          "cannot change field \"id\" from index options=DOCS to inconsistent index options=NONE",
+          exception.getMessage());
     }
   }
 }

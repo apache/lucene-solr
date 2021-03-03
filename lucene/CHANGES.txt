@@ -91,7 +91,8 @@ API Changes
 
 * LUCENE-9334:  Require consistency between data-structures on a per-field basis.
   A field across all documents within an index must be indexed with the same index
-  options and data-structures.
+  options and data-structures. As a consequence of this, doc values updates are
+  only applicable for fields that are indexed with doc values only.
 
 Improvements
 

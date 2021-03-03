@@ -673,9 +673,7 @@ final class IndexingChain implements Accountable {
     FieldInfo fi =
         fieldInfos.add(
             pf.fieldName,
-            // here using false for storeTermVector,
-            // as is set in TermVectorsConsumerPerField on successful indexing first termVector
-            false,
+            s.storeTermVector,
             s.omitNorms,
             false,
             s.indexOptions,
@@ -728,7 +726,7 @@ final class IndexingChain implements Accountable {
 
     // Invert indexed fields
     if (fieldType.indexOptions() != IndexOptions.NONE) {
-      if (pf.first) {
+      if (pf.first) { // first time we see this field in this doc
         pf.invert(docID, field, true);
         pf.first = false;
         indexedField = true;
@@ -816,7 +814,8 @@ final class IndexingChain implements Accountable {
   private static void updateDocFieldSchema(
       String fieldName, FieldSchema schema, IndexableFieldType fieldType) {
     if (fieldType.indexOptions() != IndexOptions.NONE) {
-      schema.setIndexOptions(fieldType.indexOptions(), fieldType.omitNorms());
+      schema.setIndexOptions(
+          fieldType.indexOptions(), fieldType.omitNorms(), fieldType.storeTermVectors());
     } else {
       // TODO: should this be checked when a fieldType is created?
       verifyUnIndexedFieldType(fieldName, fieldType);
@@ -1318,6 +1317,7 @@ final class IndexingChain implements Accountable {
     private int docID = 0;
     private final Map<String, String> attributes = new HashMap<>();
     private boolean omitNorms = false;
+    private boolean storeTermVector = false;
     private IndexOptions indexOptions = IndexOptions.NONE;
     private long dvGen = -1;
     private DocValuesType docValuesType = DocValuesType.NONE;
@@ -1345,14 +1345,16 @@ final class IndexingChain implements Accountable {
     }
 
     void setIndexOptions(
-        IndexOptions newIndexOptions, boolean newOmitNorms) {
+        IndexOptions newIndexOptions, boolean newOmitNorms, boolean newStoreTermVector) {
       if (indexOptions == IndexOptions.NONE) {
         indexOptions = newIndexOptions;
         omitNorms = newOmitNorms;
+        storeTermVector = newStoreTermVector;
       } else {
         assertSame(
             indexOptions == newIndexOptions
-                && omitNorms == newOmitNorms);
+                && omitNorms == newOmitNorms
+                && storeTermVector == newStoreTermVector);
       }
     }
 
@@ -1390,6 +1392,7 @@ final class IndexingChain implements Accountable {
     void reset(int doc) {
       docID = doc;
       omitNorms = false;
+      storeTermVector = false;
       indexOptions = IndexOptions.NONE;
       dvGen = -1;
       docValuesType = DocValuesType.NONE;
@@ -1404,6 +1407,7 @@ final class IndexingChain implements Accountable {
       assertSame(
           indexOptions == fi.getIndexOptions()
               && omitNorms == fi.omitsNorms()
+              && storeTermVector == fi.hasVectors()
               && docValuesType == fi.getDocValuesType()
               && dvGen == fi.getDocValuesGen()
               && pointDimensionCount == fi.getPointDimensionCount()

@@ -64,7 +64,9 @@ public class TestOmitNorms extends LuceneTestCase {
 
     IllegalArgumentException exception =
         expectThrows(IllegalArgumentException.class, () -> writer.addDocument(d2));
-    assertEquals("cannot change field \"f1\" from omitNorms=false to inconsistent omitNorms=true", exception.getMessage());
+    assertEquals(
+        "cannot change field \"f1\" from omitNorms=false to inconsistent omitNorms=true",
+        exception.getMessage());
 
     writer.forceMerge(1);
     writer.close();
@@ -171,5 +173,4 @@ public class TestOmitNorms extends LuceneTestCase {
     assertNoNrm(ram);
     ram.close();
   }
-
 }
