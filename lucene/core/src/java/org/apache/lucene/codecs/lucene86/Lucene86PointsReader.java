@@ -30,6 +30,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.bkd.BKDDefaultIndexInput;
 import org.apache.lucene.util.bkd.BKDReader;
 
 /** Reads point values previously written with {@link Lucene86PointsWriter} */
@@ -98,7 +99,7 @@ public class Lucene86PointsReader extends PointsReader implements Closeable {
             } else if (fieldNumber < 0) {
               throw new CorruptIndexException("Illegal field number: " + fieldNumber, metaIn);
             }
-            BKDReader reader = new BKDReader(metaIn, indexIn, dataIn);
+            BKDReader reader = new BKDReader(new BKDDefaultIndexInput(metaIn, indexIn, dataIn));
             readers.put(fieldNumber, reader);
           }
           indexLength = metaIn.readLong();

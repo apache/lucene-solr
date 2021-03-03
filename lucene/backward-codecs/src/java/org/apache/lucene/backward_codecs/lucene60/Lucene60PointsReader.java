@@ -29,6 +29,7 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.bkd.BKDDefaultIndexInput;
 import org.apache.lucene.util.bkd.BKDReader;
 
 /** Reads point values previously written with Lucene60PointsWriter */
@@ -101,7 +102,7 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
         int fieldNumber = ent.getKey();
         long fp = ent.getValue();
         dataIn.seek(fp);
-        BKDReader reader = new BKDReader(dataIn, dataIn, dataIn);
+        BKDReader reader = new BKDReader(new BKDDefaultIndexInput(dataIn, dataIn, dataIn));
         readers.put(fieldNumber, reader);
       }
 

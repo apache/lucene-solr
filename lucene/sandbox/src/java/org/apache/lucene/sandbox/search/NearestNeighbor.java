@@ -30,9 +30,8 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SloppyMath;
+import org.apache.lucene.util.bkd.BKDIndexInput.IndexTree;
 import org.apache.lucene.util.bkd.BKDReader;
-import org.apache.lucene.util.bkd.BKDReader.IndexTree;
-import org.apache.lucene.util.bkd.BKDReader.IntersectState;
 
 /**
  * KNN search on top of 2D lat/lon indexed points.
@@ -277,7 +276,7 @@ class NearestNeighbor {
     PriorityQueue<Cell> cellQueue = new PriorityQueue<>();
 
     NearestVisitor visitor = new NearestVisitor(hitQueue, n, pointLat, pointLon);
-    List<BKDReader.IntersectState> states = new ArrayList<>();
+    List<IndexTree> indexTrees = new ArrayList<>();
 
     // Add root cell for each reader into the queue:
     int bytesPerDim = -1;
@@ -296,12 +295,12 @@ class NearestNeighbor {
       }
       byte[] minPackedValue = reader.getMinPackedValue();
       byte[] maxPackedValue = reader.getMaxPackedValue();
-      IntersectState state = reader.getIntersectState(visitor);
-      states.add(state);
+      IndexTree indexTree = reader.getIndexTree();
+      indexTrees.add(indexTree);
 
       cellQueue.offer(
           new Cell(
-              state.index,
+              indexTree,
               i,
               reader.getMinPackedValue(),
               reader.getMaxPackedValue(),
@@ -314,14 +313,13 @@ class NearestNeighbor {
 
       // TODO: if we replace approxBestDistance with actualBestDistance, we can put an opto here to
       // break once this "best" cell is fully outside of the hitQueue bottom's radius:
-      BKDReader reader = readers.get(cell.readerIndex);
 
       if (cell.index.isLeafNode()) {
         // System.out.println("    leaf");
         // Leaf block: visit all points and possibly collect them:
         visitor.curDocBase = docBases.get(cell.readerIndex);
         visitor.curLiveDocs = liveDocs.get(cell.readerIndex);
-        reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex));
+        cell.index.visitDocValues(visitor);
         // System.out.println("    now " + hitQueue.size() + " hits");
       } else {
         // System.out.println("    non-leaf");

@@ -46,6 +46,10 @@ import org.apache.lucene.util.TestUtil;
 
 public class TestBKD extends LuceneTestCase {
 
+  protected BKDIndexInput getBKDIndexInput(IndexInput in) throws IOException {
+    return new BKDDefaultIndexInput(in, in, in);
+  }
+
   public void testBasicInts1D() throws Exception {
     try (Directory dir = getDirectory(100)) {
       BKDWriter w = new BKDWriter(100, dir, "tmp", new BKDConfig(1, 1, 4, 2), 1.0f, 100);
@@ -64,7 +68,7 @@ public class TestBKD extends LuceneTestCase {
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in);
+        BKDReader r = new BKDReader(getBKDIndexInput(in));
 
         // Simple 1D range query:
         final int queryMin = 42;
@@ -185,7 +189,7 @@ public class TestBKD extends LuceneTestCase {
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in);
+        BKDReader r = new BKDReader(getBKDIndexInput(in));
 
         byte[] minPackedValue = r.getMinPackedValue();
         byte[] maxPackedValue = r.getMaxPackedValue();
@@ -326,7 +330,7 @@ public class TestBKD extends LuceneTestCase {
 
       try (IndexInput in = dir.openInput("bkd", IOContext.DEFAULT)) {
         in.seek(indexFP);
-        BKDReader r = new BKDReader(in, in, in);
+        BKDReader r = new BKDReader(getBKDIndexInput(in));
 
         int iters = atLeast(100);
         for (int iter = 0; iter < iters; iter++) {
@@ -928,7 +932,7 @@ public class TestBKD extends LuceneTestCase {
         List<BKDReader> readers = new ArrayList<>();
         for (long fp : toMerge) {
           in.seek(fp);
-          readers.add(new BKDReader(in, in, in));
+          readers.add(new BKDReader(getBKDIndexInput(in)));
         }
         out = dir.createOutput("bkd2", IOContext.DEFAULT);
         Runnable finalizer = w.merge(out, out, out, docMaps, readers);
@@ -946,7 +950,7 @@ public class TestBKD extends LuceneTestCase {
       }
 
       in.seek(indexFP);
-      BKDReader r = new BKDReader(in, in, in);
+      BKDReader r = new BKDReader(getBKDIndexInput(in));
 
       int iters = atLeast(100);
       for (int iter = 0; iter < iters; iter++) {
@@ -1283,7 +1287,7 @@ public class TestBKD extends LuceneTestCase {
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, in, in);
+      BKDReader r = new BKDReader(getBKDIndexInput(in));
       r.intersect(
           new IntersectVisitor() {
             int lastDocID = -1;
@@ -1350,7 +1354,7 @@ public class TestBKD extends LuceneTestCase {
 
     IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
     pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
+    BKDReader points = new BKDReader(getBKDIndexInput(pointsIn));
 
     points.intersect(
         new IntersectVisitor() {
@@ -1411,7 +1415,7 @@ public class TestBKD extends LuceneTestCase {
 
       IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
       in.seek(fp);
-      BKDReader r = new BKDReader(in, in, in);
+      BKDReader r = new BKDReader(getBKDIndexInput(in));
       int[] count = new int[1];
       r.intersect(
           new IntersectVisitor() {
@@ -1478,7 +1482,7 @@ public class TestBKD extends LuceneTestCase {
 
     IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
     in.seek(fp);
-    BKDReader r = new BKDReader(in, in, in);
+    BKDReader r = new BKDReader(getBKDIndexInput(in));
     int[] count = new int[1];
     r.intersect(
         new IntersectVisitor() {
@@ -1547,7 +1551,7 @@ public class TestBKD extends LuceneTestCase {
 
     IndexInput pointsIn = dir.openInput("bkd", IOContext.DEFAULT);
     pointsIn.seek(indexFP);
-    BKDReader points = new BKDReader(pointsIn, pointsIn, pointsIn);
+    BKDReader points = new BKDReader(getBKDIndexInput(pointsIn));
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
     int numLeaves = numValues / maxPointsInLeafNode;

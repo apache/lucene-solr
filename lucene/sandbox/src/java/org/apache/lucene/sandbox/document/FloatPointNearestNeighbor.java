@@ -31,6 +31,7 @@ import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.bkd.BKDIndexInput.IndexTree;
 import org.apache.lucene.util.bkd.BKDReader;
 
 /**
@@ -44,12 +45,12 @@ public class FloatPointNearestNeighbor {
     final int readerIndex;
     final byte[] minPacked;
     final byte[] maxPacked;
-    final BKDReader.IndexTree index;
+    final IndexTree index;
     /** The closest possible distance^2 of all points in this cell */
     final double distanceSquared;
 
     Cell(
-        BKDReader.IndexTree index,
+        IndexTree index,
         int readerIndex,
         byte[] minPacked,
         byte[] maxPacked,
@@ -200,7 +201,7 @@ public class FloatPointNearestNeighbor {
     PriorityQueue<Cell> cellQueue = new PriorityQueue<>();
 
     NearestVisitor visitor = new NearestVisitor(hitQueue, topN, origin);
-    List<BKDReader.IntersectState> states = new ArrayList<>();
+    List<IndexTree> indexTrees = new ArrayList<>();
 
     // Add root cell for each reader into the queue:
     int bytesPerDim = -1;
@@ -219,12 +220,12 @@ public class FloatPointNearestNeighbor {
       }
       byte[] minPackedValue = reader.getMinPackedValue();
       byte[] maxPackedValue = reader.getMaxPackedValue();
-      BKDReader.IntersectState state = reader.getIntersectState(visitor);
-      states.add(state);
+      IndexTree indexTree = reader.getIndexTree();
+      indexTrees.add(indexTree);
 
       cellQueue.offer(
           new Cell(
-              state.index,
+              indexTree,
               i,
               reader.getMinPackedValue(),
               reader.getMaxPackedValue(),
@@ -239,13 +240,13 @@ public class FloatPointNearestNeighbor {
         break;
       }
 
-      BKDReader reader = readers.get(cell.readerIndex);
       if (cell.index.isLeafNode()) {
         // System.out.println("    leaf");
         // Leaf block: visit all points and possibly collect them:
         visitor.curDocBase = docBases.get(cell.readerIndex);
         visitor.curLiveDocs = liveDocs.get(cell.readerIndex);
-        reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex));
+        cell.index.visitDocValues(visitor);
+        // reader.visitLeafBlockValues(cell.index, states.get(cell.readerIndex));
 
         // assert hitQueue.peek().distanceSquared >= cell.distanceSquared;
         // System.out.println("    now " + hitQueue.size() + " hits");
@@ -257,7 +258,7 @@ public class FloatPointNearestNeighbor {
         int splitDim = cell.index.getSplitDim();
 
         // we must clone the index so that we we can recurse left and right "concurrently":
-        BKDReader.IndexTree newIndex = cell.index.clone();
+        IndexTree newIndex = cell.index.clone();
         byte[] splitPackedValue = cell.maxPacked.clone();
         System.arraycopy(
             splitValue.bytes,
