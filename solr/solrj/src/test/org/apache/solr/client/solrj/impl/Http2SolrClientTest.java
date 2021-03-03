@@ -673,7 +673,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       unIgnoreException("Error from server");
       assertTrue(DebugServlet.headers.size() > 0);
       String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull("Expecting authorization header but got: " + DebugServlet.headers, authorizationHeader);
+      assertNotNull("No authorization information in headers found. Headers: " + DebugServlet.headers, authorizationHeader);
       assertEquals("Basic " + Base64.byteArrayToBase64("foo:explicit".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
     }
   }
@@ -695,7 +695,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       }
       assertTrue(DebugServlet.headers.size() > 0);
       String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull("Expecting authorization header but got: " + DebugServlet.headers, authorizationHeader);
+      assertNotNull("No authorization information in headers found. Headers: " + DebugServlet.headers, authorizationHeader);
       assertEquals("Basic " + Base64.byteArrayToBase64("foo:bar".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
     } finally {
       System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
@@ -719,7 +719,7 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       unIgnoreException("Error from server");
       assertTrue(DebugServlet.headers.size() > 0);
       String authorizationHeader = DebugServlet.headers.get("authorization");
-      assertNotNull("Expecting authorization header but got: " + DebugServlet.headers, authorizationHeader);
+      assertNotNull("No authorization information in headers found. Headers: " + DebugServlet.headers, authorizationHeader);
       assertEquals("Basic " + Base64.byteArrayToBase64("foo3:per-request".getBytes(StandardCharsets.UTF_8)),  authorizationHeader);
     } finally {
       System.clearProperty("basicauth");

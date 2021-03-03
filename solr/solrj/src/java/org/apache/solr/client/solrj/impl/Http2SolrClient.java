@@ -888,7 +888,7 @@ public class Http2SolrClient extends SolrClient {
     private void httpClientBuilderSetup(Http2SolrClient client) {
       String factoryClassName = System.getProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
       if (factoryClassName != null) {
-        log.debug ("Using Builder Factory: {}", factoryClassName);
+        log.debug ("Using Http Builder Factory: {}", factoryClassName);
         HttpClientBuilderFactory factory;
         try {
           factory = (HttpClientBuilderFactory)Class.forName(factoryClassName).getConstructor().newInstance();
@@ -920,7 +920,7 @@ public class Http2SolrClient extends SolrClient {
     public Builder withBasicAuthCredentials(String user, String pass) {
       if (user != null || pass != null) {
         if (user == null || pass == null) {
-          throw new IllegalStateException("Invalid Authentication credentials. Either both or none must be provided");
+          throw new IllegalStateException("Invalid Authentication credentials. Either both username and password or none must be provided");
         }
       }
       this.basicAuthUser = user;
