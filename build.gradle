@@ -54,6 +54,8 @@ allprojects {
 }
 
 ext {
+  skipSolr = (System.getProperty("skip.solr") as Boolean)
+
   // "base" version is stripped of the qualifier. Compute it.
   baseVersion = {
     def m = (version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
@@ -112,6 +114,9 @@ apply from: file('gradle/generate-defaults.gradle')
 // Ant-compatibility layer: apply folder layout early so that
 // evaluation of other scripts doesn't need to be deferred.
 apply from: file('gradle/ant-compat/folder-layout.gradle')
+if (!skipSolr) {
+  apply from: file('gradle/ant-compat/solr.folder-layout.gradle') // SOLR ONLY
+}
 
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
@@ -139,7 +144,6 @@ apply from: file('gradle/validation/jar-checks.gradle')
 apply from: file('gradle/validation/git-status.gradle')
 apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
-apply from: file('gradle/validation/config-file-sanity.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
 apply from: file('gradle/validation/ecj-lint.gradle')
@@ -147,6 +151,10 @@ apply from: file('gradle/validation/gradlew-scripts-tweaked.gradle')
 apply from: file('gradle/validation/validate-log-calls.gradle')
 apply from: file('gradle/validation/check-broken-links.gradle')
 apply from: file('gradle/validation/spotless.gradle')
+
+if (!skipSolr) {
+  apply from: file('gradle/validation/solr.config-file-sanity.gradle') // SOLR ONLY
+}
 
 // Source or data regeneration tasks
 apply from: file('gradle/generation/jflex.gradle')
@@ -172,11 +180,14 @@ apply from: file('gradle/help.gradle')
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
 // here so that we can coexist with current ant build but they are indicative
 // of potential problems with the build conventions, dependencies, etc.
-apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
-apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
-apply from: file('gradle/ant-compat/artifact-naming.gradle')
+
+if (!skipSolr) {
+  apply from: file('gradle/ant-compat/force-versions.gradle') // SOLR ONLY
+  apply from: file('gradle/ant-compat/solr.test-classes-cross-deps.gradle') // SOLR ONLY
+  apply from: file('gradle/ant-compat/artifact-naming.gradle') // SOLR ONLY
+}
 
 apply from: file('gradle/documentation/documentation.gradle')
 apply from: file('gradle/documentation/changes-to-html.gradle')
@@ -184,9 +195,17 @@ apply from: file('gradle/documentation/markdown.gradle')
 apply from: file('gradle/documentation/render-javadoc.gradle')
 
 apply from: file('gradle/hacks/gradle-archives.gradle')
-apply from: file('gradle/hacks/findbugs.gradle')
+if (!skipSolr) {
+  apply from: file('gradle/hacks/solr.findbugs.gradle') // SOLR ONLY
+}
 apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
 
-apply from: file('gradle/solr/packaging.gradle')
-apply from: file('gradle/solr/solr-forbidden-apis.gradle')
+if (!skipSolr) {
+  apply from: file('gradle/solr/packaging.gradle') // SOLR ONLY
+  apply from: file('gradle/solr/solr-forbidden-apis.gradle') // SOLR ONLY
+}
+
+if (!skipSolr) {
+  apply from: file('gradle/ant-compat/solr.post-jar.gradle') // SOLR ONLY
+}

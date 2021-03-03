@@ -217,60 +217,62 @@ configure(project(":lucene:core")) {
   }
 }
 
-configure(project(":solr").allprojects) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: fix missing javadocs
-    javadocMissingLevel = "package"
+if (!skipSolr) {
+  configure(project(":solr").allprojects) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: fix missing javadocs
+      javadocMissingLevel = "package"
+    }
   }
-}
 
-configure(project(":solr:contrib:analysis-extras")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.solr.schema",
-        "org.apache.solr.update.processor"
-    ]
+  configure(project(":solr:contrib:analysis-extras")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: clean up split packages
+      javadocMissingIgnore = [
+          "org.apache.solr.schema",
+          "org.apache.solr.update.processor"
+      ]
+    }
   }
-}
 
-configure(project(":solr:contrib:analytics")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.solr.handler",
-        "org.apache.solr.handler.component",
-        "org.apache.solr.response"
-    ]
+  configure(project(":solr:contrib:analytics")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: clean up split packages
+      javadocMissingIgnore = [
+          "org.apache.solr.handler",
+          "org.apache.solr.handler.component",
+          "org.apache.solr.response"
+      ]
+    }
   }
-}
 
-configure(project(":solr:contrib:langid")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [ "org.apache.solr.update.processor" ]
+  configure(project(":solr:contrib:langid")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: clean up split packages
+      javadocMissingIgnore = ["org.apache.solr.update.processor"]
+    }
   }
-}
 
-configure(project(":solr:solrj")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [ "org.apache.solr.client.solrj.embedded" ]
+  configure(project(":solr:solrj")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: clean up split packages
+      javadocMissingIgnore = ["org.apache.solr.client.solrj.embedded"]
+    }
   }
-}
 
-configure(project(":solr:test-framework")) {
-  project.tasks.withType(RenderJavadocTask) {
-    // TODO: clean up split packages
-    javadocMissingIgnore = [
-        "org.apache.solr",
-        "org.apache.solr.analysis",
-        "org.apache.solr.cloud",
-        "org.apache.solr.core",
-        "org.apache.solr.handler.component",
-        "org.apache.solr.update.processor",
-        "org.apache.solr.util"
-    ]
+  configure(project(":solr:test-framework")) {
+    project.tasks.withType(RenderJavadocTask) {
+      // TODO: clean up split packages
+      javadocMissingIgnore = [
+          "org.apache.solr",
+          "org.apache.solr.analysis",
+          "org.apache.solr.cloud",
+          "org.apache.solr.core",
+          "org.apache.solr.handler.component",
+          "org.apache.solr.update.processor",
+          "org.apache.solr.util"
+      ]
+    }
   }
 }
 
@@ -298,12 +300,16 @@ configure(project(':lucene:demo')) {
 }
 
 // Disable Javadoc rendering for these projects.
-configure(subprojects.findAll { it.path in [
-    ':solr:solr-ref-guide',
-    ':solr:server',
-    ':solr:webapp']}) {
-  project.tasks.withType(RenderJavadocTask) {
-    enabled = false
+if (!skipSolr) {
+  configure(subprojects.findAll {
+    it.path in [
+        ':solr:solr-ref-guide',
+        ':solr:server',
+        ':solr:webapp']
+  }) {
+    project.tasks.withType(RenderJavadocTask) {
+      enabled = false
+    }
   }
 }
 
@@ -350,8 +356,9 @@ class RenderJavadocTask extends DefaultTask {
   @Input
   def luceneDocUrl = "${->project.luceneDocUrl}"
 
+  // SOLR ONLY
   @Input
-  def solrDocUrl = "${->project.solrDocUrl}"
+  def solrDocUrl = "${-> project.skipSolr ? null : project.solrDocUrl }"
 
   // default is to require full javadocs
   @Input
