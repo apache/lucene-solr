@@ -52,21 +52,20 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   protected volatile Integer leaderZkNodeParentVersion;
 
   public ShardLeaderElectionContextBase(final String coreNodeName, String electionPath, String leaderPath,
-                                        Replica props, CoreDescriptor cd,SolrZkClient zkClient) {
+                                        Replica props, CoreDescriptor cd, SolrZkClient zkClient) {
     super(coreNodeName, electionPath, leaderPath, props, cd);
     this.zkClient = zkClient;
   }
 
   @Override
   protected void cancelElection() throws InterruptedException, KeeperException {
-
+    if (!zkClient.isAlive()) return;
     if (log.isTraceEnabled()) log.trace("cancelElection");
     //    if (!zkClient.isConnected()) {
     //      log.info("Can't cancel, zkClient is not connected");
     //      return;
     //    }
     super.cancelElection();
-  //  if (zkClient.isAlive()) {
       try {
         if (leaderZkNodeParentVersion != null) {
           try {

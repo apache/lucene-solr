@@ -189,7 +189,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     super(loader, name, (InputSource) null, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
 
     getOverlay();//just in case it is not initialized
-    getRequestParams();
     initLibs(loader, isConfigsetTrusted);
     luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(loader.configXpathExpressions.luceneMatchVersionExp, ConfigXpathExpressions.luceneMatchVersionPath, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
@@ -992,7 +991,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   @Override
   public Properties getSubstituteProperties() {
-    Map<String, Object> p = getOverlay().getUserProps();
+    Map<String, Object> p = overlay.getUserProps();
     if (p == null || p.isEmpty()) return super.getSubstituteProperties();
     Properties result = new Properties(super.getSubstituteProperties());
     result.putAll(p);
@@ -1013,12 +1012,16 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   public RequestParams getRequestParams() {
+
     if (requestParams == null) {
-      return refreshRequestParams();
+      synchronized (this) {
+        if (requestParams == null) {
+          return refreshRequestParams();
+        }
+      }
     }
     return requestParams;
   }
-
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);

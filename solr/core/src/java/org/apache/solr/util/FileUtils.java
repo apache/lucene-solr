@@ -106,7 +106,7 @@ public class FileUtils {
     if (Files.exists(path) && Files.isSymbolicLink(path)) {
       Path real = path.toRealPath();
       if (Files.isDirectory(real)) return real;
-      throw new FileExistsException("Tried to create a directory at to an existing non-directory symlink: " + path.toString());
+      throw new FileExistsException("Tried to create a directory to an existing non-directory symlink: " + path.toString());
     }
     return Files.createDirectories(path);
   }

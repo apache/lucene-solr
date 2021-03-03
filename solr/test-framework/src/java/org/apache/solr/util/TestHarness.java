@@ -240,9 +240,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public SolrCore getCore() {
-    SolrCore core = container.getCore(coreName);
-
-    return core;
+    return container.getCore(coreName);
   }
 
   /** Gets the core with its reference count incremented.
@@ -266,15 +264,14 @@ public class TestHarness extends BaseTestHarness {
   public String update(String xml) {
     try {
       try (DirectSolrConnection connection = new DirectSolrConnection(getCore())) {
-        try (SolrCore core = getCore()) {
-          SolrRequestHandler handler = core.getRequestHandler("/update");
-          // prefer the handler mapped to /update, but use our generic backup handler
-          // if that lookup fails
-          if (handler == null) {
-            handler = updater;
-          }
-          return connection.request(handler, null, xml);
+
+        SolrRequestHandler handler = connection.getCore().getRequestHandler("/update");
+        // prefer the handler mapped to /update, but use our generic backup handler
+        // if that lookup fails
+        if (handler == null) {
+          handler = updater;
         }
+        return connection.request(handler, null, xml);
       }
     } catch (SolrException e) {
       throw e;

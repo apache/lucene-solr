@@ -282,6 +282,17 @@ public class SolrZkClient implements Closeable {
     }
   }
 
+  public void deleteAsync(final String path, final int version)
+      throws InterruptedException, KeeperException {
+    connManager.getKeeper().delete(path, version, (rc, path1, ctx) -> {
+      if (rc != 0) {
+        log.error("got zk error deleting path {} {}", path1, rc);
+        KeeperException e = KeeperException.create(KeeperException.Code.get(rc), path1);
+        log.error("Exception deleting znode path=" + path1, e);
+      }
+    }, "");
+  }
+
   /**
    * Wraps the watcher so that it doesn't fire off ZK's event queue. In order to guarantee that a watch object will
    * only be triggered once for a given notification, users need to wrap their watcher using this method before
@@ -400,14 +411,19 @@ public class SolrZkClient implements Closeable {
     }
   }
 
+  public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
+      throws KeeperException, InterruptedException {
+    return setData(path, data, version, retryOnConnLoss, true);
+  }
+
   /**
    * Returns node's state
    */
-  public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss)
+  public Stat setData(final String path, final byte data[], final int version, boolean retryOnConnLoss, boolean retryOnSessionExpiration)
       throws KeeperException, InterruptedException {
 
     if (retryOnConnLoss) {
-      return ZkCmdExecutor.retryOperation(zkCmdExecutor, new SetData(connManager.getKeeper(), path, data, version));
+      return ZkCmdExecutor.retryOperation(zkCmdExecutor, new SetData(connManager.getKeeper(), path, data, version), retryOnSessionExpiration);
     } else {
       return connManager.getKeeper().setData(path, data, version);
     }
@@ -1240,6 +1256,10 @@ public class SolrZkClient implements Closeable {
 
   public void setHigherLevelIsClosed(IsClosed isClosed) {
     this.higherLevelIsClosed = isClosed;
+  }
+
+  public IsClosed getHigherLevelIsClosed() {
+    return this.higherLevelIsClosed;
   }
 
   /**

@@ -130,6 +130,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
   protected void finish(final String chain) throws IOException {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain pc = core.getUpdateProcessingChain(chain);
+
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();

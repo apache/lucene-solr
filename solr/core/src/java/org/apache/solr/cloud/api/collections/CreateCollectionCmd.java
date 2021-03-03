@@ -217,7 +217,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
       OverseerCollectionMessageHandler.createConfNode(cloudManager.getDistribStateManager(), configName, collectionName);
 
-      DocCollection docCollection = buildDocCollection(cloudManager, ocmh.overseer.getZkStateWriter().getHighestId(), message, true);
+      long id = ocmh.overseer.getZkStateWriter().getHighestId();
+      DocCollection docCollection = buildDocCollection(cloudManager, id, message, true);
       clusterState = clusterState.copyWith(collectionName, docCollection);
       try {
         replicaPositions = buildReplicaPositions(cloudManager, message, shardNames);
@@ -280,6 +281,8 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.CREATE.toString());
 
         params.set(CoreAdminParams.NAME, coreName);
+        params.set(CoreAdminParams.PROPERTY_PREFIX + "id",  Long.toString(docCollection.getHighestReplicaId()));
+        params.set(CoreAdminParams.PROPERTY_PREFIX + "collId", Long.toString(id));
         params.set(COLL_CONF, configName);
         params.set(CoreAdminParams.COLLECTION, collectionName);
         params.set(CoreAdminParams.SHARD, replicaPosition.shard);
@@ -516,7 +519,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     }
   }
 
-  public static DocCollection buildDocCollection(SolrCloudManager cloudManager, long id, ZkNodeProps message, boolean withDocRouter) {
+  public static DocCollection buildDocCollection(SolrCloudManager cloudManager, Long id, ZkNodeProps message, boolean withDocRouter) {
     if (log.isDebugEnabled()) log.debug("buildDocCollection {}", message);
     String cName = message.getStr(NAME);
     DocRouter router = null;
@@ -530,7 +533,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
 
     Map<String,Slice> slices;
     if (messageShardsObj instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
-      slices = Slice.loadAllFromMap((Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider(), message.getStr(ZkStateReader.COLLECTION_PROP), (Map<String,Object>) messageShardsObj);
+      slices = Slice.loadAllFromMap((Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider(), message.getStr(ZkStateReader.COLLECTION_PROP), id, (Map<String,Object>) messageShardsObj);
     } else {
       List<String> shardNames = new ArrayList<>();
       if (withDocRouter) {
@@ -559,7 +562,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
         }
 
-        slices.put(sliceName, new Slice(sliceName, null, sliceProps, message.getStr(ZkStateReader.COLLECTION_PROP), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider()));
+        slices.put(sliceName, new Slice(sliceName, null, sliceProps, message.getStr(ZkStateReader.COLLECTION_PROP), id, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider()));
 
       }
     }

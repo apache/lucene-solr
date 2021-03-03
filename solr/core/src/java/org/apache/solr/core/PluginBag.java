@@ -286,7 +286,7 @@ public class PluginBag<T> implements AutoCloseable {
    */
   void init(Map<String, T> defaults, SolrCore solrCore, Collection<PluginInfo> infos) {
     core = solrCore;
-    try (ParWork parWork = new ParWork(this, false, true)) {
+    try (ParWork parWork = new ParWork(this, false, false)) {
       for (PluginInfo info : infos) {
         parWork.collect("", new CreateAndPutRequestHandler(info));
       }

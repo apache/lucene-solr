@@ -233,9 +233,7 @@ public class JsonLoader extends ContentStreamLoader {
             changeChildDoc(copy);
             docs.add(copy);
           } else {
-            AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
-            cmd.clear();
-            cmd.setReq(req);
+            AddUpdateCommand cmd = new AddUpdateCommand(req);
             cmd.commitWithin = commitWithin;
             cmd.overwrite = overwrite;
             cmd.solrDoc = buildDoc(copy);
@@ -488,9 +486,7 @@ public class JsonLoader extends ContentStreamLoader {
 
     void handleAdds() throws IOException {
       while (true) {
-        AddUpdateCommand cmd = AddUpdateCommand.THREAD_LOCAL_AddUpdateCommand.get();
-        cmd.clear();
-        cmd.setReq(req);
+        AddUpdateCommand cmd = new AddUpdateCommand(req);
         cmd.commitWithin = commitWithin;
         cmd.overwrite = overwrite;
 

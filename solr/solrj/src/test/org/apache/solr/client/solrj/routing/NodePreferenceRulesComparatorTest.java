@@ -73,8 +73,9 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node4",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ),"collection1","shard1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "TLOG",
+                "id", "-1"
+            ),"collection1",-1l, "shard1", nodeName -> "http://" + nodeName
         )
     );
 
@@ -122,8 +123,9 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node1",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "NRT"
-            ),"collection1","shard1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "NRT",
+                "id", "-1"
+            ),"collection1",-1l, "shard1", nodeName -> "http://" + nodeName
         )
     );
     replicas.add(
@@ -132,8 +134,9 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node2",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ),"collection1","shard1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "TLOG",
+                "id", "-1"
+            ),"collection1",-1l, "shard1", nodeName -> "http://" + nodeName
         )
     );
     replicas.add(
@@ -142,8 +145,9 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node3",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ),"collection1","shard1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "PULL",
+                "id", "-1"
+            ),"collection1",-1l, "shard1", nodeName -> "http://" + nodeName
         )
     );
     return replicas;

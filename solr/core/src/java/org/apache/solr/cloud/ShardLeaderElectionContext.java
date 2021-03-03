@@ -58,8 +58,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   public ShardLeaderElectionContext(LeaderElector leaderElector,
                                     final String shardId, final String collection,
-                                    final String coreNodeName, Replica props, ZkController zkController, CoreContainer cc, CoreDescriptor cd) {
-    super(coreNodeName, ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
+                                    Replica props, ZkController zkController, CoreContainer cc, CoreDescriptor cd) {
+    super(cd.getName(), ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection
                     + "/leader_elect/" + shardId,  ZkStateReader.getShardLeadersPath(
             collection, shardId), props, cd,
             zkController.getZkClient());
@@ -78,10 +78,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
   @Override
   public ElectionContext copy() {
-    return new ShardLeaderElectionContext(leaderElector, shardId, collection, id, leaderProps, zkController, cc, cd);
+    return new ShardLeaderElectionContext(leaderElector, shardId, collection, leaderProps, zkController, cc, cd);
   }
-
-
 
   public LeaderElector getLeaderElector() {
     return leaderElector;
@@ -270,7 +268,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         }
 
         ZkNodeProps zkNodes = ZkNodeProps
-            .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(), "id", leaderProps.getId(),
+            .fromKeyVals(StatePublisher.OPERATION, OverseerAction.STATE.toLower(), ZkStateReader.COLLECTION_PROP, collection, ZkStateReader.CORE_NAME_PROP, leaderProps.getName(),
+                "id", cd.getCoreProperties().get("collId") + "-" + cd.getCoreProperties().get("id"),
                 ZkStateReader.STATE_PROP, "leader");
 
         log.info("I am the new leader, publishing as active: " + leaderProps.getCoreUrl() + " " + shardId);

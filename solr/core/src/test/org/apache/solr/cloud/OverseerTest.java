@@ -68,6 +68,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyString;
@@ -229,7 +230,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
               ZkStateReader.SHARD_ID_PROP, shardId,
               ZkStateReader.COLLECTION_PROP, collection);
           LeaderElector elector = new LeaderElector(overseer.getZkController());
-          Replica replica = new Replica(coreName, props.getProperties(), collection, shardId, zkStateReader);
+          Replica replica = new Replica(coreName, props.getProperties(), collection, -1l, shardId, zkStateReader);
           ShardLeaderElectionContextBase ctx = new ShardLeaderElectionContextBase(
               nodeName + "_" + coreName, shardId, collection, replica, null,
               zkStateReader.getZkClient());
@@ -904,7 +905,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
           Replica leaderProps;
           try {
-            leaderProps = zkController.getLeaderProps(COLLECTION, "shard1", 1000, false);
+            leaderProps = zkController.getLeaderProps(COLLECTION, 1l, "shard1", 1000, false);
           } catch (SolrException e) {
             return false;
           } catch (InterruptedException e) {
@@ -1269,8 +1270,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
     when(zkController.getZkClient()).thenReturn(zkClient);
     when(zkController.getZkStateReader()).thenReturn(reader);
 
-    when(zkController.getLeaderProps(anyString(), anyString(), anyInt())).thenCallRealMethod();
-    when(zkController.getLeaderProps(anyString(), anyString(), anyInt(), anyBoolean())).thenCallRealMethod();
+    when(zkController.getLeaderProps(anyString(), anyLong(), anyString(), anyInt())).thenCallRealMethod();
+    when(zkController.getLeaderProps(anyString(),  anyLong(), anyString(), anyInt(), anyBoolean())).thenCallRealMethod();
     doReturn(getCloudDataProvider(zkAddress, zkClient, reader))
         .when(zkController).getSolrCloudManager();
     return zkController;

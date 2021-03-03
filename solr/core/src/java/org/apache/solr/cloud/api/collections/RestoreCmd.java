@@ -202,7 +202,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         Map<String, Slice> newSlices = new LinkedHashMap<>(backupSlices.size());
         for (Slice backupSlice : backupSlices) {
           newSlices.put(backupSlice.getName(),
-              new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties(),restoreCollectionName, ocmh.zkStateReader));
+              new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties(), restoreCollectionName, -1l, ocmh.zkStateReader)); // MRM TODO
         }
         propMap.put(OverseerCollectionMessageHandler.SHARDS_PROP, newSlices);
       }

@@ -126,6 +126,7 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     } catch (IOException ignore) {
       // no-op: not much we can do here
     }
+    IOUtils.closeQuietly(stateProvider);
   }
 
   private void propagateLBClientConfigOptions(Builder builder) {

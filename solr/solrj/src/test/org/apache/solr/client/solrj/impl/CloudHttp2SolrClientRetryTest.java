@@ -32,20 +32,26 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TestInjection;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // MRM TODO: ~ still a bit flakey when run in the suite, usually passes in the IDE though
 public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeCloudHttp2SolrClientRetryTest() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     configureCluster(NODE_COUNT)
         .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
   }
+
+  @AfterClass
+  public static void afterCloudHttp2SolrClientRetryTest() throws Exception {
+    shutdownCluster();
+  }
+
 
   @Test
   public void testRetry() throws Exception {
@@ -58,7 +64,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CommonParams.QT, "/admin/metrics");
-      String updateRequestCountKey = "solr.core.testRetry.shard1.replica_n1:UPDATE./update.requestTimes:count";
+      String updateRequestCountKey = "solr.core.testRetry.s1.testRetry_s1_r_n1:UPDATE./update.requestTimes:count";
       params.set("key", updateRequestCountKey);
       params.set("indent", "true");
 
@@ -66,7 +72,7 @@ public class CloudHttp2SolrClientRetryTest extends SolrCloudTestCase {
       NamedList<Object> namedList = response.getResponse();
       System.out.println(namedList);
       NamedList metrics = (NamedList) namedList.get("metrics");
-      assertEquals(1L, metrics.get(updateRequestCountKey));
+      assertEquals(metrics.toString(), 1L, metrics.get(updateRequestCountKey));
 
       TestInjection.failUpdateRequests = "true:100";
       try {

@@ -118,6 +118,7 @@ public class ClusterStateMockUtil {
     Map<String,Object> collectionProps = new HashMap<>();
     collectionProps.put(ZkStateReader.MAX_SHARDS_PER_NODE, Integer.toString(maxShardsPerNode));
     collectionProps.put(ZkStateReader.REPLICATION_FACTOR, Integer.toString(replicationFactor));
+    collectionProps.put("id",  -1l);
     Map<String,DocCollection> collectionStates = new HashMap<>();
     DocCollection docCollection = null;
     String collName = null;
@@ -137,7 +138,7 @@ public class ClusterStateMockUtil {
         case "s":
           replicas = new HashMap<>();
           if(collName == null) collName = "collection" + (collectionStates.size() + 1);
-          slice = new Slice(sliceName = "slice" + (slices.size() + 1), replicas, null,  collName, nodeName -> "http://" + nodeName);
+          slice = new Slice(sliceName = "slice" + (slices.size() + 1), replicas, null,  collName, -1l, nodeName -> "http://" + nodeName);
           slices.put(slice.getName(), slice);
 
           // hack alert: the DocCollection constructor copies over active slices to its active slice map in the constructor
@@ -172,11 +173,11 @@ public class ClusterStateMockUtil {
             replicaPropMap.put(Slice.LEADER, "true");
           }
           replicaPropMap.put("id", "1");
-          replica = new Replica(replicaName, replicaPropMap, collName, sliceName, nodeName -> "http://" + nodeName);
+          replica = new Replica(replicaName, replicaPropMap, collName, -1l, sliceName, nodeName -> "http://" + nodeName);
           replicas.put(replica.getName(), replica);
 
           // hack alert: re-create slice with existing data and new replicas map so that it updates its internal leader attribute
-          slice = new Slice(slice.getName(), replicas, null, collName, nodeName -> "http://" + nodeName);
+          slice = new Slice(slice.getName(), replicas, null, collName,-1l, nodeName -> "http://" + nodeName);
           slices.put(slice.getName(), slice);
           // we don't need to update doc collection again because we aren't adding a new slice or changing its state
           break;

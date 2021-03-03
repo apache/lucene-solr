@@ -307,7 +307,7 @@ public class ZkMaintenanceUtils {
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
         String filename = file.getFileName().toString();
         if (filenameExclusions != null && filenameExclusions.matcher(filename).matches()) {
-          log.info("uploadToZK skipping '{}' due to filenameExclusions '{}'", filename, filenameExclusions);
+          log.debug("uploadToZK skipping '{}' due to filenameExclusions '{}'", filename, filenameExclusions);
           return FileVisitResult.CONTINUE;
         }
         String zkNode = createZkNodeName(zkPath, rootPath, file);

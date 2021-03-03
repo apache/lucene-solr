@@ -57,6 +57,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final static long DATE_START_TIME_RANDOM_TEST = 1499797224224L;
+  public static final long[] EMPTY_LONGS = {};
   private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
   
   @BeforeClass
@@ -508,22 +509,29 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     assertInterval("test_l_dv", "[0,2]", new long[]{0, 1, 2}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
     assertInterval("test_l_dv", "[0,2)", new long[]{0, 1}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
 
-    assertInterval("test_l_dv", "(0,*)", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, 0, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{});
-    assertInterval("test_l_dv", "(*,2)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1}, new long[]{}, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "(*,*)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{}, new long[]{});
+    assertInterval("test_l_dv", "(0,*)", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, 0, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS);
+    assertInterval("test_l_dv", "(*,2)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1}, EMPTY_LONGS, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "(*,*)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, EMPTY_LONGS,
+        EMPTY_LONGS);
 
-    assertInterval("test_l_dv", "[0,*]", new long[]{0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{});
-    assertInterval("test_l_dv", "[*,2]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2}, new long[]{}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "[*,*]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{}, new long[]{});
+    assertInterval("test_l_dv", "[0,*]", new long[]{0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS);
+    assertInterval("test_l_dv", "[*,2]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2}, EMPTY_LONGS, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "[*,*]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 0, 1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, EMPTY_LONGS,
+        EMPTY_LONGS);
 
-    assertInterval("test_l_dv", "(2,2)", new long[]{}, new long[]{2, 1, 0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "(0,0)", new long[]{}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "(2,2)", EMPTY_LONGS, new long[]{2, 1, 0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{3, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "(0,0)", EMPTY_LONGS, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});
 
-    assertInterval("test_l_dv", "(0," + Long.MAX_VALUE + "]", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{});
+    assertInterval("test_l_dv", "(0," + Long.MAX_VALUE + "]", new long[]{1, 2, 3, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS);
     assertInterval("test_l_dv", "(0," + Long.MAX_VALUE + ")", new long[]{1, 2, 3, Integer.MAX_VALUE}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{Long.MAX_VALUE});
     assertInterval("test_l_dv", "(" + Long.MIN_VALUE + ",0)", new long[]{-1, Integer.MIN_VALUE}, new long[]{Long.MIN_VALUE}, new long[]{1, 2, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + ",0)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{}, new long[]{1, 2, Integer.MAX_VALUE, Long.MAX_VALUE});
-    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + "," + Long.MAX_VALUE + "]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 1, 2, Integer.MAX_VALUE, Long.MAX_VALUE}, new long[]{}, new long[]{});
+    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + ",0)", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE},
+        EMPTY_LONGS, new long[]{1, 2, Integer.MAX_VALUE, Long.MAX_VALUE});
+    assertInterval("test_l_dv", "[" + Long.MIN_VALUE + "," + Long.MAX_VALUE + "]", new long[]{-1, Integer.MIN_VALUE, Long.MIN_VALUE, 1, 2, Integer.MAX_VALUE, Long.MAX_VALUE},
+        EMPTY_LONGS, EMPTY_LONGS);
     assertInterval("test_l_dv", "(" + Long.MIN_VALUE + "," + Long.MAX_VALUE + ")", new long[]{-1, Integer.MIN_VALUE, 1, 2, Integer.MAX_VALUE}, new long[]{Long.MIN_VALUE}, new long[]{Long.MAX_VALUE});
 
     assertInterval("test_l_dv", "( 0,2)", new long[]{1}, new long[]{0, -1, Integer.MIN_VALUE, Long.MIN_VALUE}, new long[]{2, 3, Integer.MAX_VALUE, Long.MAX_VALUE});

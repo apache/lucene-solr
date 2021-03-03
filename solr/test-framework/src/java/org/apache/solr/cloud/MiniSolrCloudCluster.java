@@ -331,6 +331,7 @@ public class MiniSolrCloudCluster {
       solrZkClient = zkStateReader.getZkClient();
 
     } catch (Throwable t) {
+      shutdown();
       ParWork.propagateInterrupt(t);
       throw new SolrException(ErrorCode.SERVER_ERROR, t);
     }

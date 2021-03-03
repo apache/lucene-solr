@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import org.apache.lucene.document.Field;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,8 +41,14 @@ public class PreAnalyzedUpdateProcessorTest extends UpdateProcessorTestBase {
   };
   
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforePreAnalyzedUpdateProcessorTest() throws Exception {
+    useFactory(null);
     initCore("solrconfig-update-processor-chains.xml", "schema12.xml");
+  }
+
+  @AfterClass
+  public static void afterPreAnalyzedUpdateProcessorTest() throws Exception {
+    deleteCore();
   }
 
   @Test

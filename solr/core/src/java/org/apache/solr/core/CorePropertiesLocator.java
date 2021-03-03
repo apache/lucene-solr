@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -82,7 +83,8 @@ public class CorePropertiesLocator implements CoresLocator {
   private void writePropertiesFile(CoreDescriptor cd, Path propfile)  {
     Properties p = buildCoreProperties(cd);
     try {
-      FileUtils.createDirectories(propfile.getParent()); // Handling for symlinks.
+      File parentDir = propfile.getParent().toFile();
+      parentDir.mkdirs();
       try (Writer os = new OutputStreamWriter(Files.newOutputStream(propfile), StandardCharsets.UTF_8)) {
         p.store(os, "Written by CorePropertiesLocator");
       }

@@ -44,6 +44,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.ExternalPaths;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -57,7 +58,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
   private static final String CONFIG_NAME = "techproducts_config";
 
   @BeforeClass
-  public static void setupCluster() throws Exception {
+  public static void beforeJsonRequestApiTest() throws Exception {
     configureCluster(1)
         .addConfig(CONFIG_NAME, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
         .configure();
@@ -73,6 +74,11 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     UpdateResponse updateResponse = up.process(cluster.getSolrClient());
     assertEquals(0, updateResponse.getStatus());
+  }
+
+  @AfterClass
+  public static void afterJsonRequestApiTest() throws Exception {
+    shutdownCluster();
   }
 
   @Test

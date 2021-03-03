@@ -21,7 +21,6 @@ import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.schema.FieldTypeXmlAdapter;
 import org.slf4j.Logger;
 import org.w3c.dom.Document;

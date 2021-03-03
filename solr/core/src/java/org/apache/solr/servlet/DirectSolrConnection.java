@@ -151,4 +151,8 @@ public class DirectSolrConnection implements Closeable
   public void close() {
     core.close();
   }
+
+  public SolrCore getCore() {
+    return core;
+  }
 }

@@ -129,6 +129,14 @@ public class ZkNodeProps implements JSONWriter.Writable {
   /**
    * Get a string property value.
    */
+  public Long getLong(String key, Long def) {
+    Object o = propMap.get(key);
+    return o == null ? def : Long.valueOf(o.toString());
+  }
+
+  /**
+   * Get a string property value.
+   */
   public String getStr(String key,String def) {
     Object o = propMap.get(key);
     return o == null ? def : o.toString();

@@ -68,7 +68,7 @@ public class ClusterStateMutator {
 
     Map<String, Slice> slices;
     if (messageShardsObj instanceof Map) { // we are being explicitly told the slice data (e.g. coll restore)
-      slices = Slice.loadAllFromMap((Replica.NodeNameToBaseUrl) dataProvider.getClusterStateProvider(), cName, (Map<String, Object>)messageShardsObj);
+      slices = Slice.loadAllFromMap((Replica.NodeNameToBaseUrl) dataProvider.getClusterStateProvider(), cName,-1l,  (Map<String, Object>)messageShardsObj);
     } else {
       List<String> shardNames = new ArrayList<>();
 
@@ -89,7 +89,7 @@ public class ClusterStateMutator {
         Map<String, Object> sliceProps = new LinkedHashMap<>(1);
         sliceProps.put(Slice.RANGE, ranges == null ? null : ranges.get(i));
 
-        slices.put(sliceName, new Slice(sliceName, null, sliceProps,cName, (Replica.NodeNameToBaseUrl) dataProvider.getClusterStateProvider()));
+        slices.put(sliceName, new Slice(sliceName, null, sliceProps,cName, -1l, (Replica.NodeNameToBaseUrl) dataProvider.getClusterStateProvider()));
       }
     }
 
@@ -108,7 +108,7 @@ public class ClusterStateMutator {
     if (message.getStr("fromApi") == null) {
       collectionProps.put("autoCreated", "true");
     }
-
+    collectionProps.put("id", 1l);
     DocCollection newCollection = new DocCollection(cName,
             slices, collectionProps, router, 0, false);
 

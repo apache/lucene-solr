@@ -32,7 +32,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
@@ -799,9 +798,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.indexReaderFactory = indexReaderFactory;
     }
 
-    // protect via synchronized(SolrCore.class)
-    private static Set<String> dirs = new HashSet<>();
-
     /**
      * Returns <code>true</code> iff the index in the named directory is
      * currently locked.
@@ -820,38 +816,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     }
 
-    void initIndex ( boolean passOnPreviousState, boolean reload) throws IOException {
+    void initIndex (boolean passOnPreviousState, boolean reload) throws IOException {
       String indexDir = getNewIndexDir();
       boolean indexExists = getDirectoryFactory().exists(indexDir);
-      boolean firstTime;
-      synchronized (SolrCore.class) {
-        firstTime = dirs.add(getDirectoryFactory().normalize(indexDir));
-      }
 
       initIndexReaderFactory();
-
-      if (indexExists && firstTime && !passOnPreviousState) {
-        final String lockType = getSolrConfig().indexConfig.lockType;
-        Directory dir = directoryFactory.get(indexDir, DirContext.DEFAULT, lockType);
-        try {
-          if (isWriterLocked(dir)) {
-            log.error("{}Solr index directory '{}' is locked (lockType={}).  Throwing exception.", logid, indexDir, lockType);
-            throw new LockObtainFailedException("Index dir '" + indexDir + "' of core '" + name + "' is already locked. "
-                + "The most likely cause is another Solr server (or another solr core in this server) "
-                + "also configured to use this directory; other possible causes may be specific to lockType: " + lockType);
-          }
-        } finally {
-          directoryFactory.release(dir);
-        }
-      }
-
-      if (!indexExists) {
-        try {
-          NativeFSLockFactory.clearLockHeld(Paths.get(indexDir));
-        } catch (org.apache.lucene.store.AlreadyClosedException e) {
-
-        }
-      }
 
       // Create the index if it doesn't exist.
       if (!indexExists) {
@@ -866,7 +835,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
       }
 
-      cleanupOldIndexDirectories(reload);
+      ParWork.getRootSharedExecutor().submit(()->{
+        cleanupOldIndexDirectories(reload);
+      });
     }
 
     public static <T > T createInstance(String className, Class < T > cast, String msg, SolrCore core, ResourceLoader resourceLoader) {
@@ -1724,13 +1695,29 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       if (count == 0) {
         try {
-          coreContainer.solrCoreExecutor.submit(() -> {
+          if (!coreContainer.solrCoreExecutor.isShutdown()) {
+            coreContainer.solrCoreExecutor.submit(() -> {
+              try {
+                doClose();
+              } catch (Exception e1) {
+                log.error("Exception closing SolrCore", e1);
+              }
+            });
+          } else if (!ParWork.getRootSharedExecutor().isShutdown()) {
+            ParWork.getRootSharedExecutor().submit(() -> {
+              try {
+                doClose();
+              } catch (Exception e1) {
+                log.error("Exception closing SolrCore", e1);
+              }
+            });
+          } else {
             try {
               doClose();
             } catch (Exception e1) {
               log.error("Exception closing SolrCore", e1);
             }
-          });
+          }
         } catch (RejectedExecutionException e) {
           try {
             doClose();
@@ -3422,7 +3409,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     }
 
-    public static Runnable getConfListener (SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader){
+    public static Runnable getConfListener(SolrCore core, ZkSolrResourceLoader zkSolrResourceLoader){
       final String coreName = core.getName();
       final CoreContainer cc = core.getCoreContainer();
       final String overlayPath = zkSolrResourceLoader.getConfigSetZkPath() + "/" + ConfigOverlay.RESOURCE_NAME;

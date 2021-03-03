@@ -1344,7 +1344,7 @@ public class ZkController implements Closeable, Runnable {
           break;
         }
         try {
-          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 3000, true);
+          Replica leader = zkStateReader.getLeaderRetry(collection, shardId, 6000, true);
           leaderName = leader.getName();
 
         } catch (TimeoutException timeoutException) {
@@ -1492,9 +1492,9 @@ public class ZkController implements Closeable, Runnable {
    * Get leader props directly from zk nodes.
    * @throws SessionExpiredException on zk session expiration.
    */
-  public Replica getLeaderProps(final String collection,
+  public Replica getLeaderProps(final String collection, long id,
                                         final String slice, int timeoutms) throws InterruptedException, SessionExpiredException {
-    return getLeaderProps(collection, slice, timeoutms, true);
+    return getLeaderProps(collection, id, slice, timeoutms, true);
   }
 
   /**
@@ -1503,7 +1503,7 @@ public class ZkController implements Closeable, Runnable {
    * @return leader props
    * @throws SessionExpiredException on zk session expiration.
    */
-  public Replica getLeaderProps(final String collection, final String slice, int timeoutms, boolean failImmediatelyOnExpiration)
+  public Replica getLeaderProps(final String collection, long id, final String slice, int timeoutms, boolean failImmediatelyOnExpiration)
       throws InterruptedException, SessionExpiredException { // MRM TODO: look at failImmediatelyOnExpiration
 
     try {
@@ -1512,7 +1512,7 @@ public class ZkController implements Closeable, Runnable {
       byte[] data = zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
       ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
 
-      return new Replica(leaderProps.getNodeProps().getStr(CORE_NAME_PROP), leaderProps.getNodeProps().getProperties(), collection, slice, zkStateReader);
+      return new Replica(leaderProps.getNodeProps().getStr(CORE_NAME_PROP), leaderProps.getNodeProps().getProperties(), collection, id, slice, zkStateReader);
 
     } catch (Exception e) {
       SolrZkClient.checkInterrupted(e);
@@ -1533,9 +1533,20 @@ public class ZkController implements Closeable, Runnable {
     // we only put a subset of props into the leader node
     props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());
     props.put(CORE_NAME_PROP, cd.getName());
-    props.put("id", cd.getCoreProperty("id", "-1"));
 
-    Replica replica = new Replica(cd.getName(), props, collection, shardId, zkStateReader);
+    String id = cd.getCoreProperty("id", "-1");
+    if (id.equals("-1")) {
+      throw new IllegalArgumentException("no id found props=" + cd.getCoreProperties());
+    }
+
+    props.put("id", id);
+
+    String collId = cd.getCoreProperty("collId", "-1");
+    if (collId.equals("-1")) {
+      throw new IllegalArgumentException("no id found props=" + cd.getCoreProperties());
+    }
+
+    Replica replica = new Replica(cd.getName(), props, collection, Long.parseLong(collId), shardId, zkStateReader);
     LeaderElector leaderElector;
 
     if (isDcCalled() || isClosed) {
@@ -1551,7 +1562,7 @@ public class ZkController implements Closeable, Runnable {
     }
 
     ElectionContext context = new ShardLeaderElectionContext(leaderElector, shardId,
-        collection, cd.getName(), replica, this, cc, cd);
+        collection, replica, this, cc, cd);
 
 
     leaderElector.setup(context);
@@ -1600,7 +1611,7 @@ public class ZkController implements Closeable, Runnable {
 
       props.put(Overseer.QUEUE_OPERATION, "state");
       props.put(ZkStateReader.STATE_PROP, state.toString());
-      props.put("id", cd.getCoreProperty("id", "-1"));
+      props.put("id", cd.getCoreProperty("collId", "-1") + "-" + cd.getCoreProperty("id", "-1"));
       //  props.put(ZkStateReader.ROLES_PROP, cd.getCloudDescriptor().getRoles());
       props.put(CORE_NAME_PROP, cd.getName());
       //  props.put(ZkStateReader.NODE_NAME_PROP, getNodeName());

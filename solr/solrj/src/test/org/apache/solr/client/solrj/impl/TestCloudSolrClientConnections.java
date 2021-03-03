@@ -16,76 +16,29 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestUtil;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.junit.Ignore;
 import org.junit.Test;
 
-@Ignore // MRM TODO: debug
 public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
-
-  @Test
-  public void testCloudClientCanConnectAfterClusterComesUp() throws Exception {
-
-    // Start by creating a cluster with no jetties
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
-    try {
-
-      CloudHttp2SolrClient client = cluster.getSolrClient();
-      CollectionAdminRequest.List listReq = new CollectionAdminRequest.List();
-
-      SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> client.request(listReq));
-      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-
-      cluster.startJettySolrRunner();
-      cluster.waitForAllNodes(30);
-      client.connect(20, TimeUnit.SECONDS);
-
-      // should work now!
-      client.request(listReq);
-
-    }
-    finally {
-      cluster.shutdown();
-    }
-
-  }
 
   @Test
   public void testCloudClientUploads() throws Exception {
 
-    Path configPath = SolrTestUtil.getFile("solrj").toPath().resolve("solr/configsets/configset-2/conf");
-
-    MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
-    try {
-      CloudHttp2SolrClient client = cluster.getSolrClient();
-      SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
-        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
-      });
-      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-
-      cluster.startJettySolrRunner();
-      cluster.waitForAllNodes(30);
-      client.connect(20, TimeUnit.SECONDS);
-
-      ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
-
-      ZkConfigManager configManager = new ZkConfigManager(client.getZkStateReader().getZkClient());
-      assertTrue("List of uploaded configs does not contain 'testconfig'", configManager.listConfigs().contains("testconfig"));
-
-    } finally {
-      cluster.shutdown();
-    }
+    SolrException e = LuceneTestCase.expectThrows(SolrException.class, () -> {
+      MiniSolrCloudCluster cluster = null;
+      try  {
+         cluster = new MiniSolrCloudCluster(0, SolrTestUtil.createTempDir(), buildJettyConfig("/solr"));
+      } finally {
+        if (cluster != null) cluster.shutdown();
+      }
+    });
+    assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
   }
 
   @Test
@@ -98,7 +51,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     try {
       final ZkClientClusterStateProvider zkHost_provider
         = new ZkClientClusterStateProvider(cluster.getSolrClient().getZkStateReader());
-      
+
       checkAndCloseProvider(zkHost_provider);
       
       final ZkStateReader reusedZkReader = new ZkStateReader(cluster.getZkClient());
@@ -137,7 +90,7 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     LuceneTestCase.expectThrows(AlreadyClosedException.class, () -> {
         Object ignored = provider.getClusterState();
       });
-    
+
   }
 
 }

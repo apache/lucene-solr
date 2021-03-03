@@ -51,7 +51,6 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void initClass() throws Exception {
-    assertNull("no system props clash please", System.getProperty("managed.schema.mutable"));
     System.setProperty("managed.schema.mutable", ""+
       random().nextBoolean()
     );

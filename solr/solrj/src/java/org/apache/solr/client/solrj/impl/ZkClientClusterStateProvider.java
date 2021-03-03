@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import org.apache.solr.common.AlreadyClosedException;
-import org.apache.solr.common.ParWork;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -32,7 +31,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,7 +39,7 @@ import java.util.Set;
 public class ZkClientClusterStateProvider implements ClusterStateProvider, Replica.NodeNameToBaseUrl {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  ZkStateReader zkStateReader;
+  volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = false;
   final String zkHost;
   int zkConnectTimeout = 15000;
@@ -154,16 +152,24 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
   }
 
   @Override
-  public synchronized void connect() {
+  public void connect() {
     if (isClosed) {
       throw new AlreadyClosedException();
     }
     if (this.zkStateReader == null) {
-      this.zkStateReader = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
-      this.zkStateReader.createClusterStateWatchersAndUpdate();
+      boolean createWatchers = false;
+      synchronized (this) {
+        if (this.zkStateReader == null) {
+          this.zkStateReader = new ZkStateReader(zkHost, zkClientTimeout, zkConnectTimeout);
+          createWatchers = true;
+        }
+      }
+      if (createWatchers)  {
+        this.zkStateReader.createClusterStateWatchersAndUpdate();
+      }
     }
   }
-  
+
   public ZkStateReader getZkStateReader() {
     if (isClosed) {
       throw new AlreadyClosedException();
@@ -180,7 +186,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider, Repli
   }
   
   @Override
-  public synchronized void close() throws IOException {
+  public void close() throws IOException {
     if (isClosed) {
       return;
     }

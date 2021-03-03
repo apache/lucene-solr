@@ -82,8 +82,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node4",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ), "c1","s1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "TLOG",
+                "id", "-1"
+            ), "c1",-1l, "s1", nodeName -> "http://" + nodeName
         )
     );
 
@@ -94,8 +95,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node5",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ), "c1","s1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "PULL",
+                "id", "-1"
+            ), "c1",-1l, "s1", nodeName -> "http://" + nodeName
         )
     );
 
@@ -133,8 +135,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node1",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "NRT"
-            ),"c1","s1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "NRT",
+                "id", "-1"
+            ),"c1",-1l, "s1", nodeName -> "http://" + nodeName
         )
     );
     replicas.add(
@@ -143,8 +146,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node2",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "TLOG"
-            ),"c1","s1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "TLOG",
+                "id", "-1"
+            ),"c1",-1l, "s1", nodeName -> "http://" + nodeName
         )
     );
     replicas.add(
@@ -153,8 +157,9 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
             map(
                 ZkStateReader.NODE_NAME_PROP, "node3",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
-                ZkStateReader.REPLICA_TYPE, "PULL"
-            ),"c1","s1", nodeName -> "http://" + nodeName
+                ZkStateReader.REPLICA_TYPE, "PULL",
+                "id", "-1"
+            ),"c1",-1l, "s1", nodeName -> "http://" + nodeName
         )
     );
     return replicas;

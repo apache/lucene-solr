@@ -46,6 +46,7 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
     log.info("I have been requested to sync up my shard");
 
     String cname = params.required().get(CoreAdminParams.CORE);
+    String id = params.required().get("id");
 
     ZkController zkController = it.handler.coreContainer.getZkController();
     if (zkController == null) {
@@ -61,10 +62,11 @@ class RequestSyncShardOp implements CoreAdminHandler.CoreAdminOp {
         Map<String, Object> props = new HashMap<>();
         props.put(ZkStateReader.CORE_NAME_PROP, cname);
         props.put(ZkStateReader.NODE_NAME_PROP, zkController.getNodeName());
+        props.put("id", core.getCoreDescriptor().getCoreProperty("id", "-1"));
         String collection = params.get("collection");
         String shard = params.get("shard");
 
-        Replica replica = new Replica(cname, props, collection, shard, zkController.zkStateReader);
+        Replica replica = new Replica(cname, props, collection, Long.parseLong(core.getCoreDescriptor().getCoreProperty("collId", "-1")), shard, zkController.zkStateReader);
 
         boolean success = syncStrategy.sync(zkController, core, replica, true).isSuccess();
         // solrcloud_debug

@@ -70,12 +70,12 @@ public class SliceMutator {
       coreName = Assign.buildSolrCoreName(collection, slice, Replica.Type.get(message.getStr(ZkStateReader.REPLICA_TYPE)));
     }
     Replica replica = new Replica(coreName,
-        Utils.makeNonNullMap("id", String.valueOf(collection.getHighestReplicaId() + 1), "collId", String.valueOf(collection.getId()),
+        Utils.makeNonNullMap("id", String.valueOf(collection.getHighestReplicaId()),
                     ZkStateReader.STATE_PROP, Replica.State.DOWN,
                     ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP),
                     ZkStateReader.NUM_SHARDS_PROP, message.getStr(ZkStateReader.NUM_SHARDS_PROP),
                     "shards", message.getStr("shards"),
-                    ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, slice, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
+                    ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, collection.getId(), slice, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
 
     if (log.isDebugEnabled()) {
       log.debug("addReplica(ClusterState, ZkNodeProps) - end");
@@ -105,7 +105,7 @@ public class SliceMutator {
       if (replica != null) {
         Map<String, Replica> newReplicas = slice.getReplicasCopy();
         newReplicas.remove(coreName);
-        slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collection, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
+        slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collection, coll.getId(), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
       }
       newSlices.put(slice.getName(), slice);
     }
@@ -158,7 +158,7 @@ public class SliceMutator {
 
     Map<String, Object> newSliceProps = slice.shallowCopy();
     newSliceProps.put(Slice.REPLICAS, newReplicas);
-    slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
+    slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName, coll.getId(), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
 
     clusterState = clusterState.copyWith(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
     if (log.isDebugEnabled()) log.debug("setShardLeader {} {}", sliceName, clusterState);
@@ -195,7 +195,7 @@ public class SliceMutator {
       props.put(ZkStateReader.STATE_PROP, message.getStr(key));
       // we need to use epoch time so that it's comparable across Overseer restarts
       props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
-      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
+      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName, collection.getId(), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
 
       slicesCopy.put(slice.getName(), newSlice);
     }
@@ -246,7 +246,7 @@ public class SliceMutator {
     Map<String, Object> props = slice.shallowCopy();
     props.put("routingRules", routingRules);
 
-    Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
+    Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName, collection.getId(), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
     return clusterState.copyWith( collectionName,
         CollectionMutator.updateSlice(collectionName, collection, newSlice));
   }
@@ -275,7 +275,7 @@ public class SliceMutator {
       routingRules.remove(routeKeyStr); // no rules left
       Map<String, Object> props = slice.shallowCopy();
       props.put("routingRules", routingRules);
-      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName, (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
+      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props, collectionName, collection.getId(), (Replica.NodeNameToBaseUrl) cloudManager.getClusterStateProvider());
 
       if (log.isDebugEnabled()) {
         log.debug("removeRoutingRule(ClusterState, ZkNodeProps) - end");
@@ -305,7 +305,7 @@ public class SliceMutator {
     } else {
       replicasCopy.put(replica.getName(), replica);
     }
-    Slice newSlice = new Slice(slice.getName(), replicasCopy, slice.getProperties(), collection.getName(), nodeNameToBaseUrl);
+    Slice newSlice = new Slice(slice.getName(), replicasCopy, slice.getProperties(), collection.getName(), collection.getId(),  nodeNameToBaseUrl);
     if (log.isDebugEnabled()) {
       log.debug("Old Slice: {}", slice);
       log.debug("New Slice: {}", newSlice);

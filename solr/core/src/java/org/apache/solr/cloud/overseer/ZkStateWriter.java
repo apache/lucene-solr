@@ -80,7 +80,7 @@ public class ZkStateWriter {
 
   protected final ReentrantLock ourLock = new ReentrantLock();
 
-  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 10), new TimeSource.NanoTimeSource(){
+  private final ActionThrottle throttle = new ActionThrottle("ZkStateWriter", Integer.getInteger("solr.zkstatewriter.throttle", 100), new TimeSource.NanoTimeSource(){
     public void sleep(long ms) throws InterruptedException {
       ourLock.newCondition().await(ms, TimeUnit.MILLISECONDS);
     }
@@ -475,12 +475,12 @@ public class ZkStateWriter {
               lastVersion.set(version);
               if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", version, data.length, collection);
 
-              reader.getZkClient().setData(path, data, version, true);
+              reader.getZkClient().setData(path, data, version, true, false);
               trackVersions.put(collection.getName(), version + 1);
               if (dirtyStructure.contains(collection.getName())) {
                 if (log.isDebugEnabled()) log.debug("structure change in {}", collection.getName());
                 dirtyStructure.remove(collection.getName());
-                reader.getZkClient().setData(pathSCN, null, -1, true);
+                reader.getZkClient().setData(pathSCN, null, -1, true, false);
 
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
@@ -488,7 +488,7 @@ public class ZkStateWriter {
                  String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
                  if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
                   try {
-                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
+                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
                   } catch (KeeperException.NoNodeException e) {
                     if (log.isDebugEnabled()) log.debug("No node found for " + stateUpdatesPath, e);
                     lastVersion.set(-1);
@@ -510,7 +510,7 @@ public class ZkStateWriter {
               //failedUpdates.put(collection.getName(), collection);
              // Stat estate = reader.getZkClient().exists(path, null);
               trackVersions.remove(collection.getName());
-              Stat stat = reader.getZkClient().exists(path, null);
+              Stat stat = reader.getZkClient().exists(path, null, false, false);
               log.info("Tried to update state.json ({}) with bad version {} \n {}", collection, version, stat != null ? stat.getVersion() : "null");
 
               if (!overseer.isClosed() && stat != null) {
@@ -567,7 +567,7 @@ public class ZkStateWriter {
     if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
     dirtyState.remove(collection.getName());
     try {
-      reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true);
+      reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
     } catch (KeeperException.NoNodeException e) {
       if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
       lastVersion.set(-1);
@@ -630,8 +630,8 @@ public class ZkStateWriter {
       stateUpdates.remove(collection);
       cs.getCollectionStates().remove(collection);
       trackVersions.remove(collection);
-      reader.getZkClient().delete(ZkStateReader.getCollectionSCNPath(collection), -1);
-      reader.getZkClient().delete(ZkStateReader.getCollectionStateUpdatesPath(collection), -1);
+      reader.getZkClient().deleteAsync(ZkStateReader.getCollectionSCNPath(collection), -1);
+      reader.getZkClient().deleteAsync(ZkStateReader.getCollectionStateUpdatesPath(collection), -1);
     } catch (Exception e) {
       log.error("", e);
     } finally {

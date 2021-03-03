@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -306,7 +308,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     public final String fieldTypeName;
     public final Collection<String> valueClassNames;
     public final Collection<CopyFieldDef> copyFieldDefs;
-    public volatile List<Class<?>> valueClasses;
+    public final Set<Class<?>> valueClasses = ConcurrentHashMap.newKeySet(32);
     public final Boolean isDefault;
 
     public TypeMapping(String fieldTypeName, Collection<String> valueClassNames, boolean isDefault,
@@ -324,15 +326,14 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       if (null == schema.getFieldTypeByName(fieldTypeName, schema.getFieldTypes())) {
         throw new SolrException(SERVER_ERROR, "fieldType '" + fieldTypeName + "' not found in the schema");
       }
-      valueClasses = Collections.synchronizedList(new ArrayList<>());
-      synchronized (valueClasses) {
-        for (String valueClassName : valueClassNames) {
-          try {
-            valueClasses.add(loader.loadClass(valueClassName));
-          } catch (ClassNotFoundException e) {
-            throw new SolrException(SERVER_ERROR, "valueClass '" + valueClassName + "' not found for fieldType '" + fieldTypeName + "'");
-          }
+
+      for (String valueClassName : valueClassNames) {
+        try {
+          valueClasses.add(loader.loadClass(valueClassName));
+        } catch (ClassNotFoundException e) {
+          throw new SolrException(SERVER_ERROR, "valueClass '" + valueClassName + "' not found for fieldType '" + fieldTypeName + "'");
         }
+
       }
     }
 
@@ -561,11 +562,9 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     private TypeMapping mapValueClassesToFieldType(List<SolrInputField> fields) {
       NEXT_TYPE_MAPPING: for (TypeMapping typeMapping : typeMappings) {
         for (SolrInputField field : fields) {
-          //We do a assert and a null check because even after SOLR-12710 is addressed
-          //older SolrJ versions can send null values causing an NPE
-          assert field.getValues() != null;
           if (field.getValues() != null) {
-            NEXT_FIELD_VALUE: for (Object fieldValue : field.getValues()) {
+            NEXT_FIELD_VALUE:
+            for (Object fieldValue : field.getValues()) {
               for (Class<?> valueClass : typeMapping.valueClasses) {
                 if (valueClass.isInstance(fieldValue)) {
                   continue NEXT_FIELD_VALUE;

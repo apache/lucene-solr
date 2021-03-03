@@ -685,7 +685,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
           ClusterState completeCs = finalClusterState;
           for (Map<String,Object> replica : replicas) {
              completeCs = checkAndCompleteShardSplit(completeCs, coll, replica.get("name").toString(), replica.get("shard").toString(),
-                new Replica(replica.get("name").toString(), replica, replica.get("collection").toString(), replica.get("shard").toString(), ocmh.zkStateReader));
+                new Replica(replica.get("name").toString(), replica, replica.get("collection").toString(), -1l, replica.get("shard").toString(), ocmh.zkStateReader));
           }
 
           AddReplicaCmd.Response response = new AddReplicaCmd.Response();

@@ -352,6 +352,10 @@ public class CoreDescriptor {
     return coreProperties.getProperty(prop, defVal);
   }
 
+  public Properties getCoreProperties() {
+    return coreProperties;
+  }
+
   /**
    * Returns all substitutable properties defined on this CoreDescriptor
    * @return all substitutable properties defined on this CoreDescriptor

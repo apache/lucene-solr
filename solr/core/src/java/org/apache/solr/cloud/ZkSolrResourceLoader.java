@@ -21,7 +21,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.commons.collections.map.ReferenceMap;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.solr.common.ParWork;
 import org.apache.solr.common.SolrException;
@@ -44,6 +47,15 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrZkClient zkClient;
+
+  private static Map CONFIG_CACHE = new ReferenceMap(ReferenceMap.HARD, ReferenceMap.WEAK) {
+    {
+      purgeBeforeRead();
+      purgeBeforeWrite();
+    }
+  };
+
+  private static Map<String, ZkSolrResourceLoader.ZkByteArrayInputStream> SYNC_CONFIG_CACHE = Collections.synchronizedMap(CONFIG_CACHE);
 
   /**
    * <p>
@@ -72,6 +84,22 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
 
     try {
 
+      boolean usedCached = false;
+
+      ZkSolrResourceLoader.ZkByteArrayInputStream cached = SYNC_CONFIG_CACHE.get(file);
+      if (cached != null) {
+        Stat checkStat;
+        try {
+          checkStat = zkClient.exists(file, null);
+        } catch (KeeperException | InterruptedException e) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+        }
+        if (checkStat != null && checkStat.getVersion() <= cached.getStat().getVersion()) {
+          return new ZkSolrResourceLoader.ZkByteArrayInputStream(cached.getBytes(), cached.getStat());
+        }
+
+      }
+
       Stat stat = new Stat();
       byte[] bytes = zkClient.getData(file, null, stat);
       if (bytes == null) {
@@ -80,7 +108,9 @@ public class ZkSolrResourceLoader extends SolrResourceLoader implements Resource
                 + "' in classpath or '" + configSetZkPath + "', cwd="
                 + System.getProperty("user.dir"));
       }
-      return new ZkByteArrayInputStream(bytes, stat);
+      ZkByteArrayInputStream is = new ZkByteArrayInputStream(bytes, stat);
+      SYNC_CONFIG_CACHE.put(file, (ZkSolrResourceLoader.ZkByteArrayInputStream) is);
+      return is;
     } catch (InterruptedException e) {
       ParWork.propagateInterrupt(e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted while opening " + file, e);

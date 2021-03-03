@@ -29,19 +29,26 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TestInjection;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.AwaitsFix(bugUrl = "flakey test on getting metrics")
 public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    System.setProperty("solr.enableMetrics", "true");
     configureCluster(NODE_COUNT)
         .addConfig("conf", SolrTestUtil.getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
   }
+
+  @AfterClass
+  public static void afterCloudSolrClientRetryTest() throws Exception {
+    shutdownCluster();
+  }
+
 
   @Test
   public void testRetry() throws Exception {
@@ -54,7 +61,7 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/admin/metrics");
-    String updateRequestCountKey = "solr.core.testRetry.shard1.replica_n1:UPDATE./update.requestTimes:count";
+    String updateRequestCountKey = "solr.core.testRetry.s1.testRetry_s1_r_n1:UPDATE./update.requestTimes:count";
     params.set("key", updateRequestCountKey);
     params.set("indent", "true");
 

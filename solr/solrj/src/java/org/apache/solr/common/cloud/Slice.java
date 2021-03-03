@@ -41,7 +41,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   private final HashMap<String,Replica> idToReplica;
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
-  public static Map<String,Slice> loadAllFromMap(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, String collection, Map<String, Object> genericSlices) {
+  public static Map<String,Slice> loadAllFromMap(Replica.NodeNameToBaseUrl nodeNameToBaseUrl, String collection, long id, Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
     Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
     for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
@@ -50,7 +50,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       if (val instanceof Slice) {
         result.put(name, (Slice) val);
       } else if (val instanceof Map) {
-        result.put(name, new Slice(name, null, (Map<String, Object>) val, collection, nodeNameToBaseUrl));
+        result.put(name, new Slice(name, null, (Map<String, Object>) val, collection, id, nodeNameToBaseUrl));
       }
     }
     return result;
@@ -63,6 +63,10 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   public Replica getReplicaById(String id) {
     return idToReplica.get(id);
+  }
+
+  public Map<String,Replica> getReplicaByIds() {
+    return idToReplica;
   }
 
   /** The slice's state. */
@@ -134,7 +138,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
    * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.
    * @param props  The properties of the slice - a shallow copy will always be made.
    */
-  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection, Replica.NodeNameToBaseUrl nodeNameToBaseUrl) {
+  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection, Long collectionId, Replica.NodeNameToBaseUrl nodeNameToBaseUrl) {
     super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<>(props));
     this.name = name;
     this.collection = collection;
@@ -169,7 +173,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     replicationFactor = null;  // future
 
     // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
-    this.replicas = replicas != null ? replicas : makeReplicas(collection,name, (Map<String,Object>)propMap.get(REPLICAS));
+    this.replicas = replicas != null ? replicas : makeReplicas(collection, collectionId, name, (Map<String,Object>)propMap.get(REPLICAS));
 
     this.idToReplica = new HashMap<>(this.replicas.size());
 
@@ -203,7 +207,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
 
-  private Map<String,Replica> makeReplicas(String collection, String slice,Map<String,Object> genericReplicas) {
+  private Map<String,Replica> makeReplicas(String collection, Long collectionId, String slice,Map<String,Object> genericReplicas) {
     if (genericReplicas == null) return new HashMap<>(1);
     Map<String,Replica> result = new LinkedHashMap<>(genericReplicas.size());
     for (Map.Entry<String,Object> entry : genericReplicas.entrySet()) {
@@ -213,7 +217,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       if (val instanceof Replica) {
         r = (Replica)val;
       } else {
-        r = new Replica(name, (Map<String,Object>)val, collection, slice, nodeNameToBaseUrl);
+        r = new Replica(name, (Map<String,Object>)val, collection, collectionId, slice, nodeNameToBaseUrl);
       }
       result.put(name, r);
     }

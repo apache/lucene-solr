@@ -25,16 +25,6 @@ import org.apache.solr.common.util.Utils;
 
 public class Replica extends ZkNodeProps {
 
-  Long id;
-  final Long collId;
-
-  public String getId() {
-    if (collId == null) {
-      return null;
-    }
-    return collId + "-" + id.toString();
-  }
-
   /**
    * The replica's state. In general, if the node the replica is hosted on is
    * not under {@code /live_nodes} in ZK, the replica's state should be
@@ -156,7 +146,7 @@ public class Replica extends ZkNodeProps {
   public final String slice, collection;
   private final String baseUrl;
 
-  public Replica(String name, Map<String,Object> propMap, String collection, String slice, NodeNameToBaseUrl nodeNameToBaseUrl) {
+  public Replica(String name, Map<String,Object> propMap, String collection, Long collectionId, String slice, NodeNameToBaseUrl nodeNameToBaseUrl) {
     super(propMap);
     this.collection = collection;
     this.slice = slice;
@@ -165,11 +155,13 @@ public class Replica extends ZkNodeProps {
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
 
     String rawId = (String) propMap.get("id");
-    if (rawId != null && !rawId.contains(":")) {
+
+    if (!rawId.contains(":")) {
       this.id = Long.parseLong(rawId);
     }
 
-    this.collId = propMap.containsKey("collId") ? Long.parseLong((String) propMap.get("collId")) : null;
+    this.collectionId = collectionId;
+
     this.baseUrl = nodeNameToBaseUrl.getBaseUrlForNodeName(this.nodeName);
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
     Objects.requireNonNull(this.collection, "'collection' must not be null");
@@ -177,10 +169,10 @@ public class Replica extends ZkNodeProps {
     Objects.requireNonNull(this.name, "'name' must not be null");
     Objects.requireNonNull(this.nodeName, "'node_name' must not be null");
     Objects.requireNonNull(this.type, "'type' must not be null");
-    // Objects.requireNonNull(this.id, "'id' must not be null");
+    Objects.requireNonNull(this.collectionId, "'collectionId' must not be null");
 
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
-      if (propMap.get(ZkStateReader.STATE_PROP) instanceof  State) {
+      if (propMap.get(ZkStateReader.STATE_PROP) instanceof State) {
         this.state = (State) propMap.get(ZkStateReader.STATE_PROP);
       } else {
         this.state = State.getState((String) propMap.get(ZkStateReader.STATE_PROP));
@@ -191,14 +183,16 @@ public class Replica extends ZkNodeProps {
     }
   }
 
-  public Replica(String name, Map<String,Object> propMap, String collection, String slice, String baseUrl) {
+  public Replica(String name, Map<String,Object> propMap, String collection, Long collectionId, String slice, String baseUrl) {
     super(propMap);
     this.collection = collection;
     this.slice = slice;
     this.name = name;
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
     this.id = propMap.containsKey("id") ? Long.parseLong((String) propMap.get("id")) : null;
-    this.collId = propMap.containsKey("collId") ? Long.parseLong((String) propMap.get("collId")) : null;
+    this.collectionId = collectionId;
+
+    Objects.requireNonNull(this.collectionId, "'collectionId' must not be null");
     this.baseUrl =  baseUrl;
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
@@ -212,6 +206,18 @@ public class Replica extends ZkNodeProps {
       propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
   }
+
+  Long id;
+  final Long collectionId;
+
+  public String getId() {
+    return collectionId + "-" + id.toString();
+  }
+
+  public Long getCollectionId() {
+    return collectionId;
+  }
+
 
   public String getCollection(){
     return collection;
@@ -288,6 +294,6 @@ public class Replica extends ZkNodeProps {
 
   @Override
   public String toString() {
-    return name + ':' + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)
+    return name + "(" + getId() + ")" + ':' + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)
   }
 }

@@ -313,7 +313,7 @@ public class SolrTestCase extends Assert {
       Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     }
     // based on randomized SSL config, set SocketFactoryRegistryProvider appropriately
-    if(isSSLMode()) {
+    if (isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty("urlScheme", "https");
     } else {
@@ -322,7 +322,6 @@ public class SolrTestCase extends Assert {
 
     System.setProperty("useCompoundFile", "true");
     System.setProperty("solr.tests.maxBufferedDocs", "1000");
-
 
     System.setProperty("pkiHandlerPrivateKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/priv_key512_pkcs8.pem").toExternalForm());
     System.setProperty("pkiHandlerPublicKeyPath", SolrTestCaseJ4.class.getClassLoader().getResource("cryptokeys/pub_key512.der").toExternalForm());
@@ -367,12 +366,14 @@ public class SolrTestCase extends Assert {
     System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
     System.setProperty("solr.tests.numeric.dv", "true");
 
+    System.setProperty("managed.schema.mutable", "false");
+
     if (!LuceneTestCase.TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;
       Lucene86Codec codec = new Lucene86Codec(Lucene50StoredFieldsFormat.Mode.BEST_SPEED);
       //Codec.setDefault(codec);
       disableReuseOfCryptoKeys();
-     // System.setProperty("solr.zkstatewriter.throttle", "30");
+      System.setProperty("solr.zkstatewriter.throttle", "0");
       System.setProperty("solr.stateworkqueue.throttle", "0");
 
       System.setProperty("zkReaderGetLeaderRetryTimeoutMs", "800");
@@ -723,13 +724,13 @@ public class SolrTestCase extends Assert {
       thread.interrupt();
       return true;
     }
-    if (thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-") || thread.getName().contains("ParWork-") || thread.getName().contains("Core-")
-        || thread.getName().contains("ProcessThread(")) {
+    if ((thread.getName().contains(ParWork.ROOT_EXEC_NAME + "-") || thread.getName().contains("ParWork-") || thread.getName().contains("Core-")
+        || thread.getName().contains("ProcessThread(") && thread.getState() != Thread.State.TERMINATED)) {
       log.warn("interrupt on {}", thread.getName());
       thread.interrupt();
       return true;
     }
-    if (interruptThreadListContains(nameContains, thread.getName())) {
+    if (interruptThreadListContains(nameContains, thread.getName()) && thread.getState() != Thread.State.TERMINATED) {
       log.warn("interrupt on {}", thread.getName());
       thread.interrupt();
       return true;

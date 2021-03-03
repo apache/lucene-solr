@@ -42,7 +42,6 @@ import com.github.tomakehurst.wiremock.http.HttpServer;
 import com.github.tomakehurst.wiremock.http.HttpServerFactory;
 import com.github.tomakehurst.wiremock.http.StubRequestHandler;
 import com.github.tomakehurst.wiremock.jetty94.Jetty94HttpServer;
-import com.google.common.base.Optional;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
@@ -188,6 +187,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       "        \"state\":\"active\",\n" +
       "        \"type\":\"NRT\",\n" +
       "        \"force_set_state\":\"false\",\n" +
+      "        \"id\":\"1\",\n" +
       "        \"leader\":\"true\"}}},\n" +
       "    \"s1\":{\n" +
       "      \"range\":\"80000000-ffffffff\",\n" +
@@ -199,6 +199,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
       "        \"state\":\"active\",\n" +
       "        \"type\":\"NRT\",\n" +
       "        \"force_set_state\":\"false\",\n" +
+      "        \"id\":\"2\",\n" +
       "        \"leader\":\"true\"}}}}";
 
   protected static DocCollection buildMockDocCollection() throws IOException {
@@ -215,7 +216,7 @@ public abstract class BaseSolrClientWireMockTest extends SolrTestCase {
     props.put("nrtReplicas", "1");
     props.put("id", 1l);
 
-    return new DocCollection(BUILT_IN_MOCK_COLLECTION, Slice.loadAllFromMap(nodeName -> mockSolr.baseUrl() + "/solr", BUILT_IN_MOCK_COLLECTION, slices), props, DocRouter.DEFAULT);
+    return new DocCollection(BUILT_IN_MOCK_COLLECTION, Slice.loadAllFromMap(nodeName -> mockSolr.baseUrl() + "/solr", BUILT_IN_MOCK_COLLECTION, -1l, slices), props, DocRouter.DEFAULT);
   }
 
   protected static void updateReplicaBaseUrl(JsonNode json, String shard, String replica, String baseUrl) {

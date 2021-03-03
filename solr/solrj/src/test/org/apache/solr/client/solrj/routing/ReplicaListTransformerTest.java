@@ -156,8 +156,9 @@ public class ReplicaListTransformerTest extends SolrTestCase {
         final Map<String, Object> propMap = new HashMap<String, Object>();
         propMap.put(ZkStateReader.NODE_NAME_PROP, url);
         propMap.put("type", "NRT");
+        propMap.put("id", String.valueOf(ii));
         // a skeleton replica, good enough for this test's purposes
-        final Replica replica = new Replica(name, propMap, "c1", "s1", new Replica.NodeNameToBaseUrl() {
+        final Replica replica = new Replica(name, propMap, "c1",-1l,"s1", new Replica.NodeNameToBaseUrl() {
           @Override
           public String getBaseUrlForNodeName(String nodeName) {
             return Utils.getBaseUrlForNodeName(name, "http");

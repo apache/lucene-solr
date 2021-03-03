@@ -268,8 +268,7 @@ public class CloudHttp2SolrClient extends BaseCloudSolrClient {
     }
 
     public Builder(ZkStateReader zkStateReader) {
-      ZkClientClusterStateProvider stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);
-      this.stateProvider = stateProvider;
+      this.stateProvider = new ZkClientClusterStateProvider(zkStateReader, false);
     }
 
     /**

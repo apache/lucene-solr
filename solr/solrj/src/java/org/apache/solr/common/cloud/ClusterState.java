@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -235,10 +234,10 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection shards.
-      slices = Slice.loadAllFromMap(zkStateReader, name, objs);
+      slices = Slice.loadAllFromMap(zkStateReader, name, (Long) objs.get("id"), objs);
       props = Collections.emptyMap();
     } else {
-      slices = Slice.loadAllFromMap(zkStateReader, name, sliceObjs);
+      slices = Slice.loadAllFromMap(zkStateReader, name, (Long) objs.get("id"), sliceObjs);
       props = new HashMap<>(objs);
       objs.remove(DocCollection.SHARDS);
     }

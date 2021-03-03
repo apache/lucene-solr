@@ -320,6 +320,7 @@ public class AddReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
       params.set(CoreAdminParams.PROPERTY_PREFIX + "bufferOnStart", "true");
     }
     params.set(CoreAdminParams.PROPERTY_PREFIX + "id", Long.toString(createReplica.id));
+    params.set(CoreAdminParams.PROPERTY_PREFIX + "collId", Long.toString(collection.getId()));
 
     log.info("Creating SolrCore with name={}", createReplica.coreName);
     if (createReplica.sliceName != null) {

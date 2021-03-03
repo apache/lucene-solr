@@ -273,11 +273,12 @@ public class TestHashPartitioner extends SolrTestCaseJ4 {
     Map<String,Slice> slices = new HashMap<>();
     for (int i=0; i<ranges.size(); i++) {
       Range range = ranges.get(i);
-      Slice slice = new Slice("shard"+(i+1), null, map("range",range), "collections1", nodeName -> "http://" + nodeName);
+      Slice slice = new Slice("shard"+(i+1), null, map("range",range), "collections1", -1l, nodeName -> "http://" + nodeName);
       slices.put(slice.getName(), slice);
     }
-
-    DocCollection coll = new DocCollection("collection1", slices, null, router);
+    Map<String, Object> collectionProps = new HashMap<>();
+    collectionProps.put("id", -1l);
+    DocCollection coll = new DocCollection("collection1", slices, collectionProps, router);
     return coll;
   }
 

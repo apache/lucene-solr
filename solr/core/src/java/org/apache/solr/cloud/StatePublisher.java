@@ -196,7 +196,7 @@ public class StatePublisher implements Closeable {
     try {
       if (stateMessage != TERMINATE_OP) {
         String operation = stateMessage.getStr(OPERATION);
-        String id = stateMessage.getStr("id");
+        String id = null;
         if (operation.equals("state")) {
           String core = stateMessage.getStr(ZkStateReader.CORE_NAME_PROP);
           String collection = stateMessage.getStr(ZkStateReader.COLLECTION_PROP);
@@ -205,7 +205,11 @@ public class StatePublisher implements Closeable {
           DocCollection coll = zkStateReader.getClusterState().getCollectionOrNull(collection);
           if (coll != null) {
             Replica replica = coll.getReplica(core);
-            id = replica.getId();
+            if (replica != null) {
+              id = replica.getId();
+            } else {
+              id = stateMessage.getStr("id");
+            }
             String lastState = stateCache.get(id);
             if (collection != null && !state.equals(Replica.State.ACTIVE) && state.equals(lastState) && replica.getState().toString().equals(state)) {
               log.info("Skipping publish state as {} for {}, because it was the last state published", state, core);
@@ -216,6 +220,10 @@ public class StatePublisher implements Closeable {
           if (core == null || state == null) {
             log.error("Nulls in published state");
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Nulls in published state " + stateMessage);
+          }
+
+          if (id == null) {
+            id = stateMessage.getStr("id");
           }
 
           stateMessage.getProperties().put("id", id);

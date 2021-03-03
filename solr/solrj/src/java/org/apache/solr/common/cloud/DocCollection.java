@@ -54,8 +54,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   private final String name;
   private final Map<String, Slice> slices;
-  private final Map<String, List<Replica>> nodeNameReplicas;
-  private final Map<String, List<Replica>> nodeNameLeaderReplicas;
   private final DocRouter router;
 
   private final Integer replicationFactor;
@@ -83,8 +81,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.name = name;
     this.withStateUpdates = withStateUpdates;
     this.slices = slices;
-    this.nodeNameLeaderReplicas = new HashMap<>();
-    this.nodeNameReplicas = new HashMap<>();
     this.replicationFactor = (Integer) verifyProp(props, REPLICATION_FACTOR);
     this.numNrtReplicas = (Integer) verifyProp(props, NRT_REPLICAS, 0);
     this.numTlogReplicas = (Integer) verifyProp(props, TLOG_REPLICAS, 0);
@@ -94,37 +90,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     this.readOnly = readOnly == null ? Boolean.FALSE : readOnly;
 
     this.id = (Long) props.get("id");
-    
-    Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
 
-    while (iter.hasNext()) {
-      Map.Entry<String, Slice> slice = iter.next();
-      for (Replica replica : slice.getValue()) {
-        addNodeNameReplica(replica);
-      }
-    }
+    Objects.requireNonNull(this.id, "'id' must not be null");
+
     this.router = router;
     assert name != null && slices != null;
   }
 
-  private void addNodeNameReplica(Replica replica) {
-    List<Replica> replicas = nodeNameReplicas.get(replica.getNodeName());
-    if (replicas == null) {
-      replicas = new ArrayList<>();
-      nodeNameReplicas.put(replica.getNodeName(), replicas);
-    }
-    replicas.add(replica);
-
-    if (replica.getStr(Slice.LEADER) != null) {
-      List<Replica> leaderReplicas = nodeNameLeaderReplicas.get(replica.getNodeName());
-      if (leaderReplicas == null) {
-        leaderReplicas = new ArrayList<>();
-        nodeNameLeaderReplicas.put(replica.getNodeName(), leaderReplicas);
-      }
-      leaderReplicas.add(replica);
-    }
-  }
-  
   public static Object verifyProp(Map<String, Object> props, String propName) {
     return verifyProp(props, propName, null);
   }
@@ -225,14 +197,34 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    * Get the list of replicas hosted on the given node or <code>null</code> if none.
    */
   public List<Replica> getReplicas(String nodeName) {
-    return nodeNameReplicas.get(nodeName);
+    Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
+    List<Replica> replicas = new ArrayList<>(slices.size());
+    while (iter.hasNext()) {
+      Map.Entry<String, Slice> slice = iter.next();
+      for (Replica replica : slice.getValue()) {
+        if (replica.getNodeName().equals(nodeName)) {
+          replicas.add(replica);
+        }
+      }
+    }
+    return replicas;
   }
 
   /**
    * Get the list of all leaders hosted on the given node or <code>null</code> if none.
    */
   public List<Replica> getLeaderReplicas(String nodeName) {
-    return nodeNameLeaderReplicas.get(nodeName);
+    Iterator<Map.Entry<String, Slice>> iter = slices.entrySet().iterator();
+    List<Replica> leaders = new ArrayList<>(slices.size());
+    while (iter.hasNext()) {
+      Map.Entry<String, Slice> slice = iter.next();
+      Replica leader = slice.getValue().getLeader();
+      if (leader != null && leader.getNodeName().equals(nodeName)) {
+        leaders.add(leader);
+      }
+
+    }
+    return leaders;
   }
 
   public int getZNodeVersion(){
@@ -296,6 +288,14 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return null;
   }
 
+  public Map<String,Replica> getReplicaByIds() {
+    Map<String,Replica> ids = new HashMap<>();
+    for (Slice slice : slices.values()) {
+      ids.putAll(slice.getReplicaByIds());
+    }
+    return ids;
+  }
+
   public Slice getSlice(Replica replica) {
     for (Slice slice : slices.values()) {
       Replica r = slice.getReplica(replica.getName());
@@ -318,7 +318,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     long[] highest = new long[1];
     List<Replica> replicas = getReplicas();
     replicas.forEach(replica -> highest[0] = Math.max(highest[0], replica.id));
-    return highest[0];
+    return highest[0] + 1;
   }
 
   /**

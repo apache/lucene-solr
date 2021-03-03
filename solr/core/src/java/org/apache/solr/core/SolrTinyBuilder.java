@@ -21,7 +21,6 @@ import net.sf.saxon.om.AttributeInfo;
 import net.sf.saxon.tree.tiny.TinyBuilder;
 import org.apache.solr.util.PropertiesUtil;
 
-import java.util.HashMap;
 import java.util.Properties;
 
 public class SolrTinyBuilder extends TinyBuilder {

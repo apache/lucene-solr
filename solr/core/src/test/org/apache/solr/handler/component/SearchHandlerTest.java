@@ -37,14 +37,21 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SearchHandlerTest extends SolrTestCaseJ4 
 {
   @BeforeClass
-  public static void beforeTests() throws Exception {
+  public static void beforeSearchHandlerTest() throws Exception {
     initCore("solrconfig.xml","schema.xml");
+  }
+
+  @AfterClass
+  public static void afterSearchHandlerTest() throws Exception {
+    deleteCore();
   }
 
   @Test
