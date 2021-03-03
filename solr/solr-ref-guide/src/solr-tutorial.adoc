@@ -34,7 +34,7 @@ To follow along with this tutorial, you will need...
 
 // TODO possibly remove this system requirements or only replace the link
 . To meet the {solr-javadocs}/SYSTEM_REQUIREMENTS.html[system requirements]
-. An Apache Solr release http://lucene.apache.org/solr/downloads.html[download]. This tutorial is designed for Apache Solr {solr-docs-version}.
+. An Apache Solr release http://solr.apache.org/downloads.html[download]. This tutorial is designed for Apache Solr {solr-docs-version}.
 
 For best results, please run the browser showing this tutorial and the Solr server on the same machine so tutorial links will correctly point to your Solr server.
 
@@ -976,4 +976,4 @@ As you work through this tutorial, you may want to stop Solr and reset the envir
 
 This Guide will be your best resource for learning more about Solr.
 
-Solr also has a robust community made up of people happy to help you get started. For more information, check out the Solr website's http://lucene.apache.org/solr/resources.html[Resources page].
+Solr also has a robust community made up of people happy to help you get started. For more information, check out the Solr website's http://solr.apache.org/resources.html[Resources page].

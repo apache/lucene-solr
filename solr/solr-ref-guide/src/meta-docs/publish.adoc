@@ -57,7 +57,7 @@ Push the Guide directly to production via Subversion `import` from where you bui
 svn -m "Add Ref Guide for Solr 7.7" import <checkoutroot>/solr/solr-ref-guide/build/html-site https://svn.apache.org/repos/infra/websites/production/lucene/content/solr/guide/7_7
 
 Confirm you can browse to Guide manually by going to the new URL. For example:
-https://lucene.apache.org/solr/guide/7_7
+https://solr.apache.org/guide/7_7
 
 == Publish the Final Guide
 

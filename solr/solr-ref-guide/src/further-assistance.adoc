@@ -18,4 +18,4 @@
 
 There is a very active user community around Solr and Lucene. The solr-user mailing list, and #solr IRC channel are both great resources for asking questions.
 
-To view the mailing list archives, subscribe to the list, or join the IRC channel, please see https://lucene.apache.org/solr/community.html.
+To view the mailing list archives, subscribe to the list, or join the IRC channel, please see https://solr.apache.org/community.html.

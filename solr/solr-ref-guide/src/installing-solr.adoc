@@ -23,7 +23,7 @@ Please be sure to review the <<solr-system-requirements.adoc#,Solr System Requir
 
 == Available Solr Packages
 
-Solr is available from the Solr website. Download the latest release https://lucene.apache.org/solr/downloads.html.
+Solr is available from the Solr website. Download the latest release https://solr.apache.org/downloads.html.
 
 There are three separate packages:
 

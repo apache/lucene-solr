@@ -54,7 +54,7 @@ Solr is the fast open source search platform built on Apache Lucene(TM) that pro
 This Reference Guide is the official Solr documentation, written and published by Lucene/Solr committers.
 
 ++++
-<p><a class="btn btn-home btn-lg" href="https://lucene.apache.org/solr/downloads.html" role="button">Download Solr</a></p>
+<p><a class="btn btn-home btn-lg" href="https://solr.apache.org/downloads.html" role="button">Download Solr</a></p>
 ++++
 ****
 
