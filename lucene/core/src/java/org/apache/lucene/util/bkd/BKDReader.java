@@ -19,7 +19,6 @@ package org.apache.lucene.util.bkd;
 import java.io.IOException;
 import java.util.Arrays;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -32,8 +31,7 @@ public final class BKDReader extends PointValues {
   final BKDIndexInput in;
 
   /**
-   * Caller must pre-seek the provided {@link IndexInput} to the index location that {@link
-   * BKDWriter#finish} returned. BKD tree is always stored off-heap.
+   * Sole constructor
    */
   public BKDReader(BKDIndexInput in) throws IOException {
     this.in = in;
