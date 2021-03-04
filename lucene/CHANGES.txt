@@ -266,6 +266,8 @@ Other
 
 * LUCENE-9773: Upgrade icu to 68.2 (Robert Muir)
 
+* LUCENE-9822: Add assertion to PFOR exception encoding, documenting the BLOCK_SIZE assumption. (Greg Miller)
+
 ======================= Lucene 8.9.0 =======================
 
 API Changes
