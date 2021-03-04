@@ -20,6 +20,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Objects;
 
 /**
  *
@@ -32,7 +33,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
   
   public SolrInputField( String n )
   {
-    this.name = n;
+    this.name = Objects.requireNonNull(n);
   }
 
   //---------------------------------------------------------------
@@ -161,7 +162,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
   }
 
   public void setName(String name) {
-    this.name = name;
+    this.name = Objects.requireNonNull(name);
   }
 
   @Override
