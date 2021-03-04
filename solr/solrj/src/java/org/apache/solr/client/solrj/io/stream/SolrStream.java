@@ -152,15 +152,17 @@ public class SolrStream extends TupleStream {
   private ModifiableSolrParams loadParams(SolrParams paramsIn) throws IOException {
     ModifiableSolrParams solrParams = new ModifiableSolrParams(paramsIn);
     if (params.get("partitionKeys") != null) {
-      if(!params.get("partitionKeys").equals("none") && numWorkers > 1) {
-        String partitionFilter = getPartitionFilter();
-        solrParams.add("fq", partitionFilter);
+      if (!params.get("partitionKeys").equals("none") && numWorkers > 1) {
+        if (params.getBool(ParallelStream.USE_HASH_QUERY_PARAM, false)) {
+          String partitionFilter = getPartitionFilter();
+          solrParams.add("fq", partitionFilter);
+        }
       }
     } else if(numWorkers > 1) {
         throw new IOException("When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
     }
 
-    if(checkpoint > 0) {
+    if (checkpoint > 0) {
       solrParams.add("fq", "{!frange cost=100 incl=false l="+checkpoint+"}_version_");
     }
 

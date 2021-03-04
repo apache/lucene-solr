@@ -45,6 +45,11 @@ import static org.apache.solr.common.params.CommonParams.SORT;
  **/
 public class ParallelStream extends CloudSolrStream implements Expressible {
 
+  public static final String NUM_WORKERS_PARAM = "numWorkers";
+  public static final String WORKER_ID_PARAM = "workerID";
+  public static final String PARTITION_KEYS_PARAM = "partitionKeys";
+  public static final String USE_HASH_QUERY_PARAM = "useHashQuery";
+
   private TupleStream tupleStream;
   private int workers;
   private transient StreamFactory streamFactory;
@@ -252,8 +257,9 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
       for(int w=0; w<workers; w++) {
         ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
         paramsLoc.set(DISTRIB,"false"); // We are the aggregator.
-        paramsLoc.set("numWorkers", workers);
-        paramsLoc.set("workerID", w);
+        paramsLoc.set(NUM_WORKERS_PARAM, workers);
+        paramsLoc.set(WORKER_ID_PARAM, w);
+        paramsLoc.set(USE_HASH_QUERY_PARAM, false);
 
         paramsLoc.set("expr", pushStream.toString());
         paramsLoc.set("qt","/stream");

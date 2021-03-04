@@ -25,11 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Function;
 
@@ -223,6 +219,10 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   public void clear() {
     cache.invalidateAll();
     ramBytes.reset();
+  }
+
+  public ConcurrentMap<K, V> asMap() {
+    return cache.asMap();
   }
 
   @Override
