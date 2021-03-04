@@ -81,6 +81,13 @@
          <revision>8.8.1</revision>
        </Version>
    </release>
+    <release>
+       <Version>
+         <name>lucene-8.8.0</name>
+         <created>2021-02-01</created>
+         <revision>8.8.0</revision>
+       </Version>
+   </release>
 
     <release>
        <Version>
