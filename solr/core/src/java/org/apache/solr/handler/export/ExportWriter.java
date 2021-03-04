@@ -483,6 +483,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   }
 
   // this inits only those sets that are not already present in the global cache
+  // which were populated for these segments in previous runs
   private void initTempPartitionCaches(List<LeafReaderContext> leaves) {
     tempPartitionCaches.clear();
     for (LeafReaderContext leaf : leaves) {
@@ -491,7 +492,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         continue;
       }
       IndexReader.CacheKey cacheKey = cacheHelper.getKey();
-      // check if bitset was computed earlier and can be skipped
+      // check if a bitset was computed earlier for this segment and this query and can be skipped
       SolrCache<String, FixedBitSet> perSegmentCache = partitionCaches.get(cacheKey);
       if (perSegmentCache != null && perSegmentCache.get(partitionCacheKey) != null) {
         // already computed earlier
@@ -525,6 +526,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
   }
 
+  // not sure about this class - it reduces object allocation but has linear cost of get()
   private static final class DoubleArrayMapWriter implements MapWriter, EntryWriter {
     final CharSequence[] keys;
     final Object[] values;
@@ -572,7 +574,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   // we materialize this document so that we can potentially do hash partitioning
   private DoubleArrayMapWriter outputDoc;
 
-  // WARNING: single-thread only! shared var tempDoc
+  // WARNING: single-thread only! shared var outputDoc
   MapWriter fillOutputDoc(SortDoc sortDoc,
                           List<LeafReaderContext> leaves,
                           FieldWriter[] writers) throws IOException {
@@ -617,7 +619,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       return doc;
     } else {
-      // XXX update the cache
+      // not our partition - skip it
       return null;
     }
   }
