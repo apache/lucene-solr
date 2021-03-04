@@ -55,8 +55,12 @@ configure(rootProject) {
     if (!skipLucene) {
       dependsOn ':lucene:documentation:assemble'
     }
-    dependsOn ':solr:documentation:assemble'
+    if (!skipSolr) {
+      dependsOn ':solr:documentation:assemble'
+    }
   }
+
+  assemble.dependsOn documentation
 }
 
 // docroot will point to Lucene and Solr relative directory for each sub-project.

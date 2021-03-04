@@ -23,4 +23,10 @@ configure(rootProject) {
   tasks.matching { it.path == ":checkUnusedConstraints" }.all {
     enabled = false
   }
+
+  if (skipLucene || skipSolr) {
+    tasks.matching { it.path == ":verifyLocks" }.all {
+      enabled = false
+    }
+  }
 }
