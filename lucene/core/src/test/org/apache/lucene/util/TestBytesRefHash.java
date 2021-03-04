@@ -289,7 +289,7 @@ public class TestBytesRefHash extends LuceneTestCase {
       AtomicInteger notFound = new AtomicInteger();
       AtomicInteger notEquals = new AtomicInteger();
       AtomicInteger wrongSize = new AtomicInteger();
-      int numThreads = 10;
+      int numThreads = atLeast(3);
       CountDownLatch latch = new CountDownLatch(numThreads);
       Thread[] threads = new Thread[numThreads];
       for (int i = 0; i < threads.length; i++) {
