@@ -58,6 +58,7 @@ function wait_for_server_started {
       break
     fi
 
+    docker inspect "$container_name"
     local container_status
     container_status=$(docker inspect --format='{{.State.Status}}' "$container_name")
     if [[ $container_status == 'exited' ]]; then
