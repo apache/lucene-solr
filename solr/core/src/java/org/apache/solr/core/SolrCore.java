@@ -446,9 +446,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private String getIndexPropertyFromPropFile(Directory dir) throws IOException {
     IndexInput input;
-    if (!Arrays.asList(dir.listAll()).contains(IndexFetcher.INDEX_PROPERTIES)) {
-      return dataDir + "index/";
-    }
     try {
       input = dir.openInput(IndexFetcher.INDEX_PROPERTIES, IOContext.DEFAULT);
     } catch (FileNotFoundException | NoSuchFileException e) {
@@ -1788,7 +1785,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           return;
         }
 
-        log.info("CLOSING SolrCore {}", logid);
+        if (log.isDebugEnabled()) log.debug("CLOSING SolrCore {}", logid);
         assert ObjectReleaseTracker.release(this);
 
         searcherReadyLatch.countDown();
@@ -2928,7 +2925,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
 
     public void closeSearcher () {
-      log.info("{} Closing main searcher on request realtimeSearcher={} searcher={}", logid, realtimeSearcher, _searcher);
+      log.debug("{} Closing main searcher on request realtimeSearcher={} searcher={}", logid, realtimeSearcher, _searcher);
       searcherLock.lock();
       try {
         if (realtimeSearcher != null) {
@@ -3452,7 +3449,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         }
 
         //some files in conf directory may have  other than managedschema, overlay, params
-        try (ParWork worker = new ParWork("ConfListeners", true, false)) {
+        try (ParWork worker = new ParWork("ConfListeners", true, true)) {
 
           if (cc.isShutDown()) return;
           core.confListeners.forEach(runnable -> {

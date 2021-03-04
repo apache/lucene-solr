@@ -170,7 +170,7 @@ public class SolrTestUtil {
   }
 
   public static void wait(Thread thread) {
-    if (thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) {
+    if ((thread.getName().contains("ForkJoinPool.") || thread.getName().contains("Log4j2-")) && thread.getState() != Thread.State.TERMINATED) {
       log.info("Dont wait on ForkJoinPool. or Log4j2-");
       return;
     }

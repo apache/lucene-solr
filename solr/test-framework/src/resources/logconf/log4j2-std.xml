@@ -28,8 +28,12 @@
         =>%ex{short}}}{10240}%n"/>
         </Console>
 
-        <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
+        <File name="FILE_COLOR" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
             <PatternLayout pattern="%style{%-4r}{yellow} %highlight{%maxLen{%-5p}{6}} %style{(%maxLen{%t}{8})}{yellow,bold} [%style{%X{node_name} %X{core}}{cyan}] %style{%c{1.}}{cyan} %highlight{%m %notEmpty{%ex}}\n"/>
+        </File>
+        <File name="FILE" fileName="${sys:user.home}/solr-test.log" immediateFlush="false" append="false">
+            <PatternLayout pattern="%maxLen{%-4r %-5p (%t) [%X{node_name} %X{collection} %X{shard} %X{replica} %X{core} %X{trace_id}] %c{1.} %m%notEmpty{
+        =>%ex{short}}}{10240}%n"/>
         </File>
 
 
@@ -79,7 +83,7 @@
         <AsyncLogger name="org.apache.solr.client.solrj.impl.Http2SolrClient" level="INFO"/>
 
         <AsyncRoot level="INFO">
-            <AppenderRef ref="STDERR"/>
+            <AppenderRef ref="FILE"/>
          </AsyncRoot>
      </Loggers>
  </Configuration>

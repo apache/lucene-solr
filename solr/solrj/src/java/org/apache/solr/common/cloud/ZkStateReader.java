@@ -2456,7 +2456,7 @@ public class ZkStateReader implements SolrCloseable, Replica.NodeNameToBaseUrl {
         try (ParWork work = new ParWork(this)) {
           watchers.stateWatchers.forEach(watcher -> {
            // work.collect("", () -> {
-              if (log.isDebugEnabled()) log.debug("Notify DocCollectionWatcher {} {}", watcher, collectionState);
+              if (log.isTraceEnabled()) log.debug("Notify DocCollectionWatcher {} {}", watcher, collectionState);
               try {
                 if (watcher.onStateChanged(collectionState)) {
                   removeDocCollectionWatcher(collection, watcher);

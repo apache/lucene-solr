@@ -2083,25 +2083,27 @@ public class ZkController implements Closeable, Runnable {
   }
 
   private void unregisterConfListener(String confDir, Runnable listener) {
-    final ConfListeners confListeners = confDirectoryListeners.get(confDir);
-    if (confListeners == null) {
-      log.warn("{} has no more registered listeners, but a live one attempted to unregister!", confDir);
-      return;
-    }
-    if (confListeners.confDirListeners.remove(listener)) {
-      if (log.isDebugEnabled()) log.debug("removed listener for config directory [{}]", confDir);
-    }
-    if (confListeners.confDirListeners.isEmpty()) {
-      // no more listeners for this confDir, remove it from the map
-      if (log.isDebugEnabled()) log.debug("No more listeners for config directory [{}]", confDir);
-      try {
-        zkClient.removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true);
-      } catch (KeeperException.NoWatcherException e) {
-
-      } catch (Exception e) {
-        log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
+    synchronized (confDirectoryListeners) {
+      final ConfListeners confListeners = confDirectoryListeners.get(confDir);
+      if (confListeners == null) {
+        log.warn("{} has no more registered listeners, but a live one attempted to unregister!", confDir);
+        return;
       }
-      confDirectoryListeners.remove(confDir);
+      if (confListeners.confDirListeners.remove(listener)) {
+        if (log.isDebugEnabled()) log.debug("removed listener for config directory [{}]", confDir);
+      }
+      if (confListeners.confDirListeners.isEmpty()) {
+        confDirectoryListeners.remove(confDir);
+        // no more listeners for this confDir, remove it from the map
+        if (log.isDebugEnabled()) log.debug("No more listeners for config directory [{}]", confDir);
+        try {
+          zkClient.removeWatches(COLLECTIONS_ZKNODE, confListeners.watcher, Watcher.WatcherType.Any, true);
+        } catch (KeeperException.NoWatcherException e) {
+
+        } catch (Exception e) {
+          log.info("could not remove watch {} {}", e.getClass().getSimpleName(), e.getMessage());
+        }
+      }
     }
   }
 
@@ -2115,6 +2117,7 @@ public class ZkController implements Closeable, Runnable {
     if (listener == null) {
       throw new NullPointerException("listener cannot be null");
     }
+
     final ConfListeners confDirListeners = getConfDirListeners(confDir);
     confDirListeners.confDirListeners.add(listener);
     core.addCloseHook(new CloseHook() {
@@ -2141,15 +2144,17 @@ public class ZkController implements Closeable, Runnable {
   }
 
   private ConfListeners getConfDirListeners(final String confDir) {
-    ConfListeners confDirListeners = confDirectoryListeners.get(confDir);
-    if (confDirListeners == null) {
-      if (log.isDebugEnabled()) log.debug("watch zkdir {}" , confDir);
-      ConfDirWatcher watcher = new ConfDirWatcher(confDir, cc, confDirectoryListeners);
-      confDirListeners = new ConfListeners(ConcurrentHashMap.newKeySet(), watcher);
-      confDirectoryListeners.put(confDir, confDirListeners);
-      setConfWatcher(confDir, watcher, null, cc, confDirectoryListeners, cc.getZkController().getZkClient());
+    synchronized (confDirectoryListeners) {
+      ConfListeners confDirListeners = confDirectoryListeners.get(confDir);
+      if (confDirListeners == null) {
+        if (log.isTraceEnabled()) log.trace("watch zkdir {}", confDir);
+        ConfDirWatcher watcher = new ConfDirWatcher(confDir, cc, confDirectoryListeners);
+        confDirListeners = new ConfListeners(ConcurrentHashMap.newKeySet(), watcher);
+        confDirectoryListeners.put(confDir, confDirListeners);
+        setConfWatcher(confDir, watcher, null, cc, confDirectoryListeners, cc.getZkController().getZkClient());
+      }
+      return confDirListeners;
     }
-    return confDirListeners;
   }
 
   private final Map<String, ConfListeners> confDirectoryListeners = new ConcurrentHashMap<>();
@@ -2206,7 +2211,7 @@ public class ZkController implements Closeable, Runnable {
       if (cc.isShutDown() || cc.getZkController().isDcCalled()) {
         return false;
       }
-      listeners.forEach(runnable -> cc.coreContainerExecutor.submit(runnable));
+      listeners.forEach(runnable -> ParWork.getRootSharedExecutor().submit(runnable));
     }
     return true;
   }

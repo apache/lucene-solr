@@ -29,7 +29,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,7 +133,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
     private volatile WatchedEvent event;
 
     LatchWatcher(String path, SolrZkClient zkClient) {
-      this.lock = new ReentrantLock();
+      this.lock = new ReentrantLock(true);
       this.eventReceived = lock.newCondition();
       this.path = path;
       this.zkClient = zkClient;
@@ -151,36 +150,23 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
       if (log.isDebugEnabled()) log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState());
 
-      checkResult();
-    }
+      this.event = event;
 
-    private void checkResult() {
+      lock.lock();
       try {
-        Stat stat = zkClient.exists(path, null, true);
-        if (stat != null && stat.getDataLength() > 0) {
-          lock.lock();
-          try {
-            this.event = new WatchedEvent(Event.EventType.NodeDataChanged, Event.KeeperState.SyncConnected, path);
-            eventReceived.signalAll();
-          } finally {
-            lock.unlock();
-          }
-        }
-      } catch (Exception e) {
-        log.error("", e);
+        eventReceived.signalAll();
+      } finally {
+        lock.unlock();
       }
     }
 
     public void await(long timeoutMs) {
 
-      createWatch();
-
-      checkResult();
-
       if (event != null) {
-        close();
         return;
       }
+
+      createWatch();
 
       TimeOut timeout = new TimeOut(timeoutMs, TimeUnit.MILLISECONDS, TimeSource.NANO_TIME);
       lock.lock();
@@ -198,7 +184,6 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
         }
       } finally {
         lock.unlock();
-        close();
       }
     }
 
@@ -234,18 +219,7 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
   private String createData(String path, byte[] data, CreateMode mode)
       throws KeeperException, InterruptedException {
     for (;;) {
-      try {
-        return zookeeper.create(path, data, mode, true);
-      } catch (KeeperException.NodeExistsException e) {
-        log.warn("Found request node already, waiting to see if it frees up ...");
-        // TODO: use a watch?
-        Thread.sleep(50);
-        try {
-          return zookeeper.create(path, data, mode, true);
-        } catch (KeeperException.NodeExistsException ne) {
-          // someone created it
-        }
-      }
+      return zookeeper.create(path, data, mode, true);
     }
   }
 
