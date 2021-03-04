@@ -57,7 +57,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.UnmodifiableBytesRefHash;
 
 class QueryIndex implements Closeable {
 
@@ -220,13 +219,12 @@ class QueryIndex implements Closeable {
 
   static class QueryTermFilter implements BiPredicate<String, BytesRef> {
 
-    private final Map<String, UnmodifiableBytesRefHash> termsHash;
+    private final Map<String, BytesRefHash> termsHash = new HashMap<>();
 
     QueryTermFilter(IndexReader reader) throws IOException {
-      final Map<String, BytesRefHash> hashMap = new HashMap<>();
       for (LeafReaderContext ctx : reader.leaves()) {
         for (FieldInfo fi : ctx.reader().getFieldInfos()) {
-          BytesRefHash terms = hashMap.computeIfAbsent(fi.name, f -> new BytesRefHash());
+          BytesRefHash terms = termsHash.computeIfAbsent(fi.name, f -> new BytesRefHash());
           Terms t = ctx.reader().terms(fi.name);
           if (t != null) {
             TermsEnum te = t.iterator();
@@ -237,15 +235,11 @@ class QueryIndex implements Closeable {
           }
         }
       }
-      this.termsHash = new HashMap<>(hashMap.size());
-      for (Map.Entry<String, BytesRefHash> entry : hashMap.entrySet()) {
-        this.termsHash.put(entry.getKey(), new UnmodifiableBytesRefHash(entry.getValue()));
-      }
     }
 
     @Override
     public boolean test(String field, BytesRef term) {
-      UnmodifiableBytesRefHash bytes = termsHash.get(field);
+      BytesRefHash bytes = termsHash.get(field);
       if (bytes == null) {
         return false;
       }

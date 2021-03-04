@@ -272,7 +272,7 @@ public class TestBytesRefHash extends LuceneTestCase {
   }
 
   @Test
-  public void testConcurrentAccessToUnmodifiableBytesRefHash() throws Exception {
+  public void testConcurrentAccessToBytesRefHash() throws Exception {
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
       int numStrings = 797;
@@ -283,8 +283,6 @@ public class TestBytesRefHash extends LuceneTestCase {
         assertTrue(strings.add(str));
       }
       int hashSize = hash.size();
-
-      UnmodifiableBytesRefHash unmodifiableHash = new UnmodifiableBytesRefHash(hash);
 
       AtomicInteger notFound = new AtomicInteger();
       AtomicInteger notEquals = new AtomicInteger();
@@ -307,16 +305,16 @@ public class TestBytesRefHash extends LuceneTestCase {
                   }
                   for (int k = 0; k < loops; k++) {
                     BytesRef find = new BytesRef(strings.get(k % strings.size()));
-                    int id = unmodifiableHash.find(find);
+                    int id = hash.find(find);
                     if (id < 0) {
                       notFound.incrementAndGet();
                     } else {
-                      BytesRef get = unmodifiableHash.get(id, scratch);
+                      BytesRef get = hash.get(id, scratch);
                       if (!get.bytesEquals(find)) {
                         notEquals.incrementAndGet();
                       }
                     }
-                    if (unmodifiableHash.size() != hashSize) {
+                    if (hash.size() != hashSize) {
                       wrongSize.incrementAndGet();
                     }
                   }

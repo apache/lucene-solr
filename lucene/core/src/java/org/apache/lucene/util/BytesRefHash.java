@@ -31,11 +31,6 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
  * to the id is encapsulated inside {@link BytesRefHash} and is guaranteed to be increased for each
  * added {@link BytesRef}.
  *
- * <p><strong>Note that this implementation is not synchronized.</strong> If multiple threads access
- * a {@link BytesRefHash} instance concurrently, and at least one of the threads modifies it
- * structurally, it <i>must</i> be synchronized externally. (A structural modification is any
- * operation on it except operations allowed when wrapped with {@link UnmodifiableBytesRefHash}).
- *
  * <p>Note: The maximum capacity {@link BytesRef} instance passed to {@link #add(BytesRef)} must not
  * be longer than {@link ByteBlockPool#BYTE_BLOCK_SIZE}-2. The internal storage is limited to 2GB
  * total byte storage.
