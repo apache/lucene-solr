@@ -211,8 +211,9 @@ apply from: file('gradle/hacks/gradle.gradle')
 apply from: file('gradle/hacks/hashmapAssertions.gradle')
 
 if (skipLucene) {
-  apply from: file('gradle/solr/inaccessible-test-sources.gradle')
+  apply from: file('gradle/solr-tlp-migration/inaccessible-test-sources.gradle')
 }
+apply from: file('gradle/solr-tlp-migration/temp-disable-constraint-checking.gradle')
 
 if (!skipSolr) {
   apply from: file('gradle/solr/packaging.gradle') // SOLR ONLY
