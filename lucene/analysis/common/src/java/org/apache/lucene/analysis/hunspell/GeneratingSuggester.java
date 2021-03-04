@@ -65,6 +65,9 @@ class GeneratingSuggester {
       String word, WordCase originalCase) {
     Comparator<Weighted<Root<String>>> natural = Comparator.naturalOrder();
     PriorityQueue<Weighted<Root<String>>> roots = new PriorityQueue<>(natural.reversed());
+    List<Root<String>> entries = new ArrayList<>();
+    boolean ignoreTitleCaseRoots = originalCase == WordCase.LOWER && !dictionary.hasLanguage("de");
+    EnumSet<NGramOptions> options = EnumSet.of(NGramOptions.LONGER_WORSE);
 
     IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(dictionary.words);
     InputOutput<IntsRef> mapping;
@@ -78,18 +81,15 @@ class GeneratingSuggester {
       }
 
       String root = toString(key);
-      List<Root<String>> entries = filterSuitableEntries(root, mapping.output);
+      filterSuitableEntries(root, mapping.output, entries);
       if (entries.isEmpty()) continue;
 
-      if (originalCase == WordCase.LOWER
-          && WordCase.caseOf(root) == WordCase.TITLE
-          && !dictionary.hasLanguage("de")) {
+      if (ignoreTitleCaseRoots && WordCase.caseOf(root) == WordCase.TITLE) {
         continue;
       }
 
       String lower = dictionary.toLowerCase(root);
-      int sc =
-          ngram(3, word, lower, EnumSet.of(NGramOptions.LONGER_WORSE)) + commonPrefix(word, root);
+      int sc = ngram(3, word, lower, options) + commonPrefix(word, root);
 
       if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
         continue;
@@ -129,8 +129,8 @@ class GeneratingSuggester {
     return new String(chars);
   }
 
-  private List<Root<String>> filterSuitableEntries(String word, IntsRef forms) {
-    List<Root<String>> result = new ArrayList<>();
+  private void filterSuitableEntries(String word, IntsRef forms, List<Root<String>> result) {
+    result.clear();
     for (int i = 0; i < forms.length; i += dictionary.formStep()) {
       int entryId = forms.ints[forms.offset + i];
       if (dictionary.hasFlag(entryId, dictionary.forbiddenword)
@@ -141,8 +141,6 @@ class GeneratingSuggester {
       }
       result.add(new Root<>(word, entryId));
     }
-
-    return result;
   }
 
   private List<Weighted<String>> expandRoots(
