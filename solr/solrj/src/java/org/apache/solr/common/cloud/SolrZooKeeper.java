@@ -54,7 +54,7 @@ public class SolrZooKeeper extends ZooKeeper {
   }
   
   public void closeCnxn() {
-    final Thread t = new Thread() {
+    final Thread t = new Thread(new Runnable() {
       @Override
       public void run() {
         try {
@@ -64,7 +64,7 @@ public class SolrZooKeeper extends ZooKeeper {
         }
       }
       
-      @SuppressForbidden(reason = "Hack for Zookeper needs access to private methods.")
+      @SuppressForbidden(reason = "Hack for Zookeeper needs access to private methods.")
       private Void closeZookeeperChannel() {
         final ClientCnxn cnxn = getConnection();
         synchronized (cnxn) {
@@ -87,7 +87,7 @@ public class SolrZooKeeper extends ZooKeeper {
         }
         return null; // Void
       }
-    };
+    }, "closeCnxn");
     spawnedThreads.add(t);
     t.start();
   }

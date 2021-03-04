@@ -964,7 +964,7 @@ public class TestSuggestField extends LuceneTestCase {
         new Lucene90Codec() {
           CompletionPostingsFormat.FSTLoadMode fstLoadMode =
               RandomPicks.randomFrom(random(), CompletionPostingsFormat.FSTLoadMode.values());
-          PostingsFormat postingsFormat = new Completion84PostingsFormat(fstLoadMode);
+          PostingsFormat postingsFormat = new Completion90PostingsFormat(fstLoadMode);
 
           @Override
           public PostingsFormat getPostingsFormatForField(String field) {

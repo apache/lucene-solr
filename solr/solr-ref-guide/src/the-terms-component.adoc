@@ -53,7 +53,7 @@ Specifies the field from which to retrieve terms. This parameter is required if 
 Example: `terms.fl=title`
 
 `terms.list`::
-Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
+Fetches the document frequency for a comma-delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
 +
 Example: `terms.list=termA,termB,termC`
 +
@@ -298,7 +298,7 @@ Results (notice that the term counts are not affected by the query):
 
 == Using the Terms Component for an Auto-Suggest Feature
 
-If the <<suggester.adoc#suggester,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
+If the <<suggester.adoc#,Suggester>> doesn't suit your needs, you can use the Terms component in Solr to build a similar feature for your own search application. Simply submit a query specifying whatever characters the user has typed so far as a prefix. For example, if the user has typed "at", the search engine's interface would submit the following query:
 
 [source,text]
 http://localhost:8983/solr/techproducts/terms?terms.fl=name&terms.prefix=at&wt=xml
@@ -347,13 +347,13 @@ Result:
 The TermsComponent also supports distributed indexes. For the `/terms` request handler, you must provide the following two parameters:
 
 `shards`::
-Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#distributed-search-with-index-sharding,Distributed Search with Index Sharding>>.
+Specifies the shards in your distributed indexing configuration. For more information about distributed indexing, see <<distributed-search-with-index-sharding.adoc#,Distributed Search with Index Sharding>>.
 +
 The `shards` parameter is subject to a host whitelist that has to be configured in the component's parameters using the configuration key `shardsWhitelist` and the list of hosts as values.
 +
 By default the whitelist will be populated with all live nodes when running in SolrCloud mode. If you need to disable this feature for backwards compatibility, you can set the system property `solr.disable.shardsWhitelist=true`.
 +
-See the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>> for more information about how the whitelist works. 
+See the section <<distributed-requests.adoc#configuring-the-shardhandlerfactory,Configuring the ShardHandlerFactory>> for more information about how the whitelist works.
 
 `shards.qt`::
 Specifies the request handler Solr uses for requests to shards.

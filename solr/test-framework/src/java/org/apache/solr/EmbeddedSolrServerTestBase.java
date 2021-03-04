@@ -72,12 +72,7 @@ abstract public class EmbeddedSolrServerTestBase extends SolrTestCaseJ4 {
    * Create a new solr client. Subclasses should override for other options.
    */
   public EmbeddedSolrServer createNewSolrClient() {
-    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME) {
-      @Override
-      public void close() {
-        // do not close core container
-      }
-    };
+    return new EmbeddedSolrServer(h.getCoreContainer(), DEFAULT_CORE_NAME);
   }
 
   public void upload(final String collection, final ContentStream... contents) {

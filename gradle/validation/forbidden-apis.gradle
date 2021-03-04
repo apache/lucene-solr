@@ -89,6 +89,23 @@ allprojects { prj ->
       ]
     }
 
+    // Configure defaults for sourceSets.tools (if present).
+    tasks.matching { it.name == "forbiddenApisTools" }.all {
+      bundledSignatures += [
+          'jdk-unsafe',
+          'jdk-deprecated',
+          'jdk-non-portable',
+          'jdk-reflection',
+      ]
+
+      suppressAnnotations += [
+          "**.SuppressForbidden"
+      ]
+
+      doFirst dynamicSignatures.curry(configurations.toolsCompileClasspath, "lucene")
+      inputs.dir(file(resources))
+    }
+
     // Disable sysout signatures for these projects.
     if (prj.path in [
         ":lucene:demo",
@@ -117,6 +134,7 @@ allprojects { prj ->
     if (prj.path.startsWith(":solr")) {
       forbiddenApisMain {
         doFirst dynamicSignatures.curry(configurations.compileClasspath, "solr")
+        signaturesFiles += files(file("${resources}/java.solr.txt"))
       }
 
       forbiddenApisTest {

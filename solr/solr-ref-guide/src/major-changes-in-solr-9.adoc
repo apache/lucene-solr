@@ -144,6 +144,15 @@ _(raw; not yet edited)_
 
 * SOLR-14972: The default port of prometheus exporter has changed from 9983 to 8989, so you may need to adjust your configuration after upgrade.
 
+* SOLR-14067: StatelessScriptUpdateProcessorFactory moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.  Renamed to ScriptUpdateProcessorFactory for simpler name.
+
+* SOLR-15121: XSLTResponseWriter moved to /contrib/scripting/ package instead
+ of shipping as part of Solr, due to security concerns.
+
+* SOLR-15156: Child Doc Transformer's `childFilter` param no longer applies query syntax
+escaping because it's inconsistent with the rest of Solr and was limiting.  This refers to `[child childFilter='field:value']`.
+
 === Upgrade Prerequisites in Solr 9
 
 * Upgrade all collections in stateFormat=1 to stateFormat=2 *before* upgrading to Solr 9, as Solr 9 does not support the
@@ -160,6 +169,15 @@ See for example https://lucene.apache.org/solr/guide/8_5/cluster-node-management
 == New Features & Enhancements in Solr 9
 
 == Configuration and Default Parameter Changes in Solr 9
+
+* base_url removed from stored state*
+
+If you're able to upgrade SolrJ to 8.8.x for all of your client applications, then you can set `-Dsolr.storeBaseUrl=false` (introduced in Solr 8.8.1)
+to better align the stored state in Zookeeper with future versions of Solr; as of Solr 9.x, the `base_url` will no longer be
+persisted in stored state. However, if you are not able to upgrade SolrJ to 8.8.x for all client applications, then you should
+set `-Dsolr.storeBaseUrl=true` so that Solr will continue to store the `base_url` in Zookeeper. For background, see: SOLR-12182 and SOLR-15145.
+
+Support for the `solr.storeBaseUrl` system property will be removed in Solr 10.x and `base_url` will no longer be stored.
 
 === Schema Changes in 9
 

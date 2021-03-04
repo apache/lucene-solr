@@ -24,6 +24,17 @@ import java.io.IOException;
  */
 public abstract class ChecksumIndexInput extends IndexInput {
 
+  private static final int SKIP_BUFFER_SIZE = 1024;
+
+  /* This buffer is used when skipping bytes in skipBytes(). Skipping bytes
+   * still requires reading in the bytes we skip in order to update the checksum.
+   * The reason we need to use an instance member instead of sharing a single
+   * static instance across threads is that multiple instances invoking skipBytes()
+   * concurrently on different threads can clobber the contents of a shared buffer,
+   * corrupting the checksum. See LUCENE-5583 for additional context.
+   */
+  private byte[] skipBuffer;
+
   /**
    * resourceDescription should be a non-null, opaque string describing this resource; it's returned
    * from {@link #toString}.
@@ -50,6 +61,23 @@ public abstract class ChecksumIndexInput extends IndexInput {
       throw new IllegalStateException(
           getClass() + " cannot seek backwards (pos=" + pos + " getFilePointer()=" + curFP + ")");
     }
-    skipBytes(skip);
+    skipByReading(skip);
+  }
+
+  /**
+   * Skip over <code>numBytes</code> bytes. The contract on this method is that it should have the
+   * same behavior as reading the same number of bytes into a buffer and discarding its content.
+   * Negative values of <code>numBytes</code> are not supported.
+   */
+  private void skipByReading(long numBytes) throws IOException {
+    if (skipBuffer == null) {
+      skipBuffer = new byte[SKIP_BUFFER_SIZE];
+    }
+    assert skipBuffer.length == SKIP_BUFFER_SIZE;
+    for (long skipped = 0; skipped < numBytes; ) {
+      final int step = (int) Math.min(SKIP_BUFFER_SIZE, numBytes - skipped);
+      readBytes(skipBuffer, 0, step, false);
+      skipped += step;
+    }
   }
 }

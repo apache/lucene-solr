@@ -379,6 +379,8 @@ public class IndexWriter
   private final ReaderPool readerPool;
   private final BufferedUpdatesStream bufferedUpdatesStream;
 
+  private final IndexWriterEventListener eventListener;
+
   /**
    * Counts how many merges have completed; this is used by {@link
    * #forceApply(FrozenBufferedUpdates)} to handle concurrently apply deletes/updates with merges
@@ -938,6 +940,7 @@ public class IndexWriter
     config = conf;
     infoStream = config.getInfoStream();
     softDeletesEnabled = config.getSoftDeletesField() != null;
+    eventListener = config.getIndexWriterEventListener();
     // obtain the write.lock. If the user configured a timeout,
     // we wrap with a sleeper and this might take some time.
     writeLock = d.obtainLock(WRITE_LOCK_NAME);
@@ -1009,6 +1012,14 @@ public class IndexWriter
         changed();
 
       } else if (reader != null) {
+        if (reader.segmentInfos.getIndexCreatedVersionMajor() < Version.MIN_SUPPORTED_MAJOR) {
+          // second line of defence in the case somebody tries to trick us.
+          throw new IllegalArgumentException(
+              "createdVersionMajor must be >= "
+                  + Version.MIN_SUPPORTED_MAJOR
+                  + ", got: "
+                  + reader.segmentInfos.getIndexCreatedVersionMajor());
+        }
         // Init from an existing already opened NRT or non-NRT reader:
 
         if (reader.directory() != commit.getDirectory()) {
@@ -1977,6 +1988,17 @@ public class IndexWriter
       }
     }
     return dvUpdates;
+  }
+
+  /**
+   * Return an unmodifiable set of all field names as visible from this IndexWriter, across all
+   * segments of the index.
+   *
+   * @lucene.experimental
+   */
+  public Set<String> getFieldNames() {
+    // FieldNumbers#getFieldNames() returns an unmodifiableSet
+    return globalFieldNumberMap.getFieldNames();
   }
 
   // for test purpose
@@ -3503,11 +3525,16 @@ public class IndexWriter
           infoStream.message(
               "IW", "now run merges during commit: " + pointInTimeMerges.segString(directory));
         }
+        eventListener.beginMergeOnFullFlush(pointInTimeMerges);
+
         mergeScheduler.merge(mergeSource, MergeTrigger.COMMIT);
         pointInTimeMerges.await(maxCommitMergeWaitMillis, TimeUnit.MILLISECONDS);
+
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "done waiting for merges during commit");
         }
+        eventListener.endMergeOnFullFlush(pointInTimeMerges);
+
         synchronized (this) {
           // we need to call this under lock since mergeFinished above is also called under the IW
           // lock
@@ -5011,8 +5038,7 @@ public class IndexWriter
         // Merge would produce a 0-doc segment, so we do nothing except commit the merge to remove
         // all the 0-doc segments that we "merged":
         assert merge.info.info.maxDoc() == 0;
-        commitMerge(merge, mergeState);
-        success = true;
+        success = commitMerge(merge, mergeState);
         return 0;
       }
 

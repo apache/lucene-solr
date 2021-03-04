@@ -60,8 +60,8 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexFormatTooOldException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -87,15 +87,21 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.index.StandardDirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -355,7 +361,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "8.6.2-cfs",
     "8.6.2-nocfs",
     "8.6.3-cfs",
-    "8.6.3-nocfs"
+    "8.6.3-nocfs",
+    "8.7.0-cfs",
+    "8.7.0-nocfs",
+    "8.8.0-cfs",
+    "8.8.0-nocfs",
+    "8.8.1-cfs",
+    "8.8.1-nocfs"
   };
 
   public static String[] getOldNames() {
@@ -377,14 +389,17 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "sorted.8.6.0",
     "sorted.8.6.1",
     "sorted.8.6.2",
-    "sorted.8.6.3"
+    "sorted.8.6.3",
+    "sorted.8.7.0",
+    "sorted.8.8.0",
+    "sorted.8.8.1"
   };
 
   public static String[] getOldSortedNames() {
     return oldSortedNames;
   }
 
-  final String[] unsupportedNames = {
+  static final String[] unsupportedNames = {
     "1.9.0-cfs",
     "1.9.0-nocfs",
     "2.0.0-cfs",
@@ -583,6 +598,20 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     "7.7.3-cfs",
     "7.7.3-nocfs"
   };
+
+  static final int MIN_BINARY_SUPPORTED_MAJOR = Version.MIN_SUPPORTED_MAJOR - 1;
+
+  static final String[] binarySupportedNames;
+
+  static {
+    ArrayList<String> list = new ArrayList<>();
+    for (String name : unsupportedNames) {
+      if (name.startsWith(MIN_BINARY_SUPPORTED_MAJOR + ".")) {
+        list.add(name);
+      }
+    }
+    binarySupportedNames = list.toArray(new String[0]);
+  }
 
   // TODO: on 6.0.0 release, gen the single segment indices and add here:
   static final String[] oldSingleSegmentNames = {};
@@ -862,8 +891,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       CheckIndex checker = new CheckIndex(dir);
       checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8));
       CheckIndex.Status indexStatus = checker.checkIndex();
-      assertFalse(indexStatus.clean);
-      assertTrue(bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      if (unsupportedNames[i].startsWith("7.")) {
+        assertTrue(indexStatus.clean);
+      } else {
+        assertFalse(indexStatus.clean);
+        assertTrue(
+            bos.toString(IOUtils.UTF_8).contains(IndexFormatTooOldException.class.getName()));
+      }
       checker.close();
 
       dir.close();
@@ -984,7 +1018,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void testSearchOldIndex() throws IOException {
     for (String name : oldNames) {
-      searchIndex(oldIndexDirs.get(name), name);
+      searchIndex(oldIndexDirs.get(name), name, Version.MIN_SUPPORTED_MAJOR);
+    }
+
+    for (String name : binarySupportedNames) {
+      Path oldIndexDir = createTempDir(name);
+      TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+      try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
+        searchIndex(dir, name, MIN_BINARY_SUPPORTED_MAJOR);
+      }
     }
   }
 
@@ -1018,30 +1060,18 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void searchIndex(Directory dir, String oldName) throws IOException {
+  public void searchIndex(Directory dir, String oldName, int minIndexMajorVersion)
+      throws IOException {
     // QueryParser parser = new QueryParser("contents", new MockAnalyzer(random));
     // Query query = parser.parse("handle:1");
-
-    IndexReader reader = DirectoryReader.open(dir);
+    IndexCommit indexCommit = DirectoryReader.listCommits(dir).get(0);
+    IndexReader reader = DirectoryReader.open(indexCommit, minIndexMajorVersion);
     IndexSearcher searcher = newSearcher(reader);
 
     TestUtil.checkIndex(dir);
 
-    // true if this is a 4.0+ index
-    final boolean is40Index = FieldInfos.getMergedFieldInfos(reader).fieldInfo("content5") != null;
-    // true if this is a 4.2+ index
-    final boolean is42Index =
-        FieldInfos.getMergedFieldInfos(reader).fieldInfo("dvSortedSet") != null;
-    // true if this is a 4.9+ index
-    final boolean is49Index =
-        FieldInfos.getMergedFieldInfos(reader).fieldInfo("dvSortedNumeric") != null;
-    // true if this index has points (>= 6.0)
-    final boolean hasPoints =
-        FieldInfos.getMergedFieldInfos(reader).fieldInfo("intPoint1d") != null;
-
-    assert is40Index;
-
     final Bits liveDocs = MultiBits.getLiveDocs(reader);
+    assertNotNull(liveDocs);
 
     for (int i = 0; i < 35; i++) {
       if (liveDocs.get(i)) {
@@ -1049,8 +1079,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         List<IndexableField> fields = d.getFields();
         boolean isProxDoc = d.getField("content3") == null;
         if (isProxDoc) {
-          final int numFields = is40Index ? 7 : 5;
-          assertEquals(numFields, fields.size());
+          assertEquals(7, fields.size());
           IndexableField f = d.getField("id");
           assertEquals("" + i, f.stringValue());
 
@@ -1079,87 +1108,78 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
     }
 
-    if (is40Index) {
-      // check docvalues fields
-      NumericDocValues dvByte = MultiDocValues.getNumericValues(reader, "dvByte");
-      BinaryDocValues dvBytesDerefFixed =
-          MultiDocValues.getBinaryValues(reader, "dvBytesDerefFixed");
-      BinaryDocValues dvBytesDerefVar = MultiDocValues.getBinaryValues(reader, "dvBytesDerefVar");
-      SortedDocValues dvBytesSortedFixed =
-          MultiDocValues.getSortedValues(reader, "dvBytesSortedFixed");
-      SortedDocValues dvBytesSortedVar = MultiDocValues.getSortedValues(reader, "dvBytesSortedVar");
-      BinaryDocValues dvBytesStraightFixed =
-          MultiDocValues.getBinaryValues(reader, "dvBytesStraightFixed");
-      BinaryDocValues dvBytesStraightVar =
-          MultiDocValues.getBinaryValues(reader, "dvBytesStraightVar");
-      NumericDocValues dvDouble = MultiDocValues.getNumericValues(reader, "dvDouble");
-      NumericDocValues dvFloat = MultiDocValues.getNumericValues(reader, "dvFloat");
-      NumericDocValues dvInt = MultiDocValues.getNumericValues(reader, "dvInt");
-      NumericDocValues dvLong = MultiDocValues.getNumericValues(reader, "dvLong");
-      NumericDocValues dvPacked = MultiDocValues.getNumericValues(reader, "dvPacked");
-      NumericDocValues dvShort = MultiDocValues.getNumericValues(reader, "dvShort");
-      SortedSetDocValues dvSortedSet = null;
-      if (is42Index) {
-        dvSortedSet = MultiDocValues.getSortedSetValues(reader, "dvSortedSet");
-      }
-      SortedNumericDocValues dvSortedNumeric = null;
-      if (is49Index) {
-        dvSortedNumeric = MultiDocValues.getSortedNumericValues(reader, "dvSortedNumeric");
-      }
+    // check docvalues fields
+    NumericDocValues dvByte = MultiDocValues.getNumericValues(reader, "dvByte");
+    BinaryDocValues dvBytesDerefFixed = MultiDocValues.getBinaryValues(reader, "dvBytesDerefFixed");
+    BinaryDocValues dvBytesDerefVar = MultiDocValues.getBinaryValues(reader, "dvBytesDerefVar");
+    SortedDocValues dvBytesSortedFixed =
+        MultiDocValues.getSortedValues(reader, "dvBytesSortedFixed");
+    SortedDocValues dvBytesSortedVar = MultiDocValues.getSortedValues(reader, "dvBytesSortedVar");
+    BinaryDocValues dvBytesStraightFixed =
+        MultiDocValues.getBinaryValues(reader, "dvBytesStraightFixed");
+    BinaryDocValues dvBytesStraightVar =
+        MultiDocValues.getBinaryValues(reader, "dvBytesStraightVar");
+    NumericDocValues dvDouble = MultiDocValues.getNumericValues(reader, "dvDouble");
+    NumericDocValues dvFloat = MultiDocValues.getNumericValues(reader, "dvFloat");
+    NumericDocValues dvInt = MultiDocValues.getNumericValues(reader, "dvInt");
+    NumericDocValues dvLong = MultiDocValues.getNumericValues(reader, "dvLong");
+    NumericDocValues dvPacked = MultiDocValues.getNumericValues(reader, "dvPacked");
+    NumericDocValues dvShort = MultiDocValues.getNumericValues(reader, "dvShort");
 
-      for (int i = 0; i < 35; i++) {
-        int id = Integer.parseInt(reader.document(i).get("id"));
-        assertEquals(i, dvByte.nextDoc());
-        assertEquals(id, dvByte.longValue());
+    SortedSetDocValues dvSortedSet = MultiDocValues.getSortedSetValues(reader, "dvSortedSet");
+    SortedNumericDocValues dvSortedNumeric =
+        MultiDocValues.getSortedNumericValues(reader, "dvSortedNumeric");
 
-        byte bytes[] =
-            new byte[] {(byte) (id >>> 24), (byte) (id >>> 16), (byte) (id >>> 8), (byte) id};
-        BytesRef expectedRef = new BytesRef(bytes);
+    for (int i = 0; i < 35; i++) {
+      int id = Integer.parseInt(reader.document(i).get("id"));
+      assertEquals(i, dvByte.nextDoc());
+      assertEquals(id, dvByte.longValue());
 
-        assertEquals(i, dvBytesDerefFixed.nextDoc());
-        BytesRef term = dvBytesDerefFixed.binaryValue();
-        assertEquals(expectedRef, term);
-        assertEquals(i, dvBytesDerefVar.nextDoc());
-        term = dvBytesDerefVar.binaryValue();
-        assertEquals(expectedRef, term);
-        assertEquals(i, dvBytesSortedFixed.nextDoc());
-        term = dvBytesSortedFixed.binaryValue();
-        assertEquals(expectedRef, term);
-        assertEquals(i, dvBytesSortedVar.nextDoc());
-        term = dvBytesSortedVar.binaryValue();
-        assertEquals(expectedRef, term);
-        assertEquals(i, dvBytesStraightFixed.nextDoc());
-        term = dvBytesStraightFixed.binaryValue();
-        assertEquals(expectedRef, term);
-        assertEquals(i, dvBytesStraightVar.nextDoc());
-        term = dvBytesStraightVar.binaryValue();
-        assertEquals(expectedRef, term);
+      byte bytes[] =
+          new byte[] {(byte) (id >>> 24), (byte) (id >>> 16), (byte) (id >>> 8), (byte) id};
+      BytesRef expectedRef = new BytesRef(bytes);
 
-        assertEquals(i, dvDouble.nextDoc());
-        assertEquals((double) id, Double.longBitsToDouble(dvDouble.longValue()), 0D);
-        assertEquals(i, dvFloat.nextDoc());
-        assertEquals((float) id, Float.intBitsToFloat((int) dvFloat.longValue()), 0F);
-        assertEquals(i, dvInt.nextDoc());
-        assertEquals(id, dvInt.longValue());
-        assertEquals(i, dvLong.nextDoc());
-        assertEquals(id, dvLong.longValue());
-        assertEquals(i, dvPacked.nextDoc());
-        assertEquals(id, dvPacked.longValue());
-        assertEquals(i, dvShort.nextDoc());
-        assertEquals(id, dvShort.longValue());
-        if (is42Index) {
-          assertEquals(i, dvSortedSet.nextDoc());
-          long ord = dvSortedSet.nextOrd();
-          assertEquals(SortedSetDocValues.NO_MORE_ORDS, dvSortedSet.nextOrd());
-          term = dvSortedSet.lookupOrd(ord);
-          assertEquals(expectedRef, term);
-        }
-        if (is49Index) {
-          assertEquals(i, dvSortedNumeric.nextDoc());
-          assertEquals(1, dvSortedNumeric.docValueCount());
-          assertEquals(id, dvSortedNumeric.nextValue());
-        }
-      }
+      assertEquals(i, dvBytesDerefFixed.nextDoc());
+      BytesRef term = dvBytesDerefFixed.binaryValue();
+      assertEquals(expectedRef, term);
+      assertEquals(i, dvBytesDerefVar.nextDoc());
+      term = dvBytesDerefVar.binaryValue();
+      assertEquals(expectedRef, term);
+      assertEquals(i, dvBytesSortedFixed.nextDoc());
+      term = dvBytesSortedFixed.binaryValue();
+      assertEquals(expectedRef, term);
+      assertEquals(i, dvBytesSortedVar.nextDoc());
+      term = dvBytesSortedVar.binaryValue();
+      assertEquals(expectedRef, term);
+      assertEquals(i, dvBytesStraightFixed.nextDoc());
+      term = dvBytesStraightFixed.binaryValue();
+      assertEquals(expectedRef, term);
+      assertEquals(i, dvBytesStraightVar.nextDoc());
+      term = dvBytesStraightVar.binaryValue();
+      assertEquals(expectedRef, term);
+
+      assertEquals(i, dvDouble.nextDoc());
+      assertEquals((double) id, Double.longBitsToDouble(dvDouble.longValue()), 0D);
+      assertEquals(i, dvFloat.nextDoc());
+      assertEquals((float) id, Float.intBitsToFloat((int) dvFloat.longValue()), 0F);
+      assertEquals(i, dvInt.nextDoc());
+      assertEquals(id, dvInt.longValue());
+      assertEquals(i, dvLong.nextDoc());
+      assertEquals(id, dvLong.longValue());
+      assertEquals(i, dvPacked.nextDoc());
+      assertEquals(id, dvPacked.longValue());
+      assertEquals(i, dvShort.nextDoc());
+      assertEquals(id, dvShort.longValue());
+
+      assertEquals(i, dvSortedSet.nextDoc());
+      long ord = dvSortedSet.nextOrd();
+      assertEquals(SortedSetDocValues.NO_MORE_ORDS, dvSortedSet.nextOrd());
+      term = dvSortedSet.lookupOrd(ord);
+      assertEquals(expectedRef, term);
+
+      assertEquals(i, dvSortedNumeric.nextDoc());
+      assertEquals(1, dvSortedNumeric.docValueCount());
+      assertEquals(id, dvSortedNumeric.nextValue());
     }
 
     ScoreDoc[] hits =
@@ -1171,17 +1191,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     doTestHits(hits, 34, searcher.getIndexReader());
 
-    if (is40Index) {
-      hits =
-          searcher.search(new TermQuery(new Term(new String("content5"), "aaa")), 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(new Term(new String("content5"), "aaa")), 1000).scoreDocs;
 
-      doTestHits(hits, 34, searcher.getIndexReader());
+    doTestHits(hits, 34, searcher.getIndexReader());
 
-      hits =
-          searcher.search(new TermQuery(new Term(new String("content6"), "aaa")), 1000).scoreDocs;
+    hits = searcher.search(new TermQuery(new Term(new String("content6"), "aaa")), 1000).scoreDocs;
 
-      doTestHits(hits, 34, searcher.getIndexReader());
-    }
+    doTestHits(hits, 34, searcher.getIndexReader());
 
     hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), 1000).scoreDocs;
     assertEquals(34, hits.length);
@@ -1193,72 +1209,67 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), 1000).scoreDocs;
     assertEquals(34, hits.length);
 
-    if (hasPoints) {
-      doTestHits(
-          searcher.search(IntPoint.newRangeQuery("intPoint1d", 0, 34), 1000).scoreDocs,
-          34,
-          searcher.getIndexReader());
-      doTestHits(
-          searcher.search(
-                  IntPoint.newRangeQuery("intPoint2d", new int[] {0, 0}, new int[] {34, 68}), 1000)
-              .scoreDocs,
-          34,
-          searcher.getIndexReader());
-      doTestHits(
-          searcher.search(FloatPoint.newRangeQuery("floatPoint1d", 0f, 34f), 1000).scoreDocs,
-          34,
-          searcher.getIndexReader());
-      doTestHits(
-          searcher.search(
-                  FloatPoint.newRangeQuery(
-                      "floatPoint2d", new float[] {0f, 0f}, new float[] {34f, 68f}),
-                  1000)
-              .scoreDocs,
-          34,
-          searcher.getIndexReader());
-      doTestHits(
-          searcher.search(LongPoint.newRangeQuery("longPoint1d", 0, 34), 1000).scoreDocs,
-          34,
-          searcher.getIndexReader());
-      doTestHits(
-          searcher.search(
-                  LongPoint.newRangeQuery("longPoint2d", new long[] {0, 0}, new long[] {34, 68}),
-                  1000)
-              .scoreDocs,
-          34,
-          searcher.getIndexReader());
-      doTestHits(
-          searcher.search(DoublePoint.newRangeQuery("doublePoint1d", 0.0, 34.0), 1000).scoreDocs,
-          34,
-          searcher.getIndexReader());
-      doTestHits(
-          searcher.search(
-                  DoublePoint.newRangeQuery(
-                      "doublePoint2d", new double[] {0.0, 0.0}, new double[] {34.0, 68.0}),
-                  1000)
-              .scoreDocs,
-          34,
-          searcher.getIndexReader());
+    doTestHits(
+        searcher.search(IntPoint.newRangeQuery("intPoint1d", 0, 34), 1000).scoreDocs,
+        34,
+        searcher.getIndexReader());
+    doTestHits(
+        searcher.search(
+                IntPoint.newRangeQuery("intPoint2d", new int[] {0, 0}, new int[] {34, 68}), 1000)
+            .scoreDocs,
+        34,
+        searcher.getIndexReader());
+    doTestHits(
+        searcher.search(FloatPoint.newRangeQuery("floatPoint1d", 0f, 34f), 1000).scoreDocs,
+        34,
+        searcher.getIndexReader());
+    doTestHits(
+        searcher.search(
+                FloatPoint.newRangeQuery(
+                    "floatPoint2d", new float[] {0f, 0f}, new float[] {34f, 68f}),
+                1000)
+            .scoreDocs,
+        34,
+        searcher.getIndexReader());
+    doTestHits(
+        searcher.search(LongPoint.newRangeQuery("longPoint1d", 0, 34), 1000).scoreDocs,
+        34,
+        searcher.getIndexReader());
+    doTestHits(
+        searcher.search(
+                LongPoint.newRangeQuery("longPoint2d", new long[] {0, 0}, new long[] {34, 68}),
+                1000)
+            .scoreDocs,
+        34,
+        searcher.getIndexReader());
+    doTestHits(
+        searcher.search(DoublePoint.newRangeQuery("doublePoint1d", 0.0, 34.0), 1000).scoreDocs,
+        34,
+        searcher.getIndexReader());
+    doTestHits(
+        searcher.search(
+                DoublePoint.newRangeQuery(
+                    "doublePoint2d", new double[] {0.0, 0.0}, new double[] {34.0, 68.0}),
+                1000)
+            .scoreDocs,
+        34,
+        searcher.getIndexReader());
 
-      byte[] bytes1 = new byte[4];
-      byte[] bytes2 = new byte[] {0, 0, 0, (byte) 34};
-      doTestHits(
-          searcher.search(BinaryPoint.newRangeQuery("binaryPoint1d", bytes1, bytes2), 1000)
-              .scoreDocs,
-          34,
-          searcher.getIndexReader());
-      byte[] bytes3 = new byte[] {0, 0, 0, (byte) 68};
-      doTestHits(
-          searcher.search(
-                  BinaryPoint.newRangeQuery(
-                      "binaryPoint2d",
-                      new byte[][] {bytes1, bytes1},
-                      new byte[][] {bytes2, bytes3}),
-                  1000)
-              .scoreDocs,
-          34,
-          searcher.getIndexReader());
-    }
+    byte[] bytes1 = new byte[4];
+    byte[] bytes2 = new byte[] {0, 0, 0, (byte) 34};
+    doTestHits(
+        searcher.search(BinaryPoint.newRangeQuery("binaryPoint1d", bytes1, bytes2), 1000).scoreDocs,
+        34,
+        searcher.getIndexReader());
+    byte[] bytes3 = new byte[] {0, 0, 0, (byte) 68};
+    doTestHits(
+        searcher.search(
+                BinaryPoint.newRangeQuery(
+                    "binaryPoint2d", new byte[][] {bytes1, bytes1}, new byte[][] {bytes2, bytes3}),
+                1000)
+            .scoreDocs,
+        34,
+        searcher.getIndexReader());
 
     reader.close();
   }
@@ -1761,9 +1772,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Path oldIndexDir = createTempDir("moreterms");
     TestUtil.unzip(getDataInputStream(moreTermsIndex), oldIndexDir);
     Directory dir = newFSDirectory(oldIndexDir);
+    DirectoryReader reader = DirectoryReader.open(dir);
+
     verifyUsesDefaultCodec(dir, moreTermsIndex);
-    // TODO: more tests
     TestUtil.checkIndex(dir);
+    searchExampleIndex(reader);
+
+    reader.close();
     dir.close();
   }
 
@@ -1824,6 +1839,29 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.forceMerge(1);
     writer.commit();
     verifyDocValues(dir);
+
+    writer.close();
+    dir.close();
+  }
+
+  public void testDeletes() throws Exception {
+    Path oldIndexDir = createTempDir("dvupdates");
+    TestUtil.unzip(getDataInputStream(dvUpdatesIndex), oldIndexDir);
+    Directory dir = newFSDirectory(oldIndexDir);
+    verifyUsesDefaultCodec(dir, dvUpdatesIndex);
+
+    IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter writer = new IndexWriter(dir, conf);
+
+    int maxDoc = writer.getDocStats().maxDoc;
+    writer.deleteDocuments(new Term("id", "1"));
+    if (random().nextBoolean()) {
+      writer.commit();
+    }
+
+    writer.forceMerge(1);
+    writer.commit();
+    assertEquals(maxDoc - 1, writer.getDocStats().maxDoc);
 
     writer.close();
     dir.close();
@@ -1948,20 +1986,58 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertNotNull("Sorted index index " + name + " not found", resource);
       TestUtil.unzip(resource, path);
 
-      // TODO: more tests
       Directory dir = newFSDirectory(path);
-
       DirectoryReader reader = DirectoryReader.open(dir);
+
       assertEquals(1, reader.leaves().size());
       Sort sort = reader.leaves().get(0).reader().getMetaData().getSort();
       assertNotNull(sort);
       assertEquals("<long: \"dateDV\">!", sort.toString());
-      reader.close();
 
-      // this will confirm the docs really are sorted:
+      // This will confirm the docs are really sorted
       TestUtil.checkIndex(dir);
+
+      searchExampleIndex(reader);
+
+      reader.close();
       dir.close();
     }
+  }
+
+  private void searchExampleIndex(DirectoryReader reader) throws IOException {
+    IndexSearcher searcher = newSearcher(reader);
+
+    TopDocs topDocs = searcher.search(new NormsFieldExistsQuery("titleTokenized"), 10);
+    assertEquals(50, topDocs.totalHits.value);
+
+    topDocs = searcher.search(new DocValuesFieldExistsQuery("titleDV"), 10);
+    assertEquals(50, topDocs.totalHits.value);
+
+    topDocs = searcher.search(new TermQuery(new Term("body", "ja")), 10);
+    assertTrue(topDocs.totalHits.value > 0);
+
+    topDocs =
+        searcher.search(
+            IntPoint.newRangeQuery("docid_int", 42, 44),
+            10,
+            new Sort(new SortField("docid_intDV", SortField.Type.INT)));
+    assertEquals(3, topDocs.totalHits.value);
+    assertEquals(3, topDocs.scoreDocs.length);
+    assertEquals(42, ((FieldDoc) topDocs.scoreDocs[0]).fields[0]);
+    assertEquals(43, ((FieldDoc) topDocs.scoreDocs[1]).fields[0]);
+    assertEquals(44, ((FieldDoc) topDocs.scoreDocs[2]).fields[0]);
+
+    topDocs = searcher.search(new TermQuery(new Term("body", "the")), 5);
+    assertTrue(topDocs.totalHits.value > 0);
+
+    topDocs =
+        searcher.search(
+            new MatchAllDocsQuery(), 5, new Sort(new SortField("dateDV", SortField.Type.LONG)));
+    assertEquals(50, topDocs.totalHits.value);
+    assertEquals(5, topDocs.scoreDocs.length);
+    long firstDate = (Long) ((FieldDoc) topDocs.scoreDocs[0]).fields[0];
+    long lastDate = (Long) ((FieldDoc) topDocs.scoreDocs[4]).fields[0];
+    assertTrue(firstDate <= lastDate);
   }
 
   static long getValue(BinaryDocValues bdv) throws IOException {
@@ -1985,5 +2061,33 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     bytes.bytes[bytes.length++] = (byte) value;
     return bytes;
+  }
+
+  public void testFailOpenOldIndex() throws IOException {
+    for (String name : oldNames) {
+      Directory directory = oldIndexDirs.get(name);
+      IndexCommit commit = DirectoryReader.listCommits(directory).get(0);
+      IndexFormatTooOldException ex =
+          expectThrows(
+              IndexFormatTooOldException.class,
+              () -> StandardDirectoryReader.open(commit, Version.LATEST.major));
+      assertTrue(
+          ex.getMessage()
+              .contains(
+                  "only supports reading from version " + Version.LATEST.major + " upwards."));
+      // now open with allowed min version
+      StandardDirectoryReader.open(commit, Version.MIN_SUPPORTED_MAJOR).close();
+    }
+  }
+
+  public void testReadNMinusTwoCommit() throws IOException {
+    for (String name : binarySupportedNames) {
+      Path oldIndexDir = createTempDir(name);
+      TestUtil.unzip(getDataInputStream("unsupported." + name + ".zip"), oldIndexDir);
+      try (BaseDirectoryWrapper dir = newFSDirectory(oldIndexDir)) {
+        IndexCommit commit = DirectoryReader.listCommits(dir).get(0);
+        StandardDirectoryReader.open(commit, MIN_BINARY_SUPPORTED_MAJOR).close();
+      }
+    }
   }
 }

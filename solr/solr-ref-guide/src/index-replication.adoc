@@ -38,7 +38,7 @@ Solr includes a Java implementation of index replication that works over HTTP:
 .Replication In SolrCloud
 [NOTE]
 ====
-Although there is no explicit concept of "leader/follower" nodes in a <<solrcloud.adoc#solrcloud,SolrCloud>> cluster, the `ReplicationHandler` discussed on this page is still used by SolrCloud as needed to support "shard recovery" – but this is done in a peer to peer manner.
+Although there is no explicit concept of "leader/follower" nodes in a <<solrcloud.adoc#,SolrCloud>> cluster, the `ReplicationHandler` discussed on this page is still used by SolrCloud as needed to support "shard recovery" – but this is done in a peer to peer manner.
 
 When using SolrCloud, the `ReplicationHandler` must be available via the `/replication` path. Solr does this implicitly unless overridden explicitly in your `solrconfig.xml`, but if you wish to override the default behavior, make certain that you do not explicitly set any of the "leader" or "follower" configuration options mentioned below, or they will interfere with normal SolrCloud operation.
 ====

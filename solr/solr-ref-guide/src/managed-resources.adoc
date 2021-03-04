@@ -99,7 +99,7 @@ Assuming you sent this request to Solr, the response body is a JSON document:
 }
 ----
 
-The `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> ships with a pre-built set of managed stop words, however you should only interact with this file using the API and not edit it directly.
+The `sample_techproducts_configs` <<config-sets.adoc#,configset>> ships with a pre-built set of managed stop words, however you should only interact with this file using the API and not edit it directly.
 
 One thing that should stand out to you in this response is that it contains a `managedList` of words as well as `initArgs`. This is an important concept in this framework -- managed resources typically have configuration and data. For stop words, the only configuration parameter is a boolean that determines whether to ignore the case of tokens during stop word filtering (ignoreCase=true|false). The data is a list of words, which is represented as a JSON array named `managedList` in the response.
 
@@ -132,7 +132,7 @@ NOTE: PUT/POST is used to add terms to an existing list instead of replacing the
 
 === Managing Synonyms
 
-For the most part, the API for managing synonyms behaves similar to the API for stop words, except instead of working with a list of words, it uses a map, where the value for each entry in the map is a set of synonyms for a term. As with stop words, the `sample_techproducts_configs` <<config-sets.adoc#config-sets,configset>> includes a pre-built set of synonym mappings suitable for the sample data that is activated by the following field type definition in `schema.xml`:
+For the most part, the API for managing synonyms behaves similar to the API for stop words, except instead of working with a list of words, it uses a map, where the value for each entry in the map is a set of synonyms for a term. As with stop words, the `sample_techproducts_configs` <<config-sets.adoc#,configset>> includes a pre-built set of synonym mappings suitable for the sample data that is activated by the following field type definition in `schema.xml`:
 
 [source,xml]
 ----
@@ -208,7 +208,7 @@ Lastly, you can delete a mapping by sending a DELETE request to the managed endp
 
 Changes made to managed resources via this REST API are not applied to the active Solr components until the Solr collection (or Solr core in single server mode) is reloaded.
 
-For example: after adding or deleting a stop word, you must reload the core/collection before changes become active; related APIs: <<coreadmin-api.adoc#coreadmin-api,CoreAdmin API>> and <<collections-api.adoc#collections-api,Collections API>>.
+For example: after adding or deleting a stop word, you must reload the core/collection before changes become active; related APIs: <<coreadmin-api.adoc#,CoreAdmin API>> and <<collections-api.adoc#,Collections API>>.
 
 This approach is required when running in distributed mode so that we are assured changes are applied to all cores in a collection at the same time so that behavior is consistent and predictable. It goes without saying that you don’t want one of your replicas working with a different set of stop words or synonyms than the others.
 
@@ -218,7 +218,7 @@ However, the intent of this API implementation is that changes will be applied u
 
 [IMPORTANT]
 ====
-Changing things like stop words and synonym mappings typically require reindexing existing documents if being used by index-time analyzers. The RestManager framework does not guard you from this, it simply makes it possible to programmatically build up a set of stop words, synonyms, etc. See the section <<reindexing.adoc#reindexing,Reindexing>> for more information about reindexing your documents.
+Changing things like stop words and synonym mappings typically require reindexing existing documents if being used by index-time analyzers. The RestManager framework does not guard you from this, it simply makes it possible to programmatically build up a set of stop words, synonyms, etc. See the section <<reindexing.adoc#,Reindexing>> for more information about reindexing your documents.
 ====
 
 == RestManager Endpoint

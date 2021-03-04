@@ -41,14 +41,13 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.BasicAuthPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPlugin;
 import org.apache.solr.util.TimeOut;
-
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 /**
  * tests various streaming expressions (via the SolrJ {@link SolrStream} API) against a SolrCloud cluster
@@ -126,7 +125,8 @@ public class CloudAuthStreamTest extends SolrCloudTestCase {
 
     for (String collection : Arrays.asList(COLLECTION_X, COLLECTION_Y)) {
       CollectionAdminRequest.createCollection(collection, "_default", 2, 2)
-        .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
+          .setBasicAuthCredentials(ADMIN_USER, ADMIN_USER)
         .process(cluster.getSolrClient());
     }
     

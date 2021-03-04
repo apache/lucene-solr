@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -140,6 +141,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(miniCluster.getSolrClient());
     
       QueryRequest req = new QueryRequest();
@@ -182,6 +184,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 2)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -229,6 +232,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4
       miniCluster.uploadConfigSet(SolrTestCaseJ4.TEST_PATH().resolve("collection1/conf"), configName);
 
       CollectionAdminRequest.createCollection(collectionName, configName, 2, 1)
+          .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
           .process(miniCluster.getSolrClient());
 
       ModifiableSolrParams params = new ModifiableSolrParams();

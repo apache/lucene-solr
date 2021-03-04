@@ -155,6 +155,18 @@ public class TestPagedBytes extends LuceneTestCase {
           assertEquals(answer[pos + byteUpto], slice.bytes[slice.offset + byteUpto]);
         }
       }
+
+      // test skipping
+      final DataInput in2 = p.getDataInput();
+      int maxSkipTo = numBytes - 1;
+      // skip chunks of bytes until exhausted
+      for (int curr = 0; curr < maxSkipTo; ) {
+        int skipTo = TestUtil.nextInt(random, curr, maxSkipTo);
+        int step = skipTo - curr;
+        in2.skipBytes(step);
+        assertEquals(answer[skipTo], in2.readByte());
+        curr = skipTo + 1; // +1 for read byte
+      }
     }
   }
 

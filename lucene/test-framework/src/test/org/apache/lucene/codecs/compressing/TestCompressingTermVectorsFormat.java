@@ -100,8 +100,8 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
       // examine dirty counts:
       for (LeafReaderContext leaf : ir2.leaves()) {
         CodecReader sr = (CodecReader) leaf.reader();
-        CompressingTermVectorsReader reader =
-            (CompressingTermVectorsReader) sr.getTermVectorsReader();
+        Lucene90CompressingTermVectorsReader reader =
+            (Lucene90CompressingTermVectorsReader) sr.getTermVectorsReader();
         assertTrue(reader.getNumDirtyDocs() > 0);
         assertEquals(1, reader.getNumDirtyChunks());
       }
@@ -113,7 +113,8 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     ir.close();
     ir = ir2;
     CodecReader sr = (CodecReader) getOnlyLeafReader(ir);
-    CompressingTermVectorsReader reader = (CompressingTermVectorsReader) sr.getTermVectorsReader();
+    Lucene90CompressingTermVectorsReader reader =
+        (Lucene90CompressingTermVectorsReader) sr.getTermVectorsReader();
     // we could get lucky, and have zero, but typically one.
     assertTrue(reader.getNumDirtyChunks() <= 1);
     ir.close();

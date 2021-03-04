@@ -30,12 +30,6 @@ import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.VectorFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80NormsFormat;
-import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86PointsFormat;
 import org.apache.lucene.codecs.lucene86.Lucene86SegmentInfoFormat;
 import org.apache.lucene.codecs.lucene87.Lucene87StoredFieldsFormat;
@@ -55,26 +49,26 @@ public class Lucene90Codec extends Codec {
   /** Configuration option for the codec. */
   public static enum Mode {
     /** Trade compression ratio for retrieval speed. */
-    BEST_SPEED(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, Lucene80DocValuesFormat.Mode.BEST_SPEED),
+    BEST_SPEED(Lucene87StoredFieldsFormat.Mode.BEST_SPEED, Lucene90DocValuesFormat.Mode.BEST_SPEED),
     /** Trade retrieval speed for compression ratio. */
     BEST_COMPRESSION(
         Lucene87StoredFieldsFormat.Mode.BEST_COMPRESSION,
-        Lucene80DocValuesFormat.Mode.BEST_COMPRESSION);
+        Lucene90DocValuesFormat.Mode.BEST_COMPRESSION);
 
     private final Lucene87StoredFieldsFormat.Mode storedMode;
-    private final Lucene80DocValuesFormat.Mode dvMode;
+    private final Lucene90DocValuesFormat.Mode dvMode;
 
-    private Mode(Lucene87StoredFieldsFormat.Mode storedMode, Lucene80DocValuesFormat.Mode dvMode) {
+    private Mode(Lucene87StoredFieldsFormat.Mode storedMode, Lucene90DocValuesFormat.Mode dvMode) {
       this.storedMode = Objects.requireNonNull(storedMode);
       this.dvMode = Objects.requireNonNull(dvMode);
     }
   }
 
-  private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
+  private final TermVectorsFormat vectorsFormat = new Lucene90TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene90FieldInfosFormat();
   private final SegmentInfoFormat segmentInfosFormat = new Lucene86SegmentInfoFormat();
-  private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
-  private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
+  private final LiveDocsFormat liveDocsFormat = new Lucene90LiveDocsFormat();
+  private final CompoundFormat compoundFormat = new Lucene90CompoundFormat();
   private final PostingsFormat defaultFormat;
 
   private final PostingsFormat postingsFormat =
@@ -111,8 +105,8 @@ public class Lucene90Codec extends Codec {
     super("Lucene90");
     this.storedFieldsFormat =
         new Lucene87StoredFieldsFormat(Objects.requireNonNull(mode).storedMode);
-    this.defaultFormat = new Lucene84PostingsFormat();
-    this.defaultDVFormat = new Lucene80DocValuesFormat(mode.dvMode);
+    this.defaultFormat = new Lucene90PostingsFormat();
+    this.defaultDVFormat = new Lucene90DocValuesFormat(mode.dvMode);
   }
 
   @Override
@@ -192,7 +186,7 @@ public class Lucene90Codec extends Codec {
 
   private final DocValuesFormat defaultDVFormat;
 
-  private final NormsFormat normsFormat = new Lucene80NormsFormat();
+  private final NormsFormat normsFormat = new Lucene90NormsFormat();
 
   @Override
   public final NormsFormat normsFormat() {

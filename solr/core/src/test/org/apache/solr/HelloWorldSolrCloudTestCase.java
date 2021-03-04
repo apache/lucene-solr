@@ -31,7 +31,7 @@ import org.junit.Test;
  * How to use this test class:
  * #1 Run the test, e.g.
  *    in Eclipse 'Run As JUnit Test' or
- *    on the command line:  cd solr/core ; ant test -Dtestcase=HelloWorldSolrCloudTestCase
+ *    on the command line:  ./gradlew -p solr/core test --tests HelloWorldSolrCloudTestCase
  * #2 Modify the test, e.g.
  *    in setupCluster add further documents and then re-run the test.
  */

@@ -308,6 +308,9 @@ public class SolrXmlConfig {
         case "configSetsHandler":
           builder.setConfigSetsHandlerClass(value);
           break;
+        case "configSetService":
+          builder.setConfigSetServiceClass(value);
+          break;
         case "coreRootDirectory":
           builder.setCoreRootDirectory(value);
           break;
@@ -484,6 +487,9 @@ public class SolrXmlConfig {
           break;
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
+          break;
+        case "distributedClusterStateUpdates":
+          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);

@@ -22,6 +22,7 @@ import org.apache.solr.cluster.placement.impl.AttributeFetcherImpl;
 import org.apache.solr.cluster.placement.impl.AttributeValuesImpl;
 import org.apache.solr.cluster.placement.impl.CollectionMetricsBuilder;
 import org.apache.solr.cluster.placement.impl.NodeMetricImpl;
+import org.apache.solr.cluster.placement.impl.PlacementPlanFactoryImpl;
 import org.apache.solr.cluster.placement.impl.ReplicaMetricImpl;
 import org.apache.solr.common.util.Pair;
 import org.junit.Assert;
@@ -54,6 +55,7 @@ public class Builders {
         NodeBuilder nodeBuilder = new NodeBuilder().setNodeName("node_" + n); // Default name, can be changed
         nodeBuilder.setTotalDiskGB(10000.0);
         nodeBuilder.setFreeDiskGB(5000.0);
+        nodeBuilder.setCoreCount(0);
         nodeBuilders.add(nodeBuilder);
       }
       return this;
@@ -90,6 +92,29 @@ public class Builders {
       }
 
       return clusterCollections;
+    }
+
+    private static final PlacementPlanFactory PLACEMENT_PLAN_FACTORY = new PlacementPlanFactoryImpl();
+
+    public PlacementContext buildPlacementContext() {
+      Cluster cluster = build();
+      AttributeFetcher attributeFetcher = buildAttributeFetcher();
+      return new PlacementContext() {
+        @Override
+        public Cluster getCluster() {
+          return cluster;
+        }
+
+        @Override
+        public AttributeFetcher getAttributeFetcher() {
+          return attributeFetcher;
+        }
+
+        @Override
+        public PlacementPlanFactory getPlacementPlanFactory() {
+          return PLACEMENT_PLAN_FACTORY;
+        }
+      };
     }
 
     public AttributeFetcher buildAttributeFetcher() {

@@ -139,7 +139,7 @@ public class TestLocalFSCloudBackupRestore extends AbstractCloudBackupRestoreTes
     public PoinsionedRepository() {
       super();
     }
-     @Override
+    @Override
     public void copyFileFrom(Directory sourceDir, String fileName, URI dest) throws IOException {
       throw new UnsupportedOperationException(poisioned);
     }

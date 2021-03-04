@@ -279,9 +279,8 @@ public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
       map.putAll(includedMap);
     }
     if (maxDepth > 0) {
-      map.entrySet().stream()
-          .filter(e -> e.getValue() instanceof Map)
-          .map(Map.Entry::getValue)
+      map.values().stream()
+          .filter(o -> o instanceof Map)
           .forEach(m -> handleIncludes((ValidatingJsonMap) m, loc, maxDepth - 1));
     }
   }

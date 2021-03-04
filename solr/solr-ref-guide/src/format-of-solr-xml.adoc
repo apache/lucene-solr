@@ -18,7 +18,7 @@
 
 The `solr.xml` file defines some global configuration options that apply to all or many cores.
 
-This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>>.
+This section will describe the default `solr.xml` file included with Solr and how to modify it for your needs. For details on how to configure `core.properties`, see the section <<defining-core-properties.adoc#,Defining core.properties>>.
 
 == Defining solr.xml
 
@@ -42,6 +42,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr` or
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
     <str name="zkCredentialsProvider">${zkCredentialsProvider:org.apache.solr.common.cloud.DefaultZkCredentialsProvider}</str>
     <str name="zkACLProvider">${zkACLProvider:org.apache.solr.common.cloud.DefaultZkACLProvider}</str>
+    <bool name="distributedClusterStateUpdates">${distributedClusterStateUpdates:false}</bool>
   </solrcloud>
 
   <shardHandlerFactory name="shardHandlerFactory"
@@ -61,6 +62,13 @@ As you can see, the discovery Solr configuration is "SolrCloud friendly". Howeve
 === The <solr> Element
 
 There are no attributes that you can specify in the `<solr>` tag, which is the root element of `solr.xml`. The tables below list the child nodes of each XML element in `solr.xml`.
+
+`configSetService`::
+This attribute does not need to be set.
++
+If used, this attribute should be set to the FQN (Fully qualified name) of a class that inherits from ConfigSetService , and you must provide a constructor with one param which the type is `org.apache.solr.core.CoreContainer` . For example, `<str name="configSetService">com.myorg.CustomConfigSetService</str>`.
++
+If this attribute isn't set, Solr uses the default configSetService , with zookeeper aware of `org.apache.solr.cloud.CloudConfigSetService`, without zookeeper aware of `org.apache.solr.core.ConfigSetService.Standalone`.
 
 `adminHandler`::
 This attribute does not need to be set.
@@ -160,8 +168,11 @@ In SolrCloud mode, the URL of the ZooKeeper host that Solr should use for cluste
 If `TRUE`, node names are not based on the address of the node, but on a generic name that identifies the core. When a different machine takes over serving that core things will be much easier to understand.
 
 `zkCredentialsProvider` & `zkACLProvider`::
-Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>>.
+Optional parameters that can be specified if you are using <<zookeeper-access-control.adoc#,ZooKeeper Access Control>>.
 
+
+`distributedClusterStateUpdates`::
+If `TRUE`, the internal behavior of SolrCloud is changed to not use the Overseer for collections' `state.json` updates but do this directly against ZooKeeper.
 
 === The <logging> Element
 
