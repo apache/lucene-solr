@@ -30,6 +30,16 @@ configure(rootProject) {
           "https://lucene.apache.org/core/${urlVersion}"
         }
       }())
+    } else {
+      // TODO: The url should be constructed from actual dependency version... but this isn't available
+      // at evaluation time. it'd have to be a lazy property provider.
+      //
+      // There are actually two questions -
+      //   1) what to do about links to yet-unreleased Lucene versions and
+      //   2) forgot what the second question was...
+      //
+      // For now, just hardcode the latest released version.
+      luceneDocUrl = project.propertyOrDefault('lucene.javadoc.url', "https://lucene.apache.org/core/8_8_1")
     }
 
     // SOLR ONLY

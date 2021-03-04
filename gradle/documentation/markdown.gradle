@@ -108,9 +108,7 @@ if (!skipSolr) {
       // list all properties used by the template here to allow uptodate checks to be correct:
       inputs.property('version', project.version)
       inputs.property('solrRefguideUrl', project.solrRefguideUrl)
-      if (!skipLucene) {
-        inputs.property('luceneDocUrl', project.luceneDocUrl)
-      }
+      inputs.property('luceneDocUrl', project.luceneDocUrl)
 
       withProjectList()
     }

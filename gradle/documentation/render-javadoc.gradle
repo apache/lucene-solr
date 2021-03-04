@@ -357,7 +357,7 @@ class RenderJavadocTask extends DefaultTask {
   def offlineLinks = [:]
 
   @Input
-  def luceneDocUrl = "${-> project.skipLucene ? null : project.luceneDocUrl }"
+  def luceneDocUrl = "${-> project.luceneDocUrl }"
 
   // SOLR ONLY
   @Input
