@@ -106,6 +106,16 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+  // Netty is transitive by hadoop
+  runtimeOnly 'io.netty:netty-buffer'
+  runtimeOnly 'io.netty:netty-codec'
+  runtimeOnly 'io.netty:netty-common'
+  runtimeOnly 'io.netty:netty-handler'
+  runtimeOnly 'io.netty:netty-resolver'
+  runtimeOnly 'io.netty:netty-transport'
+  runtimeOnly 'io.netty:netty-transport-native-epoll'
+  runtimeOnly 'io.netty:netty-transport-native-unix-common'
+
   testImplementation 'org.apache.commons:commons-compress' // required for customized hadoop classes
 
   implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
