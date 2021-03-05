@@ -351,6 +351,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
           minPackedValueStack[level],
           0,
           config.packedIndexBytesLength);
+      // add the split dim value:
       System.arraycopy(
           splitValuesStack[level - 1],
           splitDims[level - 1] * config.bytesPerDim,
@@ -387,22 +388,17 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
-      if (minPackedValueStack[level] == null) {
-        minPackedValueStack[level] = new byte[config.packedIndexBytesLength];
-        maxPackedValueStack[level] = new byte[config.packedIndexBytesLength];
-      }
+      // we should have already called pushLeft,
+      assert minPackedValueStack[level] != null;
+      assert maxPackedValueStack[level] != null;
+      // restore the split dim value:
       System.arraycopy(
           maxPackedValueStack[level - 1],
-          0,
+          splitDims[level - 1] * config.bytesPerDim,
           maxPackedValueStack[level],
-          0,
-          config.packedIndexBytesLength);
-      System.arraycopy(
-          minPackedValueStack[level - 1],
-          0,
-          minPackedValueStack[level],
-          0,
-          config.packedIndexBytesLength);
+          splitDims[level - 1] * config.bytesPerDim,
+          config.bytesPerDim);
+      // add the split dim value:
       System.arraycopy(
           splitValuesStack[level - 1],
           splitDims[level - 1] * config.bytesPerDim,
@@ -414,7 +410,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
 
     @Override
     public boolean moveToSibling() {
-      if (negativeDeltas[level * config.numIndexDims + splitDims[level - 1]]) {
+      if (nodeID % 2 == 0) {
         pop();
         pushRight();
         return nodeExists();
