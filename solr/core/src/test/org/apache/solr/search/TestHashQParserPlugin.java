@@ -71,7 +71,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random())+"}");
-    params.add("partitionKeys", "a_i,a_s,a_i,a_s,a_i");
+    params.add("partitionKeys", "nonexistent");
     params.add("wt", "xml");
     ModifiableSolrParams finalParams = params;
     expectThrows(SolrException.class, () -> h.query(req(finalParams)));

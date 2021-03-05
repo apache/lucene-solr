@@ -274,6 +274,32 @@ image::images/math-expressions/graph2.png[]
 If we compute the dot product between the butter column and the other product columns you will find that the dot product equals the inbound degree in each case.
 This tells us that a nearest neighbor search, using a maximum inner product similarity, would select the column with the highest inbound degree.
 
+=== Limiting Basket Size
+
+The recommendation can be improved if we chose baskets that contain fewer items.
+This is because baskets with a smaller number of products carry more information about the
+relationship between the products in the basket.
+
+The `maxDocFreq` parameter can be used to limit the "walk" to only include baskets that appear in the index a certain
+number of times. Since each occurrence of a basket ID in the index is a product, limiting the document frequency of the
+basket ID will limit the size of the basket. The `maxDocFreq` param is applied per shard. If there is a single
+shard or documents are co-located by basket ID then the `maxDocFreq` will be an exact count.
+Otherwise it will return baskets with a max size of numShards*maxDocFreq.
+
+The example below shows the `maxDocFreq` parameter applied to the `nodes` expression.
+
+[source,text]
+----
+nodes(baskets,
+      random(baskets, q="product_s:butter", fl="basket_s", rows="3"),
+      walk="basket_s->basket_s",
+      maxDocFreq="5",
+      fq="-product_s:butter",
+      gather="product_s",
+      trackTraversal="true",
+      count(*))
+----
+
 === Node Scoring
 
 The degree of the node describes how many nodes in the subgraph link to it.

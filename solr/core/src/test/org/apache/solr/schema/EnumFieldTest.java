@@ -592,7 +592,7 @@ public class EnumFieldTest extends SolrTestCaseJ4 {
         "missing : true, exists : true, allBuckets : true, method : enum }}";
 
     assertQ(req("fl", "" + FIELD_NAME, "q", FIELD_NAME + ":*", "json.facet", jsonFacetParam),
-        "//*[@name='facets']/int/text()=6",
+        "//*[@name='facets']/long/text()=6",
         "//*[@name='allBuckets']/long/text()=6");
   }
 }
