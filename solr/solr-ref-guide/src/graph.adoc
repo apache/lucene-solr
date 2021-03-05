@@ -282,7 +282,7 @@ relationship between the products in the basket.
 
 The `maxDocFreq` parameter can be used to limit the "walk" to only include baskets that appear in the index a certain
 number of times. Since each occurrence of a basket ID in the index is a product, limiting the document frequency of the
-basket ID will limit the size of basket. The `maxDocFreq` param is applied per shard. If there is a single
+basket ID will limit the size of the basket. The `maxDocFreq` param is applied per shard. If there is a single
 shard or documents are co-located by basket ID then the `maxDocFreq` will be an exact count.
 Otherwise it will return baskets with a max size of numShards*maxDocFreq.
 
