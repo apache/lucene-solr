@@ -17,13 +17,14 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.SolrTestCase;
-
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.Properties;
+
+import org.apache.solr.SolrTestCase;
 
 public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
 
@@ -67,7 +68,7 @@ public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
         p.setProperty("httpBasicAuthUser", "foo");
         p.setProperty("httpBasicAuthPassword", "bar");
         File f = createTempFile().toFile();
-        try (FileWriter fw = new FileWriter(f, StandardCharsets.UTF_8)) {
+        try (BufferedWriter fw = Files.newBufferedWriter(f.toPath(), StandardCharsets.UTF_8)) {
             p.store(fw, "tmp properties file for PreemptiveBasicAuthClientBuilderFactoryTest.testCredentialsFromConfigFile");
         }
         System.setProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG, f.getAbsolutePath());
