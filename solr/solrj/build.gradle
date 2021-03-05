@@ -39,18 +39,9 @@ dependencies {
     exclude group: "commons-logging", module: "commons-logging"
   })
 
-  api 'io.netty:netty-buffer'
-  api 'io.netty:netty-codec'
-  api 'io.netty:netty-common'
-  api 'io.netty:netty-handler'
-  api 'io.netty:netty-resolver'
-  api 'io.netty:netty-transport'
-  api 'io.netty:netty-transport-native-epoll'
-  api 'io.netty:netty-transport-native-unix-common'
-
   api('org.apache.zookeeper:zookeeper', {
     exclude group: "org.apache.yetus", module: "audience-annotations"
-    exclude group: "io.netty", module: "netty-all"
+    exclude group: "io.netty"
     exclude group: "log4j", module: "log4j"
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
