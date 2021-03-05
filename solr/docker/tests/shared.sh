@@ -53,9 +53,9 @@ function wait_for_server_started {
   local log
   log="${BUILD_DIR}/${container_name}.log"
   while true; do
-    docker logs "$container_name"
     docker logs "$container_name" > "${log}" 2>&1
     if grep -E -q '(o\.e\.j\.s\.Server Started|Started SocketConnector)' "${log}" ; then
+      docker logs "$container_name"
       break
     fi
 
@@ -91,7 +91,6 @@ function prepare_dir_to_mount {
   fi
   rm -fr "$folder" >/dev/null 2>&1
   mkdir "$folder"
-  ls -ld "$folder"
   #echo "***** Created varsolr folder $BUILD_DIR / $folder"
 
   # The /var/solr mountpoint is owned by solr, so when we bind mount there our directory,
