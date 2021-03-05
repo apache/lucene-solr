@@ -30,7 +30,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.bkd.BKDIndexInput.IndexTree;
 import org.apache.lucene.util.bkd.BKDReader;
 
@@ -70,10 +69,8 @@ public class FloatPointNearestNeighbor {
     public String toString() {
       return "Cell(readerIndex="
           + readerIndex
-          + " nodeID="
-          + index.getNodeID()
-          + " isLeaf="
-          + index.isLeafNode()
+          + " "
+          + index.toString()
           + " distanceSquared="
           + distanceSquared
           + ")";
@@ -201,27 +198,13 @@ public class FloatPointNearestNeighbor {
     PriorityQueue<Cell> cellQueue = new PriorityQueue<>();
 
     NearestVisitor visitor = new NearestVisitor(hitQueue, topN, origin);
-    List<IndexTree> indexTrees = new ArrayList<>();
 
     // Add root cell for each reader into the queue:
-    int bytesPerDim = -1;
-
     for (int i = 0; i < readers.size(); ++i) {
       BKDReader reader = readers.get(i);
-      if (bytesPerDim == -1) {
-        bytesPerDim = reader.getBytesPerDimension();
-      } else if (bytesPerDim != reader.getBytesPerDimension()) {
-        throw new IllegalStateException(
-            "bytesPerDim changed from "
-                + bytesPerDim
-                + " to "
-                + reader.getBytesPerDimension()
-                + " across readers");
-      }
       byte[] minPackedValue = reader.getMinPackedValue();
       byte[] maxPackedValue = reader.getMaxPackedValue();
       IndexTree indexTree = reader.getIndexTree();
-      indexTrees.add(indexTree);
 
       cellQueue.offer(
           new Cell(
@@ -240,7 +223,7 @@ public class FloatPointNearestNeighbor {
         break;
       }
 
-      if (cell.index.isLeafNode()) {
+      if (cell.index.moveToChild() == false) {
         // System.out.println("    leaf");
         // Leaf block: visit all points and possibly collect them:
         visitor.curDocBase = docBases.get(cell.readerIndex);
@@ -251,46 +234,36 @@ public class FloatPointNearestNeighbor {
         // assert hitQueue.peek().distanceSquared >= cell.distanceSquared;
         // System.out.println("    now " + hitQueue.size() + " hits");
       } else {
-        // System.out.println("    non-leaf");
-        // Non-leaf block: split into two cells and put them back into the queue:
-
-        BytesRef splitValue = BytesRef.deepCopyOf(cell.index.getSplitDimValue());
-        int splitDim = cell.index.getSplitDim();
 
         // we must clone the index so that we we can recurse left and right "concurrently":
         IndexTree newIndex = cell.index.clone();
-        byte[] splitPackedValue = cell.maxPacked.clone();
-        System.arraycopy(
-            splitValue.bytes,
-            splitValue.offset,
-            splitPackedValue,
-            splitDim * bytesPerDim,
-            bytesPerDim);
 
-        cell.index.pushLeft();
         double distanceLeft =
-            pointToRectangleDistanceSquared(cell.minPacked, splitPackedValue, origin);
+            pointToRectangleDistanceSquared(
+                newIndex.getMinPackedValue(), newIndex.getMaxPackedValue(), origin);
         if (distanceLeft <= visitor.bottomNearestDistanceSquared) {
           cellQueue.offer(
               new Cell(
-                  cell.index, cell.readerIndex, cell.minPacked, splitPackedValue, distanceLeft));
+                  newIndex,
+                  cell.readerIndex,
+                  newIndex.getMinPackedValue(),
+                  newIndex.getMaxPackedValue(),
+                  distanceLeft));
         }
 
-        splitPackedValue = cell.minPacked.clone();
-        System.arraycopy(
-            splitValue.bytes,
-            splitValue.offset,
-            splitPackedValue,
-            splitDim * bytesPerDim,
-            bytesPerDim);
-
-        newIndex.pushRight();
-        double distanceRight =
-            pointToRectangleDistanceSquared(splitPackedValue, cell.maxPacked, origin);
-        if (distanceRight <= visitor.bottomNearestDistanceSquared) {
-          cellQueue.offer(
-              new Cell(
-                  newIndex, cell.readerIndex, splitPackedValue, cell.maxPacked, distanceRight));
+        if (cell.index.moveToSibling()) {
+          double distanceRight =
+              pointToRectangleDistanceSquared(
+                  cell.index.getMinPackedValue(), cell.index.getMaxPackedValue(), origin);
+          if (distanceRight <= visitor.bottomNearestDistanceSquared) {
+            cellQueue.offer(
+                new Cell(
+                    cell.index,
+                    cell.readerIndex,
+                    cell.index.getMinPackedValue(),
+                    cell.index.getMaxPackedValue(),
+                    distanceRight));
+          }
         }
       }
     }

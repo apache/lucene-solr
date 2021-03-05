@@ -18,7 +18,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.util.BytesRef;
 
 /**
  * Abstraction of a block KD-tree that contains multi-dimensional points in byte[] space.
@@ -54,50 +53,45 @@ public interface BKDIndexInput {
     /** Clone, but you are not allowed to pop up past the point where the clone happened. */
     IndexTree clone();
 
-    /** Return current node id. */
-    int getNodeID();
+    /**
+     * Move to the first child node and return {@code true} upon success. Returns {@code false} for
+     * leaf nodes and {@code true} otherwise. Should not be called if the current node has already
+     * called this method.
+     */
+    boolean moveToChild();
 
     /**
-     * Navigate to left child. Should not be call if the current node has already called this method
-     * or pushRight.
+     * Move to the next sibling node and return {@code true} upon success. Returns {@code false} if
+     * the current node has no more siblings.
      */
-    void pushLeft();
+    boolean moveToSibling();
 
     /**
-     * Navigate to right child. Should not be call if the current node has already called this
-     * method.
+     * Move to the parent node and return {@code true} upon success. Returns {@code false} for the
+     * root node and {@code true} otherwise.
      */
-    void pushRight();
+    boolean moveToParent();
 
-    /** Navigate to parent node. */
-    void pop();
+    /** Return the minimum packed value of the current node. */
+    byte[] getMinPackedValue();
 
-    /** Check if the current node is a leaf. */
-    boolean isLeafNode();
+    /** Return the maximum packed value of the current node. */
+    byte[] getMaxPackedValue();
 
-    /** Check if the current node exists. */
-    boolean nodeExists();
+    /** Return the number of points below the current node. */
+    long size();
 
-    /** Get split dimension for this node. Only valid after pushLeft or pushRight, not pop! */
-    int getSplitDim();
-
-    /** Get split dimension value for this node. Only valid after pushLeft or pushRight, not pop! */
-    BytesRef getSplitDimValue();
-
-    /** Get split value for this node. Only valid after pushLeft or pushRight, not pop! */
-    byte[] getSplitPackedValue();
-
-    /** Return the number of leaves below the current node. */
-    int getNumLeaves();
-
-    /** Visit the docs of the current node. Only valid if isLeafNode() is true. */
+    /** Visit the docs of the current node. Only valid if moveToChild() is false. */
     void visitDocIDs(IntersectVisitor visitor) throws IOException;
 
-    /** Visit the values of the current node. Only valid if isLeafNode() is true. */
+    /** Visit the values of the current node. Only valid if moveToChild() is false. */
     void visitDocValues(IntersectVisitor visitor) throws IOException;
   }
 
-  /** Navigate the leaf nodes of the tree. */
+  /**
+   * Navigate the leaf nodes of the tree in order, from left to right. In the 1D case, values should
+   * be visited in increasing order, and in the case of ties, in increasing docID order.
+   */
   interface LeafIterator {
 
     /** Visit the next leaf node. If the tree has no more leaves, it returns false. */

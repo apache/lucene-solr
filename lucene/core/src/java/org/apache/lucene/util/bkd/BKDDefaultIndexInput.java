@@ -33,10 +33,10 @@ import org.apache.lucene.util.MathUtil;
  * @lucene.experimental
  */
 public class BKDDefaultIndexInput implements BKDIndexInput {
-
-  // Packed array of byte[] holding all split values in the full binary tree:
+  
   final BKDConfig config;
   final int numLeaves;
+  // Packed array of byte[] holding all docs and values:
   final IndexInput in;
   final byte[] minPackedValue;
   final byte[] maxPackedValue;
@@ -44,7 +44,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
   final int docCount;
   final int version;
   final long minLeafBlockFP;
-
+  // Packed array of byte[] holding all split values in the full binary tree:
   private final IndexInput packedIndex;
 
   /**
@@ -141,14 +141,30 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
 
   @Override
   public BKDIndexInput.IndexTree getIndexTree() {
-    return new IndexTree(packedIndex.clone(), this.in.clone(), config, numLeaves, version);
+    return new IndexTree(
+        packedIndex.clone(),
+        this.in.clone(),
+        config,
+        numLeaves,
+        version,
+        minPackedValue,
+        maxPackedValue);
   }
 
   @Override
   public LeafIterator getLeafTreeIterator() throws IOException {
     final IndexInput input = in.clone();
     final IndexTree indexTree =
-        new IndexTree(packedIndex.clone(), input, config, numLeaves, version, 1, 1);
+        new IndexTree(
+            packedIndex.clone(),
+            input,
+            config,
+            numLeaves,
+            version,
+            1,
+            1,
+            minPackedValue,
+            maxPackedValue);
     input.seek(minLeafBlockFP);
     return new LeafIterator() {
       int leaf = 0;
@@ -169,8 +185,6 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     private int nodeID;
     // level is 1-based so that we can do level-1 w/o checking each time:
     private int level;
-    private int splitDim;
-    private final byte[][] splitPackedValueStack;
     // used to read the packed tree off-heap
     private final IndexInput innerNodes;
     // used to read the packed tree off-heap
@@ -187,28 +201,32 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     // this will be true if the last time we
     // split on this dimension, we next pushed to the left sub-tree:
     private final boolean[] negativeDeltas;
-    // holds the packed per-level split values; the intersect method uses this to save the cell
-    // min/max as it recurses:
+    // holds the packed per-level split values
     private final byte[][] splitValuesStack;
-    // scratch value to return from getPackedValue:
-    private final BytesRef scratch;
-
-    private final BKDReaderDocIDSetIterator scratchIterator;
-
+    // holds the packed per-level min/max values for all dimensions.
+    private final byte[][] minPackedValueStack, maxPackedValueStack;
+    // tree parameters
     private final BKDConfig config;
-
+    // number of leaves
     private final int leafNodeOffset;
-
+    // version of the index
     private final int version;
-
+    // helper objects for reading doc values
     private final byte[] scratchDataPackedValue,
         scratchMinIndexPackedValue,
         scratchMaxIndexPackedValue;
     private final int[] commonPrefixLengths;
+    private final BKDReaderDocIDSetIterator scratchIterator;
 
     private IndexTree(
-        IndexInput innerNodes, IndexInput leafNodes, BKDConfig config, int numLeaves, int version) {
-      this(innerNodes, leafNodes, config, numLeaves, version, 1, 1);
+        IndexInput innerNodes,
+        IndexInput leafNodes,
+        BKDConfig config,
+        int numLeaves,
+        int version,
+        byte[] minPackedValue,
+        byte[] maxPackedValue) {
+      this(innerNodes, leafNodes, config, numLeaves, version, 1, 1, minPackedValue, maxPackedValue);
       // read root node
       readNodeData(false);
     }
@@ -220,37 +238,34 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
         int numLeaves,
         int version,
         int nodeID,
-        int level) {
+        int level,
+        byte[] minPackedValue,
+        byte[] maxPackedValue) {
       this.config = config;
       this.version = version;
-      int treeDepth = getTreeDepth(numLeaves);
-      splitPackedValueStack = new byte[treeDepth + 1][];
       this.nodeID = nodeID;
       this.level = level;
-      splitPackedValueStack[level] = new byte[config.packedIndexBytesLength];
-      leafBlockFPStack = new long[treeDepth + 1];
-      rightNodePositions = new int[treeDepth + 1];
-      splitValuesStack = new byte[treeDepth + 1][];
-      splitDims = new int[treeDepth + 1];
-      negativeDeltas = new boolean[config.numIndexDims * (treeDepth + 1)];
+      leafNodeOffset = numLeaves;
       this.innerNodes = innerNodes;
       this.leafNodes = leafNodes;
+      // stack arrays that keep information at different levels
+      int treeDepth = getTreeDepth(numLeaves);
+      minPackedValueStack = new byte[treeDepth + 1][];
+      minPackedValueStack[level] = minPackedValue.clone();
+      maxPackedValueStack = new byte[treeDepth + 1][];
+      maxPackedValueStack[level] = maxPackedValue.clone();
+      splitValuesStack = new byte[treeDepth + 1][];
       splitValuesStack[0] = new byte[config.packedIndexBytesLength];
-      scratch = new BytesRef();
-      scratch.length = config.bytesPerDim;
+      leafBlockFPStack = new long[treeDepth + 1];
+      rightNodePositions = new int[treeDepth + 1];
+      splitDims = new int[treeDepth + 1];
+      negativeDeltas = new boolean[config.numIndexDims * (treeDepth + 1)];
+      // scratch objects
       scratchIterator = new BKDReaderDocIDSetIterator(config.maxPointsInLeafNode);
-      this.leafNodeOffset = numLeaves;
-      this.commonPrefixLengths = new int[config.numDims];
-      this.scratchDataPackedValue = new byte[config.packedBytesLength];
-      this.scratchMinIndexPackedValue = new byte[config.packedIndexBytesLength];
-      this.scratchMaxIndexPackedValue = new byte[config.packedIndexBytesLength];
-    }
-
-    @Override
-    public void pushLeft() {
-      nodeID *= 2;
-      level++;
-      readNodeData(true);
+      commonPrefixLengths = new int[config.numDims];
+      scratchDataPackedValue = new byte[config.packedBytesLength];
+      scratchMinIndexPackedValue = new byte[config.packedIndexBytesLength];
+      scratchMaxIndexPackedValue = new byte[config.packedIndexBytesLength];
     }
 
     @Override
@@ -263,12 +278,15 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
               leafNodeOffset,
               version,
               nodeID,
-              level);
+              level,
+              minPackedValueStack[level],
+              maxPackedValueStack[level]);
       // copy node data
-      index.splitDim = splitDim;
-      index.leafBlockFPStack[level] = leafBlockFPStack[level];
-      index.rightNodePositions[level] = rightNodePositions[level];
-      index.splitValuesStack[index.level] = splitValuesStack[index.level].clone();
+      index.leafBlockFPStack[index.level] = leafBlockFPStack[level];
+      index.rightNodePositions[index.level] = rightNodePositions[level];
+      if (isLeafNode() == false) {
+        index.splitValuesStack[index.level] = splitValuesStack[level].clone();
+      }
       System.arraycopy(
           negativeDeltas,
           level * config.numIndexDims,
@@ -280,12 +298,85 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     }
 
     @Override
-    public int getNodeID() {
-      return nodeID;
+    public byte[] getMinPackedValue() {
+      return minPackedValueStack[level];
     }
 
     @Override
-    public void pushRight() {
+    public byte[] getMaxPackedValue() {
+      return maxPackedValueStack[level];
+    }
+
+    @Override
+    public boolean moveToChild() {
+      if (isLeafNode()) {
+        return false;
+      }
+      pushLeft();
+      return true;
+    }
+
+    private void pushLeft() {
+      assert Arrays.compareUnsigned(
+                  maxPackedValueStack[level],
+                  splitDims[level] * config.bytesPerDim,
+                  splitDims[level] * config.bytesPerDim + config.bytesPerDim,
+                  splitValuesStack[level],
+                  splitDims[level] * config.bytesPerDim,
+                  splitDims[level] * config.bytesPerDim + config.bytesPerDim)
+              >= 0
+          : "config.bytesPerDim="
+              + config.bytesPerDim
+              + " splitDim="
+              + splitDims[level - 1]
+              + " config.numIndexDims="
+              + config.numIndexDims
+              + " config.numDims="
+              + config.numDims;
+      nodeID *= 2;
+      level++;
+      if (minPackedValueStack[level] == null) {
+        minPackedValueStack[level] = new byte[config.packedIndexBytesLength];
+        maxPackedValueStack[level] = new byte[config.packedIndexBytesLength];
+      }
+      System.arraycopy(
+          maxPackedValueStack[level - 1],
+          0,
+          maxPackedValueStack[level],
+          0,
+          config.packedIndexBytesLength);
+      System.arraycopy(
+          minPackedValueStack[level - 1],
+          0,
+          minPackedValueStack[level],
+          0,
+          config.packedIndexBytesLength);
+      System.arraycopy(
+          splitValuesStack[level - 1],
+          splitDims[level - 1] * config.bytesPerDim,
+          maxPackedValueStack[level],
+          splitDims[level - 1] * config.bytesPerDim,
+          config.bytesPerDim);
+      readNodeData(true);
+    }
+
+    private void pushRight() {
+      assert Arrays.compareUnsigned(
+                  minPackedValueStack[level],
+                  splitDims[level] * config.bytesPerDim,
+                  splitDims[level] * config.bytesPerDim + config.bytesPerDim,
+                  splitValuesStack[level],
+                  splitDims[level] * config.bytesPerDim,
+                  splitDims[level] * config.bytesPerDim + config.bytesPerDim)
+              <= 0
+          : "config.bytesPerDim="
+              + config.bytesPerDim
+              + " splitDim="
+              + splitDims[level - 1]
+              + " config.numIndexDims="
+              + config.numIndexDims
+              + " config.numDims="
+              + config.numDims;
       final int nodePosition = rightNodePositions[level];
       assert nodePosition >= innerNodes.getFilePointer()
           : "nodePosition = " + nodePosition + " < currentPosition=" + innerNodes.getFilePointer();
@@ -296,46 +387,61 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       } catch (IOException e) {
         throw new UncheckedIOException(e);
       }
+      if (minPackedValueStack[level] == null) {
+        minPackedValueStack[level] = new byte[config.packedIndexBytesLength];
+        maxPackedValueStack[level] = new byte[config.packedIndexBytesLength];
+      }
+      System.arraycopy(
+          maxPackedValueStack[level - 1],
+          0,
+          maxPackedValueStack[level],
+          0,
+          config.packedIndexBytesLength);
+      System.arraycopy(
+          minPackedValueStack[level - 1],
+          0,
+          minPackedValueStack[level],
+          0,
+          config.packedIndexBytesLength);
+      System.arraycopy(
+          splitValuesStack[level - 1],
+          splitDims[level - 1] * config.bytesPerDim,
+          minPackedValueStack[level],
+          splitDims[level - 1] * config.bytesPerDim,
+          config.bytesPerDim);
       readNodeData(false);
     }
 
     @Override
-    public void pop() {
+    public boolean moveToSibling() {
+      if (negativeDeltas[level * config.numIndexDims + splitDims[level - 1]]) {
+        pop();
+        pushRight();
+        return nodeExists();
+      }
+      return false;
+    }
+
+    private void pop() {
       nodeID /= 2;
       level--;
-      splitDim = splitDims[level];
-      // System.out.println("  pop nodeID=" + nodeID);
     }
 
     @Override
-    public boolean isLeafNode() {
+    public boolean moveToParent() {
+      if (nodeID == 1) {
+        return false;
+      }
+      pop();
+      return true;
+    }
+
+    private boolean isLeafNode() {
       return nodeID >= leafNodeOffset;
     }
 
-    @Override
-    public boolean nodeExists() {
+    private boolean nodeExists() {
       return nodeID - leafNodeOffset < leafNodeOffset;
-    }
-
-    @Override
-    public byte[] getSplitPackedValue() {
-      assert isLeafNode() == false;
-      assert splitPackedValueStack[level] != null : "level=" + level;
-      return splitPackedValueStack[level];
-    }
-
-    @Override
-    public int getSplitDim() {
-      assert isLeafNode() == false;
-      return splitDim;
-    }
-
-    @Override
-    public BytesRef getSplitDimValue() {
-      assert isLeafNode() == false;
-      scratch.bytes = splitValuesStack[level];
-      scratch.offset = splitDim * config.bytesPerDim;
-      return scratch;
     }
 
     /** Only valid after pushLeft or pushRight, not pop! */
@@ -345,7 +451,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     }
 
     @Override
-    public int getNumLeaves() {
+    public long size() {
       int leftMostLeafNode = nodeID;
       while (leftMostLeafNode < leafNodeOffset) {
         leftMostLeafNode = leftMostLeafNode * 2;
@@ -363,7 +469,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
         numLeaves = rightMostLeafNode - leftMostLeafNode + 1 + leafNodeOffset;
       }
       assert numLeaves == getNumLeavesSlow(nodeID) : numLeaves + " " + getNumLeavesSlow(nodeID);
-      return numLeaves;
+      return (long) numLeaves * config.maxPointsInLeafNode;
     }
 
     @Override
@@ -432,17 +538,13 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
     }
 
     private void readNodeData(boolean isLeft) {
-      if (splitPackedValueStack[level] == null) {
-        splitPackedValueStack[level] = new byte[config.packedIndexBytesLength];
-      }
       System.arraycopy(
           negativeDeltas,
           (level - 1) * config.numIndexDims,
           negativeDeltas,
           level * config.numIndexDims,
           config.numIndexDims);
-      assert splitDim != -1;
-      negativeDeltas[level * config.numIndexDims + splitDim] = isLeft;
+      negativeDeltas[level * config.numIndexDims + splitDims[level - 1]] = isLeft;
 
       try {
         leafBlockFPStack[level] = leafBlockFPStack[level - 1];
@@ -452,14 +554,11 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
           leafBlockFPStack[level] += innerNodes.readVLong();
         }
 
-        if (isLeafNode()) {
-          splitDim = -1;
-        } else {
-
+        if (isLeafNode() == false) {
           // read split dim, prefix, firstDiffByteDelta encoded as int:
           int code = innerNodes.readVInt();
-          splitDim = code % config.numIndexDims;
-          splitDims[level] = splitDim;
+          splitDims[level] = code % config.numIndexDims;
+          ;
           code /= config.numIndexDims;
           int prefix = code % (1 + config.bytesPerDim);
           int suffix = config.bytesPerDim - prefix;
@@ -475,14 +574,17 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
               config.packedIndexBytesLength);
           if (suffix > 0) {
             int firstDiffByteDelta = code / (1 + config.bytesPerDim);
-            if (negativeDeltas[level * config.numIndexDims + splitDim]) {
+            if (negativeDeltas[level * config.numIndexDims + splitDims[level]]) {
               firstDiffByteDelta = -firstDiffByteDelta;
             }
-            int oldByte = splitValuesStack[level][splitDim * config.bytesPerDim + prefix] & 0xFF;
-            splitValuesStack[level][splitDim * config.bytesPerDim + prefix] =
+            int oldByte =
+                splitValuesStack[level][splitDims[level] * config.bytesPerDim + prefix] & 0xFF;
+            splitValuesStack[level][splitDims[level] * config.bytesPerDim + prefix] =
                 (byte) (oldByte + firstDiffByteDelta);
             innerNodes.readBytes(
-                splitValuesStack[level], splitDim * config.bytesPerDim + prefix + 1, suffix - 1);
+                splitValuesStack[level],
+                splitDims[level] * config.bytesPerDim + prefix + 1,
+                suffix - 1);
           } else {
             // our split value is == last split value in this dim, which can happen when there are
             // many duplicate values
@@ -511,7 +613,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       return MathUtil.log(numLeaves, 2) + 2;
     }
 
-    void visitDocValuesNoCardinality(
+    private void visitDocValuesNoCardinality(
         int[] commonPrefixLengths,
         byte[] scratchDataPackedValue,
         byte[] scratchMinIndexPackedValue,
@@ -570,7 +672,7 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
       }
     }
 
-    void visitDocValuesWithCardinality(
+    private void visitDocValuesWithCardinality(
         int[] commonPrefixLengths,
         byte[] scratchDataPackedValue,
         byte[] scratchMinIndexPackedValue,
@@ -740,6 +842,11 @@ public class BKDDefaultIndexInput implements BKDIndexInput {
         }
         // System.out.println("R: " + dim + " of " + numDims + " prefix=" + prefix);
       }
+    }
+
+    @Override
+    public String toString() {
+      return "nodeID=" + nodeID;
     }
   }
 
