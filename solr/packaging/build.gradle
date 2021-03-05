@@ -59,6 +59,7 @@ dependencies {
   }
 
   distSolr project(":solr:core")
+  distSolr project(":solr:server")
   distSolr project(":solr:solrj")
   distSolr project(":solr:test-framework")
 
