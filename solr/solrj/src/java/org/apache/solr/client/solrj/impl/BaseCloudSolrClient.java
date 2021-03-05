@@ -91,6 +91,12 @@ import org.slf4j.MDC;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
 
+/**
+ * If you don't call the {@link #setIdField(String)} method and
+ * if your collection's document router has no route field then
+ * this class assumes the id field for your documents is called
+ * 'id'.
+ */
 public abstract class BaseCloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

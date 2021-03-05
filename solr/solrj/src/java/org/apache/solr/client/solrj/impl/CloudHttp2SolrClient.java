@@ -32,6 +32,8 @@ import org.apache.solr.common.SolrException;
  * Solr endpoints for SolrCloud collections, and then use the
  * {@link LBHttp2SolrClient} to issue requests.
  *
+ * {@inheritDoc}
+ *
  * @lucene.experimental
  * @since solr 8.0
  */
