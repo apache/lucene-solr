@@ -204,16 +204,16 @@ class WordStorage {
   static class Builder {
     private final boolean hasCustomMorphData;
     private final int[] hashTable;
-    private byte[] wordData;
     private final int[] chainLengths;
+    private final FlagEnumerator flagEnumerator;
+    private final ByteArrayDataOutput dataWriter;
 
+    private byte[] wordData;
+
+    private int commonPrefixLength, commonPrefixPos;
+    private String currentEntry = null;
     private final List<char[]> group = new ArrayList<>();
     private final List<Integer> morphDataIDs = new ArrayList<>();
-    private String currentEntry = null;
-    private final FlagEnumerator flagEnumerator;
-
-    private final ByteArrayDataOutput dataWriter;
-    int commonPrefixLength, commonPrefixPos;
 
     Builder(int wordCount, boolean hasCustomMorphData, FlagEnumerator flagEnumerator) {
       this.flagEnumerator = flagEnumerator;
