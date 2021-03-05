@@ -106,29 +106,18 @@ public class ReutersContentSource extends ContentSource {
     String name = null;
     int inputFilesSize = inputFiles.size();
 
-    /*
-     * synchronized (this) {
-     * if (nextFile >= inputFiles.size()) { // exhausted files, start a new round, unless forever set to false.
-     * if (!forever) {
-     *    throw new NoMoreDataException();
-     * }
-     * nextFile = 0;
-     * iteration++;
-     * }
-     * f = inputFiles.get(nextFile++);
-     * name = f.toRealPath() + "_" +iteration;
-     * }
-     */
-    if (!threadIndexCreated) {
+    if (threadIndexCreated == false) {
       createThreadIndex();
     }
-
-    int index = (int) Thread.currentThread().getId() % threadIndex.length;
+    
+    int index = Integer.parseInt(Thread.currentThread().getName().substring(12));
     int fIndex = index + threadIndex[index] * threadIndex.length;
     threadIndex[index]++;
 
     // Sanity check, if # threads is greater than # input files, wrap index
-    if (index >= inputFilesSize) index %= inputFilesSize;
+    if (index >= inputFilesSize) {
+       index %= inputFilesSize;
+    }
 
     // Check if this thread has exhausted its files
     if (fIndex >= inputFilesSize) {
@@ -174,7 +163,7 @@ public class ReutersContentSource extends ContentSource {
   }
 
   private synchronized void createThreadIndex() {
-    if (!threadIndexCreated) {
+    if (threadIndexCreated == false) {
       threadIndex = new int[getConfig().getNumThreads()];
       threadIndexCreated = true;
     }
