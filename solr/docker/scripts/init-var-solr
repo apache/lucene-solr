@@ -23,6 +23,7 @@ fi
 
 function check_dir_writability {
     local dir="$1"
+        ls -ld "$dir"
     if [ ! -w "$dir" ]; then
         echo "Cannot write to $dir as $(id -u):$(id -g)"
         ls -ld "$dir"
