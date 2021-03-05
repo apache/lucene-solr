@@ -29,7 +29,7 @@ jobs:
       with:
         java-version: 11
     - name: Install ACL
-      run: apt-get install acl
+      run: sudo apt-get install acl
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
     - uses: actions/cache@v2
