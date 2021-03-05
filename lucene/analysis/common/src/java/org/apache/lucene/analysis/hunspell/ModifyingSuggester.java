@@ -234,6 +234,8 @@ class ModifyingSuggester {
   }
 
   private void tryRemovingChar(String word) {
+    if (word.length() == 1) return;
+
     for (int i = 0; i < word.length(); i++) {
       trySuggestion(word.substring(0, i) + word.substring(i + 1));
     }

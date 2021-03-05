@@ -16,7 +16,8 @@
  */
 package org.apache.lucene.analysis.hunspell;
 
-import static org.apache.lucene.analysis.hunspell.AffixKind.*;
+import static org.apache.lucene.analysis.hunspell.AffixKind.PREFIX;
+import static org.apache.lucene.analysis.hunspell.AffixKind.SUFFIX;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -53,8 +54,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -91,14 +90,8 @@ public class Dictionary {
    */
   ArrayList<AffixCondition> patterns = new ArrayList<>();
 
-  /**
-   * The entries in the .dic file, mapping to their set of flags. the fst output is the ordinal list
-   * for flagLookup.
-   */
-  FST<IntsRef> words;
-
-  /** A Bloom filter over {@link #words} to avoid unnecessary expensive FST traversals */
-  FixedBitSet wordHashes;
+  /** The entries in the .dic file, mapping to their set of flags */
+  WordStorage words;
 
   /**
    * The list of unique flagsets (wordforms). theoretically huge, but practically small (for Polish
@@ -257,9 +250,8 @@ public class Dictionary {
       // read dictionary entries
       IndexOutput unsorted = tempDir.createTempOutput(tempFileNamePrefix, "dat", IOContext.DEFAULT);
       int wordCount = mergeDictionaries(dictionaries, decoder, unsorted);
-      wordHashes = new FixedBitSet(Integer.highestOneBit(wordCount * 10));
       String sortedFile = sortWordsOffline(tempDir, tempFileNamePrefix, unsorted);
-      words = readSortedDictionaries(tempDir, sortedFile, flagEnumerator);
+      words = readSortedDictionaries(tempDir, sortedFile, flagEnumerator, wordCount);
       flagLookup = flagEnumerator.finish();
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
@@ -272,36 +264,27 @@ public class Dictionary {
 
   /** Looks up Hunspell word forms from the dictionary */
   IntsRef lookupWord(char[] word, int offset, int length) {
-    int hash = CharsRef.stringHashCode(word, offset, length);
-    if (!wordHashes.get(Math.abs(hash) % wordHashes.length())) {
-      return null;
-    }
-
-    return lookup(words, word, offset, length);
+    return words.lookupWord(word, offset, length);
   }
 
   // only for testing
   IntsRef lookupPrefix(char[] word) {
-    return lookup(prefixes, word, 0, word.length);
+    return lookup(prefixes, word);
   }
 
   // only for testing
   IntsRef lookupSuffix(char[] word) {
-    return lookup(suffixes, word, 0, word.length);
+    return lookup(suffixes, word);
   }
 
-  IntsRef lookup(FST<IntsRef> fst, char[] word, int offset, int length) {
-    if (fst == null) {
-      return null;
-    }
+  private IntsRef lookup(FST<IntsRef> fst, char[] word) {
     final FST.BytesReader bytesReader = fst.getBytesReader();
     final FST.Arc<IntsRef> arc = fst.getFirstArc(new FST.Arc<>());
     // Accumulate output as we go
     IntsRef output = fst.outputs.getNoOutput();
 
-    int l = offset + length;
-    for (int i = offset, cp; i < l; i += Character.charCount(cp)) {
-      cp = Character.codePointAt(word, i, l);
+    for (int i = 0, cp; i < word.length; i += Character.charCount(cp)) {
+      cp = Character.codePointAt(word, i, word.length);
       output = nextArc(fst, arc, bytesReader, output, cp);
       if (output == null) {
         return null;
@@ -1134,13 +1117,13 @@ public class Dictionary {
     return sorted;
   }
 
-  private FST<IntsRef> readSortedDictionaries(
-      Directory tempDir, String sorted, FlagEnumerator flags) throws IOException {
+  private WordStorage readSortedDictionaries(
+      Directory tempDir, String sorted, FlagEnumerator flags, int wordCount) throws IOException {
     boolean success = false;
 
     Map<String, Integer> morphIndices = new HashMap<>();
 
-    EntryGrouper grouper = new EntryGrouper(flags);
+    WordStorage.Builder builder = new WordStorage.Builder(wordCount, hasCustomMorphData, flags);
 
     try (ByteSequencesReader reader =
         new ByteSequencesReader(tempDir.openChecksumInput(sorted, IOContext.READONCE), sorted)) {
@@ -1180,6 +1163,8 @@ public class Dictionary {
           entry = line.substring(0, flagSep);
         }
 
+        if (entry.isEmpty()) continue;
+
         int morphDataID = 0;
         if (end + 1 < line.length()) {
           List<String> morphFields = readMorphFields(entry, line.substring(end + 1));
@@ -1189,14 +1174,12 @@ public class Dictionary {
           }
         }
 
-        wordHashes.set(Math.abs(entry.hashCode()) % wordHashes.length());
-        grouper.add(entry, wordForm, morphDataID);
+        builder.add(entry, wordForm, morphDataID);
       }
 
       // finalize last entry
-      grouper.flushGroup();
       success = true;
-      return grouper.words.compile();
+      return builder.build();
     } finally {
       if (success) {
         tempDir.deleteFile(sorted);
@@ -1273,76 +1256,6 @@ public class Dictionary {
 
   boolean isDotICaseChangeDisallowed(char[] word) {
     return word[0] == 'İ' && !alternateCasing;
-  }
-
-  private class EntryGrouper {
-    final FSTCompiler<IntsRef> words =
-        new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, IntSequenceOutputs.getSingleton());
-    private final List<char[]> group = new ArrayList<>();
-    private final List<Integer> morphDataIDs = new ArrayList<>();
-    private final IntsRefBuilder scratchInts = new IntsRefBuilder();
-    private String currentEntry = null;
-    private final FlagEnumerator flagEnumerator;
-
-    EntryGrouper(FlagEnumerator flagEnumerator) {
-      this.flagEnumerator = flagEnumerator;
-    }
-
-    void add(String entry, char[] flags, int morphDataID) throws IOException {
-      if (!entry.equals(currentEntry)) {
-        if (currentEntry != null) {
-          if (entry.compareTo(currentEntry) < 0) {
-            throw new IllegalArgumentException("out of order: " + entry + " < " + currentEntry);
-          }
-          flushGroup();
-        }
-        currentEntry = entry;
-      }
-
-      group.add(flags);
-      if (hasCustomMorphData) {
-        morphDataIDs.add(morphDataID);
-      }
-    }
-
-    void flushGroup() throws IOException {
-      IntsRefBuilder currentOrds = new IntsRefBuilder();
-
-      boolean hasNonHidden = false;
-      for (char[] flags : group) {
-        if (!hasHiddenFlag(flags)) {
-          hasNonHidden = true;
-          break;
-        }
-      }
-
-      for (int i = 0; i < group.size(); i++) {
-        char[] flags = group.get(i);
-        if (hasNonHidden && hasHiddenFlag(flags)) {
-          continue;
-        }
-
-        currentOrds.append(flagEnumerator.add(flags));
-        if (hasCustomMorphData) {
-          currentOrds.append(morphDataIDs.get(i));
-        }
-      }
-
-      Util.toUTF32(currentEntry, scratchInts);
-      words.add(scratchInts.get(), currentOrds.get());
-
-      group.clear();
-      morphDataIDs.clear();
-    }
-  }
-
-  private static boolean hasHiddenFlag(char[] flags) {
-    for (char flag : flags) {
-      if (flag == HIDDEN_FLAG) {
-        return true;
-      }
-    }
-    return false;
   }
 
   private void parseAlias(String line) {

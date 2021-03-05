@@ -20,7 +20,6 @@ import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_APPEND;
 import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_FLAG;
 import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_STRIP_ORD;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -30,11 +29,8 @@ import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.IntsRefFSTEnum;
-import org.apache.lucene.util.fst.IntsRefFSTEnum.InputOutput;
 
 /**
  * A class that traverses the entire dictionary and applies affix rules to check if those yield
@@ -68,66 +64,42 @@ class GeneratingSuggester {
     boolean ignoreTitleCaseRoots = originalCase == WordCase.LOWER && !dictionary.hasLanguage("de");
     TrigramAutomaton automaton = new TrigramAutomaton(word);
 
-    IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(dictionary.words);
-    InputOutput<IntsRef> mapping;
-    while ((mapping = nextKey(fstEnum, word.length() + 4)) != null) {
-      speller.checkCanceled.run();
+    dictionary.words.processAllWords(
+        word.length() + 4,
+        (rootChars, forms) -> {
+          speller.checkCanceled.run();
 
-      IntsRef key = mapping.input;
-      assert key.length > 0;
-      if (Math.abs(key.length - word.length()) > MAX_ROOT_LENGTH_DIFF) {
-        assert key.length < word.length(); // nextKey takes care of longer keys
-        continue;
-      }
+          assert rootChars.length > 0;
+          if (Math.abs(rootChars.length - word.length()) > MAX_ROOT_LENGTH_DIFF) {
+            assert rootChars.length < word.length(); // nextKey takes care of longer keys
+            return;
+          }
 
-      String root = toString(key);
-      filterSuitableEntries(root, mapping.output, entries);
-      if (entries.isEmpty()) continue;
+          String root = rootChars.toString();
+          filterSuitableEntries(root, forms, entries);
+          if (entries.isEmpty()) return;
 
-      if (ignoreTitleCaseRoots && WordCase.caseOf(root) == WordCase.TITLE) {
-        continue;
-      }
+          if (ignoreTitleCaseRoots && WordCase.caseOf(rootChars) == WordCase.TITLE) {
+            return;
+          }
 
-      String lower = dictionary.toLowerCase(root);
-      int sc =
-          automaton.ngramScore(lower) - longerWorsePenalty(word, lower) + commonPrefix(word, root);
+          String lower = dictionary.toLowerCase(root);
+          int sc =
+              automaton.ngramScore(lower)
+                  - longerWorsePenalty(word, lower)
+                  + commonPrefix(word, root);
 
-      if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
-        continue;
-      }
+          if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
+            return;
+          }
 
-      entries.forEach(e -> roots.add(new Weighted<>(e, sc)));
-      while (roots.size() > MAX_ROOTS) {
-        roots.poll();
-      }
-    }
+          entries.forEach(e -> roots.add(new Weighted<>(e, sc)));
+          while (roots.size() > MAX_ROOTS) {
+            roots.poll();
+          }
+        });
+
     return roots.stream().sorted().collect(Collectors.toList());
-  }
-
-  private static InputOutput<IntsRef> nextKey(IntsRefFSTEnum<IntsRef> fstEnum, int maxLen) {
-    try {
-      InputOutput<IntsRef> next = fstEnum.next();
-      while (next != null && next.input.length > maxLen) {
-        int offset = next.input.offset;
-        int[] ints = ArrayUtil.copyOfSubArray(next.input.ints, offset, offset + maxLen);
-        if (ints[ints.length - 1] == Integer.MAX_VALUE) {
-          throw new AssertionError("Too large char");
-        }
-        ints[ints.length - 1]++;
-        next = fstEnum.seekCeil(new IntsRef(ints, 0, ints.length));
-      }
-      return next;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private static String toString(IntsRef key) {
-    char[] chars = new char[key.length];
-    for (int i = 0; i < key.length; i++) {
-      chars[i] = (char) key.ints[i + key.offset];
-    }
-    return new String(chars);
   }
 
   private void filterSuitableEntries(String word, IntsRef forms, List<Root<String>> result) {
@@ -363,7 +335,7 @@ class GeneratingSuggester {
     return result;
   }
 
-  private static int commonPrefix(String s1, String s2) {
+  static int commonPrefix(String s1, String s2) {
     int i = 0;
     int limit = Math.min(s1.length(), s2.length());
     while (i < limit && s1.charAt(i) == s2.charAt(i)) {

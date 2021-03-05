@@ -94,6 +94,10 @@ final class Stemmer {
     }
 
     List<CharsRef> list = new ArrayList<>();
+    if (length == 0) {
+      return list;
+    }
+
     RootProcessor processor =
         (stem, formID, stemException) -> {
           list.add(newStem(stem, stemException));
