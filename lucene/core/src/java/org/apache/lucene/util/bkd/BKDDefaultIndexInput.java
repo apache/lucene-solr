@@ -33,7 +33,7 @@ import org.apache.lucene.util.MathUtil;
  * @lucene.experimental
  */
 public class BKDDefaultIndexInput implements BKDIndexInput {
-  
+
   final BKDConfig config;
   final int numLeaves;
   // Packed array of byte[] holding all docs and values:
