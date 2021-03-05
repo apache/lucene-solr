@@ -88,6 +88,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15100: Make the ConfigSetService pluggable/configurable via <string name="configSetService" /> in solr.xml
  (baisui)
 
+* SOLR-15185: Various optimizations to the {!hash} QParser, typically used by the parallel()
+  streaming expression.  The hash algorithm changed.  (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
