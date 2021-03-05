@@ -341,8 +341,8 @@ public class TaskSequence extends PerfTask {
       for (int i = 0; i < tasksArray.length; i++) {
         final PerfTask task = tasksArray[i].clone();
         t[index] = new ParallelTask(task);
-	//Set the thread name for guaranteed file index while processing.
-        t[index].setName("IndexThread-"+index);
+        // Set the thread name for guaranteed file index while processing.
+        t[index].setName("IndexThread-" + index);
         index++;
       }
     }

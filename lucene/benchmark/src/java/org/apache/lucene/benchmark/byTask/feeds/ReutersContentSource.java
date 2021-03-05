@@ -109,14 +109,15 @@ public class ReutersContentSource extends ContentSource {
     if (threadIndexCreated == false) {
       createThreadIndex();
     }
-    
+
+    // Getting file index value which is set for each thread
     int index = Integer.parseInt(Thread.currentThread().getName().substring(12));
     int fIndex = index + threadIndex[index] * threadIndex.length;
     threadIndex[index]++;
 
     // Sanity check, if # threads is greater than # input files, wrap index
     if (index >= inputFilesSize) {
-       index %= inputFilesSize;
+      index %= inputFilesSize;
     }
 
     // Check if this thread has exhausted its files
