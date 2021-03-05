@@ -74,10 +74,26 @@ import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.UPLO
  * A {@link org.apache.solr.request.SolrRequestHandler} for ConfigSets API requests.
  */
 public class ConfigSetsHandler extends RequestHandlerBase implements PermissionNameProvider {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Boolean unitTest;
+  static {
+    Boolean unitTest1;
+    try {
+      Class.forName("org.apache.solr.cloud.SolrCloudTestCase");
+      unitTest1 = true;
+      log.warn("{} thinks it is running in a unit test. If you see " +
+          "this message in a production server please check that you have not added SolrCloudTestCase classes " +
+          "to your server's classpath. If this class is not present, or is present in a default installation, " +
+          "please report as a bug.", ConfigSetsHandler.class.getCanonicalName());
+    } catch (ClassNotFoundException ignored) {
+      unitTest1 = false;
+    }
+    unitTest = unitTest1;
+  }
   final public static Boolean DISABLE_CREATE_AUTH_CHECKS = Boolean.getBoolean("solr.disableConfigSetsCreateAuthChecks"); // this is for back compat only
   final public static String DEFAULT_CONFIGSET_NAME = "_default";
   final public static String AUTOCREATED_CONFIGSET_SUFFIX = ".AUTOCREATED";
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   public static long DEFAULT_ZK_TIMEOUT = 300 * 1000;
   /**
@@ -436,7 +452,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
 
         Map<String, Object> props = CollectionsHandler.copy(req.getParams().required(), null, NAME);
         props.put(BASE_CONFIGSET, baseConfigSetName);
-        if (!DISABLE_CREATE_AUTH_CHECKS &&
+        if (!getDisableCreateAuthChecks() &&
                 !isTrusted(req, h.coreContainer.getAuthenticationPlugin()) &&
                 isCurrentlyTrusted(h.coreContainer.getZkController().getZkClient(), ZkConfigManager.CONFIGS_ZKNODE + "/" +  baseConfigSetName)) {
           throw new SolrException(ErrorCode.UNAUTHORIZED, "Can't create a configset with an unauthenticated request from a trusted " + BASE_CONFIGSET);
@@ -479,6 +495,10 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "No such action" + action);
     }
+  }
+
+  private static Boolean getDisableCreateAuthChecks() {
+    return unitTest ? Boolean.getBoolean("solr.disableConfigSetsCreateAuthChecks") : DISABLE_CREATE_AUTH_CHECKS;
   }
 
   @Override

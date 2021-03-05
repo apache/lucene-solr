@@ -45,6 +45,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ import static org.apache.solr.client.solrj.request.CollectionAdminRequest.create
 import static org.apache.solr.client.solrj.request.CollectionAdminRequest.createTimeRoutedAlias;
 
 public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
+  private static final String origSysprop = System.getProperty("solr.disableConfigSetsCreateAuthChecks");
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -84,8 +86,18 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
     shutdownCluster();
   }
 
+  @BeforeClass
+  public static void setUpClass() {
+    System.setProperty("solr.disableConfigSetsCreateAuthChecks", "true");
+  }
+
   @AfterClass
-  public static void finish() throws Exception {
+  public static void cleanUpAfterClass() throws Exception {
+    if (origSysprop != null) {
+      System.setProperty("solr.disableConfigSetsCreateAuthChecks", origSysprop);
+    } else {
+      System.getProperties().remove("solr.disableConfigSetsCreateAuthChecks");
+    }
     IOUtils.close(solrClient);
     solrClient = null;
   }
@@ -125,7 +137,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ),
         ap(
             "tabby"
-        )
+        ),
+        1
     );
 
     addDocsAndCommit(true, newDoc("calico", "2019-07-02T00:00:00Z"));
@@ -141,11 +154,12 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        2
     );
 
     testFailedDocument("shorthair",     "2017-10-23T00:00:00Z", "couldn't be routed" );
-    testFailedDocument("shorthair",     "2020-10-23T00:00:00Z", "too far in the future" );
+    testFailedDocument("shorthair",     "2090-10-23T00:00:00Z", "too far in the future" );
     testFailedDocument(null,            "2019-07-02T00:00:00Z", "Route value is null");
     testFailedDocument("foo__CRA__bar", "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
     testFailedDocument("fóóCRAóóbar",   "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
@@ -161,7 +175,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        2
     );
 
     // 4 docs no new collections
@@ -183,7 +198,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        6
     );
 
     // 4 docs 2 new collections, in random order and maybe not using the alias
@@ -206,7 +222,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        10
     );
 
     // now test with async pre-create.
@@ -236,7 +253,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ),
+        12
     );
 
     addDocsAndCommit(false,
@@ -268,7 +286,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ),
+        14
     );
 
     // now test with auto-delete.
@@ -298,7 +317,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ),
+        16
     );
 
     // have to only send to alias here since one of the collections will be deleted.
@@ -326,25 +346,30 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ), 18
     );
 
+  }
+
+  private void checkDocsInRightCollections(int expected) throws SolrServerException, IOException {
     // verify that all the documents ended up in the right collections.
     QueryResponse resp = solrClient.query(getAlias(), params(
         "q", "*:*",
         "rows", "100",
-        "fl","*,[shard]",
+        "fl", "*,[shard]",
         "sort", "id asc"
     ));
     SolrDocumentList results = resp.getResults();
-    assertEquals(18, results.getNumFound());
+    assertEquals(expected, results.getNumFound());
     for (SolrDocument result : results) {
       String shard = String.valueOf(result.getFieldValue("[shard]"));
       String cat = String.valueOf(result.getFieldValue("cat_s"));
       Date date = (Date) result.getFieldValue("timestamp_dt");
       String day = date.toInstant().toString().split("T")[0];
-      assertTrue(shard.contains(cat));
-      assertTrue(shard.contains(day));
+      assertTrue("Cat=" + cat + " should not be in Shard=" + shard +
+          " DocId=" + result.getFieldValue("id"), shard.contains(cat));
+      assertTrue("Day=" + day + " should not be in Shard=" + shard +
+          " DocId=" + result.getFieldValue("id"), shard.contains(day));
     }
   }
 
@@ -383,7 +408,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ),
         ap(
             "tabby"
-        )
+        ),
+        1
     );
 
     addDocsAndCommit(true, newDoc("calico", "2019-07-02T00:00:00Z"));
@@ -399,11 +425,12 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        2
     );
 
     testFailedDocument("shorthair",     "2017-10-23T00:00:00Z", "couldn't be routed" );
-    testFailedDocument("shorthair",     "2020-10-23T00:00:00Z", "too far in the future" );
+    testFailedDocument("shorthair",     "2090-10-23T00:00:00Z", "too far in the future" );
     testFailedDocument(null,            "2019-07-02T00:00:00Z", "Route value is null");
     testFailedDocument("foo__CRA__bar", "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
     testFailedDocument("fóóCRAóóbar",   "2019-07-02T00:00:00Z", "7 character sequence __CRA__");
@@ -419,7 +446,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        2
     );
 
     // 4 docs no new collections
@@ -441,7 +469,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        6
     );
 
     // 4 docs 2 new collections, in random order and maybe not using the alias
@@ -466,7 +495,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
         ap(
             "tabby",
             "calico"
-        )
+        ),
+        10
     );
 
     // now test with async pre-create.
@@ -496,7 +526,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ),
+        12
     );
 
     addDocsAndCommit(false,
@@ -528,7 +559,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ),
+        14
     );
 
     // now test with auto-delete.
@@ -558,7 +590,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ),
+        16
     );
 
     addDocsAndCommit(true,
@@ -585,26 +618,9 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
             "shorthair",
             "tabby",
             "calico"
-        )
+        ),
+        18
     );
-
-    // verify that all the documents ended up in the right collections.
-    QueryResponse resp = solrClient.query(getAlias(), params(
-        "q", "*:*",
-        "rows", "100",
-        "fl","*,[shard]",
-        "sort", "id asc"
-    ));
-    SolrDocumentList results = resp.getResults();
-    assertEquals(18, results.getNumFound());
-    for (SolrDocument result : results) {
-      String shard = String.valueOf(result.getFieldValue("[shard]"));
-      String cat = String.valueOf(result.getFieldValue("cat_s"));
-      Date date = (Date) result.getFieldValue("timestamp_dt");
-      String day = date.toInstant().toString().split("T")[0];
-      assertTrue(shard.contains(cat));
-      assertTrue(shard.contains(day));
-    }
 
   }
 
@@ -621,9 +637,11 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
    *
    * @param expectedCols the collections we expect to see
    * @param categories   the categories added thus far
+   * @param numDocsExpected the expected number of documents across all shards
    */
-  private void assertCatTimeInvariants(String[] expectedCols, String[] categories) throws Exception {
-    final int expectNumFound = lastDocId - numDocsDeletedOrFailed; //lastDocId is effectively # generated docs
+  private void assertCatTimeInvariants(String[] expectedCols, String[] categories, int numDocsExpected) throws Exception {
+    // verify that all the documents ended up in the right collections.
+    checkDocsInRightCollections(numDocsExpected);
     int totalNumFound = 0;
 
     final List<String> cols = new CollectionAdminRequest.ListAliases().process(solrClient).getAliasesAsLists().get(getSaferTestName());
@@ -675,7 +693,11 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
 
     }
 
-    assertEquals(expectNumFound, totalNumFound);
+    assertEquals(numDocsExpected, totalNumFound);
+
+    // also sanity check that our concepts of deleted/failed docs and doc id's have remained consistent.
+    final int properNumFound = lastDocId - numDocsDeletedOrFailed;
+    assertEquals(properNumFound, totalNumFound);
 
     assertEquals("COLS FOUND:" + cols, expectedCols.length, cols.size());
   }

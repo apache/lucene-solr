@@ -42,6 +42,7 @@ import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,10 +65,7 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
   private int lastDocId = 0;
   private static CloudSolrClient solrClient;
   private int numDocsDeletedOrFailed = 0;
-  // uncomment to create pause for attaching profiler.
-//  static {
-//    JOptionPane.showMessageDialog(null,"Ready?");
-//  }
+  private static final String origSysprop=System.getProperty("solr.disableConfigSetsCreateAuthChecks");
 
   @Before
   public void doBefore() throws Exception {
@@ -88,8 +86,18 @@ public class CategoryRoutedAliasUpdateProcessorTest extends RoutedAliasUpdatePro
     }
   }
 
+  @BeforeClass
+  public static void setUpClass() {
+    System.setProperty("solr.disableConfigSetsCreateAuthChecks", "true");
+  }
+
   @AfterClass
   public static void cleanUpAfterClass() throws Exception {
+    if (origSysprop != null) {
+      System.setProperty("solr.disableConfigSetsCreateAuthChecks", origSysprop);
+    } else {
+      System.getProperties().remove("solr.disableConfigSetsCreateAuthChecks");
+    }
     solrClient = null;
   }
 
