@@ -88,6 +88,9 @@ when told to. The admin UI now tells it to. (Nazerke Seidan, David Smiley)
 * SOLR-15100: Make the ConfigSetService pluggable/configurable via <string name="configSetService" /> in solr.xml
  (baisui)
 
+* SOLR-15215: SolrJ: remove Netty dependency.  Netty was never used; it was an optional dependency
+  for Zookeeper that requires opting-in via a system property.  (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-14656: Autoscaling framework removed (Ishan Chattopadhyaya, noble, Ilan Ginzburg)
