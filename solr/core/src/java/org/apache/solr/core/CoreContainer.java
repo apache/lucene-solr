@@ -139,6 +139,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -859,40 +860,40 @@ public class CoreContainer implements Closeable {
     status |= CORE_DISCOVERY_COMPLETE;
     startedLoadingCores = true;
 
-//    if (isZooKeeperAware()) {
-//
-//      log.info("Waiting to see RECOVERY states for node on startup ...");
-//      for (final CoreDescriptor cd : cds) {
-//        String collection = cd.getCollectionName();
-//        try {
-//          getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
-//            if (c == null) {
-//              if (log.isDebugEnabled()) log.debug("Found  incorrect state c={}", c);
-//              return false;
-//            }
-//            String nodeName = getZkController().getNodeName();
-//            List<Replica> replicas = c.getReplicas();
-//            for (Replica replica : replicas) {
-//              if (replica.getNodeName().equals(nodeName)) {
-//                if (!replica.getState().equals(Replica.State.RECOVERING)) {
-//                  if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
-//                  return false;
-//                }
-//              } else {
-//                if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
-//              }
-//            }
-//
-//            return true;
-//          });
-//        } catch (InterruptedException e) {
-//          ParWork.propagateInterrupt(e);
-//          return;
-//        } catch (TimeoutException e) {
-//          log.error("Timeout", e);
-//        }
-//      }
-//    }
+    if (isZooKeeperAware()) {
+
+      log.info("Waiting to see RECOVERY states for node on startup ...");
+      for (final CoreDescriptor cd : cds) {
+        String collection = cd.getCollectionName();
+        try {
+          getZkController().getZkStateReader().waitForState(collection, 5, TimeUnit.SECONDS, (n, c) -> {
+            if (c == null) {
+              if (log.isDebugEnabled()) log.debug("Found  incorrect state c={}", c);
+              return false;
+            }
+            String nodeName = getZkController().getNodeName();
+            List<Replica> replicas = c.getReplicas();
+            for (Replica replica : replicas) {
+              if (replica.getNodeName().equals(nodeName)) {
+                if (!replica.getState().equals(Replica.State.RECOVERING)) {
+                  if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+                  return false;
+                }
+              } else {
+                if (log.isDebugEnabled()) log.debug("Found  incorrect state {} {} ourNodeName={}", replica.getState(), replica.getNodeName(), nodeName);
+              }
+            }
+
+            return true;
+          });
+        } catch (InterruptedException e) {
+          ParWork.propagateInterrupt(e);
+          return;
+        } catch (TimeoutException e) {
+          log.error("Timeout", e);
+        }
+      }
+    }
 
     for (final CoreDescriptor cd : cds) {
       if (!cd.isTransient() && cd.isLoadOnStartup()) {

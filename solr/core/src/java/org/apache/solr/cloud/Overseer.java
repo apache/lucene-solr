@@ -52,6 +52,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateShardHandler;
+import org.apache.zookeeper.AddWatchMode;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -354,8 +355,12 @@ public class Overseer implements SolrCloseable {
 
     queueWatcher = new WorkQueueWatcher(getCoreContainer());
     collectionQueueWatcher = new WorkQueueWatcher.CollectionWorkQueueWatcher(getCoreContainer(), id, overseerLbClient, adminPath, stats, Overseer.this);
-    queueWatcher.start();
-    collectionQueueWatcher.start();
+    try {
+      queueWatcher.start();
+      collectionQueueWatcher.start();
+    } catch (InterruptedException e) {
+      log.warn("interrupted", e);
+    }
 
 
     closed = false;
@@ -764,29 +769,26 @@ public class Overseer implements SolrCloseable {
       this.path = path;
     }
 
-    public abstract void start();
+    public abstract void start() throws KeeperException, InterruptedException;
 
-    private List<String> setWatch() {
+    private List<String> getItems() {
       try {
 
         if (log.isDebugEnabled()) log.debug("set watch on Overseer work queue {}", path);
-        closeWatcher();
-        List<String> children = zkController.getZkClient().getChildren(path, this, true);
+
+        List<String> children = zkController.getZkClient().getChildren(path, null, null, true, true);
 
         List<String> items = new ArrayList<>(children);
         Collections.sort(items);
         return items;
       } catch (KeeperException.SessionExpiredException e) {
         log.warn("ZooKeeper session expired");
-        overseer.close();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (InterruptedException | AlreadyClosedException e) {
         log.info("Already closed");
-        overseer.close();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       } catch (Exception e) {
         log.error("Unexpected error in Overseer state update loop", e);
-        overseer.close();
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
     }
@@ -804,7 +806,7 @@ public class Overseer implements SolrCloseable {
       ourLock.lock();
       try {
         try {
-          List<String> items = setWatch();
+          List<String> items = getItems();
           if (items.size() > 0) {
             processQueueItems(items, false);
           }
@@ -845,8 +847,9 @@ public class Overseer implements SolrCloseable {
     }
 
 
-    public void start() {
-      startItems = super.setWatch();
+    public void start() throws KeeperException, InterruptedException {
+      zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
+      startItems = super.getItems();
       log.info("Overseer found entries on start {}", startItems);
       processQueueItems(startItems, true);
     }
@@ -915,8 +918,10 @@ public class Overseer implements SolrCloseable {
       }
 
       @Override
-      public void start() {
-        startItems = super.setWatch();
+      public void start() throws KeeperException, InterruptedException {
+        zkController.getZkClient().addWatch(path, this, AddWatchMode.PERSISTENT);
+
+        startItems = super.getItems();
 
         log.info("Overseer found entries on start {}", startItems);
         processQueueItems(startItems, true);

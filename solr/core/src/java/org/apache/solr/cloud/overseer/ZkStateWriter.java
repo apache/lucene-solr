@@ -475,12 +475,12 @@ public class ZkStateWriter {
               lastVersion.set(version);
               if (log.isDebugEnabled()) log.debug("Write state.json prevVersion={} bytes={} col={}", version, data.length, collection);
 
-              reader.getZkClient().setData(path, data, version, true, false);
+              reader.getZkClient().setData(path, data, version, true, true);
               trackVersions.put(collection.getName(), version + 1);
               if (dirtyStructure.contains(collection.getName())) {
                 if (log.isDebugEnabled()) log.debug("structure change in {}", collection.getName());
                 dirtyStructure.remove(collection.getName());
-                reader.getZkClient().setData(pathSCN, null, -1, true, false);
+                reader.getZkClient().setData(pathSCN, null, -1, true, true);
 
                 ZkNodeProps updates = stateUpdates.get(collection.getName());
                 if (updates != null) {
@@ -488,7 +488,7 @@ public class ZkStateWriter {
                  String stateUpdatesPath = ZkStateReader.getCollectionStateUpdatesPath(collection.getName());
                  if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
                   try {
-                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
+                    reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, true);
                   } catch (KeeperException.NoNodeException e) {
                     if (log.isDebugEnabled()) log.debug("No node found for " + stateUpdatesPath, e);
                     lastVersion.set(-1);
@@ -567,7 +567,7 @@ public class ZkStateWriter {
     if (log.isDebugEnabled()) log.debug("write state updates for collection {} {}", collection.getName(), updates);
     dirtyState.remove(collection.getName());
     try {
-      reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, false);
+      reader.getZkClient().setData(stateUpdatesPath, Utils.toJSON(updates), -1, true, true);
     } catch (KeeperException.NoNodeException e) {
       if (log.isDebugEnabled()) log.debug("No node found for state.json", e);
       lastVersion.set(-1);

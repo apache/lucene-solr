@@ -302,6 +302,10 @@ public class SolrTestCase extends Assert {
       SysStats.reStartSysStats();
     }
 
+    // other  methods like starting a jetty instance need these too
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+
     // random is expensive, you are supposed to cache it
     random = LuceneTestCase.random();
 
@@ -366,7 +370,7 @@ public class SolrTestCase extends Assert {
     System.setProperty("solr.tests.EnumFieldType", "org.apache.solr.schema.EnumFieldType");
     System.setProperty("solr.tests.numeric.dv", "true");
 
-    System.setProperty("managed.schema.mutable", "false");
+    //System.setProperty("managed.schema.mutable", "false");
 
     if (!LuceneTestCase.TEST_NIGHTLY) {
       //TestInjection.randomDelayMaxInCoreCreationInSec = 2;

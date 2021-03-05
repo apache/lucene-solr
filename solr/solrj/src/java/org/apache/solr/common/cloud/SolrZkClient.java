@@ -172,13 +172,12 @@ public class SolrZkClient implements Closeable {
       @Override
       public boolean isClosed() {
         try {
-          if (higherLevelIsClosed != null) {
-            return SolrZkClient.this.higherLevelIsClosed.isClosed() || isClosed;
-          } else {
-            return  isClosed;
-          }
-        } catch (NullPointerException e) {
+
           return isClosed;
+
+        } catch (NullPointerException e) {
+          log.error("ZkClient is null", e);
+          throw e;
         }
       }
     });

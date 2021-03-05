@@ -29,6 +29,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,13 +151,22 @@ public class OverseerTaskQueue extends ZkDistributedQueue {
 
       if (log.isDebugEnabled()) log.debug("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState());
 
-      this.event = event;
-
-      lock.lock();
+      Stat stat = null;
       try {
-        eventReceived.signalAll();
-      } finally {
-        lock.unlock();
+        stat = zkClient.exists(path, null, true);
+      } catch (KeeperException e) {
+        log.error("exists failed", e);
+      } catch (InterruptedException e) {
+        log.error("interrupted", e);
+      }
+      if (stat != null && stat.getDataLength() > 0) {
+        lock.lock();
+        try {
+          this.event = event;
+          eventReceived.signalAll();
+        } finally {
+          lock.unlock();
+        }
       }
     }
 

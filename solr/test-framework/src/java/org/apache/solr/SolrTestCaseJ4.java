@@ -577,10 +577,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
     }
 
-    // other  methods like starting a jetty instance need these too
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-
     String configFile = getSolrConfigFile();
     if (configFile != null) {
       createCore();
