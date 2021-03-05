@@ -216,6 +216,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
                         "'indexBackup': 'copy-files', " +
                         "'commitName': 'someSnapshotName', " +
                         "'incremental': true, " +
+                        "'maxNumBackupPoints': 3, " +
                         "'async': 'requestTrackingId' " +
                         "}}");
 
@@ -228,6 +229,7 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
         assertEquals("copy-files", v1Params.get(CollectionAdminParams.INDEX_BACKUP_STRATEGY));
         assertEquals("someSnapshotName", v1Params.get(CoreAdminParams.COMMIT_NAME));
         assertEquals(true, v1Params.getPrimitiveBool(CoreAdminParams.BACKUP_INCREMENTAL));
+        assertEquals(3, v1Params.getPrimitiveInt(CoreAdminParams.MAX_NUM_BACKUP_POINTS));
         assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
     }
 
@@ -242,7 +244,6 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
                         "'backupId': 123, " +
                         "'async': 'requestTrackingId', " +
                         "'create-collection': {" +
-                        "     'numShards': 1, " +
                         "     'properties': {'foo': 'bar', 'foo2': 'bar2'}, " +
                         "     'replicationFactor': 3 " +
                         "}" +
@@ -257,10 +258,9 @@ public class V2CollectionsAPIMappingTest extends SolrTestCaseJ4 {
         assertEquals("requestTrackingId", v1Params.get(CommonAdminParams.ASYNC));
         // NOTE: Unlike other v2 APIs that have a nested object for collection-creation params, restore's v1 equivalent
         // for these properties doesn't have a "create-collection." prefix.
-        assertEquals(1, v1Params.getPrimitiveInt(CollectionAdminParams.NUM_SHARDS));
+        assertEquals(3, v1Params.getPrimitiveInt(ZkStateReader.REPLICATION_FACTOR));
         assertEquals("bar", v1Params.get("property.foo"));
         assertEquals("bar2", v1Params.get("property.foo2"));
-        assertEquals(3, v1Params.getPrimitiveInt(ZkStateReader.REPLICATION_FACTOR));
     }
 
     private SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody) throws Exception {
