@@ -23,7 +23,6 @@ import static org.apache.lucene.analysis.hunspell.Dictionary.AFFIX_STRIP_ORD;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
@@ -67,7 +66,7 @@ class GeneratingSuggester {
     PriorityQueue<Weighted<Root<String>>> roots = new PriorityQueue<>(natural.reversed());
     List<Root<String>> entries = new ArrayList<>();
     boolean ignoreTitleCaseRoots = originalCase == WordCase.LOWER && !dictionary.hasLanguage("de");
-    EnumSet<NGramOptions> options = EnumSet.of(NGramOptions.LONGER_WORSE);
+    TrigramAutomaton automaton = new TrigramAutomaton(word);
 
     IntsRefFSTEnum<IntsRef> fstEnum = new IntsRefFSTEnum<>(dictionary.words);
     InputOutput<IntsRef> mapping;
@@ -75,6 +74,7 @@ class GeneratingSuggester {
       speller.checkCanceled.run();
 
       IntsRef key = mapping.input;
+      assert key.length > 0;
       if (Math.abs(key.length - word.length()) > MAX_ROOT_LENGTH_DIFF) {
         assert key.length < word.length(); // nextKey takes care of longer keys
         continue;
@@ -89,7 +89,8 @@ class GeneratingSuggester {
       }
 
       String lower = dictionary.toLowerCase(root);
-      int sc = ngram(3, word, lower, options) + commonPrefix(word, root);
+      int sc =
+          automaton.ngramScore(lower) - longerWorsePenalty(word, lower) + commonPrefix(word, root);
 
       if (roots.size() == MAX_ROOTS && sc < roots.peek().score) {
         continue;
@@ -152,7 +153,7 @@ class GeneratingSuggester {
       for (String guess : expandRoot(weighted.word, misspelled)) {
         String lower = dictionary.toLowerCase(guess);
         int sc =
-            ngram(misspelled.length(), misspelled, lower, EnumSet.of(NGramOptions.ANY_MISMATCH))
+            anyMismatchNgram(misspelled.length(), misspelled, lower, false)
                 + commonPrefix(misspelled, guess);
         if (sc > thresh) {
           expanded.add(new Weighted<>(guess, sc));
@@ -173,7 +174,7 @@ class GeneratingSuggester {
         mw[k] = '*';
       }
 
-      thresh += ngram(word.length(), word, new String(mw), EnumSet.of(NGramOptions.ANY_MISMATCH));
+      thresh += anyMismatchNgram(word.length(), word, new String(mw), false);
     }
     return thresh / 3 - 1;
   }
@@ -314,16 +315,14 @@ class GeneratingSuggester {
         break;
       }
 
-      int re =
-          ngram(2, word, lower, EnumSet.of(NGramOptions.ANY_MISMATCH, NGramOptions.WEIGHTED))
-              + ngram(2, lower, word, EnumSet.of(NGramOptions.ANY_MISMATCH, NGramOptions.WEIGHTED));
+      int re = anyMismatchNgram(2, word, lower, true) + anyMismatchNgram(2, lower, word, true);
 
       int score =
           2 * lcs(word, lower)
               - Math.abs(word.length() - lower.length())
               + commonCharacterPositionScore(word, lower)
               + commonPrefix(word, lower)
-              + ngram(4, word, lower, EnumSet.of(NGramOptions.ANY_MISMATCH))
+              + anyMismatchNgram(4, word, lower, false)
               + re
               + (re < (word.length() + lower.length()) * fact ? -1000 : 0);
       bySimilarity.add(new Weighted<>(guess, score));
@@ -374,14 +373,9 @@ class GeneratingSuggester {
   }
 
   // generate an n-gram score comparing s1 and s2
-  private static int ngram(int n, String s1, String s2, EnumSet<NGramOptions> opt) {
-    int score = 0;
+  static int ngramScore(int n, String s1, String s2, boolean weighted) {
     int l1 = s1.length();
-    int l2 = s2.length();
-    if (l2 == 0) {
-      return 0;
-    }
-
+    int score = 0;
     int[] lastStarts = new int[l1];
     for (int j = 1; j <= n; j++) {
       int ns = 0;
@@ -394,7 +388,7 @@ class GeneratingSuggester {
             continue;
           }
         }
-        if (opt.contains(NGramOptions.WEIGHTED)) {
+        if (weighted) {
           ns--;
           if (i == 0 || i == l1 - j) {
             ns--; // side weight
@@ -402,19 +396,21 @@ class GeneratingSuggester {
         }
       }
       score = score + ns;
-      if (ns < 2 && !opt.contains(NGramOptions.WEIGHTED)) {
+      if (ns < 2 && !weighted) {
         break;
       }
     }
+    return score;
+  }
 
-    int ns = 0;
-    if (opt.contains(NGramOptions.LONGER_WORSE)) {
-      ns = (l2 - l1) - 2;
-    }
-    if (opt.contains(NGramOptions.ANY_MISMATCH)) {
-      ns = Math.abs(l2 - l1) - 2;
-    }
-    return score - Math.max(ns, 0);
+  // NGRAM_LONGER_WORSE flag in Hunspell
+  private static int longerWorsePenalty(String s1, String s2) {
+    return Math.max((s2.length() - s1.length()) - 2, 0);
+  }
+
+  // NGRAM_ANY_MISMATCH flag in Hunspell
+  private static int anyMismatchNgram(int n, String s1, String s2, boolean weighted) {
+    return ngramScore(n, s1, s2, weighted) - Math.max(Math.abs(s2.length() - s1.length()) - 2, 0);
   }
 
   private static int indexOfSubstring(
@@ -469,12 +465,6 @@ class GeneratingSuggester {
       return commonScore + 10;
     }
     return commonScore;
-  }
-
-  private enum NGramOptions {
-    WEIGHTED,
-    LONGER_WORSE,
-    ANY_MISMATCH
   }
 
   private static class Weighted<T extends Comparable<T>> implements Comparable<Weighted<T>> {
