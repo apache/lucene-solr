@@ -71,7 +71,7 @@ class GeneratingSuggester {
 
           assert rootChars.length > 0;
           if (Math.abs(rootChars.length - word.length()) > MAX_ROOT_LENGTH_DIFF) {
-            assert rootChars.length < word.length(); // nextKey takes care of longer keys
+            assert rootChars.length < word.length(); // processAllWords takes care of longer keys
             return;
           }
 
