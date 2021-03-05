@@ -91,6 +91,7 @@ function prepare_dir_to_mount {
   fi
   rm -fr "$folder" >/dev/null 2>&1
   mkdir "$folder"
+  ls -ld "$folder"
   #echo "***** Created varsolr folder $BUILD_DIR / $folder"
 
   # The /var/solr mountpoint is owned by solr, so when we bind mount there our directory,
